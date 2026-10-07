@@ -153,6 +153,7 @@ def gate_word(verdict: Optional[bool]) -> str:
 def _measure_bar(coverage: float, stub: bool, qms_passed: Optional[bool], min_coverage: float,
                  compliance: Dict[str, Any], evidence: Optional[Dict[str, Any]],
                  floor_served: bool = False,
+                 not_assessable_basis: Optional[str] = None,
                  withheld: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
     """§10 — the Solution-Quality Bar resolved PER-CRITERION, honestly, in THREE distinct states.
 
@@ -196,7 +197,7 @@ def _measure_bar(coverage: float, stub: bool, qms_passed: Optional[bool], min_co
                       "attested": False, "source": "none"}
 
     def not_assessable(name: str) -> None:
-        crit[name] = {"met": None, "basis": NOT_ASSESSABLE_BASIS, "measured": False,
+        crit[name] = {"met": None, "basis": not_assessable_basis or NOT_ASSESSABLE_BASIS, "measured": False,
                       "attested": False, "source": "none"}
 
     if floor_served:
@@ -308,7 +309,8 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
                           evidence: Optional[Dict[str, Any]] = None,
                           owner_id: Optional[str] = None,
                           served_by: Any = None,
-                          withheld: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+                          withheld: Optional[Dict[str, str]] = None,
+                          sections_by_construction: Optional[str] = None) -> Dict[str, Any]:
     """Subject an operational delivery to the living QMS + §10 bar + §8 organism.
 
     ``served_by`` (W449) is who produced the content — the orchestrator's served_by string, a
@@ -330,7 +332,18 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
                   if required_sections else
                   "NOT MEASURED — this delivery declared no required sections, so there is no coverage "
                   "to compute; what ran was the length and stub screen, which cannot stand in for it")
-    _floor = floor_served(served_by)
+    #  W616 (FU-480, M1 v8 R2.0) — A COVERAGE THE GENERATOR GUARANTEES IS NOT A MEASUREMENT. The repo, web-app
+    #  and phone-app gates checked for section names their own templates write ("Business Plan", "Overview" …),
+    #  so coverage was 1.0 by construction and the gate recorded PASS and "specifically designed: met" over a
+    #  repo whose Design and Commercialisation were blank. That is the floor's case exactly - a check that
+    #  cannot fail - reached by a different route, so it takes the floor's path: the gate does not run and the
+    #  record says why. The caller states the reason; the gate cannot discover that a heading is templated.
+    _floor_real = floor_served(served_by)
+    _floor = _floor_real or bool(sections_by_construction)
+    #  both can be true at once, and then both are said: neither reason is a substitute for the other
+    _na_basis = "; and ".join(
+        ([NOT_ASSESSABLE_BASIS] if _floor_real or not sections_by_construction else [])
+        + (["not assessable — " + str(sections_by_construction)] if sections_by_construction else []))
     _served_label = describe_served(served_by)
     quality: Dict[str, Any] = {
         "bar": list(SOLUTION_QUALITY_BAR),
@@ -362,7 +375,7 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
         # OVERALL - so the framework-level status a page renders is unchanged either way. What this corrects is
         # the DCMS-sealed quality record and the API payload, which board packs and exports consume. It does
         # not change a pixel, and claiming otherwise would be the badge-in-the-DOM error inverted.
-        _metrics = ({"coverage_not_assessable": NOT_ASSESSABLE_BASIS} if _floor else
+        _metrics = ({"coverage_not_assessable": _na_basis} if _floor else
                     {"delivery_coverage": coverage, "stub_found": stub})
         screen = screen_compliance(content or "", delivery_metrics=_metrics)
         # W483 (R1.1) — coverage_gaps and basis were dropped here, so every downstream reader (the
@@ -391,7 +404,7 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
             # nothing is counted as a gate run or a pass. Genesis has said "not assessable" for its
             # own stage checks since W436; the SHARED gate every other surface uses said "pass".
             quality["qms_gate_passed"] = None
-            quality["qms_basis"] = NOT_ASSESSABLE_BASIS
+            quality["qms_basis"] = _na_basis
         elif coverage is None:
             # §10 (W497, FU-201) — the gate compares coverage against a minimum. With no declared
             # structure there is no coverage, so the comparison cannot be made: it is NOT ASSESSABLE,
@@ -415,7 +428,8 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
         # not-measured), replacing the bare 16-name list that implied a measurement that never ran.
         quality["bar_measured"] = _measure_bar(coverage, stub, quality["qms_gate_passed"],
                                                qms.min_coverage, _comp, evidence,
-                                               floor_served=_floor, withheld=withheld)
+                                               floor_served=_floor, withheld=withheld,
+                                               not_assessable_basis=_na_basis)
         # The QMS document-controls the quality record through its OWNED DCMS (QMS ⊃ DCMS, ISO 9001 §7.5):
         # the gate verdict becomes a versioned, SHA3-512-sealed controlled document — W287: the §11
         # verdicts are IN the sealed payload now (the §13 repo's 'compliance + quality record').

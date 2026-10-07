@@ -324,6 +324,7 @@ class ModelGateway:
                     "recall_not_stored_because": "the request was refused before any model ran, so there "
                                                  "is no completion to recall",
                     "profile_applied": False,
+                    "profile_state": "not_read", "profile_basis": "the request was refused before any profile was read",
                     "governance_checkpoint": _halt}
         # W332 — generation-class callers whose output SHIPS or PERSISTS must not carry cross-request
         # recall: recall was the leak vector. W489 made that the DEFAULT (see _RECALL_OFF above)
@@ -335,8 +336,9 @@ class ModelGateway:
         # recall was the leak vector), and those are exactly the surfaces where "understand the
         # person" was missing. Recall is inference over other requests; this is the user's own
         # words, which they wrote, can read back, and can delete. Different trust, different switch.
-        from agentic_core.ai.user_context import load_preamble
-        _preamble = load_preamble(owner_id)
+        from agentic_core.ai.user_context import preamble_state
+        _pstate = preamble_state(owner_id)          # W616 (FU-397) — which fact produced the preamble
+        _preamble = _pstate["preamble"]
         augmented = _preamble + augmented
         served_by, is_external = "native", False
         try:
@@ -407,6 +409,7 @@ class ModelGateway:
                     "recall pool - it is the engine's own framing, not prior knowledge. Your own "
                     "message was kept."),
                 "profile_applied": bool(_preamble),
+                "profile_state": _pstate["state"], "profile_basis": _pstate["basis"],
                 # W505 (P2.6) — every gateway response carries its governance checkpoint: what the gate
                 # decided before and after, and whether the constitutional ledger actually recorded it.
                 "governance_checkpoint": _chk}

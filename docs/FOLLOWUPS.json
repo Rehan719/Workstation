@@ -7182,10 +7182,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.22",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W616",
       "note": "",
-      "slot_source": "P2.20 closed W612 on its ACCEPT (6); its open rows ride the truth pass that succeeds it (P2.22), as P2.19's rode P2.20"
+      "slot_source": "P2.20 closed W612 on its ACCEPT (6); its open rows ride the truth pass that succeeds it (P2.22), as P2.19's rode P2.20",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "user_context.preamble_state distinguishes applied / none_written / unreadable / no_owner / error; the gateway returns profile_state + profile_basis, the avatar carries them and ConversationPanel says 'profile: NOT applied' for an unreadable one; three blinds red"
     },
     {
       "id": "FU-398",
@@ -8956,11 +8959,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.22",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W616",
       "note": "",
       "slot_source": "ledger v8 R2.0 is tier 1: P2.22 carries the v8 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "assure_delivery takes sections_by_construction; the repo, web-app and phone-app gates pass the reason, so a check that cannot fail is not run and the record (and the bar's 'specifically designed') says why - both reasons when floor-served too; three blinds red"
     },
     {
       "id": "FU-481",

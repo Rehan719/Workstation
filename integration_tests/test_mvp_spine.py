@@ -46185,3 +46185,56 @@ def test_w615_p222c_floor_text_is_not_filed_as_the_users_or_the_owners(client):
     _vsrc = _string_constants((_root / "agentic_core/api/vsb.py").read_text(encoding="utf-8"))
     assert "the screen returns to pass; distributions are never held" not in _vsrc
     assert "the plan and registration text are NOT edited and the screen is NOT re-run" in _vsrc
+
+
+def test_w616_p222_a_gate_over_templated_headings_does_not_pass(client):
+    """P2.22(a) (W616, FU-480, M1 v8 R2.0) — the repo, web-app and phone-app QMS gates checked for section names
+    their own templates write, so coverage was 1.0 by construction and the gate sealed PASS and "specifically
+    designed: met" over a repo whose Design and Commercialisation were blank. A check that cannot fail is the
+    floor's case reached another way, and takes the floor's path: not assessable, with the true reason."""
+    import asyncio as _a616
+    import uuid as _uu616
+    from agentic_core.vbs.quality import assure_delivery, NOT_ASSESSABLE_BASIS
+    _why = "the required sections are headings this generator writes by construction"
+    q = _a616.run(assure_delivery("# Business Plan\n## Overview\n" + "real words " * 400, ["Business Plan", "Overview"],
+                                  label="w616_probe", served_by="ollama", sections_by_construction=_why))["quality"]
+    assert q["qms_gate_passed"] is None and _why in q["qms_basis"], (q["qms_gate_passed"], q["qms_basis"])
+    _sd = q["bar_measured"]["criteria"]["specifically designed"] if "criteria" in q["bar_measured"] else q["bar_measured"]["specifically designed"]
+    assert _sd["met"] is None and _why in _sd["basis"] and _sd["basis"] != NOT_ASSESSABLE_BASIS, _sd
+    q2 = _a616.run(assure_delivery("# Business Plan\n## Overview\n" + "real words " * 400, ["Business Plan", "Overview"],
+                                   label="w616_probe", served_by="ollama"))["quality"]
+    assert q2["qms_gate_passed"] is not None, "a gate over sections the caller did NOT template stopped running"
+    est = client.post("/api/v1/genesis/establish", json={
+        "problem": "w616 a halal bakery", "domain": "enterprise", "owner_id": "pytest",
+        "name": f"W616 Bakery {_uu616.uuid4().hex[:4]}"}).json()
+    vid = est["vsb_id"]
+    for _route in ("repo", "webapp", "mobile"):
+        _r = client.post(f"/api/v1/vsb/{vid}/{_route}")
+        assert _r.status_code == 200, (_route, _r.status_code, _r.text[:300])
+        _j = _r.json()
+        _qa = (_j.get("quality_assurance") or _j.get("qa") or {}).get("quality") or (_j.get("quality_assurance") or {})
+        assert _qa.get("qms_gate_passed") is None, (_route, "a gate over templated headings sealed a verdict", _qa.get("qms_gate_passed"))
+        assert "by construction" in str(_qa.get("qms_basis")), (_route, _qa.get("qms_basis"))
+
+
+def test_w616_p222_an_unreadable_profile_is_said_not_shown_as_none(client, monkeypatch):
+    """FU-397 (W616) — an unreadable stored profile produced the same empty preamble as a person who never
+    wrote one, so a reply read as though they had no profile. The state now travels with the answer, and the
+    avatar says the profile was NOT applied rather than nothing."""
+    import asyncio as _a616b
+    import pathlib as _pl616b
+    from agentic_core.ai import user_context as _uc
+    from agentic_core.api import user_workspace as _uw
+    monkeypatch.setattr(_uc, "profile_owner", lambda o: "w616-person")
+    monkeypatch.setattr(_uw, "_load", lambda owner: ({}, "JSONDecodeError at byte 12"))
+    s = _uc.preamble_state("w616-person")
+    assert s["state"] == "unreadable" and "could not be read whole" in s["basis"] and s["preamble"] == "", s
+    monkeypatch.setattr(_uw, "_load", lambda owner: ({"profile": {}}, None))
+    assert _uc.preamble_state("w616-person")["state"] == "none_written"
+    monkeypatch.setattr(_uw, "_load", lambda owner: ({}, "JSONDecodeError at byte 12"))
+    from agentic_core.ai.gateway import gateway as _gw616
+    meta = _a616b.run(_gw616.query_meta("w616 hello", agent="w616", owner_id="w616-person"))
+    assert meta.get("profile_state") == "unreadable" and meta.get("profile_applied") is False, (
+        meta.get("profile_state"), meta.get("profile_basis"))
+    _cp = _code_only((_pl616b.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/components/avatar/ConversationPanel.tsx").read_text(encoding="utf-8"))
+    assert "m.profileState === 'unreadable'" in _cp and "profile: NOT applied" in _cp

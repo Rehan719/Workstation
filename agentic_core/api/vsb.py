@@ -431,6 +431,10 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
     # required sections = content headings that genuinely appear in the repo docs (not filenames)
     qa = await assure_delivery(combined, ["Business Plan", "Organisation", "Identity", "Executive Summary"],
                                label="vsb_repo",
+                               sections_by_construction=("the required sections are headings this generator writes into every "
+                               "entity's repository whatever its content, so coverage is 1.0 by construction "
+                               "and cannot say whether the repository is designed for this entity"),
+
                                served_by=_body_served_by(vsb))
     # §13 (W289) — compliance/QUALITY.md is the REAL record now (the sealed verdicts of THIS
     # generation), not a pointer note to a snapshot.
@@ -1090,6 +1094,10 @@ async def generate_vsb_webapp(vsb_id: str, user: dict | None = Depends(get_curre
                 f"Organisation · Resources.\n{vsb.get('challenge', '')}\n" + files["webapp/data.json"])
     qa = await assure_delivery(combined, ["Overview", "Business Plan", "Organisation", "Resources"],
                                label="vsb_webapp",
+                               sections_by_construction=("the required sections are headings this generator writes into every "
+                               "entity's web app whatever its content, so coverage is 1.0 by construction "
+                               "and cannot say whether the web app is designed for this entity"),
+
                                served_by=_body_served_by(vsb))
     root = _REPO_STORE / vsb_id
     written = []
@@ -1227,6 +1235,10 @@ async def generate_vsb_mobile(vsb_id: str, user: dict | None = Depends(get_curre
                 f"Organisation · Resources.\n{vsb.get('challenge', '')}\n" + files["mobile/data.json"])
     qa = await assure_delivery(combined, ["Overview", "Business Plan", "Organisation", "Resources"],
                                label="vsb_mobile",
+                               sections_by_construction=("the required sections are headings this generator writes into every "
+                               "entity's phone app whatever its content, so coverage is 1.0 by construction "
+                               "and cannot say whether the phone app is designed for this entity"),
+
                                served_by=_body_served_by(vsb))
     root = _REPO_STORE / vsb_id
     written = []

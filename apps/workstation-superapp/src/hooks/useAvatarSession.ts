@@ -28,6 +28,8 @@ export interface AvatarMessage {
   languageRequested?: string | null;
   languageHonoured?: string | null;
   profileApplied?: boolean;   // W505 (P2.3)
+  profileState?: string | null;   // W616 (FU-397) — 'unreadable' is said, never shown as "no profile"
+  profileBasis?: string | null;
 }
 
 export type AvatarFaceState = 'idle' | 'thinking' | 'speaking';
@@ -258,6 +260,8 @@ export function useAvatarSession() {
         // W505 (P2.3) — whether the user's profile shaped this answer. Produced by the gateway since W428
         // and shown by nothing until now.
         profileApplied: Boolean(resp.data.profile_applied),
+        profileState: resp.data.profile_state ?? null,
+        profileBasis: resp.data.profile_basis ?? null,
       }]);
       if (speakReplies) speakText(replyText);
       setAiStatus('online');

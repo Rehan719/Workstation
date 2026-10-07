@@ -108,11 +108,42 @@ def build_preamble(profile: Optional[Dict[str, Any]]) -> str:
             + body + "\n\n")
 
 
+def preamble_state(owner_id: Optional[str]) -> dict:
+    """W616 (FU-397) — the preamble AND which of four different facts produced it.
+
+    load_preamble collapsed "no caller to attribute", "this person wrote no profile", "the stored profile could
+    not be read whole" and "reading it failed" into one empty string. Not failing generation over a convenience
+    store is right; not SAYING which happened is the FU-298 shape, because a reply then reads as though the
+    person had never written a profile when they had. Never raises.
+    Returns {"preamble": str, "state": applied|none_written|unreadable|no_owner|error, "basis": str}.
+    """
+    owner = profile_owner(owner_id)
+    if not owner:
+        return {"preamble": "", "state": "no_owner",
+                "basis": "no caller could be attributed, so no saved profile was looked up"}
+    try:
+        from agentic_core.api.user_workspace import _load
+        _doc, _why = _load(owner)
+        if _why:
+            import logging as _lg
+            _lg.getLogger("ai.user_context").error(
+                "the stored profile for %s could not be read whole (%s), so NO preamble was applied", owner, _why)
+            return {"preamble": "", "state": "unreadable",
+                    "basis": f"your saved profile could not be read whole ({_why}), so it was NOT applied"}
+        pre = build_preamble((_doc or {}).get("profile"))
+        return ({"preamble": pre, "state": "applied", "basis": "your saved profile was applied"} if pre else
+                {"preamble": "", "state": "none_written", "basis": "you have not written a profile"})
+    except Exception as exc:
+        return {"preamble": "", "state": "error",
+                "basis": f"the saved profile could not be looked up ({type(exc).__name__}), so it was NOT applied"}
+
+
 def load_preamble(owner_id: Optional[str]) -> str:
     """The explicit preamble for this caller, or "" — never raises, never guesses.
 
     A missing store, an unreadable document or no profile at all all mean the same thing: no
-    preamble. Generation must never fail because a convenience store is unavailable.
+    preamble. Generation must never fail because a convenience store is unavailable. W616 — a caller that
+    must say WHICH of those happened uses preamble_state().
     """
     owner = profile_owner(owner_id)
     if not owner:

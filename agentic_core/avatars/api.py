@@ -118,6 +118,8 @@ class ChatResponse(BaseModel):
     # W505 (P2.3) — whether the user's profile shaped this answer. gateway.query_meta has produced this
     # since W428 and the avatar's reply never carried it: a field produced and rendered nowhere.
     profile_applied: bool = False
+    profile_state: Optional[str] = None     # W616 (FU-397) — applied | none_written | unreadable | …
+    profile_basis: Optional[str] = None
     suggested_areas: List[Dict[str, str]] = []   # §5/§9 guided navigation — WHITELISTED platform areas only
 
 
@@ -641,6 +643,7 @@ async def chat(request: ChatRequest, user: dict | None = Depends(get_current_use
                        f"translate. Set up the owned local model and ask again."
                        if (lang and lang_instr and meta.get("served_by", "native") == "native") else None),
         profile_applied=bool(meta.get("profile_applied")),
+        profile_state=meta.get("profile_state"), profile_basis=meta.get("profile_basis"),
         suggested_areas=_suggest_areas(request.message),
     )
 
