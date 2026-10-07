@@ -5370,11 +5370,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.24",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W622",
       "note": "",
       "slot_source": "P2.22 closed W621 on its ACCEPT (6); its open riders ride P2.24, as P2.20's rode P2.22",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Owner ruling 2026-10-07: biobus.set_circadian_to_atp (runtime only, default OFF) makes the phase intensity the ATP efficiency; settable via /heartbeat/configure and the Heartbeat page; atp_depletion_state derives its efficiencies from the switch; three blinds red"
     },
     {
       "id": "FU-309",
@@ -7584,11 +7587,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.24",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W622",
       "note": "",
       "slot_source": "P2.22 closed W621 on its ACCEPT (6); its open riders ride P2.24, as P2.20's rode P2.22",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Owner ruling 2026-10-07: spine.yml installs pytest-xdist==3.8.0, runs -n 4, and the backend job has timeout-minutes: 60; two blinds red"
     },
     {
       "id": "FU-417",
@@ -8516,11 +8522,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.24",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W622",
       "note": "",
       "slot_source": "P2.22 closed W621 on its ACCEPT (6); its open riders ride P2.24, as P2.20's rode P2.22",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Owner ruling 2026-10-07 (accurate scan, no deletion): scripts/entity_coverage_scan.py reads every record kind, separates own footprint from cross-references, cannot delete; it must be run where the data lives - this checkout holds none of the 162; two blinds red"
     },
     {
       "id": "FU-460",
@@ -9617,10 +9626,13 @@
       "severity": "low",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W622",
       "note": "",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Owner ruling 2026-10-07 (b): every Owner-named priority that clears the screen receives PRIORITY_MIN_SHARE (10%) first, the remainder pro-rata; Dawah is funded; the rule travels as allocation_rule and each grant's guaranteed_share; two blinds red"
     },
     {
       "id": "FU-512",
@@ -9635,11 +9647,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.24",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W622",
       "note": "",
       "slot_source": "ledger v9 R1.0 is tier 1: P2.24 carries the v9 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "_contribution_entity refuses (422) any entity whose form is not qep_waqf_trust, naming its form and its template's owner share; nothing is written; two blinds red"
     },
     {
       "id": "FU-513",

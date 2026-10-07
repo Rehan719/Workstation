@@ -1072,6 +1072,24 @@ def _contribution_entity(vsb_id: str) -> dict:
             "message": f"no entity {safe} is on the living roster or in the VSB store, so a contribution "
                        f"cannot be recorded against its books. Nothing was written.",
             "vsb_id": safe})
+    #  W622 (FU-512, M1 v9 R1.0) — A QEP CHANNEL CREDITS ONLY A QEP ENTITY. This checked only that the entity
+    #  existed, so a Zakat or Sponsor-a-Student gift could be posted to any entity, and the response then told
+    #  the donor "no owner share at all" and "A.8: owner 0%" about one whose own waterfall paid its owner 20%.
+    #  A.8's claims are true of the qep_waqf_trust form and of nothing else, so another form is refused, with
+    #  the owner share its own template carries, rather than credited under A.8's description.
+    _etype = rec.get("entity_type") or (rec.get("economy") or {}).get("entity_type")
+    if _etype != "qep_waqf_trust":
+        try:
+            from agentic_core.economy.entities import get_template
+            _owner = (get_template(_etype or "").get("waterfall") or {}).get("owner")
+        except Exception:
+            _owner = None
+        raise HTTPException(status_code=422, detail={
+            "message": (f"{safe} is not a QEP entity (its form is {_etype or 'not recorded'}"
+                        + (f", whose waterfall pays its owner {round(_owner * 100)}%" if isinstance(_owner, (int, float)) else "")
+                        + "), so A.8's Zakat and Sponsor-a-Student terms - no owner share, Zakat-designated "
+                          "charity funds - do not describe it. Nothing was recorded."),
+            "vsb_id": safe, "entity_type": _etype})
     return {"vsb_id": safe, "record": rec}
 
 

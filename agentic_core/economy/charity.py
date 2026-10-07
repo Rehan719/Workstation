@@ -59,6 +59,13 @@ _CANDIDATES: List[Dict[str, Any]] = [
 # adjust at runtime via the persisted directives (GET/POST /api/v1/economy/charity/directives).
 _PRIORITIES = ["clean_water", "orphan_sponsorship", "conflict_relief", "dawah"]
 
+#  OWNER RULING 2026-10-07 (FU-511, option b) — EVERY OWNER-NAMED PRIORITY RECEIVES A GUARANTEED MINIMUM SHARE.
+#  Dawah ranked last on the editorial weights and so received nothing on every cycle; the Owner chose a floor for
+#  every named priority over editing the weights. Each cleared priority receives this share of the budget first,
+#  and the remainder is split pro-rata by score across every cleared cause, priorities included. If the floors
+#  would exceed the budget they are scaled down equally, so the shares always sum to the budget.
+PRIORITY_MIN_SHARE = 0.10
+
 
 def get_directives(strict: bool = False) -> Dict[str, Any]:
     """The Owner's persisted charity directives (priorities · exclusions · 100%-donation rule),
@@ -247,16 +254,38 @@ class CharityIntelligence:
                 excluded.append({"id": w["id"], "cause": w["cause"], "compliance": verdict})
             else:
                 cleared.append({**w, "compliance": verdict})
+        #  FU-511 — a priority outside the top-N joins the cleared set (screened like any grant), so it can
+        #  receive its guaranteed share; an EXCLUDED or failing priority still receives nothing.
+        _have = {w["id"] for w in cleared} | {e["id"] for e in excluded}
+        _pool = {c["id"]: c for c in self.ranked(top=10_000)}
+        for p in sorted(self.priorities):
+            if p in _have or p not in _pool:
+                continue
+            w = _pool[p]
+            try:
+                from agentic_core.api.compliance import screen_compliance
+                verdict = screen_compliance(f"charitable grant to: {w['cause']} ({w['region']})").get("overall") or "review"
+            except Exception:
+                verdict = "unscreened (engine unavailable)"
+            if verdict == "fail":
+                excluded.append({"id": w["id"], "cause": w["cause"], "compliance": verdict})
+            else:
+                cleared.append({**w, "compliance": verdict, "joined_as_priority": True})
+        _prio = [w for w in cleared if w["id"] in self.priorities]
+        _floor = min(PRIORITY_MIN_SHARE, (1.0 / len(_prio)) if _prio else PRIORITY_MIN_SHARE)
+        _remainder = budget * (1.0 - _floor * len(_prio))
         weight_sum = sum(w["score"] for w in cleared) or 1.0
         grants = []
         for w in cleared:
-            amount = round(budget * (w["score"] / weight_sum), 2)
+            _guaranteed = budget * _floor if w["id"] in self.priorities else 0.0
+            amount = round(_guaranteed + _remainder * (w["score"] / weight_sum), 2)
             # W415 — this carried `donation_100pct: True`, a flat assertion that 100% of the grant
             # reaches the cause. Nothing verifies that; it is a hand-set eligibility flag on a cause
             # CATEGORY, and no delivery organisation is even named yet. State the rule that actually
             # ran, and report the missing check as missing.
             grants.append({"id": w["id"], "cause": w["cause"], "region": w["region"],
                            "score": w["score"], "amount_wst": amount,
+                           "guaranteed_share": (round(_floor, 4) if w["id"] in self.priorities else 0.0),
                            "donation_100pct_required_by_directive": self.require_100pct,
                            "donation_100pct_verified": "not_checked",
                            "weights_source": w.get("weights_source", "curated"),
@@ -280,5 +309,10 @@ class CharityIntelligence:
             #  received nothing on every cycle and no surface said so. Whether it SHOULD be funded is the
             #  Owner's call (a weight, a floor, or a guaranteed share); this reports that it is not.
             "priorities_unfunded": self._unfunded_priorities(grants, top),
+            "priority_min_share": round(_floor, 4),
+            "allocation_rule": (f"OWNER RULING 2026-10-07: each Owner-named priority that clears the compliance screen "
+                                f"receives {round(_floor * 100, 1)}% of the budget first; the remaining "
+                                f"{round((1 - _floor * len(_prio)) * 100, 1)}% is split pro-rata by score across every "
+                                f"cleared cause"),
             "disclaimer": "Virtual/simulated allocation — no real funds moved.",
         }

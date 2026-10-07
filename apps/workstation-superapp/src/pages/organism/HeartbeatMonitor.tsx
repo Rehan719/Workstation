@@ -10,6 +10,7 @@ interface Status {
   auto_evolve: boolean; auto_economy: boolean; auto_align: boolean; auto_compliance: boolean;
   auto_ship: boolean; autonomy_persisted?: boolean; autonomy_restored_at?: string | null;
   auto_metabolic?: boolean; metabolic_every?: number; auto_metabolic_basis?: string;
+  circadian_to_atp?: boolean; circadian_to_atp_basis?: string;
   evolution_auto_apply?: { enabled: boolean | null; readable: boolean; governed_by: string;
     consumer?: string; how_to_change?: string; why_not_a_toggle?: string; effect_when_off?: string };
   recent: Beat[]; integrations: string[];
@@ -55,6 +56,9 @@ const AUTONOMY: { key: keyof Status; label: string; does: string }[] = [
   // FU-367 (W609) — the recirculation loop's lever, settable from the running backend for the first time
   { key: 'auto_metabolic', label: 'Self-reflect',
     does: 'Runs the six-stage recirculation loop every N beats; anything it would say is delivered only if all six clearance gates clear it. Runtime only: a restart turns it off.' },
+  // FU-308 (Owner ruling 2026-10-07) — default OFF
+  { key: 'circadian_to_atp', label: 'Circadian energy',
+    does: "Lets the time of day set the organism's ATP production rate (1.0 / 0.7 / 0.5 / 0.3 by phase). Off by default; runtime only: a restart turns it off." },
 ];
 
 const PHASE_ICON: Record<string, React.ComponentType<any>> = {

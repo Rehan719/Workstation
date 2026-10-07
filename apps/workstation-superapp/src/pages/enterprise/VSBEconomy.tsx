@@ -19,7 +19,7 @@ interface EntityType {
 interface Cycle {
   intake_revenue: number; homeostasis_reserves: number; operating_costs?: number; distributable_profit: number;
   circulation: Record<string, { amount_wst: number; role: string }>;
-  giving_back: { grants: { cause: string; amount_wst: number; score: number }[];
+  giving_back: { grants: { cause: string; amount_wst: number; score: number; guaranteed_share?: number }[]; allocation_rule?: string;
     priorities_unfunded?: { id: string; cause: string; rank: number | null; why: string }[] } | null;
   metabolic_energy: number | null; entity_name: string; capital_preserved: boolean;
   energy_state?: string; reserve_rate_applied?: number;   // §8→§12 economic survival instinct
@@ -599,6 +599,7 @@ export const VSBEconomy: React.FC = () => {
                     <div className="flex items-center gap-3">
                       <Recycle size={13} className="text-aura" />
                       <span className="text-sm text-slate-300 font-bold">{g.cause}</span>
+                      {(g.guaranteed_share ?? 0) > 0 && <span className="text-[9px] text-aura/80" title={cycle.giving_back?.allocation_rule}>priority · {Math.round((g.guaranteed_share ?? 0) * 100)}% guaranteed</span>}
                     </div>
                     <div className="flex items-center gap-3 text-[10px] font-mono">
                       <span className="text-slate-600" title="A weighted sum of editorial constants — nothing measures need, impact or trust. The arithmetic is real; the inputs are typed.">score {g.score} (editorial)</span>

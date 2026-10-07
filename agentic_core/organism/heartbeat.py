@@ -1193,7 +1193,8 @@ class OrganismHeartbeat:
                   auto_compliance: Optional[bool] = None,
                   auto_ship: Optional[bool] = None,
                   auto_metabolic: Optional[bool] = None,
-                  metabolic_every: Optional[int] = None) -> None:
+                  metabolic_every: Optional[int] = None,
+                  circadian_to_atp: Optional[bool] = None) -> None:
         if interval_seconds is not None:
             self.interval_seconds = max(5, int(interval_seconds))
         if auto_evolve is not None:
@@ -1213,6 +1214,10 @@ class OrganismHeartbeat:
             self.auto_metabolic = bool(auto_metabolic)
         if metabolic_every is not None:
             self._metabolic_every = max(1, int(metabolic_every))
+        #  FU-308 (Owner ruling 2026-10-07) — runtime only, default off; lives on the biobus that applies it
+        if circadian_to_atp is not None:
+            from agentic_core.organism.biobus import set_circadian_to_atp
+            set_circadian_to_atp(bool(circadian_to_atp))
         self._save_autonomy()
 
     def _reflex_arc_count(self):
@@ -1254,6 +1259,10 @@ class OrganismHeartbeat:
             "last_reshipped": getattr(self, "last_reshipped", None),
             "auto_ship": self.auto_ship,
             "auto_metabolic": self.auto_metabolic,
+            "circadian_to_atp": __import__("agentic_core.organism.biobus", fromlist=["x"]).circadian_to_atp(),
+            "circadian_to_atp_basis": ("runtime only, default OFF (Owner ruling 2026-10-07): when on, the phase's "
+                                       "intensity (1.0/0.7/0.5/0.3) is the ATP production efficiency; a restart "
+                                       "returns it to off"),
             "metabolic_every": self._metabolic_every,
             "auto_metabolic_basis": ("runtime only: set through /heartbeat/configure and NOT persisted, so a "
                                      "restart returns it to off"),

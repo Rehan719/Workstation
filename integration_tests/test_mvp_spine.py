@@ -42115,8 +42115,12 @@ def test_w594_the_owners_rulings_of_2026_10_05b_hold_in_code_and_in_canon(client
     #  THE PROPERTY IS A MATCH AGAINST THE REGISTER, both ways: every owner-gated row that is still OPEN
     #  appears, and no row that is CLOSED is still being asked about. Computed, so ruling one removes it and
     #  registering one adds it, with nothing here to edit either time.
-    _still = _plan594.split("STILL WITH THE OWNER", 1)[1][:2600]
-    assert "THE STRIPE KEY ROLL" in _still and "162" in _still, (
+    #  W622 — read to the list's OWN end marker, not a fixed 2600 characters: once rulings shortened the list,
+    #  the window reached into the "RULED" record below it and read ruled rows as still asked.
+    _still = _plan594.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0]
+    #  W622 — "162" left the list because the Owner RULED it on 2026-10-07 (FU-459: an accurate scan, no deletion);
+    #  pinning it would punish the ruling, the FU-365 class this block's own comment names.
+    assert "THE STRIPE KEY ROLL" in _still, (
         "the open-decisions list has lost a standing Owner decision that no register row carries",
         _still[:300])
     import json as _js594
@@ -46466,3 +46470,94 @@ def test_w620_p223_the_last_three_shortfalls_are_said(client):
     _td = _src("apps/workstation-superapp/src/pages/TransformationDashboard.tsx")
     assert "title={e.basis}" in _td
     assert "{result.product_label || result.product} — {result.product_source}" in _gj
+
+
+def test_w622_the_owners_rulings_of_2026_10_07_hold(client):
+    """Owner rulings 2026-10-07 ("go with your recommendations"), each driven where it lives.
+
+    FU-511 (b): every Owner-named charity priority receives a guaranteed minimum share, so Dawah is funded.
+    FU-416: CI installs pytest-xdist and runs the suite in parallel, with a job timeout for a stall.
+    FU-308: the circadian map reaches ATP behind a switch that DEFAULTS OFF. FU-459: an entity coverage scan
+    that reads every record kind and cannot delete. (FU-473 stays deferred: no code.)"""
+    import json as _j622
+    import pathlib as _pl622
+    import tempfile as _tf622
+    _root = _pl622.Path(__file__).resolve().parents[1]
+
+    # ── FU-511: a guaranteed share for every cleared priority; the shares sum to the budget ──────────
+    from agentic_core.economy.charity import CharityIntelligence, PRIORITY_MIN_SHARE
+    ci = CharityIntelligence(exclusions=[], priorities=["clean_water", "orphan_sponsorship", "conflict_relief", "dawah"])
+    a = ci.allocate(1000.0)
+    _g = {g["id"]: g for g in a["grants"]}
+    assert "dawah" in _g and _g["dawah"]["amount_wst"] >= 1000.0 * PRIORITY_MIN_SHARE, (
+        "an Owner priority is still unfunded", sorted(_g))
+    assert all(_g[p]["guaranteed_share"] == PRIORITY_MIN_SHARE for p in ci.priorities if p in _g)
+    assert abs(sum(g["amount_wst"] for g in a["grants"]) - 1000.0) < 0.1, sum(g["amount_wst"] for g in a["grants"])
+    assert a["priorities_unfunded"] == [] and "OWNER RULING 2026-10-07" in a["allocation_rule"]
+    ce = CharityIntelligence(exclusions=["dawah"], priorities=["dawah"])
+    assert "dawah" not in {g["id"] for g in ce.allocate(100.0)["grants"]}, "an EXCLUDED priority was funded"
+
+    # ── FU-416: CI runs the suite in parallel, bounded ───────────────────────────────────────────────
+    import yaml as _y622
+    _wf = _y622.safe_load((_root / ".github/workflows/spine.yml").read_text(encoding="utf-8"))["jobs"]["backend"]
+    _runs = " ".join(str(s.get("run") or "") for s in _wf["steps"])
+    assert "pip install pytest-xdist" in _runs and "-m pytest integration_tests -q -n 4" in _runs, _runs[:400]
+    assert int(_wf.get("timeout-minutes") or 0) > 0, "a parallel CI suite with no job timeout can hold a runner on a stall"
+
+    # ── FU-308: the circadian link defaults OFF; on, the phase's intensity is the efficiency ─────────
+    from agentic_core.organism import biobus as _bb622
+    assert _bb622.circadian_to_atp() is False and client.get("/api/v1/heartbeat/status").json()["circadian_to_atp"] is False
+    try:
+        r = client.post("/api/v1/heartbeat/configure", json={"circadian_to_atp": True})
+        assert r.status_code == 200 and r.json()["circadian_to_atp"] is True, r.text[:200]
+        d = _bb622.atp_depletion_state()
+        assert d["circadian_to_atp"] is True and 0.3 in d["efficiencies_this_code_passes"], d
+    finally:
+        client.post("/api/v1/heartbeat/configure", json={"circadian_to_atp": False})
+    assert _bb622.atp_depletion_state()["efficiencies_this_code_passes"] == [1.0, 0.8]
+    _hb = _code_only((_root / "apps/workstation-superapp/src/pages/organism/HeartbeatMonitor.tsx").read_text(encoding="utf-8"))
+    assert "key: 'circadian_to_atp'" in _hb
+
+    # ── FU-459: the scan reads every kind, separates footprint from cross-reference, deletes nothing ──
+    import importlib.util as _iu622
+    _spec = _iu622.spec_from_file_location("_ecs622", _root / "scripts/entity_coverage_scan.py")
+    _ecs = _iu622.module_from_spec(_spec)
+    _spec.loader.exec_module(_ecs)
+    _d = _pl622.Path(_tf622.mkdtemp())
+    (_d / "vsb_entities").mkdir()
+    (_d / "economy").mkdir()
+    (_d / "vsb_entities" / "vsb-aaaa1111.json").write_text(_j622.dumps({"vsb_id": "vsb-aaaa1111", "owner_id": "pytest"}))
+    (_d / "vsb_entities" / "vsb-bbbb2222.json").write_text(_j622.dumps({"vsb_id": "vsb-bbbb2222", "owner_id": "pytest"}))
+    (_d / "economy" / "vsb-aaaa1111_ledger.json").write_text(_j622.dumps({"entries": []}))
+    (_d / "economy_owner_payments.json").write_text(_j622.dumps({"vsb-aaaa1111": [{"amount": 12}]}))
+    rep = _ecs.scan(_d)
+    _rows = {r["vsb_id"]: r for r in rep["entities"]}
+    assert _rows["vsb-aaaa1111"]["cross_references"] == ["economy_owner_payments"], _rows["vsb-aaaa1111"]
+    assert _rows["vsb-aaaa1111"]["own_footprint"] == ["economy/<id>_ledger"], _rows["vsb-aaaa1111"]
+    assert _rows["vsb-bbbb2222"]["referenced_by_nothing"] is True
+    assert {"economy_owner_payments", "economy/<id>_ledger"} <= set(rep["kinds_scanned"])
+    assert sorted(p.name for p in (_d / "vsb_entities").iterdir()) == ["vsb-aaaa1111.json", "vsb-bbbb2222.json"]
+    _src = _string_constants((_root / "scripts/entity_coverage_scan.py").read_text(encoding="utf-8"))
+    import ast as _ast622
+    _calls = {n.func.attr for n in _ast622.walk(_ast622.parse((_root / "scripts/entity_coverage_scan.py").read_text(encoding="utf-8")))
+              if isinstance(n, _ast622.Call) and isinstance(n.func, _ast622.Attribute)}
+    assert not _calls & {"unlink", "remove", "rmtree", "rmdir"}, ("the scan can delete", _calls & {"unlink", "remove", "rmtree", "rmdir"})
+
+
+def test_w622_p224_a_qep_channel_credits_only_a_qep_entity(client):
+    """P2.24 (W622, FU-512, M1 v9 R1.0) — the Zakat and Sponsor-a-Student routes posted to ANY entity and told the
+    donor "no owner share at all" about one whose waterfall paid its owner 20%. A.8's terms describe the
+    qep_waqf_trust form only; any other form is refused and nothing is written."""
+    from agentic_core.economy.ledger import VirtualLedger
+    other = client.post("/api/v1/genesis/establish", json={"problem": "w622 a varroa watch service", "name": "W622 Varroa",
+                                                           "domain": "science"}).json()["vsb_id"]
+    _before = VirtualLedger(other).balances()
+    for path in ("/api/v1/qep/contribute/zakat", "/api/v1/qep/contribute/sponsor-a-student"):
+        r = client.post(path, json={"vsb_id": other, "amount_wst": 1.0})
+        assert r.status_code == 422, (path, r.status_code, r.text[:300])
+        assert "not a QEP entity" in r.text and "owner 20%" in r.text, r.text[:300]
+    assert VirtualLedger(other).balances() == _before, "a refused contribution still moved the books"
+    q = client.post("/api/v1/genesis/establish", json={"problem": "w622 QEP", "name": "W622 QEP", "domain": "religion",
+                                                       "entity_type": "qep_waqf_trust"}).json()["vsb_id"]
+    ok = client.post("/api/v1/qep/contribute/zakat", json={"vsb_id": q, "amount_wst": 1.0})
+    assert ok.status_code == 200, ok.text[:300]
