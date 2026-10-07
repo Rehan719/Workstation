@@ -4,6 +4,7 @@ import { Card, Button } from '@workstation/ui';
 import { Target, Loader2, Sparkles, Plus, CheckCircle2, Clock, AlertCircle, Crown, PenLine } from 'lucide-react';
 import { provenanceMapBadge, provenanceMapFromTrace } from '../../lib/api';
 import { PlanOpening } from '../../components/PlanOpening';   // W505 (FU-074) — one component, both pages
+import { CadencePanel } from '../../components/CadencePanel';   // W620 (FU-492)
 
 interface Objective {
   id: string; title: string; kpi: string; timeline: string; owner_role: string;
@@ -197,6 +198,7 @@ export const BusinessPlan: React.FC = () => {
                 </p>
               ) : null;
             })()}
+            <div className="mt-3"><CadencePanel scope={scope} /></div>
             {plan.aims?.length > 0 && (
               <div className="mt-3">
                 <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">Aims</p>

@@ -46435,3 +46435,34 @@ def test_w619_p223_every_completion_carries_its_checkpoint_and_the_callers_profi
     _gj = _code_only((_pl619.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8"))
     assert "PRODUCTS.map(p =>" in _gj and _gj.count("...(product ? { product } : {})") == 2, (
         "the page sends the chosen product on only one of its two journey requests")
+
+
+def test_w620_p223_the_last_three_shortfalls_are_said(client):
+    """P2.23 (W620) — FU-492: the cadence said a market or KPI signal "would fire it regardless" and nothing
+    observes either, and the cadence had no UI. FU-483: four lifecycle vocabularies, Projects never reaching a
+    VSB, and gates that hold the movers rather than the stages they are named after, none of it said. FU-508:
+    "a mandatory GaaS gate on every output" is not held and the governance pillar read as met."""
+    import pathlib as _pl620
+    _root = _pl620.Path(__file__).resolve().parents[1]
+    _src = lambda p: _code_only((_root / p).read_text(encoding="utf-8"))
+    from agentic_core.organism import cadence as _cad620
+    st = client.get("/api/v1/organism/cadence", params={"scope": "workstation"}).json()
+    assert "nothing in this platform observes markets or KPIs" in st.get("signals_basis", ""), st.get("signals_basis")
+    _nd = _cad620.due("strategic", "2999-01-01T00:00:00Z")
+    if not _nd["due"]:
+        assert "only one a caller SUPPLIES" in _nd["reason"], _nd["reason"]
+    _bp = _src("apps/workstation-superapp/src/pages/enterprise/BusinessPlan.tsx")
+    _cp = _src("apps/workstation-superapp/src/components/CadencePanel.tsx")
+    assert "<CadencePanel scope={scope} />" in _bp and "{st?.signals_basis && <p" in _cp and "/api/v1/organism/cadence" in _cp
+    _ph = _src("apps/workstation-superapp/src/pages/projects/ProjectsHub.tsx")
+    assert "a project never becomes a living VSB" in _ph
+    _gj = _src("apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx")
+    assert "A gate does not pause the stage it is named after" in _gj
+    real = client.get("/api/v1/transformation/realisation").json()
+    gov = [p for p in real["pillars"] if p["id"] == "governance"][0]
+    inv = [c for c in gov["evidence"] if c["label"].startswith("GaaS gate on EVERY output")]
+    assert inv and inv[0]["met"] is False and "NOT held" in inv[0]["basis"], inv
+    assert gov["status"] != "realised", ("the governance pillar reads realised while invariant 2 is not held", gov)
+    _td = _src("apps/workstation-superapp/src/pages/TransformationDashboard.tsx")
+    assert "title={e.basis}" in _td
+    assert "{result.product_label || result.product} — {result.product_source}" in _gj

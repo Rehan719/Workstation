@@ -19,6 +19,7 @@ interface JourneyResult {
   problem: string;
   domain: string;
   realm: string;
+  product?: string; product_label?: string; product_source?: string;   // W620 — FU-502's record, shown
   phase_1_conceptualisation: { cognitive_cascade: string; mjm_assessment: string; concept: string };
   stage_3_innovate_research?: string;   // §4.3 — best/latest approaches + innovative options
   // §4.5 — candidate solutions modelled + evidence-ranked → best selected.
@@ -731,6 +732,11 @@ export const GenesisJourney: React.FC = () => {
       {/* Result */}
       {result && (
         <div className="space-y-4">
+          {result.product_source && (
+            <p className="text-[10px] text-slate-500" data-testid="journey-product">
+              Product: {result.product_label || result.product} — {result.product_source}
+            </p>
+          )}
           {/* §4.9 (W306) — take the journey out in any selectable live format */}
           <Card className="p-4 border-slate-800 flex items-center justify-between gap-3 flex-wrap">
             <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Export the journey (§4.9) — becomes a living, QMS-gated deliverable</p>
@@ -1340,6 +1346,8 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                             )}
                             {/* W452 (P1.4) — the copy says what a gate DOES: it used to say only that decisions were recorded */}
                             <p className="text-[9px] text-amber-300/90">A gated stage that is <b>pending</b> or <b>rejected</b> blocks this enterprise's lifecycle movers — ship, evolve, cascades, plan orchestration and the organism's autonomous re-ship/evolve — with a 409 that names the gate, until a human approves it (or ungates the stage).</p>
+                            {/* W620 (FU-483) — what a gate does NOT do: the journey has already run, so no stage is paused */}
+                            <p className="text-[9px] text-slate-500" data-testid="gates-scope-note">A gate does not pause the stage it is named after: the journey that composed this enterprise has already run. It holds the movers above. These eight gate stages are the gate vocabulary; the journey's own stages and a Project's three are different lists.</p>
                             <div className="flex flex-wrap gap-1.5">
                               {gates.lifecycle.map(stage => {
                                 const st = gates.statuses.find(s => s.stage === stage.id);

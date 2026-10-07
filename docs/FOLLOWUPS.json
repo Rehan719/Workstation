@@ -9031,11 +9031,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.23",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W620",
       "note": "",
       "slot_source": "ledger v8 R2.3 is tier 2: P2.23 carries the v8 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "ProjectsHub says a Project is not the §4 lifecycle and never becomes a VSB; the Genesis gate panel says a gate holds the movers and does not pause its stage, and that the three stage lists differ; two blinds red"
     },
     {
       "id": "FU-484",
@@ -9218,11 +9221,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.23",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W620",
       "note": "",
       "slot_source": "ledger v8 R3.5 is tier 2: P2.23 carries the v8 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "every not-due reason and the cadence state say nothing observes markets or KPIs (a signal fires only when a caller supplies one); a new CadencePanel on BusinessPlan shows each layer's last refresh, due state and the signals basis; three blinds red"
     },
     {
       "id": "FU-493",
@@ -9548,11 +9554,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.23",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W620",
       "note": "",
       "slot_source": "ledger v8 R6.4 is tier 2: P2.23 carries the v8 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "§17.5 invariant 2 is MEASURED: the governance pillar carries 'GaaS gate on EVERY output: N of M API modules' (a call-site count, stated as one) with met=false and the basis that no global gate exists; the pillar is no longer realised by the gaas router being mounted; two blinds red"
     },
     {
       "id": "FU-509",

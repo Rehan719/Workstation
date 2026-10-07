@@ -8,7 +8,7 @@ import { apiJson, errorMessage, provenanceBadge } from '../lib/api';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-interface Evidence { label: string; met: boolean | null }
+interface Evidence { label: string; met: boolean | null; basis?: string }
 interface Pillar { id: string; pillar: string; realisation: number; status: string; evidence: Evidence[] }
 interface Picture {
   vision_summary: string;
@@ -329,7 +329,7 @@ export const TransformationDashboard: React.FC = () => {
                       <span key={i} className="flex items-center gap-1.5 text-[10px] font-bold">
                         {e.met ? <CheckCircle2 size={11} className="text-emerald-400" /> : <Circle size={11} className="text-slate-600" />}
                         {/* W613 (FU-504) — null is NOT ASSESSED (the route census could not be read), never "not mounted" */}
-                        <span className={e.met ? 'text-slate-400' : 'text-slate-600'}>{e.label}{e.met === null ? ' — not assessed' : ''}</span>
+                        <span className={e.met ? 'text-slate-400' : 'text-slate-600'} title={e.basis}>{e.label}{e.met === null ? ' — not assessed' : ''}</span>
                       </span>
                     ))}
                   </div>

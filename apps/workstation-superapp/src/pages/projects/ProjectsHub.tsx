@@ -580,6 +580,10 @@ export const ProjectsHub: React.FC = () => {
         <div className="shrink-0 px-4 pt-6 pb-3 flex items-center justify-between">
           <div>
             <h1 className="text-xs font-black uppercase tracking-[0.3em] text-white">Projects</h1>
+            {/* W620 (FU-483, M2 v8 R2.3) — a Project is not the §4 lifecycle and never becomes a VSB; it said neither */}
+            <p className="text-[9px] text-slate-500 mt-1" data-testid="projects-scope-note">
+              AI deliverable projects (concept → prototype → commercialise). Not the §4 enterprise lifecycle: a project never becomes a living VSB — Genesis establishes those.
+            </p>
             <p className="text-[9px] text-slate-600 mt-0.5">AI-powered product workflows</p>
           </div>
           <button

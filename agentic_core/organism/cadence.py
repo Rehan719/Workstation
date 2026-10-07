@@ -53,6 +53,13 @@ SIGNAL_NAME = {STRATEGIC: "market signal", ACTION_PLAN: "KPI trigger"}
 #  which field of the plan each layer writes
 PLAN_FIELD = {STRATEGIC: "strategy", ACTION_PLAN: "action_plan"}
 
+#  W620 (FU-492, M2 v8 R3.5) — the cadence said a market signal or KPI trigger "would fire it regardless", and
+#  nothing in this repository observes a market or a KPI: the only producer of a signal is the refresh route's
+#  own `signal` parameter. The trigger is real; the observer is absent, and every reason that names the signal
+#  now says which.
+SIGNALS_OBSERVED_BY = ("nothing in this platform observes markets or KPIs, so a signal fires only when someone "
+                       "supplies one (POST /api/v1/organism/cadence/refresh?layer=...&signal=...)")
+
 TRIGGER_ELAPSED = "elapsed"
 TRIGGER_SIGNAL = "signal"
 TRIGGER_NEVER_REFRESHED = "never_refreshed"
@@ -119,7 +126,8 @@ def due(layer: str, last_refresh_at: Any, now: Optional[float] = None,
     return {"due": False, "trigger": None, "signal": None,
             "reason": (f"not due: {round(elapsed / 86400, 2)} day(s) since the last refresh, "
                        f"{PERIOD_NAME[layer]} period is {round(period / 86400)} day(s). A "
-                       f"{SIGNAL_NAME[layer]} would fire it regardless"),
+                       f"{SIGNAL_NAME[layer]} would fire it regardless, but only one a caller SUPPLIES - "
+                       f"{SIGNALS_OBSERVED_BY}"),
             "last_refresh_at": last_refresh_at, "elapsed_seconds": round(elapsed, 3),
             "period_seconds": period}
 
@@ -318,6 +326,9 @@ def state(scope: str) -> Dict[str, Any]:
             "due": due(layer, last),
             "latest": rows[-1] if rows else None,
         }
+    #  W620 (FU-492, M2 v8 R3.5) — the signal triggers are real but nothing in the platform PRODUCES a signal, and
+    #  the state now says so wherever it is read, beside the elapsed-time trigger that does fire on its own.
+    out["signals_basis"] = SIGNALS_OBSERVED_BY
     out["basis"] = ("each layer reports when it was last refreshed, how many refreshes are on record and "
                     "whether it is due now. A layer that has NEVER been refreshed says so rather than "
                     "reporting an age of zero - never and just-now are opposite facts")
