@@ -42,6 +42,28 @@ npx tsc --noEmit` (and `npm run build`, which passes).
 
 ## 2. State at handover
 
+> **UPDATED after W630 (2026-10-07).** This section supersedes the table below it.
+>
+> - **Done:** P2.24 and P2.25 (W629). The M1+M2 re-run W629 issued **ledger v10**: Tier-1 **4**, Tier-2 **12**. The
+>   series at twelve agents: v7 20 → v8 18 → v9 11 → v10 4. Raw record: `docs/fidelity_runs/ledger_v10_W629_aeb9fa8.json`.
+> - **P2.26** (the 4 tier-1): all four rows closed in W630 (FU-544, 545, 549, 550).
+> - **P2.27** (the 12 tier-2): OPEN — FU-546, 547, 548, 551, 552, 553, 554, 555, 556, 557, 558, 559. Each row's
+>   `why` ends with the auditor's SMALLEST HONEST FIX. FU-559 (a gate on every response) is architecture: stamp
+>   ungated responses rather than build a global gate, unless the Owner rules otherwise.
+> - **Next milestone:** M1+M2 re-run when P2.27 closes. Same instrument, twelve agents. Boot a fresh backend from
+>   HEAD on a scratch DATA_DIR with AI_DISABLE_LOCAL=1, run `fidelity_audit_v7.js` with `{base, head, date}`, then
+>   `refutation_gate.py after --result <the workflow output file>`. Render from the `result` list:
+>   `render_fidelity_ledger.py <list.json> docs/VISION_FIDELITY_LEDGER.md <head> <date> 8031 11 W6xx`. Then
+>   archive v10, add the milestone record to the prompt, update the anchor in `scripts/blinds_w572.json`, and add
+>   rows with `followups.py add`. W629 is the worked example.
+> - **Owner rulings, 2026-10-07b:**
+>   - P2.24 closes without FU-301, FU-417 and FU-399; they ride P5.1.
+>   - M1 may run locally.
+>   - The FU-283 dependency removal is approved.
+> - **Dependency removal (FU-283): TRIED AND REVERTED.** W628b removed 19 packages and CI's fresh install failed two
+>   tests. The retry plan is in `docs/DEPENDENCY_VERDICTS.md`: remove in halves, test on a fresh venv, and hold back
+>   firebase-admin.
+
 | | |
 |---|---|
 | plan | **70 of 83 items** before P2.24 closes — P1 18/18 · P2 23/25 · P3 **29/29** · P4 0/6 · P5 0/5 |
