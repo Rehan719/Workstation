@@ -121,7 +121,9 @@ export const QEPStudio: React.FC = () => {
     if (!reviewAyah) return;
     setBusy('recall'); setErr('');
     try {
-      const d = await apiJson('/api/v1/qep/tajweed/analyse', { method: 'POST', body: { ayah_text: reviewAyah.text_arabic, recited_text: recallText } });
+      // W630 (FU-545) — the server fetches the reference from surah + ayah; the page no longer supplies it
+      const [rs, ra] = (reviewRef ?? '').split(':').map(Number);
+      const d = await apiJson('/api/v1/qep/tajweed/analyse', { method: 'POST', body: { surah: rs, ayah: ra, recited_text: recallText } });
       setRecall(d.comparison);
     } catch (e) { setErr(errorMessage(e)); }
     setBusy('');

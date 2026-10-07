@@ -10345,11 +10345,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.26",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W630",
       "note": "",
       "slot_source": "ledger v10 R1.0 is tier 1: P2.26 carries the v10 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the QEP feature chip reads each card's kind: ratified refusals say not offered, live cards say live, only kind-less cards say planned; blind red"
     },
     {
       "id": "FU-545",
@@ -10363,11 +10366,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.26",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W630",
       "note": "",
       "slot_source": "ledger v10 R1.1 is tier 1: P2.26 carries the v10 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the written-recall check fetches the reference from surah + ayah (503 when it cannot), the Studio sends surah + ayah, and caller-supplied text is labelled supplied with no qiraat and no claim of Qur'anic text; blinds red"
     },
     {
       "id": "FU-546",
@@ -10436,11 +10442,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.26",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W630",
       "note": "",
       "slot_source": "ledger v10 R2.0 is tier 1: P2.26 carries the v10 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "with no concept recorded the generated solution page says content pending the owned model instead of claiming in-house delivery; blind red"
     },
     {
       "id": "FU-550",
@@ -10452,11 +10461,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.26",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W630",
       "note": "",
       "slot_source": "ledger v10 R2.1 is tier 1: P2.26 carries the v10 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "when the twin stage is floor-served the 4.5 method says forward-simulation NOT run and each candidate's simulation score is labelled not simulated evidence; blinds red"
     },
     {
       "id": "FU-551",

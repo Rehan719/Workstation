@@ -80,7 +80,8 @@ export const QEPFlagshipFeatures: React.FC = () => {
               </div>
               {/* W439 — the CheckCircle success tick on selection signalled completion for
                   unbuilt modules; a selection is not a success */}
-              <span className="text-[7px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400">{f.id === 'memorization' ? 'live' : 'planned'}</span>
+              {/* W630 (FU-544) — the chip reads the card's own kind: a ratified refusal is 'not offered', never 'planned' */}
+              <span data-testid="qep-feature-chip" className={`text-[7px] font-black uppercase px-1.5 py-0.5 rounded ${(f as any).kind === 'refused' ? 'bg-slate-700/40 text-slate-300' : ((f as any).kind === 'live' || f.id === 'memorization') ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>{(f as any).kind === 'refused' ? 'not offered' : ((f as any).kind === 'live' || f.id === 'memorization') ? 'live' : 'planned'}</span>
             </div>
             <h3 className="text-lg font-black text-white mb-2">{f.name}</h3>
             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-relaxed">{f.desc}</p>

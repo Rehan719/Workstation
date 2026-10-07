@@ -528,12 +528,23 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         _unmeasured_now.update({k: ("the §11 screen ran (" + v + ") and could assess nothing - a keyword "
                                     "screen can refuse a subject but cannot clear one, so it contributed no "
                                     "figure") for k, v in _CAND_MEASURED.items()})
+    #  W630 (FU-550) - the twin stage is SAID to have run only when a model served it. On the floor its text is
+    #  the keyword frame under twin headings, and "FORWARD-SIMULATED through the owned digital-twin pattern"
+    #  was a claim about a simulation that did not happen; its score is not simulated evidence either.
+    _sba5 = provenance.get("served_by_agent", {}) or {}
+    _twin_floor = all(_sba5.get(f"genesis_twin_{c['id']}", "native") in ("native", "failed") for c in candidates)
+    if _twin_floor:
+        for c in candidates:
+            c["simulation_score_basis"] = ("NOT SIMULATED EVIDENCE - the twin stage was floor-served, so this "
+                                           "figure is the FORM of its text, not a forward simulation")
     stage_5 = {
         # W483 (refutation) — the method now declares the weights that were APPLIED, not the ones
         # the design hoped for. Declaring "0.35 compliance · 0.25 safety" while every candidate
         # scored on form alone is the defect this round exists to remove.
-        "method": ("candidates modelled + FORWARD-SIMULATED through the owned digital-twin pattern, "
-                   "then screened by the deterministic §11 screen. Weights APPLIED to this run: "
+        "method": (("candidates modelled; forward-simulation NOT run: the twin stage was floor-served, so its "
+                    "text is a structured frame and not a simulation. They were " if _twin_floor else
+                    "candidates modelled + FORWARD-SIMULATED through the owned digital-twin pattern, then ")
+                   + "screened by the deterministic §11 screen. Weights APPLIED to this run: "
                    + ("0.40 form · 0.35 compliance · 0.25 safety"
                       if any(c["screen"].get("compliance") is not None for c in candidates)
                       else "1.00 form — compliance and safety contributed NOTHING because no §11 "

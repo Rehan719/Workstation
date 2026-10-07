@@ -827,7 +827,8 @@ def _entity_fallback_copy(name: str, challenge: str, concept: str, kind: str) ->
         return base + (f" Its approach: {concept.strip()[:400]}" if concept.strip() else "")
     return (f"{name} exists to solve {subj}. "
             + (concept.strip()[:400] if concept.strip()
-               else "Its solution is developed and delivered in-house, end to end."))
+               #  W630 (FU-549) - with no concept recorded nothing was designed; this claimed delivery
+               else "content pending the owned model — this enterprise has not yet composed its own solution."))
 
 
 @router.post("/{vsb_id}/website")

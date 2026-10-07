@@ -47057,3 +47057,47 @@ def test_w628_p225_p224_cascade_products_strict_models_and_verdicts(client):
     _rm = open("docs/NATIVE_AI_FABRIC_ROADMAP.md", encoding="utf-8").read()
     _p323 = [l for l in _rm.splitlines() if l.startswith("| **P3.23** |")][0]
     assert "AS BUILT (W628, FU-474)" in _p323 and "no retrieval-with-citations for GMP or QEP" in _p323
+
+
+def test_w630_p226_the_four_v10_tier1_statements_are_true(client, monkeypatch):
+    """W630 (P2.26): FU-544, FU-545, FU-549, FU-550 - the four tier-1 findings of ledger v10."""
+    # ── FU-544: a ratified refusal is 'not offered', never 'planned' ──────────────────────────────────
+    _qf = _code_only(open("apps/workstation-superapp/src/components/QEPFlagshipFeatures.tsx", encoding="utf-8").read())
+    assert "f.id === 'memorization' ? 'live' : 'planned'" not in _qf
+    _chip = _qf.split('data-testid="qep-feature-chip"', 1)[1].split("</span>", 1)[0]
+    assert "kind === 'refused' ? 'not offered'" in _chip and "kind === 'live'" in _chip, _chip[:300]
+
+    # ── FU-545: the reference is fetched from surah+ayah; supplied text asserts no transmission ───────
+    import agentic_core.religious_domain.api as _rd
+    _fatiha2 = "ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَٰلَمِينَ"
+
+    async def _fetch(s, a):
+        return _fatiha2 if (s, a) == (1, 2) else None
+    monkeypatch.setattr(_rd, "fetch_ayah_arabic", _fetch)
+    _ok = client.post("/api/v1/qep/tajweed/analyse", json={"surah": 1, "ayah": 2,
+                                                           "recited_text": "الحمد لله رب العالمين"}).json()
+    assert _ok["reference_source"] == "fetched" and _ok["comparison"]["comparable"] is True, _ok
+    assert client.post("/api/v1/qep/tajweed/analyse", json={"surah": 1, "ayah": 9,
+                                                            "recited_text": "x"}).status_code == 503
+    _sup = client.post("/api/v1/qep/tajweed/analyse", json={"ayah_text": "مرحبا بكم",
+                                                             "recited_text": "مرحبا بكم"}).json()
+    assert _sup["reference_source"] == "supplied_by_caller" and "qiraat" not in _sup["comparison"], (
+        "a caller-supplied string is still labelled with a Qur'anic transmission", _sup["comparison"])
+    assert "asserts NO Qur'anic text" in _sup["reference_basis"]
+    _st = open("apps/workstation-superapp/src/components/QEPStudio.tsx", encoding="utf-8").read()
+    assert "body: { surah: rs, ayah: ra, recited_text: recallText }" in _st
+
+    # ── FU-549: no concept, no delivery claim ─────────────────────────────────────────────────────────
+    from agentic_core.api.vsb import _entity_fallback_copy
+    _sol = _entity_fallback_copy("LoafLink", "bread for Leeds", "", "solution")
+    assert "developed and delivered in-house" not in _sol and "content pending the owned model" in _sol, _sol
+
+    # ── FU-550: the method says forward-simulation did not run when the twin stage was the floor ──────
+    _jr = client.post("/api/v1/genesis/journey", json={"problem": "w630 bakery twin probe", "domain": "enterprise"}).json()
+    _s5 = _jr["stage_5_model_simulate_rank"]
+    _twin_served = [v for k, v in ((_jr.get("ai_provenance") or {}).get("served_by_agent") or {}).items()
+                    if k.startswith("genesis_twin_")]
+    if not _twin_served or all(v in ("native", "failed") for v in _twin_served):
+        assert "forward-simulation NOT run" in _s5["method"] and "FORWARD-SIMULATED" not in _s5["method"], _s5["method"][:300]
+        assert all("NOT SIMULATED EVIDENCE" in (c.get("simulation_score_basis") or "") for c in _s5["candidates"]), (
+            "a floor twin's score still reads as simulated evidence")

@@ -708,7 +708,12 @@ class WrittenRecallRequest(BaseModel):
     # max_length (refuter catch): the O(n*m) Levenshtein ran unbounded on the event loop — a 40k-char
     # body blocked every route for minutes. The longest ayah (2:282) is ~1.1k chars; 1500 bounds the
     # comparison at ~2.25M cells, and the compare runs in a worker thread besides.
-    ayah_text: str = Field(max_length=1500)     # Arabic text from the authoritative source
+    #  W630 (FU-545) - the reference is FETCHED by the server from surah + ayah. A caller-supplied ayah_text is
+    #  still compared (offline use, tests) but is labelled as supplied and asserts no transmission: it was
+    #  labelled qiraat 'Hafs' and "the authoritative text" for any string, Qur'anic or not.
+    surah: int | None = Field(default=None, ge=1, le=114)
+    ayah: int | None = Field(default=None, ge=1, le=286)
+    ayah_text: str | None = Field(default=None, max_length=1500)
     recited_text: str = Field(max_length=1500)  # the learner's TYPED Arabic recollection
 
 
@@ -723,11 +728,31 @@ async def tajweed_analyse(req: WrittenRecallRequest):
     What a text engine can honestly do, it now does, and it says exactly what it is NOT:
     no claim about pronunciation, recitation, or articulation is made anywhere in the payload."""
     from fastapi.concurrency import run_in_threadpool
+    if req.surah is not None and req.ayah is not None:
+        reference = await fetch_ayah_arabic(req.surah, req.ayah)
+        if not reference:
+            raise HTTPException(status_code=503, detail=(
+                f"the authoritative text of {req.surah}:{req.ayah} could not be fetched (source unreachable, no "
+                f"cache, or no such ayah) - nothing is compared against text the platform did not source"))
+        source = {"reference_source": "fetched", "reference": f"{req.surah}:{req.ayah} quran-uthmani",
+                  "reference_basis": "the reference Arabic was fetched by the server from the sourced edition"}
+    elif req.ayah_text:
+        reference = req.ayah_text
+        source = {"reference_source": "supplied_by_caller", "reference": None,
+                  "reference_basis": ("the reference text was SUPPLIED BY THE CALLER and not fetched, so this is a "
+                                      "comparison of two strings - it asserts NO Qur'anic text and NO riwayah. "
+                                      "Send surah + ayah to compare against the sourced edition")}
+    else:
+        raise HTTPException(status_code=422, detail="send surah + ayah (preferred) or ayah_text")
     comparison = await run_in_threadpool(
-        _tajweed_coach.compare_written_recall, req.ayah_text, req.recited_text)
+        _tajweed_coach.compare_written_recall, reference, req.recited_text)
+    if source["reference_source"] != "fetched":
+        comparison.pop("qiraat", None)
+        comparison.pop("qiraat_note", None)
     return {
         "comparison": comparison,
-        "ayah_text": req.ayah_text[:200],
+        **source,
+        "ayah_text": reference[:200],
         "kind": "written_recall_check",
         "disclaimer": ("Compares WRITTEN text only — it says nothing about your recitation or "
                        "pronunciation. Recitation assessment requires a qualified teacher "
