@@ -51,7 +51,8 @@ _SUPPORTED_LANGUAGES = ["Arabic", "English", "Urdu", "Turkish", "Indonesian", "F
 _DEFAULT_ADAPTATIONS = [
     {"id": "ADP-hifz-science", "pattern": "SM-2 spaced repetition", "from": "religion",
      "to": "science", "status": "pattern_seed", "fidelity": None},
-    {"id": "ADP-tajweed-care", "pattern": "phoneme feedback loop", "from": "religion",
+    #  W635 (FU-576) - there is NO phonetic capability (A.9.1); the Religion pattern that exists is written recall
+    {"id": "ADP-tajweed-care", "pattern": "written-recall comparison", "from": "religion",
      "to": "care", "status": "pattern_seed", "fidelity": None},
 ]
 

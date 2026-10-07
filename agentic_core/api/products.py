@@ -199,7 +199,8 @@ async def factory_produce(req: ProductionRequest) -> StreamingResponse:
                 try:
                     from agentic_core.projects.api import _load, _save, _save_output
                     project = _load(req.project_id)
-                    _save_output(project, accumulated)
+                    _save_output(project, accumulated, served_by=prod.get("served_by"),   # W635 (FU-585)
+                                 is_external=bool(prod.get("is_external")))
                     _save(project)
                 except Exception:
                     pass

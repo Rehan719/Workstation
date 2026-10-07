@@ -70,6 +70,8 @@ def _evidence_counts() -> Dict[str, Any]:
     try:
         from agentic_core.organism.immune import immune
         d["organism_health"] = immune.status().get("health")
+        d["organism_health_basis"] = ("the immune system's health: AI-call failures and compliance regressions "
+                                      "only - route 5xx failures are not tracked")   # W635 (FU-587)
     except Exception:
         d["organism_health"] = None
     return d

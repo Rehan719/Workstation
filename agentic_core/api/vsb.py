@@ -159,6 +159,10 @@ def _build_repo_files(vsb: dict) -> dict:
         "- `ORGANISATION.md` — Chief → Board → AI CEO → C-Suite → CoE → Build-to-Order\n"
         "- `resources/cascades.json` — native AI-swarm cascades (reconfigurable, re-runnable)\n"
         "- `compliance/QUALITY.md` — live compliance + quality record (see `manifest.json`)\n"
+        #  W635 (FU-578) - said where the reader is sent: the download does not carry these two
+        "- NOTE: a downloaded archive carries the declared files only. `manifest.json` and the version history "
+        "(`.git`) stay in the platform's copy of this repository, so the pointers to `manifest.json` here "
+        "resolve there, not in a zip\n"
         # W574 (M1 R2.4) — this said "(scaffold)" unconditionally. The README is written BEFORE the
         # surfaces are generated, so at this point it genuinely cannot know which they are: it now
         # points at the one place that is computed from disk rather than guessing, instead of
@@ -239,7 +243,7 @@ def _build_repo_files(vsb: dict) -> dict:
             _ev_lines += ["- comparison: " + "; ".join(_notes)]
         _ev_lines += [""]
     if _sv:
-        _ev_lines += ["## Stage Verifications (§5 measured)"]
+        _ev_lines += ["## Stage Verifications (proxies; not assessable on the floor)"]   # W635 (FU-579)
         # W436 — `verified: None` means NOT ASSESSABLE (floor-served: the proxies cannot fail on
         # floor output). Rendering the raw None into a shipped evidence file would leave the reader
         # to guess; say what it means instead.
@@ -271,7 +275,11 @@ def _build_repo_files(vsb: dict) -> dict:
     f["README.md"] = f["README.md"].replace("{BP_SECTIONS}", " · ".join(
         _re615.findall(r"(?m)^## (.+)$", f["BUSINESS_PLAN.md"])))
     f["ORGANISATION.md"] = (f"# Organisation — {name}\n\nChief → Board → AI CEO → C-Suite → Centres of "
-                            f"Excellence → Build-to-Order.\n\n## AI CEO\n```json\n"
+                            f"Excellence → Build-to-Order.\n\n## AI CEO\n"
+                            #  W635 (FU-579) - the field holds the commercialisation text the founder gave, not a
+                            #  CEO charter; it is labelled as what it is
+                            f"_AI CEO charter pending the owned model. Recorded instead: the founder's "
+                            f"commercialisation text, which the AI CEO is handed._\n```json\n"
                             f"{json.dumps(vsb.get('ceo_specification') or {}, indent=2)[:2000]}\n```\n\n"
                             f"## Board\n```json\n{json.dumps(vsb.get('board') or {}, indent=2)[:2000]}\n```\n")
     f["resources/cascades.json"] = json.dumps({"native_swarm": vsb.get("native_swarm"),
@@ -463,7 +471,7 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
         # W489 (refutation) — this line is SEALED as §10 evidence for THIS generation, so it must not
         # read as this entity's record: one QMS store serves every entity and tenant on the install.
         f"- Non-conformance rate (platform-wide, all entities and tenants — NOT this VSB's own record): "
-        f"{_q.get('qms_non_conformance_rate')}\n"
+        f"{_q.get('qms_non_conformance_rate') if _q.get('qms_non_conformance_rate') is not None else 'not measured (0 gates run)'}\n"
         f"- Document-control seal: {_q.get('quality_record_hash')}\n\n"
         f"## §11 Compliance ({_comp.get('overall', 'unscreened')})\n"
         + "".join(f"- {v['framework']}: {v['status']} — {v['reason'][:160]}\n"
@@ -1583,6 +1591,15 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
     # old membership test did and what made the count unfalsifiable for two of the four.
     for _k in ("constitutional", "operational"):
         layers[_k].setdefault("holds", "content")
+    #  W635 (FU-584) - ONE VISION PER PACK, or the difference is named. The strategic refresh quotes the plan's
+    #  vision field, which may be the platform's template; the constitutional layer uses only an Owner-written one.
+    _sc584 = str((layers.get("strategic") or {}).get("content") or "")
+    _cv584 = str(constitutional.get("vision") or "")
+    if "vision on record:" in _sc584 and _cv584 and _cv584[:60] not in _sc584:
+        layers["strategic"]["vision_note"] = (
+            "the vision quoted in this strategic refresh is the business plan's vision FIELD, which is not "
+            "Owner-written here (a platform template); the pack's vision is the constitutional layer's: "
+            + str(constitutional.get("vision_source")))
         layers[_k].setdefault("present", True)
         layers[_k].setdefault("basis", "derived fresh from this entity when the pack was assembled; "
                                        "each field above carries its own source")

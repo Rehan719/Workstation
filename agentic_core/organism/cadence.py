@@ -181,7 +181,9 @@ def _compose(plan: Dict[str, Any], layer: str) -> Dict[str, Any]:
     objectives = [o for o in (plan.get("objectives") or []) if isinstance(o, dict)]
     aims = [a for a in (plan.get("aims") or []) if a]
     if layer == STRATEGIC:
-        body = (f"Strategic position derived from the plan itself: {len(aims)} aim(s) and "
+        #  W635 (FU-581) - derived text goes stale between quarterly refreshes, so it carries the time it was derived
+        body = (f"[as of {time.strftime('%Y-%m-%d %H:%M UTC', time.gmtime())}] "
+                f"Strategic position derived from the plan itself: {len(aims)} aim(s) and "
                 f"{len(objectives)} objective(s) on the roadmap"
                 + (f"; vision on record: {str(plan.get('vision'))[:160]}" if plan.get("vision") else
                    "; no vision is on record")

@@ -1045,8 +1045,10 @@ def test_qms_defect_loop_and_measured_bar(client):
     assert s["defects_total"] == base["defects_total"] + 1
     # W316 — the rate is FAILURES over gates run (a failed re-verify counts as a failure)
     # W489 — and it is 0.0 with no DELIVERY gates at all, rather than borrowing the what-if figures
-    _expected = round(s["gate_failures"] / s["gates_run"], 4) if s["gates_run"] else 0.0
-    assert abs(s["non_conformance_rate"] - _expected) < 1e-9, s
+    #  W635 (FU-575) - and with no delivery gate it is None (not measured), not a 0.0 nobody measured
+    _expected = round(s["gate_failures"] / s["gates_run"], 4) if s["gates_run"] else None
+    assert (s["non_conformance_rate"] is None if _expected is None
+            else abs(s["non_conformance_rate"] - _expected) < 1e-9), s
     _rate_before_loop = s["non_conformance_rate"]
     new = [x for x in d["defects"] if x["id"].startswith("DEF-")]
     assert new and new[0]["label"] and new[0]["status"] == "open"
@@ -1071,8 +1073,9 @@ def test_qms_defect_loop_and_measured_bar(client):
     assert s2["what_if_failures"] == s["what_if_failures"] + 2, (s, s2)
     assert s2["gate_failures"] == s["gate_failures"], (s, s2)
     assert s2["non_conformance_rate"] == _rate_before_loop, (s, s2)
-    _expected2 = round(s2["gate_failures"] / s2["gates_run"], 4) if s2["gates_run"] else 0.0
-    assert abs(s2["non_conformance_rate"] - _expected2) < 1e-9, s2
+    _expected2 = round(s2["gate_failures"] / s2["gates_run"], 4) if s2["gates_run"] else None   # W635 (FU-575)
+    assert (s2["non_conformance_rate"] is None if _expected2 is None
+            else abs(s2["non_conformance_rate"] - _expected2) < 1e-9), s2
     # the defects the what-if opened say so on their own rows
     _rows = client.get("/api/v1/vbs/qms/defects").json()["defects"]
     assert any(r.get("what_if") is True for r in _rows), _rows[:2]
@@ -1157,7 +1160,10 @@ def test_candidates_selected_on_simulated_evidence(client):
     for c in cands:
         # the twin genuinely runs, and its sub-scores survive as their own fields
         assert "simulation_score" in c and "modelled_score" in c and c.get("simulation")
-        assert abs(c["form_score"] - round(0.6 * c["modelled_score"] + 0.4 * c["simulation_score"], 3)) < 1e-9
+        if c["simulation_score"] is None:      # W635 (FU-574): a floor twin has no simulation score to show
+            assert "NOT SIMULATED EVIDENCE" in c["simulation_score_basis"] and c["modelled_score"] is None
+        else:
+            assert abs(c["form_score"] - round(0.6 * c["modelled_score"] + 0.4 * c["simulation_score"], 3)) < 1e-9
         # and the composite now carries REAL criteria, with its arithmetic declared per candidate
         sc = c.get("screen") or {}
         if sc.get("compliance") is not None:
@@ -3584,7 +3590,7 @@ def test_deliverables_living_lifecycle(client):
     # the OWNED QMS, held to the §10 Solution-Quality Bar, recorded within the §8 biomimetic organism.
     qa = d["quality_assurance"]; q = qa["quality"]; bio = qa["biomimetic"]
     assert q["qms_gate_passed"] is None and "not assessable" in q["qms_basis"] and ((q["delivery_coverage"] is None and "NOT ASSESSED" in q.get("proxies_basis", "")) or 0.0 <= q["delivery_coverage"] <= 1.0)   # W449; W633 (FU-566): withheld with its basis
-    assert q["qms_min_coverage"] == 0.95 and q["qms_non_conformance_rate"] >= 0.0
+    assert q["qms_min_coverage"] == 0.95 and (q["qms_non_conformance_rate"] is None or q["qms_non_conformance_rate"] >= 0.0)   # W635 (FU-575): None = 0 gates run
     assert len(q["bar"]) >= 12 and {"verified", "compliant", "safe", "ranked"} <= set(q["bar"])
     assert bio["layers"] == ["Immune"] and len(bio["layers_declared"]) == 7
     assert {"Genome", "Endocrine"} <= set(bio["layers_not_contributing"])
@@ -3863,7 +3869,7 @@ def test_swarm_cascade_in_house_provenance(client):
     # §10 Solution-Quality Bar + continual operational delivery within the LIVING QMS (real gate)
     q = r["quality"]
     assert q["qms_gate_passed"] is None and "not assessable" in q["qms_basis"] and ((q["delivery_coverage"] is None and "NOT ASSESSED" in q.get("proxies_basis", "")) or 0.0 <= q["delivery_coverage"] <= 1.0)   # W449; W633 (FU-566): withheld with its basis
-    assert q["qms_min_coverage"] == 0.95 and q["qms_non_conformance_rate"] >= 0.0
+    assert q["qms_min_coverage"] == 0.95 and (q["qms_non_conformance_rate"] is None or q["qms_non_conformance_rate"] >= 0.0)   # W635 (FU-575): None = 0 gates run
     assert len(q["bar"]) >= 12 and {"verified", "compliant", "ranked", "safe"} <= set(q["bar"])
     # the QMS document-controls the quality record through its OWNED DCMS (QMS ⊃ DCMS, ISO 9001 §7.5)
     assert isinstance(q.get("quality_record_hash"), str) and len(q["quality_record_hash"]) == 128
@@ -40770,7 +40776,7 @@ def test_w587_p34_the_chief_is_a_modelled_twin_or_says_it_is_a_role(client, monk
         _twin587 = _b587.founder_model()
         assert _twin587["is_modelled_twin"] is True and _twin587["owner_inputs"] == 1, _twin587
         assert _twin587["instructions"]["count"] == 1, _twin587["instructions"]
-        assert "MODELLED TWIN" in _twin587["basis"], _twin587["basis"]
+        assert "CARRYING YOUR RECORD, NOT A FITTED MODEL" in _twin587["basis"], _twin587["basis"]   # W635 (FU-583)
         assert "FOUNDER MODEL (the Owner's lived record" in _b587.founder_profile()
 
         # ── L3. CLAUSE (3): THE BASIS TRAVELS WITH THE OUTPUT, WITH ITS COUNTS ─────────────────────
@@ -47244,3 +47250,76 @@ def test_w633_p229_the_ten_v11_tier2_shortfalls_are_said(client):
     # FU-573: the realisation figure carries what it measures
     _hs = client.get("/api/v1/heartbeat/status").json()
     assert "API surface coverage" in (_hs.get("last_realisation_measure") or ""), _hs.get("last_realisation_measure")
+
+
+def test_w635_p230_p231_the_fourteen_v12_findings(client):
+    """W635 (P2.30 + P2.31): FU-574..587 - each v12 finding driven or read where a person meets it."""
+    _fe = lambda p: _code_only(open(f"apps/workstation-superapp/src/{p}", encoding="utf-8").read())
+    import agentic_core.api.vsb as _vsb635
+    _src = lambda p: open(p, encoding="utf-8").read()
+
+    # FU-574: a floor twin carries no simulation figure
+    _s5 = client.post("/api/v1/genesis/journey", json={"problem": "w635 twin", "domain": "enterprise"}).json()["stage_5_model_simulate_rank"]
+    if "forward-simulation NOT run" in _s5["method"]:
+        assert all(c.get("simulation_score") is None and c.get("modelled_score") is None for c in _s5["candidates"]), _s5["candidates"][:1]
+    assert "(c as any).simulation_score != null" in _fe("pages/synthesis/GenesisJourney.tsx")
+
+    # FU-575: no gate run -> no rate
+    from agentic_core.vbs.qms import QualityManagementSystem as _Q
+    assert "else None" in _src("agentic_core/vbs/qms.py").split("def get_non_conformance_rate", 1)[1][:1400]
+    assert "o.qms_non_conformance_rate === null" in _fe("pages/enterprise/ServiceContracts.tsx")
+
+    # FU-576: no 'phoneme feedback loop' pattern is advertised
+    _reg = client.get("/api/v1/qep/adaptation/registry").json()
+    assert "phoneme" not in str(_reg).lower(), str(_reg)[:300]
+
+    # FU-577: the tafsir disclaimer follows what the response carries
+    _tf = client.post("/api/v1/religion/quran-tafsir", json={"surah": 1, "ayah_start": 1, "ayah_end": 2}).json()
+    if not _tf.get("arabic_text"):
+        assert "No Arabic is shown" in _tf["disclaimer"] and "The Arabic is sourced from" not in _tf["disclaimer"], _tf["disclaimer"]
+
+    # FU-578 / FU-579: the README says what a download omits; the evidence heading and the AI CEO block say what they are
+    _rd = _src("agentic_core/api/vsb.py")
+    assert "a downloaded archive carries the declared files only" in _rd
+    assert "Stage Verifications (proxies; not assessable on the floor)" in _rd and "AI CEO charter pending the owned model" in _rd
+
+    # FU-580: the engine banner is not counted as a cited directive
+    from agentic_core.api.v138.ceo import _cited
+    _ban = "_[Workstation native structured engine — owned, no external dependency]_\n\n## Directive\nfund it"
+    _c = _cited("_[Workstation native structured engine — owned, no external dependency]_ ...", {"_directive_texts": [_ban, _ban], "directives": 2})
+    assert _c["cited"]["directives"] == 0, _c
+
+    # FU-581: derived strategy carries when it was derived
+    assert "[as of {time.strftime" in _src("agentic_core/organism/cadence.py")
+
+    # FU-582: an unknown change type is filed HIGH and says so
+    _cc = client.post("/api/v1/cca/submit", json={"title": "w635 unknown type", "change_type": "genome_change",
+                                                   "description": "probe", "submitted_by": "guard"}).json()
+    _rec = _cc.get("change") or _cc
+    assert _rec.get("impact_tier") in ("HIGH", "CRITICAL") and "not a known change type" in str(_rec.get("change_type_unrecognised")), _rec
+
+    # FU-583: the Chief is not called a 'Modelled twin'
+    assert "Modelled twin —" not in _fe("pages/enterprise/BoardOfDirectors.tsx")
+    assert '"chief carrying your record"' in _src("agentic_core/api/board.py")
+
+    # FU-584 / FU-587: the pack names a differing vision; organism_health carries its scope
+    assert '"vision_note"' in _rd
+    _ps = client.get("/api/v1/plan/state").json()
+    if "organism_health" in _ps:
+        assert "5xx failures are not tracked" in (_ps.get("organism_health_basis") or ""), sorted(_ps)[:20]
+
+    # FU-585: factory output saved to a project carries its provenance
+    assert 'served_by=prod.get("served_by")' in _src("agentic_core/api/products.py")
+
+    # FU-586: an unscreened grant is not funded, and the rule does not claim a clearance
+    from agentic_core.economy.charity import CharityIntelligence as _CI
+    import agentic_core.api.compliance as _comp635
+    _orig = _comp635.screen_compliance
+    try:
+        def _boom(*a, **k): raise RuntimeError("engine down")
+        _comp635.screen_compliance = _boom
+        _al = _CI(exclusions=[]).allocate(1000.0)
+    finally:
+        _comp635.screen_compliance = _orig
+    assert not _al.get("grants") and all(str(e["compliance"]).startswith("unscreened") for e in _al.get("excluded_by_compliance", [])), _al.get("grants")
+    assert "NOT REFUSED by the compliance screen" in _al["allocation_rule"]

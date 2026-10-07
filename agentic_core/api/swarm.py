@@ -856,7 +856,7 @@ async def cascade_orchestration(req: CascadeRequest,
         # W489 (sweep S9.4, C3) — this line sits under "Measured outcomes for THIS run" and is neither
         # this run's nor this entity's: one QMS store serves every entity and tenant on the platform.
         f"- QMS non-conformance rate (NOT this run — platform-wide, all-time, every entity): "
-        f"{quality.get('qms_non_conformance_rate')}\n"
+        f"{quality.get('qms_non_conformance_rate') if quality.get('qms_non_conformance_rate') is not None else 'not measured (0 gates run)'}\n"
         f"- Stub/placeholder content detected: {quality.get('stub_found')}\n"
         f"- Served in-house: {not provenance['any_external']} (by: {provenance['served_by']})\n"
         + (f"- Recent cascade-tier call success rate: {_ops_stats.get('success_rate')} "

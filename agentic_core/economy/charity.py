@@ -257,7 +257,8 @@ class CharityIntelligence:
                 verdict = screen.get("overall") or "review"
             except Exception:
                 verdict = "unscreened (engine unavailable)"
-            if verdict == "fail":
+            #  W635 (FU-586) - an UNSCREENED grant is not funded: the screen did not run, so nothing cleared it
+            if verdict == "fail" or verdict.startswith("unscreened"):
                 excluded.append({"id": w["id"], "cause": w["cause"], "compliance": verdict})
             else:
                 cleared.append({**w, "compliance": verdict})
@@ -274,7 +275,7 @@ class CharityIntelligence:
                 verdict = screen_compliance(f"charitable grant to: {w['cause']} ({w['region']})").get("overall") or "review"
             except Exception:
                 verdict = "unscreened (engine unavailable)"
-            if verdict == "fail":
+            if verdict == "fail" or verdict.startswith("unscreened"):   # W635 (FU-586)
                 excluded.append({"id": w["id"], "cause": w["cause"], "compliance": verdict})
             else:
                 cleared.append({**w, "compliance": verdict, "joined_as_priority": True})
@@ -319,7 +320,8 @@ class CharityIntelligence:
             "priority_min_share": round(_floor, 4),
             "allocation_rule": (f"OWNER RULING 2026-10-07: each "
                                 f"{'Owner-named' if self.priorities_owner_named else 'editorial-default (the Owner named none)'} "
-                                f"priority that clears the compliance screen and is not excluded "
+                                f"priority that is NOT REFUSED by the compliance screen (a 'review' verdict means "
+                                f"unassessed, not cleared - each grant carries its verdict) and is not excluded "
                                 f"receives {round(_floor * 100, 1)}% of the budget first; the remaining "
                                 f"{round((1 - _floor * len(_prio)) * 100, 1)}% is split pro-rata by score across every "
                                 f"cleared cause"),

@@ -132,6 +132,8 @@ function qualityText(q: unknown): string | null {
     const zeroUnassessed = d.defects_total === 0 && chip && chip.verdict !== 'pass';
     parts.push(`${d.defects_total} defect${d.defects_total === 1 ? '' : 's'}/${d.gates_run} gates`
                + (zeroUnassessed ? ' (none of them assessed this delivery — a zero here is not a pass)' : ''));
+  } else if (o.qms_non_conformance_rate === null) {
+    parts.push('non-conformance not measured (0 gates run)');   // W635 (FU-575)
   } else if (typeof o.qms_non_conformance_rate === 'number') {
     // W489 (refutation) — a per-deliverable row showing the PLATFORM-WIDE rate read as this
     // deliverable's. One QMS store serves every entity and tenant; the label now says so.

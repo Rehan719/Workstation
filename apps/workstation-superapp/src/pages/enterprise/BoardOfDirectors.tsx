@@ -108,7 +108,8 @@ export const BoardOfDirectors: React.FC = () => {
     return chiefModel.is_modelled_twin ? (
       <div data-testid="chief-model-twin" className="space-y-1">
         <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400">
-          Modelled twin — {chiefModel.instructions.count} instruction(s) you wrote ·{' '}
+          {/* W635 (FU-583) — nothing is modelled: the Chief carries what you wrote */}
+          Chief carrying your record — {chiefModel.instructions.count} instruction(s) you wrote ·{' '}
           {chiefModel.decisions.count} decision(s) you made
         </p>
         <p className="text-[10px] text-slate-400 leading-relaxed">{chiefModel.basis}</p>

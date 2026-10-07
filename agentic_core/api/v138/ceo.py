@@ -363,7 +363,12 @@ def _cited(answer: str, facts: dict) -> dict:
     out = {k: v for k, v in facts.items() if not k.startswith("_")}
     dirs = [t for t in facts.get("_directive_texts") or [] if t.strip()]
     objs = [t for t in facts.get("_objective_titles") or [] if t.strip()]
-    cd = sum(1 for t in dirs if t.strip()[:40].lower() in low)
+    #  W635 (FU-580) - the engine's own banner and framing lines are not the directive: stripped before the test,
+    #  or every floor answer 'names' every floor directive by repeating the same banner
+    def _own(t: str) -> str:
+        return " ".join(l for l in t.splitlines() if l.strip() and not l.strip().startswith(("_[", "_Acting as", "_Composed for", "#"))).strip()
+    dirs = [_own(t) for t in dirs if _own(t)]
+    cd = sum(1 for t in dirs if t[:40].lower() in low)
     co = sum(1 for t in objs if t.strip().lower() in low)
     out["cited"] = {"directives": cd, "objectives": co}
     out["cited_basis"] = (f"handed {facts.get('directives') or 0} directive(s) and {facts.get('objectives') or 0} "

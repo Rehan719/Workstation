@@ -321,7 +321,9 @@ def _tier_raise(description: str) -> str | None:
 
 
 def _determine_tier(change_type: str, description: str) -> ImpactTier:
-    base = _TIER_MAP.get(change_type, "MEDIUM")
+    #  W635 (FU-582) - an UNRECOGNISED change type fails closed at HIGH (a review, never an auto-approval); it was
+    #  filed at MEDIUM without a word, and an AI CEO 'genome_change' was auto-approved that way
+    base = _TIER_MAP.get(change_type, "HIGH")
     # Elevate if the description names something constitutional or organism-wide. Failing closed here is
     # right; doing it without telling the caller is what FU-157 (S1.18) is about, so submit() records the
     # raise and the response says which phrase did it.
@@ -766,7 +768,8 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
     # phrase in the description can raise it to CRITICAL; the record carried no trace, so the page appeared to
     # contradict itself. `_raised_by` is None whenever the type's own tier stands.
     _raised_by = _tier_raise(req.description)
-    _tier_from = _TIER_MAP.get(change_type, "MEDIUM")
+    _tier_from = _TIER_MAP.get(change_type, "HIGH")
+    _type_unrecognised = change_type not in _TIER_MAP
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     # the name on the record is the authenticated one when there is one; otherwise the caller's
     _by = principal or req.submitted_by or "system"
@@ -846,6 +849,9 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
         "submitted_by_verified": bool(principal) and auth_enabled(),
         "submitted_at": now,
         "impact_tier": tier,
+        **({"change_type_unrecognised": (f"'{change_type}' is not a known change type, so it was filed at HIGH (a "
+                                         f"review, never an auto-approval). Known types: {sorted(_TIER_MAP)}")}
+           if _type_unrecognised else {}),
         **({"impact_tier_raised_by": _raised_by, "impact_tier_raised_from": _tier_from,
             "impact_tier_raised_because": (
                 f"the description names {_raised_by!r}, which raises any change to CRITICAL whatever its "
@@ -1012,6 +1018,8 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
     return {
         "cca_id": cca_id,
         "impact_tier": tier,
+        **({"change_type_unrecognised": change.get("change_type_unrecognised")}   # W635 (FU-582)
+           if change.get("change_type_unrecognised") else {}),
         "status": change["status"],
         # W505 (FU-157) — the facts the caller needs to describe what happened. S1.11: the gate's own
         # measurement, so no caller has to invent the word "healthy" over a composite that is 60%

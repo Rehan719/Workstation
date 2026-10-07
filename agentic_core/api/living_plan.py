@@ -161,6 +161,7 @@ async def get_state():
         from agentic_core.organism.immune import immune
         imm = immune.status()
         state["organism_health"] = imm.get("health")
+        state["organism_health_basis"] = ("the immune system's health: AI-call failures and compliance regressions only - route 5xx failures are not tracked")   # W635 (FU-587)
         state["threat_level"] = imm.get("threat_level")
     except Exception:
         pass

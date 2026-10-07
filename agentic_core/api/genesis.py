@@ -544,8 +544,12 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
     _twin_floor = all(_sba5.get(f"genesis_twin_{c['id']}", "native") in ("native", "failed") for c in candidates)
     if _twin_floor:
         for c in candidates:
-            c["simulation_score_basis"] = ("NOT SIMULATED EVIDENCE - the twin stage was floor-served, so this "
-                                           "figure is the FORM of its text, not a forward simulation")
+            #  W635 (FU-574) - and the figures go: a 'simulation_score' for a simulation that did not run is a
+            #  number asserting one. The form score that ranked them stays, under its own name.
+            c["simulation_score"] = None
+            c["modelled_score"] = None
+            c["simulation_score_basis"] = ("NOT SIMULATED EVIDENCE - the twin stage was floor-served, so no "
+                                           "simulation or modelled score exists; the form score is the only figure")
     stage_5 = {
         # W483 (refutation) — the method now declares the weights that were APPLIED, not the ones
         # the design hoped for. Declaring "0.35 compliance · 0.25 safety" while every candidate

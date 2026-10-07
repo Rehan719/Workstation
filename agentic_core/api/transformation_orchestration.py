@@ -270,6 +270,7 @@ async def orchestrate(req: OrchestrateRequest):
           "Integrate the living systems (BMS·QMS·DCS·EMS) + organism telemetry",
           {"living_systems": living_systems,
            "organism_health": organism.get("immune", {}).get("health"),
+           "organism_health_basis": ("the immune system's health: AI-call failures and compliance regressions only - route 5xx failures are not tracked"),   # W635 (FU-587)
            "arousal": organism.get("nervous", {}).get("arousal_state")},
           verified=(None if (organism.get("immune", {}) or {}).get("health") is not None else False),
           checks="presence",

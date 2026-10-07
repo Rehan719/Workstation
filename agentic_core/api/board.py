@@ -92,6 +92,10 @@ def _load() -> List[Dict[str, Any]]:
     return []
 
 
+_ORGANISM_HEALTH_SCOPE = ("the immune system's health: AI-call failures and compliance regressions only - route "
+                          "5xx failures are not tracked, so this is not the health of the whole platform")
+
+
 def _load_strict() -> List[Dict[str, Any]]:
     """W624 (FU-524, M1 v9 R3.1) — the board store read WHOLE or refused. `_load` answers a corrupt store with [],
     which is right for a reader that only displays, and wrong for two kinds of caller: the founder model, which
@@ -257,10 +261,12 @@ def founder_model(scope: "str | None" = None, owner: "str | None" = None) -> Dic
                       "source": "the Owner's ratify/refuse decisions recorded by the Board in Change Control"},
         "owner_inputs": n_i + n_d,
         "is_modelled_twin": is_twin,
-        "reported_as": "modelled twin" if is_twin else "role",
+        #  W635 (FU-583) - nothing is fitted or evaluated, so the word 'modelled' is not used: the Chief CARRIES
+        #  what the Owner wrote (is_modelled_twin keeps its name for callers; its meaning is 'has an Owner record')
+        "reported_as": "chief carrying your record" if is_twin else "role",
         "basis": (
-            (f"MODELLED TWIN: built from {n_i} instruction(s) the Owner wrote and {n_d} decision(s) the "
-             f"Owner made. The standing canon is also carried and is the PLATFORM's, identical for every "
+            (f"CARRYING YOUR RECORD, NOT A FITTED MODEL: {n_i} instruction(s) the Owner wrote and {n_d} decision(s) "
+             f"the Owner made are handed to the Chief's prompt; nothing is trained, fitted or evaluated on them. The standing canon is also carried and is the PLATFORM's, identical for every "
              f"Chief - it is not counted as this Owner's own declaration."
              if is_twin else
              "A ROLE, NOT A MODELLED TWIN: this Owner has written no instruction and made no recorded "
@@ -425,6 +431,7 @@ async def board_status(scope: str = "workstation"):
     try:
         from agentic_core.organism.immune import immune
         snapshot["organism_health"] = immune.status().get("health")
+        snapshot["organism_health_basis"] = _ORGANISM_HEALTH_SCOPE      # W635 (FU-587)
     except Exception:
         pass
     if scope != "workstation":

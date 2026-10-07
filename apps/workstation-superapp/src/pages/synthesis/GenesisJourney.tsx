@@ -877,8 +877,9 @@ export const GenesisJourney: React.FC = () => {
                         <span className="text-[9px] font-mono text-slate-500 shrink-0" title={`coverage ${c.coverage} · specificity ${c.specificity} · structure ${c.structure}`}>
                           score {c.score}
                           {/* §4.5 (W305) — the ranking's simulated-evidence component, declared */}
-                          {(c as any).simulation_score !== undefined && (
-                            <span className="text-aura/70 ml-1" title="forward-simulated through the owned digital-twin pattern (declared weights 60/40)">· sim {(c as any).simulation_score}</span>
+                          {/* W635 (FU-574) — shown only when a simulation produced one; the tooltip reads the record */}
+                          {(c as any).simulation_score != null && (
+                            <span className="text-aura/70 ml-1" title={(c as any).simulation_score_basis ?? 'forward-simulated through the owned digital-twin pattern (declared weights 60/40)'}>· sim {(c as any).simulation_score}</span>
                           )}
                         </span>
                       </div>

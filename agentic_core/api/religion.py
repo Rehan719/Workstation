@@ -366,11 +366,17 @@ async def quran_tafsir(req: QuranTafsirRequest):
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         # W456 — the §11 disclaimer the fatwa and halal tools carried and this one did not
+        #  W635 (FU-577) - the disclaimer says what THIS response carries: no Arabic when none was fetched, and
+        #  'a structured frame' rather than 'AI-labelled content' when the floor wrote it
         "disclaimer": (
-            "AI-assisted study aid — NOT a scholarly tafsir and NOT a ruling. The Arabic is sourced from "
-            "alquran.cloud and is never AI-generated; everything else here is AI-labelled content to be read "
-            "with, and checked against, the classical tafasir and a qualified teacher. Scholarly translations "
-            "and interpretations differ; where they do, learn from a scholar."
+            "Study aid — NOT a scholarly tafsir and NOT a ruling. "
+            + ("The Arabic is sourced from alquran.cloud and is never AI-generated. " if arabic_text else
+               "No Arabic is shown: it could not be fetched, and it is never AI-generated. ")
+            + ("Everything else here is a structured frame composed by the native floor, not scholarship"
+               if str((provenance or {}).get("served_by", "native")).startswith("native") else
+               "Everything else here is AI-labelled content")
+            + " - read it with, and check it against, the classical tafasir and a qualified teacher. Scholarly "
+              "translations and interpretations differ; where they do, learn from a scholar."
         ),
     }
 

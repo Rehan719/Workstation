@@ -10956,11 +10956,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W635",
       "note": "",
       "slot_source": "ledger v12 R1.0 is tier 1: P2.30 carries the v12 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "a floor-served twin stage nulls simulation_score and modelled_score with a basis, and the sim chip renders only when a score exists; blind red"
     },
     {
       "id": "FU-575",
@@ -10976,11 +10979,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W635",
       "note": "",
       "slot_source": "ledger v12 R1.1 is tier 1: P2.30 carries the v12 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the QMS non-conformance rate is None when no delivery gate has run, and the sealers and ServiceContracts print not measured (0 gates run); blind red"
     },
     {
       "id": "FU-576",
@@ -10994,11 +11000,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W635",
       "note": "",
       "slot_source": "ledger v12 R1.2 is tier 1: P2.30 carries the v12 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the QEP adaptation seed is renamed written-recall comparison; no phoneme feedback loop is advertised; blind red"
     },
     {
       "id": "FU-577",
@@ -11012,11 +11021,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.31",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W635",
       "note": "",
       "slot_source": "ledger v12 R1.3 is tier 2: P2.31 carries the v12 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the tafsir disclaimer says no Arabic is shown when none was fetched and calls floor text a structured frame; blind red"
     },
     {
       "id": "FU-578",
@@ -11031,11 +11043,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.31",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W635",
       "note": "",
       "slot_source": "ledger v12 R2.0 is tier 2: P2.31 carries the v12 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the generated README says a downloaded archive carries the declared files only and that manifest.json and .git stay in the platform's copy; blind red"
     },
     {
       "id": "FU-579",
@@ -11047,11 +11062,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.31",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W635",
       "note": "",
       "slot_source": "ledger v12 R2.9 is tier 2: P2.31 carries the v12 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "EVIDENCE.md's heading reads Stage Verifications (proxies; not assessable on the floor) and ORGANISATION.md labels the AI CEO block as the founder's commercialisation text, charter pending; blind red"
     },
     {
       "id": "FU-580",
@@ -11065,11 +11083,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W635",
       "note": "",
       "slot_source": "ledger v12 R3.0 is tier 1: P2.30 carries the v12 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the CEO's cited count strips the engine banner and framing lines before the presence test, so a floor answer no longer names floor directives by their banner; blind red"
     },
     {
       "id": "FU-581",
@@ -11081,11 +11102,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W635",
       "note": "",
       "slot_source": "ledger v12 R3.1 is tier 1: P2.30 carries the v12 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the derived strategic text carries an as-of timestamp; covered by the W635 guard"
     },
     {
       "id": "FU-582",
@@ -11097,11 +11121,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.31",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W635",
       "note": "",
       "slot_source": "ledger v12 R3.2 is tier 2: P2.31 carries the v12 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "an unrecognised change type is filed HIGH (review, never auto-approval) and the record and response say it was not recognised; blind red"
     },
     {
       "id": "FU-583",
@@ -11113,11 +11140,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.31",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W635",
       "note": "",
       "slot_source": "ledger v12 R3.3 is tier 2: P2.31 carries the v12 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the Chief is labelled Chief carrying your record, not a modelled twin; the basis says nothing is fitted or evaluated; blind red"
     },
     {
       "id": "FU-584",
@@ -11129,11 +11159,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.31",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W635",
       "note": "",
       "slot_source": "ledger v12 R3.4 is tier 2: P2.31 carries the v12 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the board pack names it when the strategic refresh quotes a plan vision field that differs from the constitutional vision; covered by the W635 guard"
     },
     {
       "id": "FU-585",
@@ -11148,11 +11181,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.31",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W635",
       "note": "",
       "slot_source": "ledger v12 R4.0 is tier 2: P2.31 carries the v12 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "factory output saved to a project passes served_by and is_external, so its file label is the real provenance; covered by the W635 guard"
     },
     {
       "id": "FU-586",
@@ -11167,11 +11203,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W635",
       "note": "",
       "slot_source": "ledger v12 R6.0 is tier 1: P2.30 carries the v12 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "an unscreened charity grant is excluded, not funded, and the allocation rule says not refused by the screen (review means unassessed); blind red"
     },
     {
       "id": "FU-587",
@@ -11187,11 +11226,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.31",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W635",
       "note": "",
       "slot_source": "ledger v12 R6.1 is tier 2: P2.31 carries the v12 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "organism_health carries organism_health_basis (AI-call failures and compliance regressions only; route 5xx not tracked) on every surface that reports it; blind red"
     }
   ],
   "routes": [
