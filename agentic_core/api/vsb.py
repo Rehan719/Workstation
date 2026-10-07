@@ -2448,7 +2448,12 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
             "CLO":  "Legal and regulatory compliance",
             "CoE":  ["Research", "Design", "Engineering", "Science", "Commercial", "Compliance"],
         }
-        yield _event("swarm_complete", "Swarm Configured", f"Agent hierarchy set for {req.domain} domain.", {"swarm": swarm_config})
+        # W617 (FU-498, M2 v8 R4.5) — the hierarchy is a FIXED TEMPLATE with the domain name substituted, and
+        # the event now says so, as the cascade's "(fixed markers)" event beside it already does.
+        yield _event("swarm_complete", "Swarm Configured (fixed template)",
+                     f"A fixed CEO + C-Suite + CoE template, with the {req.domain} domain named in two roles - "
+                     f"nothing was designed for this entity at this step.",
+                     {"swarm": swarm_config, "swarm_is_template": True})
 
         # ── Persist VSB Entity ────────────────────────────────────────────────
         # W450 (refuter F1) — never `VSB — {challenge[:60]}`: the founder's name, else a pending slug

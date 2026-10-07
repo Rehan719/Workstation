@@ -22,6 +22,7 @@ interface Cycle {
   giving_back: { grants: { cause: string; amount_wst: number; score: number }[] } | null;
   metabolic_energy: number | null; entity_name: string; capital_preserved: boolean;
   energy_state?: string; reserve_rate_applied?: number;   // §8→§12 economic survival instinct
+  metabolic_energy_basis?: string | null;   // W617 (FU-507) — null: the energy term was not measured
   biogeochemical_model: string;
   // W465 (FU-016) — whether this cycle's owner share was recorded in Owner Payments
   owner_accrual?: { accrued: boolean; amount_wst: number; error?: string; note?: string; ueg_logged?: boolean };
@@ -531,9 +532,18 @@ export const VSBEconomy: React.FC = () => {
               <Metric label="Operating costs" value={cycle.operating_costs ?? 0} />
               <Metric label="Reserve" value={cycle.homeostasis_reserves} />
               <Metric label="Distributable" value={cycle.distributable_profit} tone="good" />
-              <Metric label="Metabolic Energy" value={cycle.metabolic_energy != null ? `${Math.round(cycle.metabolic_energy * 100)}%` : '—'} tone="good" />
+              {/* W617 (FU-507, M2 v8 R6.3) — an UNMEASURED energy term is not shown in the green 'good' tone:
+                  with no basis the figure is the simulator's default, and the cycle did not adjust on it. */}
+              <Metric label={cycle.metabolic_energy_basis ? 'Metabolic Energy' : 'Metabolic Energy (simulated, not measured)'}
+                value={cycle.metabolic_energy != null ? `${Math.round(cycle.metabolic_energy * 100)}%` : '—'}
+                tone={cycle.metabolic_energy_basis ? 'good' : undefined} />
             </div>
-            {cycle.energy_state && cycle.energy_state !== 'healthy' && (
+            {cycle.energy_state && String(cycle.energy_state).startsWith('not_adjusted') && (
+              <p className="text-[9px] font-bold text-slate-500 mt-2" data-testid="energy-unmeasured">
+                Energy term unmeasured — the reserve was NOT adjusted for it: {String(cycle.energy_state).replace(/^not_adjusted_term_unmeasured\s*—?\s*/, '')}
+              </p>
+            )}
+            {cycle.energy_state && cycle.energy_state !== 'healthy' && !String(cycle.energy_state).startsWith('not_adjusted') && (
               <p className="text-[9px] font-black uppercase tracking-widest text-amber-400 mt-2" title="§8→§12 — the living organism's energy is low, so the economic organism conserves more (raises reserves).">
                 §8→§12 survival instinct: {cycle.energy_state}{cycle.reserve_rate_applied != null ? ` · reserve ${Math.round(cycle.reserve_rate_applied * 100)}%` : ''}
               </p>

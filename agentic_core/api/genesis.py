@@ -203,7 +203,7 @@ async def genesis_status():
 
 def _bar_attestations(candidates: List[Dict[str, Any]], stage_5: Dict[str, Any], winner: Dict[str, Any],
                       realm: str, domain: str, stage_verifications: Dict[str, Any],
-                      stages_verified: int) -> "tuple[Dict[str, str], Dict[str, str]]":
+                      stages_verified: int, chosen: "set | None" = None) -> "tuple[Dict[str, str], Dict[str, str]]":
     """§10 (W419 → W449, ledger 3.11) — the journey's bar attestations, DERIVED from this run, and the
     criteria it DECLINES to attest, each with the reason. Returns (evidence, withheld).
 
@@ -220,7 +220,18 @@ def _bar_attestations(candidates: List[Dict[str, Any]], stage_5: Dict[str, Any],
     n = len(candidates)
     _tied = bool((stage_5.get("tie") or {}).get("detected"))
     _distinct = int(stage_5.get("candidates_distinct") or (n if n else 0))
-    ev["categorised"] = f"realm '{realm}' × domain '{domain}' categorisation"
+    #  W617 (FU-479, M2 v8 R1.6) — CATEGORISED IS ATTESTED ONLY FROM A CHOICE. Both axes default to
+    #  'enterprise', so a journey nobody categorised attested "categorised: met" from the request's own
+    #  defaults, and the record called the platform reading its defaults "caller evidence". `chosen` is the
+    #  set of fields the caller actually sent; a default is withheld with that reason.
+    _chosen = {"realm", "domain"} if chosen is None else set(chosen)
+    _defaulted = [ax for ax in ("realm", "domain") if ax not in _chosen]
+    if _defaulted:
+        wh["categorised"] = (f"the {' and '.join(_defaulted)} {'were' if len(_defaulted) > 1 else 'was'} not "
+                             f"chosen - the request's default ('enterprise') was used, and a default is not a "
+                             f"categorisation anyone made")
+    else:
+        ev["categorised"] = f"realm '{realm}' × domain '{domain}' categorisation, both chosen by the caller"
     if n > 1 and _distinct > 1:
         ev["modelled"] = (f"stage 5 modelled {n} candidates ({_distinct} distinct); form scores "
                           + " · ".join(f"{c['id']}={c.get('modelled_score')}" for c in candidates))
@@ -729,7 +740,8 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
                       "verified", "tested", "validated", "best-in-class")}
     else:
         _bar_evidence, _bar_withheld = _bar_attestations(candidates, stage_5, winner, req.realm, req.domain,
-                                                         stage_verifications, stages_verified)
+                                                         stage_verifications, stages_verified,
+                                                         chosen=set(getattr(req, "model_fields_set", set()) or set()))
     # W449 (ledger 1.1) — the gate learns who served the design + commercialisation it measures.
     _gate_servers = [s for s in (_sba.get("genesis_design"), _sba.get("genesis_commercial")) if s]
     quality_assurance = await assure_delivery(

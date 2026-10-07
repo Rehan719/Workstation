@@ -46238,3 +46238,70 @@ def test_w616_p222_an_unreadable_profile_is_said_not_shown_as_none(client, monke
         meta.get("profile_state"), meta.get("profile_basis"))
     _cp = _code_only((_pl616b.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/components/avatar/ConversationPanel.tsx").read_text(encoding="utf-8"))
     assert "m.profileState === 'unreadable'" in _cp and "profile: NOT applied" in _cp
+
+
+def test_w617_p223_a_partial_surface_says_what_it_does_not_do(client):
+    """P2.23 (W617) — seven of M2 v8's tier-2 rows: partial surfaces that did not say they were partial.
+
+    FU-478 a word-perfect recall typed without harakat scored 49%; FU-479 "categorised" attested from the
+    request's defaults, and the bar summary printed 18 counts for 16 criteria; FU-491 "Chief's Opening" headed
+    a plan the Chief wrote nothing of; FU-497 the Cardiovascular dot is CPU headroom; FU-498 a fixed swarm
+    template reported as configured for the domain; FU-507 an unmeasured energy term in the green tone;
+    FU-506 the Heartbeat page never showed a failed step.
+    """
+    import pathlib as _pl617
+    import uuid as _uu617
+    _root = _pl617.Path(__file__).resolve().parents[1]
+    _src = lambda p: _code_only((_root / p).read_text(encoding="utf-8"))
+
+    # ── FU-478: the letters figure leads, and marks are not compared when the attempt carries none ──
+    ok = client.post("/api/v1/qep/tajweed/analyse", json={
+        "ayah_text": "ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَٰلَمِينَ",
+        "recited_text": "الحمد لله رب العالمين"}).json()
+    c = ok["comparison"]
+    assert c["comparable"] is True and c["text_similarity"] >= 0.9, ("a word-perfect recall typed without harakat "
+                                                                      "is still marked down for them", c.get("text_similarity"))
+    assert c["exact_similarity"] < c["text_similarity"] and "EVERY CHARACTER" in c["exact_similarity_basis"]
+    assert c["missing_rule_markers"] == [] and c["markers_basis"].startswith("NOT COMPARED"), c["markers_basis"]
+    _st = _src("apps/workstation-superapp/src/components/QEPStudio.tsx")
+    assert "recall.exact_similarity_basis" in _st and "recall.markers_basis" in _st and "(normalised Levenshtein)" not in _st
+
+    # ── FU-479: categorised only from a choice, and the summary partitions the bar ───────────────────
+    j = client.post("/api/v1/genesis/journey", json={"problem": f"w617 bakery {_uu617.uuid4().hex[:6]}"}).json()
+    bar = ((j.get("quality") or {}).get("bar_measured")
+           or ((j.get("quality_assurance") or {}).get("quality") or {}).get("bar_measured") or {})
+    if not bar:
+        import json as _jj617
+        _flat = _jj617.dumps(j)
+        assert '"categorised"' in _flat, sorted(j)
+    else:
+        cat = bar["criteria"]["categorised"]
+        assert cat["met"] is None and cat["attested"] is False and "not chosen" in cat["basis"], cat
+        import re as _re617
+        _nums = [int(x) for x in _re617.findall(r"(\d+) (?:measured|attested|screen-only|not measured)", bar["summary"])]
+        assert sum(_nums) == bar["total"] == len(bar["criteria"]), (bar["summary"], bar["total"])
+    from agentic_core.api.genesis import _bar_attestations
+    _ev, _wh = _bar_attestations([], {}, {}, "religion", "care", {}, 0, chosen={"realm", "domain"})
+    assert "categorised" in _ev and "categorised" not in _wh
+    _ev2, _wh2 = _bar_attestations([], {}, {}, "enterprise", "enterprise", {}, 0, chosen={"domain"})
+    assert "categorised" not in _ev2 and "realm was not chosen" in _wh2["categorised"], _wh2
+
+    # ── FU-491 / FU-497 / FU-507 / FU-506: what each page says ───────────────────────────────────────
+    _bp = _src("apps/workstation-superapp/src/pages/enterprise/BusinessPlan.tsx")
+    assert "Chief's Opening — Executive Summary" not in _bp and "Plan Opening — Executive Summary" in _bp
+    _bs = _src("apps/workstation-superapp/src/components/BiometricStatus.tsx")
+    assert 'title="Cardiovascular"' not in _bs and "host CPU headroom" in _bs and _bs.count("title={CARDIO_TITLE}") == 2
+    _ec = _src("apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx")
+    assert "tone={cycle.metabolic_energy_basis ? 'good' : undefined}" in _ec and 'energy-unmeasured' in _ec
+    _cy = client.post("/api/v1/economy/cycle", json={"vsb_id": f"w617-{_uu617.uuid4().hex[:6]}", "revenue": 10}).json()
+    _cy = _cy.get("cycle", _cy)
+    assert "metabolic_energy" in _cy, sorted(_cy)
+    if _cy.get("metabolic_energy_basis") is None:
+        assert str(_cy.get("energy_state", "")).startswith("not_adjusted"), ("the page's unmeasured branch keys on a "
+                                                                             "state the API no longer sends", _cy.get("energy_state"))
+    _hb = _src("apps/workstation-superapp/src/pages/organism/HeartbeatMonitor.tsx")
+    assert "b.steps_failed && Object.keys(b.steps_failed).length > 0" in _hb and "step(s) FAILED" in _hb
+
+    # ── FU-498: a fixed template is reported as one ──────────────────────────────────────────────────
+    _vs = _string_constants((_root / "agentic_core/api/vsb.py").read_text(encoding="utf-8"))
+    assert "Agent hierarchy set for " not in _vs and "Swarm Configured (fixed template)" in _vs

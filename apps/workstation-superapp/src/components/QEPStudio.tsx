@@ -15,7 +15,7 @@ interface Surah { number: number; name_arabic: string; name_transliteration: str
 interface Ayah { number_in_surah: number; text_arabic: string }
 interface HifzProgress { total_ayaat_in_schedule: number; total_ayaat_memorised: number; due_today: number; due_refs: string[]; total_sessions: number }
 interface GamiState { xp: number; level: number; level_basis: string; achievements: string[]; streak_days: number; streak_basis: string; awards_recorded: number; scope: string }
-interface Recall { comparable: boolean; reason?: string; text_similarity?: number; similarity_basis?: string; missing_rule_markers?: string[]; markers_basis?: string; scope?: string }
+interface Recall { comparable: boolean; reason?: string; text_similarity?: number; similarity_basis?: string; exact_similarity?: number; exact_similarity_basis?: string; missing_rule_markers?: string[]; markers_basis?: string; scope?: string }
 
 const UID = 'local';
 
@@ -357,8 +357,13 @@ export const QEPStudio: React.FC = () => {
                 </Button>
                 {recall && (recall.comparable ? (
                   <div className="mt-2">
-                    <p className="text-[11px] text-white">written similarity {Math.round((recall.text_similarity ?? 0) * 100)}% <span className="text-[9px] text-slate-600" title={recall.similarity_basis}>(normalised Levenshtein)</span></p>
+                    {/* W617 (FU-478) — the letters figure leads, and each figure says what it compares */}
+                    <p className="text-[11px] text-white" data-testid="recall-letters">letters similarity {Math.round((recall.text_similarity ?? 0) * 100)}% <span className="text-[9px] text-slate-500">(diacritics and Uthmani marks not counted)</span></p>
+                    {recall.exact_similarity != null && (
+                      <p className="text-[9px] text-slate-500" title={recall.exact_similarity_basis} data-testid="recall-exact">with every mark counted: {Math.round(recall.exact_similarity * 100)}% — {recall.exact_similarity_basis}</p>
+                    )}
                     {(recall.missing_rule_markers ?? []).map((m, i) => <p key={i} className="text-[9px] text-amber-400">{m}</p>)}
+                    {recall.markers_basis && <p className="text-[8px] text-slate-600" data-testid="recall-markers-basis">{recall.markers_basis}</p>}
                     <p className="text-[8px] text-slate-600 italic mt-1">{recall.scope}</p>
                   </div>
                 ) : <p className="text-[10px] text-amber-400 mt-2">{recall.reason}</p>)}

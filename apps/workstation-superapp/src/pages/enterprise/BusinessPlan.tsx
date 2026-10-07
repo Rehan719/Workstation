@@ -160,7 +160,10 @@ export const BusinessPlan: React.FC = () => {
             <Card className="p-8 border-highlight/40 bg-gradient-to-br from-highlight/10 to-transparent" data-testid="chiefs-opening">
               <div className="flex items-center gap-3 mb-4 flex-wrap">
                 <Crown size={18} className="text-highlight" />
-                <h3 className="text-sm font-black text-white uppercase tracking-wide">Chief's Opening — Executive Summary · Concept · Vision</h3>
+                {/* W617 (FU-491, M2 v8 R3.4) — this heading named the Chief unconditionally, above PlanOpening's own
+                    heading that says when the Chief wrote nothing. The outer card names the section; the inner one
+                    decides whether it is the Chief's. */}
+                <h3 className="text-sm font-black text-white uppercase tracking-wide">Plan Opening — Executive Summary · Concept · Vision</h3>
                 {/* W471 (P1.14) — who wrote it: the generation's provenance through the shared map helper; pending fields named */}
                 {plan.provenance?.served_by && (() => { const b = provenanceMapBadge(plan.provenance.served_by, plan.provenance.any_external); return (
                   <span className={`text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded ${b.cls}`} title={b.title} data-testid="plan-provenance">{b.label}</span>

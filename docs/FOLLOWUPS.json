@@ -8921,11 +8921,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.23",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W617",
       "note": "",
       "slot_source": "ledger v8 R1.3 is tier 2: P2.23 carries the v8 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the recall leads with a LETTERS-only similarity (harakat, Quranic marks and tatweel removed, alif wasla read as alif) and reports the every-character figure beside it, each with its basis; marks are NOT COMPARED when the attempt carries none; QEPStudio shows both; three blinds red"
     },
     {
       "id": "FU-479",
@@ -8941,11 +8944,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.23",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W617",
       "note": "",
       "slot_source": "ledger v8 R1.6 is tier 2: P2.23 carries the v8 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "categorised is attested only when the caller chose both realm and domain (model_fields_set), otherwise withheld naming the default; the bar summary partitions the criteria and says 'of N'; two blinds red"
     },
     {
       "id": "FU-480",
@@ -9188,11 +9194,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.23",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W617",
       "note": "",
       "slot_source": "ledger v8 R3.4 is tier 2: P2.23 carries the v8 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "BusinessPlan's outer card is headed 'Plan Opening'; PlanOpening's inner heading decides whether it is the Chief's; blind red"
     },
     {
       "id": "FU-492",
@@ -9297,11 +9306,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.23",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W617",
       "note": "",
       "slot_source": "ledger v8 R4.4 is tier 2: P2.23 carries the v8 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the Cardiovascular dot's title says host CPU headroom, spare capacity, no circulatory subsystem; blind red"
     },
     {
       "id": "FU-498",
@@ -9315,11 +9327,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.23",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W617",
       "note": "",
       "slot_source": "ledger v8 R4.5 is tier 2: P2.23 carries the v8 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the spawn stream's event reads 'Swarm Configured (fixed template)' and says nothing was designed at that step, with swarm_is_template; blind red"
     },
     {
       "id": "FU-499",
@@ -9472,11 +9487,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.23",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W617",
       "note": "",
       "slot_source": "ledger v8 R6.2 is tier 2: P2.23 carries the v8 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "HeartbeatMonitor renders each recent beat's steps_failed by name, with the reasons in the title; blind red"
     },
     {
       "id": "FU-507",
@@ -9488,11 +9506,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.23",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W617",
       "note": "",
       "slot_source": "ledger v8 R6.3 is tier 2: P2.23 carries the v8 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "an unmeasured Metabolic Energy is labelled '(simulated, not measured)' and not in the good tone; the not_adjusted state gets its own line instead of the 'energy is low' survival-instinct line; blind red"
     },
     {
       "id": "FU-508",

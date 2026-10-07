@@ -274,9 +274,14 @@ def _measure_bar(coverage: float, stub: bool, qms_passed: Optional[bool], min_co
             # bucket, so a reader is never shown a §11 keyword screen as a measurement.
             "screen_only": len(_s),
             "screen_only_criteria": sorted(k for k, c in crit.items() if c["source"] == "screen"),
+            #  W617 (FU-479) — the summary's buckets PARTITION the bar. Screen-only criteria were printed in
+            #  their own bucket AND again inside "not measured", so the chip read 18 counts against a 16-item
+            #  bar. `not_measured` keeps its meaning for existing readers (screen-only is also unmeasured);
+            #  the printed line counts each criterion once and says out of how many.
             "summary": (f"{len(_m)} measured · {len(_a)} attested · "
                         + (f"{len(_s)} screen-only · " if _s else "")
-                        + f"{len(_n) + len(_s)} not measured"),
+                        + f"{len(_n)} not measured (of {len(crit)})"),
+            "total": len(crit),
             "measured_criteria": sorted(k for k, c in crit.items() if c["source"] == "gate"),
             "attested_criteria": sorted(k for k, c in crit.items() if c["source"] == "caller")}
 
