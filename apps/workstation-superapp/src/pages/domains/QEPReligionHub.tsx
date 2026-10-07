@@ -14,7 +14,9 @@ export const QEPReligionHub: React.FC = () => {
       <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6">
         <div>
           <h1 className="text-3xl @[480px]:text-4xl @[680px]:text-6xl font-black mb-1 text-white tracking-tighter uppercase italic break-words">QEP <span className="text-aura">Religion</span></h1>
-          <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Quran Education Platform • Advanced AI Flagship • v1.0</p>
+          {/* W625 (FU-538, M2 v9 R5.5) — "Advanced AI Flagship • v1.0" headed a hub where most of A.6's fifteen features are
+              absent, and the hub never said so. The header now says what stage it is at and where the state of each is. */}
+          <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]" data-testid="qep-hub-stage">Quran Education Platform • in development — a few features live; the roadmap states each one's state</p>
         </div>
         <div className="flex gap-2 p-1 rounded-2xl bg-slate-900 border border-slate-800 flex-wrap shrink-0">
            {[

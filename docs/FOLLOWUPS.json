@@ -9669,11 +9669,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.25",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W625",
       "note": "",
       "slot_source": "ledger v9 R1.1 is tier 2: P2.25 carries the v9 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "quran-tafsir refuses (422) a surah outside 1-114 or an ayah below 1 instead of clamping, and range_note says when the end was clipped to the surah's length; blind red"
     },
     {
       "id": "FU-514",
@@ -9688,11 +9691,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.25",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W625",
       "note": "",
       "slot_source": "ledger v9 R1.2 is tier 2: P2.25 carries the v9 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "compliance rows say '(engine-backed)' only when the engine itself produced a finding; otherwise '(engine ran and produced no finding here, so it backs no verdict)'; blind red"
     },
     {
       "id": "FU-515",
@@ -9707,11 +9713,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.25",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W625",
       "note": "",
       "slot_source": "ledger v9 R1.3 is tier 2: P2.25 carries the v9 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "every export carries the compliance verdict and the §10 bar summary on page one, not only a FAIL (REVIEW reads 'not established'); blind red"
     },
     {
       "id": "FU-516",
@@ -9725,11 +9734,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.25",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W625",
       "note": "",
       "slot_source": "ledger v9 R1.4 is tier 2: P2.25 carries the v9 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "with no gate run the QMS panel says so instead of a green '0 failures' and a 0% rate; blind red after a vacuous first drive"
     },
     {
       "id": "FU-517",
@@ -10101,11 +10113,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.25",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W625",
       "note": "",
       "slot_source": "ledger v9 R5.2 is tier 2: P2.25 carries the v9 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the avatar grounds on the MOST RECENT entity (rows[0]; the list is newest-first) and the reply shows which entity it was grounded in; blind red"
     },
     {
       "id": "FU-536",
@@ -10155,11 +10170,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.25",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W625",
       "note": "",
       "slot_source": "ledger v9 R5.5 is tier 2: P2.25 carries the v9 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the QEP hub header says it is in development and points at the roadmap's per-feature states, not 'Advanced AI Flagship v1.0'; blind red"
     },
     {
       "id": "FU-539",
@@ -10254,11 +10272,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.25",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W625",
       "note": "",
       "slot_source": "ledger v9 R6.4 is tier 2: P2.25 carries the v9 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the life-cycle basis says 'operable, but NOT operated' when the heartbeat's Self-run lever is off, and 'operated by the organism' only when it is on; blind red"
     }
   ],
   "routes": [

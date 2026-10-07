@@ -230,8 +230,16 @@ async def quran_tafsir(req: QuranTafsirRequest):
     """
     AI-assisted Quranic exegesis (tafsir) for a specified verse range.
     """
-    surah = max(1, min(req.surah, 114))
-    ayah_start = max(1, req.ayah_start)
+    # W625 (FU-513, M2 v9 R1.1) — A REFERENCE THAT DOES NOT EXIST IS REFUSED, NEVER REPLACED. This clamped: surah 200
+    # served An-Nas, surah 0 Al-Fatiha, ayah -5 ayah 1, and nothing told the reader their request was swapped. §11
+    # rule 2 refuses nonexistent ayaat, and every other sacred-text route here (/qep/ayah, hifz) already refuses.
+    from fastapi import HTTPException as _HE625
+    if not 1 <= int(req.surah) <= 114:
+        raise _HE625(status_code=422, detail=f"surah {req.surah} does not exist - the Qur'an has 114 surahs. Nothing was served.")
+    if int(req.ayah_start) < 1:
+        raise _HE625(status_code=422, detail=f"ayah {req.ayah_start} does not exist - ayaat are numbered from 1. Nothing was served.")
+    surah = int(req.surah)
+    ayah_start = int(req.ayah_start)
     ayah_end = req.ayah_end if req.ayah_end >= ayah_start else ayah_start
     reference = f"Surah {surah}:{ayah_start}" + (f"–{ayah_end}" if ayah_end > ayah_start else "")
 
@@ -256,11 +264,15 @@ async def quran_tafsir(req: QuranTafsirRequest):
         raise HTTPException(status_code=422,
                             detail=f"surah {surah} has {_AYAH_COUNTS[surah]} ayaat — "
                                    f"ayah {ayah_start} does not exist")
+    _requested_end = ayah_end
     ayah_end = min(ayah_end, _AYAH_COUNTS[surah])
     covered_end = min(ayah_end, ayah_start + 9)
-    range_note = (f"range capped at 10 ayaat per request — this tafsir covers "
-                  f"{surah}:{ayah_start}-{covered_end}, not the requested end {ayah_end}"
-                  if covered_end < ayah_end else None)
+    #  W625 (FU-513) — clipping the end to the surah's length is said too, not only the 10-ayah cap
+    range_note = ("; ".join(n for n in (
+        (f"surah {surah} has {_AYAH_COUNTS[surah]} ayaat, so the requested end {_requested_end} was clipped to "
+         f"{_AYAH_COUNTS[surah]}" if _requested_end > _AYAH_COUNTS[surah] else None),
+        (f"range capped at 10 ayaat per request — this tafsir covers {surah}:{ayah_start}-{covered_end}, not the "
+         f"requested end {ayah_end}" if covered_end < ayah_end else None)) if n) or None)
     ayah_end = covered_end
     reference = f"Surah {surah}:{ayah_start}" + (f"-{ayah_end}" if ayah_end > ayah_start else "")
 

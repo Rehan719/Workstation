@@ -29,6 +29,7 @@ export interface AvatarMessage {
   languageHonoured?: string | null;
   profileApplied?: boolean;   // W505 (P2.3)
   profileState?: string | null;   // W616 (FU-397) — 'unreadable' is said, never shown as "no profile"
+  groundedIn?: string | null;     // W625 (FU-535) — which entity the answer was grounded in, shown
   profileBasis?: string | null;
 }
 
@@ -43,7 +44,9 @@ async function resolveGroundingVsb(): Promise<string | null> {
     const r = await fetch('/api/v1/vsb');
     const d = await r.json();
     const rows: any[] = d.entities ?? [];
-    _groundingVsb = rows.length ? (rows[rows.length - 1].vsb_id ?? null) : null;
+    // W625 (FU-535, M2 v9 R5.2) — /api/v1/vsb lists MOST RECENT FIRST, so rows[0] is the latest; this took the last
+    // row, the least-recently-touched entity, while its own comment said "most recent".
+    _groundingVsb = rows.length ? (rows[0].vsb_id ?? null) : null;
   } catch { _groundingVsb = null; }
   return _groundingVsb ?? null;
 }
@@ -261,6 +264,7 @@ export function useAvatarSession() {
         // and shown by nothing until now.
         profileApplied: Boolean(resp.data.profile_applied),
         profileState: resp.data.profile_state ?? null,
+        groundedIn: resp.data.grounded_in ?? null,
         profileBasis: resp.data.profile_basis ?? null,
       }]);
       if (speakReplies) speakText(replyText);

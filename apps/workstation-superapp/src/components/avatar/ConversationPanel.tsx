@@ -126,6 +126,11 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({ avatar }) 
                   profile: applied — your saved profile shaped this answer.
                 </p>
               )}
+              {m.role === 'assistant' && m.groundedIn && (
+                <p data-testid="avatar-grounded-in" className="text-[9px] font-bold text-slate-500 px-1">
+                  grounded in your enterprise {m.groundedIn} (your most recently updated one)
+                </p>
+              )}
               {m.role === 'assistant' && (m.profileState === 'unreadable' || m.profileState === 'error') && (
                 <p data-testid="profile-unreadable" className="text-[9px] font-bold text-vital px-1">
                   profile: NOT applied — {m.profileBasis || 'your saved profile could not be read'}.

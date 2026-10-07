@@ -1680,7 +1680,9 @@ def test_compliance_engines_genuinely_invoked(client):
     h3 = next(v for v in r3["verdicts"] if v["framework"] == "sharia_halal")
     # W483 retarget — halal vocabulary is the subject's own claim: REVIEW, never a pass. The engine
     # label is the point of this test and still travels on the row.
-    assert h3["status"] == "review" and "(engine-backed)" in h3["reason"]
+    # W625 (FU-514) — the halal VOCABULARY rule produced this review, not the engine, so the row says the engine ran
+    # and backs no verdict here; "(engine-backed)" now means the engine itself produced a finding (as with h above)
+    assert h3["status"] == "review" and "engine ran and produced no finding here" in h3["reason"], h3["reason"]
     orig = C._halal_engine
     try:
         C._halal_engine = lambda: (_ for _ in ()).throw(RuntimeError("down"))
@@ -46693,3 +46695,50 @@ def test_w624_p224_the_last_three_tier1_rows(client):
     import pathlib as _pl624
     _ec = _code_only((_pl624.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx").read_text(encoding="utf-8"))
     assert "surplus after distributions" in _ec and "operating_result_before_distributions_wst" in _ec
+
+
+def test_w625_p225_partial_surfaces_say_so(client):
+    """P2.25 (W625) — seven of M2 v9's tier-2 rows. FU-513 Tafsir replaced a nonexistent surah with a real one;
+    FU-514 "(engine-backed)" beside "no engine covers this area"; FU-515 exports stamped compliance only on FAIL;
+    FU-516 a green 0% QMS with no gate run; FU-535 the avatar grounded on the OLDEST entity; FU-538 "Advanced AI
+    Flagship v1.0"; FU-543 "operated by the organism" with Self-run off."""
+    import pathlib as _pl625
+    import uuid as _uu625
+    _root = _pl625.Path(__file__).resolve().parents[1]
+    _src = lambda p: _code_only((_root / p).read_text(encoding="utf-8"))
+    for body in ({"surah": 200, "ayah_start": 1}, {"surah": 0, "ayah_start": 1}, {"surah": 2, "ayah_start": -5}):
+        r = client.post("/api/v1/religion/quran-tafsir", json=body)
+        assert r.status_code == 422 and "does not exist" in r.text, (body, r.status_code, r.text[:200])
+    r = client.post("/api/v1/religion/quran-tafsir", json={"surah": 1, "ayah_start": 3, "ayah_end": 99})
+    if r.status_code == 200:
+        assert "clipped to 7" in str(r.json().get("range_note")), r.json().get("range_note")
+    from agentic_core.api.compliance import screen_compliance
+    vs = {v["framework"]: v for v in screen_compliance("A bakery in Leeds")["verdicts"]}
+    for fw in ("sharia_halal", "uk_legal", "ethical"):
+        if vs[fw]["coverage"] == "none":
+            assert "-backed)" not in vs[fw]["reason"] and "produced no finding" in vs[fw]["reason"], (fw, vs[fw]["reason"])
+    alc = {v["framework"]: v for v in screen_compliance("a venture selling alcohol at events")["verdicts"]}
+    assert "(engine-backed)" in alc["sharia_halal"]["reason"], "an engine that DID flag a violation lost its label"
+    from agentic_core.api.deliverables import _compliance_stamp
+    st = _compliance_stamp({"quality_assurance": {"quality": {"compliance": {"overall": "review"},
+                                                             "bar_measured": {"summary": "0 measured · 14 not measured (of 16)"}}}})
+    assert st and st.startswith("COMPLIANCE: REVIEW — not established") and "§10 bar: 0 measured" in st, st
+    assert _compliance_stamp({"quality_assurance": {"quality": {"compliance": {"overall": "fail", "verdicts": []}}}}).startswith("COMPLIANCE VERDICT: FAIL")
+    _vb = _src("apps/workstation-superapp/src/components/VBSSystemsPanel.tsx")
+    assert _vb.count("defects.summary.gates_run === 0") == 2, "both the failures chip and the rate must branch on no gate run"
+    assert "non-conformance: not measured (0 gates run)" in _vb and 'data-testid="qms-no-gates"' in _vb
+    _hk = _src("apps/workstation-superapp/src/hooks/useAvatarSession.ts")
+    assert "rows[0].vsb_id" in _hk and "rows[rows.length - 1].vsb_id" not in _hk and "groundedIn: resp.data.grounded_in" in _hk
+    assert "m.groundedIn &&" in _src("apps/workstation-superapp/src/components/avatar/ConversationPanel.tsx")
+    _qh = _src("apps/workstation-superapp/src/pages/domains/QEPReligionHub.tsx")
+    assert "Advanced AI Flagship" not in _qh and "in development" in _qh
+    from agentic_core.economy import living_vsbs as _lv625
+    from agentic_core.organism.heartbeat import heartbeat as _hb625
+    _was = _hb625.auto_economy
+    try:
+        _hb625.auto_economy = False
+        assert "NOT operated" in _lv625.lifecycle({"lifecycle_state": "juvenile"})["basis"]
+        _hb625.auto_economy = True
+        assert "operated by the organism" in _lv625.lifecycle({"lifecycle_state": "juvenile"})["basis"]
+    finally:
+        _hb625.auto_economy = _was

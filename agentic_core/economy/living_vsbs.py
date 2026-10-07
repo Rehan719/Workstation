@@ -175,6 +175,19 @@ LIFECYCLE_ABSENT_MEANS = ("an entity registered before the life cycle existed ca
                           "state it was not given")
 
 
+def _operated_phrase() -> str:
+    """W625 (FU-543, M2 v9 R6.4) — OPERABLE IS NOT OPERATED. The record said "operated by the organism" whenever the
+    life cycle allowed it, while the heartbeat's economy lever (Self-run) was off and so nothing operated it. The
+    phrase now reads the lever."""
+    try:
+        from agentic_core.organism.heartbeat import heartbeat as _hb625
+        _on = bool(getattr(_hb625, "auto_economy", False))
+    except Exception:
+        return "operable - whether the organism is operating it could not be read"
+    return ("operable, and operated by the organism (Self-run is on; one entity per beat)" if _on else
+            "operable, but NOT operated: the heartbeat's Self-run lever is off, so nothing runs its cycles")
+
+
 def lifecycle(rec: Dict[str, Any]) -> Dict[str, Any]:
     """This entity's life-cycle state, whether the organism may operate it, and the basis for both."""
     st = rec.get("lifecycle_state") if isinstance(rec, dict) else None
@@ -186,7 +199,7 @@ def lifecycle(rec: Dict[str, Any]) -> Dict[str, Any]:
                           f"it may be operated is NOT KNOWN and it is not operated")}
     _op = st in _LIFECYCLE_OPERABLE
     return {"state": st, "recorded": True, "operable": _op,
-            "basis": (f"{st}: operated by the organism" if _op else
+            "basis": (f"{st}: " + _operated_phrase() if _op else
                       f"{st}: NOT operated - " + ("dormancy is self-service and reversible, and costs nothing"
                                                   if st == "dormant" else
                                                   "a retired entity's record is kept and nothing operates it"))}
@@ -343,7 +356,7 @@ def register(vsb_id: str, name: str = "", entity_type: str = "waqf_ltd_hybrid",
                          "auto_compliance": bool(auto_compliance),
                          #  P3.26 clause (2) — born juvenile, and the record says what that means
                          "lifecycle_state": "juvenile",
-                         "lifecycle_basis": "juvenile: operated by the organism"}
+                         "lifecycle_basis": "juvenile: " + _operated_phrase()}
             _save(d)
         return d[vsb_id]
 
