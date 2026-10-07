@@ -325,7 +325,9 @@ export const HeartbeatMonitor: React.FC = () => {
 
           {s.recent.length > 0 && (
             <Card className="p-6">
-              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Recent Beats</h3>
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Recent Beats</h3>
+              {/* W633 (FU-572) — said where the beats are read, not only in a hover title */}
+              <p data-testid="heartbeat-survival-note" className="text-[10px] text-slate-500 mb-4">The survival instinct and energy regulation run on a simulated ATP model in which ATP cannot fall, so they do not fire in practice.</p>
               <div className="space-y-2">
                 {s.recent.slice().reverse().map(b => (
                   <div key={b.beat} className="flex items-center justify-between p-3 bg-slate-950 rounded-lg border border-slate-900 text-xs">
@@ -342,7 +344,7 @@ export const HeartbeatMonitor: React.FC = () => {
                         </span>
                       )}
                       {b.self_recovery && (
-                        <span className="text-amber-400 font-black uppercase" title="§8 survival instinct — the organism autonomously rested and restored its own energy on this beat">
+                        <span className="text-amber-400 font-black uppercase" title="§8 survival instinct — the organism rested and restored its own simulated energy on this beat. On the current energy model ATP cannot fall (see /api/v1/native-ai/homeostasis), so this does not fire in practice">
                           self-healed ATP {b.self_recovery}
                         </span>
                       )}

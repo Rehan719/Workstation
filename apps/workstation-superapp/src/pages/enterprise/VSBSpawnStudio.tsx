@@ -552,6 +552,8 @@ const VSBDetailPanel: React.FC<{
         <div className="pt-1 border-t border-slate-900">
           <p className="text-[9px] font-black uppercase tracking-widest text-aura mb-1 mt-3 flex items-center gap-1.5"><Network size={11} /> Native delivery swarm (owned, in-house)</p>
           <p className="text-[9px] text-slate-600 mb-1.5">{ns.org.join(' → ')}</p>
+          {/* W633 (FU-568) — the same sentence the Cockpit carries */}
+          <p data-testid="spawn-swarm-template-note" className="text-[9px] text-amber-400/80 mb-1.5">Started from the same fixed template every VSB receives — not synthesised or optimised for this solution.</p>
           <div className="flex flex-wrap gap-1 mb-2">
             {ns.stages.map((s, i) => (
               <span key={i} className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-slate-900 text-aura/80">{i + 1}. {s}</span>

@@ -794,6 +794,12 @@ async def cascade_orchestration(req: CascadeRequest,
         ["Operational Delivery Resources", "Work Breakdown", "Quality Gates", "Go-Live"],
         label="cascade", served_by=provenance["served_by"])
     quality: dict = _qa["quality"]
+    #  W633 (FU-566) - on a not-assessable gate the proxies read as passes ('stub_found: false',
+    #  'substantive_length: true', coverage 1.0) over floor scaffolds. They are withheld, with the reason
+    if quality.get("qms_gate_passed") is None:
+        quality = {**quality, "stub_found": None, "substantive_length": None, "delivery_coverage": None,
+                   "proxies_basis": ("NOT ASSESSED - the gate is not assessable on floor-served text, so the stub, "
+                                     "length and coverage proxies are withheld rather than read as passes")}
     biomimetic: dict = _qa["biomimetic"]
 
     # §5 (W268) — the MEASURED outcomes block every appraisal is grounded in: the real QMS gate,
@@ -1145,7 +1151,8 @@ async def cascade_orchestration(req: CascadeRequest,
             "run_id": run_id, "mission": req.mission[:200], "domain": req.domain,
             "csuite_engaged": selected, "appraisals": appraisals,
             "quality": {**{k: quality.get(k) for k in ("qms_gate_passed", "qms_basis", "delivery_coverage",
-                                                       "qms_non_conformance_rate", "stub_found")},
+                                                       "qms_non_conformance_rate", "stub_found",
+                                                       "proxies_basis")},   # W633 (FU-566): the record says why
                         # §11 (W287) — the persisted run record carries the compliance verdict
                         "compliance_overall": (quality.get("compliance") or {}).get("overall")},
             "governance": governance.get("status"), "ueg_hash": ueg_hash,

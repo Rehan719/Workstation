@@ -267,8 +267,10 @@ export const OrganismDashboard: React.FC = () => {
               : 'bg-red-500/20 text-red-400'}`}>{cognition.posture}</span>
           </div>
           <p className="text-[11px] text-white/45 leading-relaxed">
-            The organism is governing how much AI cognition the swarm admits — and each run expends ATP, which
-            recovers on the circadian cycle. Max parallel agents now: <span className="text-violet-300 font-bold">{cognition.max_parallel}</span>
+            {/* W633 (FU-570) — said from the model's own flags: on the current model ATP cannot fall */}
+            The organism is governing how much AI cognition the swarm admits. {cognition.atp_can_fall === false
+              ? 'ATP here is a SIMULATION that cannot fall (production always exceeds consumption), so it does not limit runs.'
+              : 'Each run expends simulated ATP.'} Max parallel agents now: <span className="text-violet-300 font-bold">{cognition.max_parallel}</span>
             {cognition.organism.should_throttle && <span className="text-amber-400"> · throttling</span>}.
           </p>
         </div>
@@ -426,7 +428,7 @@ export const OrganismDashboard: React.FC = () => {
               <span className="text-2xl font-black text-white">{Math.round(systems.metabolic.atp_ratio * 100)}%</span>
             </div>
             <HealthBar value={systems.metabolic.atp_ratio} />
-            <div className="text-xs font-mono text-white/30">ATP ratio</div>
+            <div className="text-xs font-mono text-white/30">ATP ratio · simulated{cognition?.atp_can_fall === false ? ' — cannot fall' : ''}</div>
           </SystemCard>
 
           {/* Circadian */}

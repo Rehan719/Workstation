@@ -179,6 +179,9 @@ class CharityIntelligence:
         directives = get_directives(strict=True)
         self.exclusions = set(exclusions if exclusions is not None else directives["exclusions"])
         self.priorities = set(priorities if priorities is not None else directives["priorities"])
+        #  W633 (FU-571) - whether the Owner named these priorities, so the allocation rule does not call
+        #  editorial defaults 'Owner-named'
+        self.priorities_owner_named = bool(directives.get("priorities_owner_named")) if priorities is None else True
         self.require_100pct = bool(directives["require_100pct"] if require_100pct is None else require_100pct)
         self._live: List[Dict[str, Any]] = approved_signals()   # the gated ingestion seam (empty until enabled)
 
@@ -224,9 +227,13 @@ class CharityIntelligence:
         funded = {g["id"] for g in grants}
         order = [c["id"] for c in self.ranked(top=10_000)]
         names = {c["id"]: c.get("cause", c["id"]) for c in self._candidates()}
+        #  W633 (FU-571) - a priority the Owner EXCLUDED is unfunded because of that exclusion, and says so; the
+        #  ranking reason it was given was untrue
         return [{"id": p, "cause": names.get(p, p),
                  "rank": (order.index(p) + 1) if p in order else None,
-                 "why": (f"ranked {order.index(p) + 1} of {len(order)} on the editorial weights, below the "
+                 "why": ("excluded by the Owner's directive, so it is not funded whatever its rank"
+                         if p in self.exclusions else
+                         f"ranked {order.index(p) + 1} of {len(order)} on the editorial weights, below the "
                          f"top-{top} cut, so it received nothing this cycle" if p in order else
                          "not among the candidate causes, so it cannot be funded")}
                 for p in sorted(self.priorities) if p not in funded]
@@ -310,7 +317,9 @@ class CharityIntelligence:
             #  Owner's call (a weight, a floor, or a guaranteed share); this reports that it is not.
             "priorities_unfunded": self._unfunded_priorities(grants, top),
             "priority_min_share": round(_floor, 4),
-            "allocation_rule": (f"OWNER RULING 2026-10-07: each Owner-named priority that clears the compliance screen "
+            "allocation_rule": (f"OWNER RULING 2026-10-07: each "
+                                f"{'Owner-named' if self.priorities_owner_named else 'editorial-default (the Owner named none)'} "
+                                f"priority that clears the compliance screen and is not excluded "
                                 f"receives {round(_floor * 100, 1)}% of the budget first; the remaining "
                                 f"{round((1 - _floor * len(_prio)) * 100, 1)}% is split pro-rata by score across every "
                                 f"cleared cause"),

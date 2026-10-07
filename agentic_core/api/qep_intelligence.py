@@ -236,7 +236,7 @@ def _is_sacred_source(req: "TranslateRequest") -> bool:
 class TranslateRequest(BaseModel):
     text: str
     target_language: str = "English"
-    source_language: str = "Arabic"
+    source_language: str | None = None   # W633 (FU-560): undeclared, so non-Arabic text is not refused as Arabic
     preserve_tajweed: bool = True
 
 

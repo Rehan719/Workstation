@@ -938,6 +938,8 @@ export const GenesisJourney: React.FC = () => {
               {/* W623 (FU-534) — the heading names what the journey produced, not a sovereign enterprise it may not have */}
               <h3 className="font-black text-highlight uppercase tracking-widest text-sm" data-testid="journey-complete-heading">
                 {(result as any).status === 'blocked_by_screen' ? 'Journey Stopped — vetoed by the §11 screen'
+                  /* W633 (FU-562) — a body still pending is registered, not established */
+                  : (result as any).enterprise_established && Object.values(((result as any).established_vsb?.body_pending) || {}).some(Boolean) ? 'Enterprise Registered — body pending'
                   : (result as any).enterprise_established ? 'Journey Complete — Enterprise Established'
                   : 'Journey Complete — Record Only (no enterprise established)'}
               </h3>

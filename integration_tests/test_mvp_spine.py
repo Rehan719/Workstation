@@ -624,7 +624,7 @@ def test_cascade_appraisals_measured_and_persisted(client):
     runs = client.get("/api/v1/swarm/cascade/runs").json()
     top = runs["runs"][0]
     assert top["run_id"] == r["run_id"]                          # this run persisted
-    assert top["appraisals"] and top["quality"].get("delivery_coverage") is not None
+    assert top["appraisals"] and (top["quality"].get("delivery_coverage") is not None or "NOT ASSESSED" in (top["quality"].get("proxies_basis") or ""))   # W633 (FU-566)
     ops = client.get("/api/v1/operations/rankings").json()["rankings"]
     tier_rows = [x for x in ops if str(x["resource"]).startswith(("agent:cascade_", "agent:appraise_"))]
     assert tier_rows, "cascade tier calls accrued no operational-excellence rows"
@@ -2574,7 +2574,7 @@ def test_genesis_journey_in_house_provenance(client):
     # W109 — continual operational delivery within the LIVING QMS: the journey's buildable + go-to-market
     # delivery is QMS-gated, held to the §10 bar, recorded within the §8 organism (same shared capability).
     qa = body["quality_assurance"]; q = qa["quality"]; bio = qa["biomimetic"]
-    assert q["qms_gate_passed"] is None and "not assessable" in q["qms_basis"] and 0.0 <= q["delivery_coverage"] <= 1.0   # W449: floor-served in this suite
+    assert q["qms_gate_passed"] is None and "not assessable" in q["qms_basis"] and ((q["delivery_coverage"] is None and "NOT ASSESSED" in q.get("proxies_basis", "")) or 0.0 <= q["delivery_coverage"] <= 1.0)   # W449; W633 (FU-566): withheld with its basis
     assert q["qms_min_coverage"] == 0.95 and len(q["bar"]) >= 12 and {"verified", "safe"} <= set(q["bar"])
     # W422 — `layers` now means CONTRIBUTED, not declared. The old assertion (== 7) enshrined the
     # defect: the record named all seven on every delivery regardless of what participated.
@@ -3583,7 +3583,7 @@ def test_deliverables_living_lifecycle(client):
     # W108 — continual operational delivery within the LIVING QMS: the produced deliverable is gated by
     # the OWNED QMS, held to the §10 Solution-Quality Bar, recorded within the §8 biomimetic organism.
     qa = d["quality_assurance"]; q = qa["quality"]; bio = qa["biomimetic"]
-    assert q["qms_gate_passed"] is None and "not assessable" in q["qms_basis"] and 0.0 <= q["delivery_coverage"] <= 1.0   # W449: floor-served in this suite
+    assert q["qms_gate_passed"] is None and "not assessable" in q["qms_basis"] and ((q["delivery_coverage"] is None and "NOT ASSESSED" in q.get("proxies_basis", "")) or 0.0 <= q["delivery_coverage"] <= 1.0)   # W449; W633 (FU-566): withheld with its basis
     assert q["qms_min_coverage"] == 0.95 and q["qms_non_conformance_rate"] >= 0.0
     assert len(q["bar"]) >= 12 and {"verified", "compliant", "safe", "ranked"} <= set(q["bar"])
     assert bio["layers"] == ["Immune"] and len(bio["layers_declared"]) == 7
@@ -3862,7 +3862,7 @@ def test_swarm_cascade_in_house_provenance(client):
     assert all(appr[k] for k in appr)
     # §10 Solution-Quality Bar + continual operational delivery within the LIVING QMS (real gate)
     q = r["quality"]
-    assert q["qms_gate_passed"] is None and "not assessable" in q["qms_basis"] and 0.0 <= q["delivery_coverage"] <= 1.0   # W449: floor-served in this suite
+    assert q["qms_gate_passed"] is None and "not assessable" in q["qms_basis"] and ((q["delivery_coverage"] is None and "NOT ASSESSED" in q.get("proxies_basis", "")) or 0.0 <= q["delivery_coverage"] <= 1.0)   # W449; W633 (FU-566): withheld with its basis
     assert q["qms_min_coverage"] == 0.95 and q["qms_non_conformance_rate"] >= 0.0
     assert len(q["bar"]) >= 12 and {"verified", "compliant", "ranked", "safe"} <= set(q["bar"])
     # the QMS document-controls the quality record through its OWNED DCMS (QMS ⊃ DCMS, ISO 9001 §7.5)
@@ -47168,3 +47168,79 @@ def test_w631_p227_the_twelve_v10_tier2_shortfalls_are_said(client):
     _cy = client.post("/api/v1/economy/cycle", json={"vsb_id": "vsb-w631-nobody", "revenue": 0})
     if _cy.status_code == 200:
         assert _cy.json().get("registration") == "UNREGISTERED" and "SIMULATION" in _cy.json()["registration_basis"]
+
+
+def test_w633_p228_the_four_v11_tier1_statements_are_true(client):
+    """W633 (P2.28): FU-561, FU-567, FU-570, FU-571 - the four tier-1 findings of ledger v11."""
+    _fe = lambda p: _code_only(open(f"apps/workstation-superapp/src/{p}", encoding="utf-8").read())
+
+    # FU-561: a generated page no longer calls a pending, non-operating entity 'Living'
+    from agentic_core.api.vsb import _website_page
+    assert "Living VSB IDBO enterprise" not in _website_page("t", "index", "b")
+
+    # FU-567: the 'Cognition' vital is a load reading and says so
+    _b = client.get("/api/v1/biometrics/status").json()
+    assert "not cognition" in (_b.get("cognition") or {}).get("basis", ""), _b.get("cognition")
+    assert "label: 'Load state'" in _fe("pages/cognitive/Introspection.tsx")
+    assert 'title="Cognition"' not in _fe("components/BiometricStatus.tsx")
+
+    # FU-570: the dashboard says ATP is a simulation that cannot fall, from the model's own flag
+    _od = _fe("pages/organism/OrganismDashboard.tsx")
+    assert "recovers on the circadian cycle" not in _od and "cognition.atp_can_fall === false" in _od
+    assert "ATP ratio · simulated" in _od
+
+    # FU-571: an Owner-excluded priority is unfunded BECAUSE of the exclusion; defaults are not 'Owner-named'
+    from agentic_core.economy.charity import CharityIntelligence as CharityEngine
+    _eng = CharityEngine(exclusions=["dawah"], priorities=["dawah"])
+    _un = _eng._unfunded_priorities([], 5)
+    assert _un and "excluded by the Owner's directive" in _un[0]["why"], _un
+    _eng2 = CharityEngine(exclusions=[])
+    _eng2.priorities_owner_named = False
+    _al = _eng2.allocate(1000.0)
+    assert "editorial-default" in _al["allocation_rule"] and "each Owner-named" not in _al["allocation_rule"], _al["allocation_rule"]
+
+
+def test_w633_p229_the_ten_v11_tier2_shortfalls_are_said(client):
+    """W633 (P2.29): FU-560, 562, 563, 564, 565, 566, 568, 569, 572, 573."""
+    _fe = lambda p: _code_only(open(f"apps/workstation-superapp/src/{p}", encoding="utf-8").read())
+
+    # FU-560: non-Arabic educational text is not refused as Arabic; Arabic still is
+    _en = client.post("/api/v1/qep/translation/translate", json={"text": "Patience is a virtue", "target_language": "French"})
+    assert _en.status_code != 422 or "NOT OFFERED" not in _en.text, (_en.status_code, _en.text[:200])
+    assert client.post("/api/v1/qep/translation/translate", json={"text": "الصبر"}).status_code == 422
+
+    # FU-562 / FU-563 / FU-568: the pages say registered, written-not-verified, and fixed template
+    assert "'Enterprise Registered — body pending'" in _fe("pages/synthesis/GenesisJourney.tsx")
+    _ck = _fe("pages/enterprise/VSBCockpit.tsx")
+    assert "growthResult.coherent_whole_basis" in _ck and "coherent whole: {String" not in _ck
+    assert 'data-testid="spawn-swarm-template-note"' in _fe("pages/enterprise/VSBSpawnStudio.tsx")
+
+    # FU-564: the review-gate stages are said to be a separate lifecycle from the journey's
+    _v = client.post("/api/v1/genesis/establish", json={"problem": "w633 gates", "domain": "enterprise", "concept": "c",
+                                                        "design": "d", "commercialisation": "m", "ship_output": False}).json()["vsb_id"]
+    _rg = client.get(f"/api/v1/vsb/{_v}/review-gates").json()
+    assert "separate list from the Genesis journey" in _rg.get("lifecycle_basis", ""), sorted(_rg)
+
+    # FU-565: a floor-served Chief directive says it did not read the instruction
+    _ci = client.post("/api/v1/board/chief/instruct", json={"instruction": "Prioritise W633 bakery outreach",
+                                                            "cascade_to_ceo": False}).json()
+    if str(((_ci.get("ai_provenance") or {}).get("served_by") or {}).get("board_chief", "native")).startswith("native"):
+        assert "did NOT read your instruction" in (_ci.get("directive_reason") or ""), _ci.get("directive_reason")
+    assert "result.directive_reason" in _fe("pages/enterprise/BoardOfDirectors.tsx")
+
+    # FU-566: a not-assessable cascade withholds the proxies instead of reading them as passes
+    _q = client.post("/api/v1/swarm/cascade", json={"mission": "Launch a halal tutoring MVP", "domain": "enterprise"}).json()["quality"]
+    if _q.get("qms_gate_passed") is None:
+        assert _q.get("stub_found") is None and _q.get("delivery_coverage") is None and "NOT ASSESSED" in _q.get("proxies_basis", ""), _q
+
+    # FU-569: risk bullets are terms to check, not identified risks
+    from agentic_core.ai.native.engine import NativeReasoningEngine
+    _r = NativeReasoningEngine().generate("Problem: tenant deposit disputes\n\n## Key Risks\n")
+    assert "Exposure on" not in _r and "to CHECK, not risks this engine identified" in _r, _r[:400]
+
+    # FU-572: the survival note is visible on the Heartbeat page
+    assert 'data-testid="heartbeat-survival-note"' in _fe("pages/organism/HeartbeatMonitor.tsx")
+
+    # FU-573: the realisation figure carries what it measures
+    _hs = client.get("/api/v1/heartbeat/status").json()
+    assert "API surface coverage" in (_hs.get("last_realisation_measure") or ""), _hs.get("last_realisation_measure")

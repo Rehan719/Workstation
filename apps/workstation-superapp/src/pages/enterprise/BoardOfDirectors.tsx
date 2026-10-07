@@ -31,6 +31,7 @@ interface Status {
   recent_directives?: any[];
 }
 interface ChiefResult {
+  directive_reason?: string | null;   // W633 (FU-565)
   directive_id: string; owner: string; instruction: string;
   chief_directive: string; ceo_action_plan: string; delegation_chain: string[]; delegation_chain_basis?: string; created_at: string;
   // W270/W284 — the apex runs on the §6 fabric: provenance + gaas verdict + the plan objectives landed
@@ -347,6 +348,7 @@ export const BoardOfDirectors: React.FC = () => {
               {/* P3.4 (W587) — the Chief's standing travels WITH its output: a reader of a directive sees
                   whether the Chief that issued it is a twin built from their record or a role. */}
               <div data-testid="chief-standing-with-output" className="mb-3 pb-3 border-b border-slate-800/50">{chiefStanding()}</div>
+              {result.directive_reason && <p data-testid="chief-directive-reason" className="text-[11px] text-amber-400 mb-2">{result.directive_reason}</p>}
               <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{result.chief_directive}</p></div>}
           </Card>
           {result.ceo_action_plan && (

@@ -1409,7 +1409,7 @@ export const VSBCockpit: React.FC = () => {
                           : <>Nothing was applied — {String(growthResult.reason ?? 'no reason reported')}{growthResult.detail ? `: ${String(growthResult.detail)}` : ''}. An evolution must be APPROVED in Change Control first; filing a proposal does not mutate the genome.</>}
                       </p>
                     ) : growthResult.kind === 'ship' ? (
-                      <p>Shipped {Object.values(growthResult.surfaces || {}).filter((s: any) => s && !s.error && !s.deferred).length} of {Object.keys(growthResult.surfaces || {}).length} surfaces · coherent whole: {String(growthResult.coherent_whole)} · commit {growthResult.version_control?.commit}</p>
+                      <p>Shipped {Object.values(growthResult.surfaces || {}).filter((s: any) => s && !s.error && !s.deferred).length} of {Object.keys(growthResult.surfaces || {}).length} surfaces · all surfaces written: {String(growthResult.coherent_whole)}{growthResult.coherent_whole_basis ? ` (${growthResult.coherent_whole_basis})` : ''} · commit {growthResult.version_control?.commit}</p>
                     ) : growthResult.kind === 'cascade' ? (
                       <p>Cascade run {growthResult.repo_run?.run_id} · plan: {growthResult.repo_run?.plan_binding?.result ?? '—'} · committed {growthResult.version_control?.commit}</p>
                     ) : (

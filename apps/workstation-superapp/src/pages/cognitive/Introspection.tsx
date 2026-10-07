@@ -6,7 +6,7 @@ import { Activity, Brain, Zap, Heart, Wind, Shield, Cpu, FlaskConical, Radio } f
 interface Biometrics {
   circadian:      { cycle: string };
   cardiovascular: { resource_flow: number; peristaltic_delay: number };
-  cognition:      { state: string; primary_drive: string };
+  cognition:      { state: string; primary_drive: string; basis?: string };
   immune:         { health: number; threat_level: string; error_rate: number };
   metabolic:      { efficiency: number; atp_ratio: number; total_projects: number };
   nervous:        { arousal_state: string; signal_rate: number };
@@ -125,7 +125,7 @@ export const Introspection: React.FC = () => {
           <div className="grid grid-cols-2 gap-3 mt-4">
             {[
               { icon: Radio, label: 'Circadian', val: bio.circadian.cycle.replace('_', ' ') },
-              { icon: Brain, label: 'Cognition', val: bio.cognition.state },
+              { icon: Brain, label: 'Load state', val: bio.cognition.state },   /* W633 (FU-567): not a cognitive measure */
               { icon: Shield, label: 'Immune', val: bio.immune.threat_level },
               { icon: Cpu, label: 'Nervous', val: bio.nervous.arousal_state },
             ].map(({ icon: Icon, label, val }) => (

@@ -194,6 +194,7 @@ class OrganismHeartbeat:
         self.last_beat: Optional[str] = None
         self.last_phase: Optional[str] = None
         self.last_realisation: Optional[float] = None
+        self.last_realisation_measure: Optional[str] = None
         self.last_recovery: Optional[str] = None   # last autonomous metabolic self-recovery (ATP before->after)
         self.last_self_healing: Optional[float] = None   # last self-healing circuit health read on the beat
         self.last_heal: Optional[str] = None        # last proactive self-heal (circuits probed for recovery)
@@ -637,7 +638,9 @@ class OrganismHeartbeat:
         # 3. Transformation tick — vision-realisation introspection (no AI)
         try:
             from agentic_core.api.transformation import _realise
-            self.last_realisation = _realise().get("overall_realisation")
+            _rz = _realise()
+            self.last_realisation = _rz.get("overall_realisation")
+            self.last_realisation_measure = _rz.get("measure")   # W633 (FU-573) - what the figure measures
             actions.append("transformation_tick")
         except Exception as _swallowed:   # FU-461 (W611) — recorded, never swallowed
             self._step_failed("transformation_tick", _swallowed)
@@ -1297,6 +1300,8 @@ class OrganismHeartbeat:
             "phase_intensity": _INTENSITY.get(self.last_phase or circadian_phase(), 0.5),
             "last_beat": self.last_beat,
             "last_realisation": self.last_realisation,
+            "last_realisation_measure": (self.last_realisation_measure or
+                                         "API surface coverage, not delivery - see /api/v1/plan/state"),
             "last_self_healing": self.last_self_healing,
             "last_recovery": self.last_recovery,
             "last_heal": self.last_heal,

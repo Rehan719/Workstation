@@ -10666,11 +10666,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.29",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W633",
       "note": "",
       "slot_source": "ledger v11 R1.0 is tier 2: P2.29 carries the v11 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "TranslateRequest.source_language defaults to None, so non-Arabic educational text is not refused as Arabic, while Arabic script is still refused; blind red"
     },
     {
       "id": "FU-561",
@@ -10684,11 +10687,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.28",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W633",
       "note": "",
       "slot_source": "ledger v11 R2.0 is tier 1: P2.28 carries the v11 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "generated pages no longer call a pending, non-operating entity Living in the footer; blind red"
     },
     {
       "id": "FU-562",
@@ -10702,11 +10708,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.29",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W633",
       "note": "",
       "slot_source": "ledger v11 R2.1 is tier 2: P2.29 carries the v11 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the Genesis result heading reads Enterprise Registered - body pending while any body surface is pending; blind red"
     },
     {
       "id": "FU-563",
@@ -10720,11 +10729,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.29",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W633",
       "note": "",
       "slot_source": "ledger v11 R2.2 is tier 2: P2.29 carries the v11 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the cockpit's ship line says all surfaces written and shows coherent_whole_basis; blind red"
     },
     {
       "id": "FU-564",
@@ -10736,11 +10748,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.29",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W633",
       "note": "",
       "slot_source": "ledger v11 R2.3 is tier 2: P2.29 carries the v11 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the review-gates response carries lifecycle_basis saying its stages are the governance lifecycle, separate from the Genesis journey's, and off until set; blind red"
     },
     {
       "id": "FU-565",
@@ -10752,11 +10767,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.29",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W633",
       "note": "",
       "slot_source": "ledger v11 R3.0 is tier 2: P2.29 carries the v11 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "a floor-served Chief directive carries directive_reason saying it did not read the instruction, rendered above the directive; blind red"
     },
     {
       "id": "FU-566",
@@ -10768,11 +10786,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.29",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W633",
       "note": "",
       "slot_source": "ledger v11 R3.1 is tier 2: P2.29 carries the v11 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "a not-assessable cascade withholds stub_found, substantive_length and delivery_coverage with a proxies_basis instead of reading them as passes; blind red"
     },
     {
       "id": "FU-567",
@@ -10788,11 +10809,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.28",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W633",
       "note": "",
       "slot_source": "ledger v11 R4.0 is tier 1: P2.28 carries the v11 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the cognition vital carries a basis saying it is a load reading from host CPU and running projects, and the pages label it Load state; blind red"
     },
     {
       "id": "FU-568",
@@ -10808,11 +10832,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.29",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W633",
       "note": "",
       "slot_source": "ledger v11 R4.1 is tier 2: P2.29 carries the v11 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Spawn Studio's swarm panel carries the fixed-template sentence the cockpit uses; blind red"
     },
     {
       "id": "FU-569",
@@ -10824,11 +10851,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.29",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W633",
       "note": "",
       "slot_source": "ledger v11 R5.0 is tier 2: P2.29 carries the v11 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the floor's risk frame words its bullets as terms to check, not risks it identified; blind red"
     },
     {
       "id": "FU-570",
@@ -10843,11 +10873,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.28",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W633",
       "note": "",
       "slot_source": "ledger v11 R6.0 is tier 1: P2.28 carries the v11 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the Organism dashboard says ATP is a simulation that cannot fall, from atp_can_fall, and labels the metabolic card simulated; blind red"
     },
     {
       "id": "FU-571",
@@ -10861,11 +10894,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.28",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W633",
       "note": "",
       "slot_source": "ledger v11 R6.1 is tier 1: P2.28 carries the v11 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "an Owner-excluded priority is unfunded with the reason excluded by the Owner's directive, and the allocation rule says editorial-default when the Owner named no priorities; blinds red"
     },
     {
       "id": "FU-572",
@@ -10877,11 +10913,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.29",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W633",
       "note": "",
       "slot_source": "ledger v11 R6.2 is tier 2: P2.29 carries the v11 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the Heartbeat page says visibly that the survival instinct and energy regulation run on a simulated ATP model that cannot fall; blind red"
     },
     {
       "id": "FU-573",
@@ -10896,11 +10935,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.29",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W633",
       "note": "",
       "slot_source": "ledger v11 R6.3 is tier 2: P2.29 carries the v11 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "heartbeat status carries last_realisation_measure (API surface coverage, not delivery) beside last_realisation; blind red"
     }
   ],
   "routes": [

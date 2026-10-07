@@ -824,6 +824,13 @@ async def chief_instruct(req: ChiefInstruction, user: dict | None = Depends(get_
                                if req.unprompted else
                                "supplied directly by the caller as the Owner's own instruction"),
         "chief_directive": directive,
+        #  W633 (FU-565) - on the floor the directive is a structured frame that did not read the instruction;
+        #  said beside it, as /business-plan/generate does, instead of under a 'Modelled twin' banner alone
+        "directive_reason": (("the native floor composed this directive: it did NOT read your instruction, so the "
+                              "text below is a structured frame, not the Chief's response to it. Your instruction "
+                              "itself is recorded verbatim above")
+                             if str((provenance.get("served_by") or {}).get("board_chief", "native")).startswith("native")
+                             else None),
         "ceo_action_plan": action_plan,
         "business_plan_scope": req.scope,
         "objectives_added": objectives_added,

@@ -686,7 +686,10 @@ async def biometrics_status():
         "workload": {"platform_busy": bool(active > 0 or ws > 0), "active_projects": active,
                      "open_channels": ws,
                      "basis": "the platform's own running projects and open channels"},
-        "cognition":      {"state": cognition_state, "primary_drive": primary_drive},
+        #  W633 (FU-567) - NOTHING COGNITIVE IS MEASURED: the state is a host-load reading and says so
+        "cognition":      {"state": cognition_state, "primary_drive": primary_drive,
+                           "basis": ("a LOAD reading, not cognition: derived from host CPU% and the running-project "
+                                     "count, qualified by immune health. No cognitive engine is read")},
         "communication":  {"active_channels": ["WS"] if ws > 0 else [], "neurotransmitter": neurotransmitter, "is_active": ws > 0},
         "immune":         imm,
         # W506 (P2.7(4), FU-265a) — the qualifier travels WITH the figure: atp_basis set above and not

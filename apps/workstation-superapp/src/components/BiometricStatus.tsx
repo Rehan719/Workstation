@@ -176,7 +176,7 @@ export const BiometricStatus: React.FC<BiometricStatusProps> = ({
         />
         <span
           className={`w-1.5 h-1.5 rounded-full shrink-0 ${cogCol} animate-pulse ${cogDur} [animation-delay:300ms]`}
-          title="Cognition"
+          title={`Load state — ${(b.cognition as any).basis ?? "derived from host CPU and running projects; no cognitive engine is read"}`}
         />
         <span
           className={`w-1.5 h-1.5 rounded-full shrink-0 ${commCol} animate-pulse ${commDur} [animation-delay:600ms]`}
@@ -201,7 +201,7 @@ export const BiometricStatus: React.FC<BiometricStatusProps> = ({
           />
           <span
             className={`w-1.5 h-1.5 rounded-full shrink-0 ${cogCol} animate-pulse ${cogDur} [animation-delay:300ms]`}
-            title="Cognition"
+            title={`Load state — ${(b.cognition as any).basis ?? "derived from host CPU and running projects; no cognitive engine is read"}`}
           />
           <span
             className={`w-1.5 h-1.5 rounded-full shrink-0 ${commCol} animate-pulse ${commDur} [animation-delay:600ms]`}

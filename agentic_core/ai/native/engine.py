@@ -395,8 +395,10 @@ class NativeReasoningEngine:
             return any(k in t for k in ks)
 
         if has("risk", "gap", "failure", "weakness", "threat", "limitation"):
-            return ("Structured risk frame for this dimension — surface, don't invent:\n"
-                    + self._dims(terms, "Exposure on") +
+            #  W633 (FU-569) - the terms are words FROM THE REQUEST, not identified risks: worded as things to check
+            return ("Structured risk frame for this dimension — surface, don't invent. The items below are terms "
+                    "taken from the request to CHECK, not risks this engine identified:\n"
+                    + self._dims(terms, "Check:") +
                     "\n- Likelihood × impact to be scored; mitigations and owners to be assigned.\n"
                     "- The native engine flags areas needing attention; a model resource details them.")
         if has("architecture", "component", "system", "technical", "build", "mvp", "stack", "blueprint"):

@@ -710,7 +710,9 @@ def _website_page(title: str, active: str, body: str) -> str:
             f"<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
             f"<title>{_esc(title)}</title><link rel=\"stylesheet\" href=\"styles.css\"></head><body>"
             f"<header class=\"nav\"><nav>{nav}</nav></header><main>{body}</main>"
-            f"<footer>Living VSB IDBO enterprise · generated in-house on Workstation's own AI fabric · "
+            #  W633 (FU-561) - the footer no longer says 'Living': it ships on bodies that are pending and entities
+            #  that do not operate, and the entity's own record carries its status
+            f"<footer>VSB IDBO enterprise · generated in-house on Workstation's own AI fabric · "
             f"quality record and compliance screen in the entity repository (compliance/QUALITY.md).</footer></body></html>")
 
 
@@ -2072,7 +2074,12 @@ async def get_review_gates(vsb_id: str, user: dict | None = Depends(get_current_
     return {"vsb_id": vsb_id, "mode": "Mode 3 — optional human review gates (set in the VSB genome)",
             "stages": rg.get("stages", []), "lifecycle": _lifecycle_meta(),
             "statuses": [_gate_status(rg, s[0]) for s in _CONCEPT_TO_COMMERCIALISE_STAGES],
-            "gated_count": len(rg.get("stages", []))}
+            "gated_count": len(rg.get("stages", [])),
+            #  W633 (FU-564) - these stages are NOT the Genesis journey's: said, so no reader takes them for one lifecycle
+            "lifecycle_basis": (f"these {len(_CONCEPT_TO_COMMERCIALISE_STAGES)} stages are the entity's GOVERNANCE "
+                                "lifecycle, a separate list from the Genesis journey's own stages (GET "
+                                "/api/v1/genesis/status). A gate here pauses the entity's lifecycle movers (ship, "
+                                "evolve, cascade), not a journey stage, and every gate is OFF until the founder sets one")}
 
 
 @router.post("/{vsb_id}/review-gates")
