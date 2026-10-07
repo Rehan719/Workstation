@@ -74,10 +74,9 @@ fees). Nothing chargeable is triggered autonomously.
 
 - **Vercel is retired.** The Vercel project still attached to the GitHub repo points at `src/qep_frontend`, a
   folder that no longer exists, which is why its check has failed on every commit since 2026-08-30. The repo's
-  `vercel.json` is archived at `_archive/deployment/vercel/workstation-superapp.vercel.json`. **To silence the check**,
-  the Owner disconnects it in the Vercel account: Project → Settings → Git → Disconnect. Alternatively, uninstall
-  the Vercel app from the GitHub repository (GitHub → Settings → Integrations → Applications → Vercel). Nothing in
-  this repository can do that.
+  `vercel.json` is archived at `_archive/deployment/vercel/workstation-superapp.vercel.json`. **The Owner deleted the
+  Vercel project on 2026-10-07**, so no further Vercel checks run. Optionally, remove the Vercel GitHub app from the
+  repository as well (GitHub → Settings → Integrations).
 - **Planned target: Google Cloud Platform (free tier)**, with three channels:
   - **development**: every push to the working branch;
   - **beta**: a tag or a `beta` branch;

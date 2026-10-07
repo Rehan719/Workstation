@@ -45,7 +45,6 @@ Resume the Workstation delivery from where the cloud session stopped, autonomous
     `docs/DEPENDENCY_VERDICTS.md`.
   - Vercel is retired; Google Cloud (free tier, dev/beta/release) is the planned target. See `docs/DEPLOYMENT.md`.
 - **Still yours:**
-  - Disconnect the Vercel project in your Vercel account, so its red check stops.
   - Merge PR #355 when you are ready.
   - Roll the Stripe key (P4.6).
   - FU-559: whether to build an app-wide constitutional gate.
