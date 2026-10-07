@@ -42,7 +42,11 @@ npx tsc --noEmit` (and `npm run build`, which passes).
 
 ## 2. State at handover
 
-> **UPDATED after W634 (2026-10-07). START HERE: `docs/RESUME_ON_MY_MACHINE.md` holds the one prompt to paste.**
+> **UPDATED after W635 (2026-10-07). START HERE: `docs/RESUME_ON_MY_MACHINE.md` holds the one prompt to paste.**
+> **W635 IS COMMITTED (3613fbe):** all fourteen P2.30/P2.31 rows are closed. **NEXT: the M1+M2 re-run (ledger v13)**
+> against a fresh backend from HEAD, worked exactly like W634: check :8031 is free, launch one twelve-agent run, gate it,
+> render v13, archive v12, close P2.30/P2.31 on their ACCEPTs, charter P2.32/P2.33, and add the rows from the run record.
+> The text below is from W634 and is otherwise still accurate.
 > State: **W634 issued ledger v12**, with Tier-1 **6** and Tier-2 **8**. **P2.30** (six tier-1) and **P2.31** (eight
 > tier-2) are open, FU-574..587. W635, which fixes all fourteen, was in progress in the cloud: if `git log` has no W635,
 > work those rows again from the register. Each row's `why` ends with the auditor's SMALLEST HONEST FIX.
