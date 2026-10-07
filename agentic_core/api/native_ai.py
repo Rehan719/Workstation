@@ -428,8 +428,17 @@ class EnsembleRequest(BaseModel):
 async def native_ensemble(req: EnsembleRequest):
     """§6 — run a prompt across MULTIPLE owned models in parallel, then synthesise a consensus. Owned
     orchestration as a composable resource; every member reports which owned resource served it."""
-    return await orchestrator.ensemble(req.prompt, agent=req.agent,
-                                       models=req.models or None, synthesize=req.synthesize)
+    #  W627 (FU-531) - the same constitutional pre-gate and response checkpoint /complete and /swarm carry
+    from agentic_core.ai.gateway import console_pre_gate, console_post_gate
+    _halt = console_pre_gate(req.agent)
+    if _halt:
+        return {"agent": req.agent, "members": [], "synthesis": None, "refused": True,
+                "final": f"[CONSTITUTIONAL REFUSAL] {_halt.get('refused_reason')}", "governance_checkpoint": _halt}
+    res = await orchestrator.ensemble(req.prompt, agent=req.agent,
+                                      models=req.models or None, synthesize=req.synthesize)
+    res["governance_checkpoint"] = console_post_gate(
+        req.agent, str((res.get("synthesis") or {}).get("output") or ""))
+    return res
 
 
 @router.post("/complete")
@@ -812,6 +821,14 @@ async def native_tree(req: TreeRequest):
     """Autonomous workflow-TREE orchestration: the native swarm decomposes the goal into a dependency
     tree and runs it in-house-first with PARALLEL branches — the living-organism cascade (immune-throttled
     parallelism + biobus signals + learning loop). Every node reports the OWNED resource that served it."""
-    return await orchestrator.orchestrate_tree(
+    #  W627 (FU-531) - gated as /complete and /swarm are; the orchestrator itself applies no policy
+    from agentic_core.ai.gateway import console_pre_gate, console_post_gate
+    _halt = console_pre_gate("tree")
+    if _halt:
+        return {"goal": req.goal, "nodes": [], "refused": True,
+                "final": f"[CONSTITUTIONAL REFUSAL] {_halt.get('refused_reason')}", "governance_checkpoint": _halt}
+    res = await orchestrator.orchestrate_tree(
         req.goal, context=req.context, max_parallel=req.max_parallel,
         prefer_external=req.prefer_external, timeout=req.timeout)
+    res["governance_checkpoint"] = console_post_gate("tree", str(res.get("final") or ""))
+    return res

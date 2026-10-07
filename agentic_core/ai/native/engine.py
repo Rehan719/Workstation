@@ -105,12 +105,36 @@ def _phrases(prompt: str, n: int = 6) -> List[str]:
 
 
 def _field(prompt: str, *labels: str) -> str:
-    """Extract the value after a 'Label:' marker (first match wins), one line, trimmed."""
+    """Extract the value after a 'Label:' marker (first match wins), one line, trimmed.
+
+    W627 (FU-530) - an exact-case label is tried first, as before, so the label order still decides. Only if
+    NO label matched exactly is each tried again ignoring case, as a whole word and with a colon only: Studio
+    writes 'CHALLENGE:' and the tree writes 'Overall goal:' / 'Your task:', and an exact-case scan dropped all
+    three and then told the reader the request had no subject. The hyphen separator stays exact-case so
+    'user-friendly' in running text is never read as a 'User' field."""
     for lab in labels:
         m = re.search(rf"{re.escape(lab)}\s*[:\-]\s*(.+)", prompt)
         if m:
             return m.group(1).strip().splitlines()[0].strip()[:140]
+    for lab in labels:
+        #  [ \t]* not \s*: a value on the NEXT line is a block, not this field ('Prior context:\n<carried
+        #  output>' was read as a 'Context' field and the previous stage's headings became the user's terms)
+        m = re.search(rf"(?<![A-Za-z]){re.escape(lab)}[ \t]*:[ \t]*(\S.*)", prompt, re.IGNORECASE)
+        if m:
+            return m.group(1).strip().splitlines()[0].strip()[:140]
     return ""
+
+
+#  W627 (FU-530) - a prompt that is ONE line and carries no 'Label:' marker at all IS the request: nothing
+#  the platform adds (a realm directive, a carried stage, a preamble) arrives on the same line without a label.
+_ANY_LABEL = re.compile(r"(?m)^\s*[A-Za-z][\w /&'-]{0,40}:\s")
+
+
+def _unlabelled_request(prompt: str) -> str:
+    text = (prompt or "").strip()
+    if not text or "\n" in text or _ANY_LABEL.search(text):
+        return ""
+    return text[:220]
 
 
 def _role(prompt: str) -> str:
@@ -128,7 +152,9 @@ def _role(prompt: str) -> str:
 _SUBJECT_LABELS = ("User", "Problem", "Challenge", "Objective", "Mission", "Concept", "Topic",
                    "Research question", "Question", "Task / question", "Task", "Hypothesis",
                    "Target role", "Current situation", "Concern", "Subject", "Search query",
-                   "Brief", "Design", "Vision", "Commercialisation", "Product", "Scope", "Description")
+                   "Brief", "Design", "Vision", "Commercialisation", "Product", "Scope", "Description",
+                   #  W627 (FU-530) - the tree's node prompt names its subject 'Overall goal:' / 'Goal:'
+                   "Goal")
 
 
 def _subject(prompt: str) -> str:
@@ -158,6 +184,11 @@ def _subject(prompt: str) -> str:
     field = _field(prompt, *_SUBJECT_LABELS)
     if len(field) > 8:
         return field[:220]
+    #  W627 (FU-530) - an unlabelled one-line request is its own subject ('Write a mission statement for a
+    #  bakery cooperative' was answered "the request carries no labelled subject")
+    _whole = _unlabelled_request(prompt)
+    if len(_whole) > 8:
+        return _whole
     #  NO LABEL MATCHED, SO THERE IS NO SUBJECT TO REPORT. This returned THE LONGEST SENTENCE, and in a
     #  prompt carrying a realm directive the longest sentence IS the directive - which is how a report on a
     #  Kenyan clinic opened "Subject: Lead with the decision and its cost...". A fall-through presented as a
@@ -176,7 +207,7 @@ _CONTENT_LABELS = ("User", "Problem", "Challenge", "Objective", "Concept", "Desi
                    "Profile", "Experience", "Subject", "Assessment", "Description",
                    "Current draft", "Refinement instruction", "Search query", "Scope",
                    "Product", "Ingredients", "Care setting", "Identified care needs",
-                   "Prior knowledge", "Context", "Task",
+                   "Prior knowledge", "Context", "Task", "Goal",
                    #  W593 — THE REALM IS PART OF THE REQUEST. It reached the composition only through
                    #  `_subject`'s fall-through to the longest sentence (the unlabelled realm DIRECTIVE
                    #  line), so removing that fall-through made two realms produce a byte-identical
@@ -275,6 +306,17 @@ class NativeReasoningEngine:
         #  precedent is this engine's own: a floor cannot act on a style directive, and the honest move is
         #  to say so rather than to look as though it did (W434's candidates ruling, W498's withheld
         #  sections). A served model DOES act on the directive, and then this line is still true.
+        #  W627 (FU-519) - ATTACHED MATERIAL IS NAMED IN EVERY STAGE. The terms above are counted over all
+        #  the labelled fields, and in a later stage the earlier stages' text outnumbers an attached survey,
+        #  so 212 households, rainwater and greywater reached no stage after the concept. The document's own
+        #  terms are listed under a line that says what they are.
+        _doc = _block(prompt, "DOCUMENT")
+        if _doc:
+            _dt = [p for p in _phrases(_doc)] + [k for k in _keywords(_doc, n=8)]
+            _dt = [t for i, t in enumerate(_dt) if t not in _dt[:i]][:10]
+            if _dt:
+                lead += (f"_Attached material considered — its most frequent terms: {', '.join(_dt)}. This "
+                         f"engine lists them; it does not analyse the material._\n\n")
         _realm_named = _field(prompt, "Realm")
         if _realm_named:
             lead += (f"_Composed for the {_realm_named} realm. This engine RECORDS the realm and does not "

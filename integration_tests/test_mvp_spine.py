@@ -210,6 +210,19 @@ def test_biometrics_status(client):
     assert immune["threat_level"] in ("NOMINAL", "ELEVATED", "HIGH", "CRITICAL")
 
 
+def _measure_objectives(vsb_id):
+    """W627 (FU-541) - give an entity a KPI on every objective (or one measured objective), so a test that
+    lists its product passes §17.5's release gate honestly instead of the gate being skipped."""
+    from agentic_core.api import business_plan as _bp
+    _plan = _bp._load(vsb_id)
+    _objs = [o for o in (_plan.get("objectives") or []) if isinstance(o, dict)]
+    for _o in _objs:
+        _o["kpi"] = str(_o.get("kpi") or "").strip() or "a measured test KPI"
+    if not _objs:
+        _plan["objectives"] = [{"id": "o-test", "title": "Sell the first unit", "kpi": "1 sale"}]
+    _bp._save(_plan)
+
+
 # ── AI endpoints — skipped without API key ───────────────────────────────────
 
 def _assert_real_response(text: str, min_chars: int = 100):
@@ -876,6 +889,7 @@ def test_marketplace_attribution_owner_scoped(client, monkeypatch):
     va = client.post("/api/v1/genesis/establish", json={
         "problem": "w311a venture", "domain": "enterprise", "concept": "A.", "design": "D.",
         "commercialisation": "C.", "ship_output": False}, headers=ha).json()["vsb_id"]
+    _measure_objectives(va)                                  # W627 (FU-541): the KPI gate covers this route
     l1 = client.post("/api/v1/marketplace/listings", json={
         "name": "w311 halal pack", "price_wst": 10,
         "creator_id": "someone_else", "vsb_id": va}, headers=ha).json()
@@ -1429,6 +1443,7 @@ def test_capital_compounds_and_proposals_commercialise(client):
     assert ta > tb                                            # the endowment genuinely compounded
     r = client.post("/api/v1/swarm/cascade", json={
         "mission": "w294 catalogue proposals", "domain": "enterprise"}).json()
+    _measure_objectives(vid)                                 # W627 (FU-541): curation lists for the entity
     cur = client.post(f"/api/v1/swarm/catalogue/proposed/{r['run_id']}/curate", json={
         "item": "Halal Meal Planning Service",
         "description": "transparent community nutrition benefit",
@@ -1465,6 +1480,7 @@ def test_economy_fed_by_real_work(client):
     op0 = _tick()
     assert op0["revenue_basis"] == "no_activity_maintenance_cycle"   # honest zero, not fabricated
     assert op0["revenue_recognised_wst"] == 0.0
+    _measure_objectives(vid)                                 # W627 (FU-541): the KPI gate covers this route
     lst = client.post("/api/v1/marketplace/listings", json={
         "name": "W293 Halal Meal Plan", "price_wst": 40, "vsb_id": vid}).json()
     lid = lst.get("id") or (lst.get("listing") or {}).get("id")
@@ -9455,7 +9471,8 @@ def test_w450_shipped_body_never_wears_scaffold_or_fallback_name(client):
         "the generated entry page is on disk and missing from the manifest's tree, which is the "
         "undercount R2.2 was filed for")
     ship = _json.loads((_REPO_STORE / f"{vid}.ship.json").read_text(encoding="utf-8"))
-    assert ship["stale"] is False and ship["surfaces"]["website"]["file_count"] == 3
+    #  W627 (FU-522) - the website's FILE count (3 pages + the stylesheet), not its page count
+    assert ship["stale"] is False and ship["surfaces"]["website"]["file_count"] == 4
     # …and renaming a SHIPPED body marks it stale with the reason (its every page wears the name),
     # and the delivery swarm the body ships follows the name (refuter F4)
     r2 = client.post(f"/api/v1/vsb/{vid}/name", json={"name": "Somerset Hive Health Ltd"}).json()
@@ -46742,3 +46759,235 @@ def test_w625_p225_partial_surfaces_say_so(client):
         assert "operated by the organism" in _lv625.lifecycle({"lifecycle_state": "juvenile"})["basis"]
     finally:
         _hb625.auto_economy = _was
+
+
+def test_w627_p225_establish_subject_kpi_and_quarantine(client, monkeypatch):
+    """W627 (P2.25): FU-521, FU-530, FU-541, FU-542 - each driven on the path a person reaches."""
+    import json as _j627
+    import re as _re627
+
+    # ── FU-521: the STREAMED establish reports the first cycle it ran, as the blocking one does ─────────
+    r = client.post("/api/v1/genesis/establish/stream", json={
+        "problem": "w627 stream first cycle", "domain": "enterprise", "name": "W627 Table",
+        "concept": "c", "design": "d", "commercialisation": "m", "ship_output": False})
+    assert r.status_code == 200
+    _ev = [_j627.loads(l[6:]) for l in r.text.splitlines() if l.startswith("data: ")]
+    _titles = [str(e.get("title") or e.get("label") or "") for e in _ev]
+    assert any("First Economy Cycle" in t for t in _titles), (
+        "the streamed birth dropped its 'First Economy Cycle' event, so the watched birth record omits a step "
+        "the blocking establish reports", _titles)
+    _bv = [e for e in _ev if "birth_vitals" in _j627.dumps(e)]
+    assert "'str' object has no attribute 'get'" not in r.text, (
+        "the stream read governance only as a dict and overwrote the real first cycle with that error",
+        _bv[-1:] if _bv else r.text[-400:])
+
+    # ── FU-530: a subject labelled in capitals, as a goal, or not at all, is still the subject ─────────
+    from agentic_core.ai.native.engine import _subject, NativeReasoningEngine
+    assert _subject("CHALLENGE: community bakery cooperative") == "community bakery cooperative"
+    assert "bakery" in _subject("Overall goal: launch a bakery co-op in Leeds\nInputs: none")
+    assert _subject("Write a mission statement for a bakery cooperative") == (
+        "Write a mission statement for a bakery cooperative")
+    assert _subject("A user-friendly tool\nLead with the decision and its cost.") == "", (
+        "a multi-line unlabelled prompt (the shape a platform directive arrives in) was given a subject")
+    _out = NativeReasoningEngine().generate("Write a mission statement for a bakery cooperative")
+    assert "carries no labelled subject" not in _out and "bakery cooperative" in _out, _out[:400]
+
+    # ── FU-541: the KPI gate covers EVERY listing an entity releases ───────────────────────────────────
+    _vid = client.post("/api/v1/genesis/establish", json={
+        "problem": "w627 kpi gate", "domain": "enterprise", "concept": "c", "design": "d",
+        "commercialisation": "m", "ship_output": False}).json()["vsb_id"]
+    _r1 = client.post("/api/v1/marketplace/listings", json={
+        "name": "w627 priced probe", "price_wst": 25, "vsb_id": _vid})
+    assert _r1.status_code == 409 and (_r1.json().get("detail") or {}).get("error") == "kpi_gate", (
+        "an entity refused at /listings/from-entity still lists a PRICED product through /listings with no "
+        "KPI check", _r1.status_code, _r1.text[:300])
+    _measure_objectives(_vid)
+    _r2 = client.post("/api/v1/marketplace/listings", json={
+        "name": "w627 priced probe", "price_wst": 25, "vsb_id": _vid})
+    assert _r2.status_code == 200, ("a fully-measured entity is refused", _r2.text[:300])
+    client.delete(f"/api/v1/marketplace/listings/{_r2.json()['id']}")
+    assert client.post("/api/v1/marketplace/listings", json={
+        "name": "w627 personal listing", "price_wst": 5}).status_code == 200, (
+        "a listing that names no entity releases no entity's work and must not be KPI-gated")
+
+    # ── FU-542: a quarantine this heartbeat engaged LIFTS when the threat subsides, and is said ────────
+    import agentic_core.api.change_control as _cc627
+    from agentic_core.organism.heartbeat import heartbeat as _hb
+    from agentic_core.organism.reconfiguration import _load_config, apply_config_change as _apply
+
+    def _q():
+        return bool((_load_config().get("organism") or {}).get("immune_quarantine"))
+
+    _saved = (_hb.last_immune_defence, _hb._last_defence_beat, _hb.beats)
+    _apply("organism", "immune_quarantine", False, reason="w627 guard precondition", updated_by="guard.w627")
+    assert _q() is False
+    try:
+        _hb.last_immune_defence, _hb._last_defence_beat = None, None
+        monkeypatch.setattr(_cc627, "_immune_threat", lambda: "CRITICAL")
+        _e = _hb.respond_to_threat()
+        assert _e["engaged"] is True and _q() is True, ("CRITICAL did not engage the quarantine", _e)
+        _st = client.get("/api/v1/heartbeat/status").json() if client.get(
+            "/api/v1/heartbeat/status").status_code == 200 else {"immune_quarantine": _hb._quarantine_state()}
+        _iq = _st.get("immune_quarantine") or _hb._quarantine_state()
+        assert _iq["engaged"] is True and "HELD" in _iq["basis"], (
+            "the hold is engaged and the heartbeat's status does not say self-healing is held", _iq)
+
+        monkeypatch.setattr(_cc627, "_immune_threat", lambda: "NOMINAL")
+        _early = _hb.respond_to_threat()
+        assert _q() is True and _early.get("stand_down_pending"), (
+            "the hold lifted on the first calm beat, so a threat that dips once flaps the lever", _early)
+        _hb.beats += _hb._STAND_DOWN_BEATS
+        _sd = _hb.respond_to_threat()
+        assert _sd.get("stood_down") is True and _q() is False, (
+            "the threat fell to NOMINAL and the quarantine still holds self-healing - nothing ever reverts it",
+            _sd)
+        assert _hb.last_immune_defence.get("reverted_at"), _hb.last_immune_defence
+        assert _hb._quarantine_state()["engaged"] is False
+    finally:
+        _apply("organism", "immune_quarantine", False, reason="w627 guard cleanup", updated_by="guard.w627")
+        _hb.last_immune_defence, _hb._last_defence_beat, _hb.beats = _saved
+
+
+def test_w627_p225_ceo_cites_and_studio_provenance(client):
+    """W627 (P2.25): FU-526 (the CEO's chip counts what the answer NAMES) and FU-529 (Studio stages carry
+    who served them, on the stream and in the durable record)."""
+    import json as _j
+    from agentic_core.api import business_plan as _bp
+    _scope = client.post("/api/v1/genesis/establish", json={
+        "problem": "w627 ceo cites", "domain": "enterprise", "concept": "c", "design": "d",
+        "commercialisation": "m", "ship_output": False}).json()["vsb_id"]
+    _p = _bp._load(_scope)
+    _p["objectives"] = [{"id": "o1", "title": "Zylophone outreach in Bradford", "kpi": "3 schools"}]
+    _bp._save(_p)
+    r = client.post("/api/v138/ceo/chat", json={"message": "What should we do next?", "scope": _scope})
+    assert r.status_code == 200
+    _done = [_j.loads(l[6:]) for l in r.text.splitlines() if l.startswith("data: ") and '"done": true' in l]
+    assert _done, r.text[-300:]
+    _g = _done[-1].get("grounding") or {}
+    assert _g.get("objectives") == 1 and isinstance(_g.get("cited"), dict), (
+        "the chip still counts only what was HANDED IN, so an answer naming nothing reads as grounded", _g)
+    _ans = "".join(_j.loads(l[6:]).get("content", "") for l in r.text.splitlines() if l.startswith("data: "))
+    assert _g["cited"]["objectives"] == (1 if "zylophone outreach in bradford" in _ans.lower() else 0), (_g, _ans[:300])
+    assert not any(k.startswith("_") for k in _g), ("the server's working texts leaked into the payload", sorted(_g))
+    from agentic_core.api.v138.ceo import _cited
+    _f = {"directives": 1, "objectives": 2, "_directive_texts": ["Hold prices until the spring review"],
+          "_objective_titles": ["Zylophone outreach in Bradford", "Open a second site"]}
+    _c = _cited("## Priorities\n- Zylophone outreach in Bradford first; hold prices until the spring review.", _f)
+    assert _c["cited"] == {"directives": 1, "objectives": 1}, (
+        "the answer names one directive and one of two objectives and the count does not say so", _c)
+    assert "names" in (_g.get("cited_basis") or ""), _g
+    _src = open("apps/workstation-superapp/src/pages/CEOChat.tsx", encoding="utf-8").read()
+    assert "I answer from the record" not in _src and "the answer names" in _src
+    assert "opacity-0 group-hover:opacity-100" not in _src.split("aria-label=\"Helpful\"")[0][-900:], (
+        "the rating buttons still sit invisible under an ancestor with no `group`")
+
+    s = client.post("/api/v1/studio/synthesise", json={
+        "challenge": "CHALLENGE probe: community bakery cooperative", "domain": "enterprise",
+        "realm": "enterprise"})
+    assert s.status_code == 200
+    _ev = [_j.loads(l[6:]) for l in s.text.splitlines() if l.startswith("data: ")]
+    _comp = [e for e in _ev if e.get("stage") == "complete"]
+    assert _comp and all("served_by" in e and "is_external" in e for e in _comp), (
+        "a Studio stage event carries no provenance, though the handler computed it", _comp[:1])
+    _eid = next(e["entity_id"] for e in _ev if e.get("stage") == "done")
+    _ent = client.get(f"/api/v1/studio/vsb/{_eid}").json()
+    _ap = _ent.get("ai_provenance") or {}
+    assert _ap.get("total_stages") == len(_comp) and _ap.get("basis"), (
+        "the saved VSB records no provenance, so floor scaffolds read as a synthesised enterprise", sorted(_ent))
+    if _ap["floor_composed_stages"] == _ap["total_stages"]:
+        assert "floor scaffold" in (_ent.get("status_basis") or ""), _ent.get("status_basis")
+    assert sum("bakery" in str(v).lower() for v in (_ent.get("stages") or {}).values()) >= 1, (
+        "no stage body carries the challenge's subject (FU-530's 'CHALLENGE:' label)")
+
+
+def test_w627_p225_material_chief_gates_overclaims_and_surfaces(client, monkeypatch):
+    """W627 (P2.25): FU-519, FU-522, FU-525, FU-531, FU-532, FU-536, and FU-542's page."""
+    import json as _j
+
+    # ── FU-519: attached material reaches EVERY stage, not only the concept ────────────────────────────
+    _p = ("Community allotment co-operative plan.\n\nSurvey of 212 households in Leeds: rainwater harvesting, "
+          "greywater reuse, hosepipe bans.")
+    _jr = client.post("/api/v1/genesis/journey", json={"problem": _p, "domain": "enterprise"}).json()
+    for _k in ("stage_3_innovate_research", "phase_2_design_development", "stage_6_develop",
+               "stage_7_operational_intelligence", "phase_3_commercialisation"):
+        assert "rainwater" in _j.dumps(_jr.get(_k)).lower(), (
+            f"the attached survey reached no word of {_k}: only the problem's first line travels", _k)
+
+    # ── FU-525: the Chief drafts a VSB's plan from the FOUNDER's description, not Workstation's vision ─
+    _vid = client.post("/api/v1/genesis/establish", json={
+        "problem": "Mobile bicycle repair for Bradford commuters", "domain": "enterprise",
+        "concept": "A van that fixes bikes at the office", "design": "d", "commercialisation": "m",
+        "ship_output": False}).json()["vsb_id"]
+    from agentic_core.api import business_plan as _bp
+    _seen = []
+
+    async def _cap(prompt, **kw):
+        _seen.append(prompt)
+        return {"output": "", "served_by": "native", "is_external": False}
+    monkeypatch.setattr(_bp.gateway, "query_meta", _cap)
+    client.post("/api/v1/business-plan/generate", json={"scope": _vid})
+    assert _seen, "the Chief's generate made no model call to inspect"
+    assert "bicycle repair for Bradford" in _seen[-1] and "AI-mediate working for any user" not in _seen[-1], (
+        "a VSB's plan is still drafted from Workstation's own vision sentence", _seen[-1][:500])
+    _seen.clear()
+    client.post("/api/v1/business-plan/generate", json={"scope": "workstation"})
+    assert _seen and "AI-mediate working for any user" in _seen[-1], "the platform's own plan lost the Owner's vision"
+    monkeypatch.undo()
+
+    # ── FU-531: tree, ensemble and a saved swarm run carry the constitutional checkpoint ───────────────
+    _t = client.post("/api/v1/native-ai/tree", json={"goal": "Launch a bakery cooperative in Leeds",
+                                                      "timeout": 5}).json()
+    assert _t.get("governance_checkpoint"), ("/tree runs with no constitutional gate", sorted(_t)[:20])
+    _e = client.post("/api/v1/native-ai/ensemble", json={"prompt": "Summarise a bakery co-op",
+                                                          "models": ["native"]}).json()
+    assert _e.get("governance_checkpoint"), ("/ensemble runs with no constitutional gate", sorted(_e)[:20])
+    _sw = client.get("/api/v1/resources/swarm").json()
+    _sws = _sw.get("cascades") or []
+    assert _sws, ("no saved cascade to run, so the saved-swarm leg cannot discriminate", sorted(_sw))
+    if _sws:
+        _sid = _sws[0].get("swarm_id") or _sws[0].get("cascade_id") or _sws[0].get("id")
+        _run = client.post("/api/v1/resources/swarm/run", json={"swarm_id": _sid, "timeout": 5}).json()
+        assert _run.get("governance_checkpoint"), ("a saved cascade runs with no constitutional gate", sorted(_run)[:25])
+
+    # ── FU-532: the §6 mandate no longer reads DELIVERED for a template swarm ─────────────────────────
+    _vis = open("docs/WORKSTATION_IDBO_WHOLE_VISION.md", encoding="utf-8").read()
+    assert "CORRECTED W627 (FU-532" in _vis and "SAME four-stage delivery swarm" in _vis
+    _ck = open("apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx", encoding="utf-8").read()
+    _note627 = _ck.split('data-testid="vsb-swarm-template-note"', 1)[1].split("</p>", 1)[0]
+    assert "fixed template every VSB" in _note627 and "not synthesised or optimised" in _note627, (
+        "the cockpit's swarm line does not say it starts from the fixed template")
+    from agentic_core.api.genesis import _attach_delivery_swarm
+    assert (_attach_delivery_swarm.__doc__ or "").lstrip().startswith("Give the VSB its own COPY of the platform's fixed")
+
+    # ── FU-536: floor output in every domain says what was NOT done ───────────────────────────────────
+    _law = client.post("/api/v1/law/research", json={"question": "Can my landlord keep my deposit?",
+                                                      "jurisdiction": "England"}).json()
+    _lp = _law.get("ai_provenance") or {}
+    if str(_lp.get("served_by", "")).startswith("native"):
+        assert _lp.get("floor_note") and "NO research" in _lp["floor_note"], _lp
+        assert "AI-generated" not in (_law.get("disclaimer") or "") and "NO legal research" in _law["disclaimer"], (
+            "the law floor still carries a disclaimer describing AI legal research", _law.get("disclaimer"))
+    _cv = client.post("/api/v1/employment/cv", json={"name": "A", "target_role": "baker",
+                                                     "experience": "5 years"}).json()
+    _cp = _cv.get("ai_provenance") or {}
+    if str(_cp.get("served_by", "")).startswith("native"):
+        assert _cp.get("floor_note"), ("an Employment floor response carries no floor note", sorted(_cv))
+    _dt = open("apps/workstation-superapp/src/components/DomainTool.tsx", encoding="utf-8").read()
+    assert 'data-testid="domain-floor-note"' in _dt and "ai_provenance?.floor_note" in _dt
+
+    # ── FU-522: the three surfaces link each other, and the ship counts the website's FILES ────────────
+    from agentic_core.api import vsb as _vsbm
+    _page = _vsbm._website_page("t", "index", "b")
+    assert "../webapp/index.html" in _page and "../mobile/index.html" in _page, _page[:400]
+    assert "../web/index.html" in _vsbm._SURFACE_LINKS_WEBAPP and "../mobile/" in _vsbm._SURFACE_LINKS_WEBAPP
+    assert "../web/index.html" in _vsbm._SURFACE_LINKS_MOBILE and "../webapp/" in _vsbm._SURFACE_LINKS_MOBILE
+    client.post(f"/api/v1/vsb/{_vid}/name", json={"name": "W627 Bike Doctor"})
+    _site = client.post(f"/api/v1/vsb/{_vid}/website").json()
+    assert _site.get("pages") is not None, ("the website did not generate, so the count leg cannot run", _site)
+    if _site.get("pages") is not None:
+        assert _site.get("file_count") == len(_site["pages"]) + len(_site.get("assets") or []), (
+            "the website manifest's file count is its page count", _site.get("file_count"), _site.get("page_count"))
+
+    # ── FU-542: the hold is on the Heartbeat page ─────────────────────────────────────────────────────
+    _hm = open("apps/workstation-superapp/src/pages/organism/HeartbeatMonitor.tsx", encoding="utf-8").read()
+    assert 'data-testid="heartbeat-immune-quarantine"' in _hm and "s.immune_quarantine.basis" in _hm

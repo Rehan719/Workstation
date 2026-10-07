@@ -11,6 +11,9 @@ interface Status {
   auto_ship: boolean; autonomy_persisted?: boolean; autonomy_restored_at?: string | null;
   auto_metabolic?: boolean; metabolic_every?: number; auto_metabolic_basis?: string;
   circadian_to_atp?: boolean; circadian_to_atp_basis?: string;
+  // W627 (FU-542) — the immune quarantine as it stands in the config, whoever engaged it
+  immune_quarantine?: { engaged: boolean | null; engaged_by?: string | null; revert_with?: string | null; basis: string };
+  last_immune_defence?: { at?: string; threat?: string; reverted_at?: string; stood_down_because?: string } | null;
   evolution_auto_apply?: { enabled: boolean | null; readable: boolean; governed_by: string;
     consumer?: string; how_to_change?: string; why_not_a_toggle?: string; effect_when_off?: string };
   recent: Beat[]; integrations: string[];
@@ -259,6 +262,23 @@ export const HeartbeatMonitor: React.FC = () => {
               </div>
             )}
           </Card>
+
+          {s.immune_quarantine && (
+            <Card className="p-6" data-testid="heartbeat-immune-quarantine">
+              <div className={`text-xs font-bold ${s.immune_quarantine.engaged ? 'text-vital' : 'text-slate-400'}`}>
+                Immune quarantine: {s.immune_quarantine.engaged === null ? 'NOT KNOWN' : s.immune_quarantine.engaged ? 'ENGAGED' : 'off'}
+                {s.immune_quarantine.engaged_by ? ` — engaged by ${s.immune_quarantine.engaged_by}` : ''}
+              </div>
+              <p className="text-[11px] text-slate-500 mt-1">{s.immune_quarantine.basis}</p>
+              {s.immune_quarantine.revert_with && <p className="text-[11px] text-slate-500 mt-1">Revert: {s.immune_quarantine.revert_with}</p>}
+              {s.last_immune_defence?.reverted_at && (
+                <p className="text-[11px] text-slate-500 mt-1">
+                  Last defence ({s.last_immune_defence.threat}, {s.last_immune_defence.at}) stood down {s.last_immune_defence.reverted_at}
+                  {s.last_immune_defence.stood_down_because ? ` — ${s.last_immune_defence.stood_down_because}` : ''}
+                </p>
+              )}
+            </Card>
+          )}
 
           {(s.last_vsb_operated || s.last_vsb_failed || s.last_vsb_not_operated || s.last_vsb_evolved) && (
             <Card className="p-6" data-testid="heartbeat-vsb-visits">

@@ -352,6 +352,26 @@ _GROUNDED_SECTIONS = {"directives": "board directives",
                       "objectives": "business plan for this scope"}
 
 
+def _cited(answer: str, facts: dict) -> dict:
+    """W627 (FU-526) - the facts as they leave the server, with what the answer CITES measured, not assumed.
+
+    The chip read "grounded in 1 directive · 1 objective" on an answer that named neither: the counts were of
+    what was HANDED IN, emitted whether or not the answer used it. A record counts as cited when its text (a
+    directive's first 40 characters, an objective's title) appears in the answer, case-insensitively. That is a
+    presence test, not a judgement of whether the answer used it well."""
+    low = (answer or "").lower()
+    out = {k: v for k, v in facts.items() if not k.startswith("_")}
+    dirs = [t for t in facts.get("_directive_texts") or [] if t.strip()]
+    objs = [t for t in facts.get("_objective_titles") or [] if t.strip()]
+    cd = sum(1 for t in dirs if t.strip()[:40].lower() in low)
+    co = sum(1 for t in objs if t.strip().lower() in low)
+    out["cited"] = {"directives": cd, "objectives": co}
+    out["cited_basis"] = (f"handed {facts.get('directives') or 0} directive(s) and {facts.get('objectives') or 0} "
+                          f"objective(s); the answer names {cd} and {co} of them. A record handed in and not "
+                          f"named was not answered from")
+    return out
+
+
 def _ungrounded_sections(answer: str, facts: dict) -> list:
     """Headings the answer filled with items while the grounding counted none. Empty when clean."""
     out = []
@@ -395,6 +415,10 @@ def _ceo_grounding(prompt: str, scope: str, owner_id: Optional[str]) -> tuple:
         rows = [r for r in _board._load()
                 if r.get("business_plan_scope") == scope or (scope == "workstation" and r.get("kind") == "board_directive")]
         facts["directives"] = len(rows)
+        #  W627 (FU-526) - the texts handed in, kept so the answer can be MEASURED against them (popped
+        #  before the facts leave the server; see _cited)
+        facts["_directive_texts"] = [str(r.get('chief_directive') or r.get('resolution') or r.get('instruction')
+                                         or r.get('topic') or '')[:240] for r in rows[-3:][::-1]]
         if rows:
             parts.append("## Board directives (most recent first)\n" + "\n".join(
                 f"- {str(r.get('chief_directive') or r.get('resolution') or r.get('instruction') or r.get('topic') or '')[:240]}"
@@ -419,6 +443,7 @@ def _ceo_grounding(prompt: str, scope: str, owner_id: Optional[str]) -> tuple:
         bp = _bp._load(scope)
         objs = bp.get("objectives") or []
         facts["objectives"] = len(objs)
+        facts["_objective_titles"] = [str(o.get("title") or "") for o in objs[:5] if isinstance(o, dict)]
         parts.append("## Business plan for this scope\n"
                      f"- executive summary: {str(bp.get('executive_summary') or 'not set')[:300]}\n"
                      f"- mission: {str(bp.get('mission') or 'not set')[:160]}\n"
@@ -533,13 +558,14 @@ async def generate_ceo_stream(prompt: str, scope: str, owner_id: Optional[str]):
                     "content": "", "done": True,
                     "served_by": ev.get("served_by"), "is_external": bool(ev.get("is_external")),
                     "guardrail_passed": ev.get("guardrail_passed"), "profile_applied": ev.get("profile_applied"),
-                    "grounding": facts,
+                    "grounding": _cited("".join(_answer), facts),
                     "grounding_conflicts": _ungrounded_sections("".join(_answer), facts),
                 }) + "\n\n"
     except Exception as exc:
         # honest terminal frame — never a canned answer, never a silent stop
         yield "data: " + json.dumps({"content": "", "done": True, "served_by": None, "is_external": False,
-                                     "error": f"the owned fabric raised: {str(exc)[:160]}", "grounding": facts}) + "\n\n"
+                                     "error": f"the owned fabric raised: {str(exc)[:160]}",
+                                     "grounding": _cited("", facts)}) + "\n\n"
 
 @router.get("/meeting/log")
 async def get_meeting_log():

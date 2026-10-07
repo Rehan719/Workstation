@@ -88,6 +88,7 @@ const withDisclosures = (body: string, data: any): string =>
   + body
   + (data?.screen_note ? `\n\n[${data.screen_note}]` : '')
   + (data?.floor_note ? `\n\n[${data.floor_note}]` : '')
+  + (!data?.floor_note && data?.ai_provenance?.floor_note ? `\n\n[${data.ai_provenance.floor_note}]` : '')
   + (data?.disclaimer ? `\n\n_${data.disclaimer}_` : '');
 
 export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endpoint, fields, resultKey, submitLabel = 'Generate', renderExtra }) => {
@@ -341,6 +342,12 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
             </div>
           </div>
           {renderExtra && renderExtra(result)}
+          {/* W627 (FU-536) — floor output says what was NOT done, where the output is, not only in a badge */}
+          {(effectiveProv as any)?.floor_note && !result.floor_note && (
+            <p data-testid="domain-floor-note" className="text-[10px] text-amber-400 leading-relaxed border border-amber-500/30 rounded-lg p-2">
+              {(effectiveProv as any).floor_note}
+            </p>
+          )}
           <pre className="text-[11px] text-slate-300 whitespace-pre-wrap font-sans leading-relaxed bg-slate-950 border border-slate-900 rounded-xl p-4 max-h-[420px] overflow-y-auto">
             {displayText}
           </pre>

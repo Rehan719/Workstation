@@ -22,6 +22,11 @@ from agentic_core.api._ai_provenance import ai_text
 
 router = APIRouter(prefix="/api/v1/law", tags=["law"])
 
+#  W627 (FU-536) - the floor's disclaimer says what the floor did, which was no legal research at all
+_FLOOR_LAW = ("Composed by the native floor, not by a model: NO legal research or analysis was performed, no law "
+              "was looked up, and the 'Relevant Law' and 'Conclusion' headings hold terms from your question. "
+              "It is not legal advice - consult a qualified solicitor.")
+
 _TEMPLATES = [
     {"id": "nda", "name": "Non-Disclosure Agreement", "category": "Contracts", "jurisdiction": "England & Wales"},
     {"id": "employment_contract", "name": "Employment Contract", "category": "Employment", "jurisdiction": "England & Wales"},
@@ -192,7 +197,8 @@ async def analyse_document(req: AnalyseRequest):
         "analysis": analysis,
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "disclaimer": (
+        #  W627 (FU-536) - "AI-generated" analysis is not what the floor produced
+        "disclaimer": (_FLOOR_LAW if provenance.get("floor_note") else
             "This analysis is AI-generated for informational purposes only. "
             "It does not constitute legal advice. Consult a qualified solicitor for legal matters."
         ),
@@ -240,7 +246,7 @@ async def legal_research(req: ResearchRequest):
         "method": "IRAC",
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "disclaimer": (
+        "disclaimer": (_FLOOR_LAW if provenance.get("floor_note") else
             "This legal research is AI-generated for informational purposes only and does NOT constitute "
             "legal advice. Laws change and outcomes are fact-specific — consult a qualified solicitor."
         ),

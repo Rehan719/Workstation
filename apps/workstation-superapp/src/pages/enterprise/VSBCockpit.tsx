@@ -738,7 +738,7 @@ export const VSBCockpit: React.FC = () => {
                   ))}
                 </div>
                 {swarm.org && (
-                  <p className="text-[10px] text-slate-500 mt-4">Native delivery swarm: <span className="text-aura font-bold">{swarm.name || swarm.cascade_id}</span> · {(swarm.stages || []).length} stages · posture {swarm.posture || 'in-house'}</p>
+                  <p className="text-[10px] text-slate-500 mt-4" data-testid="vsb-swarm-template-note">Native delivery swarm: <span className="text-aura font-bold">{swarm.name || swarm.cascade_id}</span> · {(swarm.stages || []).length} stages · posture {swarm.posture || 'in-house'} · {/* W627 (FU-532) */}started from the same fixed template every VSB receives — not synthesised or optimised for this solution; edit its stages to make it this entity's own</p>
                 )}
                 {/* W508 (P2.8(2)) — EDIT CASCADE. The Cockpit showed the entity's delivery swarm and offered
                     no way to reconfigure it, while PUT /resources/swarm/{id} has done exactly that since

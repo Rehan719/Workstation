@@ -304,13 +304,20 @@ class OrganismHeartbeat:
         #     when circuits are OPEN past their recovery window, the organism ACTIVELY probes them for
         #     recovery (proactive self-healing, not just passive timeout) — §3 "defends and heals itself".
         # W506 (P2.7(2)) — same extraction: a registered arc drives this between beats.
-        if self.respond_to_circuits().get("probed"):
+        _circ = self.respond_to_circuits()
+        if _circ.get("probed"):
             actions.append("self_heal")
+        if _circ.get("quarantine_hold"):
+            #  W627 (FU-542) - healing HELD by the immune quarantine is said on the beat, not discarded
+            actions.append("self_heal_held_by_quarantine")
 
         # §8 (W506, P2.7(3)) — the organism ENGAGES its own immune defence at ≥HIGH. The CCA route that
         # does this was built and had no caller, so a HIGH threat waited for an admin to press a button.
-        if self.respond_to_threat().get("engaged"):
+        _thr = self.respond_to_threat()
+        if _thr.get("engaged"):
             actions.append("immune_defence")
+        if _thr.get("stood_down"):
+            actions.append("immune_stand_down")
 
         # 2d. Genome vital sign — read the organism's genome-population genetics (count, mean fitness,
         #     generational depth) as part of its self-monitoring, so the genome subsystem joins the living
@@ -931,6 +938,7 @@ class OrganismHeartbeat:
             out["read"], out["open_circuits"] = True, sh.get("open_circuits", 0)
             if sh.get("open_circuits", 0) > 0:
                 heal = self_healer.attempt_heal()
+                out["quarantine_hold"] = bool(heal.get("quarantine_hold"))
                 if heal.get("count"):
                     self.last_heal = ",".join(heal["probed"])[:80]
                     out["probed"] = heal["count"]
@@ -993,6 +1001,7 @@ class OrganismHeartbeat:
                 return out
             if order.index(threat) < order.index(self.DEFEND_AT):
                 out["why_not"] = f"{threat} is below {self.DEFEND_AT}"
+                out.update(self._stand_down(threat))
                 return out
             # `or` here was a falsy-ZERO defect: a defence engaged on beat 0 stored 0, and
             # `0 or -10**9` is the sentinel, so the cooldown never applied and a sustained threat
@@ -1021,6 +1030,53 @@ class OrganismHeartbeat:
         except Exception as exc:
             out["error"] = f"{exc.__class__.__name__}: {exc}"
         return out
+
+    _STAND_DOWN_BEATS = 5            # the threat must stay below DEFEND_AT this long before the hold lifts
+
+    def _stand_down(self, threat: str) -> Dict[str, Any]:
+        """W627 (FU-542) - lift a defence THIS heartbeat engaged once the threat has fallen below DEFEND_AT.
+
+        The defence was a one-way switch in practice: respond_to_threat engaged the quarantine, and the only
+        callers of revert_immune_defence were an admin route and a rollback string, so self-healing stayed
+        held indefinitely while every organism surface read NOMINAL. The way back is the same governed revert
+        the admin route uses, recorded on the change; it waits _STAND_DOWN_BEATS beats after the engagement so
+        a threat that dips for one beat does not flap the lever. A hold this heartbeat did not engage (an
+        admin's) is not lifted here - it is reported by status()."""
+        d = self.last_immune_defence
+        if not (isinstance(d, dict) and d.get("cca_id") and d.get("reversible") and not d.get("reverted_at")):
+            return {}
+        since = None if self._last_defence_beat is None else self.beats - self._last_defence_beat
+        if since is not None and since < self._STAND_DOWN_BEATS:
+            return {"stand_down_pending": f"the threat is {threat}; the hold lifts after "
+                                          f"{self._STAND_DOWN_BEATS} beats ({since} so far)"}
+        from agentic_core.api.change_control import revert_immune_defence
+        res = revert_immune_defence(d["cca_id"], reason=f"threat subsided to {threat} (organism.heartbeat)")
+        if res.get("reverted"):
+            d["reverted_at"] = res.get("reverted_at") or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            d["stood_down_because"] = f"the threat fell to {threat}, below {self.DEFEND_AT}"
+            return {"stood_down": True, "revert": res}
+        return {"stand_down_refused": res.get("reason")}
+
+    def _quarantine_state(self) -> Dict[str, Any]:
+        """The immune quarantine lever AS IT IS IN THE CONFIG, whoever set it (W627, FU-542)."""
+        try:
+            from agentic_core.organism.reconfiguration import _load_config
+            on = bool(((_load_config() or {}).get("organism") or {}).get("immune_quarantine"))
+        except Exception as exc:                                   # noqa: BLE001 - an unread lever is SAID
+            return {"engaged": None, "engaged_by": None, "revert_with": None,
+                    "basis": f"the lever could not be read ({exc.__class__.__name__})"}
+        d = self.last_immune_defence if isinstance(self.last_immune_defence, dict) else {}
+        mine = bool(on and d.get("cca_id") and not d.get("reverted_at"))
+        return {"engaged": on,
+                "engaged_by": ("this heartbeat" if mine else "not this heartbeat (an admin, or before a restart)"
+                               if on else None),
+                "revert_with": d.get("revert_with") if mine else (
+                    "POST /api/v1/cca/immune-reconfigure/<cca_id>/revert, with the id of the change that "
+                    "engaged it" if on else None),
+                "basis": ("ENGAGED - self-healing is HELD: open circuits are contained and not probed"
+                          + (f"; it lifts {self._STAND_DOWN_BEATS} beats after the threat falls below "
+                             f"{self.DEFEND_AT}" if mine else "; nothing lifts it automatically")
+                          if on else "not engaged - self-healing probes open circuits")}
 
     def register_reflexes(self) -> Dict[str, Any]:
         """Register this organism's reflex arcs on the nervous system. Idempotent by name.
@@ -1294,6 +1350,7 @@ class OrganismHeartbeat:
             # §8 (W506, P2.7(3)) - the defence the organism engaged ITSELF, with the way back. Before
             # this round nothing called the reconfigurator, so this was structurally always absent.
             "last_immune_defence": self.last_immune_defence,
+            "immune_quarantine": self._quarantine_state(),      # W627 (FU-542) - the hold, as it stands
             "defends_at": self.DEFEND_AT,
             "recent": self._log[-10:],
             "integrations": ["circadian", "central_nervous_system", "immune", "self_healing",

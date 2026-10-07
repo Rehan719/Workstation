@@ -277,6 +277,13 @@ composes bespoke agent-cascade trees as first-class, reconfigurable, biomimetic 
 external providers becoming *optional accelerants*, never *dependencies*. (See Action Plan, new
 workstream **W1 — Native AI Resource Fabric**.)
 
+> **◐ CORRECTED W627 (FU-532, M2 ledger v9 R4.3 — DOC_OVERCLAIM):** the fabric, orchestrator, swarm engine
+> and workflow tree below are real, but two clauses of this mandate are NOT built: every VSB receives the
+> SAME four-stage delivery swarm (ai-ceo → c-suite → centre-of-excellence → build-to-order) from one fixed
+> template — it is not synthesised, modelled or simulated for its solution or its founder — and no code
+> searches, scores or optimises cascade configurations ("optimised cascades"). Read the line below as
+> DELIVERED for the machinery and PARTIAL for the mandate.
+>
 > **✅ DELIVERED (2026-06-24):** this mandate is built and the in-house-integration sweep is complete —
 > the native AI resource fabric, in-platform orchestrator, and bespoke reconfigurable swarm engine are
 > live and in-house-first; the **autonomous workflow-TREE** ("dynamic, adaptive, autonomous workflow /

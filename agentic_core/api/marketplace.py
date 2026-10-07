@@ -374,6 +374,18 @@ async def create_listing(req: CreateListingRequest,
     if user is not None and not isinstance(user, dict):
         user = None
     _require_vsb_attribution(req.vsb_id, user)
+    #  W627 (FU-541) - §17.5's KPI gate applies to EVERY listing an entity releases, not to one route. The
+    #  gate sat only on /listings/from-entity, so the same entity refused there listed a priced product
+    #  here with no KPI check. A listing with no vsb_id is a person's own and releases no entity's work.
+    if req.vsb_id:
+        from agentic_core.api.business_plan import kpi_release_gate as _kpi_gate
+        _gate = _kpi_gate(req.vsb_id)
+        if not _gate["ok"]:
+            raise HTTPException(status_code=409, detail={
+                "error": "kpi_gate", "reason": _gate["reason"], "detail": _gate["detail"],
+                "objectives": _gate["objectives"], "missing_kpi": _gate["missing"],
+                "where": f"set a KPI on each objective at /api/v1/business-plan/{req.vsb_id}",
+            })
     _screen = _screen_listing(req.name, req.description, req.tags)
     lid = uuid.uuid4().hex[:12]
     listing = Listing(

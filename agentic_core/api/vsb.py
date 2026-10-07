@@ -690,11 +690,22 @@ def _esc(s) -> str:
     return (str(s or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;"))
 
 
+#  W627 (FU-522) - the cross-surface links the web app and phone app carry (relative: siblings in the repo)
+_SURFACE_LINKS_WEBAPP = ('<nav class="surfaces" data-surfaces="webapp"><a href="../web/index.html">Website</a> · '
+                         '<a href="../mobile/index.html">Phone app</a></nav>')
+_SURFACE_LINKS_MOBILE = ('<nav class="surfaces" data-surfaces="mobile"><a href="../web/index.html">Website</a> · '
+                         '<a href="../webapp/index.html">Web app</a></nav>')
+
+
 def _website_page(title: str, active: str, body: str) -> str:
     nav = "".join(
         f'<a href="{href}" class="{ "active" if active == key else "" }">{label}</a>'
         for key, href, label in (("index", "index.html", "Home"), ("about", "about.html", "About"),
-                                  ("solution", "solution.html", "Solution")))
+                                  ("solution", "solution.html", "Solution"),
+                                  #  W627 (FU-522) - the three surfaces were unconnected folders labelled
+                                  #  'integrated'; each now links the other two (siblings in the repo)
+                                  ("webapp", "../webapp/index.html", "Web app"),
+                                  ("mobile", "../mobile/index.html", "Phone app")))
     return (f"<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
             f"<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
             f"<title>{_esc(title)}</title><link rel=\"stylesheet\" href=\"styles.css\"></head><body>"
@@ -913,6 +924,7 @@ async def generate_vsb_website(vsb_id: str, user: dict | None = Depends(get_curr
         "pages": [w for w in written if w["path"].endswith(".html")],
         "assets": [w for w in written if not w["path"].endswith(".html")],
         "page_count": sum(1 for w in written if w["path"].endswith(".html")),
+        "file_count": len(written),        # W627 (FU-522) - the ship manifest read page_count as files
         "total_bytes": sum(w["bytes"] for w in written),
         "nav": [{"label": "Home", "href": "index.html"}, {"label": "About", "href": "about.html"},
                 {"label": "Solution", "href": "solution.html"}],
@@ -1074,7 +1086,7 @@ def _build_webapp_files(vsb: dict) -> dict:
         "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
         "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
         f"<title>{_esc(name)} — Web app</title><link rel=\"stylesheet\" href=\"styles.css\"></head>"
-        "<body><div id=\"app\"></div><script src=\"app.js\"></script></body></html>")
+        "<body><div id=\"app\"></div>" + _SURFACE_LINKS_WEBAPP + "<script src=\"app.js\"></script></body></html>")
     f["webapp/app.js"] = _WEBAPP_APP_JS
     f["webapp/data.json"] = json.dumps(appdata, indent=2)
     f["webapp/styles.css"] = (
@@ -1197,7 +1209,7 @@ def _build_mobile_files(vsb: dict) -> dict:
         "<meta name=\"theme-color\" content=\"#4f46e5\"><meta name=\"mobile-web-app-capable\" content=\"yes\">"
         f"<link rel=\"manifest\" href=\"manifest.webmanifest\"><link rel=\"icon\" href=\"icon.svg\">"
         f"<link rel=\"stylesheet\" href=\"styles.css\"><title>{_esc(name)}</title></head>"
-        "<body><div id=\"app\"></div><script src=\"app.js\"></script>"
+        "<body><div id=\"app\"></div>" + _SURFACE_LINKS_MOBILE + "<script src=\"app.js\"></script>"
         "<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){});}</script>"
         "</body></html>")
     f["mobile/app.js"] = _WEBAPP_APP_JS

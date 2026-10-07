@@ -275,6 +275,7 @@ async def synthesise(req: SynthesiseRequest,
     synthesis_id = uuid.uuid4().hex[:12]
     start = time.time()
     results: dict[str, str] = {}
+    provenance: dict[str, dict] = {}     # W627 (FU-529) - who served each stage, kept for the durable record
 
     async def stream() -> AsyncIterator[str]:
         # Announce start
@@ -302,8 +303,10 @@ async def synthesise(req: SynthesiseRequest,
             results[stage_key] = stage_content
             _stage_served = _st.get("served_by")
             _stage_ext = bool(_st.get("is_external"))
+            provenance[stage_key] = {"served_by": _stage_served, "is_external": _stage_ext}
 
-            yield f'data: {json.dumps({"stage": "complete", "stage_key": stage_key, "stage_label": stage_label, "content": stage_content, "stage_num": i + 1})}\n\n'
+            #  W627 (FU-529) - the provenance computed above now RIDES the event, as the comment says it must
+            yield f'data: {json.dumps({"stage": "complete", "stage_key": stage_key, "stage_label": stage_label, "content": stage_content, "stage_num": i + 1, "served_by": _stage_served, "is_external": _stage_ext})}\n\n'
 
         # Spawn the VSB entity
         entity_id = f"vsb-{synthesis_id[:8]}"
@@ -323,6 +326,21 @@ async def synthesise(req: SynthesiseRequest,
             "stages": results,
             "duration_seconds": round(time.time() - start, 1),
         }
+        #  W627 (FU-529) - the durable record says who wrote its stages. Saved as an 'active' VSB with no
+        #  provenance, nine floor scaffolds read as a synthesised enterprise.
+        _served = [p.get("served_by") for p in provenance.values()]
+        _floor = sum(1 for s in _served if s in ("native", None))
+        entity["ai_provenance"] = {
+            "stages": provenance,
+            "floor_composed_stages": _floor, "total_stages": len(_served),
+            "basis": (f"{_floor} of {len(_served)} stage(s) were composed by the native floor - structured "
+                      f"scaffolds from the challenge's labelled fields, not model analysis; content pending "
+                      f"the owned model" if _floor else
+                      f"every stage was served by a model ({', '.join(sorted({str(s) for s in _served}))})"),
+        }
+        if _served and _floor == len(_served):
+            entity["status_basis"] = ("active as a record; every stage is a floor scaffold, so nothing here "
+                                      "was synthesised by a model yet")
         # §3.3 invariant — the cascade-born VSB also carries Board + Chief + living economy + plan.
         try:
             from agentic_core.api.vsb import enrich_vsb_entity

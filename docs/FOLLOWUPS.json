@@ -9799,11 +9799,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.25",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W627",
       "note": "",
       "slot_source": "ledger v9 R2.2 is tier 2: P2.25 carries the v9 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "everything after the problem's first line travels to every Genesis stage as a DOCUMENT block, and the floor names the attached material's own terms in each stage under a line saying it lists and does not analyse them; image/media upload stays out of scope; blinds red"
     },
     {
       "id": "FU-520",
@@ -9836,11 +9839,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.25",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W627",
       "note": "",
       "slot_source": "ledger v9 R2.4 is tier 2: P2.25 carries the v9 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the streamed establish reads governance as a verdict string or a dict, so its First Economy Cycle event is emitted and the real cycle result is kept; a later reporting error no longer overwrites it; blind red"
     },
     {
       "id": "FU-522",
@@ -9852,11 +9858,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.25",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W627",
       "note": "",
       "slot_source": "ledger v9 R2.5 is tier 2: P2.25 carries the v9 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the website nav links the web app and phone app, both of those link the other two surfaces, and the website manifest counts files as well as pages so the ship manifest no longer reports 3 for 5; blinds red"
     },
     {
       "id": "FU-523",
@@ -9912,11 +9921,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.25",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W627",
       "note": "",
       "slot_source": "ledger v9 R3.2 is tier 2: P2.25 carries the v9 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the Chief drafts a VSB's plan from the founder's own description, concept and plan fields (or says none is recorded); the platform's plan keeps the Owner's vision; blind red"
     },
     {
       "id": "FU-526",
@@ -9930,11 +9942,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.25",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W627",
       "note": "",
       "slot_source": "ledger v9 R3.3 is tier 2: P2.25 carries the v9 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the CEO's terminal frame carries cited counts measured against the answer, and the chip says handed N and the answer names M; the greeting no longer says it answers from the record; the rating buttons are visible and say they are not sent; blinds red after one vacuous drive"
     },
     {
       "id": "FU-527",
@@ -9991,11 +10006,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.25",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W627",
       "note": "",
       "slot_source": "ledger v9 R4.0 is tier 2: P2.25 carries the v9 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Studio stage events carry served_by and is_external, and the saved VSB records ai_provenance per stage with a floor basis and a status_basis when every stage is a floor scaffold; blinds red"
     },
     {
       "id": "FU-530",
@@ -10011,11 +10029,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.25",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W627",
       "note": "",
       "slot_source": "ledger v9 R4.1 is tier 2: P2.25 carries the v9 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the floor reads a subject labelled in capitals (CHALLENGE:), as a goal (Overall goal:, Your task:) or a one-line unlabelled request; multi-line platform prompts still get none; blinds red"
     },
     {
       "id": "FU-531",
@@ -10031,11 +10052,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.25",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W627",
       "note": "",
       "slot_source": "ledger v9 R4.2 is tier 2: P2.25 carries the v9 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "/native-ai/tree, /native-ai/ensemble, /resources/swarm/run and composition runs pass the same constitutional pre-gate and carry the same governance_checkpoint as /complete and /swarm; blinds red"
     },
     {
       "id": "FU-532",
@@ -10050,11 +10074,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.25",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W627",
       "note": "",
       "slot_source": "ledger v9 R4.3 is tier 2: P2.25 carries the v9 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the vision's section 6 DELIVERED block carries a W627 correction (one fixed four-stage template, no optimisation), the swarm docstring no longer says bespoke, and the cockpit says the swarm starts from the fixed template; blind red"
     },
     {
       "id": "FU-533",
@@ -10135,11 +10162,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.25",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W627",
       "note": "",
       "slot_source": "ledger v9 R5.3 is tier 2: P2.25 carries the v9 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "every domain response's ai_provenance carries floor_note on the floor (NO research, analysis, guidance or marking performed), the law floor disclaimer says no legal research was done, and DomainTool shows the note beside the output; blinds red"
     },
     {
       "id": "FU-537",
@@ -10235,11 +10265,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.25",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W627",
       "note": "",
       "slot_source": "ledger v9 R6.2 is tier 2: P2.25 carries the v9 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the KPI release gate now covers POST /marketplace/listings for any listing naming a vsb_id, with the same named-missing refusal; personal listings stay ungated; blind red"
     },
     {
       "id": "FU-542",
@@ -10253,11 +10286,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.25",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W627",
       "note": "",
       "slot_source": "ledger v9 R6.3 is tier 2: P2.25 carries the v9 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "a quarantine the heartbeat engaged is reverted through the governed revert once the threat stays below HIGH for 5 beats; healing held by it is on the beat (self_heal_held_by_quarantine) and heartbeat status carries immune_quarantine with its basis; blinds red"
     },
     {
       "id": "FU-543",

@@ -273,6 +273,13 @@ def _bar_attestations(candidates: List[Dict[str, Any]], stage_5: Dict[str, Any],
     return ev, wh
 
 
+def _problem_detail(problem: str, limit: int = 3000) -> str:
+    """W627 (FU-519) - the part of a problem after its first line, blank lines folded, for a DOCUMENT block."""
+    lines = (problem or "").strip().splitlines()
+    rest = [l.rstrip() for l in lines[1:] if l.strip()]
+    return "\n".join(rest)[:limit]
+
+
 @router.post("/journey")
 async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_current_user)):
     """Run the full intelligently-autonomous Concept → Commercialisation cascade."""
@@ -296,7 +303,13 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
     # Stated as a labelled field so the owned floor reads it as one (engine.py:81).
     _realm_prefix = (f"{realm_directive(req.realm)}\n"
                      f"Realm: {REALM_LABELS.get(normalise_realm(req.realm), 'Enterprise')}\n"
-                     f"Problem: {(req.problem or '').strip()[:400]}\n\n")
+                     f"Problem: {(req.problem or '').strip()[:400]}\n"
+                     #  W627 (FU-519) - everything after the problem's first line (an attached survey, the
+                     #  Offering-1 bridge) rode only inside a 400-character cut and the floor reads one line
+                     #  of a field, so no stage carried any of it. It travels as a DOCUMENT block, blank
+                     #  lines folded so the block reads as one.
+                     + (f"DOCUMENT:\n{_detail}\n" if (_detail := _problem_detail(req.problem)) else "")
+                     + "\n")
 
     #  P3.1 — the journey's own id. The §4.6 artefact is stored under it, so a reader can fetch the
     #  bill of materials this journey produced; an artefact nobody can look up does not satisfy
@@ -902,7 +915,9 @@ class EstablishRequest(BaseModel):
 
 def _attach_delivery_swarm(entity: dict, vsb_id: str, name: str, problem: str,
                            domain: str, concept: str = "") -> None:
-    """Give the VSB its OWN bespoke, reconfigurable native swarm cascade — its in-house delivery org
+    """Give the VSB its own COPY of the platform's fixed four-stage delivery swarm — reconfigurable, but NOT
+    synthesised for its solution (W627, FU-532: this said "OWN bespoke"; every VSB gets the same stages and
+    instructions, and nothing optimises them) — its in-house delivery org
     (Chief → AI CEO → C-Suite → CoE → BTO) as a runnable, owned Resource-Fabric resource. Shared by
     the blocking /establish and the SSE /establish/stream. Best-effort (never blocks establishment)."""
     try:
@@ -1630,8 +1645,11 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
             # producer now names one of four outcomes and this reads it; an unrecognised value is
             # reported as unrecognised rather than defaulting to the good news.
             _oc = _fc.get("outcome")
-            _why = str(_fc.get("held") or (_fc.get("governance") or {}).get("status")
-                       or _fc.get("error") or "not recorded")
+            # W627 (FU-521) - governance arrives as a plain verdict string ('passed') as well as a dict;
+            # reading it only as a dict raised here and the except below overwrote the REAL cycle result
+            _gov = _fc.get("governance")
+            _gov_status = _gov.get("status") if isinstance(_gov, dict) else _gov
+            _why = str(_fc.get("held") or _gov_status or _fc.get("error") or "not recorded")
             yield _event("vitals", "First Economy Cycle",
                          ("cycle ran" if _oc == "ran" else
                           f"held: {_why}" if _oc == "held" else
@@ -1640,7 +1658,11 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
                           f"the first cycle failed: {_why}" if _oc == "raised" else
                           f"the first cycle's outcome was not reported ({_why})"), _fc)
         except Exception as exc:
-            birth_vitals["first_cycle"] = {"error": str(exc)[:160]}
+            #  a failure AFTER the cycle returned is a failure to REPORT it, not of the cycle: keep the result
+            if isinstance(birth_vitals.get("first_cycle"), dict) and "outcome" in birth_vitals["first_cycle"]:
+                birth_vitals["first_cycle"]["report_error"] = str(exc)[:160]
+            else:
+                birth_vitals["first_cycle"] = {"error": str(exc)[:160]}
 
         # 7 — §4 (W302): the newborn's WHOLE §13 living body ships at birth (watchable, honest)
         initial_ship = None

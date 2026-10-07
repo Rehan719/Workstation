@@ -573,6 +573,36 @@ async def orchestrate_objective(oid: str, req: OrchestrateRequest):
                      "any_external": tree.get("any_external")}}
 
 
+def _chief_grounding(scope: str, plan: Dict[str, Any]) -> str:
+    """W627 (FU-525) - what the Chief drafts FROM. For a VSB that is the founder's own description, not
+    Workstation's vision: every scope was handed the same fixed Workstation sentence, so a VSB's opening would
+    have been drafted about the platform. The platform's own plan keeps the Owner's vision."""
+    if scope == "workstation":
+        return ("Owner vision: AI-mediate working for any user — Concept→Design→Delivery — generating living "
+                "VSB IDBO entities; one self-running living organism.\n")
+    ent: Dict[str, Any] = {}
+    try:
+        from agentic_core.api.vsb import _load_vsb
+        ent = _load_vsb(scope) or {}
+    except Exception:                                        # noqa: BLE001 - an unread entity is SAID below
+        ent = {}
+    lines = []
+    for label, val in (("Founder's description", ent.get("problem") or ent.get("challenge")),
+                       ("Founder's concept", ent.get("concept")), ("Design", ent.get("design")),
+                       ("Commercialisation", ent.get("commercialisation"))):
+        v = str(val or "").strip()
+        if v:
+            lines.append(f"{label}: {v[:600]}")
+    for key, label in (("executive_summary", "Current executive summary"), ("concept", "Current concept")):
+        v = str(plan.get(key) or "").strip()
+        if v and _PENDING_MARK not in v:
+            lines.append(f"{label}: {v[:400]}")
+    if not lines:
+        lines.append("Founder's description: NOT RECORDED for this entity - draft nothing that claims to "
+                     "know what it is")
+    return "\n".join(lines) + "\n"
+
+
 class GenerateRequest(BaseModel):
     scope: str = "workstation"
     context: str = ""
@@ -594,8 +624,7 @@ async def generate_plan(req: GenerateRequest):
         "You are the Chief of the Board (the Owner's standing charter — you hold no trained model of "
         "them; represent only what the Owner has actually stated) drafting/refreshing the LIVING "
         f"business plan for scope '{req.scope}'.\n\n"
-        f"Owner vision: AI-mediate working for any user — Concept→Design→Delivery — generating living VSB IDBO "
-        f"entities; one self-running living organism.\n"
+        + _chief_grounding(req.scope, plan)
         + (f"Current vision realisation: {int(realisation*100)}%\n" if realisation is not None else "")
         + (f"Existing strategy: {plan.get('strategy','')[:300]}\n" if plan.get("strategy") else "")
         + (f"Owner context: {req.context}\n" if req.context else "")

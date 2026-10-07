@@ -26,6 +26,15 @@ _REQUEST_LANGUAGE: "contextvars.ContextVar[str]" = contextvars.ContextVar("ws_re
 #  returned None ("an unidentified caller gets NO profile") and the saved profile reached none of the 35 tools,
 #  while Settings says it shapes what the platform generates. The middleware resolves the bearer token it
 #  already sees into this; a token that does not resolve leaves it empty, which is the old behaviour.
+FLOOR_NOTE = ("Composed by the native floor, not by a model: the headings are a structure filled with terms "
+              "taken from your input. NO research, legal or clinical analysis, guidance, marking, market data or "
+              "safeguarding assessment was performed - read it as an outline to work from, not as an answer.")
+
+
+def is_floor_served(served_by: Any) -> bool:
+    return str(served_by or "native").startswith("native")
+
+
 _REQUEST_USER: "contextvars.ContextVar[str]" = contextvars.ContextVar("ws_request_user", default="")
 
 
@@ -103,6 +112,12 @@ async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
                                   "language_requested": res.get("language_requested"),
                                   "language_delivered": res.get("language_delivered"),
                                   "language_basis": res.get("language_basis")}
+    #  W627 (FU-536) - every domain tool's floor output said so only through a badge, while its headings
+    #  ('Relevant Law', 'Who to Notify', 'Target Range') and a static "AI-generated" disclaimer described
+    #  research, guidance and marking that did not happen. The note rides the provenance EVERY domain router
+    #  returns, so no router can omit it; Religion's tools already withhold sections and say so.
+    if is_floor_served(served_by):
+        provenance["floor_note"] = FLOOR_NOTE
     # §10×§11 (W308) — Offering-1 GATED: every domain-tool / refine response passes the SAME living
     # QMS + compliance gate as the cascade and deliverables (assure_delivery). FLAG, never block:
     # the user always gets their output; the quality/compliance posture rides on the provenance the
