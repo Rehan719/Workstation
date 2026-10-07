@@ -788,10 +788,18 @@ async def tajweed_lesson(req: TajweedLessonRequest):
         "served_by": served_by,
         "is_external": bool(meta.get("is_external")),
         "floor_served": floor_served,
+        #  W613 (FU-477, M1 v8 R1.2) — THE NOTE DESCRIBES WHAT THE LEARNER RECEIVED. It was emitted whenever the
+        #  floor served the composition, including when the scholar gate WITHHELD it, so a learner was told to
+        #  treat "this outline" as a checklist above an empty box. A withheld lesson is not an outline the
+        #  learner has: the note now speaks only of a published body, and a withheld one says why it is empty.
         **({"floor_note": ("the deterministic native floor served this — it is a structured "
                            "OUTLINE composed from the request, not scholarly content; treat it as "
                            "a study checklist and verify every rule with a qualified teacher")}
-           if floor_served else {}),
+           if floor_served and _published is not None else {}),
+        "withheld_note": (None if _published is not None else
+                          "Nothing is shown because this lesson has not been approved by a scholar: "
+                          + str(_review_why or "it is awaiting review")
+                          + " The text was composed and queued for review; it is not shown until approved."),
         "ai_assisted": True,
         #  R11 (Owner ruling 2026-10-05b) — THE RIWAYAH IS DECLARED, so a rule set is not presented as
         #  universal. Tajwid rules differ between transmissions, and stating one set without saying which

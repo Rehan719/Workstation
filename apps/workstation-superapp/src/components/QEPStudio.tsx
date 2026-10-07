@@ -129,7 +129,9 @@ export const QEPStudio: React.FC = () => {
 
   // ── lesson plans (provenance disclosed) ──
   const [rule, setRule] = useState('idgham');
-  const [lesson, setLesson] = useState<{ lesson_plan: string; served_by: string; floor_served: boolean; floor_note?: string; disclaimer: string } | null>(null);
+  // W613 (FU-477) — review_state / review_note / withheld_note are TYPED and RENDERED: a withheld lesson
+  // showed the "outline" chip and an empty box, and never the reason nothing appeared.
+  const [lesson, setLesson] = useState<{ lesson_plan: string | null; served_by: string; floor_served: boolean; floor_note?: string; disclaimer: string; review_state?: string; review_note?: string; withheld_note?: string | null } | null>(null);
   const runLesson = async () => {
     setBusy('lesson'); setErr(''); setLesson(null);
     try { setLesson(await apiJson('/api/v1/qep/tajweed/lesson', { method: 'POST', body: { rule_name: rule } })); }
@@ -381,10 +383,14 @@ export const QEPStudio: React.FC = () => {
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
               <div className="flex gap-1.5 mb-1.5">
                 <Chip tone={lesson.floor_served ? 'warn' : 'ok'}>served by {lesson.served_by}</Chip>
-                {lesson.floor_served && <Chip tone="warn">outline, not a lesson</Chip>}
+                {lesson.lesson_plan == null
+                  ? <Chip tone="warn">withheld — not scholar-reviewed</Chip>
+                  : lesson.floor_served && <Chip tone="warn">outline, not a lesson</Chip>}
               </div>
               {lesson.floor_note && <p className="text-[9px] text-amber-200/70 italic mb-1.5">{lesson.floor_note}</p>}
-              <p className="text-[11px] text-slate-300 whitespace-pre-wrap max-h-40 overflow-y-auto">{lesson.lesson_plan}</p>
+              {lesson.lesson_plan == null
+                ? <p className="text-[11px] text-amber-200/80" data-testid="qep-lesson-withheld">{lesson.withheld_note || lesson.review_note || 'Withheld: this lesson has not been approved by a scholar.'}</p>
+                : <p className="text-[11px] text-slate-300 whitespace-pre-wrap max-h-40 overflow-y-auto">{lesson.lesson_plan}</p>}
               <p className="text-[8px] text-slate-600 italic mt-1.5">{lesson.disclaimer}</p>
             </div>
           )}

@@ -32,7 +32,7 @@ interface Status {
 }
 interface ChiefResult {
   directive_id: string; owner: string; instruction: string;
-  chief_directive: string; ceo_action_plan: string; delegation_chain: string[]; created_at: string;
+  chief_directive: string; ceo_action_plan: string; delegation_chain: string[]; delegation_chain_basis?: string; created_at: string;
   // W270/W284 — the apex runs on the §6 fabric: provenance + gaas verdict + the plan objectives landed
   ai_provenance?: { served_by?: Record<string, number>; any_external?: boolean };
   governance?: { status?: string; screened?: string; covers_directive_content?: boolean; basis?: string };
@@ -309,7 +309,7 @@ export const BoardOfDirectors: React.FC = () => {
       {result && (
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-[9px] font-mono text-slate-500">
-            <ShieldCheck size={12} className="text-slate-500" /> {result.directive_id} · chain: {result.delegation_chain.join(' → ')}
+            <ShieldCheck size={12} className="text-slate-500" /> {result.directive_id} · <span title={result.delegation_chain_basis}>ran: {result.delegation_chain.join(' → ')}</span>
           </div>
           {/* W270/W284 — apex honesty chips: which OWNED resource served, the gaas verdict, what landed on the plan */}
           <div className="flex flex-wrap items-center gap-1.5">

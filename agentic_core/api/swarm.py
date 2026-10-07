@@ -999,8 +999,12 @@ async def cascade_orchestration(req: CascadeRequest,
         # prohibited pattern. The delivery is NOT discarded - a transformation programme discussing a database
         # migration must not be deleted by its own audit trail - it is named, and the interceptor chains it.
         _post_ok = _gov.status != "partial"
-        governance = intent_gate_result(_gov.status, _gov.checkpoint_id, _gov.node, arms_length=True)
-        governance.update({
+        # W613 (FU-493, M1 v8 R3.7) — THE CONTENT FIELDS GO IN THROUGH THE HELPER, NOT AFTER IT. W593 made
+        # intent_gate_result derive its scope sentence from the FINAL `content_screened`, and this emitter then
+        # set `content_screened: True` with `.update()` AFTER the call, so the tooltip still read "The
+        # delivery's content was NOT screened" beside nine screened tiers. Passing them as `extra` lets the
+        # helper derive the sentence from what was actually screened.
+        governance = intent_gate_result(_gov.status, _gov.checkpoint_id, _gov.node, arms_length=True, **{
             "screened": "intent + domain + the delivered content of every tier",
             "content_screened": True,
             "content_chars": len(_delivered),

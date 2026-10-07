@@ -249,6 +249,8 @@ export const GenesisJourney: React.FC = () => {
   const [pack, setPack] = useState<BoardPack | null>(null);
   const [packBusy, setPackBusy] = useState(false);
   const [gates, setGates] = useState<ReviewGates | null>(null);
+  // W614 (FU-482) — the entity's status is derived again by every gate decision; show what it now reads
+  const [entityStatus, setEntityStatus] = useState<{ status?: string; basis?: string } | null>(null);
   const [gatesOpen, setGatesOpen] = useState(false);
 
   const run = async () => {
@@ -483,6 +485,8 @@ export const GenesisJourney: React.FC = () => {
       });
       // Ledger cluster 1 — the Owner's gate decision must never silently no-op on a 4xx/5xx
       if (!res.ok) { setError(`Gate ${decision} failed (HTTP ${res.status}).`); return; }
+      const dj = await res.json();
+      setEntityStatus({ status: dj.entity_status, basis: dj.entity_status_basis });
       setGates(await fetch(`/api/v1/vsb/${vsb.vsb_id}/review-gates`).then(r => r.json()));
     } catch { setError('Action failed — backend unreachable; nothing changed.'); }   // W344
   };
@@ -1317,6 +1321,11 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                         {gatesOpen && gates && (
                           <div className="mt-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
                             <p className="text-[9px] text-slate-500">{gates.mode} — tap a stage to gate/ungate; each change is DCS-audited.</p>
+                            {entityStatus?.status && (
+                              <p className="text-[9px] text-slate-400" data-testid="gate-entity-status" title={entityStatus.basis}>
+                                entity status now: {entityStatus.status}{entityStatus.basis ? ` — ${entityStatus.basis}` : ''}
+                              </p>
+                            )}
                             {/* W452 (P1.4) — the copy says what a gate DOES: it used to say only that decisions were recorded */}
                             <p className="text-[9px] text-amber-300/90">A gated stage that is <b>pending</b> or <b>rejected</b> blocks this enterprise's lifecycle movers — ship, evolve, cascades, plan orchestration and the organism's autonomous re-ship/evolve — with a 409 that names the gate, until a human approves it (or ungates the stage).</p>
                             <div className="flex flex-wrap gap-1.5">

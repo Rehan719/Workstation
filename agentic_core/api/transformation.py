@@ -21,7 +21,7 @@ from __future__ import annotations
 import time
 from pathlib import Path
 from agentic_core.config import data_path
-from typing import Any, Callable, Dict, List, Set
+from typing import Any, Callable, Dict, List, Optional, Set
 
 from fastapi import APIRouter
 
@@ -31,15 +31,16 @@ router = APIRouter(prefix="/api/v1/transformation", tags=["vision-transformation
 
 
 # ── deep introspection of the live organism ───────────────────────────────────
-def _routes() -> Set[str]:
-    try:
-        from agentic_core.app_mvp import app
-        return {getattr(r, "path", "") for r in app.routes}
-    except Exception:
-        return set()
+def _routes() -> Optional[Set[str]]:
+    #  W613 (FU-504, M1 v8 R6.0) — the shared census: OpenAPI paths plus flat routes, and None (not an empty
+    #  set) when it cannot be read, so an unreadable census is never reported as "not mounted".
+    from agentic_core.route_inventory import mounted_paths
+    return mounted_paths()[0]
 
 
-def _has(routes: Set[str], prefix: str) -> bool:
+def _has(routes: Optional[Set[str]], prefix: str) -> Optional[bool]:
+    if routes is None:
+        return None
     return any(p.startswith(prefix) for p in routes)
 
 
@@ -143,19 +144,28 @@ _LONG_TERM = [
 
 
 def _realise() -> Dict[str, Any]:
-    routes, data = _routes(), _evidence_counts()
+    from agentic_core.route_inventory import mounted_paths
+    routes, census = mounted_paths()
+    data = _evidence_counts()
     pillars = []
     total = 0.0
     for p in _PILLARS:
-        checks = [{"label": lbl, "met": bool(fn(routes, data))} for lbl, fn in p["evidence"]]
-        met = sum(1 for c in checks if c["met"])
-        frac = round(met / len(checks), 3) if checks else 0.0
+        checks = []
+        for lbl, fn in p["evidence"]:
+            _m = fn(routes, data)
+            checks.append({"label": lbl, "met": None if _m is None else bool(_m)})
+        _assessed = [c for c in checks if c["met"] is not None]
+        met = sum(1 for c in _assessed if c["met"])
+        #  a check whose census could not be read is NOT ASSESSED, and is left out of the fraction rather
+        #  than counted as unmet
+        frac = round(met / len(_assessed), 3) if _assessed else 0.0
         status = "realised" if frac >= 0.999 else ("partial" if frac > 0 else "seed")
         total += frac
         pillars.append({"id": p["id"], "pillar": p["pillar"], "realisation": frac,
                         "status": status, "evidence": checks})
     overall = round(total / len(_PILLARS), 3) if _PILLARS else 0.0
     return {"overall_realisation": overall, "pillars": pillars, "evidence_counts": data,
+            "route_census": census,
             # W475 (ledger v4 R6.0) — this figure is API SURFACE COVERAGE (routers mounted, stores non-empty), not
             # delivery; the delivery measure is the plan's item states at /api/v1/plan/state.
             "measure": "API surface coverage — pillar routers mounted and stores non-empty; not delivery "

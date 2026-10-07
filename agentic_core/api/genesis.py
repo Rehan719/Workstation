@@ -492,6 +492,18 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
     _top = [c["id"] for c in _eligible if c["score"] == winner["score"]]
     _tied = len(_top) > 1
 
+    # W613 (FU-475, M1 v8 R1.0) — WHAT WAS MEASURED IS COMPUTED FROM THIS RUN. `criteria_measured` was the
+    # constant _CAND_MEASURED and `honesty` a fixed sentence saying compliance and safety "are measured here",
+    # so a run whose screens assessed nothing printed that claim beside weights {compliance: None, safety: None}
+    # and a method saying both "contributed NOTHING". The screens RAN in that case; they measured nothing, and
+    # a criterion is measured only when it contributed a figure.
+    _screen_scored = any(c["screen"].get("compliance") is not None for c in candidates)
+    _measured_now = dict(_CAND_MEASURED) if _screen_scored else {}
+    _unmeasured_now = dict(_CAND_UNMEASURED)
+    if not _screen_scored:
+        _unmeasured_now.update({k: ("the §11 screen ran (" + v + ") and could assess nothing - a keyword "
+                                    "screen can refuse a subject but cannot clear one, so it contributed no "
+                                    "figure") for k, v in _CAND_MEASURED.items()})
     stage_5 = {
         # W483 (refutation) — the method now declares the weights that were APPLIED, not the ones
         # the design hoped for. Declaring "0.35 compliance · 0.25 safety" while every candidate
@@ -504,8 +516,10 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
                            "framework could assess these candidates (they are keyword screens, and a "
                            "keyword screen can refuse but not clear). Form saturates, so a tie here "
                            "is expected and is disclosed below rather than resolved silently")
-                   + ". A candidate the screen FAILS is vetoed and cannot be selected. Real measured "
-                     "proxies, never fabricated."),
+                   + ". A candidate the screen FAILS is vetoed and cannot be selected. "
+                   + ("Real measured proxies, never fabricated." if _screen_scored else
+                      "The only figure in the ranking is FORM, a shape proxy - nothing fabricated, and "
+                      "nothing about solution quality measured.")),
         "weights_applied": ({"form": 0.40, "compliance": 0.35, "safety": 0.25}
                             if any(c["screen"].get("compliance") is not None for c in candidates)
                             else {"form": 1.0, "compliance": None, "safety": None}),
@@ -542,12 +556,17 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
                             "the framing that was meant to differentiate them ('pragmatic' / "
                             "'innovative' / 'lean') is prose it cannot act on. Show one answer, not "
                             "three ranked cards."),
-        "criteria_measured": _CAND_MEASURED,
-        "criteria_not_measured": _CAND_UNMEASURED,
-        "honesty": ("Two of the five criteria §4.5 names are measured here (compliance, safety); "
-                    "three are NOT measured at selection time and are named in "
-                    "criteria_not_measured. FORM is a shape proxy, not solution quality — it "
-                    "saturates at 1.000 for any candidate past ~2800 characters."),
+        "criteria_measured": _measured_now,
+        "criteria_not_measured": _unmeasured_now,
+        "honesty": (("Two of the five criteria §4.5 names are measured here (compliance, safety); "
+                     "three are NOT measured at selection time and are named in criteria_not_measured. ")
+                    if _screen_scored else
+                    ("NONE of the five criteria §4.5 names was measured in this run: the §11 screen ran on "
+                     "every candidate and could assess nothing, so compliance and safety contributed no "
+                     "figure, and the other three are not measurable at selection time. All five are named "
+                     "in criteria_not_measured. "))
+                   + ("FORM is a shape proxy, not solution quality — it saturates at 1.000 for any "
+                      "candidate past ~2800 characters."),
         "selection_basis": (
             (f"TIE at {winner['score']} across {len(_top)} candidates ({', '.join(_top)}) — resolved "
              f"by list order, NOT by evidence. ") if _tied else "") + (

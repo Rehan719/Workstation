@@ -201,10 +201,12 @@ const MemorizationSuite = () => (
 const QuranCompetitions = () => (
    <div className="space-y-8 animate-in fade-in duration-700">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-         {/* W329/W339 — honest: illustrative previews; no real tournament backend exists yet */}
+         {/* W329/W339 — honest: illustrative previews; no tournament backend exists yet.
+             W613 (FU-499, M1 v8 R5.0) — "Sovereign Reciters" was a RECITATION tournament marked PLANNED, and
+             Appendix A.9.1 rules that recitation is never scored, so it is not planned: it is refused. */}
          <TournamentCard title="Ramadan Global (preview)" tier="Expert" players={0} status="PLANNED" />
          <TournamentCard title="Linguistic Roots (preview)" tier="Novice" players={0} status="PLANNED" />
-         <TournamentCard title="Sovereign Reciters (preview)" tier="All" players={0} status="PLANNED" />
+         <TournamentCard title="Recitation contests" tier="Not offered" players={0} status="REFUSED (A.9.1)" />
       </div>
    </div>
 );
@@ -236,6 +238,6 @@ const TournamentCard = ({ title, tier, players, status }: any) => (
      </div>
      <h4 className="text-xl font-black text-white uppercase tracking-tight mb-2">{title}</h4>
      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{tier} • {players} Participants</p>
-     <Button onClick={() => toast('No tournament or leaderboard backend exists yet - this card is a preview, not a fixture')} variant="outline" className="w-full mt-8 text-[9px] uppercase font-black">View Leaderboard</Button>
+     <Button onClick={() => toast(status === 'PLANNED' ? 'No tournament exists yet - this card is a preview, not a fixture. The live XP leaderboard is on the Memorization tab.' : 'Recitation is never scored (Appendix A.9.1), so no recitation contest is run or ranked. The live XP leaderboard is on the Memorization tab.')} variant="outline" className="w-full mt-8 text-[9px] uppercase font-black">View Leaderboard</Button>
   </Card>
 );

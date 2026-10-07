@@ -1171,9 +1171,14 @@ def test_candidates_selected_on_simulated_evidence(client):
         assert s5["tie"]["tiebreak_is_merit"] is False, s5["tie"]
         assert s5["tie"]["tiebreak_rule"], s5["tie"]
         assert len(s5["tie"]["tied_candidates"]) > 1
-    # and what is NOT measured at selection time is NAMED, never proxied
-    assert set(s5["criteria_not_measured"]) == {"effectiveness", "efficiency", "commercial viability"}
-    assert set(s5["criteria_measured"]) == {"compliance", "safety"}
+    # and what is NOT measured at selection time is NAMED, never proxied. W613 (FU-475) — computed from the
+    # run: compliance and safety count as measured only when the screen contributed a figure.
+    _never = {"effectiveness", "efficiency", "commercial viability"}
+    assert _never <= set(s5["criteria_not_measured"])
+    if (s5.get("weights_applied") or {}).get("compliance") is None:
+        assert s5["criteria_measured"] == {} and {"compliance", "safety"} <= set(s5["criteria_not_measured"])
+    else:
+        assert set(s5["criteria_measured"]) == {"compliance", "safety"}
 
 
 def test_full_journey_record_survives_establishment(client):
@@ -1197,7 +1202,9 @@ def test_full_journey_record_survives_establishment(client):
     root = pathlib.Path(m["repo_root"])
     assert "Not provided" not in (root / "OPERATIONS.md").read_text(encoding="utf-8")
     evd = (root / "EVIDENCE.md").read_text(encoding="utf-8")
-    assert "Selected Candidate" in evd and "Stage Verifications" in evd
+    # W613 (FU-485) — the heading is "Selected Candidate" only when the run ranked on evidence; a tie or
+    # identical candidates is "Candidate Carried Forward (NOT evidence-ranked …)"
+    assert ("Selected Candidate" in evd or "Candidate Carried Forward (NOT evidence-ranked" in evd) and "Stage Verifications" in evd
     plan = client.get("/api/v1/business-plan", params={"scope": vid}).json()
     objs = (plan.get("plan") or plan).get("objectives", [])
     assert any(o.get("source") == "genesis_journey.operations" for o in objs)
@@ -8694,7 +8701,12 @@ def test_w439_qep_cluster_audited_fixes_hold(client):
     l = client.post("/api/v1/qep/tajweed/lesson", json={"rule_name": "idgham"}).json()
     assert "served_by" in l
     if l["served_by"] == "native":
-        assert l["floor_served"] is True and "OUTLINE" in l["floor_note"]
+        # W613 (FU-477) — the outline note describes a PUBLISHED body; a withheld lesson says why it is empty
+        assert l["floor_served"] is True
+        if l.get("lesson_plan") is not None:
+            assert "OUTLINE" in l["floor_note"]
+        else:
+            assert "floor_note" not in l and "scholar" in (l.get("withheld_note") or "")
 
     # ── translation: the floor CANNOT translate — scaffold is never presented as translation ────
     tr = client.post("/api/v1/qep/translation/translate",
@@ -21454,7 +21466,7 @@ def test_w494_a_verdict_that_cannot_come_out_otherwise_is_not_an_assessment(clie
     # the dict by hand with the (now unused) import still sitting above it.
     for _f, _label, _call in (
             (root / "agentic_core/api/swarm.py", "cascade",
-             "governance = intent_gate_result(_gov.status, _gov.checkpoint_id, _gov.node, arms_length=True)"),
+             "governance = intent_gate_result(_gov.status, _gov.checkpoint_id, _gov.node, arms_length=True, **{"),
             (root / "agentic_core/api/forge.py", "forge",
              'governance = intent_gate_result(res.status, res.checkpoint_id, getattr(res, "node", None))'),
             (root / "agentic_core/api/transformation_orchestration.py", "orchestration",
@@ -41835,7 +41847,8 @@ def test_w593_p220_the_qep_flagship_service_reports_only_what_it_holds():
                  _re440.finditer(r"id: '([a-z_]+)'[^\n]*?desc: '((?:[^'\\]|\\.)*)'", _cards440)}
     assert len(_descs440) >= 13, ("the card array stopped parsing, so this leg measures nothing",
                                   sorted(_descs440))
-    _MARKERS440 = ("Planned:", "LIVE", "NOT measured", "are real", "is recorded", "No cohort")
+    # W613 (FU-476) — "Not offered, by ruling" is a state too: a ratified boundary, not a backlog item
+    _MARKERS440 = ("Planned:", "LIVE", "NOT measured", "are real", "is recorded", "No cohort", "Not offered, by ruling")
     _bare440 = {k: v[:70] for k, v in _descs440.items()
                 if not any(m in v for m in _MARKERS440)}
     assert not _bare440, (
@@ -45898,3 +45911,163 @@ def test_w612_a_refuter_that_raises_a_tier_has_reproduced_the_gap(client):
     assert _m and _m.group(1) == "1", ("the method line still hides the escalation into tier 1",
                                        _m.group(0) if _m else None)
     assert "REFUTED AS TOO KIND" in _text, "an escalated finding is rendered as if it had been struck"
+
+
+def test_w613_p222_the_surface_says_what_the_run_did(client):
+    """P2.22 (W613) — eight of M1 v8's eighteen tier-1 rows, clauses (a) and (b) and one of (a)'s board rows.
+
+    Each fixes a surface that asserted something the run did not do: Genesis said compliance and safety were
+    measured when neither contributed a figure (FU-475); the shipped EVIDENCE.md called a tie "evidence-ranked"
+    and a floor frame "simulated evidence" (FU-485); the cascade tooltip said content was NOT screened beside
+    nine screened tiers (FU-493); a directive named a six-tier chain when two ran (FU-510); the realisation and
+    wiring surfaces reported mounted routers as absent (FU-504); the QEP roadmap called a live leaderboard
+    missing and two ratified boundaries "Planned" (FU-476, FU-499); and the Tajweed lesson called a withheld
+    lesson an outline (FU-477). Driven through the routes a page reads wherever the route is reachable here.
+    """
+    import pathlib as _pl613
+    import uuid as _uu613
+    _root = _pl613.Path(__file__).resolve().parents[1]
+
+    # ── FU-475: what was MEASURED is computed from the run ──────────────────────────────────────────
+    j = client.post("/api/v1/genesis/journey", json={
+        "problem": f"w613 halal bakery cooperative {_uu613.uuid4().hex[:6]}", "domain": "enterprise"}).json()
+    s5 = j.get("stage_5_model_simulate_rank") or {}
+    assert s5, sorted(j)
+    _five = {"compliance", "safety", "effectiveness", "efficiency", "commercial viability"}
+    assert set(s5["criteria_measured"]) | set(s5["criteria_not_measured"]) == _five, s5["criteria_measured"]
+    assert not set(s5["criteria_measured"]) & set(s5["criteria_not_measured"])
+    if (s5.get("weights_applied") or {}).get("compliance") is None:
+        assert s5["criteria_measured"] == {}, ("a run whose screens contributed no figure still lists "
+                                               "compliance and safety as measured", s5["criteria_measured"])
+        assert "are measured here" not in s5["honesty"], s5["honesty"]
+        assert s5["honesty"].startswith("NONE of the five"), s5["honesty"]
+        assert "Real measured proxies" not in s5["method"], s5["method"]
+    else:
+        assert set(s5["criteria_measured"]) == {"compliance", "safety"}
+
+    # ── FU-485: the shipped EVIDENCE.md heading and simulation line follow the run ──────────────────
+    from agentic_core.api.vsb import _build_repo_files
+    _cand = {"id": "c1", "rank": 1, "score": 0.77, "simulation_score": 0.815, "modelled_score": 0.7,
+             "simulation": "frame", "tie": {"detected": True, "resolved_by": "the declared tiebreak — NOT evidence"},
+             "candidates_distinct": 1}
+    _vsb = {"vsb_id": "vsb-w613", "name": "W613 Probe", "challenge": "probe",
+            "genesis_journey": {"selected_candidate": _cand},
+            "ai_provenance": {"served_by": "native", "served_by_agent": {"genesis_twin_c1": "native"}}}
+    _ev = _build_repo_files(_vsb)["EVIDENCE.md"]
+    assert "evidence-ranked)" not in _ev.split("\n## Candidate Carried Forward")[0], _ev[:400]
+    assert "## Candidate Carried Forward (NOT evidence-ranked" in _ev, _ev[:400]
+    assert "- simulated evidence:" not in _ev and "NOT simulated evidence" in _ev, _ev[:600]
+    _ranked = dict(_cand, tie={"detected": False}, candidates_distinct=3)
+    _vsb2 = dict(_vsb, genesis_journey={"selected_candidate": _ranked},
+                 ai_provenance={"served_by": "ollama", "served_by_agent": {"genesis_twin_c1": "ollama"}})
+    _ev2 = _build_repo_files(_vsb2)["EVIDENCE.md"]
+    assert "## Selected Candidate (§4.5 evidence-ranked)" in _ev2 and "- simulated evidence: 0.815" in _ev2, _ev2[:600]
+
+    # ── FU-493: the cascade's scope sentence agrees with what it screened ───────────────────────────
+    from agentic_core.gaas.v5 import CONTENT_GATE_SCOPE, INTENT_GATE_SCOPE
+    r = client.post("/api/v1/swarm/cascade", json={"mission": "w613 scope probe", "domain": "enterprise"}).json()
+    g = r.get("governance") or {}
+    if g.get("content_screened"):
+        assert g.get("scope") == CONTENT_GATE_SCOPE, ("the tooltip says content was NOT screened beside "
+                                                       "screened tiers", g.get("scope"))
+        assert g.get("scope") != INTENT_GATE_SCOPE
+
+    # ── FU-510: the delegation chain names the tiers that ran ───────────────────────────────────────
+    d = client.post("/api/v1/board/chief/instruct", json={
+        "instruction": "w613 chain probe: open a second site", "scope": f"vsb:w613-{_uu613.uuid4().hex[:6]}"}).json()
+    assert d["delegation_chain"] == ["Chief", "AI CEO"], d["delegation_chain"]
+    assert "NOT invoked" in d.get("delegation_chain_basis", ""), d.get("delegation_chain_basis")
+    _bd = _code_only((_root / "apps/workstation-superapp/src/pages/enterprise/BoardOfDirectors.tsx").read_text(encoding="utf-8"))
+    assert "delegation_chain_basis" in _bd and "chain: {result.delegation_chain" not in _bd
+
+    # ── FU-504: a census FastAPI reports differently is still read, and an unreadable one is not "absent" ─
+    from agentic_core.app_mvp import app as _app613
+    from agentic_core.api import transformation as _tr613, cognition as _cg613
+    from agentic_core.route_inventory import mounted_paths
+    _app613.openapi()                                    # the schema is built (and cached) from the real routes
+    _saved = list(_app613.router.routes)
+
+    class _Included:                                     # the FastAPI 0.142 shape: one entry per router, no path
+        path = ""
+    try:
+        _app613.router.routes[:] = [_Included() for _ in _saved]
+        _paths, _census = mounted_paths()
+        assert _paths and any(p.startswith("/api/v1/heartbeat") for p in _paths), _census
+        _real = _tr613._realise()
+        _hb = [c for p in _real["pillars"] for c in p["evidence"] if c["label"] == "Continuous heartbeat (scheduler)"]
+        assert _hb and _hb[0]["met"] is True, ("a mounted router reads as absent when the routes are nested", _hb)
+        _saved_schema = _app613.openapi_schema
+        try:
+            _app613.openapi_schema = {"paths": {}}
+            assert mounted_paths()[0] is None, "an empty census is returned as a reading, not as a failure"
+            _real2 = _tr613._realise()
+            _hb2 = [c for p in _real2["pillars"] for c in p["evidence"] if c["label"] == "Continuous heartbeat (scheduler)"]
+            assert _hb2[0]["met"] is None, ("an unreadable census reported a router as NOT mounted", _hb2)
+            assert _cg613._has(None, "/api/v1/board") is None
+        finally:
+            _app613.openapi_schema = _saved_schema
+    finally:
+        _app613.router.routes[:] = _saved
+    _w = client.get("/api/v1/cognition/wiring").json()
+    assert _w["routes_mounted"] == _w["total"] and _w.get("route_census", {}).get("paths", 0) > 100, _w.get("route_census")
+    _ps = client.get("/api/v1/plan/state").json()
+    assert (_ps.get("api_routes") or 0) > 100 and _ps.get("api_routes_census", {}).get("basis"), (
+        "plan/state counts an included router as one route", _ps.get("api_routes"), _ps.get("api_routes_census"))
+    _td = _code_only((_root / "apps/workstation-superapp/src/pages/TransformationDashboard.tsx").read_text(encoding="utf-8"))
+    _ci = _code_only((_root / "apps/workstation-superapp/src/pages/CognitionIntegration.tsx").read_text(encoding="utf-8"))
+    assert "route_census.basis" in _td and "e.met === null ? ' — not assessed'" in _td
+    assert "wiring.route_census.basis" in _ci
+
+    # ── FU-476 / FU-499: the QEP roadmap says what exists and what a ruling forbids ─────────────────
+    _ff = _code_only((_root / "apps/workstation-superapp/src/components/QEPFlagshipFeatures.tsx").read_text(encoding="utf-8"))
+    _hub = _code_only((_root / "apps/workstation-superapp/src/pages/domains/QEPReligionHub.tsx").read_text(encoding="utf-8"))
+    for _bad in ("no backend exists yet", "Planned: verified digital credentials",
+                 "Planned: recitation analysis", "or leaderboard backend exists"):
+        assert _bad not in _ff and _bad not in _hub, _bad
+    assert "Sovereign Reciters" not in _hub, "a recitation tournament is still offered as PLANNED (A.9.1 refuses it)"
+    assert "A.9.1" in _ff and "A.12.2" in _ff and "kind: 'live'" in _ff and "kind: 'refused'" in _ff
+
+    # ── FU-477: a withheld lesson is not described as an outline ────────────────────────────────────
+    L = client.post("/api/v1/qep/tajweed/lesson", json={"rule_name": "idgham"}).json()
+    if L.get("lesson_plan") is None:
+        assert "floor_note" not in L, ("a withheld lesson still tells the learner to treat 'this outline' as a "
+                                       "checklist", L.get("floor_note"))
+        assert L.get("withheld_note") and "scholar" in L["withheld_note"], L.get("withheld_note")
+    else:
+        assert L.get("withheld_note") is None
+    _st = _code_only((_root / "apps/workstation-superapp/src/components/QEPStudio.tsx").read_text(encoding="utf-8"))
+    assert "lesson.withheld_note" in _st and "withheld — not scholar-reviewed" in _st
+
+
+def test_w614_p222_a_status_is_derived_again_when_its_facts_change(client):
+    """P2.22(d) (W614, FU-482, M1 v8 R2.2) — a VSB read "held — a review gate blocks progress: design pending"
+    after the gate was approved and the body shipped, and the shipped README repeated it, because the status
+    was derived once, at birth. Every writer of the facts it is read from now derives it again: configuring
+    the gates, deciding one, and the ship whose README prints it."""
+    import time as _t614
+    from agentic_core.api import vsb as _v614
+    est = client.post("/api/v1/genesis/establish", json={
+        "problem": "w614 a halal community bakery", "domain": "enterprise", "owner_id": "pytest",
+        "name": "W614 Bakery"}).json()
+    vid = est["vsb_id"]
+    client.post(f"/api/v1/vsb/{vid}/review-gates", json={"stages": ["design"]})
+    held = client.get(f"/api/v1/vsb/{vid}").json()
+    assert held["status"] == "held" and "design pending" in held.get("status_basis", ""), (
+        "configuring a gate did not derive the status from it", held.get("status"), held.get("status_basis"))
+    d = client.post(f"/api/v1/vsb/{vid}/review-gates/design/decision", json={"decision": "approve", "note": "ok"}).json()
+    assert d["entity_status"] != "held", ("the gate was approved and the entity still reads held", d)
+    after = client.get(f"/api/v1/vsb/{vid}").json()
+    assert after["status"] == d["entity_status"] and "design pending" not in after.get("status_basis", ""), after.get("status_basis")
+    import pathlib as _pl614
+    _gj = _code_only((_pl614.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8"))
+    assert "setEntityStatus({ status: dj.entity_status" in _gj and "entity status now:" in _gj
+    # the ship derives it again from the facts AS SHIPPED, so the README cannot print a stale one
+    _raw = _v614._load_vsb(vid) if hasattr(_v614, "_load_vsb") else None
+    if _raw is None:
+        import json as _j614
+        _raw = _j614.loads((_v614._VSB_STORE / f"{vid}.json").read_text(encoding="utf-8"))
+    _raw["status"], _raw["status_basis"] = "held", "a stale status written before the gate moved"
+    _v614._save_vsb(_raw)
+    client.post(f"/api/v1/vsb/{vid}/repo/ship")
+    _readme = (_v614._REPO_STORE / vid / "README.md").read_text(encoding="utf-8")
+    assert "**Status:** held" not in _readme, ("the shipped README printed a status the ship did not derive", _readme[:400])

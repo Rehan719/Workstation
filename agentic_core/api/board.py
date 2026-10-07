@@ -796,7 +796,13 @@ async def chief_instruct(req: ChiefInstruction, user: dict | None = Depends(get_
         "objectives_not_added_reason": objectives_not_added_reason,   # W488 — a 0 that says why, or None
         "ai_provenance": provenance,     # §6 — which OWNED resource served the apex (W270)
         "governance": governance,        # §11 — the gaas.v5 gate verdict over the apex direction
-        "delegation_chain": ["Chief", "Board", "AI CEO", "C-Suite", "CoE", "BTO"],
+        # W613 (FU-510, M1 v8 R3.6) — THE CHAIN NAMES THE TIERS THAT RAN. It was a constant six-tier list on
+        # every record, printed under the result as "chain: Chief → Board → AI CEO → C-Suite → CoE → BTO",
+        # while this path runs the Chief's prompt and, when cascading, the AI CEO's — nothing else. The
+        # C-Suite, CoE and BTO run in the org cascade (POST /api/v1/swarm/cascade), not here.
+        "delegation_chain": (["Chief", "AI CEO"] if req.cascade_to_ceo else ["Chief"]),
+        "delegation_chain_basis": ("the tiers whose prompts ran for this directive. The C-Suite, CoE and BTO "
+                                   "are NOT invoked by a directive; the org cascade runs them."),
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     rows = _load()

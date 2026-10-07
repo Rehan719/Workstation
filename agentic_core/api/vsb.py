@@ -155,13 +155,30 @@ def _build_repo_files(vsb: dict) -> dict:
     _sv = gj.get("stage_verifications") if isinstance(gj.get("stage_verifications"), dict) else {}
     _ev_lines = [f"# Selection & Verification Evidence — {name}", ""]
     if _cand:
-        _ev_lines += ["## Selected Candidate (§4.5 evidence-ranked)",
+        # W613 (FU-485, M1 v8 R2.5) — THE HEADING AND THE SIMULATION LINE ARE COMPUTED FROM THE RUN. Both were
+        # written unconditionally, so a file that later said "TIE" and "no comparison happened" opened by
+        # calling the winner "evidence-ranked", and printed "simulated evidence" for a digital-twin stage the
+        # same file calls "a structured frame, not a simulation". A tie or identical candidates mean nothing
+        # was ranked on evidence; a floor-served twin means nothing was simulated.
+        _tie0 = _cand.get("tie") if isinstance(_cand.get("tie"), dict) else {}
+        _nd0 = _cand.get("candidates_distinct")
+        _ranked = not _tie0.get("detected") and not (isinstance(_nd0, int) and _nd0 <= 1)
+        _sba0 = ((vsb.get("ai_provenance") or {}).get("served_by_agent") or {})
+        _sim_agents0 = [a for a in _sba0 if a.startswith(("genesis_twin_", "genesis_cand"))]
+        from agentic_core.vbs.quality import floor_served as _floor_served0
+        _sim_floor0 = (all(_sba0[a] == "native" for a in _sim_agents0) if _sim_agents0
+                       else _floor_served0((vsb.get("ai_provenance") or {}).get("served_by")))
+        _ev_lines += [("## Selected Candidate (§4.5 evidence-ranked)" if _ranked else
+                       "## Candidate Carried Forward (NOT evidence-ranked — see comparison below)"),
                       f"- id: {_cand.get('id')} · rank: {_cand.get('rank')} · score: {_cand.get('score')}",
                       f"- coverage {_cand.get('coverage')} · specificity {_cand.get('specificity')} · structure {_cand.get('structure')}",
                       f"- framing: {str(_cand.get('framing') or '')[:160]}"]
         if _cand.get("simulation_score") is not None:       # §4.5 (W305) — simulated evidence
-            _ev_lines += [f"- simulated evidence: {_cand.get('simulation_score')} "
-                          f"(modelled {_cand.get('modelled_score')}; declared weights 60/40)"]
+            _ev_lines += [(f"- simulated evidence: {_cand.get('simulation_score')} "
+                           f"(modelled {_cand.get('modelled_score')}; declared weights 60/40)") if not _sim_floor0 else
+                          (f"- twin-stage score: {_cand.get('simulation_score')} — NOT simulated evidence: the "
+                           f"deterministic floor served the digital-twin stage, so this scores the shape of a "
+                           f"frame (modelled {_cand.get('modelled_score')}; declared weights 60/40)")]
             if _cand.get("simulation"):
                 # W450 (P1.2) — the floor's "simulation" is a headings frame over the problem's
                 # bigrams; it shipped as evidence. When the twin/candidate agents were floor-served
@@ -1622,6 +1639,21 @@ def _gate_block_reason(vsb: dict) -> str | None:
 OPERATING_STATUS = "operating"
 
 
+def _rederive(vsb: dict) -> dict:
+    """W614 (FU-482, M1 v8 R2.2) — RE-DERIVE THE STATUS AND STAGE WHEREVER THE FACTS THEY ARE READ FROM CHANGE.
+
+    _derived_status ran once, at birth. A gate approved afterwards, and a body shipped after that, left the
+    entity reading "held — a review gate blocks progress: design pending", and the shipped README repeated it.
+    A status derived from facts is only as current as the last time it was derived, so every writer of those
+    facts (the gate configuration, a gate decision, the ship) derives it again. Mutates and returns `vsb`.
+    """
+    _st, _st_basis = _derived_status(vsb)
+    _sg, _sg_basis = _derived_stage(vsb)
+    vsb.update(status=_st, status_basis=_st_basis, stage=_sg, stage_basis=_sg_basis,
+               status_derived_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
+    return vsb
+
+
 def _derived_status(vsb: dict) -> tuple:
     """§3.3 (W496, FU-100) — THE STATUS IS DERIVED FROM FACTS, NEVER WRITTEN AS A LITERAL.
 
@@ -1964,6 +1996,7 @@ async def set_review_gates(vsb_id: str, req: ReviewGatesRequest, user: dict | No
     vsb["review_gates"] = rg
     from agentic_core.vbs.registry import qms
     dcs_hash = await qms.control_document(f"vsb_review_gates:{vsb_id}", {"stages": rg["stages"]}, "Owner")
+    _rederive(vsb)   # W614 — the gates changed, so the status read from them is derived again
     _save_vsb(vsb)
     try:
         biobus.fire_signal("cognitive", "vsb.review_gates", f"{vsb.get('name')}: {len(rg['stages'])} gated", 0.5)
@@ -2002,8 +2035,10 @@ async def decide_review_gate(vsb_id: str, stage: str, req: GateDecisionRequest, 
     vsb["review_gates"] = rg
     from agentic_core.vbs.registry import qms
     dcs_hash = await qms.control_document(f"vsb_review_decision:{vsb_id}:{stage}", rec, "human-reviewer")
+    _rederive(vsb)   # W614 — a decision moves the gate, so the status read from it is derived again
     _save_vsb(vsb)
-    return {"vsb_id": vsb_id, **_gate_status(rg, stage), "dcs_hash": dcs_hash}
+    return {"vsb_id": vsb_id, **_gate_status(rg, stage), "dcs_hash": dcs_hash,
+            "entity_status": vsb.get("status"), "entity_status_basis": vsb.get("status_basis")}
 
 
 def _list_vsbs() -> list[dict]:
@@ -2458,6 +2493,8 @@ async def ship_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current_use
     vsb = _require_vsb_access(vsb_id, user)
     _refuse_pending_name(vsb)   # W450 — no public surface under a pending working name
     _refuse_gated(vsb, "ship")  # W452 — Mode 3: a pending/rejected human review gate blocks the ship
+    #  W614 (FU-482) — the README and manifest print the status, so it is derived from the facts AS SHIPPED
+    _save_vsb(_rederive(vsb))
     surfaces: Dict[str, Any] = {}
     #  W593 (FU-422, M1 R2.0) - "repo" MOVED TO LAST. generate_vsb_repo writes manifest.json first,
     #  so running it first wrote a manifest against a disk holding 13 of the eventual 29 files, with

@@ -8852,11 +8852,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.22",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W613",
       "note": "",
       "slot_source": "ledger v8 R1.0 is tier 1: P2.22 carries the v8 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "genesis stage 5 computes criteria_measured, honesty and the method sentence from whether any screen contributed a figure; guard test_w613 leg 1, two blinds red"
     },
     {
       "id": "FU-476",
@@ -8871,11 +8874,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.22",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W613",
       "note": "",
       "slot_source": "ledger v8 R1.1 is tier 1: P2.22 carries the v8 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the QEP roadmap's tajwid and credentials cards say 'Not offered, by ruling' (A.9.1, A.12.2), competitions says the leaderboard is LIVE, and the panel text follows each card's kind; blinds red"
     },
     {
       "id": "FU-477",
@@ -8890,11 +8896,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.22",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W613",
       "note": "",
       "slot_source": "ledger v8 R1.2 is tier 1: P2.22 carries the v8 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the tajweed lesson emits floor_note only for a published body and a withheld_note otherwise; QEPStudio types and renders it with a 'withheld — not scholar-reviewed' chip; three blinds red"
     },
     {
       "id": "FU-478",
@@ -8983,11 +8992,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.22",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W614",
       "note": "",
       "slot_source": "ledger v8 R2.2 is tier 1: P2.22 carries the v8 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "vsb._rederive re-derives status and stage when gates are configured, when one is decided, and before the ship writes the README; three blinds red"
     },
     {
       "id": "FU-483",
@@ -9040,11 +9052,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.22",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W613",
       "note": "",
       "slot_source": "ledger v8 R2.5 is tier 1: P2.22 carries the v8 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "EVIDENCE.md heads a tie or identical candidates 'Candidate Carried Forward (NOT evidence-ranked)' and calls a floor-served twin score 'NOT simulated evidence'; two blinds red"
     },
     {
       "id": "FU-486",
@@ -9186,11 +9201,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.22",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W613",
       "note": "",
       "slot_source": "ledger v8 R3.7 is tier 1: P2.22 carries the v8 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the cascade passes its content fields into intent_gate_result, so the scope sentence is derived from what was screened; blind red"
     },
     {
       "id": "FU-494",
@@ -9290,11 +9308,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.22",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W613",
       "note": "",
       "slot_source": "ledger v8 R5.0 is tier 1: P2.22 carries the v8 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the hub's leaderboard toast points to the live leaderboard, and the 'Sovereign Reciters' recitation tournament is replaced by 'Recitation contests — REFUSED (A.9.1)'; blind red"
     },
     {
       "id": "FU-500",
@@ -9386,11 +9407,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.22",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W613",
       "note": "",
       "slot_source": "ledger v8 R6.0 is tier 1: P2.22 carries the v8 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "new agentic_core/route_inventory.py reads the OpenAPI paths plus flat routes and returns None for an unreadable census; transformation, cognition and plan/state use it, and an unassessed check is met=None; three blinds red under a simulated FastAPI-0.142 route shape"
     },
     {
       "id": "FU-505",
@@ -9488,11 +9512,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.22",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W613",
       "note": "",
       "slot_source": "ledger v8 R3.6 stands at tier 1 (escalated by its refuter): P2.22 carries the v8 tier-1 findings",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "delegation_chain names the tiers whose prompts ran (Chief, AI CEO), with a basis; the Board page labels it 'ran:'; two blinds red"
     }
   ],
   "routes": [
