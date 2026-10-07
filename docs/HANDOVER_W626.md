@@ -42,7 +42,16 @@ npx tsc --noEmit` (and `npm run build`, which passes).
 
 ## 2. State at handover
 
-> **UPDATED after W630 (2026-10-07).** This section supersedes the table below it.
+> **UPDATED after W632 (2026-10-07).** Done: P2.26 and P2.27, closed by the W632 re-run, which issued **ledger v11**:
+> Tier-1 **4**, Tier-2 **10**, all NEW surfaces (every v10 row was fixed in W630/W631). **P2.28** carries the four, **P2.29**
+> the ten: `python scripts/followups.py list --slot P2.28` and `--slot P2.29`. Each row's `why` ends with the auditor's
+> SMALLEST HONEST FIX.
+>
+> **Before booting the audit backend, check that :8031 is FREE:** `pgrep -af "uvicorn agentic_core"`. An audit agent started
+> its own backend on :8031 during W629, and a second boot then exits silently, so the audit can measure the wrong process.
+> Confirm the booted commit by a response header or a route that only HEAD has.
+>
+> **UPDATED after W630 (2026-10-07).** The rest of this section is still accurate, except where the note above updates it.
 >
 > - **Done:** P2.24 and P2.25 (W629). The M1+M2 re-run W629 issued **ledger v10**: Tier-1 **4**, Tier-2 **12**. The
 >   series at twelve agents: v7 20 → v8 18 → v9 11 → v10 4. Raw record: `docs/fidelity_runs/ledger_v10_W629_aeb9fa8.json`.
