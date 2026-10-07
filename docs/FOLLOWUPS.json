@@ -10943,11 +10943,260 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "heartbeat status carries last_realisation_measure (API surface coverage, not delivery) beside last_realisation; blind red"
+    },
+    {
+      "id": "FU-574",
+      "title": "Genesis ranking stores and renders a 'simulation_score' for a forward-simulation its own method says was NOT run",
+      "why": "MILESTONE M1 ledger v12 (R1.0), measured 2026-10-07 against 23a163c on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 1 after independent refutation. THE VISION CLAIM: §10: every solution is modelled · simulated · ranked, and the amended bar says these are measured with an instrument, or WITHHELD with the reason. OBSERVED: POST /api/v1/genesis/journey (problem 'A halal meal-kit subscription for students in Leeds'): stage_5 method says 'forward-simulation NOT run: the twin stage was floor-served, so its text is a structured frame and not a simulation'. Yet each of pragmatic, innovative and lean carries simulation_score 0.779, modelled_score 0.787 and form_score 0.784. The tie and the identical-text case are otherwise disclosed well (tie.tiebreak_is_merit false, comparison_note, honesty, criteria_not_measured). EVIDENCE: curl POST /api/v1/genesis/journey -> stage_5_model_simulate_rank.candidates[*].simulation_score=0.779 next to method 'forward-simulation NOT run'; apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx:878-882 SMALLEST HONEST FIX: When the twin stage is floor-served, set simulation_score and modelled_score to null with a basis line. Have the UI chip render only when the score is non-null, with a tooltip derived from the record.",
+      "source": "W634 M1/M2 v12 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v12 R1.0 is tier 1: P2.30 carries the v12 tier-1 findings",
+      "tier": 1
+    },
+    {
+      "id": "FU-575",
+      "title": "QMS non-conformance rate is reported as 0.0 when zero gates have run, and sealed into §10 records as a figure",
+      "why": "MILESTONE M1 ledger v12 (R1.1), measured 2026-10-07 against 23a163c on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 1 after independent refutation. THE VISION CLAIM: §10 verified · tested · validated within a living QMS; the §15 honesty rule that no figure is shown which nothing measured. OBSERVED: Fresh install: GET /api/v1/vbs/qms/defects shows gates_run 0 and non_conformance_rate 0.0. POST /api/v1/deliverables/produce returns quality.qms_non_conformance_rate 0.0 with qms_defects.gates_run 0. The POST /vbs/qms/gate what-if route is honest: counted_in_rate false, with its basis stated. EVIDENCE: agentic_core/vbs/qms.py:125-136; agentic_core/api/vsb.py:455-467; agentic_core/api/swarm.py:850-859; apps/workstation-superapp/src/pages/enterprise/ServiceContracts.tsx:135-138 vs components/VBSSystemsPanel.tsx:200 SMALLEST HONEST FIX: Return None when gates_run is 0, and have every renderer and sealer print 'not measured (0 gates run)'.",
+      "source": "W634 M1/M2 v12 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/api/swarm.py",
+        "agentic_core/api/vsb.py",
+        "agentic_core/vbs/qms.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v12 R1.1 is tier 1: P2.30 carries the v12 tier-1 findings",
+      "tier": 1
+    },
+    {
+      "id": "FU-576",
+      "title": "QEP adaptation registry advertises a Religion 'phoneme feedback loop' pattern, which the constitution says does not exist",
+      "why": "MILESTONE M1 ledger v12 (R1.2), measured 2026-10-07 against 23a163c on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict STUB at TIER 1 after independent refutation. THE VISION CLAIM: §11 rule 3, A.9.1: recitation is never scored, and no phonetic capability exists. OBSERVED: The registry lists ADP-tajweed-care 'phoneme feedback loop' religion→care. The execute route appends a floor frame with no extracted terms and grows the registry that /qep/compliance/audit then counts. EVIDENCE: curl GET /api/v1/qep/adaptation/registry; POST /api/v1/qep/adaptation/execute {pattern:'phoneme feedback loop',...}; agentic_core/api/qep_intelligence.py:368-394 SMALLEST HONEST FIX: Remove or rename the tajweed-care seed (for example to 'written-recall comparison'), and pass the pattern text to the floor so the frame is not empty.",
+      "source": "W634 M1/M2 v12 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/api/qep_intelligence.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v12 R1.2 is tier 1: P2.30 carries the v12 tier-1 findings",
+      "tier": 1
+    },
+    {
+      "id": "FU-577",
+      "title": "Tafsir disclaimer says 'The Arabic is sourced from alquran.cloud' on a response that shows no Arabic because the source was unreachable",
+      "why": "MILESTONE M2 ledger v12 (R1.3), measured 2026-10-07 against 23a163c on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 2 after independent refutation. THE VISION CLAIM: §11 rules 1–2 and 4: Arabic is labelled at source, and floor output is never presented as scholarship. OBSERVED: POST /api/v1/religion/quran-tafsir {surah:1, ayah_start:1, ayah_end:7}: arabic_text null; sections_withheld [Transliteration, Translation]; QMS 'not assessable' (the green-chip defect is gone); the disclaimer is unconditional. Nonexistent ayah 1:9 is refused with 'surah 1 has 7 ayaat'. EVIDENCE: curl POST /api/v1/religion/quran-tafsir; apps/workstation-superapp/src/pages/domains/ReligionHub.tsx:147-185 SMALLEST HONEST FIX: Make the disclaimer conditional on arabic_text being present and on served_by being something other than native.",
+      "source": "W634 M1/M2 v12 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "apps/workstation-superapp/src/pages/domains/ReligionHub.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.31",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v12 R1.3 is tier 2: P2.31 carries the v12 tier-2 findings",
+      "tier": 2
+    },
+    {
+      "id": "FU-578",
+      "title": "The downloadable repo zip drops manifest.json and .git, but its README still sends the reader to manifest.json twice",
+      "why": "MILESTONE M2 ledger v12 (R2.0), measured 2026-10-07 against 23a163c on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 2 after independent refutation. THE VISION CLAIM: §13: the canonical output is a Repository of the IDBO Entity, 'shipped as a coherent, version-controlled whole'. OBSERVED: On disk the repo at repo_root has .git (10 commits) and manifest.json, which holds integrated_surfaces, version_control and manifest_history. GET /api/v1/vsb/{id}/repo/zip returns 27 files with no manifest.json and no .git. /repo/file refuses manifest.json because it is 'not a file this repo declares'. VSBCockpit downloadRepoZip saves that zip as '{id}-repo.zip' and says nothing about what was left out. EVIDENCE: vsb-edafbd9ebd: `unzip` gives 27 files and no manifest.json. `ls -a` of repo_root shows .git and manifest.json. agentic_core/api/vsb.py:485 excludes manifest.json from the tree, and the zip at ~l.630 serves only declared tree entries. apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx:319-333. SMALLEST HONEST FIX: Put manifest.json (or a git bundle) in the zip, or rewrite the README pointers and add a line to the download card: 'archive excludes version history and the manifest'.",
+      "source": "W634 M1/M2 v12 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/api/vsb.py",
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.31",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v12 R2.0 is tier 2: P2.31 carries the v12 tier-2 findings",
+      "tier": 2
+    },
+    {
+      "id": "FU-579",
+      "title": "Two repo files mislabel or headline their figures: ORGANISATION.md's AI CEO block holds the commercialisation placeholder, and EVIDENCE.md puts by-construction scores under a '(§5 measured)' heading",
+      "why": "MILESTONE M2 ledger v12 (R2.9), measured 2026-10-07 against 23a163c on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 2 after independent refutation. THE VISION CLAIM: §13: the repo carries the organisation and the quality record, document-controlled. OBSERVED: In the zip for vsb-edafbd9ebd, ORGANISATION.md's AI CEO block is the string 'content pending the owned model — this enterprise has not yet composed its own commercialisation'. EVIDENCE.md's '§5 measured' heading lists scores 0.853, 0.799, 0.997, 0.77 and 0.932. EVIDENCE: zx/ORGANISATION.md and zx/EVIDENCE.md. The journey's stage_verifications basis reads 'the coverage/structure proxies cannot fail by construction'. SMALLEST HONEST FIX: Rename the heading to 'Stage Verifications (proxies; not assessable on the floor)'. Render the AI CEO block as 'AI CEO charter pending the owned model'.",
+      "source": "W634 M1/M2 v12 refuter",
+      "found": "2026-10-07",
+      "files": [],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.31",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v12 R2.9 is tier 2: P2.31 carries the v12 tier-2 findings",
+      "tier": 2
+    },
+    {
+      "id": "FU-580",
+      "title": "The AI CEO chat says its answer 'names 2' Board directives when it names none, because the floor's own banner matches as a citation",
+      "why": "MILESTONE M1 ledger v12 (R3.0), measured 2026-10-07 against 23a163c on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict STUB at TIER 1 after independent refutation. THE VISION CLAIM: §5 says the AI CEO receives the Board's action plan, and the chat's grounding chip (W627 FU-526) says what the answer actually NAMES. OBSERVED: I sent POST /api/v138/ceo/chat with 'hello' and with 'What are our current priorities?'. The deterministic floor answered with a term-count frame that cites no directive. The done frame still returned cited.directives=2 and cited_basis 'the answer names 2 and 0 of them'. EVIDENCE: agentic_core/api/v138/ceo.py:366 counts a directive as cited when its first 40 characters appear in the answer. Lines 420-421 take those characters from the stored chief_directive, and that text begins with the floor banner '_[Workstation native structured engine — owned, no external dependency]_'. Every floor answer opens with the same banner, so every stored directive counts as cited. The chip is rendered in CEOChat.tsx:292. SMALLEST HONEST FIX: Remove the engine banner and other boilerplate before the presence test, or match on directive_id or the Owner's instruction text instead.",
+      "source": "W634 M1/M2 v12 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/api/v138/ceo.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v12 R3.0 is tier 1: P2.30 carries the v12 tier-1 findings",
+      "tier": 1
+    },
+    {
+      "id": "FU-581",
+      "title": "The plan's Strategy field says '0 objective(s) on the roadmap' while the same plan holds 2, and it can stay that way for 91 days",
+      "why": "MILESTONE M1 ledger v12 (R3.1), measured 2026-10-07 against 23a163c on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 1 after independent refutation. THE VISION CLAIM: §17.3: the Strategic layer is refreshed quarterly and on market signal. §17.5: the living business plan is never more than 5 minutes stale. OBSERVED: I added 2 objectives with /board/chief/instruct. GET /business-plan then showed objectives=2, and /business-plan/roadmap showed 2 under Unscheduled. The strategy field still said 0 objectives, because the quarterly layer is not due for 91 days and adding objectives does not count as a trigger. EVIDENCE: GET /api/v1/organism/cadence: strategic due=false, '0.0 day(s) since the last refresh, quarterly period is 91 day(s)'. BusinessPlan.tsx:191 renders plan.strategy as a plain Field. SMALLEST HONEST FIX: Prefix the derived strategy with its refresh timestamp ('as of …'), or work out the count when the page is read.",
+      "source": "W634 M1/M2 v12 refuter",
+      "found": "2026-10-07",
+      "files": [],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v12 R3.1 is tier 1: P2.30 carries the v12 tier-1 findings",
+      "tier": 1
+    },
+    {
+      "id": "FU-582",
+      "title": "Change Control files an unknown change type at MEDIUM without a word, so an AI CEO 'genome_change' was auto-approved by a health rule with no Board ratification",
+      "why": "MILESTONE M2 ledger v12 (R3.2), measured 2026-10-07 against 23a163c on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 2 after independent refutation. THE VISION CLAIM: §5 and §17.5 Arms-Length Agency: lower tiers cannot instruct the Board or genome, and a HIGH change approved by a review waits for Board ratification. OBSERVED: I submitted POST /cca/submit with change_type 'genome_change' and submitted_by 'ai_ceo'. It was accepted as MEDIUM, and POST /cca/{id}/review approved it through health_threshold_rule. It never entered /board/ratifications. EVIDENCE: change_control.py:324 `_TIER_MAP.get(change_type, \"MEDIUM\")`. The known key is 'genome_edit' (HIGH), and there is no validation of change_type. The record is cca-1c3a5ee108. SMALLEST HONEST FIX: Reject an unknown change_type, or default it to HIGH and say that it was not recognised.",
+      "source": "W634 M1/M2 v12 refuter",
+      "found": "2026-10-07",
+      "files": [],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.31",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v12 R3.2 is tier 2: P2.31 carries the v12 tier-2 findings",
+      "tier": 2
+    },
+    {
+      "id": "FU-583",
+      "title": "The Chief is labelled a 'Modelled twin' as soon as anyone types one instruction, and nothing is modelled",
+      "why": "MILESTONE M2 ledger v12 (R3.3), measured 2026-10-07 against 23a163c on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 2 after independent refutation. THE VISION CLAIM: §5 and §17.4 Mode 2: the Chief is the founder's digital twin, 'modelled, simulated and iterated' from the founder's record (W587). OBSERVED: /board/chief/model returned reported_as 'role' before I instructed and 'modelled twin' after two identical POSTs. owner_source was 'the caller's own label — single-user mode has no principal'. Identical instructions are each counted. EVIDENCE: board.py:242 `is_twin = (n_i + n_d) > 0`. founder_profile() injects the recent instructions into the prompt. BoardOfDirectors.tsx:108 renders it. SMALLEST HONEST FIX: Rename it 'Chief carrying N of your instructions', or require an actual fitted or evaluated model before using the word 'modelled'.",
+      "source": "W634 M1/M2 v12 refuter",
+      "found": "2026-10-07",
+      "files": [],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.31",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v12 R3.3 is tier 2: P2.31 carries the v12 tier-2 findings",
+      "tier": 2
+    },
+    {
+      "id": "FU-584",
+      "title": "One Board Pack gives two different visions for the same VSB",
+      "why": "MILESTONE M2 ledger v12 (R3.4), measured 2026-10-07 against 23a163c on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 2 after independent refutation. THE VISION CLAIM: §17.3: the Board Pack is assembled fresh from live data, and the Constitutional layer holds Mission · Vision. OBSERVED: I sent POST /vsb/vsb-edafbd9ebd/board-pack. The pack is DCS-registered, the floor narrative is disclosed and quality is not_assessable=true, so it is honest otherwise. The constitutional vision is the problem statement verbatim, while the plan's vision field is an establish_template sentence quoted in the strategic layer. EVIDENCE: In the pack JSON, layers.constitutional.vision and layers.strategic.content differ. GET /business-plan?scope=vsb-edafbd9ebd has vision = 'A self-running waqf_ltd_hybrid…'. SMALLEST HONEST FIX: Use one vision source in both layers, or flag the template vision as a template in the strategic content.",
+      "source": "W634 M1/M2 v12 refuter",
+      "found": "2026-10-07",
+      "files": [],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.31",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v12 R3.4 is tier 2: P2.31 carries the v12 tier-2 findings",
+      "tier": 2
+    },
+    {
+      "id": "FU-585",
+      "title": "Factory output saved to a project records no provenance, and its file label always says 'deterministic floor' whoever served it",
+      "why": "MILESTONE M2 ledger v12 (R4.0), measured 2026-10-07 against 23a163c on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 2 after independent refutation. THE VISION CLAIM: §6: provenance (served_by/is_external) goes with output everywhere it reaches a user, including the durable record. OBSERVED: POST /api/v1/factory/produce with project_id calls _save_output(project, accumulated) and does not pass the served_by/is_external values it already holds in prod. _save_output defaults served_by=None, and its label branch `(served_by or 'native') == 'native'` then writes the floor label. EVIDENCE: agentic_core/api/products.py around line 196: `_save_output(project, accumulated)`, compared with agentic_core/projects/api.py:213-224 (_save_output signature and the _basis logic). projects/api.py:470 passes fin.get('served_by') correctly, so the gap is only on the Factory path. SMALLEST HONEST FIX: Pass served_by=prod['served_by'], is_external=prod['is_external'] into _save_output in factory_produce.",
+      "source": "W634 M1/M2 v12 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/api/products.py",
+        "agentic_core/projects/api.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.31",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v12 R4.0 is tier 2: P2.31 carries the v12 tier-2 findings",
+      "tier": 2
+    },
+    {
+      "id": "FU-586",
+      "title": "Charity grants are funded and labelled as having cleared a compliance screen that cannot clear anything",
+      "why": "MILESTONE M1 ledger v12 (R6.0), measured 2026-10-07 against 23a163c on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 1 after independent refutation. THE VISION CLAIM: §12: the four causes go through a 100%-donation-only screen and every distribution is compliance-checked (charity.py docstring: 'Halal / ethical only (enforced + checked)'). OBSERVED: POST /api/v1/economy/cycle {revenue:1000,costs:100} funded 4 grants out of a 105 WST charity pot. Each grant had compliance:'review' and donation_100pct_verified:'not_checked'. charity.py only excludes a grant when the verdict is 'fail', so 'review' gets funded, and so does 'unscreened (engine unavailable)'. The UI footnote does say the 100%-donation flag is not_checked, but it says nothing about compliance being unassessed. EVIDENCE: agentic_core/economy/charity.py:250-263 (only verdict=='fail' excluded; 'review' and 'unscreened (engine unavailable)' go to cleared), :307 method string, :322 allocation_rule 'clears the compliance screen'; apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx:597-602 (grant row tooltip = allocation_rule, compliance field never rendered). SMALLEST HONEST FIX: Change 'clears the compliance screen' to 'is not refused by the screen (verdict: review = unassessed)', show each grant's compliance verdict on its row, and stop funding 'unscreened (engine unavailable)' grants.",
+      "source": "W634 M1/M2 v12 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/economy/charity.py",
+        "apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v12 R6.0 is tier 1: P2.30 carries the v12 tier-1 findings",
+      "tier": 1
+    },
+    {
+      "id": "FU-587",
+      "title": "'organism_health' on plan state and the board snapshot is just the AI-call error rate, and HTTP 5xx failures are never counted",
+      "why": "MILESTONE M2 ledger v12 (R6.1), measured 2026-10-07 against 23a163c on the native floor (AI_DISABLE_LOCAL=1) by a 12-agent run, standing verdict PARTIAL at TIER 2 after independent refutation. THE VISION CLAIM: §8: the organism defends itself; profitability, satisfaction, alignment and compliance are continuously monitored. The naming invariant: a quantity carries a name only when it is computed as that thing. OBSERVED: organism_health = immune.status().health = max(0, 1 - errors/10) over 5 minutes. immune.record is called only from ai/gateway.py, ai/native/orchestrator.py, heartbeat compliance regression, biobus and vbs/quality. No http_5xx recorder exists anywhere. EVIDENCE: agentic_core/api/transformation.py:72 and agentic_core/api/board.py:427 (organism_health = immune health); agentic_core/organism/immune.py:1-9 docstring claims HTTP 5xx tracking; grep for 'http_5xx' outside immune.py finds nothing; live /api/v1/plan/state shows organism_health 1.0. SMALLEST HONEST FIX: Rename the field immune_ai_error_health or attach a scope basis ('AI-call failures and compliance regressions only; route 5xx not tracked'), or add a 5xx middleware recorder.",
+      "source": "W634 M1/M2 v12 refuter",
+      "found": "2026-10-07",
+      "files": [
+        "agentic_core/api/board.py",
+        "agentic_core/api/transformation.py",
+        "agentic_core/organism/immune.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.31",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ledger v12 R6.1 is tier 2: P2.31 carries the v12 tier-2 findings",
+      "tier": 2
     }
   ],
   "routes": [
     {
-      "slot": "P2.28",
+      "slot": "P2.30",
       "files": [
         "agentic_core/cognitive/",
         "agentic_core/consultation/",
@@ -10955,40 +11204,40 @@
         "agentic_core/api/cognitive.py"
       ],
       "words": [],
-      "note": "handed from P3.12 via P2.26; handed from P3.12 via P2.24; handed from P3.12 via P2.22; handed from P3.12 via P2.20; handed from P3.12 via P3.23; handed from P3.12 via P3.28; handed from P3.12 via P3.21; handed from P3.12 via P3.20; handed from P3.12 via P3.16; handed from P3.12 via P3.13; handed from P3.12; the cognitive engine contract and the six foundational engines (W480 review)",
+      "note": "handed from P3.12 via P2.28; handed from P3.12 via P2.26; handed from P3.12 via P2.24; handed from P3.12 via P2.22; handed from P3.12 via P2.20; handed from P3.12 via P3.23; handed from P3.12 via P3.28; handed from P3.12 via P3.21; handed from P3.12 via P3.20; handed from P3.12 via P3.16; handed from P3.12 via P3.13; handed from P3.12; the cognitive engine contract and the six foundational engines (W480 review)",
       "handed_from": "P3.12"
     },
     {
-      "slot": "P2.28",
+      "slot": "P2.30",
       "files": [
         "agentic_core/avatars/core/clearance_chain.py"
       ],
       "words": [],
-      "note": "handed from P3.14 via P2.26; handed from P3.14 via P2.24; handed from P3.14 via P2.22; handed from P3.14 via P2.20; handed from P3.14 via P3.23; handed from P3.14 via P3.28; handed from P3.14 via P3.21; handed from P3.14 via P3.20; handed from P3.14 via P3.16; handed from P3.14 via P3.15; handed from P3.14; the five-gate clearance chain",
+      "note": "handed from P3.14 via P2.28; handed from P3.14 via P2.26; handed from P3.14 via P2.24; handed from P3.14 via P2.22; handed from P3.14 via P2.20; handed from P3.14 via P3.23; handed from P3.14 via P3.28; handed from P3.14 via P3.21; handed from P3.14 via P3.20; handed from P3.14 via P3.16; handed from P3.14 via P3.15; handed from P3.14; the five-gate clearance chain",
       "handed_from": "P3.14"
     },
     {
-      "slot": "P2.28",
+      "slot": "P2.30",
       "files": [
         "agentic_core/avatars/core/recirculation_orchestrator.py",
         "agentic_core/avatars/cognition/"
       ],
       "words": [],
-      "note": "handed from P3.16 via P2.26; handed from P3.16 via P2.24; handed from P3.16 via P2.22; handed from P3.16 via P2.20; handed from P3.16 via P3.23; handed from P3.16 via P3.28; handed from P3.16 via P3.21; handed from P3.16 via P3.20; handed from P3.16; the recirculation loop and the auxiliary engines",
+      "note": "handed from P3.16 via P2.28; handed from P3.16 via P2.26; handed from P3.16 via P2.24; handed from P3.16 via P2.22; handed from P3.16 via P2.20; handed from P3.16 via P3.23; handed from P3.16 via P3.28; handed from P3.16 via P3.21; handed from P3.16 via P3.20; handed from P3.16; the recirculation loop and the auxiliary engines",
       "handed_from": "P3.16"
     },
     {
-      "slot": "P2.28",
+      "slot": "P2.30",
       "files": [],
       "words": [
         "attestation",
         "post-quantum"
       ],
-      "note": "handed from P3.15 via P2.26; handed from P3.15 via P2.24; handed from P3.15 via P2.22; handed from P3.15 via P2.20; handed from P3.15 via P3.23; handed from P3.15 via P3.28; handed from P3.15 via P3.21; handed from P3.15 via P3.20; handed from P3.15 via P3.16; handed from P3.15; attestations that are attestations",
+      "note": "handed from P3.15 via P2.28; handed from P3.15 via P2.26; handed from P3.15 via P2.24; handed from P3.15 via P2.22; handed from P3.15 via P2.20; handed from P3.15 via P3.23; handed from P3.15 via P3.28; handed from P3.15 via P3.21; handed from P3.15 via P3.20; handed from P3.15 via P3.16; handed from P3.15; attestations that are attestations",
       "handed_from": "P3.15"
     },
     {
-      "slot": "P2.28",
+      "slot": "P2.30",
       "files": [
         "agentic_core/biomimicry/minimisation/",
         "core/transcendent_subsystems/",
@@ -10996,11 +11245,11 @@
         "agentic_core/validation/"
       ],
       "words": [],
-      "note": "handed from P3.17 via P2.26; handed from P3.17 via P2.24; handed from P3.17 via P2.22; handed from P3.17 via P2.20; handed from P3.17 via P3.23; handed from P3.17 via P3.28; handed from P3.17 via P3.21; handed from P3.17 via P3.20; handed from P3.17 via P3.16; handed from P3.17; W482 — the BME recovery and the two engines it leans on (VRPR, the enforcement pattern)",
+      "note": "handed from P3.17 via P2.28; handed from P3.17 via P2.26; handed from P3.17 via P2.24; handed from P3.17 via P2.22; handed from P3.17 via P2.20; handed from P3.17 via P3.23; handed from P3.17 via P3.28; handed from P3.17 via P3.21; handed from P3.17 via P3.20; handed from P3.17 via P3.16; handed from P3.17; W482 — the BME recovery and the two engines it leans on (VRPR, the enforcement pattern)",
       "handed_from": "P3.17"
     },
     {
-      "slot": "P2.28",
+      "slot": "P2.30",
       "files": [
         "agentic_core/avatars/"
       ],
@@ -11008,21 +11257,21 @@
         "avatar",
         "profile applied"
       ],
-      "note": "handed from P2.3 via P2.26; handed from P2.3 via P2.24; handed from P2.3 via P2.22; handed from P2.3 via P2.20; handed from P2.3 via P3.23; handed from P2.3 via P3.28; handed from P2.3 via P3.21; handed from P2.3 via P3.6; handed from P2.3; avatar and profile honesty (after P2.9: an economy row that also touches avatars/api.py is P2.9's)",
+      "note": "handed from P2.3 via P2.28; handed from P2.3 via P2.26; handed from P2.3 via P2.24; handed from P2.3 via P2.22; handed from P2.3 via P2.20; handed from P2.3 via P3.23; handed from P2.3 via P3.28; handed from P2.3 via P3.21; handed from P2.3 via P3.6; handed from P2.3; avatar and profile honesty (after P2.9: an economy row that also touches avatars/api.py is P2.9's)",
       "handed_from": "P2.3"
     },
     {
-      "slot": "P2.28",
+      "slot": "P2.30",
       "files": [
         "agentic_core/organism/",
         "agentic_core/optimizer/"
       ],
       "words": [],
-      "note": "handed from P2.7 via P2.26; handed from P2.7 via P2.24; handed from P2.7 via P2.22; handed from P2.7 via P2.20; handed from P2.7 via P3.26; handed from P2.7 via P3.2; handed from P2.7; the organism and its heartbeat",
+      "note": "handed from P2.7 via P2.28; handed from P2.7 via P2.26; handed from P2.7 via P2.24; handed from P2.7 via P2.22; handed from P2.7 via P2.20; handed from P2.7 via P3.26; handed from P2.7 via P3.2; handed from P2.7; the organism and its heartbeat",
       "handed_from": "P2.7"
     },
     {
-      "slot": "P2.28",
+      "slot": "P2.30",
       "files": [
         "requirements.txt",
         "pyproject.toml",
@@ -11038,7 +11287,7 @@
         "pins",
         "distribution"
       ],
-      "note": "handed from P3.26 via P2.26; handed from P3.26 via P2.24; handed from P3.26 via P2.22; handed from P3.26 via P2.20; handed from P3.26; W588: the dependency DECLARATION area, narrowed from W583's words after they collided. W583 gave this route the bare words dependency and dependencies, and a route word is matched as a whole phrase inside a row's TITLE - so it also matched P2.18's governance route, whose words are auth dependency governance verdict circuit breaker evolution. followups.py done P2.18 --retire-routes then REFUSED with \"P3.26 claims [change_control.py, governance pages, board.py] - title word dependency\", which would have blocked P2.18's closure on a false claim. The same generic-word hazard W586 recorded for value, outcome and benefit: a word common enough to be useful is common enough to capture somebody else's area. The words are now phrases that only a manifest row carries. P3.26 clause (7) remains the mechanism that answers this area: the retire-or-relabel discipline PROPOSES a removal through Change Control and names what it would remove and why, which is what 25 declared dependencies that no module imports needs - not a round quietly deleting a pin from a lock CI installs from.",
+      "note": "handed from P3.26 via P2.28; handed from P3.26 via P2.26; handed from P3.26 via P2.24; handed from P3.26 via P2.22; handed from P3.26 via P2.20; handed from P3.26; W588: the dependency DECLARATION area, narrowed from W583's words after they collided. W583 gave this route the bare words dependency and dependencies, and a route word is matched as a whole phrase inside a row's TITLE - so it also matched P2.18's governance route, whose words are auth dependency governance verdict circuit breaker evolution. followups.py done P2.18 --retire-routes then REFUSED with \"P3.26 claims [change_control.py, governance pages, board.py] - title word dependency\", which would have blocked P2.18's closure on a false claim. The same generic-word hazard W586 recorded for value, outcome and benefit: a word common enough to be useful is common enough to capture somebody else's area. The words are now phrases that only a manifest row carries. P3.26 clause (7) remains the mechanism that answers this area: the retire-or-relabel discipline PROPOSES a removal through Change Control and names what it would remove and why, which is what 25 declared dependencies that no module imports needs - not a round quietly deleting a pin from a lock CI installs from.",
       "handed_from": "P3.26"
     }
   ],
