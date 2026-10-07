@@ -307,6 +307,14 @@ async def run_cycle(req: CycleRequest, user: dict | None = Depends(get_current_u
                                                     "living_registry" if attribution.startswith("living_registration")
                                                     else ("caller_claimed" if req.entity_type
                                                           else "platform_default"))}
+        #  W631 (FU-558) - a cycle for an id that is NOT a registered living entity is a SIMULATION, and says so:
+        #  it wrote books and an Owner accrual for nothing that exists, and the response never mentioned it
+        if not attribution.startswith("living_registration"):
+            result["registration"] = "UNREGISTERED"
+            result["registration_basis"] = (
+                f"'{req.vsb_id}' is not a registered living entity: this cycle is a SIMULATION run on request "
+                f"values, and the ledger entries and any Owner accrual it wrote belong to no entity that exists. "
+                f"Virtual WST only.")
         # §13 (W338) — USER-driven cycles drift the living record too: a cycle that genuinely
         # moved the ledger marks the shipped repo stale (the audit found only AUTONOMOUS cycles
         # marked drift — an owner-run cycle silently outdated the shipped body).

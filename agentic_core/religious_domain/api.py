@@ -856,6 +856,10 @@ async def get_gamification(uid: str):
     return _gami_state(_load_gami(uid))
 
 
+_RESERVED_ACHIEVEMENT_PREFIXES = ("hafiz", "hifz", "surah_complete", "ayah_memorised", "ayah_memorized",
+                                  "juz_complete", "khatm", "certif", "ijazah")
+
+
 class AwardRequest(BaseModel):
     uid: str
     achievement: str    # e.g. "ayah_memorised" | "daily_review" | "surah_complete"
@@ -869,8 +873,17 @@ async def award_xp(req: AwardRequest):
     W439 — the old fallback returned "Achievement recorded" while persisting NOTHING (the engine
     it deferred to lacks the method it probed for). "recorded: true" now means the write happened;
     the full recomputed state comes back with it."""
+    #  W631 (FU-548) - an achievement that CLAIMS memorisation or completion is the platform's own review path's
+    #  to award. Any caller could name 'hafiz_complete' here and be ranked for it.
+    _a = str(req.achievement or "").strip().lower()
+    if any(_a.startswith(p) for p in _RESERVED_ACHIEVEMENT_PREFIXES):
+        raise HTTPException(status_code=422, detail=(
+            f"'{req.achievement}' claims memorisation or completion, which only the platform's own review path "
+            f"records - an explicit award may not assert it"))
     state = _award(req.uid, req.achievement, req.xp, source="explicit_award")
-    return {"recorded": True, "achievement": req.achievement, "xp_awarded": req.xp, **state}
+    return {"recorded": True, "achievement": req.achievement, "xp_awarded": req.xp, "award_source": "caller_asserted",
+            "award_basis": "an explicit award records what the CALLER asserted; the platform did not observe it",
+            **state}
 
 
 @router.get("/leaderboard")
@@ -902,6 +915,9 @@ async def qep_leaderboard(limit: int = 20):
             #  trusting it. They can differ: history is capped at the last 500 awards while xp is a
             #  running total, and saying so is better than quietly presenting one as proof of the other.
             "xp_in_recorded_history": sum(int(h.get("xp", 0) or 0) for h in _hist),
+            #  W631 (FU-548) - how much of it a caller asserted rather than the platform observed
+            "caller_asserted_xp": sum(int(h.get("xp", 0) or 0) for h in _hist
+                                      if h.get("source") == "explicit_award"),
         })
 
     #  a tie is ordered by uid for determinism, and NAMED below rather than passed off as a ranking

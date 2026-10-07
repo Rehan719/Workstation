@@ -104,6 +104,11 @@ def _phrases(prompt: str, n: int = 6) -> List[str]:
     return out[:n]
 
 
+#  W631 (FU-557) - words that mark a request about a PERSON's work (pay, a role, a CV), not a venture's market
+_PERSONAL_MARKERS = ("salary", "negotiation coach", "compensation", "career", "curriculum vitae", " cv ",
+                     "résumé", "resume", "interview", "job offer", "pay rise", "target role")
+
+
 def _field(prompt: str, *labels: str) -> str:
     """Extract the value after a 'Label:' marker (first match wins), one line, trimmed.
 
@@ -283,7 +288,8 @@ class NativeReasoningEngine:
         # list of the stage that followed.
         prompt = _strip_carried(prompt)
         subject = _subject(prompt)
-        domain = _field(prompt, "Domain") or "the stated domain"
+        #  W631 (FU-556) - an unnamed domain is WITHHELD, not filled with a placeholder that reads as a reading
+        domain = _field(prompt, "Domain") or "WITHHELD — the request named no domain"
         role = _role(prompt)
         content = _content(prompt)
         #  W593 (P2.20 a.ii) — THE TERMS COME FROM THE USER'S OWN FIELDS, PER FIELD. The carried labels are
@@ -324,7 +330,9 @@ class NativeReasoningEngine:
                      f"directive only a served model can follow._\n\n")
 
         if sections:
-            blocks = [f"## {title}\n{self._section_body(title, subject, domain, terms)}" for title in sections]
+            _personal = any(w in prompt.lower() for w in _PERSONAL_MARKERS)      # W631 (FU-557)
+            blocks = [f"## {title}\n{self._section_body(title, subject, domain, terms, personal=_personal)}"
+                      for title in sections]
             body = lead + "\n\n".join(blocks)
         else:
             #  W593 (P2.20 a.i) — WHAT THE UNDERSTANDING LINE SAYS WHEN NO LABEL NAMED A SUBJECT. `_subject`
@@ -380,7 +388,7 @@ class NativeReasoningEngine:
         return f"{_MARKER}\n\n{body}"
 
     # ── per-archetype structured scaffolds (useful, grounded, never fabricated) ──
-    def _section_body(self, title: str, subject: str, domain: str, terms: List[str]) -> str:
+    def _section_body(self, title: str, subject: str, domain: str, terms: List[str], personal: bool = False) -> str:
         t = title.lower()
 
         def has(*ks: str) -> bool:
@@ -430,7 +438,10 @@ class NativeReasoningEngine:
                     "- Unit economics: cost-to-serve vs price; contribution margin (to be quantified).\n"
                     + self._dims(terms[:3], "Stream from") +
                     "\n- Sensitivity: the key drivers to stress-test.")
-        if has("market", "value", "business model", "go-to-market", "gtm",
+        #  W631 (FU-557) - the go-to-market frame (segment, CAC, moat) belongs to a VENTURE. A salary plan or a CV
+        #  that carries a "Market Positioning" heading is about a person in a labour market, and filling it with
+        #  CAC and a moat contradicted the floor note beside it. Outside a venture the generic frame is used.
+        if not personal and has("market", "value", "business model", "go-to-market", "gtm",
                "commercial", "demand", "customer", "segment"):
             return (f"Structured go-to-market frame for: {subject}.\n"
                     "- Segment & need: who is served and the job-to-be-done.\n"

@@ -523,7 +523,10 @@ async def cascade_orchestration(req: CascadeRequest,
     chief_prompt = (
         f"You are the Chief of the Board of Directors — the founder's standing charter (no trained "
         f"model of them exists) and the apex of "
-        f"this VSB's governance. A mission has been raised:\n\"{req.mission}\"\n"
+        f"this VSB's governance. A mission has been raised.\n"
+        #  W631 (FU-554) - the mission travels as a LABELLED field on its own line, so the floor reads it as the
+        #  subject; an unlabelled quoted line left the Chief level composed over an empty request
+        f"Mission: {req.mission}\n"
         f"Domain: {req.domain}\nRealm: {req.realm}\n{_founder_ctx}{_plan_ctx}\n"
         "You own the living Business Plan and deliver it via Strategy and a living Roadmap. Set the "
         "Founding Mandate the Board and whole organisation must serve:\n"
@@ -558,7 +561,7 @@ async def cascade_orchestration(req: CascadeRequest,
     ceo_prompt = (
         f"You are the AI CEO of a VSB, accountable to the Board. The Board has resolved:\n\n"
         f"{board_resolution[:600]}\n\n"
-        f"Mission:\n\"{req.mission}\"\nDomain: {req.domain}\nRealm: {req.realm}\n{_plan_ctx}\n"
+        f"Mission: {req.mission}\nDomain: {req.domain}\nRealm: {req.realm}\n{_plan_ctx}\n"   # W631 (FU-555)
         "Issue a CEO Mission Directive that honours the Board's guardrails:\n"
         "## Mission Statement (what we are achieving and why)\n"
         "## Strategic Priorities (top 3)\n"

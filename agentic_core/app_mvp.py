@@ -167,6 +167,15 @@ async def _horizon_observe(request, call_next):
     try:
         _response = await call_next(request)
         _status = getattr(_response, "status_code", None)
+        #  W631 (FU-559) - NO APP-WIDE CONSTITUTIONAL GATE EXISTS, and every response says so. A gate is applied
+        #  only by the routes that call it, and those carry their own governance_checkpoint in the body; this
+        #  header tells any caller of any other route that it was not gated. Building a global gate is an
+        #  architecture decision for the Owner (the transformation invariant row already reports it NOT held).
+        try:
+            _response.headers["X-Workstation-GaaS"] = ("route-level only: no app-wide gate - a response is gated "
+                                                       "only if its body carries a governance_checkpoint")
+        except Exception:     # noqa: BLE001 - a header must never fail a response
+            pass
         return _response
     except Exception as _exc:         # noqa: BLE001 — observed, then re-raised unchanged
         _raised = _exc.__class__.__name__

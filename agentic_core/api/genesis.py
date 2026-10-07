@@ -273,6 +273,15 @@ def _bar_attestations(candidates: List[Dict[str, Any]], stage_5: Dict[str, Any],
     return ev, wh
 
 
+def _deliverable_line(entity: dict) -> str:
+    """W631 (FU-552) - what establishment produced, from the entity's DERIVED status, not a fixed claim that a
+    'Living Enterprise ... generated, governed' exists while the status reads 'registered - not operating'."""
+    st = str(entity.get("status") or "status not derived")
+    if st == "operating":
+        return "VSB IDBO entity established and operating — persisted"
+    return f"VSB IDBO entity registered and persisted — {st}; it is not yet a living, operating enterprise"
+
+
 def _problem_detail(problem: str, limit: int = 3000) -> str:
     """W627 (FU-519) - the part of a problem after its first line, blank lines folded, for a DOCUMENT block."""
     lines = (problem or "").strip().splitlines()
@@ -1505,7 +1514,7 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
         "governance": entity["governance"],
         "initial_ship": initial_ship,   # §4 (W302) — the body shipped at birth (or honestly not)
         "birth_vitals": birth_vitals,   # §3×§8×§12 (W309) — first screen + first cycle at birth
-        "deliverable": "Living Enterprise IDBO (VSB) generated, governed, and persisted",
+        "deliverable": _deliverable_line(entity),   # W631 (FU-552)
     }
 
 
@@ -1721,7 +1730,7 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
             "birth_vitals": birth_vitals,
             # parity with the blocking path — the UI badge must reflect the REAL gate outcome
             "governance": entity["governance"],
-            "deliverable": "Living Enterprise IDBO (VSB) generated, governed, and persisted",
+            "deliverable": _deliverable_line(entity),   # W631 (FU-552)
         })
 
     return StreamingResponse(_stream(), media_type="text/event-stream",

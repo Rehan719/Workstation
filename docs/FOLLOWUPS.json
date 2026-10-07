@@ -10388,11 +10388,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.27",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W631",
       "note": "",
       "slot_source": "ledger v10 R1.2 is tier 2: P2.27 carries the v10 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Arabic and Quranic source text is refused unconditionally (422) whatever model is available, pointing to sourced editions; the status and the Studio say so before a click; blind red"
     },
     {
       "id": "FU-547",
@@ -10406,11 +10409,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.27",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W631",
       "note": "",
       "slot_source": "ledger v10 R1.3 is tier 2: P2.27 carries the v10 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "a compliance FAIL or REVIEW is a visible chip in DomainTool and its first line in every copy and download; blind red"
     },
     {
       "id": "FU-548",
@@ -10424,11 +10430,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.27",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W631",
       "note": "",
       "slot_source": "ledger v10 R1.4 is tier 2: P2.27 carries the v10 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "explicit awards may not claim memorisation or completion (reserved prefixes refused 422); what they record is labelled caller-asserted and the leaderboard shows caller_asserted_xp; blinds red"
     },
     {
       "id": "FU-549",
@@ -10480,11 +10489,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.27",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W631",
       "note": "",
       "slot_source": "ledger v10 R2.2 is tier 2: P2.27 carries the v10 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "stage chips show n/a, not a percentage, on a stage the backend calls not assessable; blind red"
     },
     {
       "id": "FU-552",
@@ -10496,11 +10508,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.27",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W631",
       "note": "",
       "slot_source": "ledger v10 R2.5 is tier 2: P2.27 carries the v10 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the establish deliverable line is derived from the entity's status and no longer claims a generated, governed living enterprise while it is registered and not operating; blind red"
     },
     {
       "id": "FU-553",
@@ -10512,11 +10527,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.27",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W631",
       "note": "",
       "slot_source": "ledger v10 R2.6 is tier 2: P2.27 carries the v10 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the ship response carries coherent_whole_basis: every surface written, how many gates were not assessable and the compliance verdict; blind red"
     },
     {
       "id": "FU-554",
@@ -10528,11 +10546,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.27",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W631",
       "note": "",
       "slot_source": "ledger v10 R3.0 is tier 2: P2.27 carries the v10 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the cascade's Chief prompt carries the mission as a labelled field, so the Chief level is composed over it; blind red"
     },
     {
       "id": "FU-555",
@@ -10544,11 +10565,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.27",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W631",
       "note": "",
       "slot_source": "ledger v10 R4.0 is tier 2: P2.27 carries the v10 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the CEO prompt's mission is on its labelled line, so the CEO tier names the founder's mission instead of an empty frame; covered by the W631 guard"
     },
     {
       "id": "FU-556",
@@ -10560,11 +10584,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.27",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W631",
       "note": "",
       "slot_source": "ledger v10 R4.1 is tier 2: P2.27 carries the v10 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "an unnamed domain reads WITHHELD instead of the placeholder 'the stated domain'; blind red"
     },
     {
       "id": "FU-557",
@@ -10578,11 +10605,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.27",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W631",
       "note": "",
       "slot_source": "ledger v10 R5.0 is tier 2: P2.27 carries the v10 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the go-to-market frame is not used for a request about a person's work (salary, CV, interview), so a salary plan carries no CAC or moat; blind red"
     },
     {
       "id": "FU-558",
@@ -10596,11 +10626,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.27",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W631",
       "note": "",
       "slot_source": "ledger v10 R6.0 is tier 2: P2.27 carries the v10 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "a metabolic cycle for an id that is not a registered living entity is marked UNREGISTERED with a basis saying it is a simulation; blind red"
     },
     {
       "id": "FU-559",
@@ -10614,11 +10647,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.27",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W631",
       "note": "",
       "slot_source": "ledger v10 R6.1 is tier 2: P2.27 carries the v10 tier-2 findings",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "every response carries X-Workstation-GaaS saying the gate is route-level only and a response is gated only if it carries a governance_checkpoint; a global gate remains the Owner's architecture decision; blind red"
     }
   ],
   "routes": [

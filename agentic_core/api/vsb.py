@@ -2636,6 +2636,13 @@ async def ship_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current_use
         "vsb_id": vsb_id, "name": vsb.get("name"), "shipped": True,
         "surfaces": surfaces,
         "coherent_whole": all("error" not in s and "deferred" not in s for s in surfaces.values()),
+        #  W631 (FU-553) - 'coherent whole' means every surface was WRITTEN; said beside the gates it did not pass
+        "coherent_whole_basis": (
+            f"every surface was WRITTEN; {sum(1 for v in _vals if v is None)} of {len(_vals)} surface quality gate(s) "
+            f"were not assessable and compliance is {_agg_qa['quality']['compliance']['overall'] or 'not screened'} "
+            f"- written, not verified" if any(v is None for v in _vals) or
+            (_agg_qa['quality']['compliance']['overall'] or 'pass') != 'pass' else
+            "every surface was written and every surface's quality gate passed"),
         "surfaces_shipped": sorted(k for k, s in surfaces.items() if "error" not in s and "deferred" not in s),
         "surfaces_refused": {k: (s.get("error") or s.get("deferred")) for k, s in surfaces.items()
                              if "error" in s or "deferred" in s},

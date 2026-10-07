@@ -8695,7 +8695,7 @@ def test_w439_qep_cluster_audited_fixes_hold(client):
     # ── gamification: "recorded" means PERSISTED (the old fallback claimed it while writing
     # nothing, and every learner read zeros forever) ─────────────────────────────────────────────
     a = client.post("/api/v1/qep/gamification/award",
-                    json={"uid": UID, "achievement": "surah_complete", "xp": 20}).json()
+                    json={"uid": UID, "achievement": "daily_review", "xp": 20}).json()   # W631: surah_complete is reserved
     assert a["recorded"] is True and a["xp"] == 20
     g = client.get(f"/api/v1/qep/gamification/{UID}").json()
     assert g["xp"] == 20, "the award vanished — the fabricated-recorded fallback is back"
@@ -8747,9 +8747,9 @@ def test_w439_qep_cluster_audited_fixes_hold(client):
     tr = client.post("/api/v1/qep/translation/translate",
                      json={"text": "بِسْمِ اللَّهِ", "target_language": "English"})
     ts = client.get("/api/v1/qep/translation/status").json()
-    if not ts["translation_available"]:
-        assert tr.status_code == 503, (
-            "a floor-served scaffold was returned as a 'translation' of sacred text")
+    #  W631 (FU-546) - sacred text is refused UNCONDITIONALLY now (422, by ruling), not only when no model runs
+    assert tr.status_code == 422 and "NOT OFFERED" in tr.text, (
+        "Arabic / Qur'anic text reached the translation path", tr.status_code)
     assert "availability_basis" in ts and "pipeline" not in ts, "the constant status fields are back"
 
     # ── XAI explains with the REAL engine's arithmetic ──────────────────────────────────────────
@@ -47101,3 +47101,70 @@ def test_w630_p226_the_four_v10_tier1_statements_are_true(client, monkeypatch):
         assert "forward-simulation NOT run" in _s5["method"] and "FORWARD-SIMULATED" not in _s5["method"], _s5["method"][:300]
         assert all("NOT SIMULATED EVIDENCE" in (c.get("simulation_score_basis") or "") for c in _s5["candidates"]), (
             "a floor twin's score still reads as simulated evidence")
+
+
+def test_w631_p227_the_twelve_v10_tier2_shortfalls_are_said(client):
+    """W631 (P2.27): FU-546, 547, 548, 551, 552, 553, 554, 555, 556, 557, 558, 559."""
+    _fe = lambda p: _code_only(open(f"apps/workstation-superapp/src/{p}", encoding="utf-8").read())
+
+    # FU-559: every response says no app-wide gate exists
+    _h = client.get("/health")
+    assert "route-level only" in (_h.headers.get("X-Workstation-GaaS") or ""), dict(_h.headers)
+
+    # FU-546: sacred text is refused whatever model is available, and the status says so up front
+    _t = client.post("/api/v1/qep/translation/translate", json={"text": "قُلْ هُوَ اللَّهُ أَحَدٌ"})
+    assert _t.status_code == 422 and "NOT OFFERED" in _t.text, (_t.status_code, _t.text[:200])
+    assert "NOT OFFERED" in client.get("/api/v1/qep/translation/status").json().get("sacred_text", "")
+    assert "Arabic / Qur'anic text is NOT translated here" in open(
+        "apps/workstation-superapp/src/components/QEPStudio.tsx", encoding="utf-8").read()
+
+    # FU-548: an explicit award may not claim memorisation; what it records is labelled caller-asserted
+    assert client.post("/api/v1/qep/gamification/award",
+                       json={"uid": "w631u", "achievement": "hafiz_complete", "xp": 100}).status_code == 422
+    _aw = client.post("/api/v1/qep/gamification/award", json={"uid": "w631u", "achievement": "daily_review", "xp": 5}).json()
+    assert _aw["award_source"] == "caller_asserted"
+    _lb = client.get("/api/v1/qep/leaderboard").json()
+    _row = next(r for r in (_lb.get("rows") or _lb.get("leaderboard") or []) if r.get("uid") == "w631u")
+    assert _row["caller_asserted_xp"] >= 5, _row
+
+    # FU-547: a compliance FAIL is visible and travels into the export
+    _dt = _fe("components/DomainTool.tsx")
+    assert 'data-testid="domain-compliance-chip"' in _dt and "§11 COMPLIANCE:" in _dt.split("const withDisclosures", 1)[1][:700]
+
+    # FU-551: no percentage on a not-assessable stage
+    assert "v.verified === null ? 'n/a'" in _fe("pages/synthesis/GenesisJourney.tsx")
+
+    # FU-552: the establish deliverable follows the derived status
+    _es = client.post("/api/v1/genesis/establish", json={"problem": "w631 status probe", "domain": "enterprise",
+                                                         "concept": "c", "design": "d", "commercialisation": "m",
+                                                         "ship_output": False}).json()
+    if _es.get("status") != "operating":
+        assert "generated, governed" not in _es["deliverable"] and str(_es.get("status")) in _es["deliverable"], _es["deliverable"]
+
+    # FU-553: 'coherent whole' is said beside the gates it did not pass
+    _vid = _es["vsb_id"]
+    client.post(f"/api/v1/vsb/{_vid}/name", json={"name": "W631 Status Co"})
+    _sh = client.post(f"/api/v1/vsb/{_vid}/repo/ship").json()
+    assert _sh.get("coherent_whole_basis") and "WRITTEN" in _sh["coherent_whole_basis"].upper(), sorted(_sh)[:20]
+
+    # FU-554 / FU-555: the cascade's Chief and CEO levels carry the founder's mission
+    _c = client.post("/api/v1/swarm/cascade", json={"mission": "Varroa mite monitoring for Yorkshire beekeepers",
+                                                    "domain": "enterprise"}).json()
+    for _lv in ("level_0_chief_of_board", "level_1_ceo_directive"):
+        assert "varroa" in str(_c.get(_lv)).lower(), (f"{_lv} was composed without the mission", str(_c.get(_lv))[:300])
+        assert "frame for: ." not in str(_c.get(_lv))
+
+    # FU-556: an unnamed domain is withheld, not filled
+    from agentic_core.ai.native.engine import NativeReasoningEngine
+    _o = NativeReasoningEngine().generate("Write a mission statement for a bakery cooperative")
+    assert "the stated domain" not in _o and "WITHHELD" in _o, _o[:300]
+
+    # FU-557: a salary plan carries no go-to-market boilerplate
+    _sal = client.post("/api/v1/employment/salary-negotiation",
+                       json={"target_role": "Head baker", "seniority": "senior", "experience_years": 8}).json()
+    assert "CAC" not in str(_sal.get("plan")) and "Moat" not in str(_sal.get("plan")), str(_sal.get("plan"))[:400]
+
+    # FU-558: a cycle for an unregistered id says it is a simulation
+    _cy = client.post("/api/v1/economy/cycle", json={"vsb_id": "vsb-w631-nobody", "revenue": 0})
+    if _cy.status_code == 200:
+        assert _cy.json().get("registration") == "UNREGISTERED" and "SIMULATION" in _cy.json()["registration_basis"]

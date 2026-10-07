@@ -221,6 +221,18 @@ async def recommendation_update(req: RecommendationUpdate,
 
 # ── Translation ───────────────────────────────────────────────────────────────
 
+_SACRED_REFUSAL = ("translation of Arabic / Qur'anic text is NOT OFFERED, by ruling (A.9.3): it refuses rather "
+                   "than approximates, whatever model is available. Translations of the Qur'an come only from "
+                   "licensed, sourced editions (A.12.1) - read one with GET /api/v1/qep/ayah/{surah}/{ayah}?edition=<a "
+                   "translation edition>. AI-composed religious text is withheld until a named scholar approves it (A.12.3).")
+
+
+def _is_sacred_source(req: "TranslateRequest") -> bool:
+    import re as _re
+    return (str(req.source_language or "").strip().lower() in ("arabic", "ar", "quranic arabic", "classical arabic")
+            or bool(_re.search(r"[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]", req.text or "")))
+
+
 class TranslateRequest(BaseModel):
     text: str
     target_language: str = "English"
@@ -250,6 +262,7 @@ async def translation_status():
                                "no model resource is available — the deterministic native floor "
                                "cannot translate, so /translate refuses rather than fabricating"),
         "supported_languages": _SUPPORTED_LANGUAGES,
+        "sacred_text": _SACRED_REFUSAL,      # W631 (FU-546) - said before anyone clicks, not only at refusal
         "engine": "in-house-first gateway (owned local model; external accelerants opt-in via AI_ALLOW_EXTERNAL)",
         "tajweed_note": ("recitation-note annotation is REQUESTED from the model when "
                          "preserve_tajweed is set — it is a prompt instruction, not a verified "
@@ -260,6 +273,12 @@ async def translation_status():
 @router.post("/translation/translate")
 async def translation_translate(req: TranslateRequest,
                                 user: dict | None = Depends(get_current_user)):
+    #  W631 (FU-546) - A.9.3 / A.12.1 / A.12.3: translating SACRED TEXT is not a feature waiting on a model. Arabic
+    #  source text is refused unconditionally, with or without a model; translations of the Qur'an come only from
+    #  licensed, sourced editions. Only non-Arabic educational text reaches the model-gated path below.
+    if _is_sacred_source(req):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=422, detail=_SACRED_REFUSAL)
     prompt = (
         f"Translate the following from {req.source_language} to {req.target_language}. "
         "Preserve meaning and scholarly register"
@@ -281,8 +300,8 @@ async def translation_translate(req: TranslateRequest,
         from fastapi import HTTPException
         raise HTTPException(status_code=503, detail=(
             "no model resource is available to translate — the deterministic native floor cannot "
-            "translate and its output will not be presented as a translation. Start a local model "
-            "(Ollama) or enable an external accelerant."))
+            "translate and its output will not be presented as a translation. (Arabic / Qur'anic text is "
+            "refused whatever model is available - this path is for non-Arabic educational text only.)"))
     # §17.5 invariant 1 (W343, FU-276) — the caller's identity reaches the memory layer, or what they asked for is stored where even they cannot recall it.
     _owner_id = user.get("username") if isinstance(user, dict) else None
     meta = await gateway.query_meta(prompt, agent="qep_translator", augment=False, owner_id=_owner_id)

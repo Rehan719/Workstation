@@ -803,7 +803,7 @@ export const GenesisJourney: React.FC = () => {
                 {Object.entries(result.stage_verifications).map(([stage, v]) => (
                   <span key={stage} title={v.verified === null ? (v.basis || 'not assessable — floor-served') : `score ${v.score} · sections ${v.sections_present}`}
                     className={`text-[9px] font-black uppercase px-2 py-1 rounded ${v.verified === null ? 'bg-slate-800 text-slate-500' : v.verified ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>
-                    {v.verified === null ? '—' : v.verified ? '✓' : '⚠'} {stage} · {Math.round(v.score * 100)}%
+                    {v.verified === null ? '—' : v.verified ? '✓' : '⚠'} {stage} · {/* W631 (FU-551) — no percentage on a stage the backend calls not assessable */}{v.verified === null ? 'n/a' : `${Math.round(v.score * 100)}%`}
                   </span>
                 ))}
               </div>
