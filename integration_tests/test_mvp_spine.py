@@ -45833,3 +45833,68 @@ def test_w611_p221_no_beat_step_fails_silently_and_no_presence_check_reads_a_com
     _spec.loader.exec_module(_scd)
     _leads = _scd.check_presence("HEAD", ["integration_tests/test_mvp_spine.py"])
     assert _leads == [], ("a presence check can still be satisfied by a comment alone", _leads[:3])
+
+
+def test_w612_a_refuter_that_raises_a_tier_has_reproduced_the_gap(client):
+    """MILESTONE M1 v8 (W612): the ledger's first render read 17 standing tier-1 while its own tier-1
+    headings numbered 18.
+
+    The refuter is told to refute "when the verdict is the wrong one", so `refuted` also marks a finding
+    it REPRODUCED and judged too kind. v8's R3.6 was raised tier 2 -> 1 and carried refuted=true, and the
+    renderer struck every refuted finding from the tier table and the direction counts. The method line
+    said "0 escalated INTO tier 1" in the same render. A finding cannot be made harsher unless it exists,
+    so an escalation stands at the raised tier, and a DELIVERED claim refuted into a gap (v7's R3.9 and
+    R5.9) is an escalation too: tier 0 is the mildest state, not the most severe. A refutation that strikes
+    or lowers still has no standing, as W572 ruled. Driven on crafted input through the committed renderer.
+    """
+    import json as _j612
+    import pathlib as _pl612
+    import re as _re612
+    import subprocess as _sp612
+    import sys as _sys612
+    import tempfile as _tf612
+
+    _root = _pl612.Path(__file__).resolve().parents[1]
+    _script = _root / "scripts" / "render_fidelity_ledger.py"
+
+    def _f(i, verdict, tier):
+        return {"id": f"R1.{i}", "section": f"finding {i}", "verdict": verdict, "tier": tier,
+                "vision_claim": "c", "observed": "o", "evidence": "e"}
+
+    def _v(i, cv, ct, refuted):
+        return {"index": i, "corrected_verdict": cv, "corrected_tier": ct, "refuted": refuted,
+                "reason": "r", "evidence": "x"}
+
+    _regions = [{"region": "R1", "summary": "", "findings": [
+        _f(0, "PARTIAL", 2),       # reproduced and RAISED 2 -> 1 under refuted=true: stands at 1
+        _f(1, "DELIVERED", 0),     # a DELIVERED claim refuted into a tier-2 gap: stands at 2
+        _f(2, "PARTIAL", 2),       # refuted and LOWERED 2 -> 3: no standing (W572)
+        _f(3, "STUB", 1),          # survived at 1
+    ], "verdicts": [_v(0, "PARTIAL", 1, True), _v(1, "PARTIAL", 2, True),
+                    _v(2, "PARTIAL", 3, True), _v(3, "STUB", 1, False)]}]
+    _d = _pl612.Path(_tf612.mkdtemp())
+    (_d / "in.json").write_text(_j612.dumps(_regions), encoding="utf-8")
+    _p = _sp612.run([_sys612.executable, str(_script), str(_d / "in.json"), str(_d / "out.md"),
+                     "deadbeef", "2026-01-01", "8086", "8", "W612"],
+                    capture_output=True, text=True, encoding="utf-8",
+                    env=dict(__import__("os").environ, PYTHONIOENCODING="utf-8"))
+    assert _p.returncode == 0, _p.stdout + _p.stderr
+    _text = (_d / "out.md").read_text(encoding="utf-8")
+
+    def _tier_row(t):
+        _m = _re612.search(r"^\| \*{0,2}%d\*{0,2} \| \*{0,2}(\d+)\*{0,2} \|" % t, _text, _re612.M)
+        return int(_m.group(1)) if _m else 0
+
+    assert _tier_row(1) == 2, ("a finding the refuter reproduced and RAISED into tier 1 was struck from the "
+                               "count M1 is scored on", _tier_row(1))
+    assert _tier_row(2) == 1, ("a DELIVERED claim the refuter overturned into a gap was struck, because tier 0 "
+                               "was read as the most severe tier", _tier_row(2))
+    assert _tier_row(3) == 0, ("a refutation that LOWERED a finding now contributes its tier - W572's rule "
+                               "was lost with the fix", _tier_row(3))
+    _headings = len(_re612.findall(r"^### R\d+\.\d+ .*· tier 1(?: |\*|$)", _text, _re612.M))
+    assert _headings == _tier_row(1), ("the tier-1 table and the tier-1 headings disagree", _headings)
+    _flat = " ".join(_text.split())
+    _m = _re612.search(r"with \*\*(\d+) escalated INTO tier 1\*\*", _flat)
+    assert _m and _m.group(1) == "1", ("the method line still hides the escalation into tier 1",
+                                       _m.group(0) if _m else None)
+    assert "REFUTED AS TOO KIND" in _text, "an escalated finding is rendered as if it had been struck"
