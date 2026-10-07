@@ -52,3 +52,18 @@ Both need a check on a machine where they are installed.
 lock, and `requirements.txt` is re-exported from it with the repository's tooling, never by hand. That happens in
 its own commit, with the full suite and CI run against it. If the lock cannot be regenerated, nothing is removed
 and the reason is recorded here.
+
+## Removal, W628b
+
+Removed from `pyproject.toml`: the 19 REMOVABLE rows above. `poetry lock` regenerated the lock and
+`poetry export` re-exported `requirements.txt`, which went from about 293 to 187 lines.
+
+**What re-locking found.** Eight packages that live code imports or loads had never been declared. They were
+present only as transitive dependencies of removed packages, or because of a hand edit to `requirements.txt`.
+Each is now declared in `pyproject.toml` at its existing pin:
+
+- `fpdf2`, `openpyxl`, `python-docx`, `python-pptx` and `pypdf`: the deliverable exports and document extraction
+- `passlib` and `python-jose`: auth
+- `python-multipart`: FastAPI form logins
+
+Removing first and declaring afterwards would have broken login and every export.
