@@ -103,6 +103,62 @@ async def native_resources():
     return {"resources": registry.available(), "selection_order": registry.select()}
 
 
+@router.get("/inventory")
+async def native_inventory():
+    """FU-618 — WHAT RESOURCES EXIST AND WHAT STATE EACH IS IN, in one read-only answer.
+
+    Composed from the producers that already exist; nothing is stored or recomputed here. Each block names
+    what KIND of statement it is (measured now / declared by the registry / simulated / not known), because
+    the optimizer's capacity baseline is a labelled simulation and the machine block is a measurement, and a
+    reader must not take one for the other. A producer that cannot answer is `known: False` with the reason:
+    not known is not the same as none.
+    """
+    def _block(kind: str, basis: str, produce):
+        try:
+            return {"known": True, "basis_kind": kind, "basis": basis, "data": produce()}
+        except Exception as exc:                                    # noqa: BLE001 - said, never swallowed
+            return {"known": False, "basis_kind": "not_known", "data": None,
+                    "basis": f"NOT KNOWN - this producer could not answer ({type(exc).__name__}: "
+                             f"{str(exc)[:120]}). Not the same as none."}
+
+    from agentic_core.ai.native import tiers as _tiers
+
+    def _fabric():
+        from agentic_core.api.resource_fabric import _REGISTRY
+        classes: Dict[str, int] = {}
+        for r in _REGISTRY:
+            classes[r["resource_class"]] = classes.get(r["resource_class"], 0) + 1
+        return {"total": len(_REGISTRY), "by_class": classes}
+
+    def _optimizer():
+        from agentic_core.optimizer.fabric import DynamicResourceFabric
+        return DynamicResourceFabric().get_inventory_status()
+
+    def _homeostasis():
+        from agentic_core.ai.native.homeostasis import homeostasis
+        return homeostasis.snapshot()
+
+    return {
+        "machine": _block("measured", "read from this machine at call time; each field carries its own "
+                          "source in the data", _tiers.machine),
+        "tiers": _block("measured", "each tier's `runnable here` is decided from the machine block above and "
+                        "the local model runtime, at call time", _tiers.registry),
+        "models": _block("declared", "the model resource registry: what is configured and reachable; "
+                         "`available` is checked at call time, the model names are configuration",
+                         lambda: {"resources": registry.available(), "selection_order": registry.select()}),
+        "fabric": _block("declared", "the Resource Fabric's registered resources, counted by class; a count "
+                         "of what is registered, not of what has run", _fabric),
+        "homeostasis": _block("measured", "the organism's current admission posture for cognitive work",
+                              _homeostasis),
+        "optimizer_baseline": _block("simulated", "a single-node SIMULATED capacity baseline with no real "
+                                     "quota behind it - not a measurement of this machine; the machine "
+                                     "block is", _optimizer),
+        "read_only": True,
+        "note": ("composed from existing producers; this route stores nothing and allocates nothing. People "
+                 "are not a resource class here."),
+    }
+
+
 @router.get("/tiers")
 async def native_tiers():
     """The five declared tiers, each with whether it is RUNNABLE HERE and the MEASURED reason (P3.20).

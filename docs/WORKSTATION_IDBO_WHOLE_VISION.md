@@ -1492,7 +1492,9 @@ ruling forbids. Recitation audio, Hadith and Tafsir remain unsourced and therefo
 **A.12.2 Certification authority — RULED 2026-10-05b: QEP ISSUES NO CERTIFICATE IN ITS OWN NAME.** A
 certificate implies a body standing behind it and there is none. A **record of completion** is issued
 instead, stating plainly that it is not a credential, until a recognised body is named.
-*Built W594: the issuing path returns `completion_record_id` with `status: "RECORDED"` and
+*Status, corrected W639 (the note, not the ruling): the path below is BUILT AND UNREACHABLE — no HTTP route
+exposes it, nothing writes the completion it requires, and no course exists to complete, so no record has
+been or can be issued today. What W594 built: the issuing path returns `completion_record_id` with `status: "RECORDED"` and
 `is_credential: false`, and the `verify_url` is gone — it pointed at `/verify/{id}`, which nothing serves,
 so a learner clicking through to check their credential got a 404. The evidence gate from W403 stays
 (nothing is recorded without a recorded completion) and so does the line that the integrity digest is not

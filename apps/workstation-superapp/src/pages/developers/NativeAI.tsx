@@ -407,6 +407,8 @@ export const NativeAI: React.FC = () => {
   // live resource selection order (both were server-side only; no page ever called them)
   const [selfcheck, setSelfcheck] = useState<{ total: number; live: number; all_live: boolean; modules: { source: string; live: boolean; error?: string }[] } | null>(null);
   const [fabricRes, setFabricRes] = useState<{ resources: string[]; selection_order: string[] } | null>(null);
+  //  FU-618 — the read-only resource inventory: every block with the server's own basis and its KIND
+  const [inventory, setInventory] = useState<Record<string, any> | null>(null);
 
   // ── bespoke cascade design (user design control) ──
   const [name, setName] = useState('Concept Validator');
@@ -468,6 +470,7 @@ export const NativeAI: React.FC = () => {
     fetch('/api/v1/native-ai/homeostasis').then(r => r.json()).then(setHomeo).catch(() => {});
     fetch('/api/v1/native-ai/selfcheck').then(r => r.json()).then(setSelfcheck).catch(() => {});
     fetch('/api/v1/native-ai/resources').then(r => r.json()).then(setFabricRes).catch(() => {});
+    fetch('/api/v1/native-ai/inventory').then(r => r.json()).then(setInventory).catch(() => {});
     fetch('/api/v1/native-ai/models').then(r => r.json())
       .then(d => setModelTiers(d.tiers || [])).catch(() => {});
     loadCascades();
@@ -625,6 +628,45 @@ export const NativeAI: React.FC = () => {
               <p className="text-[9px] text-slate-500 mt-1" data-testid="native-status-basis">basis: {status.floor_active_basis}</p>
             )}
           </Card>
+
+          {/* FU-618 — WHAT RESOURCES EXIST, IN ONE PLACE. Composed by the server from the registries that
+              already exist; this panel prints each block's kind and the server's basis, and nothing of its own. */}
+          {inventory && (
+            <Card className="p-6 border-slate-800" data-testid="resource-inventory">
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Resource inventory — read only</h3>
+              <p className="text-[10px] text-slate-500 mb-3 leading-relaxed">
+                What this deployment has, each line with the kind of statement it is. A measured line was read
+                from this machine now; a simulated line is a baseline with nothing behind it; not known means
+                the source could not answer, which is not the same as none.{' '}
+                <a href="/resource-fabric" className="text-aura underline">Open the Resource Fabric</a>
+              </p>
+              <div className="space-y-2">
+                {([
+                  ['machine', 'This machine', (d: any) => `${d?.ram_gb ?? '?'} GB RAM · ${d?.cpu_count ?? '?'} logical CPUs · CUDA ${d?.cuda ? 'visible' : 'not visible'}`],
+                  ['tiers', 'Model tiers', (d: any) => `${(d?.runnable_tiers ?? []).length} of ${Object.keys(d?.tiers ?? {}).length} runnable here`],
+                  ['models', 'Model resources', (d: any) => `${(d?.resources ?? []).filter((r: any) => r.available).length} of ${(d?.resources ?? []).length} available now`],
+                  ['fabric', 'Resource Fabric', (d: any) => `${d?.total ?? '?'} registered resources`],
+                  ['homeostasis', 'Homeostasis', (d: any) => `posture ${d?.posture ?? 'not stated'}`],
+                  ['optimizer_baseline', 'Optimizer capacity baseline', (_d: any) => 'a baseline, not this machine'],
+                ] as [string, string, (d: any) => string][]).map(([key, label, headline]) => {
+                  const b = inventory[key];
+                  if (!b) return null;
+                  return (
+                    <div key={key} className="p-2 rounded-lg bg-slate-950 border border-slate-900" data-testid={`inventory-${key}`}>
+                      <p className="text-[11px] font-bold text-white flex items-center gap-2 flex-wrap">
+                        {label}
+                        <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${b.basis_kind === 'measured' ? 'bg-emerald-500/15 text-emerald-300' : b.basis_kind === 'simulated' || b.basis_kind === 'not_known' ? 'bg-amber-500/15 text-amber-300' : 'bg-slate-800 text-slate-300'}`}>
+                          {String(b.basis_kind).replace('_', ' ')}
+                        </span>
+                        <span className="text-slate-400 font-semibold">{b.known === false ? 'not known' : headline(b.data)}</span>
+                      </p>
+                      <p className="text-[9px] text-slate-500 leading-relaxed">{b.basis}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          )}
 
           {/* Posture */}
           <Card className="p-6 border-slate-800">
