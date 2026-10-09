@@ -96,7 +96,12 @@ ${TIERS}
 Your job is the GAP that remains, but report DELIVERED where you verified it — the honest picture needs both.
 Up to 10 findings, most consequential first (rank by how much a real person is misled or blocked). The CAP IS
 TEN AND THAT IS NOT THE SIZE OF THE GAP: if you hit it, say so in region_summary, because a reader must not
-read ten as "all there was".
+read ten as "all there was". Set unlisted_findings to the NUMBER of further gaps you found and could not
+list (0 if you listed everything you found).
+STATE YOUR COVERAGE. In surfaces_exercised list every API route you actually CALLED (as "METHOD /path", the
+route template, not the filled-in id) and every page or component file you actually READ (repo-relative
+path). Only what you executed or opened — not what you know exists. A surface you did not reach is not a
+clean surface, and this list is how a reader tells the two apart.
 EVERY finding's \`section\` is its ONE-LINE TITLE — a sentence naming what is wrong, not a section number.
 It becomes the finding's heading and is the only handle a register row or a reader has on it.`
 
@@ -106,14 +111,18 @@ const FINDINGS = { type: 'object', properties: { findings: { type: 'array', item
   vision_claim: { type: 'string' }, observed: { type: 'string' }, evidence: { type: 'string' },
   disclosed_to_user: { type: 'string' }, severity: { type: 'string' }, smallest_honest_fix: { type: 'string' } },
   required: ['section', 'verdict', 'tier', 'why_this_tier', 'vision_claim', 'observed', 'evidence'] } },
-  region_summary: { type: 'string' }, hit_the_cap: { type: 'boolean' } },
-  required: ['findings', 'region_summary', 'hit_the_cap'] }
+  region_summary: { type: 'string' }, hit_the_cap: { type: 'boolean' },
+  unlisted_findings: { type: 'number' },
+  surfaces_exercised: { type: 'object', properties: {
+    routes: { type: 'array', items: { type: 'string' } },
+    files: { type: 'array', items: { type: 'string' } } }, required: ['routes', 'files'] } },
+  required: ['findings', 'region_summary', 'hit_the_cap', 'unlisted_findings', 'surfaces_exercised'] }
 
 const VERDICTS = { type: 'object', properties: { verdicts: { type: 'array', items: { type: 'object', properties: {
-  index: { type: 'number' }, refuted: { type: 'boolean' },
+  index: { type: 'number' }, refuted: { type: 'boolean' }, reproduced: { type: 'boolean' },
   corrected_verdict: { type: 'string' }, corrected_tier: { type: 'number' },
   reason: { type: 'string' }, evidence: { type: 'string' } },
-  required: ['index', 'refuted', 'corrected_verdict', 'corrected_tier', 'reason'] } } },
+  required: ['index', 'refuted', 'reproduced', 'corrected_verdict', 'corrected_tier', 'reason'] } } },
   required: ['verdicts'] }
 
 const REGIONS = [
@@ -137,9 +146,9 @@ const results = await pipeline(REGIONS,
   (assessed, r) => {
     if (!assessed || !assessed.findings?.length) return { region: r.key, findings: [], verdicts: [], summary: assessed?.region_summary || '' }
     const listing = assessed.findings.map((f, i) => `[${i}] ${f.section} — ${f.verdict} · tier ${f.tier}: claim="${f.vision_claim}" observed="${f.observed}" evidence="${f.evidence}" disclosed=${f.disclosed_to_user || '?'} why_this_tier="${f.why_this_tier}"`).join('\n')
-    return agent(COMMON + `\nYOU ARE THE REFUTER for region ${r.key} (${r.title}). An assessor produced these findings:\n${listing}\n\nAttack EVERY finding. Default to refuted=true unless you personally reproduce the gap (execute the route, read the code, count the store). A finding is refuted when the capability IS delivered/disclosed as the vision says, when the evidence does not support the verdict, or when the verdict is the wrong one (say the corrected verdict — findings often need correcting UPWARD to DELIVERED or DOWNWARD when the assessor was too kind).\n\nAND GIVE corrected_tier ON EVERY INDEX, even when you leave it unchanged — it is the axis MILESTONE M1 is scored on, and a refuter who reports only a verdict hides a tier they moved. In v6 FOUR findings were escalated into tier 1 and the record said none had been made harsher, because direction was computed from the verdict alone; two of those had their verdict index RISE while the tier tightened. Tier the finding as YOU stand behind it after checking, against the tier definitions above, and say in \`reason\` why that tier rather than the one above or below.`,
+    return agent(COMMON + `\nYOU ARE THE REFUTER for region ${r.key} (${r.title}). An assessor produced these findings:\n${listing}\n\nAttack EVERY finding. Default to refuted=true unless you personally reproduce the gap (execute the route, read the code, count the store). SAY WHICH IT WAS ON EVERY INDEX: set reproduced=true ONLY if you personally reproduced the gap the finding describes - whatever you then decide about its verdict or its tier - and reproduced=false if you could not, or found the capability delivered. A finding you reproduced and merely re-labelled or re-tiered STANDS at your tier; one you could not reproduce does not. The ledger counts by this field, so do not leave it to be guessed from the tier. A finding is refuted when the capability IS delivered/disclosed as the vision says, when the evidence does not support the verdict, or when the verdict is the wrong one (say the corrected verdict — findings often need correcting UPWARD to DELIVERED or DOWNWARD when the assessor was too kind).\n\nAND GIVE corrected_tier ON EVERY INDEX, even when you leave it unchanged — it is the axis MILESTONE M1 is scored on, and a refuter who reports only a verdict hides a tier they moved. In v6 FOUR findings were escalated into tier 1 and the record said none had been made harsher, because direction was computed from the verdict alone; two of those had their verdict index RISE while the tier tightened. Tier the finding as YOU stand behind it after checking, against the tier definitions above, and say in \`reason\` why that tier rather than the one above or below.`,
       { label: `refute:${r.key}`, phase: 'Refute', schema: VERDICTS })
-      .then(v => ({ region: r.key, findings: assessed.findings, verdicts: v?.verdicts || [], summary: assessed.region_summary, hit_the_cap: assessed.hit_the_cap }))
+      .then(v => ({ region: r.key, findings: assessed.findings, verdicts: v?.verdicts || [], summary: assessed.region_summary, hit_the_cap: assessed.hit_the_cap, unlisted_findings: assessed.unlisted_findings, surfaces_exercised: assessed.surfaces_exercised }))
   })
 
 return results

@@ -13,7 +13,6 @@ from agentic_core.mjm.self_reflection_engine import SelfReflectionEngine
 from agentic_core.divine.v2.alignment_v2 import DivineAlignmentEngineV2
 from agentic_core.governance.gaas.v5.hallucination_sandbox import HallucinationSandbox
 from agentic_core.architecture.enriched_layers import EnrichedArchitecturalLayerManager
-from agentic_core.products.signature_suite.core import SignatureProductSuite
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +33,7 @@ class RecirculationPreflight:
 
     Enforces the pillars that path checks before it runs an action: geospheric homeostasis, the niyyah
     gate (which W584 made three-state after driving it with five opposite intents and getting one
-    constant), digital twin simulation, and signature suite integrity.
+    constant), and digital twin simulation.
     """
     def __init__(self, node_id: str = "MASTER_UCI_001", ueg_logger: Optional[Any] = None):
         self.node_id = node_id
@@ -48,7 +47,6 @@ class RecirculationPreflight:
         self.reflection = SelfReflectionEngine(validator=self.regulator, biomimetic_validator=self.layers.geospheric)
         self.divine = DivineAlignmentEngineV2(self.ueg)
         self.hallucination = HallucinationSandbox(self.ueg)
-        self.signature_suite = SignatureProductSuite(self.ueg)
 
     async def intercept(self, context: Dict[str, Any], action: Callable) -> Dict[str, Any]:
         """
@@ -107,11 +105,12 @@ class RecirculationPreflight:
         # 5. High-Fidelity Execution
         start_ts = time.time()
         try:
-            # Convergence: Support signature tech and standard agent actions
-            if context.get("requires_signature_tech"):
-                output = await self.signature_suite.execute_capability(context.get("tech_id"), context.get("payload", {}))
-            else:
-                output = await action()
+            #  W637 — THE CALLER'S ACTION IS WHAT RUNS. A branch here replaced it, for any context carrying a
+            #  "signature tech" key, with a suite that executed nothing and returned a constant fidelity and a
+            #  success status for six technologies this platform has never had. No caller set the key; the
+            #  branch and the suite are removed rather than made to refuse, because a refusal would still
+            #  advertise them.
+            output = await action()
         except Exception as e:
             logger.error(f"Definitive execution failed: {e}. Initiating Self-Healing.")
             # W584 — THE METHOD IS `repair`, NOT `repair_tier`. The v2/v140 consolidation into

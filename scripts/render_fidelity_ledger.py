@@ -162,6 +162,17 @@ def standing(f, v):
         # as W572 ruled. Tier 0 is DELIVERED, the MILDEST state, so a DELIVERED claim refuted into a gap
         # (v7's R3.9 and R5.9) is an escalation too — severity is not the tier's numeric order there.
         _ct, _at = v.get("corrected_tier"), f.get("tier")
+        #  W638 — WHEN THE REFUTER SAYS WHETHER IT REPRODUCED THE GAP, THAT DECIDES. `refuted` was asked to mean
+        #  delivered, unsupported, or merely mislabelled, and this function guessed which from the tier's
+        #  direction three times (W572, W612, W636). v13 still struck two findings whose refuters wrote "facts
+        #  reproduced" and "the shortfall is real" because they LOWERED the tier. From v14 the refuter states
+        #  `reproduced`; a record without the field (every earlier edition) falls through to the rules below.
+        if isinstance(v.get("reproduced"), bool):
+            if not v["reproduced"] or cv in ("DELIVERED", "?"):
+                return cv, "refuted"
+            _harsher = (isinstance(_ct, int) and isinstance(_at, int) and _ct >= 1
+                        and (4 if _ct == 0 else _ct) < (4 if _at == 0 else _at))
+            return cv, ("escalated" if _harsher else "corrected")
         _sev = lambda t: 4 if t == 0 else t
         if (isinstance(_ct, int) and isinstance(_at, int) and _ct >= 1 and _sev(_ct) < _sev(_at)
                 and cv != "DELIVERED"):
@@ -191,10 +202,27 @@ def standing_tier(f, v):
         return None
 
 
-def main(src, dst, head, date, port="8024", version="3", round_name="W446"):
+def main(src, dst, head, date, port="8024", version="3", round_name="W446", census=None):
     regions = json.load(open(src, encoding="utf-8"))
     by_key = {r["region"]: r for r in regions}
     ver = int(version)
+    #  W639 (FU-602) — FROM v14 A RUN STATES ITS COVERAGE OR IS NOT WRITTEN. The Owner's stopping rule counts a
+    #  run only if it says what it covered; nothing forced the instrument to say it, so the renderer does.
+    _census = json.load(open(census, encoding="utf-8")) if census else None
+    if ver >= 14:
+        _lacking = [r["region"] for r in regions
+                    if not isinstance(r.get("hit_the_cap"), bool)
+                    or not isinstance(r.get("unlisted_findings"), (int, float))
+                    or not isinstance(r.get("surfaces_exercised"), dict)
+                    #  W638 — and every verdict says whether its refuter reproduced the gap
+                    or any(not isinstance(v.get("reproduced"), bool) for v in (r.get("verdicts") or []))]
+        if _lacking or _census is None:
+            raise SystemExit(
+                "REFUSING TO WRITE: a v14+ ledger must state its coverage. "
+                + (f"Region(s) {', '.join(_lacking)} carry no hit_the_cap / unlisted_findings / "
+                   f"surfaces_exercised. " if _lacking else "")
+                + ("No surface census was supplied (8th argument). " if _census is None else "")
+                + "A count from a run that does not say what it looked at cannot be scored.")
     v4 = ver >= 4                     # a tiered edition (v4 at M1, W474; v5 at the M1 re-run, W476; …)
     rows = []  # (region, idx, finding, verdict, standing_verdict, how)
     for k in ORDER:
@@ -356,14 +384,37 @@ def main(src, dst, head, date, port="8024", version="3", round_name="W446"):
         w("")
     w("Per region:")
     w("")
-    w("| region | sections | findings | STUB | MISSING | DOC_OVERCLAIM | API_ONLY | PARTIAL | DELIVERED |")
-    w("|---|---|---|---|---|---|---|---|---|")
+    #  W639 (FU-602) — THE CAP COLUMN IS THE ASSESSOR'S OWN FLAG. The instrument requires `hit_the_cap` of
+    #  every region and this renderer never read it: "at the cap" was inferred from a count of ten. A region
+    #  that says it stopped with more behind it has not been fully listed, so a zero there is a zero among
+    #  its ten worst. An absent flag is "not recorded", never "no".
+    def _cap(k):
+        flag = (by_key.get(k) or {}).get("hit_the_cap")
+        return "YES" if flag is True else "no" if flag is False else "not recorded"
+
+    w("| region | sections | findings | cap reached | STUB | MISSING | DOC_OVERCLAIM | API_ONLY | PARTIAL | DELIVERED |")
+    w("|---|---|---|---|---|---|---|---|---|---|")
     for k in ORDER:
         rr = [x for x in rows if x[0] == k]
         if not rr:
             continue
         c = Counter(x[4] for x in rr)
-        w(f"| {k} | {REGION_TITLES[k].split(' — ')[0]} | {len(rr)} | " + " | ".join(str(c.get(v, 0)) for v in VERDICTS) + " |")
+        w(f"| {k} | {REGION_TITLES[k].split(' — ')[0]} | {len(rr)} | {_cap(k)} | "
+          + " | ".join(str(c.get(v, 0)) for v in VERDICTS) + " |")
+    w("")
+    _capped = [k for k in ORDER if (by_key.get(k) or {}).get("hit_the_cap") is True]
+    _unrecorded = [k for k in ORDER if k in by_key and not isinstance(by_key[k].get("hit_the_cap"), bool)]
+    if _capped:
+        w(f"**Coverage: INCOMPLETE in {len(_capped)} of {len([k for k in ORDER if k in by_key])} regions** "
+          f"({', '.join(_capped)}). Each of these assessors reported stopping at the cap with findings left "
+          "unlisted, so a tier count for those regions is a count of the ten most consequential, not of all. "
+          "A run with any region at the cap does not count toward a milestone's two consecutive zero runs.")
+    elif _unrecorded:
+        w(f"**Coverage: NOT STATED** — {', '.join(_unrecorded)} carried no cap flag, so whether those regions "
+          "were fully listed is unknown.")
+    else:
+        w("**Coverage: no region reported reaching the cap** — every assessor listed all it found. This is "
+          "the assessor's statement about its own list, not a census of surfaces.")
     w("")
     w("The distilled, actionable form of the surviving gaps is **prompt v11 rev 2's `<ledger>` and")
     w("`<delivery_plan>`** (`docs/FABLE_DELIVERY_PROMPT.md`). This document is the evidence base behind")
@@ -445,6 +496,56 @@ def main(src, dst, head, date, port="8024", version="3", round_name="W446"):
             w("")
         w("---")
     w("")
+    if _census is not None:
+        _routes = sorted(set(_census.get("routes") or []))
+        _pages = [p for p in (_census.get("pages") or []) if isinstance(p, dict) and p.get("component")]
+        _claimed_r, _claimed_f = set(), set()
+        for _r in regions:
+            _se = _r.get("surfaces_exercised") or {}
+            _claimed_r |= {str(x).strip() for x in (_se.get("routes") or [])}
+            _claimed_f |= {str(x).strip().replace(chr(92), "/") for x in (_se.get("files") or [])}
+        _stems = {f.rsplit("/", 1)[-1].rsplit(".", 1)[0] for f in _claimed_f}
+        _hit_r = [x for x in _routes if x in _claimed_r]
+        _miss_r = [x for x in _routes if x not in _claimed_r]
+        _stray_r = sorted(_claimed_r - set(_routes))
+        _hit_p = [p for p in _pages if p["component"] in _stems]
+        _miss_p = [p for p in _pages if p["component"] not in _stems]
+        _unlisted = sum(int(r.get("unlisted_findings") or 0) for r in regions)
+        w("## Coverage — what this run exercised, against a census computed from the tree")
+        w("")
+        w("| surface | in the census | exercised by at least one assessor | not exercised |")
+        w("|---|---|---|---|")
+        w(f"| API routes | {len(_routes)} | {len(_hit_r)} | {len(_miss_r)} |")
+        w(f"| pages | {len(_pages)} | {len(_hit_p)} | {len(_miss_p)} |")
+        w("")
+        w(f"Findings the assessors found and could NOT list under the cap: **{_unlisted}**.")
+        w("")
+        w("*Limits of this table: \"exercised\" is each assessor's own statement of what it called or opened; the "
+          "refuters did not check it. A page counts as exercised only when an assessor named the file of its "
+          "top-level component, so a page whose work is in child components can read as not exercised. A surface "
+          "not exercised is NOT a clean surface.*")
+        w("")
+        if _stray_r:
+            w(f"**Claimed but not in the census ({len(_stray_r)})** — not counted above; an assessor's path that "
+              "matches no registered route (a filled-in id, a typo, or a route that does not exist):")
+            w("")
+            for x in _stray_r[:60]:
+                w(f"- `{x}`")
+            if len(_stray_r) > 60:
+                w(f"- … and {len(_stray_r) - 60} more")
+            w("")
+        w(f"**Pages not exercised ({len(_miss_p)}):** "
+          + (", ".join(f"`{p['path']}` ({p['component']})" for p in _miss_p) or "none") + ".")
+        w("")
+        w(f"**API routes not exercised ({len(_miss_r)}):**")
+        w("")
+        for x in _miss_r:
+            w(f"- `{x}`")
+        w("")
+        if _census.get("excluded"):
+            w(f"Excluded from the census, with the reason: "
+              + "; ".join(f"`{e.get('surface')}` ({e.get('reason')})" for e in _census["excluded"][:40]) + ".")
+            w("")
     w(f"*Regenerated by {round_name} from the audit workflow's journal" + (" (status lines added from W449 onward)" if not v4 else "") + ". Every entry above is an observation against")
     w("the booted HEAD named in the header — routes executed, handlers and components read, stores counted —")
     w("not a claim read from another document. No browser was driven: statements about what a user SEES")
@@ -459,4 +560,5 @@ def main(src, dst, head, date, port="8024", version="3", round_name="W446"):
 
 if __name__ == "__main__":
     # argv: src.json dst.md head date [port] [version 3|4] [round]  — W474 renders v4 (tiers, no v3 status map)
-    main(*sys.argv[1:8])
+    # W639 — an optional 8th argument: the surface census (scripts/audit_surface_census.py). Required from v14.
+    main(*sys.argv[1:9])

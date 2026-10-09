@@ -87,6 +87,11 @@ def _fresh(scope: str) -> Dict[str, Any]:
             "mission": "", "strategy": "", "aims": [], "objectives": [], "updated_at": None}
 
 
+#  W638 (FU-600) — what board.py's Chief-instruction fallback writes where a KPI would go. Named here so the
+#  release gate can refuse to count it; a guard asserts board.py still carries this exact text.
+_PLATFORM_KPI_PLACEHOLDER = "(KPI to be set by the Board)"
+
+
 def parse_objective_lines(text: str, extra: Dict[str, Any] | None = None) -> List[Dict[str, Any]]:
     """Parse 'TITLE | KPI | TIMELINE | OWNER_ROLE' pipe-lines into living-plan objective dicts.
     Shared by the Chief's plan generation AND the Board's chief_instruct delegation (§5 apex
@@ -225,8 +230,12 @@ def kpi_release_gate(vsb_id: str) -> dict:
                 "detail": ("this entity has no business-plan objectives recorded, so there is nothing to "
                            "measure a release against yet. Add an objective with a KPI on the Business "
                            "Plan before listing or exporting.")}
+    #  W638 (FU-600) — THE PLATFORM'S OWN "NOT SET YET" TEXT IS NOT A KPI. The Chief-instruction fallback
+    #  writes this placeholder into the KPI position, and a non-empty test read it as a KPI: the gate released
+    #  on a sentence saying no KPI existed. Still a presence test for anything a person wrote.
     missing = [{"id": str(o.get("id") or ""), "title": str(o.get("title") or "")[:90]}
-               for o in objectives if not str(o.get("kpi") or "").strip()]
+               for o in objectives
+               if str(o.get("kpi") or "").strip() in ("", _PLATFORM_KPI_PLACEHOLDER)]
     if missing:
         return {"ok": False, "reason": "kpi_not_set", "objectives": len(objectives), "missing": missing,
                 "detail": ("§17.5 gates release on measurable objectives. "

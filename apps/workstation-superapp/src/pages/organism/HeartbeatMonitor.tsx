@@ -42,7 +42,9 @@ interface Status {
  * at all. "Once established it runs, maintains, defends, improves and grows itself" is the product's
  * headline promise, and until now a user could switch on exactly one fifth of it.
  */
-const AUTONOMY: { key: keyof Status; label: string; does: string }[] = [
+//  W638 (FU-601) — `runtimeOnly` marks a switch the backend deliberately does not persist (Owner ruling
+//  2026-10-07). The summary sentence below is computed from this array, so it cannot disagree with the rows.
+const AUTONOMY: { key: keyof Status; label: string; does: string; runtimeOnly?: boolean }[] = [
   { key: 'auto_evolve', label: 'Self-improve',
     does: 'Runs an AI evolution cycle on maintenance-phase beats, paced — proposals go to governance, never straight to production.' },
   // W493 (FU-214, sweep S9.5, C4) - these said "each"/"every living VSB ... each beat". Each beat
@@ -57,10 +59,10 @@ const AUTONOMY: { key: keyof Status; label: string; does: string }[] = [
   { key: 'auto_ship', label: 'Self-ship',
     does: 'Re-ships ONE stale repo per beat, oldest first.' },
   // FU-367 (W609) — the recirculation loop's lever, settable from the running backend for the first time
-  { key: 'auto_metabolic', label: 'Self-reflect',
+  { key: 'auto_metabolic', label: 'Self-reflect', runtimeOnly: true,
     does: 'Runs the six-stage recirculation loop every N beats; anything it would say is delivered only if all six clearance gates clear it. Runtime only: a restart turns it off.' },
   // FU-308 (Owner ruling 2026-10-07) — default OFF
-  { key: 'circadian_to_atp', label: 'Circadian energy',
+  { key: 'circadian_to_atp', label: 'Circadian energy', runtimeOnly: true,
     does: "Lets the time of day set the organism's ATP production rate (1.0 / 0.7 / 0.5 / 0.3 by phase). Off by default; runtime only: a restart turns it off." },
 ];
 
@@ -138,11 +140,16 @@ export const HeartbeatMonitor: React.FC = () => {
                 </span>
               </div>
               <p className="text-[10px] text-slate-500 font-semibold mb-3 leading-relaxed">
-                All five are OFF by default and take effect on the NEXT beat. Money moved by
+                All {AUTONOMY.length} are OFF by default and take effect on the NEXT beat. Money moved by
                 self-run is virtual WST.
                 {s.autonomy_persisted === false
                   ? ' ⚠ These settings could NOT be saved — they will revert when the backend restarts.'
-                  : ' Your choices are saved and survive a restart.'}
+                  : ` Your choices for ${AUTONOMY.filter(a => !a.runtimeOnly).length} of them are saved and survive a restart.`}
+                {AUTONOMY.some(a => a.runtimeOnly)
+                  ? ` ${AUTONOMY.filter(a => a.runtimeOnly).map(a => a.label).join(' and ')} `
+                    + `${AUTONOMY.filter(a => a.runtimeOnly).length === 1 ? 'is' : 'are'} runtime only: a restart turns `
+                    + `${AUTONOMY.filter(a => a.runtimeOnly).length === 1 ? 'it' : 'them'} off.`
+                  : ''}
                 {s.autonomy_restored_at ? ` Restored from ${s.autonomy_restored_at}.` : ''}
               </p>
               <div className="space-y-2">

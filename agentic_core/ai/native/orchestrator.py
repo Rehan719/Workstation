@@ -898,8 +898,13 @@ class NativeOrchestrator:
             # owned resource that serves it ("native" | "local" | "ollama:<name>"); unset → auto
             # in-house-first. The trace records what was requested vs what genuinely served.
             requested = str(stage.get("model") or "auto")
+            #  W637 (FU-593) — COMPOSED OUTSIDE THE F-STRING. Inside an f-string's braces a doubled
+            #  backslash-n is a backslash and an n, not a newline, so this emitted the literal two characters
+            #  and the carried banner never sat on a line of its own: the engine's anchored strip could not
+            #  match it and the floor reported the platform's own banner words as the request's terms.
+            prior = ("Prior context:\n" + carry[:1200] + "\n\n") if carry else ""
             prompt = (f"You are the '{role}' agent in Workstation's native swarm.\n"
-                      f"{('Prior context:\\n' + carry[:1200] + '\\n\\n') if carry else ''}"
+                      f"{prior}"
                       f"Task: {instruction}\n\n## {role} output")
             res = await self.complete(prompt, agent=f"{agent}:{role}", timeout=timeout,
                                       prefer_external=prefer_external, prefer=requested)

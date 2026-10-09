@@ -92,8 +92,9 @@ def _load() -> List[Dict[str, Any]]:
     return []
 
 
-_ORGANISM_HEALTH_SCOPE = ("the immune system's health: AI-call failures and compliance regressions only - route "
-                          "5xx failures are not tracked, so this is not the health of the whole platform")
+#  W637 — the sentence lives beside the computation it describes (organism/immune.py); this name is kept
+#  for its reader below.
+from agentic_core.organism.immune import HEALTH_SCOPE as _ORGANISM_HEALTH_SCOPE  # noqa: E402
 
 
 def _load_strict() -> List[Dict[str, Any]]:

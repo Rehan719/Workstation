@@ -266,11 +266,12 @@ async def orchestrate(req: OrchestrateRequest):
         organism["nervous"] = nervous.status()
     except Exception:
         pass
+    from agentic_core.organism.immune import HEALTH_SCOPE as _HEALTH_SCOPE_W637
     stage(4, "AI CEO", "C-Suite",
           "Integrate the living systems (BMS·QMS·DCS·EMS) + organism telemetry",
           {"living_systems": living_systems,
            "organism_health": organism.get("immune", {}).get("health"),
-           "organism_health_basis": ("the immune system's health: AI-call failures and compliance regressions only - route 5xx failures are not tracked"),   # W635 (FU-587)
+           "organism_health_basis": _HEALTH_SCOPE_W637,   # W637 — one sentence, one home (was W635's typed copy)
            "arousal": organism.get("nervous", {}).get("arousal_state")},
           verified=(None if (organism.get("immune", {}) or {}).get("health") is not None else False),
           checks="presence",

@@ -24,7 +24,7 @@ interface Lifecycle {
   commercialisation_readiness: number; commercialisation_readiness_basis: string;
 }
 interface Systems {
-  immune: { health: number; threat_level: string; errors_in_window: number; response_playbook: string[]; hot_endpoint?: string | null; hot_endpoint_errors?: number | null; hot_endpoint_tied?: string[] };
+  immune: { health: number; threat_level: string; errors_in_window: number; review_flags_in_window?: number; response_playbook: string[]; hot_endpoint?: string | null; hot_endpoint_errors?: number | null; hot_endpoint_tied?: string[] };
   nervous: { arousal_state: string; arousal_thresholds: Record<string, string>; signal_rate_per_second: number; total_signals: Record<string, number>; buffer_size: number; buffer_capacity: number; scope: string };
   self_healing: { overall_health: number | null; health_basis: string; open_circuits: number; tracked_endpoints: number; circuits: Record<string, { state: string; failures_in_window: number; total_calls: number; total_failures: number; failure_rate: number }>; thresholds: Record<string, number>; scope: string };
   scope: string;
@@ -59,6 +59,8 @@ export const OrganismAnatomy: React.FC = () => {
   const [signals, setSignals] = useState<NervSignal[]>([]);
   const [healLog, setHealLog] = useState<{ events: { ts: string; endpoint: string; state: string; reason: string }[]; events_ever: number; capacity: number } | null>(null);
   const [genomes, setGenomes] = useState<Genome[] | null>(null);   // null = not loaded (never conflate with empty)
+  //  W638 (FU-595) — the OTHER genome record (specs written on living entities), as the server states it
+  const [entGenomes, setEntGenomes] = useState<{ count: number | null; basis?: string } | null>(null);
   //  FU-405 — what the population's fitness values are WORTH, not just what they are
   const [pop, setPop] = useState<{
     mean_fitness: number | null; mean_fitness_basis: string;
@@ -83,7 +85,7 @@ export const OrganismAnatomy: React.FC = () => {
     getJson('/api/v1/organism/systems', setSystems);
     getJson('/api/v1/organism/nervous/signals?n=25', d => setSignals(d.signals || []));
     getJson('/api/v1/organism/self-healing/log', setHealLog);
-    getJson('/api/v1/organism/genome', d => { setGenomes(d.genomes || []); setPop(d.population ?? null); });
+    getJson('/api/v1/organism/genome', d => { setGenomes(d.genomes || []); setPop(d.population ?? null); setEntGenomes(d.entity_genomes ?? null); });
     getJson('/api/v1/organism/config', setConfig);
   };
   useEffect(loadAll, []);
@@ -305,6 +307,9 @@ export const OrganismAnatomy: React.FC = () => {
               <p className="text-[9px] font-black uppercase text-slate-500 mb-1.5">Immune</p>
               <p className="text-lg font-black text-white">{pct(systems.immune.health)} <Chip tone={systems.immune.threat_level === 'NOMINAL' ? 'ok' : 'warn'}>{systems.immune.threat_level}</Chip></p>
               <p className="text-[9px] text-slate-600 mb-1">{systems.immune.errors_in_window} errors in window</p>
+              {(systems.immune.review_flags_in_window ?? 0) > 0 && (
+                <p data-testid="immune-review-flags" className="text-[9px] text-amber-400 mb-1">{systems.immune.review_flags_in_window} compliance review flag(s) in window — awaiting a human, not counted as errors</p>
+              )}
               {systems.immune.hot_endpoint && <p className="text-[9px] text-amber-400">hot: {systems.immune.hot_endpoint} ({systems.immune.hot_endpoint_errors} errors)</p>}
               {(systems.immune.hot_endpoint_tied || []).length > 1 && (
                 <p className="text-[9px] text-slate-500">{systems.immune.hot_endpoint_tied!.length} endpoints tie at the top — none is singly hot</p>
@@ -374,6 +379,11 @@ export const OrganismAnatomy: React.FC = () => {
           Encode an entity into a 10-axis trait genome, then mutate or cross lineages. Every number carries its
           provenance — an unencoded genome says so instead of wearing a flat radar, and <span className="text-aura">no fitness here is ever evaluated</span> (there is no selection step; the labels say inherited, not earned).
         </p>
+        {entGenomes?.basis && (
+          <p data-testid="entity-genomes-basis" className="text-[10px] text-amber-400 mb-3 leading-relaxed border border-amber-500/30 rounded-lg p-2">
+            {entGenomes.basis}
+          </p>
+        )}
         <div className="flex items-center gap-2 flex-wrap mb-3">
           <input value={encName} onChange={e => setEncName(e.target.value)}
             className="flex-1 min-w-48 text-[11px] bg-slate-950 border border-slate-900 rounded-lg p-2 text-slate-300" placeholder="Entity to encode…" />

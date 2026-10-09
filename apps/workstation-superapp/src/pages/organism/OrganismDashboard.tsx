@@ -31,7 +31,7 @@ interface OrganismStatus {
   composite_health_measured_weight?: number;
   health_summary: string;
   systems: {
-    immune:        { health: number; threat_level: string; errors_in_window: number; response_playbook?: string[]; hot_endpoint?: string };
+    immune:        { health: number; threat_level: string; errors_in_window: number; review_flags_in_window?: number; response_playbook?: string[]; hot_endpoint?: string };
     nervous:       { arousal_state: string; signal_rate_per_second: number; signals_last_60s: number; by_type: Record<string,number>; total_signals: Record<string,number>; reflex_arcs: number };
     self_healing:  { overall_health: number | null; open_circuits: number; recent_events: unknown[] };
     metabolic:     { atp_ratio: number };
@@ -388,6 +388,9 @@ export const OrganismDashboard: React.FC = () => {
                 {systems.immune.threat_level}
               </span>
               <span>{systems.immune.errors_in_window} errors</span>
+              {(systems.immune.review_flags_in_window ?? 0) > 0 && (
+                <span data-testid="dash-immune-review-flags" className="text-amber-400">{systems.immune.review_flags_in_window} review flag(s)</span>
+              )}
             </div>
           </SystemCard>
 

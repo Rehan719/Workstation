@@ -567,7 +567,12 @@ async def chat(request: ChatRequest, user: dict | None = Depends(get_current_use
     # All-language: instruct the in-house fabric to answer in the requested language (default English).
     lang = (request.language or "").strip()
     lang_instr = f"Respond ENTIRELY in {lang}. " if lang and lang.lower() not in ("english", "en") else ""
+    #  W637 (FU-597) — THE AVATAR SAYS WHAT IT IS. It named no domain, so the floor told every reader their
+    #  request "named no domain" — and for a user with a VSB, the engine's case-insensitive field read would
+    #  take the grounding block's "(domain: <the entity's>, stage: …)" as the domain of whatever they asked.
+    #  An exact-case line first settles both: a fact about this caller, not a domain inferred for the user.
     prompt = (
+        "Domain: cross-domain (the avatar is a conversation across every domain, not a domain tool)\n"
         f"{domain_prompt}{grounding}\n\n"
         f"{lang_instr}"
         f"{f'Conversation so far:\n{history_block}\n\n' if history_block else ''}"

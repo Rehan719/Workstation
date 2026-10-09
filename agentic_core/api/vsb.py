@@ -1595,7 +1595,15 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
     #  vision field, which may be the platform's template; the constitutional layer uses only an Owner-written one.
     _sc584 = str((layers.get("strategic") or {}).get("content") or "")
     _cv584 = str(constitutional.get("vision") or "")
-    if "vision on record:" in _sc584 and _cv584 and _cv584[:60] not in _sc584:
+    #  W638 (FU-590) — COMPARED WITH THE VISION THE REFRESH QUOTED, NOT WITH THE PARAGRAPH. The strategic text
+    #  also quotes the mission, which carries the founder's problem statement, and the constitutional vision
+    #  IS that statement: searching the whole paragraph therefore always found it and this note never fired.
+    #  The segment is cut on the refresh's own delimiters (cadence._compose).
+    _qv638 = _sc584.partition("vision on record: ")[2]
+    for _stop638 in ("; mission on record:", "; no mission is on record"):
+        _qv638 = _qv638.partition(_stop638)[0]
+    _qv638 = _qv638.strip().rstrip(".")
+    if _qv638 and _cv584 and _qv638[:60] != _cv584.strip()[:60]:
         layers["strategic"]["vision_note"] = (
             "the vision quoted in this strategic refresh is the business plan's vision FIELD, which is not "
             "Owner-written here (a platform template); the pack's vision is the constitutional layer's: "
@@ -2271,6 +2279,23 @@ def enrich_vsb_entity(entity: dict, *, owner_id: str = "default", problem: str =
             plan["mission"] = f"Deliver: {problem[:160]}"
             plan["strategy"] = ("Concept → Design → Commercialisation, governed by the Board "
                                 "(Chief — the Owner's standing charter; no twin model is trained) → AI CEO → C-Suite → CoE → BTO.")
+            #  W638 (FU-591) — THE SECOND WRITER STAMPS WHAT IT WROTE. Genesis records which opening fields
+            #  are code templates; this function seeds the same four and recorded nothing, so a plan born by
+            #  spawn, Synthesis Studio or a child spawn came back with no provenance and the page headed a
+            #  template with the Chief's name. Same keys, same meanings as genesis. `concept` is not written
+            #  here, so nothing is claimed about it.
+            _tpl638 = ["executive_summary", "vision", "mission", "strategy"]
+            plan["provenance"] = {
+                "served_by": (entity.get("ai_provenance") or {}).get("served_by") or None,
+                "body_pending": [k for k, v in (entity.get("body_pending") or {}).items() if v],
+                "name_source": entity.get("name_source"),
+                "field_sources": {f: "establish_template" for f in _tpl638},
+                "templated_fields": _tpl638,
+                "opening_written_by": (
+                    "code templates filled from the request that created this entity — not the Chief, and "
+                    "not a model. Edit any field to replace it with your own; a model or the Chief has "
+                    "composed nothing here."),
+            }
             plan.setdefault("objectives", [])
             if not plan["objectives"]:
                 for _title in ("Validate the concept", "Deliver the design", "Launch to market"):

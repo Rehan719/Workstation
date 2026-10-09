@@ -7,6 +7,7 @@ Forge/Genesis. In-house-first; never a dependency on an external provider.
 from __future__ import annotations
 
 import contextvars
+import re
 import time
 from typing import Any, Dict, Tuple
 
@@ -64,7 +65,7 @@ def request_language() -> str:
 
 async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
                   owner_id: str | None = None, augment: bool = False,
-                  realm: str = "") -> Tuple[str, Dict[str, Any]]:
+                  realm: str = "", domain: str = "") -> Tuple[str, Dict[str, Any]]:
     """Return (text, provenance) where provenance = {posture, served_by, is_external}.
 
     Every call is recorded into the operational-excellence learning loop (best-effort, non-critical)
@@ -84,6 +85,13 @@ async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
     if str(realm or "").strip():
         from agentic_core.taxonomy import normalise_realm, realm_directive
         prompt = f"{realm_directive(normalise_realm(realm))}\n\n{prompt}"
+    #  W637 (FU-597) — THE ROUTER SAYS WHICH DOMAIN IT IS. The native floor prints a `Domain:` field and
+    #  otherwise "WITHHELD — the request named no domain"; none of the five domain routers wrote one, so a law
+    #  analysis told its reader the request named no domain. Written here, once, from an argument each router
+    #  binds explicitly — never inferred from the agent's name — and only when the prompt carries no Domain
+    #  line of its own, so a tool that names a narrower domain keeps it.
+    if str(domain or "").strip() and not re.search(r"(?m)^[ \t]*Domain[ \t]*:", prompt):
+        prompt = f"Domain: {domain.strip()}\n{prompt}"
     t0 = time.monotonic()
     owner_id = owner_id or request_user() or None     # W619 (FU-501) — the authenticated caller, when there is one
     res = await gateway.query_meta(prompt, agent=agent, timeout=timeout,
@@ -111,7 +119,14 @@ async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
                                   #  already renders, so a reader sees it rather than it sitting in the API
                                   "language_requested": res.get("language_requested"),
                                   "language_delivered": res.get("language_delivered"),
-                                  "language_basis": res.get("language_basis")}
+                                  "language_basis": res.get("language_basis"),
+                                  #  W638 (FU-598) — the profile verdict travels the same way. The gateway
+                                  #  computes it on every response and this fixed key set dropped it, so
+                                  #  only the avatar told a user their saved profile had not shaped a
+                                  #  floor-served answer.
+                                  "profile_applied": res.get("profile_applied"),
+                                  "profile_state": res.get("profile_state"),
+                                  "profile_basis": res.get("profile_basis")}
     #  W627 (FU-536) - every domain tool's floor output said so only through a badge, while its headings
     #  ('Relevant Law', 'Who to Notify', 'Target Range') and a static "AI-generated" disclaimer described
     #  research, guidance and marking that did not happen. The note rides the provenance EVERY domain router
