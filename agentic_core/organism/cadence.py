@@ -30,6 +30,7 @@ served it.
 """
 from __future__ import annotations
 
+import calendar
 import time
 import uuid
 from typing import Any, Dict, List, Optional
@@ -82,7 +83,11 @@ def _parse_stamp(s: Any) -> Optional[float]:
     if not s:
         return None
     try:
-        return time.mktime(time.strptime(str(s), "%Y-%m-%dT%H:%M:%SZ")) - time.timezone
+        #  W639 (ledger v14 R3.3 / R4.6 / R6.3 — one bug, found by three regions). The stamp is written with
+        #  gmtime, and this read it back with mktime (LOCAL time) less time.timezone. time.timezone is the
+        #  NON-daylight offset, so during summer time the result was an hour early and every "time since the
+        #  last refresh" read an hour long. A UTC stamp is parsed as UTC.
+        return float(calendar.timegm(time.strptime(str(s), "%Y-%m-%dT%H:%M:%SZ")))
     except Exception:
         return None
 

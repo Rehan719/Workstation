@@ -1,0 +1,872 @@
+{
+ "head": "375c5ffb",
+ "routes": [
+  "DELETE /api/v1/avatar/session/{session_id}",
+  "DELETE /api/v1/hub/agents/{agent_id}",
+  "DELETE /api/v1/ingest/{file_id}",
+  "DELETE /api/v1/marketplace/listings/{listing_id}",
+  "DELETE /api/v1/projects/{project_id}",
+  "DELETE /api/v1/resources/compositions/{cid}",
+  "DELETE /api/v1/resources/swarm/{sid}",
+  "DELETE /api/v1/user/profile",
+  "DELETE /api/v1/user/workspace",
+  "GET /",
+  "GET /api/civilization/recommendations",
+  "GET /api/council/judge/rulings",
+  "GET /api/cross-platform/ar/scene",
+  "GET /api/csuite/cfo/metrics",
+  "GET /api/csuite/cto/infrastructure",
+  "GET /api/partnerships/registry",
+  "GET /api/partnerships/status/{partner_id}",
+  "GET /api/qep/analytics/overview",
+  "GET /api/realms/v2/discover",
+  "GET /api/tools/constellation",
+  "GET /api/tools/discover",
+  "GET /api/v1/ai/quotas",
+  "GET /api/v1/attestation/status",
+  "GET /api/v1/auth/config",
+  "GET /api/v1/auth/me",
+  "GET /api/v1/auth/status",
+  "GET /api/v1/auth/users",
+  "GET /api/v1/avatar/balance-objectives",
+  "GET /api/v1/avatar/ratifications",
+  "GET /api/v1/avatar/session/{session_id}/history",
+  "GET /api/v1/avatar/sessions",
+  "GET /api/v1/avatar/status",
+  "GET /api/v1/biometrics/status",
+  "GET /api/v1/board/charter",
+  "GET /api/v1/board/chief/model",
+  "GET /api/v1/board/ratifications",
+  "GET /api/v1/board/status",
+  "GET /api/v1/bto/components",
+  "GET /api/v1/business-plan",
+  "GET /api/v1/business-plan/list",
+  "GET /api/v1/business-plan/progress",
+  "GET /api/v1/business-plan/roadmap",
+  "GET /api/v1/care/tools",
+  "GET /api/v1/catalog/products",
+  "GET /api/v1/cca",
+  "GET /api/v1/cca/approved",
+  "GET /api/v1/cca/impact/{cca_id}",
+  "GET /api/v1/cca/implemented",
+  "GET /api/v1/cca/ledger-gaps",
+  "GET /api/v1/cca/queue",
+  "GET /api/v1/cca/rejected",
+  "GET /api/v1/cca/{cca_id}",
+  "GET /api/v1/claude/status",
+  "GET /api/v1/cognition/knowledge",
+  "GET /api/v1/cognition/wiring",
+  "GET /api/v1/cognitive/engines",
+  "GET /api/v1/compliance/frameworks",
+  "GET /api/v1/cycles",
+  "GET /api/v1/deliverables",
+  "GET /api/v1/deliverables/output-formats",
+  "GET /api/v1/deliverables/types",
+  "GET /api/v1/deliverables/{deliverable_id}",
+  "GET /api/v1/deliverables/{deliverable_id}/export",
+  "GET /api/v1/economy/board-pack",
+  "GET /api/v1/economy/charity/candidates",
+  "GET /api/v1/economy/charity/directives",
+  "GET /api/v1/economy/contracts",
+  "GET /api/v1/economy/entity-types",
+  "GET /api/v1/economy/ledger/{vsb_id}",
+  "GET /api/v1/economy/living-vsbs",
+  "GET /api/v1/economy/living-vsbs/{vsb_id}/retirement-check",
+  "GET /api/v1/economy/owner-payments",
+  "GET /api/v1/economy/status",
+  "GET /api/v1/economy/transfers/open",
+  "GET /api/v1/economy/transfers/unmarked-audit",
+  "GET /api/v1/economy/venture-funding-share",
+  "GET /api/v1/economy/ventures/candidates",
+  "GET /api/v1/economy/ventures/portfolio",
+  "GET /api/v1/economy/waterfall",
+  "GET /api/v1/education/frameworks",
+  "GET /api/v1/employment/services",
+  "GET /api/v1/evidence/graph",
+  "GET /api/v1/forge/resources",
+  "GET /api/v1/forge/runs",
+  "GET /api/v1/fund/portfolio",
+  "GET /api/v1/fund/status",
+  "GET /api/v1/gaas/status",
+  "GET /api/v1/gaas/ueg/events",
+  "GET /api/v1/gaas/ueg/verify",
+  "GET /api/v1/genesis/status",
+  "GET /api/v1/health",
+  "GET /api/v1/heartbeat/status",
+  "GET /api/v1/horizon/archive",
+  "GET /api/v1/horizon/archive/search",
+  "GET /api/v1/horizon/consumption",
+  "GET /api/v1/horizon/guardrails",
+  "GET /api/v1/horizon/lessons",
+  "GET /api/v1/horizon/records",
+  "GET /api/v1/horizon/seam",
+  "GET /api/v1/horizon/simulation/stage/{number}",
+  "GET /api/v1/horizon/states",
+  "GET /api/v1/hub/agents",
+  "GET /api/v1/hub/handoffs",
+  "GET /api/v1/hub/messages",
+  "GET /api/v1/hub/stream",
+  "GET /api/v1/ingest/list",
+  "GET /api/v1/intelligence/cognitive-engines",
+  "GET /api/v1/intelligence/forecasts",
+  "GET /api/v1/intelligence/insights",
+  "GET /api/v1/intelligence/status",
+  "GET /api/v1/law/bundle",
+  "GET /api/v1/law/templates",
+  "GET /api/v1/marketplace/listings",
+  "GET /api/v1/marketplace/listings/{listing_id}",
+  "GET /api/v1/mega-project/sections",
+  "GET /api/v1/mesh/status",
+  "GET /api/v1/method",
+  "GET /api/v1/method/appraise",
+  "GET /api/v1/method/defect-classes",
+  "GET /api/v1/method/forecast",
+  "GET /api/v1/method/handover",
+  "GET /api/v1/method/learning",
+  "GET /api/v1/method/lessons/{lesson_id}",
+  "GET /api/v1/mgmt/standards",
+  "GET /api/v1/minimisation/status",
+  "GET /api/v1/native-ai/capabilities",
+  "GET /api/v1/native-ai/homeostasis",
+  "GET /api/v1/native-ai/lifecycle",
+  "GET /api/v1/native-ai/models",
+  "GET /api/v1/native-ai/resources",
+  "GET /api/v1/native-ai/route",
+  "GET /api/v1/native-ai/selfcheck",
+  "GET /api/v1/native-ai/status",
+  "GET /api/v1/native-ai/tiers",
+  "GET /api/v1/operations/degradation",
+  "GET /api/v1/operations/failures",
+  "GET /api/v1/operations/model-health",
+  "GET /api/v1/operations/outcomes",
+  "GET /api/v1/operations/rankings",
+  "GET /api/v1/operations/summary",
+  "GET /api/v1/optimizer/inventory",
+  "GET /api/v1/organism/cadence",
+  "GET /api/v1/organism/config",
+  "GET /api/v1/organism/config/history",
+  "GET /api/v1/organism/genome",
+  "GET /api/v1/organism/genome/{genome_id}",
+  "GET /api/v1/organism/health-summary",
+  "GET /api/v1/organism/lifecycle",
+  "GET /api/v1/organism/nervous/signals",
+  "GET /api/v1/organism/nervous/status",
+  "GET /api/v1/organism/selection/{vsb_id}",
+  "GET /api/v1/organism/selection/{vsb_id}/floor",
+  "GET /api/v1/organism/self-healing/log",
+  "GET /api/v1/organism/self-healing/status",
+  "GET /api/v1/organism/signals",
+  "GET /api/v1/organism/status",
+  "GET /api/v1/organism/systems",
+  "GET /api/v1/plan",
+  "GET /api/v1/plan/followups",
+  "GET /api/v1/plan/state",
+  "GET /api/v1/projects/",
+  "GET /api/v1/projects/governance/proposals",
+  "GET /api/v1/projects/stats/summary",
+  "GET /api/v1/projects/{project_id}",
+  "GET /api/v1/projects/{project_id}/outputs",
+  "GET /api/v1/qep/adaptation/registry",
+  "GET /api/v1/qep/ayah/{surah_number}/{ayah_number}",
+  "GET /api/v1/qep/compliance/audit",
+  "GET /api/v1/qep/contribute/statement/{vsb_id}",
+  "GET /api/v1/qep/gamification/{uid}",
+  "GET /api/v1/qep/hifz/progress/{uid}",
+  "GET /api/v1/qep/leaderboard",
+  "GET /api/v1/qep/status",
+  "GET /api/v1/qep/surah/{number}",
+  "GET /api/v1/qep/suwar",
+  "GET /api/v1/qep/translation/status",
+  "GET /api/v1/qep/xai/explanations",
+  "GET /api/v1/religion/schools",
+  "GET /api/v1/resources",
+  "GET /api/v1/resources/compositions",
+  "GET /api/v1/resources/compositions/runs",
+  "GET /api/v1/resources/compositions/{cid}",
+  "GET /api/v1/resources/swarm",
+  "GET /api/v1/resources/swarm/{sid}",
+  "GET /api/v1/resources/{resource_id}",
+  "GET /api/v1/science/gmp/records/{record_id}",
+  "GET /api/v1/science/methodologies",
+  "GET /api/v1/sovereign-evolution/roadmap",
+  "GET /api/v1/sovereign-evolution/status",
+  "GET /api/v1/studio/vsb",
+  "GET /api/v1/studio/vsb/{entity_id}",
+  "GET /api/v1/support/satisfaction",
+  "GET /api/v1/support/sla",
+  "GET /api/v1/swarm/agents",
+  "GET /api/v1/swarm/cascade/runs",
+  "GET /api/v1/swarm/catalogue/proposed",
+  "GET /api/v1/swarm/runs",
+  "GET /api/v1/synthesis/download/{output_id}",
+  "GET /api/v1/synthesis/history",
+  "GET /api/v1/system/info",
+  "GET /api/v1/transformation",
+  "GET /api/v1/transformation/orchestrate/runs",
+  "GET /api/v1/transformation/realisation",
+  "GET /api/v1/twin/models",
+  "GET /api/v1/twin/models/{model_id}",
+  "GET /api/v1/ueg/recent",
+  "GET /api/v1/ueg/verify",
+  "GET /api/v1/user/profile",
+  "GET /api/v1/user/workspace",
+  "GET /api/v1/vbs/backbone/health",
+  "GET /api/v1/vbs/qms/defects",
+  "GET /api/v1/vbs/qms/document-control",
+  "GET /api/v1/vbs/systems",
+  "GET /api/v1/vsb",
+  "GET /api/v1/vsb/{vsb_id}",
+  "GET /api/v1/vsb/{vsb_id}/board-pack",
+  "GET /api/v1/vsb/{vsb_id}/board-packs",
+  "GET /api/v1/vsb/{vsb_id}/genome",
+  "GET /api/v1/vsb/{vsb_id}/mobile",
+  "GET /api/v1/vsb/{vsb_id}/mobile/page/{name}",
+  "GET /api/v1/vsb/{vsb_id}/repo",
+  "GET /api/v1/vsb/{vsb_id}/repo/file",
+  "GET /api/v1/vsb/{vsb_id}/repo/ship",
+  "GET /api/v1/vsb/{vsb_id}/repo/zip",
+  "GET /api/v1/vsb/{vsb_id}/review-gates",
+  "GET /api/v1/vsb/{vsb_id}/review-gates/{stage}",
+  "GET /api/v1/vsb/{vsb_id}/webapp",
+  "GET /api/v1/vsb/{vsb_id}/webapp/page/{name}",
+  "GET /api/v1/vsb/{vsb_id}/website",
+  "GET /api/v1/vsb/{vsb_id}/website/page/{name}",
+  "GET /api/v1/workstation/git-history",
+  "GET /api/v138/ceo/meeting/log",
+  "GET /api/v138/ceo/meeting/minutes",
+  "GET /api/v138/ceo/vitals",
+  "GET /api/v154/constitution/articles",
+  "GET /api/v154/security/status",
+  "GET /api/v154/status",
+  "GET /api/v190/evolution/trajectories",
+  "GET /api/v190/extrospection/signals",
+  "GET /api/v191/evolution/history",
+  "GET /api/v191/evolution/proposals",
+  "GET /api/v191/modes/{mode_id}",
+  "GET /api/v210/federation/twins",
+  "GET /api/v220/twin/blueprint/{twin_id}",
+  "GET /api/v230/marketplace/products",
+  "GET /api/v240/evolution/metrics",
+  "GET /api/v250/search/global",
+  "GET /api/v250/treaties/active",
+  "GET /api/v260/user/preferences",
+  "GET /api/v260/user/recommendations",
+  "GET /api/v280/gamification/quests",
+  "GET /api/v280/gamification/stats/{user_id}",
+  "GET /api/v290/iot/devices",
+  "GET /api/v290/iot/telemetry/{device_id}",
+  "GET /api/v310/entrepreneur/mentors",
+  "GET /api/v310/fund/epoch-synthesis",
+  "GET /api/v310/fund/grants/active",
+  "GET /api/v310/governance/proposals",
+  "GET /api/v310/governance/treasury",
+  "GET /api/v310/payments/status",
+  "GET /api/v310/payments/wallet/{user_id}",
+  "GET /api/v310/payments/wallet/{user_id}/v2",
+  "GET /health",
+  "GET /{full_path:path}",
+  "PATCH /api/v1/marketplace/listings/{listing_id}",
+  "PATCH /api/v1/projects/{project_id}",
+  "POST /api/ai/query",
+  "POST /api/ceo/delegate",
+  "POST /api/civilization/assistant/query",
+  "POST /api/council/judge/disputes",
+  "POST /api/council/judge/override",
+  "POST /api/cross-platform/voice/command",
+  "POST /api/cross-platform/wearable/alert",
+  "POST /api/partnerships/onboard",
+  "POST /api/realms/v2/create",
+  "POST /api/security/bounty/submit",
+  "POST /api/v1/ai/completion",
+  "POST /api/v1/ai/query",
+  "POST /api/v1/attestation/sign",
+  "POST /api/v1/attestation/verify",
+  "POST /api/v1/auth/api-key",
+  "POST /api/v1/auth/refresh",
+  "POST /api/v1/auth/register",
+  "POST /api/v1/auth/signup",
+  "POST /api/v1/auth/token",
+  "POST /api/v1/avatar/chat",
+  "POST /api/v1/avatar/ratifications",
+  "POST /api/v1/avatar/ratifications/{rid}/cosign",
+  "POST /api/v1/avatar/ratifications/{rid}/revoke",
+  "POST /api/v1/avatar/session",
+  "POST /api/v1/avatar/speak",
+  "POST /api/v1/avatar/transcribe",
+  "POST /api/v1/board/chief/instruct",
+  "POST /api/v1/board/directive",
+  "POST /api/v1/board/ratifications/{cca_id}",
+  "POST /api/v1/bto/build",
+  "POST /api/v1/bto/configure",
+  "POST /api/v1/business-plan/generate",
+  "POST /api/v1/business-plan/objective",
+  "POST /api/v1/business-plan/objective/{oid}/orchestrate",
+  "POST /api/v1/business-plan/objective/{oid}/review",
+  "POST /api/v1/business-plan/set",
+  "POST /api/v1/care/care-plan",
+  "POST /api/v1/care/handover",
+  "POST /api/v1/care/risk-assess",
+  "POST /api/v1/care/safeguarding",
+  "POST /api/v1/career/generate",
+  "POST /api/v1/career/job-search",
+  "POST /api/v1/career/job-search/use",
+  "POST /api/v1/career/uploads/auto",
+  "POST /api/v1/cca/immune-reconfigure",
+  "POST /api/v1/cca/immune-reconfigure/{cca_id}/revert",
+  "POST /api/v1/cca/submit",
+  "POST /api/v1/cca/{cca_id}/implement",
+  "POST /api/v1/cca/{cca_id}/review",
+  "POST /api/v1/cca/{cca_id}/twin-prevalidate",
+  "POST /api/v1/cognition/align",
+  "POST /api/v1/cognitive/cascade",
+  "POST /api/v1/cognitive/engine",
+  "POST /api/v1/cognitive/mjm",
+  "POST /api/v1/collective/consensus",
+  "POST /api/v1/compliance/check",
+  "POST /api/v1/deliverables/produce",
+  "POST /api/v1/deliverables/{deliverable_id}/regenerate",
+  "POST /api/v1/economy/charity/directives",
+  "POST /api/v1/economy/charity/signals",
+  "POST /api/v1/economy/close-period",
+  "POST /api/v1/economy/contracts",
+  "POST /api/v1/economy/contracts/{cid}/accept",
+  "POST /api/v1/economy/contracts/{cid}/cancel",
+  "POST /api/v1/economy/contracts/{cid}/decline",
+  "POST /api/v1/economy/contracts/{cid}/deliver",
+  "POST /api/v1/economy/contracts/{cid}/settle",
+  "POST /api/v1/economy/cycle",
+  "POST /api/v1/economy/entity-form",
+  "POST /api/v1/economy/ledger/{vsb_id}/repair",
+  "POST /api/v1/economy/living-vsbs/{vsb_id}/lifecycle",
+  "POST /api/v1/economy/living-vsbs/{vsb_id}/propose-mitosis",
+  "POST /api/v1/economy/living-vsbs/{vsb_id}/propose-removal",
+  "POST /api/v1/economy/owner-payments/payout",
+  "POST /api/v1/economy/transfer",
+  "POST /api/v1/economy/transfers/reconcile",
+  "POST /api/v1/economy/transfers/{transfer_id}/complete",
+  "POST /api/v1/economy/venture-funding-share",
+  "POST /api/v1/economy/ventures/return",
+  "POST /api/v1/economy/waterfall",
+  "POST /api/v1/education/assessment",
+  "POST /api/v1/education/curriculum",
+  "POST /api/v1/education/feedback",
+  "POST /api/v1/education/lesson-plan",
+  "POST /api/v1/employment/application",
+  "POST /api/v1/employment/career-path",
+  "POST /api/v1/employment/cover-letter",
+  "POST /api/v1/employment/cv",
+  "POST /api/v1/employment/interview-prep",
+  "POST /api/v1/employment/salary-negotiation",
+  "POST /api/v1/factory/produce",
+  "POST /api/v1/forge/run",
+  "POST /api/v1/forge/runs/{run_id}/rerun",
+  "POST /api/v1/fund/allocate",
+  "POST /api/v1/fund/report",
+  "POST /api/v1/gaas/breaker/reset",
+  "POST /api/v1/gaas/intercept",
+  "POST /api/v1/generator/produce",
+  "POST /api/v1/genesis/establish",
+  "POST /api/v1/genesis/establish/stream",
+  "POST /api/v1/genesis/journey",
+  "POST /api/v1/heartbeat/beat",
+  "POST /api/v1/heartbeat/configure",
+  "POST /api/v1/heartbeat/start",
+  "POST /api/v1/heartbeat/stop",
+  "POST /api/v1/horizon/archive/scan",
+  "POST /api/v1/horizon/consumption/owner-field",
+  "POST /api/v1/horizon/lessons",
+  "POST /api/v1/horizon/observe",
+  "POST /api/v1/horizon/reflection",
+  "POST /api/v1/horizon/screen",
+  "POST /api/v1/horizon/simulation/forecast",
+  "POST /api/v1/horizon/simulation/schedule",
+  "POST /api/v1/horizon/simulation/surface-stage-4",
+  "POST /api/v1/horizon/verify",
+  "POST /api/v1/hub/agents/register",
+  "POST /api/v1/hub/claude-code-handoff",
+  "POST /api/v1/hub/handoffs/{handoff_id}/status",
+  "POST /api/v1/hub/message",
+  "POST /api/v1/incubator/evolve",
+  "POST /api/v1/ingest/",
+  "POST /api/v1/ingest/url",
+  "POST /api/v1/intelligence/authorship",
+  "POST /api/v1/intelligence/bdp",
+  "POST /api/v1/intelligence/design-dev",
+  "POST /api/v1/intelligence/mjm",
+  "POST /api/v1/intelligence/nexus",
+  "POST /api/v1/intelligence/solve",
+  "POST /api/v1/intelligence/spi",
+  "POST /api/v1/law/analyse",
+  "POST /api/v1/law/generate",
+  "POST /api/v1/law/matter/artefacts/{artefact_id}/approve",
+  "POST /api/v1/law/matter/assemble",
+  "POST /api/v1/law/research",
+  "POST /api/v1/marketplace/listings",
+  "POST /api/v1/marketplace/listings/from-entity/{vsb_id}",
+  "POST /api/v1/marketplace/listings/{listing_id}/purchase",
+  "POST /api/v1/marketplace/value",
+  "POST /api/v1/mega-project/synthesise",
+  "POST /api/v1/method/breach",
+  "POST /api/v1/method/check",
+  "POST /api/v1/method/check-cascade",
+  "POST /api/v1/method/correct",
+  "POST /api/v1/method/derive",
+  "POST /api/v1/method/diagnose",
+  "POST /api/v1/method/screen",
+  "POST /api/v1/mgmt/audit/schedule",
+  "POST /api/v1/mgmt/bms/generate",
+  "POST /api/v1/mgmt/dcs/generate",
+  "POST /api/v1/mgmt/ems/generate",
+  "POST /api/v1/mgmt/nonconformance",
+  "POST /api/v1/mgmt/qms/generate",
+  "POST /api/v1/mgmt/risk-register",
+  "POST /api/v1/native-ai/complete",
+  "POST /api/v1/native-ai/consensus",
+  "POST /api/v1/native-ai/decide",
+  "POST /api/v1/native-ai/ensemble",
+  "POST /api/v1/native-ai/entailment",
+  "POST /api/v1/native-ai/entropy",
+  "POST /api/v1/native-ai/intent",
+  "POST /api/v1/native-ai/lifecycle/evaluate",
+  "POST /api/v1/native-ai/lifecycle/promote",
+  "POST /api/v1/native-ai/lifecycle/reinstate",
+  "POST /api/v1/native-ai/lifecycle/retire",
+  "POST /api/v1/native-ai/quorum",
+  "POST /api/v1/native-ai/rigor",
+  "POST /api/v1/native-ai/swarm",
+  "POST /api/v1/native-ai/topology",
+  "POST /api/v1/native-ai/transduce",
+  "POST /api/v1/native-ai/tree",
+  "POST /api/v1/native-ai/validate",
+  "POST /api/v1/operations/model-health/rebaseline",
+  "POST /api/v1/operations/record",
+  "POST /api/v1/optimizer/allocate",
+  "POST /api/v1/organism/cadence/refresh",
+  "POST /api/v1/organism/config/ai-suggest",
+  "POST /api/v1/organism/config/reset",
+  "POST /api/v1/organism/config/update",
+  "POST /api/v1/organism/genome/crossover",
+  "POST /api/v1/organism/genome/encode",
+  "POST /api/v1/organism/genome/mutate",
+  "POST /api/v1/organism/homeostasis",
+  "POST /api/v1/organism/nervous/stimulate",
+  "POST /api/v1/petri/culture",
+  "POST /api/v1/projects/",
+  "POST /api/v1/projects/governance/proposals/{proposal_id}/vote",
+  "POST /api/v1/projects/{project_id}/advance",
+  "POST /api/v1/projects/{project_id}/propose-advance",
+  "POST /api/v1/projects/{project_id}/run",
+  "POST /api/v1/qep/adaptation/execute",
+  "POST /api/v1/qep/contribute/sponsor-a-student",
+  "POST /api/v1/qep/contribute/zakat",
+  "POST /api/v1/qep/curriculum",
+  "POST /api/v1/qep/gamification/award",
+  "POST /api/v1/qep/hifz/review",
+  "POST /api/v1/qep/hifz/schedule",
+  "POST /api/v1/qep/recommendation/update",
+  "POST /api/v1/qep/tajweed/analyse",
+  "POST /api/v1/qep/tajweed/lesson",
+  "POST /api/v1/qep/translation/translate",
+  "POST /api/v1/reactor/composite",
+  "POST /api/v1/reactor/experiment",
+  "POST /api/v1/reactor/run",
+  "POST /api/v1/reactor/studio",
+  "POST /api/v1/refine",
+  "POST /api/v1/religion/fatwa-research",
+  "POST /api/v1/religion/hadith-study",
+  "POST /api/v1/religion/halal-review",
+  "POST /api/v1/religion/interfaith",
+  "POST /api/v1/religion/quran-tafsir",
+  "POST /api/v1/resources/compose",
+  "POST /api/v1/resources/compose/simulate",
+  "POST /api/v1/resources/compositions/{cid}/run",
+  "POST /api/v1/resources/swarm/define",
+  "POST /api/v1/resources/swarm/run",
+  "POST /api/v1/science/experiment-design",
+  "POST /api/v1/science/gmp/records",
+  "POST /api/v1/science/gmp/records/{record_id}/sign",
+  "POST /api/v1/science/gmp/roster",
+  "POST /api/v1/science/hypothesis",
+  "POST /api/v1/science/literature",
+  "POST /api/v1/science/synthesise",
+  "POST /api/v1/sovereign-evolution/cycle",
+  "POST /api/v1/studio/synthesise",
+  "POST /api/v1/studio/vsb/spawn",
+  "POST /api/v1/support/ask",
+  "POST /api/v1/support/confirm",
+  "POST /api/v1/support/policy-change",
+  "POST /api/v1/support/satisfaction",
+  "POST /api/v1/swarm/cascade",
+  "POST /api/v1/swarm/catalogue/proposed/{run_id}/curate",
+  "POST /api/v1/swarm/delegate",
+  "POST /api/v1/synthesis/generate",
+  "POST /api/v1/synthesis/stream",
+  "POST /api/v1/transformation/assess",
+  "POST /api/v1/transformation/orchestrate",
+  "POST /api/v1/transformation/tick",
+  "POST /api/v1/twin/model",
+  "POST /api/v1/twin/optimise",
+  "POST /api/v1/twin/simulate",
+  "POST /api/v1/ueg/log",
+  "POST /api/v1/vbs/backbone/register",
+  "POST /api/v1/vbs/bms/economics",
+  "POST /api/v1/vbs/dcms/commit",
+  "POST /api/v1/vbs/ems/efficiency",
+  "POST /api/v1/vbs/qms/defects/{defect_id}/correct",
+  "POST /api/v1/vbs/qms/defects/{defect_id}/reverify",
+  "POST /api/v1/vbs/qms/gate",
+  "POST /api/v1/vsb/spawn",
+  "POST /api/v1/vsb/{vsb_id}/board-pack",
+  "POST /api/v1/vsb/{vsb_id}/concept",
+  "POST /api/v1/vsb/{vsb_id}/evolution/apply",
+  "POST /api/v1/vsb/{vsb_id}/evolve",
+  "POST /api/v1/vsb/{vsb_id}/mobile",
+  "POST /api/v1/vsb/{vsb_id}/name",
+  "POST /api/v1/vsb/{vsb_id}/repo",
+  "POST /api/v1/vsb/{vsb_id}/repo/cascade",
+  "POST /api/v1/vsb/{vsb_id}/repo/ship",
+  "POST /api/v1/vsb/{vsb_id}/review-gates",
+  "POST /api/v1/vsb/{vsb_id}/review-gates/{stage}/decision",
+  "POST /api/v1/vsb/{vsb_id}/webapp",
+  "POST /api/v1/vsb/{vsb_id}/website",
+  "POST /api/v138/ceo/chat",
+  "POST /api/v191/evolution/proposals/generate",
+  "POST /api/v191/evolution/proposals/{proposal_id}/approve",
+  "POST /api/v191/evolution/proposals/{proposal_id}/reject",
+  "POST /api/v200/contribute/feedback",
+  "POST /api/v200/contribute/vote",
+  "POST /api/v210/federation/spawn-twin",
+  "POST /api/v250/treaties/draft",
+  "POST /api/v250/treaties/{treaty_id}/sign",
+  "POST /api/v260/user/activity",
+  "POST /api/v280/gamification/quests/complete",
+  "POST /api/v280/gamification/xp",
+  "POST /api/v290/ceo/debug-creation",
+  "POST /api/v290/ceo/generate-blueprint",
+  "POST /api/v310/entrepreneur/generate-plan",
+  "POST /api/v310/entrepreneur/generate-plan/stream",
+  "POST /api/v310/governance/vote",
+  "POST /api/v310/payments/create-session",
+  "POST /api/v310/payments/payout",
+  "PUT /api/v1/avatar/balance-objectives",
+  "PUT /api/v1/resources/compositions/{cid}",
+  "PUT /api/v1/resources/swarm/{sid}",
+  "PUT /api/v1/user/profile",
+  "PUT /api/v1/user/workspace"
+ ],
+ "pages": [
+  {
+   "path": "/",
+   "component": "Dashboard"
+  },
+  {
+   "path": "/my-work",
+   "component": "MyWork"
+  },
+  {
+   "path": "/organism",
+   "component": "OrganismHub"
+  },
+  {
+   "path": "/native-ai",
+   "component": "NativeAI"
+  },
+  {
+   "path": "/ai-tools",
+   "component": "AIToolsCatalogue"
+  },
+  {
+   "path": "/ceo",
+   "component": "LivingOrganisationHub"
+  },
+  {
+   "path": "/domains",
+   "component": "DomainsHub"
+  },
+  {
+   "path": "/religion",
+   "component": "ReligionHub"
+  },
+  {
+   "path": "/science",
+   "component": "ScienceHub"
+  },
+  {
+   "path": "/law",
+   "component": "LawHub"
+  },
+  {
+   "path": "/education",
+   "component": "EducationHub"
+  },
+  {
+   "path": "/care",
+   "component": "CareHub"
+  },
+  {
+   "path": "/employment",
+   "component": "EmploymentHub"
+  },
+  {
+   "path": "/qep",
+   "component": "QEPReligionHub"
+  },
+  {
+   "path": "/qep-religion",
+   "component": "QEPReligionHub"
+  },
+  {
+   "path": "/vsb",
+   "component": "VSBSpawnStudio"
+  },
+  {
+   "path": "/vsb-spawn",
+   "component": "VSBSpawnStudio"
+  },
+  {
+   "path": "/vsb-cockpit",
+   "component": "VSBCockpit"
+  },
+  {
+   "path": "/genesis",
+   "component": "GenesisJourney"
+  },
+  {
+   "path": "/business-plan",
+   "component": "BusinessPlan"
+  },
+  {
+   "path": "/management",
+   "component": "ManagementSystemsHub"
+  },
+  {
+   "path": "/change-control",
+   "component": "ChangeControlAgency"
+  },
+  {
+   "path": "/digital-twins",
+   "component": "DigitalTwins"
+  },
+  {
+   "path": "/projects",
+   "component": "ProjectsHub"
+  },
+  {
+   "path": "/resource-fabric",
+   "component": "ResourceFabric"
+  },
+  {
+   "path": "/synthesis",
+   "component": "SynthesisStudio"
+  },
+  {
+   "path": "/nexus",
+   "component": "SynthesisNexus"
+  },
+  {
+   "path": "/forge-pipeline",
+   "component": "ForgePipeline"
+  },
+  {
+   "path": "/reactor",
+   "component": "DigitalReactor"
+  },
+  {
+   "path": "/incubator",
+   "component": "Incubator"
+  },
+  {
+   "path": "/reactor-studio",
+   "component": "ReactorStudio"
+  },
+  {
+   "path": "/factory",
+   "component": "Factory"
+  },
+  {
+   "path": "/generator",
+   "component": "Generator"
+  },
+  {
+   "path": "/intelligence",
+   "component": "IntelligenceLab"
+  },
+  {
+   "path": "/authorship",
+   "component": "AuthorshipEngine"
+  },
+  {
+   "path": "/design-dev",
+   "component": "DesignDevEngine"
+  },
+  {
+   "path": "/solutions",
+   "component": "SolutionsPlatform"
+  },
+  {
+   "path": "/bto",
+   "component": "BTOCatalog"
+  },
+  {
+   "path": "/transformation",
+   "component": "TransformationDashboard"
+  },
+  {
+   "path": "/economy",
+   "component": "EconomyCenter"
+  },
+  {
+   "path": "/marketplace",
+   "component": "LivingMarketplace"
+  },
+  {
+   "path": "/deliverables",
+   "component": "Deliverables"
+  },
+  {
+   "path": "/governance-hub",
+   "component": "GovernanceCenter"
+  },
+  {
+   "path": "/operations",
+   "component": "OperationalExcellence"
+  },
+  {
+   "path": "/sovereign-evolution",
+   "component": "SovereignEvolution"
+  },
+  {
+   "path": "/coe",
+   "component": "KnowledgeHub"
+  },
+  {
+   "path": "/contribute",
+   "component": "Contribute"
+  },
+  {
+   "path": "/creator",
+   "component": "CreatorStudio"
+  },
+  {
+   "path": "/settings",
+   "component": "Settings"
+  },
+  {
+   "path": "/login",
+   "component": "Login"
+  },
+  {
+   "path": "/cognitive-introspection",
+   "component": "CognitiveIntrospection"
+  },
+  {
+   "path": "/support",
+   "component": "Support"
+  },
+  {
+   "path": "/horizon-guardrails",
+   "component": "HorizonGuardrails"
+  },
+  {
+   "path": "/horizon-companion",
+   "component": "HorizonCompanion"
+  },
+  {
+   "path": "*",
+   "component": "div"
+  }
+ ],
+ "redirects": [
+  {
+   "path": "/dashboard"
+  },
+  {
+   "path": "/heartbeat"
+  },
+  {
+   "path": "/cognition"
+  },
+  {
+   "path": "/board"
+  },
+  {
+   "path": "/visual-composer"
+  },
+  {
+   "path": "/swarm-intelligence"
+  },
+  {
+   "path": "/enterprise"
+  },
+  {
+   "path": "/capital"
+  },
+  {
+   "path": "/products"
+  },
+  {
+   "path": "/dev-marketplace"
+  },
+  {
+   "path": "/product-catalog"
+  },
+  {
+   "path": "/wallet"
+  },
+  {
+   "path": "/impact"
+  },
+  {
+   "path": "/constitution"
+  },
+  {
+   "path": "/compliance"
+  },
+  {
+   "path": "/audit-dashboard"
+  },
+  {
+   "path": "/audit"
+  },
+  {
+   "path": "/transparency"
+  },
+  {
+   "path": "/vault"
+  },
+  {
+   "path": "/admin"
+  },
+  {
+   "path": "/landing"
+  }
+ ],
+ "unparsed_pages": [],
+ "route_tags_declared": 76,
+ "excluded": [
+  {
+   "surface": "/openapi.json",
+   "reason": "framework schema route"
+  },
+  {
+   "surface": "/docs",
+   "reason": "framework docs page"
+  },
+  {
+   "surface": "/docs/oauth2-redirect",
+   "reason": "framework docs helper"
+  },
+  {
+   "surface": "/redoc",
+   "reason": "framework docs page"
+  },
+  {
+   "surface": "/api/v154/ws/streams",
+   "reason": "not an HTTP method route (APIWebSocketRoute)"
+  },
+  {
+   "surface": "/assets",
+   "reason": "not an HTTP method route (Mount)"
+  }
+ ]
+}

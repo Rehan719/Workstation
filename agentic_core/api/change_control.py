@@ -544,7 +544,9 @@ def _record_variance(change: dict, now: str, outcome: str) -> None:
 
     def _secs(stamp):
         try:
-            return _t.mktime(_t.strptime(str(stamp), "%Y-%m-%dT%H:%M:%SZ"))
+            #  W639 — a UTC ("…Z") stamp parsed as UTC. mktime read it as LOCAL time: the two ends of a
+            #  variance usually cancel, but not across a daylight-saving change, where it was an hour out.
+            return float(__import__("calendar").timegm(_t.strptime(str(stamp), "%Y-%m-%dT%H:%M:%SZ")))
         except (ValueError, TypeError):
             return None
 

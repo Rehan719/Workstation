@@ -1591,6 +1591,13 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
     # old membership test did and what made the count unfalsifiable for two of the four.
     for _k in ("constitutional", "operational"):
         layers[_k].setdefault("holds", "content")
+        #  W639 (ledger v14 R3.1) — BACK INSIDE THE LOOP. W635 inserted the vision-note block below after the
+        #  loop's first line, and these two lines, keeping their indentation, fell inside its `if`: they ran
+        #  only when the note fired and only for the last layer, so a layer that holds content was counted
+        #  as empty.
+        layers[_k].setdefault("present", True)
+        layers[_k].setdefault("basis", "derived fresh from this entity when the pack was assembled; "
+                                       "each field above carries its own source")
     #  W635 (FU-584) - ONE VISION PER PACK, or the difference is named. The strategic refresh quotes the plan's
     #  vision field, which may be the platform's template; the constitutional layer uses only an Owner-written one.
     _sc584 = str((layers.get("strategic") or {}).get("content") or "")
@@ -1608,9 +1615,6 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
             "the vision quoted in this strategic refresh is the business plan's vision FIELD, which is not "
             "Owner-written here (a platform template); the pack's vision is the constitutional layer's: "
             + str(constitutional.get("vision_source")))
-        layers[_k].setdefault("present", True)
-        layers[_k].setdefault("basis", "derived fresh from this entity when the pack was assembled; "
-                                       "each field above carries its own source")
     layers_present = sorted(k for k, v in layers.items() if v.get("present"))
     # EVERY LAYER'S STATE, REACHABLE. The page could only reach a basis through the "N empty" chip,
     # which renders only when a layer is absent - so with all four counted present, no basis could be

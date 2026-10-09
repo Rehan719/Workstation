@@ -42214,9 +42214,16 @@ def test_w594_the_owners_rulings_of_2026_10_05b_hold_in_code_and_in_canon(client
     _still = _plan594.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0]
     #  W622 — "162" left the list because the Owner RULED it on 2026-10-07 (FU-459: an accurate scan, no deletion);
     #  pinning it would punish the ruling, the FU-365 class this block's own comment names.
-    assert "THE STRIPE KEY ROLL" in _still, (
-        "the open-decisions list has lost a standing Owner decision that no register row carries",
-        _still[:300])
+    #  W639 — THIS PINNED "THE STRIPE KEY ROLL" AS OPEN, AND THE OWNER THEN DID IT (rotated and expired the old
+    #  keys, 2026-10-09). The third time this block has gone red because a decision was acted on - the FU-365
+    #  class its own comments name twice. What no register row carries, and what must stay listed, is the
+    #  SWITCH: real money stays off until compliance review, and the list says so. A key roll that is done must
+    #  not be asked for again.
+    assert "REAL_MONEY_ENABLED" in _still and "OFF" in _still, (
+        "the open-decisions list has lost the real-money switch, a standing Owner decision that no register "
+        "row carries", _still[:300])
+    assert "to be rolled at Stripe" not in _still, (
+        "the list still asks the Owner to roll a key they have already rotated", _still[:300])
     import json as _js594
     _reg594 = _js594.loads((_root594 / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))
     _gated = [r for r in _reg594["items"]
@@ -48171,3 +48178,137 @@ def test_w638_test_entities_are_quarantined_by_the_owners_rule_and_nothing_is_de
               if isinstance(n, _ast638.Call) and isinstance(n.func, _ast638.Attribute)}
     assert not (_calls & {"unlink", "rmtree", "remove", "rmdir"}), (
         "the quarantine tool can delete: " + ", ".join(sorted(_calls & {"unlink", "rmtree", "remove", "rmdir"})))
+
+
+def test_w640_the_resource_inventory_is_composed_and_says_what_kind_of_statement_each_block_is(client):
+    """FU-618 (Owner-approved 2026-10-09). A model registry, a tier router that measures the machine, an
+    optimizer baseline, the Resource Fabric and homeostasis each had their own route and no one place showed
+    them together. /native-ai/inventory composes them, read-only. The optimizer's capacity baseline is a
+    labelled SIMULATION and the machine block is a MEASUREMENT: a reader must never take one for the other."""
+    _inv = client.get("/api/v1/native-ai/inventory")
+    assert _inv.status_code == 200, _inv.text[:200]
+    _j = _inv.json()
+    _blocks = ("machine", "tiers", "models", "fabric", "homeostasis", "optimizer_baseline")
+    for _b in _blocks:
+        assert _b in _j and "known" in _j[_b] and _j[_b].get("basis"), (_b, _j.get(_b))
+        assert _j[_b]["known"] is True, ("a producer could not answer in the test environment", _b, _j[_b]["basis"])
+    assert _j["read_only"] is True
+    #  THE TWO KINDS ARE NEVER CONFUSED
+    assert _j["machine"]["basis_kind"] == "measured" and _j["optimizer_baseline"]["basis_kind"] == "simulated", (
+        "the simulated capacity baseline and the measured machine are presented as the same kind of statement",
+        _j["machine"]["basis_kind"], _j["optimizer_baseline"]["basis_kind"])
+    assert "SIMULATED" in _j["optimizer_baseline"]["basis"] and "not a measurement" in _j["optimizer_baseline"]["basis"]
+    #  ONE PRODUCER PER FIGURE: the models block IS what /resources returns, compared as data
+    _res = client.get("/api/v1/native-ai/resources").json()
+    assert _j["models"]["data"] == _res, "the inventory recomputes the model list instead of calling its producer"
+    #  the fabric count is the Resource Fabric's own
+    from agentic_core.api import resource_fabric as _rf640
+    assert _j["fabric"]["data"]["total"] == len(_rf640._REGISTRY), _j["fabric"]["data"]
+    assert sum(_j["fabric"]["data"]["by_class"].values()) == _j["fabric"]["data"]["total"]
+
+    #  A PRODUCER THAT CANNOT ANSWER IS "NOT KNOWN" - AND ONLY THAT BLOCK, AND THE ROUTE STILL ANSWERS
+    from agentic_core.ai.native import tiers as _t640
+    _real_machine = _t640.machine
+
+    def _boom():
+        raise RuntimeError("the machine could not be read")
+    try:
+        _t640.machine = _boom
+        _broken = client.get("/api/v1/native-ai/inventory")
+    finally:
+        _t640.machine = _real_machine
+    assert _broken.status_code == 200, _broken.text[:200]
+    _bj = _broken.json()
+    assert _bj["machine"]["known"] is False and _bj["machine"]["data"] is None, _bj["machine"]
+    assert "NOT KNOWN" in _bj["machine"]["basis"] and "RuntimeError" in _bj["machine"]["basis"], _bj["machine"]["basis"]
+    assert _bj["machine"]["basis_kind"] == "not_known"
+    assert _bj["models"]["known"] is True and _bj["fabric"]["known"] is True, (
+        "one producer failing took other blocks down with it")
+
+    #  IT WRITES NOTHING: the handler names no store writer (scoped to the function's own source)
+    import ast as _ast640
+    import pathlib as _pl640
+    _src = (_pl640.Path(__file__).resolve().parents[1] / "agentic_core/api/native_ai.py").read_text(encoding="utf-8")
+    _fn = next(n for n in _ast640.walk(_ast640.parse(_src))
+               if isinstance(n, _ast640.AsyncFunctionDef) and n.name == "native_inventory")
+    _called = {n.func.attr if isinstance(n.func, _ast640.Attribute) else getattr(n.func, "id", "")
+               for n in _ast640.walk(_fn) if isinstance(n, _ast640.Call)}
+    assert not (_called & {"atomic_write_json", "write_text", "write_bytes", "save_lifecycle", "_save"}), (
+        "the read-only inventory calls a writer", sorted(_called))
+    #  and the route is bound to its own handler (a helper between a decorator and its handler rebinds it)
+    assert [_ast640.unparse(d) for d in _fn.decorator_list] == ["router.get('/inventory')"], _fn.decorator_list
+
+
+def test_w639_a_utc_stamp_is_parsed_as_utc_and_a_layer_that_holds_content_is_counted(client):
+    """Ledger v14, fixed in the round that found them.
+
+    R3.3 / R4.6 / R6.3 (one bug, three regions): the living cadence wrote its stamps with gmtime and read them
+    back with mktime - LOCAL time - less time.timezone, which is the NON-daylight offset. In summer every
+    "time since the last refresh" read an hour long.
+    R3.1: W635 inserted a block after the first line of a two-layer loop in the Board Pack; the loop's other
+    two lines kept their indentation and fell inside the new block's `if`, so a layer that holds content was
+    counted as empty unless a vision note happened to fire, and then only the last layer was marked.
+    """
+    import calendar as _cal639
+    import time as _time639
+    from agentic_core.organism import cadence as _cad639
+
+    # ── the stamp round-trips exactly, for a summer and a winter instant ────────────────────────
+    for _s in ("2026-07-01T12:00:00Z", "2026-01-15T12:00:00Z"):
+        _want = float(_cal639.timegm(_time639.strptime(_s, "%Y-%m-%dT%H:%M:%SZ")))
+        assert _cad639._parse_stamp(_s) == _want, (
+            "a UTC stamp is not read back as the instant it names", _s, _cad639._parse_stamp(_s), _want)
+        assert _cad639._stamp(_cad639._parse_stamp(_s)) == _s, "stamp -> parse -> stamp is not the identity"
+    #  DRIVEN ON ANY MACHINE: a CI runner in UTC cannot see a local-time parse by its value (local IS UTC
+    #  there), so the property is asserted directly - the parse must not go through local time at all.
+    _real_mktime = _cad639.time.mktime
+
+    def _no_local_time(*_a, **_k):
+        raise AssertionError("the cadence parsed a UTC stamp through LOCAL time (mktime)")
+    try:
+        _cad639.time.mktime = _no_local_time
+        assert _cad639._parse_stamp("2026-07-01T12:00:00Z") is not None, (
+            "the cadence's stamp parse depends on mktime: under daylight saving it is an hour out, and with "
+            "mktime unavailable it reports 'never refreshed'")
+    finally:
+        _cad639.time.mktime = _real_mktime
+    assert _cad639._parse_stamp("") is None and _cad639._parse_stamp("not a stamp") is None
+
+    # ── both derived layers of a Board Pack are counted present, whether or not a vision note fires ─
+    _vid = client.post("/api/v1/genesis/establish", json={
+        "problem": "W639 a village library that lends tools as well as books", "domain": "enterprise",
+        "owner_id": "pytest", "name": "W639 Pack Layers Probe", "concept": "a tool-lending library",
+        "design": "d", "commercialisation": "membership"}).json()["vsb_id"]
+    _p1 = client.post(f"/api/v1/vsb/{_vid}/board-pack").json()
+    for _k in ("constitutional", "operational"):
+        assert _p1["layers"][_k].get("present") is True and _p1["layers"][_k].get("basis"), (
+            "a Board Pack layer that is derived fresh from the entity is not marked present - the pack's "
+            "chip counts a layer that holds content as empty", _k, _p1["layers"][_k].get("present"))
+    _noted1 = "vision_note" in _p1["layers"]["strategic"]
+    #  ...and the same holds in the OTHER state of the vision note, which is what the lines had fallen under
+    _cad639.refresh(_vid, "strategic", force=True, content=(
+        "Strategic position derived from the plan itself: 0 aim(s); vision on record: "
+        + ("a vision unlike the constitutional one" if not _noted1 else _p1["layers"]["constitutional"]["vision"][:160])
+        + "; mission on record: Deliver: tools."))
+    _p2 = client.post(f"/api/v1/vsb/{_vid}/board-pack").json()
+    assert ("vision_note" in _p2["layers"]["strategic"]) != _noted1, (
+        "the second pack did not reach the other state of the vision note, so this leg tests one branch twice")
+    for _k in ("constitutional", "operational"):
+        assert _p2["layers"][_k].get("present") is True, (
+            "a derived layer is marked present only in one state of the vision note", _k)
+    # ── v14 R1.2 / R5.4: the certifications card does not promise a record nothing can issue ───────
+    _qf639 = _code_only((__import__("pathlib").Path(__file__).resolve().parents[1]
+                         / "apps/workstation-superapp/src/components/QEPFlagshipFeatures.tsx").read_text(encoding="utf-8"))
+    _ci639 = _qf639.index("id: 'credentials'")
+    _card639 = _qf639[_ci639:_qf639.index("},", _ci639)]
+    assert "A.12.2" in _card639 and "Not offered, by ruling" in _card639, _card639[:200]
+    assert "is issued instead" not in _card639, (
+        "the card says a record of completion IS issued; nothing writes the completion it requires, no route "
+        "exposes it, and no course exists to complete")
+    assert "none is issued today" in _card639, _card639[-200:]
+    #  and the claim would become true only if something wrote a completion: assert nothing does yet, so the
+    #  day a course writer lands this leg goes red and the card is revisited rather than left stale
+    _writers639 = [str(p) for p in (__import__("pathlib").Path(__file__).resolve().parents[1] / "agentic_core").rglob("*.py")
+                   if "_archive" not in str(p) and '["completed"] = True' in p.read_text(encoding="utf-8", errors="replace")]
+    assert _writers639 == [], ("something now writes a course completion - the card's 'none is issued today' "
+                               "may have become false; re-read it", _writers639[:3])
