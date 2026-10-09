@@ -705,7 +705,7 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
             st = immune.status()
             return {"resource": "immune", "ran": "organism.immune.status() (in-process)",   # W324 — honest label
                     "health": st.get("health"), "threat_level": st.get("threat_level"),
-                    "output": json.dumps({k: st.get(k) for k in ("health", "threat_level", "errors_in_window", "hot_endpoint")}, default=str)[:400]}
+                    "output": json.dumps({k: st.get(k) for k in ("health", "threat_level", "errors_in_window", "review_flags_in_window", "hot_endpoint")}, default=str)[:400]}
         if rid == "self_healing":
             from agentic_core.organism.self_healing import self_healer
             st = self_healer.status()

@@ -77,7 +77,12 @@ class HomeostaticController:
             cap = 1
         cap = max(1, cap)
 
-        if bool(rec.get("should_throttle")) or cap == 1 or atp < _ATP_CONSERVE_AT:
+        #  W638 (FU-596) — A CAP THE CALLER ASKED FOR IS NOT A DEFENCE. `cap == 1` alone made every sequential
+        #  cascade (which requests 1) report the organism as defending itself while immune was NOMINAL and the
+        #  throttle off. Protected means the ORGANISM forced the floor, or cut a larger request down to it.
+        _forced_floor = (immune_threat in ("HIGH", "CRITICAL")) or atp < _ATP_CONSERVE_AT
+        _cut_to_one = cap == 1 and int(requested_parallel) > 1
+        if bool(rec.get("should_throttle")) or _forced_floor or _cut_to_one:
             posture = "protected"           # organism is defending itself — minimal cognitive load
         elif cycle != "ACTIVE_FOCUS" or cap < int(requested_parallel):
             posture = "reduced"             # off-peak circadian / partial headroom — measured load

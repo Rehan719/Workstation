@@ -51,7 +51,11 @@ def _sections(prompt: str) -> List[str]:
 # no external dependency]_ · _Acting as: Chief Legal Officer._ · ## Intent & Values …" at level 3. Three
 # shapes do it, and all three are emitted by this platform's own code (the marker below; the `lead` line in
 # generate(); and orchestrator.py:565/854, which append "## {role} output" to a carried task):
-_CARRIED_MARKER_RE = re.compile(r"^[ \t]*" + re.escape(_MARKER) + r"[ \t]*$", re.M)
+#  W637 (FU-593) — UNANCHORED. This required the marker to fill a line of its own, so a caller that carried
+#  a previous stage's output without a real newline in front of it (orchestrator.swarm did, for many rounds)
+#  left the banner in place and its words were counted as the user's. The marker is this engine's own
+#  literal and appears in no user's request, so removing it anywhere costs nothing and closes the class.
+_CARRIED_MARKER_RE = re.compile(re.escape(_MARKER))
 _CARRIED_ACTING_RE = re.compile(r"^[ \t]*_Acting as:.*?_[ \t]*$", re.M)
 # a "<role> output" header, not any header ending in the word output: a role name then the bare word
 _CARRIED_ROLE_OUTPUT_RE = re.compile(r"^[ \t]*##[ \t]+[A-Za-z][A-Za-z0-9 &/\-]{1,60}[ \t]+output[ \t]*$",
@@ -144,8 +148,17 @@ def _unlabelled_request(prompt: str) -> str:
 
 def _role(prompt: str) -> str:
     """The persona the prompt assigns ('You are the X' / 'As a X')."""
-    m = re.search(r"(?:You are|As)\s+(?:the|a|an)\s+([A-Za-z][A-Za-z0-9 &/\-]{2,60})", prompt)
-    return m.group(1).strip().rstrip(".") if m else ""
+    #  W637 (FU-597) — TO THE END OF THE SENTENCE, TRIMMED AT A WORD. The class excluded the comma and the
+    #  limit was a character count, so "an experienced, fair teacher and examiner" printed as "experienced"
+    #  and a 68-character persona printed with its last word cut in half. The first character is still a
+    #  letter, so a quoted swarm role yields nothing, as before.
+    m = re.search(r"(?:You are|As)[ \t]+(?:the|a|an)[ \t]+([A-Za-z][^.:\n]{2,160})", prompt)
+    if not m:
+        return ""
+    role = m.group(1).strip()
+    if len(role) > 110:
+        role = role[:110].rsplit(" ", 1)[0]
+    return role.rstrip(" ,;-")
 
 
 #  W593 (P2.20 a.i) — the labels that may become a SUBJECT, as a constant beside `_CONTENT_LABELS` so the
@@ -186,6 +199,15 @@ def _subject(prompt: str) -> str:
     #  Ingredients, Candidate experience, Assessment): a 220-character slice of a body is not a subject,
     #  and taking one would replace a false subject with a different false subject. The two lists SHOULD
     #  differ; what must not happen is a prompt that one list reads and the other falls through on.
+    #  W637 (FU-594) — THE TREE'S OWN GOAL LINE IS READ FIRST. `Goal` sits last in the label order, so in a
+    #  node prompt with upstream inputs the subject was this node's `Your task:` instruction, or any
+    #  exact-case label inside a CARRIED upstream output — never the user's goal. `Overall goal:` is written
+    #  by the tree alone, ahead of the upstream block, and holds the request itself. A precedence here rather
+    #  than a new label: `Goal` already reads this line for the content, and listing it twice would count
+    #  the user's words twice in the term list.
+    _goal = _field(prompt, "Overall goal")
+    if len(_goal) > 8:
+        return _goal[:220]
     field = _field(prompt, *_SUBJECT_LABELS)
     if len(field) > 8:
         return field[:220]

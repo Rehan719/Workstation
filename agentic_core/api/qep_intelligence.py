@@ -224,8 +224,9 @@ async def recommendation_update(req: RecommendationUpdate,
 
 _SACRED_REFUSAL = ("translation of Arabic / Qur'anic text is NOT OFFERED, by ruling (A.9.3): it refuses rather "
                    "than approximates, whatever model is available. Translations of the Qur'an come only from "
-                   "licensed, sourced editions (A.12.1) - read one with GET /api/v1/qep/ayah/{surah}/{ayah}?edition=<a "
-                   "translation edition>. AI-composed religious text is withheld until a named scholar approves it (A.12.3).")
+                   "licensed, sourced editions (A.12.1), and no translation edition is served on this deployment: "
+                   "the sourced text here is the Arabic. AI-composed religious text is withheld until a named scholar "
+                   "approves it (A.12.3).")
 
 
 def _is_sacred_source(req: "TranslateRequest") -> bool:

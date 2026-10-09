@@ -86,9 +86,13 @@ class QEPFlagshipService:
             "rules_verified": [],
             "reference": reference,
             "audio_bytes_received": len(audio_blob or b""),
-            "detail": ("Recitation assessment requires a phonetic model that is not provisioned on "
-                       "this deployment. No score is produced, because any score here would be "
-                       "invented rather than measured."),
+            #  W637 (ledger v13 R5.4) — THE WHOLE REASON. "Not provisioned" alone reads as "coming when it is";
+            #  A.9.1 rules that recitation is never scored, and only an Owner ruling after scholar review
+            #  could change that.
+            "detail": ("Recitation is not scored here, by ruling (A.9.1). Assessing it would need a phonetic "
+                       "model, and none is provisioned on this deployment; even a validated one would be "
+                       "used only after scholar review and the Owner's ruling. No score is produced, "
+                       "because any score here would be invented rather than measured."),
             "timestamp": datetime.datetime.utcnow().isoformat(),
         }
 

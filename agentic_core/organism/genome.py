@@ -119,7 +119,37 @@ async def list_genomes():
         _pop = {"mean_fitness": None,
                 "mean_fitness_basis": f"the population summary could not be read: {type(exc).__name__}",
                 "mean_declared_fitness": None, "fitness_composition": {}}
-    return {"genomes": gs, "total": len(gs), "population": _pop}
+    #  W638 (FU-595) — THE OTHER GENOME RECORD IS NAMED BESIDE THIS ONE. Establishing an entity writes a genome
+    #  spec onto it and tells the founder a genome was encoded; this list reads a different store, so with
+    #  living entities present it said zero and nothing explained why. Counted from the entity records, and
+    #  an unreadable roster is "not known", never zero.
+    #  Read from the entity RECORDS, not vsb._list_vsbs(): that listing is a projection which does not carry
+    #  genome_spec (a first draft counted through it and would have reported zero for ever), and it skips an
+    #  unreadable record silently. A record that cannot be read is counted as unread, not as specless.
+    try:
+        import json as _json
+        from agentic_core.api.vsb import _VSB_STORE
+        _n_spec = _n_unread = 0
+        for _p in sorted(_VSB_STORE.glob("*.json")):
+            try:
+                _rec = _json.loads(_p.read_text(encoding="utf-8"))
+            except Exception:
+                _n_unread += 1
+                continue
+            if isinstance(_rec, dict) and _rec.get("genome_spec"):
+                _n_spec += 1
+        _ent = {"count": _n_spec, "unread_records": _n_unread,
+                "basis": (f"{_n_spec} living entit{'y carries' if _n_spec == 1 else 'ies carry'} a genome spec "
+                          "written when the entity was established. That is a SEPARATE record from the "
+                          f"{len(gs)} trait-vector genome(s) listed here: the two are not yet one identity, "
+                          "and nothing on this page mutates or crosses an entity's spec."
+                          + (f" {_n_unread} entity record(s) could not be read and are not in this count."
+                             if _n_unread else ""))}
+    except Exception as exc:
+        _ent = {"count": None,
+                "basis": ("whether living entities carry a genome spec is NOT KNOWN - the entity roster "
+                          f"could not be read ({type(exc).__name__}). Not the same as none.")}
+    return {"genomes": gs, "total": len(gs), "population": _pop, "entity_genomes": _ent}
 
 
 @router.get("/genome/{genome_id}")

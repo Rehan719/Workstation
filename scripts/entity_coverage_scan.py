@@ -60,17 +60,28 @@ def scan(root: pathlib.Path) -> Dict[str, Any]:
                          "own_footprint": set(), "cross_references": set()}
     kinds: Dict[str, int] = {}
     unreadable: List[str] = []
+    not_utf8: List[str] = []
     for p in sorted(root.rglob("*.json")):
         rel = p.relative_to(root)
         if rel.parts and rel.parts[0] == "vsb_entities":
             continue                       # the entity record itself is not a reference to it
         k = _kind(rel)
         kinds[k] = kinds.get(k, 0) + 1
+        #  W637 — READ AS BYTES. The first run against the Owner's real data (the cloud checkout that wrote this
+        #  held none) stopped on a file that is not valid UTF-8: one stray byte and no entity was reported at
+        #  all. An entity id is plain ASCII, so a file with a bad byte elsewhere is still SCANNED - skipping it
+        #  would make "named by nothing" false for whatever it names - and it is listed, so a reader knows
+        #  which files were read leniently.
         try:
-            text = p.read_text(encoding="utf-8")
+            raw = p.read_bytes()
         except OSError:
             unreadable.append(str(rel))
             continue
+        try:
+            text = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            text = raw.decode("utf-8", errors="replace")
+            not_utf8.append(str(rel))
         own = set(_ID_RE.findall(str(rel)))
         #  a file names an entity in its CONTENT or in its PATH: an entity's own ledger is keyed by the filename
         #  and need not repeat the id inside, and missing it would report a footprint as absent
@@ -84,6 +95,7 @@ def scan(root: pathlib.Path) -> Dict[str, Any]:
                      "referenced_by_nothing": not e["own_footprint"] and not e["cross_references"]})
     return {"root": str(root), "entities": rows, "kinds_scanned": dict(sorted(kinds.items())),
             "unreadable": unreadable,
+            "scanned_leniently_not_utf8": not_utf8,
             "counts": {"entities": len(rows),
                        "with_cross_references": sum(1 for r in rows if r["cross_references"]),
                        "own_footprint_only": sum(1 for r in rows if r["own_footprint"] and not r["cross_references"]),
@@ -109,6 +121,9 @@ def main() -> int:
         print(f"  {k}  ({n} file{'s' if n != 1 else ''})")
     if rep["unreadable"]:
         print(f"UNREADABLE, so not scanned: {rep['unreadable']}")
+    if rep["scanned_leniently_not_utf8"]:
+        print(f"NOT VALID UTF-8, scanned with the bad bytes replaced ({len(rep['scanned_leniently_not_utf8'])}): "
+              f"{rep['scanned_leniently_not_utf8'][:8]}")
     print(rep["basis"])
     return 0
 

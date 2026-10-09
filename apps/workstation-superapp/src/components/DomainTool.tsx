@@ -96,6 +96,8 @@ const withDisclosures = (body: string, data: any): string =>
   + (data?.screen_note ? `\n\n[${data.screen_note}]` : '')
   + (data?.floor_note ? `\n\n[${data.floor_note}]` : '')
   + (!data?.floor_note && data?.ai_provenance?.floor_note ? `\n\n[${data.ai_provenance.floor_note}]` : '')
+  + (data?.ai_provenance?.profile_state === 'not_usable_by_floor' && data?.ai_provenance?.profile_basis
+      ? `\n\n[profile: ${data.ai_provenance.profile_basis}]` : '')
   + (data?.disclaimer ? `\n\n_${data.disclaimer}_` : '');
 
 export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endpoint, fields, resultKey, submitLabel = 'Generate', renderExtra }) => {
@@ -358,6 +360,11 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
           {(effectiveProv as any)?.floor_note && !result.floor_note && (
             <p data-testid="domain-floor-note" className="text-[10px] text-amber-400 leading-relaxed border border-amber-500/30 rounded-lg p-2">
               {(effectiveProv as any).floor_note}
+            </p>
+          )}
+          {(effectiveProv as any)?.profile_state === 'not_usable_by_floor' && (
+            <p data-testid="domain-profile-not-usable" className="text-[10px] text-amber-400 leading-relaxed border border-amber-500/30 rounded-lg p-2">
+              profile: {(effectiveProv as any).profile_basis || 'the structured floor served this and does not read a saved profile'}
             </p>
           )}
           <pre className="text-[11px] text-slate-300 whitespace-pre-wrap font-sans leading-relaxed bg-slate-950 border border-slate-900 rounded-xl p-4 max-h-[420px] overflow-y-auto">

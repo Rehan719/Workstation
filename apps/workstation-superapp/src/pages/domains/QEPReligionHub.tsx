@@ -165,8 +165,10 @@ const TajwidCoach = () => {
                 Recitation assessment unavailable
              </p>
              <p className="mt-4 max-w-md text-xs text-slate-500 font-semibold leading-relaxed">
-                Assessing tajwid requires a phonetic model that is not provisioned on this
-                deployment. Rather than show a score nothing measured, this reports nothing.
+                Recitation is not scored here, by ruling (A.9.1). Assessing tajwid would need a phonetic
+                model, and none is provisioned on this deployment; even a validated one would be used only
+                after scholar review and the Owner&rsquo;s ruling. Rather than show a score nothing measured,
+                this reports nothing.
                 {ayah
                   ? ` The text above was retrieved from ${ayah.source} at ${ayah.ref}: it is not stored in this page and is never generated.`
                   : ' This page keeps no copy of the Qur\u2019an to fall back on, so when the source cannot be reached it shows no verse at all.'}

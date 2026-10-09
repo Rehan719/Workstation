@@ -10,6 +10,7 @@ import { Card } from '@workstation/ui';
 import { useStore } from '@workstation/shared';
 import { useNavigate } from 'react-router-dom';
 import { FabricLink } from '../components/FabricLink';
+import { REALM_LABELS, DOMAIN_LABELS } from '../lib/taxonomy';
 import axios from 'axios';
 
 // ── BTO component registry ────────────────────────────────────────────────────
@@ -20,8 +21,8 @@ const BTO_COMPONENTS = [
   { id: 'vsb',      label: 'Virtual Sovereign Business', icon: Building2,   desc: 'AI CEO + Autonomous Operations' },
   { id: 'csuite',   label: 'C-Suite',                    icon: Users,       desc: 'CFO · CTO · CMO · COO Agents' },
   { id: 'coe',      label: 'Centers of Excellence',      icon: Award,       desc: 'Security · Ethics · QA · Compliance' },
-  { id: 'domains',  label: 'Domains',                    icon: Globe,       desc: 'Religion · Science · Law · Care · Education' },
-  { id: 'realms',   label: 'Realms',                     icon: Layers,      desc: 'Learner · Developer · Enterprise · Scholar' },
+  { id: 'domains',  label: 'Domains',                    icon: Globe,       desc: Object.values(DOMAIN_LABELS).join(' · ') },   // W637 (FU-606): computed, never typed
+  { id: 'realms',   label: 'Realms',                     icon: Layers,      desc: Object.values(REALM_LABELS).join(' · ') },
   { id: 'products', label: 'Products',                   icon: ShoppingBag, desc: 'Full BTO Product Catalog access' },
   { id: 'services', label: 'Services',                   icon: Wrench,      desc: 'Synthesis Studio · Capital · Marketplace' },
 ] as const;

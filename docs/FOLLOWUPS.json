@@ -8836,7 +8836,7 @@
       "slot": "OWNER",
       "status": "open",
       "closed_by": null,
-      "note": "",
+      "note": "ADDED W637 for the review, not decided here: SEVEN declared constraints in config/constraints/absolute_constraints.yaml name an enforcer that does not exist - five name a MultiSigCouncil (lines 12, 57, 67, 99-100, 130; the module was unreachable and was archived on the Owner's ruling of 2026-10-09) and two name 'Nemoclaw' (lines 11, 16; no such runtime is in the tree). Whether those constraints stand, and what enforces them, is this review's question.",
       "slot_source": "W607: the Owner chose to review the 16 unchecked constitutional constraints LATER (FU-472, choice 3). Which declared constraints apply to an avatar reply is a constitutional decision, so it is the Owner's."
     },
     {
@@ -11249,11 +11249,12 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W637",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v13 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built"
     },
     {
       "id": "FU-589",
@@ -11269,11 +11270,12 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.33",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W637",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v13 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built"
     },
     {
       "id": "FU-590",
@@ -11289,11 +11291,12 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W637",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v13 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built"
     },
     {
       "id": "FU-591",
@@ -11310,11 +11313,12 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W637",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v13 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built"
     },
     {
       "id": "FU-592",
@@ -11333,11 +11337,12 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W637",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v13 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built"
     },
     {
       "id": "FU-593",
@@ -11356,11 +11361,12 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W637",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v13 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built"
     },
     {
       "id": "FU-594",
@@ -11377,11 +11383,12 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W637",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v13 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built"
     },
     {
       "id": "FU-595",
@@ -11398,11 +11405,12 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W637",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v13 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built"
     },
     {
       "id": "FU-596",
@@ -11419,11 +11427,12 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W637",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v13 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built"
     },
     {
       "id": "FU-597",
@@ -11438,11 +11447,12 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W637",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v13 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built"
     },
     {
       "id": "FU-598",
@@ -11459,11 +11469,12 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.33",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W637",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v13 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built"
     },
     {
       "id": "FU-599",
@@ -11480,11 +11491,12 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W637",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v13 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built"
     },
     {
       "id": "FU-600",
@@ -11500,11 +11512,12 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.33",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W637",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v13 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built"
     },
     {
       "id": "FU-601",
@@ -11519,11 +11532,12 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W637",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v13 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built"
     },
     {
       "id": "FU-602",
@@ -11598,7 +11612,7 @@
       "slot": "P5.1",
       "status": "open",
       "closed_by": null,
-      "note": "",
+      "note": "MEASURED W637 (whole-tree grep): the two live importers - agentic_core/api/minimisation.py:48 and agentic_core/avatars/core/recirculation_orchestrator.py:31 - take ONLY core.transcendent_subsystems.tfel. core/identity.py is imported by nothing and CANNOT be imported: it imports core.nemoclaw_runtime, a file that is not in the tree. Remedy when worked: move tfel into agentic_core with both importers updated; archive core/identity.py.",
       "slot_source": "a tree-shape question no open build item owns; it rides P5.1 with the other riders the Owner placed there",
       "tier": 3
     },
@@ -11612,11 +11626,12 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W637",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v13 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built"
     },
     {
       "id": "FU-607",
@@ -11634,8 +11649,61 @@
       "slot": "P4.5",
       "status": "open",
       "closed_by": null,
-      "note": "",
+      "note": "RULED 2026-10-09 and done W637: POT is removed from pyproject.toml (it was never in requirements.txt). STILL OPEN on this row: compare the two dependency declarations line by line - one drifted entry means they are not generated from one source.",
       "slot_source": "dependency declarations are the deployment pre-flight this item owns, beside FU-604"
+    },
+    {
+      "id": "FU-608",
+      "title": "OWNER, ruled 2026-10-09: no Qur'an translation edition is served; choosing one is a licensing and scholarly decision",
+      "why": "The translation refusal used to point readers at GET /api/v1/qep/ayah/{surah}/{ayah}?edition=<a translation edition>, and that route allowlists only four ARABIC editions, so every translation edition was refused (ledger v13 R1.0, fixed W637: the pointer is gone and the refusal says none is served). The Owner ruled 2026-10-09 that none is served for now. This row holds the decision that remains theirs: which licensed translation edition, if any, is ever allowlisted, with its licence and edition recorded in the corpus provenance (A.12.1). No round chooses a translation of the Qur'an.",
+      "source": "Owner ruling 2026-10-09 (evening)",
+      "found": "2026-10-09",
+      "files": [
+        "agentic_core/religious_domain/api.py",
+        "agentic_core/api/qep_intelligence.py"
+      ],
+      "severity": "low",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "an Owner decision with no build work until it is taken; parked with the Owner's hand items"
+    },
+    {
+      "id": "FU-609",
+      "title": "A fabric facility has no lifecycle: it can be composed and retired, never provisioned-for-a-time or expired",
+      "why": "FROM the OGE/HAIRMS brief, the one part of its facilities plane the tree lacks. The vision's section 7 names the facility family (Engines, Reactors, Petri dishes, Incubators, Labs, Factories) and the Resource Fabric realises it. MEASURED in agentic_core/api/resource_fabric.py: the only lifecycle verbs are the two retire routes (W273, W345); there is no state field (requested, provisioned, operating, retired), no expiry for a temporary facility and no retention field. MEASURE FIRST: which fabric resources hold any state between calls at all - a lifecycle on a stateless handler would be a label, not a behaviour. Only then: a state the resource actually moves through, an expiry an ephemeral one honours on the beat, and a page that shows it. Refuse the brief's cost and carbon attribution until something measures either.",
+      "source": "OGE/HAIRMS brief interrogated 2026-10-09 (docs/OGE_HAIRMS_BRIEF_ASSESSMENT.md)",
+      "found": "2026-10-09",
+      "files": [
+        "agentic_core/api/resource_fabric.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "no open item owns new Resource Fabric capability; parked on the Phase 5 item beside FU-605 until the Owner charters facility work or rules it out"
+    },
+    {
+      "id": "FU-610",
+      "title": "An external call says THAT it left the platform, never WHAT class of data it carried",
+      "why": "FROM the OGE/HAIRMS brief's accelerant broker, reduced to the part that is true and missing. Every output already carries is_external and AI_ALLOW_EXTERNAL gates the call in 11 files. MEASURED: no live file carries a data class (git grep data_class, special_category, 'data classification' returns nothing). So when the Owner turns the switch on, a call can state that it was external and cannot state whether it carried a person's document, and no class can be barred from leaving. PRE-FLIGHT for the switch: each external call declares the class of what it sends, the declaration travels in the output's provenance, and a barred class is REFUSED before transmission (placed where the refusal can be received, driven over HTTP). The Owner's ruling that the legal-matter folder is never sent to any external service is the first barred class. The switch itself stays the Owner's.",
+      "source": "OGE/HAIRMS brief interrogated 2026-10-09 (docs/OGE_HAIRMS_BRIEF_ASSESSMENT.md)",
+      "found": "2026-10-09",
+      "files": [
+        "agentic_core/ai/native/model_resource.py",
+        "agentic_core/ai/gateway.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.3",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P4.3 is the external-accelerant switch; its pre-flight is built by us and this is part of it"
     }
   ],
   "routes": [

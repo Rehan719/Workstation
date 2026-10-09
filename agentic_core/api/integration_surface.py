@@ -416,6 +416,7 @@ async def evo_trajectories():
 @router.get("/api/v240/evolution/metrics")
 async def evo_metrics():
     imm = _immune()
+    from agentic_core.organism.immune import HEALTH_SCOPE as _HEALTH_SCOPE_W637
     real = None
     pillars: List[Dict[str, Any]] = []
     measure = None
@@ -430,7 +431,7 @@ async def evo_metrics():
         pass
     return {"vision_realisation": real, "vision_realisation_measure": measure,
             "organism_health": imm.get("health"),
-            "organism_health_basis": ("the immune system's health: AI-call failures and compliance regressions only - route 5xx failures are not tracked"),   # W635 (FU-587)
+            "organism_health_basis": _HEALTH_SCOPE_W637,   # W637 — one sentence, one home (was W635's typed copy)
             "threat_level": imm.get("threat_level"),
             "pillar_breakdown": pillars,
             "dimensions_realised": sum(1 for p in pillars if p["status"] == "realised"),

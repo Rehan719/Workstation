@@ -60,11 +60,20 @@ class ImmuneSystem:
         by_endpoint: dict[str, int] = {}
         for e in events:
             by_type[e.error_type] = by_type.get(e.error_type, 0) + 1
-            by_endpoint[e.endpoint] = by_endpoint.get(e.endpoint, 0) + 1
+            if e.error_type not in REVIEW_FLAG_TYPES:      # W637 — the hot endpoint is hot with FAILURES
+                by_endpoint[e.endpoint] = by_endpoint.get(e.endpoint, 0) + 1
 
-        # Immune health: 1.0 = fully healthy, degrades with error rate
-        # 0 errors → 1.0; 10+ errors in window → 0.0
-        health = max(0.0, 1.0 - (total / 10.0))
+        #  W637 (FU-592, FU-599) — A REVIEW FLAG IS NOT AN ERROR. This computed health from EVERY event, and
+        #  vbs/quality.py records a compliance ESCALATION here (W483: it must reach a human) beside real
+        #  failures. So ten §11 review flags on floor-served output — flags for a person to look at, not
+        #  findings of harm — read as health 0.0 and threat CRITICAL: Change Control terminally rejected a HIGH
+        #  change on it and the heartbeat engaged immune quarantine. The flag is still recorded and still
+        #  reported, as a review flag; it does not move the threat ladder. A compliance FAIL still does.
+        review_flags = sum(n for t, n in by_type.items() if t in REVIEW_FLAG_TYPES)
+        failures = total - review_flags
+        # Immune health: 1.0 = fully healthy, degrades with the FAILURE rate
+        # 0 failures → 1.0; 10+ failures in window → 0.0
+        health = max(0.0, 1.0 - (failures / 10.0))
 
         # Threat level based on health
         if health >= 0.8:
@@ -94,7 +103,14 @@ class ImmuneSystem:
             # the count travels with the name: one stray error is not a hot endpoint
             "hot_endpoint_errors": hot_errors,
             "hot_endpoint_tied": hot_tied if len(hot_tied) > 1 else [],
-            "errors_in_window": total,
+            #  `errors_in_window` now counts what its name says. The old total is kept as
+            #  `events_in_window` so no reader loses a figure, and the split is stated rather than implied.
+            "errors_in_window": failures,
+            "review_flags_in_window": review_flags,
+            "events_in_window": total,
+            "health_basis": (f"health and threat are computed from {failures} failure(s) in the window; "
+                             f"{review_flags} compliance review flag(s) are reported beside them and are NOT "
+                             f"counted — a flag asks a human to look, it is not a finding of harm"),
             "window_seconds": self.WINDOW_SECONDS,
             "by_type": by_type,
             "hot_endpoint": hot_endpoint,
@@ -120,5 +136,15 @@ def _response_playbook(threat_level: str) -> list[str]:
     return playbook.get(threat_level, [])
 
 
+#  W637 — event types that are REVIEW FLAGS, not failures. Recorded, reported, never on the threat ladder.
+REVIEW_FLAG_TYPES = frozenset({"compliance_escalation"})
+
+
 # Singleton — imported by gateway and middleware
+#  W637 — WHAT THE HEALTH FIGURE IS, said once. W635 typed this sentence in four places; every reader of
+#  `health` that prints a basis imports this one, so the description cannot drift from the computation above.
+HEALTH_SCOPE = ("the immune system's health: AI-call failures and compliance regressions only - compliance "
+                "review flags are reported beside it and do not lower it, and route 5xx failures are not "
+                "tracked, so this is not the health of the whole platform")
+
 immune = ImmuneSystem()

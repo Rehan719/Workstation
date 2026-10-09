@@ -415,7 +415,7 @@ export const QEPStudio: React.FC = () => {
                 : 'unavailable — the floor cannot translate; Translate will refuse'}
             </Chip>
           </p>
-          <p className="text-[9px] text-slate-600 mb-2">{/* W631 (FU-546) */}Arabic / Qur'anic text is NOT translated here, by ruling, whatever model is available — Qur'an translations come only from licensed, sourced editions. This tool is for non-Arabic educational text, and even then only a model may translate; the floor refuses.{trStatus?.tajweed_note ? ` ${trStatus.tajweed_note}` : ''}</p>
+          <p className="text-[9px] text-slate-600 mb-2">{/* W631 (FU-546) */}Arabic / Qur'anic text is NOT translated here, by ruling, whatever model is available — Qur'an translations come only from licensed, sourced editions, and none is served here yet. This tool is for non-Arabic educational text, and even then only a model may translate; the floor refuses.{trStatus?.tajweed_note ? ` ${trStatus.tajweed_note}` : ''}</p>
           <textarea value={trText} onChange={e => setTrText(e.target.value)} rows={2}
             className="w-full text-[11px] bg-slate-950 border border-slate-900 rounded-lg p-2 text-slate-300 mb-2" placeholder="Arabic educational text…" />
           <Button onClick={runTranslate} disabled={busy === 'translate' || !trText.trim()} className="flex items-center gap-1.5 bg-slate-900 text-aura text-[10px]">

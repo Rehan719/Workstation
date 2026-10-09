@@ -17,7 +17,13 @@ import uuid
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from agentic_core.api._ai_provenance import ai_text
+import functools
+
+from agentic_core.api._ai_provenance import ai_text as _ai_text
+
+#  W637 (FU-597) — this router's domain, bound once. Every ai_text call below carries it, so the native floor
+#  prints the real domain instead of "the request named no domain".
+ai_text = functools.partial(_ai_text, domain="religion")
 
 router = APIRouter(prefix="/api/v1/religion", tags=["religion"])
 
@@ -338,15 +344,28 @@ async def quran_tafsir(req: QuranTafsirRequest):
             raise HTTPException(status_code=503, detail=(
                 "a model resource was available but the deterministic native floor served this tafsir — "
                 "a tafsir requested with a translation is not served from the floor; retry"))
-        tafsir, _cut = _withhold_sections(tafsir, ("Transliteration", "Translation"))
-        sections_withheld = ["Transliteration", "Translation"]   # withheld by omission from the prompt (or cut)
+        #  W637 (FU-589) — THE SIBLINGS' RULE, applied to the one tool over sacred text that lacked it.
+        #  Fatwa, hadith and interfaith withhold every research section on the floor; tafsir withheld two
+        #  and SERVED five study headings, each filled with words lifted from this handler's own "Subject:"
+        #  instruction line and labelled the reader's request terms. The floor composes headings, not
+        #  exegesis, so the five are withheld and named; the sourced Arabic, the reference and the referral
+        #  stand. Matched on leading words: the prompt's headings carry parenthetical tails.
+        tafsir, _cut = _withhold_sections(tafsir, (
+            "Transliteration", "Translation",
+            "Context of Revelation", "Linguistic Analysis", "Exegesis", "Related Verses",
+            "Key Lessons and Guidance"))
+        #  what was never requested on the floor, plus what was ACTUALLY cut — not a fixed pair, because a
+        #  list naming a section as withheld while the reply still carries it is the defect itself
+        sections_withheld = ["Transliteration", "Translation"] + [
+            h for h in _cut if h not in ("Transliteration", "Translation")]
         floor_note = ("served by the deterministic native floor — no translation or transliteration is "
                       "offered (a translation must come from a model; the floor composes headings, not "
                       "meaning). "
                       + ("The sourced Arabic above is authentic; " if arabic_text else
                          "No Arabic is shown because the authoritative source was unreachable; ")
-                      + "the study notes below are a structured frame, not scholarship. Study this passage "
-                        "with a qualified teacher.")
+                      + "no exegesis, linguistic analysis, cross-references or lessons are offered here: the "
+                        "floor composes headings, not scholarship, and those sections are withheld. Study "
+                        "this passage with a qualified teacher.")
 
     return {
         "tafsir_id": uuid.uuid4().hex[:10],
@@ -547,8 +566,13 @@ async def halal_pre_assessment(req: HalalReviewRequest):
             raise HTTPException(status_code=503, detail=(
                 "a model resource was available but the deterministic native floor served this halal "
                 "pre-assessment — a halal status is not composed from prompt headings; retry"))
-        assessment, _cut = _withhold_sections(assessment, _judging)
-        sections_withheld = list(_judging)
+        #  W637 (ledger v13 R1.8) — THE TWO RESEARCH SECTIONS GO THE SAME WAY. The floor kept "Recommended
+        #  Certifying Bodies" and "Market-Specific Requirements" and filled them from a template: a list of
+        #  recommended bodies nobody looked up. A halal status rests on a certificate verified with its
+        #  body (Owner, 2026-09-29), so on the floor these are withheld and named, like the judging three.
+        _research637 = ("Recommended Certifying Bodies", "Market-Specific Requirements")
+        assessment, _cut = _withhold_sections(assessment, _judging + _research637)
+        sections_withheld = list(_judging) + [h for h in _research637 if h in _cut]
         floor_note = (
             "served by the deterministic native floor — no halal status, critical issues or flagged "
             "ingredients are offered. The floor composes the headings it is given and cannot read an "

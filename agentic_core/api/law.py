@@ -18,7 +18,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from agentic_core.auth.core import get_current_user, require_admin
 from pydantic import BaseModel
 
-from agentic_core.api._ai_provenance import ai_text
+import functools
+
+from agentic_core.api._ai_provenance import ai_text as _ai_text
+
+#  W637 (FU-597) — this router's domain, bound once. Every ai_text call below carries it, so the native floor
+#  prints the real domain instead of "the request named no domain".
+ai_text = functools.partial(_ai_text, domain="law")
 
 router = APIRouter(prefix="/api/v1/law", tags=["law"])
 

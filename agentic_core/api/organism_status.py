@@ -386,6 +386,11 @@ async def organism_status():
                 "health": imm["health"],
                 "threat_level": imm["threat_level"],
                 "errors_in_window": imm["errors_in_window"],
+                #  W637 (FU-592/599) — the review flags and what the health figure counted travel with it:
+                #  this block is a fixed key set, so a field not copied here reaches no page.
+                "review_flags_in_window": imm.get("review_flags_in_window"),
+                "events_in_window": imm.get("events_in_window"),
+                "health_basis": imm.get("health_basis"),
                 "response_playbook": imm["response_playbook"],
                 # W438 — the projection used to drop the W433 companion fields, so at THIS surface
                 # a null was ambiguous (no errors vs tie) and one stray error read as genuinely hot

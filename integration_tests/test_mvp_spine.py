@@ -9997,7 +9997,14 @@ def test_w456_tafsir_tab_completes_section_11_both_ways(client, monkeypatch):
     assert tf["ai_provenance"]["served_by"] == "native"
     assert "## Translation" not in seen["prompt"] and "## Transliteration" not in seen["prompt"], seen["prompt"][:400]
     assert "## Translation" not in tf["tafsir"] and "## Transliteration" not in tf["tafsir"]
-    assert set(tf["sections_withheld"]) == {"Transliteration", "Translation"}, tf["sections_withheld"]
+    #  W637 (FU-589) — tafsir on the floor withholds its five study sections as well as these two (the rule its
+    #  three siblings already followed), names every one, and the body carries none of their headings.
+    _study637 = {"Context of Revelation", "Linguistic Analysis", "Exegesis", "Related Verses",
+                 "Key Lessons and Guidance"}
+    assert set(tf["sections_withheld"]) == {"Transliteration", "Translation"} | _study637, tf["sections_withheld"]
+    for _h637 in sorted(_study637):
+        assert ("## " + _h637) not in tf["tafsir"], (
+            "tafsir on the floor names a study section as withheld and still serves its heading", _h637)
     assert "no translation or transliteration is offered" in tf["floor_note"] and "qualified teacher" in tf["floor_note"]
     assert ("authentic" in tf["floor_note"]) == bool(tf["arabic_text"])   # the note never claims Arabic it did not show
     assert "NOT a scholarly tafsir" in tf["disclaimer"] and "never AI-generated" in tf["disclaimer"]
@@ -18552,8 +18559,13 @@ def test_w483_a_keyword_screen_flags_and_never_clears(client):
     _txt = json.dumps(_cca)
     assert "escalation" in _txt.lower() and "NOT a finding of harm" in _txt, _txt[:400]
     from agentic_core.organism.immune import immune
-    assert any("compliance_escalation" in str(e) for e in json.dumps(immune.status()).split()) \
-        or immune.status(), immune.status()
+    #  W637 — this leg was `any(...) or immune.status()`, and a non-empty dict is always true: it could not
+    #  fail. The property it stood for is that an escalation is RECORDED where a human can see it; since
+    #  W637 that is the review-flag count, which the escalation above must have raised.
+    _imm637 = immune.status()
+    assert _imm637.get("review_flags_in_window", 0) >= 1, (
+        "a compliance escalation was raised and the immune status reports no review flag - it reached "
+        "nobody", {k: _imm637.get(k) for k in ("review_flags_in_window", "errors_in_window", "by_type")})
 
     # (refutation) the two gates the downgrade had silently opened are shut again
     _hold = client.post("/api/v1/marketplace/listings", json={
@@ -18587,8 +18599,13 @@ def test_w483_a_keyword_screen_flags_and_never_clears(client):
         "product_name": "Choco bar", "product_description": "A chocolate bar",
         "ingredients": ["sugar", "cocoa butter", "gelatin", "E471"]}).json()
     if (hr.get("ai_provenance") or {}).get("served_by") == "native":
-        assert hr["sections_withheld"] == ["Halal Status Assessment", "Critical Issues",
-                                           "Flagged Ingredients"], hr
+        #  W637 (ledger v13 R1.8) — the two research sections are withheld on the floor with the judging three
+        assert hr["sections_withheld"] == ["Halal Status Assessment", "Critical Issues", "Flagged Ingredients",
+                                           "Recommended Certifying Bodies",
+                                           "Market-Specific Requirements"], hr["sections_withheld"]
+        for _h637 in ("## Recommended Certifying Bodies", "## Market-Specific Requirements"):
+            assert _h637 not in (hr["assessment"] or ""), (
+                "the floor still serves a research heading the halal tool says it withheld", _h637)
         assert hr.get("floor_note") and "accredited certifying body" in hr["floor_note"], hr
         body = hr["assessment"] or ""
         for token in ("COMPLIANT", "NON-COMPLIANT", "REQUIRES REVIEW", "Halal Status Assessment"):
@@ -46629,6 +46646,18 @@ def test_w622_the_owners_rulings_of_2026_10_07_hold(client):
     assert _rows["vsb-bbbb2222"]["referenced_by_nothing"] is True
     assert {"economy_owner_payments", "economy/<id>_ledger"} <= set(rep["kinds_scanned"])
     assert sorted(p.name for p in (_d / "vsb_entities").iterdir()) == ["vsb-aaaa1111.json", "vsb-bbbb2222.json"]
+    #  W637 — A FILE WITH ONE BAD BYTE IS STILL SCANNED. The first run on the Owner's real data stopped on a
+    #  file that is not valid UTF-8 and reported no entity at all. An id is plain ASCII: the file is read as
+    #  bytes, what it names is still found, and it is listed as read leniently. Skipping it would have made
+    #  "named by nothing" false for vsb-bbbb2222 here.
+    (_d / "notes.json").write_bytes(b'{"about": "vsb-bbbb2222", "text": "a dash \x97 that is not utf-8"}')
+    rep2 = _ecs.scan(_d)
+    _rows2 = {r["vsb_id"]: r for r in rep2["entities"]}
+    assert _rows2["vsb-bbbb2222"]["referenced_by_nothing"] is False and \
+        _rows2["vsb-bbbb2222"]["cross_references"] == ["notes"], _rows2["vsb-bbbb2222"]
+    assert rep2["scanned_leniently_not_utf8"] == ["notes.json"] and rep2["unreadable"] == [], (
+        rep2["scanned_leniently_not_utf8"], rep2["unreadable"])
+    assert rep["scanned_leniently_not_utf8"] == [], "a clean store is reported as holding a non-UTF-8 file"
     _src = _string_constants((_root / "scripts/entity_coverage_scan.py").read_text(encoding="utf-8"))
     import ast as _ast622
     _calls = {n.func.attr for n in _ast622.walk(_ast622.parse((_root / "scripts/entity_coverage_scan.py").read_text(encoding="utf-8")))
@@ -47369,3 +47398,476 @@ def test_w635_p230_p231_the_fourteen_v12_findings(client):
         _comp635.screen_compliance = _orig
     assert not _al.get("grants") and all(str(e["compliance"]).startswith("unscreened") for e in _al.get("excluded_by_compliance", [])), _al.get("grants")
     assert "NOT REFUSED by the compliance screen" in _al["allocation_rule"]
+
+
+def test_w637_a_review_flag_is_not_an_error_and_the_floor_reads_the_users_request(client):
+    """P2.32 (ledger v13) — two mechanisms, each fixed at its one cause.
+
+    A. immune.status() computed health from EVERY event, and a compliance ESCALATION is recorded there so a
+       human sees it (W483). Ten review flags therefore read as CRITICAL: Change Control terminally rejected a
+       HIGH change on it and the heartbeat engaged quarantine. A flag is not a failure.
+    B. The native floor read the server's own prompt wrapper as the user's request: a literal backslash-n in
+       the swarm's carried block left the banner un-stripped, and no domain router named its domain.
+    """
+    import asyncio as _aio637
+
+    # ── A. flags are REPORTED and do not move the threat ladder; failures still do ───────────────
+    from agentic_core.organism import immune as _imod637
+    _imm = _imod637.immune
+    with _imm._lock:
+        _saved637 = list(_imm._events)
+        _imm._events.clear()
+    try:
+        for _ in range(12):
+            _imm.record("compliance:w637", "compliance_escalation")
+        _st = _imm.status()
+        assert _st["review_flags_in_window"] == 12, _st
+        assert _st["errors_in_window"] == 0, (
+            "twelve compliance REVIEW FLAGS are counted as errors", _st["errors_in_window"])
+        assert _st["health"] == 1.0 and _st["threat_level"] == "NOMINAL", (
+            "review flags alone moved organism health or the threat ladder - Change Control rejects HIGH "
+            "changes and the heartbeat engages quarantine on this figure", _st["health"], _st["threat_level"])
+        #  THE FLAG STILL REACHES A READER (W483): reported beside the errors, with a basis saying it was not counted
+        assert _st["events_in_window"] == 12 and "NOT" in _st["health_basis"], _st.get("health_basis")
+        #  AND A REAL FAILURE STILL COUNTS - a fix that silenced everything would pass the legs above
+        for _ in range(12):
+            _imm.record("compliance:w637", "compliance_fail")
+        _st2 = _imm.status()
+        assert _st2["errors_in_window"] == 12 and _st2["threat_level"] == "CRITICAL", (
+            "a compliance FAIL no longer moves the threat ladder - the fix removed the signal, not the noise",
+            _st2["errors_in_window"], _st2["threat_level"])
+        assert _st2["review_flags_in_window"] == 12, _st2
+        #  the hot endpoint is hot with FAILURES: both batches hit one endpoint, and the figure printed
+        #  beside "errors in window" may not be twice it (found by driving the projected module)
+        assert _st2["hot_endpoint"] == "compliance:w637" and _st2["hot_endpoint_errors"] == 12, (
+            "the hot endpoint's error count includes review flags, so the page prints a larger number "
+            "beside the errors it has just counted", _st2["hot_endpoint_errors"], _st2["errors_in_window"])
+        #  shape-complete: the same keys whatever the mix
+        assert set(_st) == set(_st2), sorted(set(_st) ^ set(_st2))
+    finally:
+        with _imm._lock:
+            _imm._events.clear()
+            _imm._events.extend(_saved637)
+
+    # ── B1. the swarm's carried block carries REAL newlines, read off the prompt it actually sends ─
+    from agentic_core.ai.native import orchestrator as _orch637
+    _sent637 = []
+
+    async def _capture(prompt, **kw):
+        _sent637.append(prompt)
+        #  the keys swarm() reads off a completion: `output`, `served_by`, `is_external` (measured, :906-910)
+        return {"output": "_[Workstation native structured engine — owned, no external dependency]_\n\nstage out",
+                "served_by": "native", "is_external": False}
+
+    #  the package exports the SINGLETON under the module's name, so the import above is already the
+    #  instance the routes use (orchestrator.py: `orchestrator = NativeOrchestrator()`)
+    _o637 = getattr(_orch637, "orchestrator", _orch637)
+    try:
+        _o637.complete = _capture          # an INSTANCE attribute shadowing the method; popped in finally
+        _aio637.run(_o637.swarm("w637", [{"role": "one", "instruction": "first"},
+                                         {"role": "two", "instruction": "second"}]))
+    finally:
+        _o637.__dict__.pop("complete", None)
+    assert len(_sent637) >= 2, ("the swarm did not reach its second stage, so the carried block is untested",
+                               len(_sent637))
+    assert "Prior context:\n" in _sent637[1], (
+        "the second stage's prompt has no real newline after 'Prior context:'", _sent637[1][:160])
+    assert "\\n" not in _sent637[1], (
+        "the carried block carries a LITERAL backslash-n: inside an f-string expression a doubled backslash-n "
+        "is two characters, so the previous stage's banner never sits on a line of its own", _sent637[1][:200])
+
+    # ── B2. the engine strips its own marker WHEREVER it occurs, not only alone on a line ────────
+    from agentic_core.ai.native import engine as _eng637
+    _inline = "Prior context: " + _eng637._MARKER + " and some carried words. Task: write a plan for a bakery"
+    assert _eng637._MARKER not in _eng637._strip_carried(_inline), (
+        "the engine's own banner survives when it is not alone on a line, so its words are counted as the user's")
+
+    # ── B3. every domain router names its domain: no floor reply says the request named none ─────
+    for _path637, _body637 in (
+            #  field names read from each request model, not guessed (a first draft had all three wrong)
+            ("/api/v1/law/analyse", {"document_text": "A tenancy agreement with a break clause after six months."}),
+            ("/api/v1/care/care-plan", {"care_needs": ["support with mobility after a hip replacement"]}),
+            ("/api/v1/education/feedback", {"student_work": "An essay on the causes of the First World War.",
+                                           "subject": "History"}),
+    ):
+        _r637 = client.post(_path637, json=_body637)
+        assert _r637.status_code == 200, (_path637, _r637.status_code, _r637.text[:160])
+        assert "named no domain" not in _r637.text, (
+            f"{_path637} tells its reader the request named no domain - the router never wrote one into the "
+            f"prompt it sends to the floor", _path637)
+        _sent637.append(_path637)
+    assert sum(1 for x in _sent637 if str(x).startswith("/api/v1/")) == 3, (
+        "not all three domain routes were driven, so the domain leg is narrower than it reads", _sent637[-3:])
+    _root637 = __import__("pathlib").Path(__file__).resolve().parents[1]
+
+    # ── B4. THE TREE'S GOAL IS THE SUBJECT, whatever an upstream node carried ───────────────────
+    _goal637 = "Launch a halal bakery cooperative in Leeds"
+    for _dep637 in ("[n1] Task: Map the regulatory requirements\nbody text",      # an exact-case label upstream
+                    "[n1] plain body with no label at all"):                       # only this node's own task
+        _tree637 = ("You are the 'analyst' agent in Workstation's native swarm, executing node 'n2' of an "
+                    "autonomously-planned workflow tree.\n"
+                    "Overall goal: " + _goal637 + "\n"
+                    "Inputs from upstream nodes:\n" + _dep637 + "\n\n"
+                    "Your task: Draft the supplier shortlist\n\n## n2 output")
+        _got637 = _eng637._subject(_eng637._strip_carried(_tree637))
+        assert _got637 == _goal637, (
+            "a workflow-tree node names something other than the user's goal as the request's subject - "
+            "an upstream node's labelled line, or this node's own instruction", _got637)
+    #  and a prompt with NO goal line still reads its task: the precedence must not swallow the old path
+    assert _eng637._subject("Task: Draft the supplier shortlist for a bakery") == \
+        "Draft the supplier shortlist for a bakery"
+
+    # ── B5. THE PERSONA IS A WHOLE PHRASE, never a word cut in half or a lone adjective ─────────
+    for _prompt637, _want637 in (
+            ("You are a clinical risk assessment specialist supporting a qualified clinician. Assess the",
+             "clinical risk assessment specialist supporting a qualified clinician"),
+            ("You are an experienced, fair teacher and examiner. Mark the student's work",
+             "experienced, fair teacher and examiner")):
+        assert _eng637._role(_prompt637) == _want637, (
+            "the floor prints a truncated persona under 'Acting as'", _eng637._role(_prompt637))
+    #  a persona longer than the limit is cut at a WORD, and a quoted swarm role still yields nothing
+    #  "practitioner" + a space is 13 characters, which does not divide the 110-character limit, so a cut by
+    #  character count lands INSIDE a word. (The first version used a 10-letter word: 11 divides 110, the cut
+    #  fell exactly on a boundary, and the blind that removes the word trim stayed green.)
+    _long637 = _eng637._role("You are a " + " ".join(["practitioner"] * 20) + ". Then do it")
+    assert _long637 and set(_long637.split()) == {"practitioner"}, (
+        "a long persona was cut inside a word", _long637[-24:])
+    assert _eng637._role("You are the 'analyst' agent in Workstation's native swarm") == ""
+
+    # ── C. NO CONSTANT SUCCESS FOR A TECHNOLOGY THE PLATFORM DOES NOT HAVE (DRAFT - run once first) ──
+    #  uci_interceptor's execution step replaced the caller's action, for any context carrying a
+    #  "signature tech" key, with a suite that executed nothing and returned fidelity 0.995 and a success
+    #  status for AlphaFold and five others. The branch and the package are gone; the caller's action runs.
+    #  TO CONFIRM ON FIRST RUN: that intercept() reaches its execution step for this context — it has gates
+    #  before it (alignment, immune) that may refuse a bare context. If it refuses, drive the same context the
+    #  orchestrator at avatars/core/recirculation_orchestrator.py:188 builds, and keep the two assertions.
+    import asyncio as _aio637c
+    from agentic_core.governance.uci_interceptor import RecirculationPreflight as _RP637
+    _ran637 = []
+
+    async def _action637():
+        _ran637.append(1)
+        return {"ok": "the caller's own action"}
+
+    _res637 = _aio637c.run(_RP637().intercept(
+        {"requires_signature_tech": True, "tech_id": "alphafold_3", "intent": "summarise a document"},
+        _action637))
+    assert _ran637 == [1], (
+        "a context carrying the old signature-tech key did not run the caller's action - something still "
+        "substitutes for it", _res637)
+    _flat637 = __import__("json").dumps(_res637, default=str)
+    _banned637 = "TRANSFORMATIVE" + "_SUCCESS"          # built from halves: a guard must not contain its literal
+    assert _banned637 not in _flat637 and "0.995" not in _flat637, (
+        "the interceptor still returns the constant result of the removed suite", _flat637[:300])
+    #  and nothing live still DEFINES it (scoped to agentic_core; _archive is where the package now lives)
+    for _p637 in sorted((_root637 / "agentic_core").rglob("*.py")):
+        assert _banned637 not in _p637.read_text(encoding="utf-8", errors="replace"), (
+            "a live module still carries the fabricated success status", str(_p637))
+    assert not (_root637 / "agentic_core/products/signature_suite").exists(), (
+        "the fabricated executor's package is still in the live tree")
+
+    # ── B6. TAFSIR ON THE FLOOR WITHHOLDS ITS STUDY SECTIONS (DRAFT - read the route first) ─────
+    #  CONFIRMED against the sibling guard at test_mvp_spine.py:9996: path, request fields (surah, ayah_start,
+    #  ayah_end) and the response keys `tafsir`, `sections_withheld`, `ai_provenance.served_by`. Still a draft
+    #  until run once. THE OLD GUARD AT :10000 asserts the withheld set is exactly the two — rewrite it to
+    #  the seven in the same round; its floor_note assertions ("no translation or transliteration is offered",
+    #  "qualified teacher") still hold under NOTE_NEW, which changes only the middle clause.
+    _tf637 = client.post("/api/v1/religion/quran-tafsir", json={"surah": 2, "ayah_start": 1, "ayah_end": 5})
+    assert _tf637.status_code == 200, _tf637.text[:200]
+    _tfj637 = _tf637.json()
+    for _h637 in ("Context of Revelation", "Linguistic Analysis", "Exegesis", "Related Verses",
+                  "Key Lessons and Guidance"):
+        assert _h637 in _tfj637["sections_withheld"], (
+            "tafsir on the floor does not NAME this study section as withheld", _h637)
+        assert ("## " + _h637) not in _tfj637["tafsir"], (
+            "tafsir on the floor still SERVES a study heading it says it withheld - a list naming a "
+            "section as withheld while the reply carries it is the defect itself", _h637)
+    #  This leg only means something when the floor served the call: assert that, or it passes vacuously
+    #  the day a model is available in the test environment.
+    assert (_tfj637.get("ai_provenance") or {}).get("served_by") == "native", _tfj637.get("ai_provenance")
+
+    # ── B7. THE AVATAR DECLARES ITSELF; A GROUNDING LINE IS NOT THE REQUEST'S DOMAIN ───────────
+    _declared637 = "Domain: cross-domain (the avatar is a conversation across every domain, not a domain tool)"
+    _grounded637 = (_declared637 + "\nYou are a helpful Workstation avatar.\n"
+                    "- VSB: Honey Co (domain: care, stage: design)\n\nUser: what should I measure first?")
+    assert _eng637._field(_grounded637, "Domain").startswith("cross-domain"), (
+        "the floor reads an entity's grounding line as the domain of the user's request",
+        _eng637._field(_grounded637, "Domain"))
+    #  ...which is what it does WITHOUT the declaration - the case this fix exists for, kept as a witness
+    assert "care" in _eng637._field(_grounded637.split("\n", 1)[1], "Domain"), (
+        "the undeclared prompt no longer shows the defect, so this leg proves nothing about the fix")
+    _av637 = client.post("/api/v1/avatar/chat", json={
+        "message": "what should I measure first?", "context": "general", "session_id": "w637-avatar"})
+    assert _av637.status_code == 200, _av637.text[:200]
+    assert "named no domain" not in _av637.text, (
+        "the avatar's floor reply still tells the reader their request named no domain")
+
+    # ── A2. THE REVIEW FLAGS REACH A READER (W483: an escalation that reaches nobody is a quieter signal) ─
+    _st637 = client.get("/api/v1/organism/status").json()["systems"]["immune"]
+    assert "review_flags_in_window" in _st637 and "health_basis" in _st637, (
+        "the status route the organism pages read drops the review-flag count - it copies a fixed key set",
+        sorted(_st637))
+    for _rel637, _tid637 in (("pages/organism/OrganismAnatomy.tsx", "immune-review-flags"),
+                             ("pages/organism/OrganismDashboard.tsx", "dash-immune-review-flags")):
+        _pg637 = _code_only((_root637 / "apps/workstation-superapp/src" / _rel637).read_text(encoding="utf-8"))
+        _i637 = _pg637.find('data-testid="' + _tid637 + '"')
+        assert _i637 > 0, (_rel637, "the review-flag line is not rendered")
+        #  the GATE (the 120 characters before the element) and the BODY (the element itself) both read the
+        #  field: a gate replaced by a constant, or a body printing a different figure, fails here
+        assert "review_flags_in_window" in _pg637[_i637 - 160:_i637], (_rel637, "the line is not gated on the field")
+        assert "review_flags_in_window" in _pg637[_i637:_i637 + 260], (_rel637, "the line does not print the field")
+    #  the four surfaces that describe organism health say ONE sentence, read from where it is computed
+    from agentic_core.organism.immune import HEALTH_SCOPE as _hs637
+    assert "review flags" in _hs637 and "5xx failures are not tracked" in _hs637, _hs637
+    _ps637 = client.get("/api/v1/plan/state").json()
+    if "organism_health" in _ps637:
+        assert _ps637.get("organism_health_basis") == _hs637, (
+            "a surface describes organism health in its own words rather than the one sentence beside the "
+            "computation", _ps637.get("organism_health_basis"))
+
+
+
+def test_w637_every_writer_stamps_what_it_wrote_and_no_gate_counts_a_placeholder(client):
+    """P2.32 + P2.33 (ledger v13), the second half of the round: one mechanism and six singles.
+
+    A seeded plan opening is stamped as templated by EVERY writer (FU-591) and the Board Pack names a
+    differing vision (FU-590); a cap the caller asked for is not a defence (FU-596); the KPI gate does not
+    count the platform's own placeholder (FU-600); the profile verdict rides every domain tool (FU-598); the
+    translation refusal points at no route it does not serve (FU-588); the genome list names the other genome
+    record (FU-595); and the Heartbeat page's summary is computed from its own rows (FU-601).
+    """
+    _root638 = __import__("pathlib").Path(__file__).resolve().parents[1]
+
+    # ── FU-596. A CAP THE CALLER ASKED FOR IS NOT A DEFENCE ─────────────────────────────────────
+    from agentic_core.ai.native import homeostasis as _hmod638
+    from agentic_core.organism import biobus as _bb638
+
+    def _ctx638(threat="NOMINAL", throttle=False, atp=1.0, cycle="ACTIVE_FOCUS", cap=8):
+        return {"immune": {"threat_level": threat}, "circadian": {"cycle": cycle},
+                "metabolic": {"atp_ratio": atp, "measured": False, "basis": "driven by the guard"},
+                "recommended": {"should_throttle": throttle, "max_parallel_agents": cap},
+                "mode": "FULL_POWER", "composite_health": 0.9}
+
+    _real_ctx638 = _bb638.biobus.organism_context
+    try:
+        def _drive(**kw):
+            _bb638.biobus.organism_context = lambda **_k: _ctx638(**kw)
+            return _hmod638.homeostasis
+        #  a sequential cascade asks for 1 on a healthy organism: NOT protected
+        _a = _drive().assess(demand_nodes=3, requested_parallel=1)
+        assert _a["max_parallel"] == 1 and _a["posture"] != "protected", (
+            "a cascade that REQUESTED one agent on a healthy organism is reported as the organism defending "
+            "itself - the cap equals the request, nothing was reduced", _a["posture"])
+        #  the organism FORCING the floor is still protected, even when 1 was asked for
+        for _kw in ({"threat": "CRITICAL"}, {"throttle": True}):
+            _p = _drive(**_kw).assess(demand_nodes=3, requested_parallel=1)
+            assert _p["posture"] == "protected", (
+                "a real defence no longer reads as protected when the caller asked for one agent - the fix "
+                "removed the signal, not the noise", _kw, _p["posture"])
+        #  and a larger request cut down to one is protected
+        _c = _drive(cap=1).assess(demand_nodes=3, requested_parallel=4)
+        assert _c["max_parallel"] == 1 and _c["posture"] == "protected", (_c["max_parallel"], _c["posture"])
+    finally:
+        _bb638.biobus.organism_context = _real_ctx638
+
+    # ── FU-600. THE PLATFORM'S OWN "NOT SET YET" TEXT IS NOT A KPI ───────────────────────────────
+    from agentic_core.api import business_plan as _bp638
+    _scope638 = "vsb-w638kpi0001"
+    _plan638 = _bp638._load(_scope638)
+    _plan638["objectives"] = [{"id": "obj-w638", "title": "an objective the fallback wrote",
+                               "kpi": _bp638._PLATFORM_KPI_PLACEHOLDER, "timeline": "", "owner_role": "AI CEO",
+                               "progress_pct": 0, "status": "planned", "reviews": []}]
+    _bp638._save(_plan638)
+    _g = _bp638.kpi_release_gate(_scope638)
+    assert _g["ok"] is False and _g["reason"] == "kpi_not_set", (
+        "the release gate is satisfied by the platform's own placeholder: a sentence saying the KPI has not "
+        "been set counted as a KPI", _g)
+    assert [m["id"] for m in _g["missing"]] == ["obj-w638"], _g["missing"]
+    #  a KPI a person wrote still releases - a gate that refuses everything would pass the legs above
+    _plan638["objectives"][0]["kpi"] = "20 paying members by the end of the quarter"
+    _bp638._save(_plan638)
+    _g2 = _bp638.kpi_release_gate(_scope638)
+    assert _g2["ok"] is True and _g2["reason"] == "kpi_set", _g2
+    #  the two spellings cannot drift: the writer still writes exactly what the gate refuses to count.
+    #  Scoped to the fallback's own line, so a comment elsewhere cannot supply the literal.
+    _board638 = (_root638 / "agentic_core/api/board.py").read_text(encoding="utf-8")
+    _line638 = [ln for ln in _board638.splitlines()
+                if "chief_instruct_fallback" in ln or _bp638._PLATFORM_KPI_PLACEHOLDER in ln]
+    assert any(_bp638._PLATFORM_KPI_PLACEHOLDER in ln and not ln.strip().startswith("#") for ln in _line638), (
+        "board.py's fallback no longer writes the placeholder the gate names, so the gate guards a string "
+        "nothing produces", _line638[:3])
+
+    # ── FU-591. EVERY WRITER OF A SEEDED PLAN OPENING STAMPS IT AS TEMPLATED ────────────────────
+    from agentic_core.api import vsb as _vsb638
+    _id638 = f"vsb-w638-{__import__('uuid').uuid4().hex[:6]}"
+    _vsb638.enrich_vsb_entity({"vsb_id": _id638, "name": "W638 Spawn Probe"}, owner_id="default",
+                              problem="I keep bees in Yorkshire and want to sell honey to local cafes")
+    _plan638b = client.get("/api/v1/business-plan", params={"scope": _id638}).json()
+    _prov638 = _plan638b.get("provenance") or {}
+    assert set(_prov638.get("templated_fields") or []) >= {"executive_summary", "vision", "mission", "strategy"}, (
+        "a plan seeded by the shared enrichment path (spawn, Synthesis Studio, a child spawn) carries no "
+        "template mark, so the page heads code templates with the Chief's name", _plan638b.get("provenance"))
+    assert _prov638.get("opening_written_by"), _prov638
+    assert all(v == "establish_template" for v in (_prov638.get("field_sources") or {"x": 0}).values()), (
+        _prov638.get("field_sources"))
+    #  the two writers agree on the KEYS, so a third writer that forgets one goes red: compared with the keys
+    #  genesis writes, read from genesis's own source rather than typed here
+    _gsrc638 = (_root638 / "agentic_core/api/genesis.py").read_text(encoding="utf-8")
+    _gi638 = _gsrc638.index('plan["provenance"] = {')
+    _gkeys638 = set(__import__("re").findall(r'^\s{12}"([a-z_]+)":', _gsrc638[_gi638:_gi638 + 1600],
+                                             __import__("re").M))
+    assert _gkeys638 and _gkeys638 <= set(_prov638), (
+        "the spawn path's provenance lacks a key the Genesis path writes", sorted(_gkeys638 - set(_prov638)))
+
+    # ── FU-598. THE PROFILE VERDICT RIDES EVERY DOMAIN TOOL'S PROVENANCE ────────────────────────
+    _np638 = client.post("/api/v1/education/feedback", json={
+        "student_work": "An essay on the causes of the First World War.", "subject": "History"}).json()
+    _state_none638 = (_np638.get("ai_provenance") or {}).get("profile_state")
+    _put638 = client.put("/api/v1/user/profile", json={
+        "about_you": "a KS1 teacher", "goals": "mark faster", "context": "a two-form entry primary",
+        "constraints": "", "success_criteria": "feedback a six-year-old can act on"})
+    assert _put638.status_code in (200, 201), _put638.text
+    try:
+        _wp638 = client.post("/api/v1/education/feedback", json={
+            "student_work": "An essay on the causes of the First World War.", "subject": "History"}).json()
+        _ap638 = _wp638.get("ai_provenance") or {}
+        if _ap638.get("served_by") in (None, "native"):
+            assert _ap638.get("profile_state") == "not_usable_by_floor" and _ap638.get("profile_applied") is False, (
+                "a domain tool served by the floor does not say the saved profile did not shape the answer - "
+                "the gateway computes it and the provenance dropped it", _ap638)
+            assert _ap638.get("profile_basis"), _ap638
+        #  and the state DIFFERS from the no-profile call: a blind that hardcodes the floor string fails here
+        assert _ap638.get("profile_state") != _state_none638, (
+            "the profile verdict is the same with and without a saved profile, so it reports nothing",
+            _state_none638, _ap638.get("profile_state"))
+    finally:
+        client.delete("/api/v1/user/profile")
+
+    # ── FU-588. THE TRANSLATION REFUSAL POINTS AT NO ROUTE IT DOES NOT SERVE ────────────────────
+    _sacred638 = client.get("/api/v1/qep/translation/status").json().get("sacred_text", "")
+    assert "NOT OFFERED" in _sacred638, _sacred638[:120]
+    for _path638 in __import__("re").findall(r"/api/v1/[\w/{}.-]+", _sacred638):
+        raise AssertionError(
+            "the translation refusal still points the reader at a route (" + _path638 + ") - every "
+            "translation edition is refused there, so the pointer sends them to a locked door")
+
+    # ── FU-595. THE GENOME LIST NAMES THE OTHER GENOME RECORD ──────────────────────────────────
+    _gl638 = client.get("/api/v1/organism/genome").json()
+    _eg638 = _gl638.get("entity_genomes") or {}
+    assert "count" in _eg638 and _eg638.get("basis"), (
+        "the organism's genome list does not report the genome specs written on living entities", _gl638.keys())
+    assert "SEPARATE" in _eg638["basis"] or "NOT KNOWN" in _eg638["basis"], _eg638["basis"]
+    #  DRIVE the count: write one entity record carrying a spec and the figure must rise by exactly one
+    _before638 = _eg638["count"]
+    _rec638 = _vsb638._VSB_STORE / f"vsb-w638g-{__import__('uuid').uuid4().hex[:6]}.json"
+    try:
+        _rec638.write_text(__import__("json").dumps({"vsb_id": _rec638.stem, "name": "W638 Genome Probe",
+                                                     "genome_spec": {"traits": {"x": 1}}}), encoding="utf-8")
+        _after638 = client.get("/api/v1/organism/genome").json()["entity_genomes"]["count"]
+        assert _after638 == (_before638 or 0) + 1, (
+            "an entity record carrying a genome spec is not counted", _before638, _after638)
+    finally:
+        _rec638.unlink(missing_ok=True)
+    #  FORCE the branch a blind found undriven: when the roster cannot be read at all the count is NOT KNOWN,
+    #  never zero. The route reads `agentic_core.api.vsb._VSB_STORE` at call time, so the store is swapped for
+    #  one whose listing raises, and restored.
+    class _Broken638:
+        def glob(self, _pattern):
+            raise OSError("the entity roster cannot be listed")
+    _real_store638 = _vsb638._VSB_STORE
+    try:
+        _vsb638._VSB_STORE = _Broken638()
+        _unk638 = client.get("/api/v1/organism/genome").json()["entity_genomes"]
+    finally:
+        _vsb638._VSB_STORE = _real_store638
+    assert _unk638["count"] is None and "NOT KNOWN" in _unk638["basis"], (
+        "an unreadable entity roster is reported as zero genome specs - not known is not the same as none",
+        _unk638)
+
+    # ── FU-590. THE PACK NAMES A DIFFERING VISION, AND STAYS SILENT WHEN THEY AGREE ─────────────
+    #  W635's check searched the whole strategic paragraph for the constitutional vision. The paragraph also
+    #  quotes the mission, which carries the founder's problem statement, and the constitutional vision IS
+    #  that statement - so the note could never fire, and its guard only looked for the key in the source.
+    from agentic_core.organism import cadence as _cad638
+    _prob638 = "I keep bees in Yorkshire and want to sell honey to local cafes and farm shops"
+    _vp638 = client.post("/api/v1/genesis/establish", json={
+        "problem": _prob638, "domain": "enterprise", "owner_id": "pytest", "name": "W638 Vision Note Probe",
+        "concept": "jarred raw honey sold wholesale", "design": "d", "commercialisation": "wholesale"}).json()["vsb_id"]
+    #  (i) the refresh as the platform composes it: it quotes the plan's TEMPLATE vision
+    _r1 = _cad638.refresh(_vp638, "strategic", force=True)
+    assert _r1.get("refreshed") is not False, _r1
+    _pack1 = client.post(f"/api/v1/vsb/{_vp638}/board-pack").json()
+    _s1 = _pack1["layers"]["strategic"]
+    assert "vision on record:" in str(_s1.get("content") or ""), (
+        "the strategic layer does not carry the cadence refresh, so this leg is not testing the note",
+        str(_s1.get("content"))[:200])
+    assert _s1.get("vision_note"), (
+        "the pack quotes a template vision in its strategic layer beside a different constitutional vision "
+        "and says nothing about the difference", _pack1["layers"]["constitutional"].get("vision"))
+    #  (ii) a refresh that quotes the SAME vision the constitutional layer holds: no note
+    _cv638 = _pack1["layers"]["constitutional"]["vision"]
+    _cad638.refresh(_vp638, "strategic", force=True, content=(
+        "Strategic position derived from the plan itself: 0 aim(s) and 3 objective(s) on the roadmap; "
+        "vision on record: " + _cv638[:160] + "; mission on record: Deliver: " + _prob638[:120] + "."))
+    _pack2 = client.post(f"/api/v1/vsb/{_vp638}/board-pack").json()
+    assert "vision_note" not in _pack2["layers"]["strategic"], (
+        "the note fires although the strategic layer quotes the same vision the constitutional layer holds",
+        _pack2["layers"]["strategic"].get("vision_note"))
+
+    # ── FU-601. THE HEARTBEAT SUMMARY IS COMPUTED FROM ITS OWN ROWS ─────────────────────────────
+    _hb638 = _code_only((_root638 / "apps/workstation-superapp/src/pages/organism/HeartbeatMonitor.tsx")
+                        .read_text(encoding="utf-8"))
+    assert "All five are OFF" not in _hb638, (
+        "the page states a count of switches as a literal above a list that has grown past it")
+    assert "All {AUTONOMY.length} are OFF" in _hb638, "the count is not computed from the array"
+    assert _hb638.count("runtimeOnly: true") >= 2 and "!a.runtimeOnly" in _hb638, (
+        "the persistence sentence is not scoped to the switches that persist, so it still tells a reader a "
+        "runtime-only switch survives a restart")
+    #  the backend agrees about WHICH are runtime-only: the two the page marks are the two it does not persist
+    _hbs638 = client.get("/api/v1/heartbeat/status").json()
+    assert "auto_metabolic_basis" in _hbs638 and "circadian_to_atp_basis" in _hbs638, sorted(_hbs638)[:30]
+
+    # ── FU-598 (page). THE DOMAIN TOOL PRINTS THE SERVER'S BASIS, AND IT TRAVELS WITH THE TEXT ──
+    _dt638 = _code_only((_root638 / "apps/workstation-superapp/src/components/DomainTool.tsx")
+                        .read_text(encoding="utf-8"))
+    _j638 = _dt638.find('data-testid="domain-profile-not-usable"')
+    assert _j638 > 0, "the domain tool does not render the profile verdict"
+    assert "not_usable_by_floor" in _dt638[_j638 - 200:_j638] and "profile_basis" in _dt638[_j638:_j638 + 320], (
+        "the profile line is not gated on the state, or does not print the server's own basis")
+    #  the EXPORT expression itself, not a count of the word: the gate beside it names the field too, so a
+    #  count stayed satisfied with the exported sentence deleted (found by its blind)
+    assert "[profile: ${data.ai_provenance.profile_basis}]" in _dt638, (
+        "the verdict is on the page and not in the copied or downloaded text - a badge in the DOM is not a "
+        "label on the text")
+
+    # ── FU-595 (page). THE GENOME LAB SHOWS THE SERVER'S BASIS FOR THE OTHER GENOME RECORD ──────
+    _an638 = _code_only((_root638 / "apps/workstation-superapp/src/pages/organism/OrganismAnatomy.tsx")
+                        .read_text(encoding="utf-8"))
+    _k638 = _an638.find('data-testid="entity-genomes-basis"')
+    assert _k638 > 0 and "entGenomes?.basis" in _an638[_k638 - 120:_k638] and "entGenomes.basis" in _an638[_k638:_k638 + 260], (
+        "the genome lab does not print the basis for the entities' genome specs")
+    assert "setEntGenomes(d.entity_genomes" in _an638, "the page never stores what the route sends"
+
+    # ── FU-606. THE BTO CATALOGUE'S TAXONOMY IS COMPUTED, NOT TYPED ─────────────────────────────
+    _bto638 = _code_only((_root638 / "apps/workstation-superapp/src/pages/BTOCatalog.tsx").read_text(encoding="utf-8"))
+    _blk638 = _bto638[_bto638.index("const BTO_COMPONENTS"):_bto638.index("type ComponentId")]
+    assert "Object.values(DOMAIN_LABELS).join" in _blk638 and "Object.values(REALM_LABELS).join" in _blk638, (
+        "the catalogue types its realm and domain names instead of reading the taxonomy that defines them")
+    for _old638 in ("Learner", "Developer", "· Scholar", "Religion · Science"):
+        assert _old638 not in _blk638, (
+            "a typed taxonomy name is back in the BTO component descriptions", _old638)
+    #  the taxonomy the page now reads has the six domains and the four realms the API returns
+    _tx638 = (_root638 / "apps/workstation-superapp/src/lib/taxonomy.ts").read_text(encoding="utf-8")
+    _cfg638 = client.post("/api/v1/bto/configure", json={"entity_name": "T", "components": ["realms", "domains"]}).json()
+    for _name638 in (_cfg638.get("realms", {}).get("available") or []) + (_cfg638.get("domains", {}).get("available") or []):
+        assert ("'" + str(_name638) + "'") in _tx638, (
+            "the API offers a realm or domain the page's taxonomy does not label", _name638)
+
+    # ── R5.4. THE QEP COACH GIVES THE WHOLE REASON ──────────────────────────────────────────────
+    _qp638 = _code_only((_root638 / "apps/workstation-superapp/src/pages/domains/QEPReligionHub.tsx")
+                        .read_text(encoding="utf-8"))
+    assert "by ruling (A.9.1)" in _qp638, (
+        "the coach explains the absent recitation score as provisioning alone; A.9.1 rules it is never scored")
+    from agentic_core.reactor.religion import qep_flagship as _qf638
+    assert "A.9.1" in (_root638 / "agentic_core/reactor/religion/qep_flagship.py").read_text(encoding="utf-8")
+    assert _qf638 is not None
