@@ -147,3 +147,44 @@ beside it would be the parallel tree refused in §2.1.
 3. **Does the vision adopt any of the brief's vocabulary** (OGE, HAIRMS, "Facilities Plane")? *Recommendation:
    no.* "Constitution", "Regulator" and "mechanical" already carry measured meanings here; a second naming layer
    over working code has cost rounds before.
+
+---
+
+## 6. Reconsidered the same evening, against the revised brief and commit `4cd66b2d`
+
+The Owner supplied a revised text of the brief and asked for it to be reconsidered alongside commit `4cd66b2d`
+on `main` ("docs: detail workstation resource management architecture", a Jules bot commit merged by PR #356).
+
+**The commit changed nothing.** Its tree is identical to its parent's (`git diff --stat 4cd66b2d^ 4cd66b2d` is
+empty; PR #356 reports 0 files, +0 −0), and that parent is W601 — thirty‑five rounds behind the branch. The
+"comprehensive technical breakdown" it describes exists only in the Jules task and the PR description.
+
+**What its description names does exist** (whole‑tree search): the resource optimiser
+(`agentic_core/optimization/aro.py`), the Resource Fabric API (`agentic_core/api/resource_fabric.py`, 16
+routes), the Model Resource Registry (`agentic_core/ai/native/model_resource.py`, nine importers), a cost
+guard, and homeostasis. It did not name two more: the tier router that refuses a model this machine cannot run
+(`agentic_core/ai/native/tiers.py`) and the optimizer package — monitor, predictor, allocator, scheduler,
+fabric, RAL verifier — wired at `agentic_core/api/optimizer.py`.
+
+**What this changes in sections 1–4:**
+
+- The brief's AI‑resource and facilities halves duplicate MORE than section 1 said. A registry, a router, an
+  optimiser and a fabric already exist; `ai_fabric/` and `facilities/` would be a parallel tree (§2.1).
+- **Under‑weighted the first time:** these subsystems are scattered and no surface shows them together. The
+  valid kernel of "HAIRMS" is one place that says what resources exist and what state each is in. Taken into
+  the plan as a row: a READ‑ONLY resource inventory — one route, one page — composed from the registries that
+  exist, with no new registry and no new tree. Measure first what each registry can honestly report.
+- **A defect found by reading the optimiser:** `AutonomousResourceOptimisation.optimize()` returns an
+  "allocation" of four weights that nothing reads (`git grep current_allocation` finds only its own file). Its
+  objective is linear in the weights, so the optimum always puts everything on the largest demand; two of its
+  four demands are constants typed in the file under the comment "Simulated demand". It is exposed as the CEO
+  tool `optimize_qep_resources`. An allocator that allocates nothing — registered as a row.
+
+**What the revised brief adds, and why none of it reopens a ruling:** a "human‑centric needs framework"
+(emotional monitoring, satisfaction scoring, social‑graph analytics) that monitors and grades a person — ruling
+A.9.5; twenty‑five numbered "constitutional articles" — constitutional text is the Owner's to write; Raspberry
+Pi 5 targets nothing here can measure. The architecture, the module tree, the KPIs and the instruction to
+"Jules" are unchanged. The Owner confirmed the recommendation on 2026‑10‑09.
+
+*Method note: when a commit is named as evidence, compare its tree with its parent's before reading its
+message. A commit message is not evidence that anything changed.*

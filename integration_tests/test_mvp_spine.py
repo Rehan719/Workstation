@@ -47871,3 +47871,303 @@ def test_w637_every_writer_stamps_what_it_wrote_and_no_gate_counts_a_placeholder
     from agentic_core.reactor.religion import qep_flagship as _qf638
     assert "A.9.1" in (_root638 / "agentic_core/reactor/religion/qep_flagship.py").read_text(encoding="utf-8")
     assert _qf638 is not None
+
+
+def test_w639_a_ledger_states_its_coverage_or_is_not_written(client):
+    """FU-602 — the Owner's stopping rule (2026-10-09) counts an audit run only if it states its coverage.
+
+    The instrument collected `hit_the_cap` and the ledger never printed it; no assessor said what it had
+    exercised; nothing computed what there was to exercise. A zero from such a run cannot be told from "not
+    looked at". From edition 14 the renderer refuses to write without coverage, and prints it against a census.
+    """
+    import json as _j639
+    import pathlib as _pl639
+    import subprocess as _sp639
+    import sys as _sys639
+    import tempfile as _tf639
+
+    _root = _pl639.Path(__file__).resolve().parents[1]
+    _script = _root / "scripts" / "render_fidelity_ledger.py"
+    _d = _pl639.Path(_tf639.mkdtemp())
+
+    def _f(i):
+        return {"id": f"R1.{i}", "section": f"finding {i}", "verdict": "PARTIAL", "tier": 1,
+                "vision_claim": "c", "observed": "o", "evidence": "e"}
+
+    def _record(with_cov=True, capped=False):
+        r = {"region": "R1", "summary": "", "findings": [_f(0)], "verdicts": [
+            {"index": 0, "corrected_verdict": "PARTIAL", "corrected_tier": 1, "refuted": False,
+             "reproduced": True, "reason": "r", "evidence": "x"}], "hit_the_cap": capped}
+        if with_cov:
+            r["unlisted_findings"] = 2
+            r["surfaces_exercised"] = {"routes": ["GET /api/v1/a", "GET /api/v1/zzz-not-real"],
+                                       "files": ["apps/workstation-superapp/src/pages/Alpha.tsx"]}
+        return [r]
+
+    _census = _d / "census.json"
+    _census.write_text(_j639.dumps({
+        "routes": ["GET /api/v1/a", "POST /api/v1/b", "GET /api/v1/c"],
+        "pages": [{"path": "/alpha", "component": "Alpha"}, {"path": "/beta", "component": "Beta"}],
+        "excluded": [{"surface": "/docs", "reason": "framework docs page"}]}), encoding="utf-8")
+
+    def _render(regions, version, census=None, name="o.md"):
+        _src = _d / (name + ".json")
+        _src.write_text(_j639.dumps(regions), encoding="utf-8")
+        _dst = _d / name
+        _args = [_sys639.executable, str(_script), str(_src), str(_dst), "deadbeef", "2026-01-01", "8031",
+                 str(version), "W639"] + ([str(census)] if census else [])
+        _p = _sp639.run(_args, capture_output=True, text=True, encoding="utf-8",
+                        env=dict(__import__("os").environ, PYTHONIOENCODING="utf-8"))
+        return _p.returncode, (_p.stdout or "") + (_p.stderr or ""), (
+            _dst.read_text(encoding="utf-8") if _dst.exists() else None)
+
+    # ── 1. v14 WITHOUT COVERAGE FIELDS IS REFUSED, AND NOTHING IS WRITTEN ───────────────────────
+    _rc, _out, _text = _render(_record(with_cov=False), 14, _census, "a.md")
+    assert _rc != 0 and "REFUSING TO WRITE" in _out and _text is None, (
+        "a v14 ledger was written from a run that does not say what it exercised", _rc, _out[-300:])
+
+    # ── 2. v14 WITH FIELDS AND NO CENSUS IS REFUSED ─────────────────────────────────────────────
+    _rc, _out, _text = _render(_record(), 14, None, "b.md")
+    assert _rc != 0 and "No surface census" in _out and _text is None, (_rc, _out[-300:])
+
+    # ── 3. v14 WITH BOTH PRINTS EXACT FIGURES ───────────────────────────────────────────────────
+    _rc, _out, _text = _render(_record(), 14, _census, "c.md")
+    assert _rc == 0, _out[-400:]
+    _i = _text.index("## Coverage ")
+    _blk = _text[_i:_i + 2200]
+    assert "| API routes | 3 | 1 | 2 |" in _blk and "| pages | 2 | 1 | 1 |" in _blk, _blk[:500]
+    #  a claimed route that is NOT in the census is listed and does not raise the exercised count
+    assert "`GET /api/v1/zzz-not-real`" in _blk and "not in the census (1)" in _blk, _blk[:900]
+    #  the unexercised surfaces are NAMED, so "not covered" is a list a person can act on
+    assert "`/beta` (Beta)" in _blk and "- `POST /api/v1/b`" in _blk and "- `GET /api/v1/c`" in _blk, _blk
+    assert "could NOT list under the cap: **2**" in _blk, _blk[:600]
+
+    # ── 4. THE CAP IS THE ASSESSOR'S FLAG, AND A CAPPED RUN SAYS IT CANNOT COUNT ────────────────
+    _rc, _out, _capped = _render(_record(capped=True), 14, _census, "d.md")
+    assert _rc == 0, _out[-300:]
+    assert "| R1 |" in _capped and "| YES |" in _capped, "a region that reported hitting the cap is not marked"
+    assert "Coverage: INCOMPLETE in 1 of 1 regions" in " ".join(_capped.split()), (
+        "a run with a region at the cap does not say its coverage is incomplete")
+    assert "| no |" in _text and "INCOMPLETE" not in _text, (
+        "an uncapped run is reported as incomplete - the flag is not what decides it")
+
+    # ── 5. EDITIONS UP TO 13 RENDER AS BEFORE, WITH NO CENSUS ───────────────────────────────────
+    _rc, _out, _old = _render(_record(with_cov=False), 13, None, "e.md")
+    assert _rc == 0 and _old and "## Coverage " not in _old, (_rc, _out[-300:])
+
+    # ── 5b. THE REFUTER SAYS WHETHER IT REPRODUCED THE GAP, AND STANDING FOLLOWS THAT ───────────
+    #  `refuted` meant delivered, unsupported, or merely mislabelled, and the renderer guessed which from the
+    #  tier's direction three times. v13 still struck two findings whose refuters wrote "facts reproduced"
+    #  because they LOWERED the tier. From v14 the flag decides; a record without it keeps the old rules.
+    def _rec5b(verdicts, n=4):
+        r = _record()[0]
+        r["findings"] = [dict(_f(i), tier=2) for i in range(n)]
+        r["verdicts"] = verdicts
+        return [r]
+
+    _v5b = [
+        #  0 reproduced, tier LOWERED 2 -> 3: stands at 3 (the v13 case)
+        {"index": 0, "refuted": True, "reproduced": True, "corrected_verdict": "PARTIAL", "corrected_tier": 3,
+         "reason": "facts reproduced; tier 3", "evidence": "x"},
+        #  1 NOT reproduced, verdict relabelled at the same tier: no standing (the flag overrides the W636 inference)
+        {"index": 1, "refuted": True, "reproduced": False, "corrected_verdict": "STUB", "corrected_tier": 2,
+         "reason": "could not reproduce", "evidence": "x"},
+        #  2 reproduced, tier RAISED 2 -> 1: stands at 1
+        {"index": 2, "refuted": True, "reproduced": True, "corrected_verdict": "PARTIAL", "corrected_tier": 1,
+         "reason": "worse than assessed", "evidence": "x"},
+        #  3 reproduced as DELIVERED: no gap, no standing
+        {"index": 3, "refuted": True, "reproduced": True, "corrected_verdict": "DELIVERED", "corrected_tier": 0,
+         "reason": "it works", "evidence": "x"},
+    ]
+    _rc, _out, _t5b = _render(_rec5b(_v5b), 14, _census, "f.md")
+    assert _rc == 0, _out[-400:]
+    import re as _re639
+
+    def _tier_row(text, n):
+        _m = _re639.search(r"^\| \*\*1\*\* \| \*\*(\d+)\*\* \|" if n == 1 else rf"^\| {n} \| (\d+) \|", text, _re639.M)
+        return int(_m.group(1)) if _m else 0
+
+    assert (_tier_row(_t5b, 1), _tier_row(_t5b, 2), _tier_row(_t5b, 3)) == (1, 0, 1), (
+        "standing does not follow the refuter's `reproduced` flag: expected one finding at tier 1 (reproduced "
+        "and raised), one at tier 3 (reproduced and lowered), none at tier 2 (not reproduced; delivered)",
+        (_tier_row(_t5b, 1), _tier_row(_t5b, 2), _tier_row(_t5b, 3)))
+    #  A finding its refuter reproduced AS DELIVERED is not a gap, and the record says so. The tier table
+    #  already leaves DELIVERED out, so the table cannot see this clause (its blind stayed green); the
+    #  ledger's own account of what the refuters did - how many findings stand as corrected - can.
+    import importlib.util as _ilu5b
+    _sp5b = _ilu5b.spec_from_file_location("_rfl5b", _script)
+    _rfl5b = _ilu5b.module_from_spec(_sp5b)
+    _sp5b.loader.exec_module(_rfl5b)
+    assert _rfl5b.standing(_f(3), _v5b[3]) == ("DELIVERED", "refuted"), (
+        "a finding the refuter found DELIVERED is recorded as a corrected gap", _rfl5b.standing(_f(3), _v5b[3]))
+    assert _rfl5b.standing(_f(0), _v5b[0])[1] == "corrected" and _rfl5b.standing(_f(2), dict(_v5b[2]))[1] in (
+        "escalated", "corrected"), "the reproduced findings are not recorded as standing"
+    #  a v14 record whose verdicts do not carry the flag is refused, and nothing is written
+    _nov = [dict(v) for v in _v5b]
+    for _x in _nov:
+        _x.pop("reproduced")
+    _rc, _out, _none = _render(_rec5b(_nov), 14, _census, "g.md")
+    assert _rc != 0 and "REFUSING TO WRITE" in _out and _none is None, (
+        "a v14 ledger was written from verdicts that do not say whether the gap was reproduced", _rc)
+    #  the same flagless verdicts in a v13 record render by the OLD rules: lowered and unreproduced are both
+    #  struck, the raised one stands at 1 - no published edition moves
+    _old = _rec5b(_nov)
+    _old[0].pop("unlisted_findings", None)
+    _old[0].pop("surfaces_exercised", None)
+    _rc, _out, _t13 = _render(_old, 13, None, "h.md")
+    assert _rc == 0 and (_tier_row(_t13, 1), _tier_row(_t13, 3)) == (1, 0), (
+        "the flag's absence changed how an earlier edition is counted",
+        (_tier_row(_t13, 1), _tier_row(_t13, 2), _tier_row(_t13, 3)))
+
+    # ── 6. THE CENSUS COUNTS PAGES FROM THE ROUTE TABLE, AND FALLS BY ONE WHEN A ROUTE IS REMOVED ─
+    import importlib.util as _ilu639
+    _spec = _ilu639.spec_from_file_location("census639", _root / "scripts" / "audit_surface_census.py")
+    _cen = _ilu639.module_from_spec(_spec)
+    _spec.loader.exec_module(_cen)          # defines functions only; the app is imported by main(), not here
+    _app = ('<Routes>\n'
+            '  <Route path="/"        element={<Home />} />\n'
+            '  <Route path="/old"     element={<Navigate to="/" replace />} />\n'
+            '  <Route path="/alpha"   element={<Alpha mode="x" />} />\n'
+            '</Routes>\n')
+    _pg, _rd, _un, _decl = _cen.parse_pages(_app)
+    assert (_decl, len(_pg), len(_rd), len(_un)) == (3, 2, 1, 0), (_decl, _pg, _rd, _un)
+    assert {p["component"] for p in _pg} == {"Home", "Alpha"}, _pg
+    _pg2, _, _, _decl2 = _cen.parse_pages(_app.replace('  <Route path="/alpha"   element={<Alpha mode="x" />} />\n', ""))
+    assert len(_pg2) == len(_pg) - 1 and _decl2 == _decl - 1, (
+        "removing a page route does not shrink the census by exactly one", len(_pg), len(_pg2))
+    #  THE ROUTE HALF, against the app this test client holds: every method route of the app's own table is in
+    #  the census or in its exclusions - nothing is lost between the two, and nothing is invented
+    _rts, _exc = _cen.routes_of(client.app)
+    _own = {f"{m} {r.path}" for r in client.app.routes
+            for m in (getattr(r, "methods", None) or set()) if getattr(r, "path", None)}
+    _exc_paths = {e["surface"] for e in _exc}
+    assert set(_rts) <= _own, ("the census lists a route the app does not register", sorted(set(_rts) - _own)[:3])
+    _lost = {x for x in _own if x not in set(_rts) and x.split(" ", 1)[1] not in _exc_paths
+             and x.split(" ", 1)[0] not in ("HEAD", "OPTIONS")}
+    assert not _lost, ("a route the app registers is in neither the census nor its listed exclusions",
+                       sorted(_lost)[:5])
+    assert len(_rts) > 100 and all(e.get("reason") for e in _exc), (len(_rts), _exc[:3])
+    #  a route the parser cannot read is REPORTED, never dropped: the census must account for every tag
+    _pg3, _rd3, _un3, _decl3 = _cen.parse_pages(_app + '<Route path="/odd" />\n')
+    assert len(_un3) == 1 and _un3[0]["path"] == "/odd" and len(_pg3) + len(_rd3) + len(_un3) == _decl3, (
+        "a route tag with no element is silently dropped, so the census under-reports what exists", _un3, _decl3)
+    #  and the real route table parses whole: nothing unparsed, every tag accounted for
+    _real = (_root / "apps/workstation-superapp/src/App.tsx").read_text(encoding="utf-8")
+    _rp, _rr, _ru, _rdecl = _cen.parse_pages(_real)
+    assert _ru == [] and len(_rp) + len(_rr) == _rdecl and len(_rp) >= 1, (
+        "the census cannot account for every <Route> in App.tsx, so it under-reports its own denominator",
+        _ru[:3], len(_rp), len(_rr), _rdecl)
+
+
+def test_w638_test_entities_are_quarantined_by_the_owners_rule_and_nothing_is_deleted(client):
+    """Owner ruling 2026-10-09: an entity may be removed when its owner_id is "pytest" and it is not on the
+    living roster, and its owner-payment and portfolio entries leave in the same operation. Carried out as a
+    REVERSIBLE MOVE. The earlier basis for removal ("referenced only by an auto-seeded plan") was false for
+    every one of 112 entities; this rule is tested on what it selects, what it refuses, and that it undoes."""
+    import hashlib as _h638
+    import importlib.util as _ilu638
+    import json as _j638
+    import pathlib as _pl638
+    import tempfile as _tf638
+
+    _root = _pl638.Path(__file__).resolve().parents[1]
+    _spec = _ilu638.spec_from_file_location("_qte638", _root / "scripts/quarantine_test_entities.py")
+    _q = _ilu638.module_from_spec(_spec)
+    _spec.loader.exec_module(_q)
+
+    _d = _pl638.Path(_tf638.mkdtemp())
+
+    def _w(rel, doc):
+        _p = _d / rel
+        _p.parent.mkdir(parents=True, exist_ok=True)
+        _p.write_text(_j638.dumps(doc), encoding="utf-8")
+
+    #  six entities, one per case
+    for _vid, _owner in (("vsb-aaaa0001", "pytest"),     # eligible
+                         ("vsb-aaaa0002", "pytest"),     # on the roster -> skipped
+                         ("vsb-aaaa0003", "pytest"),     # named by a contract -> skipped
+                         ("vsb-aaaa0004", "pytest"),     # named only by history -> eligible
+                         ("vsb-bbbb0001", "default"),    # not test-owned, named by nothing -> untouched
+                         ("vsb-bbbb0002", "Rehan")):     # the Owner's own -> untouched
+        _w(f"vsb_entities/{_vid}.json", {"vsb_id": _vid, "owner_id": _owner, "name": _vid})
+        _w(f"business_plans/{_vid}.json", {"scope": _vid})
+        _w(f"economy/{_vid}_ledger.json", {"entries": []})
+    _w("vsb_repos/vsb-aaaa0001/genome.json", {"g": 1})                 # a footprint DIRECTORY
+    _all = ["vsb-aaaa0001", "vsb-aaaa0002", "vsb-aaaa0003", "vsb-aaaa0004", "vsb-bbbb0001", "vsb-bbbb0002"]
+    _w("economy_owner_payments.json", {v: {"vsb_id": v, "accrued": 1.0} for v in _all} | {"workstation-idbo": {}})
+    _w("economy_ventures_portfolio.json", {v: {"vsb_id": v, "invested_total": 2.0} for v in _all})
+    _w("living_vsbs.json", {"vsb-aaaa0002": {"owner": "pytest"}})
+    _w("vsb_contracts.json", [{"client": "vsb-aaaa0003", "provider": "vsb-bbbb0001"}])
+    _w("swarm_cascades.json", [{"run": 1, "vsb_id": "vsb-aaaa0004"}, {"run": 2, "vsb_id": "vsb-aaaa0001"}])
+    _w("meta/gaas_v5_ueg.json", [{"event": "x", "vsb": "vsb-aaaa0001"}])
+
+    def _snapshot():
+        return {str(p.relative_to(_d)).replace(chr(92), "/"): _h638.sha256(p.read_bytes()).hexdigest()
+                for p in sorted(_d.rglob("*")) if p.is_file()}
+
+    _before = _snapshot()
+
+    # ── THE PLAN: who is eligible, who is skipped and why, who is never considered ───────────────
+    _pl = _q.plan(_d)
+    assert sorted(e["vsb_id"] for e in _pl["eligible"]) == ["vsb-aaaa0001", "vsb-aaaa0004"], (
+        "the rule does not select exactly the test-owned, off-roster, unreferenced entities",
+        [e["vsb_id"] for e in _pl["eligible"]])
+    _skip = {s["vsb_id"]: s for s in _pl["skipped"]}
+    assert set(_skip) == {"vsb-aaaa0002", "vsb-aaaa0003"}, sorted(_skip)
+    assert "roster" in _skip["vsb-aaaa0002"]["reason"], _skip["vsb-aaaa0002"]
+    assert _skip["vsb-aaaa0003"].get("named_by") == ["vsb_contracts.json"], (
+        "an entity a contract names is not skipped, or the skip does not say which record names it",
+        _skip["vsb-aaaa0003"])
+    assert _pl["counts"]["not_test_owned_untouched"] == 2, _pl["counts"]
+    _e1 = next(e for e in _pl["eligible"] if e["vsb_id"] == "vsb-aaaa0001")
+    assert "vsb_repos/vsb-aaaa0001".replace("/", chr(92)) in _e1["footprint"] or "vsb_repos/vsb-aaaa0001" in _e1["footprint"], (
+        "a footprint directory is not part of what moves", _e1["footprint"])
+    assert _snapshot() == _before, "planning changed the data root - a dry run must move nothing"
+
+    # ── APPLY: a move, the two entries leave together, history and everyone else untouched ───────
+    _mp = _q.apply(_d, _pl, "20260101-000000")
+    _after = _snapshot()
+    _m = _j638.loads(_mp.read_text(encoding="utf-8"))
+    for _vid in ("vsb-aaaa0001", "vsb-aaaa0004"):
+        assert not (_d / "vsb_entities" / f"{_vid}.json").exists(), _vid
+        assert (_d / "_pruned_20260101-000000/files/vsb_entities" / f"{_vid}.json").exists(), (
+            "an entity record is gone from the store and NOT in the quarantine - that is a deletion", _vid)
+    assert (_d / "_pruned_20260101-000000/files/vsb_repos/vsb-aaaa0001/genome.json").exists()
+    _pay = _j638.loads((_d / "economy_owner_payments.json").read_text(encoding="utf-8"))
+    _port = _j638.loads((_d / "economy_ventures_portfolio.json").read_text(encoding="utf-8"))
+    assert set(_pay) == {"vsb-aaaa0002", "vsb-aaaa0003", "vsb-bbbb0001", "vsb-bbbb0002", "workstation-idbo"}, sorted(_pay)
+    assert set(_port) == {"vsb-aaaa0002", "vsb-aaaa0003", "vsb-bbbb0001", "vsb-bbbb0002"}, sorted(_port)
+    assert set(_m["taken_from_platform_records"]["economy_owner_payments.json"]) == {"vsb-aaaa0001", "vsb-aaaa0004"}, (
+        "the entries taken out are not kept whole in the manifest, so they cannot be put back")
+    #  history is left exactly as it was, and so is every file of every entity that was not eligible
+    for _rel in ("swarm_cascades.json", "meta/gaas_v5_ueg.json", "vsb_contracts.json", "living_vsbs.json",
+                 "vsb_entities/vsb-bbbb0001.json", "vsb_entities/vsb-bbbb0002.json",
+                 "vsb_entities/vsb-aaaa0002.json", "business_plans/vsb-aaaa0003.json"):
+        assert _after.get(_rel) == _before[_rel], ("a file the rule does not cover was changed", _rel)
+    #  NOTHING WAS DELETED: every byte that left its place is under the quarantine
+    _gone = {k for k in _before if k not in _after}
+    _held = {k[len("_pruned_20260101-000000/files/"):]: v for k, v in _after.items()
+             if k.startswith("_pruned_20260101-000000/files/")}
+    assert _gone and all(_held.get(k) == _before[k] for k in _gone), (
+        "a file left the data root and is not held byte-identical in the quarantine",
+        sorted(k for k in _gone if _held.get(k) != _before[k])[:4])
+
+    # ── RESTORE: the root is byte-identical to before ───────────────────────────────────────────
+    assert _q.restore(_mp) == 0
+    _back = {k: v for k, v in _snapshot().items() if not k.startswith("_pruned_")}
+    #  the two platform records are rewritten by the tool's own writer, so compare them as DATA
+    for _rec in ("economy_owner_payments.json", "economy_ventures_portfolio.json"):
+        assert _j638.loads((_d / _rec).read_text(encoding="utf-8")) == {
+            v: ({"vsb_id": v, "accrued": 1.0} if _rec.startswith("economy_owner") else {"vsb_id": v, "invested_total": 2.0})
+            for v in _all} | ({"workstation-idbo": {}} if _rec.startswith("economy_owner") else {}), _rec
+        _back.pop(_rec)
+    assert _back == {k: v for k, v in _before.items() if not k.startswith("economy_owner") and
+                     not k.startswith("economy_ventures")}, "restore did not return every file to its place"
+
+    # ── AND IT HAS NO WAY TO DELETE ─────────────────────────────────────────────────────────────
+    import ast as _ast638
+    _tree = _ast638.parse((_root / "scripts/quarantine_test_entities.py").read_text(encoding="utf-8"))
+    _calls = {n.func.attr for n in _ast638.walk(_tree)
+              if isinstance(n, _ast638.Call) and isinstance(n.func, _ast638.Attribute)}
+    assert not (_calls & {"unlink", "rmtree", "remove", "rmdir"}), (
+        "the quarantine tool can delete: " + ", ".join(sorted(_calls & {"unlink", "rmtree", "remove", "rmdir"})))
