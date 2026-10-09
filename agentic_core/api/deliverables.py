@@ -532,7 +532,17 @@ def _compliance_stamp(d: Dict[str, Any]) -> Optional[str]:
     q = ((d.get("quality_assurance") or {}).get("quality") or {})
     comp = q.get("compliance") or {}
     if comp.get("overall") != "fail":
-        return None
+        #  W625 (FU-515, M2 v9 R1.3) — AN UNESTABLISHED VERDICT TRAVELS TOO. Only a FAIL was stamped, so a file
+        #  forwarded from a deliverable whose every compliance area went unassessed carried nothing saying so,
+        #  nor the §10 bar's count. A recipient now reads the verdict and the bar on page one whatever they are.
+        _ov = comp.get("overall")
+        _bar = (q.get("bar_measured") or {}).get("summary")
+        if not _ov and not _bar:
+            return None
+        return ("COMPLIANCE: " + (str(_ov).upper() if _ov else "NOT SCREENED")
+                + (" — not established: no area was cleared, and a screen can refuse but not certify"
+                   if _ov in ("review", "not_assessed", None) else "")
+                + (f" · §10 bar: {_bar}" if _bar else ""))
     fails = ", ".join(f"{v.get('framework')}: {str(v.get('reason') or '')[:90]}"
                       for v in (comp.get("verdicts") or []) if v.get("status") == "fail") or "see the record"
     cca = q.get("compliance_cca_id")

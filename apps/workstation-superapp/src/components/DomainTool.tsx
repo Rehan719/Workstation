@@ -83,11 +83,19 @@ interface DomainToolProps {
 //  body is absent from the saved record, which is the W490 rule (provenance travels with the output).
 //  Before this, `religious_subject_screen` was returned by the education route under a comment saying it
 //  travelled with the output, and nothing on any surface read it.
+// W631 (FU-547) — the §11 verdict, wherever the response carries it; a FAIL or REVIEW travels into every export
+const complianceOf = (data: any): string | undefined => {
+  const qa = data?.ai_provenance?.quality_assurance ?? data?.quality_assurance;
+  return qa?.compliance_overall ?? qa?.quality?.compliance_overall ?? qa?.quality?.compliance?.overall;
+};
 const withDisclosures = (body: string, data: any): string =>
-  (data?.score_summary ? `${data.score_summary}\n\n` : '')
+  ((complianceOf(data) === 'fail' || complianceOf(data) === 'review')
+    ? `[§11 COMPLIANCE: ${String(complianceOf(data)).toUpperCase()} — this output did not pass the constitutional screen]\n\n` : '')
+  + (data?.score_summary ? `${data.score_summary}\n\n` : '')
   + body
   + (data?.screen_note ? `\n\n[${data.screen_note}]` : '')
   + (data?.floor_note ? `\n\n[${data.floor_note}]` : '')
+  + (!data?.floor_note && data?.ai_provenance?.floor_note ? `\n\n[${data.ai_provenance.floor_note}]` : '')
   + (data?.disclaimer ? `\n\n_${data.disclaimer}_` : '');
 
 export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endpoint, fields, resultKey, submitLabel = 'Generate', renderExtra }) => {
@@ -341,6 +349,17 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
             </div>
           </div>
           {renderExtra && renderExtra(result)}
+          {(complianceOf(result) === 'fail' || complianceOf(result) === 'review') && (
+            <p data-testid="domain-compliance-chip" className={`text-[10px] font-black uppercase tracking-widest rounded-lg p-2 border ${complianceOf(result) === 'fail' ? 'text-vital border-vital/40 bg-vital/10' : 'text-amber-400 border-amber-500/30'}`}>
+              §11 compliance {String(complianceOf(result)).toUpperCase()} — {complianceOf(result) === 'fail' ? 'this output did not pass the constitutional screen' : 'the screen could not clear this output'}
+            </p>
+          )}
+          {/* W627 (FU-536) — floor output says what was NOT done, where the output is, not only in a badge */}
+          {(effectiveProv as any)?.floor_note && !result.floor_note && (
+            <p data-testid="domain-floor-note" className="text-[10px] text-amber-400 leading-relaxed border border-amber-500/30 rounded-lg p-2">
+              {(effectiveProv as any).floor_note}
+            </p>
+          )}
           <pre className="text-[11px] text-slate-300 whitespace-pre-wrap font-sans leading-relaxed bg-slate-950 border border-slate-900 rounded-xl p-4 max-h-[420px] overflow-y-auto">
             {displayText}
           </pre>

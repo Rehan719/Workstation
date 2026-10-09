@@ -143,6 +143,23 @@ async def _horizon_observe(request, call_next):
         set_request_language((request.headers.get("accept-language") or "").split(",")[0])
     except Exception:          # noqa: BLE001 - a missing header must never fail a request
         pass
+    #  W619 (FU-501) — the authenticated caller, resolved from the bearer token this layer already sees, so the
+    #  domain tools (which declare no user dependency) apply THAT person's own profile. Resolution never fails a
+    #  request and never grants anything: an unresolvable token leaves no user, and the route's own auth
+    #  dependency, where it has one, still decides access.
+    try:
+        from agentic_core.api._ai_provenance import set_request_user
+        set_request_user("")
+        _authz = request.headers.get("authorization") or ""
+        if _authz.lower().startswith("bearer "):
+            from agentic_core.auth.core import auth_enabled as _ae619, _decode_token as _dt619, _get_user as _gu619
+            if _ae619():
+                _sub = (_dt619(_authz.split(" ", 1)[1].strip()) or {}).get("sub")
+                _u = _gu619(_sub) if _sub else None
+                if _u and _u.get("username"):
+                    set_request_user(_u["username"])
+    except Exception:          # noqa: BLE001 - an invalid token is the route's 401 to give, not this layer's
+        pass
     _status, _raised = None, None
     # W558 (P2.15) — the clock is here because this is the only layer that brackets the handler. A
     # monotonic clock, not a wall clock, so a system time change cannot produce a negative duration.
@@ -150,6 +167,15 @@ async def _horizon_observe(request, call_next):
     try:
         _response = await call_next(request)
         _status = getattr(_response, "status_code", None)
+        #  W631 (FU-559) - NO APP-WIDE CONSTITUTIONAL GATE EXISTS, and every response says so. A gate is applied
+        #  only by the routes that call it, and those carry their own governance_checkpoint in the body; this
+        #  header tells any caller of any other route that it was not gated. Building a global gate is an
+        #  architecture decision for the Owner (the transformation invariant row already reports it NOT held).
+        try:
+            _response.headers["X-Workstation-GaaS"] = ("route-level only: no app-wide gate - a response is gated "
+                                                       "only if its body carries a governance_checkpoint")
+        except Exception:     # noqa: BLE001 - a header must never fail a response
+            pass
         return _response
     except Exception as _exc:         # noqa: BLE001 — observed, then re-raised unchanged
         _raised = _exc.__class__.__name__
@@ -660,7 +686,10 @@ async def biometrics_status():
         "workload": {"platform_busy": bool(active > 0 or ws > 0), "active_projects": active,
                      "open_channels": ws,
                      "basis": "the platform's own running projects and open channels"},
-        "cognition":      {"state": cognition_state, "primary_drive": primary_drive},
+        #  W633 (FU-567) - NOTHING COGNITIVE IS MEASURED: the state is a host-load reading and says so
+        "cognition":      {"state": cognition_state, "primary_drive": primary_drive,
+                           "basis": ("a LOAD reading, not cognition: derived from host CPU% and the running-project "
+                                     "count, qualified by immune health. No cognitive engine is read")},
         "communication":  {"active_channels": ["WS"] if ws > 0 else [], "neurotransmitter": neurotransmitter, "is_active": ws > 0},
         "immune":         imm,
         # W506 (P2.7(4), FU-265a) — the qualifier travels WITH the figure: atp_basis set above and not

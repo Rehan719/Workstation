@@ -224,7 +224,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
     // scaffold left the product as a document with a "Generated" date and nothing else. The label
     // travels INTO the file (the W490 rule).
     const prov = provenanceLine(streamServedBy, streamIsExternal);
-    const header = `# ${project.title}\n**Stage:** ${project.stage} | **Realm:** ${project.realm} | **Domain:** ${project.domain}\n**Generated:** ${new Date().toISOString().slice(0,10)}\n${prov}\n\n---\n\n`;
+    const header = `# ${project.title}\n**Stage:** ${project.stage} | **Domain:** ${project.realm} | **Area:** ${project.domain}\n**Generated:** ${new Date().toISOString().slice(0,10)}\n${prov}\n\n---\n\n`;
     const blob = new Blob([header + streamText], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -364,7 +364,8 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
           <h2 className="text-sm font-black text-white truncate">{project.title}</h2>
           <p className="text-[10px] text-slate-500 mt-0.5 leading-relaxed line-clamp-2">{project.description}</p>
           <div className="flex items-center gap-2 mt-2">
-            <span className="text-[9px] font-bold text-slate-600 uppercase">{project.realm} · {project.domain}</span>
+            {/* W628 (FU-537) — a project's `realm` field holds the taxonomy DOMAIN and `domain` a sub-area; labelled as what they are */}
+            <span className="text-[9px] font-bold text-slate-600 uppercase" title="domain · area (the project record stores the domain in its 'realm' field)">{project.realm} · {project.domain}</span>
             <StagePill stage={project.stage} />
             <StatusDot status={project.status} />
           </div>
@@ -580,6 +581,10 @@ export const ProjectsHub: React.FC = () => {
         <div className="shrink-0 px-4 pt-6 pb-3 flex items-center justify-between">
           <div>
             <h1 className="text-xs font-black uppercase tracking-[0.3em] text-white">Projects</h1>
+            {/* W620 (FU-483, M2 v8 R2.3) — a Project is not the §4 lifecycle and never becomes a VSB; it said neither */}
+            <p className="text-[9px] text-slate-500 mt-1" data-testid="projects-scope-note">
+              AI deliverable projects (concept → prototype → commercialise). Not the §4 enterprise lifecycle: a project never becomes a living VSB — Genesis establishes those.
+            </p>
             <p className="text-[9px] text-slate-600 mt-0.5">AI-powered product workflows</p>
           </div>
           <button

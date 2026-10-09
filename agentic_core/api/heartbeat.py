@@ -61,11 +61,15 @@ class ConfigureRequest(BaseModel):
     auto_align: Optional[bool] = None       # opt-in: route vision gaps to tiers each beat (cheap)
     auto_compliance: Optional[bool] = None  # opt-in (§11, W288): re-screen living VSBs on the beat
     auto_ship: Optional[bool] = None        # opt-in (§13, W319): re-ship STALE repos on the beat
+    auto_metabolic: Optional[bool] = None   # FU-367 (W609): run the recirculation loop on the beat (runtime only)
+    metabolic_every: Optional[int] = None   # every N beats
+    circadian_to_atp: Optional[bool] = None # FU-308 (W622): the circadian map reaches ATP (runtime only, default off)
 
 
 @router.post("/configure")
 async def configure(req: ConfigureRequest):
     _hb_mod.heartbeat.configure(req.interval_seconds, req.auto_evolve, req.auto_economy,
                                 req.auto_align, auto_compliance=req.auto_compliance,
-                                auto_ship=req.auto_ship)
+                                auto_ship=req.auto_ship, auto_metabolic=req.auto_metabolic,
+                                metabolic_every=req.metabolic_every, circadian_to_atp=req.circadian_to_atp)
     return _hb_mod.heartbeat.status()

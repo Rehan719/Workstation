@@ -152,6 +152,109 @@ TENDING_ABSENT_MEANS = ("an entity registered before these fields existed carrie
                         "stop that")
 
 
+#  P3.26 clause (2) (W605) — THE ENTITY'S LIFE CYCLE. Before this an entity was "living" or deleted: status had
+#  one value, the heartbeat tended every row it found, and deregister erased the record outright (with no
+#  caller). The states are the clause's own five. Three things are deliberate:
+#    · DORMANCY IS SELF-SERVICE and reversible: a dormant entity is not operated and costs nothing, and wake
+#      returns it to the state it left, which is remembered rather than guessed;
+#    · RETIREMENT IS NOT A STATE ANYONE CAN SET HERE. Death is governed through Change Control (clause 3 builds
+#      that apply step), so this refuses it and says so;
+#    · juvenile -> mature -> senescent have NO MEASURED TRIGGER in this platform, and inventing a cycle-count
+#      threshold would put a fabricated age on every entity. They move only by an explicit, recorded transition.
+LIFECYCLE_STATES = ("juvenile", "mature", "senescent", "dormant", "retired")
+_LIFECYCLE_OPERABLE = ("juvenile", "mature", "senescent")
+_LIFECYCLE_TRANSITIONS = {
+    "juvenile": ("mature", "dormant"),
+    "mature": ("senescent", "dormant"),
+    "senescent": ("dormant",),
+    "dormant": (),          # leaves only by wake, back to the state it came from
+    "retired": (),
+}
+LIFECYCLE_ABSENT_MEANS = ("an entity registered before the life cycle existed carries no state; it was being "
+                          "tended already, so it is read as OPERABLE and reported as UNRECORDED - never as a "
+                          "state it was not given")
+
+
+def _operated_phrase() -> str:
+    """W625 (FU-543, M2 v9 R6.4) — OPERABLE IS NOT OPERATED. The record said "operated by the organism" whenever the
+    life cycle allowed it, while the heartbeat's economy lever (Self-run) was off and so nothing operated it. The
+    phrase now reads the lever."""
+    try:
+        from agentic_core.organism.heartbeat import heartbeat as _hb625
+        _on = bool(getattr(_hb625, "auto_economy", False))
+    except Exception:
+        return "operable - whether the organism is operating it could not be read"
+    return ("operable, and operated by the organism (Self-run is on; one entity per beat)" if _on else
+            "operable, but NOT operated: the heartbeat's Self-run lever is off, so nothing runs its cycles")
+
+
+def lifecycle(rec: Dict[str, Any]) -> Dict[str, Any]:
+    """This entity's life-cycle state, whether the organism may operate it, and the basis for both."""
+    st = rec.get("lifecycle_state") if isinstance(rec, dict) else None
+    if st is None:
+        return {"state": None, "recorded": False, "operable": True, "basis": LIFECYCLE_ABSENT_MEANS}
+    if st not in LIFECYCLE_STATES:
+        return {"state": st, "recorded": True, "operable": False,
+                "basis": (f"the recorded state {st!r} is not one of {', '.join(LIFECYCLE_STATES)}, so whether "
+                          f"it may be operated is NOT KNOWN and it is not operated")}
+    _op = st in _LIFECYCLE_OPERABLE
+    return {"state": st, "recorded": True, "operable": _op,
+            "basis": (f"{st}: " + _operated_phrase() if _op else
+                      f"{st}: NOT operated - " + ("dormancy is self-service and reversible, and costs nothing"
+                                                  if st == "dormant" else
+                                                  "a retired entity's record is kept and nothing operates it"))}
+
+
+def set_lifecycle(vsb_id: str, to: str, by: str = "", note: str = "") -> Dict[str, Any]:
+    """Move an entity along its life cycle, or REFUSE naming the rule. Recorded with who moved it and when."""
+    from agentic_core.config import store_lock
+    to = str(to or "").strip().lower()
+    who = str(by or "").strip()
+    out = {"vsb_id": vsb_id, "changed": False, "from": None, "to": to, "refused": None, "basis": ""}
+    if to == "retired":
+        out.update(refused="retirement_is_governed",
+                   basis=("REFUSED: death is governed through Change Control and is never set directly. "
+                          "Propose a removal, which checks the never-auto-retire rules before anything moves"))
+        return out
+    if to not in LIFECYCLE_STATES and to != "awake":
+        out.update(refused="unknown_state", basis=f"REFUSED: {to!r} is not a life-cycle state")
+        return out
+    if not who:
+        out.update(refused="unattributed",
+                   basis="REFUSED: a life-cycle transition records WHO made it, and none was named")
+        return out
+    with store_lock(_STORE):
+        d = _load()
+        rec = d.get(vsb_id)
+        if not isinstance(rec, dict):
+            out.update(refused="not_on_roster", basis=f"REFUSED: {vsb_id} is not on the living roster")
+            return out
+        cur = rec.get("lifecycle_state") or "juvenile"
+        out["from"] = rec.get("lifecycle_state")
+        if to == "awake":
+            if cur != "dormant":
+                out.update(refused="not_dormant", basis=f"REFUSED: {vsb_id} is {cur}, not dormant, so there is nothing to wake")
+                return out
+            to = rec.get("dormant_from") if rec.get("dormant_from") in _LIFECYCLE_OPERABLE else "juvenile"
+            out["to"] = to
+        elif to not in _LIFECYCLE_TRANSITIONS.get(cur, ()):
+            out.update(refused="illegal_transition",
+                       basis=(f"REFUSED: {cur} may move to {', '.join(_LIFECYCLE_TRANSITIONS.get(cur, ())) or 'nothing'} "
+                              f"here, not {to}"))
+            return out
+        if to == "dormant":
+            rec["dormant_from"] = cur
+        else:
+            rec.pop("dormant_from", None)
+        rec["lifecycle_state"] = to
+        rec.setdefault("lifecycle_history", []).append({"from": cur, "to": to, "by": who, "at": _now(),
+                                                         "note": str(note or "")[:200]})
+        rec["lifecycle_basis"] = lifecycle(rec)["basis"]
+        _save(d)
+    out.update(changed=True, basis=f"{cur} -> {to}, recorded as made by {who}")
+    return out
+
+
 def resolve_parent(parent_vsb: str) -> Dict[str, Any]:
     """Three states for a claimed parent. A LOOKUP ONLY — it refuses nothing; the routes do that.
 
@@ -160,7 +263,7 @@ def resolve_parent(parent_vsb: str) -> Dict[str, Any]:
     """
     pid = str(parent_vsb or "").strip()
     if not pid:
-        return {"state": NO_PARENT, "parent_vsb": None, "generation": 0,
+        return {"state": NO_PARENT, "parent_vsb": None, "lineage_generation": 0,
                 "basis": ("no parent was stated, so this entity has NONE - which is a fact about it and "
                           "not a field somebody forgot. An entity established directly by its founder is "
                           "the root of its own lineage, which makes it generation 0.")}
@@ -171,9 +274,12 @@ def resolve_parent(parent_vsb: str) -> Dict[str, Any]:
         #  `generation` was TEXT generation), so that clause's own stated test - "a guard drives generation
         #  0 and asserts NO re-score" - had nothing to drive. A generation is the DEPTH of the lineage chain
         #  this field creates, so it belongs here with the parent rather than in a second mechanism.
-        _pg = d[pid].get("generation")
+        #  FU-465 (W603) — the field is `lineage_generation` now, because `generation` already meant APPLIED
+        #  EVOLUTIONS in the VSB store. A roster record written W599-W602 carries the old key with the
+        #  lineage meaning, so it is read as a fallback here and nowhere else.
+        _pg = d[pid].get("lineage_generation", d[pid].get("generation"))
         _gen = (int(_pg) + 1) if isinstance(_pg, int) else 1
-        return {"state": PARENT_RESOLVED, "parent_vsb": pid, "generation": _gen,
+        return {"state": PARENT_RESOLVED, "parent_vsb": pid, "lineage_generation": _gen,
                 "basis": (f"spawned from {pid}, which was resolved on the living roster at creation - so "
                           f"this lineage names an entity that exists rather than an id somebody typed. "
                           f"Generation {_gen}: one deeper than its parent"
@@ -181,7 +287,7 @@ def resolve_parent(parent_vsb: str) -> Dict[str, Any]:
                              ", whose own generation was not recorded (it predates the field), so this is "
                              "counted as 1 rather than guessed from a chain that cannot be walked")
                           + ".")}
-    return {"state": PARENT_UNRESOLVED, "parent_vsb": None, "generation": None,
+    return {"state": PARENT_UNRESOLVED, "parent_vsb": None, "lineage_generation": None,
             "basis": (f"the stated parent {pid!r} is not on the living roster. A lineage field that "
                       f"accepted this would claim a parent that never existed, and every clause reasoning "
                       f"over the lineage would then be reasoning about a fiction. The generation is None "
@@ -241,11 +347,16 @@ def register(vsb_id: str, name: str = "", entity_type: str = "waqf_ltd_hybrid",
                          #  ADDED, never folded into `status`: it already has readers.
                          "parent_vsb": _lin["parent_vsb"],
                          "lineage_state": _lin["state"],
-                         "generation": _lin["generation"],
+                         #  FU-465 — LINEAGE DEPTH, named so it cannot be read as vsb["generation"],
+                         #  which counts APPLIED EVOLUTIONS and is what P3.2 clause (5) gates on
+                         "lineage_generation": _lin["lineage_generation"],
                          "lineage_basis": _lin["basis"],
                          #  stated explicitly, so the record says what is true of it
                          "auto_economy": bool(auto_economy),
-                         "auto_compliance": bool(auto_compliance)}
+                         "auto_compliance": bool(auto_compliance),
+                         #  P3.26 clause (2) — born juvenile, and the record says what that means
+                         "lifecycle_state": "juvenile",
+                         "lifecycle_basis": "juvenile: " + _operated_phrase()}
             _save(d)
         return d[vsb_id]
 
@@ -558,6 +669,8 @@ def operate_one() -> Optional[Dict[str, Any]]:
         # the roster could not be used, which is a refusal by the platform, not a decision about anyone.
         return {"cycle_ran": False, "held": "roster_unavailable", "outcome": "refused", "note": str(e)}
     entries = [v for v in d.values() if isinstance(v, dict) and isinstance(v.get("vsb_id"), str)]
+    #  P3.26 clause (2) — a dormant or retired entity is not picked, so the beat stops operating it
+    entries = [v for v in entries if lifecycle(v)["operable"]]
     if not entries:
         return None
     # pick the least-recently-operated (None sorts first). §8 (W340) — FAIR under bursts: the
@@ -733,6 +846,11 @@ def operate_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
     target = d.get(vsb_id)
     if not target:
         return None
+    #  P3.26 clause (2) — REFUSED BEFORE ANYTHING IS CLAIMED OR POSTED, so a dormant entity costs nothing
+    _lc = lifecycle(target)
+    if not _lc["operable"]:
+        return {"vsb_id": vsb_id, "name": target.get("name"), "cycle_ran": False,
+                "held": f"lifecycle_{_lc['state']}", "outcome": "refused", "note": _lc["basis"]}
     # W505 (FU-287) — ONE visit at a time per entity. Everything below writes this entity's outcome fields
     # (last_hold, last_error, last_operated, operating_cycles), and two visits interleaving left the row
     # describing one of them while the counter reflected both.
@@ -897,8 +1015,16 @@ def _operate_vsb_claimed(vsb_id: str, target: Dict[str, Any], _visit: str,
             from agentic_core.economy.governance import retire_heartbeat_holds_for_consumed_events
             retire_heartbeat_holds_for_consumed_events(vsb_id)
         stamp = _now()
+        #  P3.28 clause (4) (FU-401) — THE GOVERNANCE RECORD, WHOLE. The policy gate states what it screened
+        #  and the limit of that screening on every pass, and governed_cycle_sync carries it; this return kept
+        #  only the word "passed", so the limit died one step before any surface. It is kept on the roster
+        #  record now, which is what the Cockpit's operating panel reads.
+        _g = res.get("governance") if isinstance(res.get("governance"), dict) else {}
+        _gov_record = {k: _g.get(k) for k in ("status", "gate", "screened", "coverage_limit", "label_screened")}
+        _gov_record["at"] = stamp
 
         def _ran(e: Dict[str, Any]) -> None:
+            e["last_governance"] = _gov_record
             e["operating_cycles"] = int(e.get("operating_cycles", 0)) + 1
             e["last_operated"] = stamp
             e.pop("last_hold", None)   # a real cycle ran — no standing hold implied
@@ -931,7 +1057,8 @@ def _operate_vsb_claimed(vsb_id: str, target: Dict[str, Any], _visit: str,
                 "revenue_recognised_wst": pend["revenue"],
                 "revenue_basis": ("recognised_events" if pend["events"]
                                   else "no_activity_maintenance_cycle"),
-                "governance": (res.get("governance") or {}).get("status")}
+                "governance": (res.get("governance") or {}).get("status"),
+                "governance_coverage": _gov_record}
     except Exception as e:
         # W468 — a visit that RAISED is still a visit: last_operated used to advance only on a cycle or a hold, so the
         # least-recently-operated pick chose the same failing entity on every beat and no other entity was tended again

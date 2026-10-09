@@ -10,7 +10,7 @@ import { provenanceBadge } from '../lib/api';
 // grounding counted none. The card already said "grounded in 0 directives" beside three invented
 // bullets; a count a reader has to cross-check against prose is not a disclosure.
 type CeoMessage = { role: string; content: string; servedBy?: string | null; isExternal?: boolean; grounding?: any; groundingConflicts?: any[] };
-const GREETING = 'I am this enterprise\'s AI CEO, reporting to the Board. Ask me about priorities, the living plan, the business plan or the C-Suite — I answer from the record, and every answer says who served it.';
+const GREETING = 'I am this enterprise\'s AI CEO, reporting to the Board. Ask me about priorities, the living plan, the business plan or the C-Suite — I am handed the record for this scope, and every answer says who served it and which records it actually names.';
 
 export const CEOChat: React.FC = () => {
   const navigate = useNavigate();
@@ -289,7 +289,7 @@ export const CEOChat: React.FC = () => {
                    {m.role === 'assistant' && m.servedBy !== undefined && (() => { const b = provenanceBadge(m.servedBy, m.isExternal); return (
                      <div className="flex flex-wrap items-center gap-2 ml-2">
                        <span className={`text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>
-                       {m.grounding && <span className="text-[9px] text-slate-500" title="what the answer was grounded in">grounded in {m.grounding.directives ?? 0} directive{m.grounding.directives === 1 ? '' : 's'} · {m.grounding.objectives ?? 0} objective{m.grounding.objectives === 1 ? '' : 's'} · scope {m.grounding.scope}</span>}
+                       {m.grounding && <span data-testid="ceo-grounding-cited" className="text-[9px] text-slate-500" title={m.grounding.cited_basis ?? 'what the answer was handed'}>{/* W627 (FU-526) — handed is not used: the chip says what the answer NAMES */}handed {m.grounding.directives ?? 0} directive{m.grounding.directives === 1 ? '' : 's'} · {m.grounding.objectives ?? 0} objective{m.grounding.objectives === 1 ? '' : 's'} · the answer names {m.grounding.cited?.directives ?? 0} and {m.grounding.cited?.objectives ?? 0} · scope {m.grounding.scope}</span>}
                        {/* W574 (M1 R3.2) — the answer printed a "## Board directives" section with
                            three bullets while the chip beside it said "grounded in 0 directives".
                            A count the reader has to cross-check against the prose is not a
@@ -303,7 +303,10 @@ export const CEOChat: React.FC = () => {
                      </div>
                    ); })()}
                    {m.role === 'assistant' && (
-                     <div className="flex gap-3 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                     <div className="flex gap-3 ml-2 items-center">
+                        {/* W627 (FU-526) — these sat in opacity-0 under an ancestor with no `group`, so they never
+                            showed; and a rating is kept on this page only, which the label now says */}
+                        <span className="text-[9px] text-slate-500">rating stays on this page — not sent</span>
                         <button
                           type="button"
                           aria-label="Helpful"

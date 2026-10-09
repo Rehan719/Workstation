@@ -21,7 +21,7 @@ from __future__ import annotations
 import time
 from pathlib import Path
 from agentic_core.config import data_path
-from typing import Any, Callable, Dict, List, Set
+from typing import Any, Callable, Dict, List, Optional, Set
 
 from fastapi import APIRouter
 
@@ -31,15 +31,16 @@ router = APIRouter(prefix="/api/v1/transformation", tags=["vision-transformation
 
 
 # ── deep introspection of the live organism ───────────────────────────────────
-def _routes() -> Set[str]:
-    try:
-        from agentic_core.app_mvp import app
-        return {getattr(r, "path", "") for r in app.routes}
-    except Exception:
-        return set()
+def _routes() -> Optional[Set[str]]:
+    #  W613 (FU-504, M1 v8 R6.0) — the shared census: OpenAPI paths plus flat routes, and None (not an empty
+    #  set) when it cannot be read, so an unreadable census is never reported as "not mounted".
+    from agentic_core.route_inventory import mounted_paths
+    return mounted_paths()[0]
 
 
-def _has(routes: Set[str], prefix: str) -> bool:
+def _has(routes: Optional[Set[str]], prefix: str) -> Optional[bool]:
+    if routes is None:
+        return None
     return any(p.startswith(prefix) for p in routes)
 
 
@@ -69,6 +70,8 @@ def _evidence_counts() -> Dict[str, Any]:
     try:
         from agentic_core.organism.immune import immune
         d["organism_health"] = immune.status().get("health")
+        d["organism_health_basis"] = ("the immune system's health: AI-call failures and compliance regressions "
+                                      "only - route 5xx failures are not tracked")   # W635 (FU-587)
     except Exception:
         d["organism_health"] = None
     return d
@@ -142,20 +145,56 @@ _LONG_TERM = [
 ]
 
 
+#  W620 (FU-508, M2 v8 R6.4) — §17.5 INVARIANT 2, "a mandatory GaaS gate on every output", MEASURED rather than
+#  assumed. No global gate exists: gating is per route, and the one HTTP middleware observes and does not gate.
+#  The governance pillar used to be met by "the gaas router is mounted", which is true and says nothing about
+#  whether outputs pass a gate. This counts the API modules whose code calls one of the gates, and the pillar
+#  shows that figure and is not met until every module does. It is a CALL-SITE count, and says so: a module
+#  that calls a gate somewhere is not proof that every one of its outputs passes it.
+_GATE_CALLS = ("ai_text(", "query_meta(", "stream_meta(", ".intercept(", "_policy_verdict(",
+               "ConstitutionalPolicyGate", "intent_gate_result(", "console_pre_gate(")
+
+
+def _gaas_coverage() -> Dict[str, Any]:
+    import pathlib as _pl
+    api = _pl.Path(__file__).resolve().parent
+    mods = sorted(p for p in api.glob("*.py") if not p.name.startswith("_"))
+    gated = [p.stem for p in mods if any(c in p.read_text(encoding="utf-8", errors="replace") for c in _GATE_CALLS)]
+    return {"gated_modules": len(gated), "api_modules": len(mods),
+            "basis": (f"{len(gated)} of {len(mods)} API modules call a constitutional or output gate somewhere in "
+                      f"their code (a call-site count: it does not prove every output of those modules passes it). "
+                      f"There is NO global gate - the HTTP middleware observes and does not gate - so an output of "
+                      f"the other {len(mods) - len(gated)} passes no GaaS gate. §17.5 invariant 2 is NOT held.")}
+
+
 def _realise() -> Dict[str, Any]:
-    routes, data = _routes(), _evidence_counts()
+    from agentic_core.route_inventory import mounted_paths
+    routes, census = mounted_paths()
+    data = _evidence_counts()
     pillars = []
     total = 0.0
     for p in _PILLARS:
-        checks = [{"label": lbl, "met": bool(fn(routes, data))} for lbl, fn in p["evidence"]]
-        met = sum(1 for c in checks if c["met"])
-        frac = round(met / len(checks), 3) if checks else 0.0
+        checks = []
+        for lbl, fn in p["evidence"]:
+            _m = fn(routes, data)
+            checks.append({"label": lbl, "met": None if _m is None else bool(_m)})
+        if p["id"] == "governance":
+            _gc = _gaas_coverage()
+            checks.append({"label": (f"GaaS gate on EVERY output (§17.5 invariant 2): {_gc['gated_modules']} of "
+                                     f"{_gc['api_modules']} API modules"),
+                           "met": _gc["gated_modules"] == _gc["api_modules"], "basis": _gc["basis"]})
+        _assessed = [c for c in checks if c["met"] is not None]
+        met = sum(1 for c in _assessed if c["met"])
+        #  a check whose census could not be read is NOT ASSESSED, and is left out of the fraction rather
+        #  than counted as unmet
+        frac = round(met / len(_assessed), 3) if _assessed else 0.0
         status = "realised" if frac >= 0.999 else ("partial" if frac > 0 else "seed")
         total += frac
         pillars.append({"id": p["id"], "pillar": p["pillar"], "realisation": frac,
                         "status": status, "evidence": checks})
     overall = round(total / len(_PILLARS), 3) if _PILLARS else 0.0
     return {"overall_realisation": overall, "pillars": pillars, "evidence_counts": data,
+            "route_census": census,
             # W475 (ledger v4 R6.0) — this figure is API SURFACE COVERAGE (routers mounted, stores non-empty), not
             # delivery; the delivery measure is the plan's item states at /api/v1/plan/state.
             "measure": "API surface coverage — pillar routers mounted and stores non-empty; not delivery "

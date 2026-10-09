@@ -125,8 +125,10 @@ async def get_state():
     state: Dict[str, Any] = {"reconciled_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
 
     try:
-        from agentic_core.app_mvp import app
-        state["api_routes"] = len(app.routes)
+        #  W613 (FU-504) — len(app.routes) counted an included router as ONE route on FastAPI 0.142 (95 for 521)
+        from agentic_core.route_inventory import mounted_paths
+        _paths, state["api_routes_census"] = mounted_paths()
+        state["api_routes"] = None if _paths is None else len(_paths)
     except Exception:
         pass
     try:
@@ -159,6 +161,7 @@ async def get_state():
         from agentic_core.organism.immune import immune
         imm = immune.status()
         state["organism_health"] = imm.get("health")
+        state["organism_health_basis"] = ("the immune system's health: AI-call failures and compliance regressions only - route 5xx failures are not tracked")   # W635 (FU-587)
         state["threat_level"] = imm.get("threat_level")
     except Exception:
         pass

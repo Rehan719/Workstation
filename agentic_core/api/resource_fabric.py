@@ -1223,10 +1223,25 @@ async def run_composition(cid: str, req: RunCompositionRequest,
         raise HTTPException(status_code=400, detail="Composition has no resources to run.")
 
     objective = req.objective or f"Execute the '{comp['name']}' configuration for {comp.get('usage_area', 'synthesis')}."
+    # W618 (FU-495, M2 v8 R4.1) — THE USER'S OBJECTIVE IS IN EVERY STAGE'S OWN INSTRUCTION. It reached the swarm
+    # only as `context`, which the orchestrator renders "Prior context:" - the label for a previous stage's output -
+    # so no stage read it, and a run with an objective returned the same output as one without. Labelled
+    # "Objective:", which every stage's subject and terms read. A defaulted objective is the platform's sentence and
+    # is not added under the user's label.
+    if req.objective:
+        for _st in stages:
+            _st["instruction"] += f"\nObjective: {req.objective}"
     from agentic_core.ai.native import orchestrator
     _t0 = time.time()
+    #  W627 (FU-531) - a composition run passes the same constitutional pre-gate and checkpoint as /swarm
+    from agentic_core.ai.gateway import console_pre_gate, console_post_gate
+    _halt = console_pre_gate("composition-run")
+    if _halt:
+        return {"composition_id": cid, "refused": True,
+                "final": f"[CONSTITUTIONAL REFUSAL] {_halt.get('refused_reason')}", "governance_checkpoint": _halt}
     res = await orchestrator.swarm("composition-run", stages, context=objective,
                                    prefer_external=req.prefer_external, timeout=req.timeout)
+    _gov_checkpoint = console_post_gate("composition-run", str(res.get("final") or ""))
     # §10/§8 — the combined run is gated by the living QMS + document-controlled under the QMS
     qa = await assure_delivery(res.get("final", ""), [r["name"] for r in comp["resources"]],
                                label="composition_run",
@@ -1422,6 +1437,7 @@ async def run_composition(cid: str, req: RunCompositionRequest,
     return {"run_id": run_id, "plan_binding": plan_binding, "run_record": run_record,
             "composition_id": cid, "name": comp["name"], "usage_area": comp.get("usage_area"),
             "objective": objective, "posture": "in-house-first", "quality_assurance": qa,
+            "governance_checkpoint": _gov_checkpoint,
             # W273 — run-time honesty: the design's simulation verdicts (explicit warning when
             # either failed — never silent, never a hard wall) + which resources got per-run overrides.
             "commit_ready": commit_ready, "usage_area_supported": _area_ok,
@@ -1804,8 +1820,15 @@ async def run_swarm(req: RunSwarmRequest, user: dict | None = Depends(get_curren
     # W509 (FU-009) — the run's own identity, minted BEFORE the run so the outcome row, the ledger entry
     # and the response all cite the same one. Without it a cascade run could not be referred to at all.
     swarm_run_id = f"sr-{uuid.uuid4().hex[:8]}"
+    #  W627 (FU-531) - a saved cascade passes the same constitutional pre-gate and checkpoint as /swarm
+    from agentic_core.ai.gateway import console_pre_gate, console_post_gate
+    _halt = console_pre_gate(req.agent)
+    if _halt:
+        return {"run_id": swarm_run_id, "swarm_id": req.swarm_id, "refused": True, "trace": [],
+                "final": f"[CONSTITUTIONAL REFUSAL] {_halt.get('refused_reason')}", "governance_checkpoint": _halt}
     res = await orchestrator.swarm(req.agent, stages, context=context,
                                    prefer_external=req.prefer_external, timeout=req.timeout)
+    res["governance_checkpoint"] = console_post_gate(req.agent, str(res.get("final") or ""))
     _ms = int((time.time() - _t0) * 1000)
     # W509 (FU-009) — what genuinely served each stage, and what each stage ASKED for. A stage whose
     # request was not honoured is visible here rather than silently served by something else.

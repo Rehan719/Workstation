@@ -86,6 +86,8 @@ from typing import Any, Literal
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from agentic_core.api._strict_models import STRICT
+
 from agentic_core.ai.gateway import gateway
 from agentic_core.auth.core import auth_enabled, get_current_user, request_owner_id, require_admin
 from agentic_core.organism.biobus import biobus
@@ -289,6 +291,11 @@ _TIER_MAP: dict[str, ImpactTier] = {
     "security_change":      "HIGH",
     "integration_add":      "LOW",
     "integration_remove":   "MEDIUM",
+    # P3.26 clause (3) (W608) — the death of an entity is a MAJOR change: twin pre-validation, and Board
+    # ratification when a review rather than the Owner approved it
+    "entity_retirement":    "HIGH",
+    # P3.26 clause (5) (W609) — an entity dividing creates a new one and moves funds: also MAJOR
+    "entity_mitosis":       "HIGH",
     # W464 (FU-014, the Owner's ruling of 2026-09-14) — both fell through to MEDIUM by the default, so their tier
     # was an accident rather than a decision. A code correction is HIGH (a review's approval waits for Board
     # ratification); a material economy action is CRITICAL (decided only by the Owner's explicit decision).
@@ -314,7 +321,9 @@ def _tier_raise(description: str) -> str | None:
 
 
 def _determine_tier(change_type: str, description: str) -> ImpactTier:
-    base = _TIER_MAP.get(change_type, "MEDIUM")
+    #  W635 (FU-582) - an UNRECOGNISED change type fails closed at HIGH (a review, never an auto-approval); it was
+    #  filed at MEDIUM without a word, and an AI CEO 'genome_change' was auto-approved that way
+    base = _TIER_MAP.get(change_type, "HIGH")
     # Elevate if the description names something constitutional or organism-wide. Failing closed here is
     # right; doing it without telling the caller is what FU-157 (S1.18) is about, so submit() records the
     # raise and the response says which phrase did it.
@@ -504,6 +513,7 @@ def _decision_fields(c: dict) -> dict:
 # ── Request models ────────────────────────────────────────────────────────────
 
 class ConfigChangeSpec(BaseModel):
+    model_config = STRICT   # W628 (FU-398): an undeclared field here is a lost instruction - see _strict_models
     # W438 — the CCA's execution arm for organism configuration. Either one (section, key, value)
     # change or reset: true. Validated/coerced at SUBMIT time so an unappliable change can never
     # be approved, and APPLIED by /implement (which used to only mark, never execute).
@@ -588,6 +598,7 @@ _ROOT_FOR_FORECAST = Path(__file__).resolve().parents[2]
 
 
 class SubmitChangeRequest(BaseModel):
+    model_config = STRICT   # W628 (FU-398): an undeclared field here is a lost instruction - see _strict_models
     title: str
     change_type: str = "config_minor"
     description: str
@@ -609,6 +620,7 @@ class SubmitChangeRequest(BaseModel):
 
 
 class ReviewDecision(BaseModel):
+    model_config = STRICT   # W628 (FU-398): an undeclared field here is a lost instruction - see _strict_models
     # W459 — the override used to be free text: `override_decision: "implemented"` jumped a CRITICAL
     # change straight past approval with nothing applied and no pre-validation recorded, and any
     # other word was written into `status` outside the ChangeStatus vocabulary.
@@ -756,7 +768,8 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
     # phrase in the description can raise it to CRITICAL; the record carried no trace, so the page appeared to
     # contradict itself. `_raised_by` is None whenever the type's own tier stands.
     _raised_by = _tier_raise(req.description)
-    _tier_from = _TIER_MAP.get(change_type, "MEDIUM")
+    _tier_from = _TIER_MAP.get(change_type, "HIGH")
+    _type_unrecognised = change_type not in _TIER_MAP
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     # the name on the record is the authenticated one when there is one; otherwise the caller's
     _by = principal or req.submitted_by or "system"
@@ -836,6 +849,9 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
         "submitted_by_verified": bool(principal) and auth_enabled(),
         "submitted_at": now,
         "impact_tier": tier,
+        **({"change_type_unrecognised": (f"'{change_type}' is not a known change type, so it was filed at HIGH (a "
+                                         f"review, never an auto-approval). Known types: {sorted(_TIER_MAP)}")}
+           if _type_unrecognised else {}),
         **({"impact_tier_raised_by": _raised_by, "impact_tier_raised_from": _tier_from,
             "impact_tier_raised_because": (
                 f"the description names {_raised_by!r}, which raises any change to CRITICAL whatever its "
@@ -1002,6 +1018,8 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
     return {
         "cca_id": cca_id,
         "impact_tier": tier,
+        **({"change_type_unrecognised": change.get("change_type_unrecognised")}   # W635 (FU-582)
+           if change.get("change_type_unrecognised") else {}),
         "status": change["status"],
         # W505 (FU-157) — the facts the caller needs to describe what happened. S1.11: the gate's own
         # measurement, so no caller has to invent the word "healthy" over a composite that is 60%
@@ -1047,6 +1065,7 @@ async def submit_change_route(req: SubmitChangeRequest,
 
 
 class ImmuneReconfigureRequest(BaseModel):
+    model_config = STRICT   # W628 (FU-398): an undeclared field here is a lost instruction - see _strict_models
     # Default reads the LIVE immune threat. `simulate_threat` is an honest demonstration/test input
     # that exercises the defensive mapping without mutating global immune state.
     simulate_threat: str | None = None
@@ -1915,6 +1934,33 @@ def _implement_locked(cca_id: str, force: bool, principal: str, verified: bool,
         c["audit_trail"].append({"event": "config_applied", "ts": now, "applied": applied,
                                  "consumer": consumer})
 
+    # P3.26 clauses (3) and (7) (W608) — A RETIREMENT IS APPLIED HERE AND NOWHERE ELSE, and it re-checks the
+    # never-auto-retire rules first: an entity can become protected between filing and approval.
+    _retirement_effect = None
+    if c.get("change_type") == "entity_retirement":
+        from agentic_core.economy.turnover import apply_retirement
+        _ret = apply_retirement(str(c.get("vsb_id") or ""), cca_id)
+        if not _ret.get("retired"):
+            c["audit_trail"].append({"event": "implement_refused_protected", "ts": now, "by": principal,
+                                     "by_verified": verified, "basis": _ret.get("basis")})
+            _save_change(c)
+            raise HTTPException(status_code=409, detail=_ret)
+        applied = _ret
+        _retirement_effect = _ret["basis"]
+        c["audit_trail"].append({"event": "entity_retired", "ts": now, "applied": _ret})
+    # P3.26 clause (5) (W609) — MITOSIS is applied here and nowhere else, re-checking maturity and funds
+    if c.get("change_type") == "entity_mitosis":
+        from agentic_core.economy.turnover import apply_mitosis
+        _mit = apply_mitosis(str(c.get("vsb_id") or ""), cca_id, c.get("mitosis") or {})
+        if not _mit.get("divided"):
+            c["audit_trail"].append({"event": "implement_refused_mitosis", "ts": now, "by": principal,
+                                     "by_verified": verified, "basis": _mit.get("basis")})
+            _save_change(c)
+            raise HTTPException(status_code=409, detail=_mit)
+        applied = _mit
+        _retirement_effect = _mit["basis"]
+        c["audit_trail"].append({"event": "entity_divided", "ts": now, "applied": _mit})
+
     c["status"] = "implemented"
     c["implemented_at"] = now
     _record_variance(c, now, "implemented")                   # W581 (FU-313) — the SECOND of two sites
@@ -1925,6 +1971,7 @@ def _implement_locked(cca_id: str, force: bool, principal: str, verified: bool,
     _effect = "applied" if applied else "recorded_only"
     c["implementation_effect"] = _effect
     c["implementation_effect_basis"] = (
+        _retirement_effect if _retirement_effect else
         "the change carried a config_change payload and the reconfiguration engine applied it"
         if applied else
         "this change carried nothing for the platform to apply, so implementing it recorded the decision and "

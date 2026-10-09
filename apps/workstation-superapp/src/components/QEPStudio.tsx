@@ -15,7 +15,7 @@ interface Surah { number: number; name_arabic: string; name_transliteration: str
 interface Ayah { number_in_surah: number; text_arabic: string }
 interface HifzProgress { total_ayaat_in_schedule: number; total_ayaat_memorised: number; due_today: number; due_refs: string[]; total_sessions: number }
 interface GamiState { xp: number; level: number; level_basis: string; achievements: string[]; streak_days: number; streak_basis: string; awards_recorded: number; scope: string }
-interface Recall { comparable: boolean; reason?: string; text_similarity?: number; similarity_basis?: string; missing_rule_markers?: string[]; markers_basis?: string; scope?: string }
+interface Recall { comparable: boolean; reason?: string; text_similarity?: number; similarity_basis?: string; exact_similarity?: number; exact_similarity_basis?: string; missing_rule_markers?: string[]; markers_basis?: string; scope?: string }
 
 const UID = 'local';
 
@@ -121,7 +121,9 @@ export const QEPStudio: React.FC = () => {
     if (!reviewAyah) return;
     setBusy('recall'); setErr('');
     try {
-      const d = await apiJson('/api/v1/qep/tajweed/analyse', { method: 'POST', body: { ayah_text: reviewAyah.text_arabic, recited_text: recallText } });
+      // W630 (FU-545) — the server fetches the reference from surah + ayah; the page no longer supplies it
+      const [rs, ra] = (reviewRef ?? '').split(':').map(Number);
+      const d = await apiJson('/api/v1/qep/tajweed/analyse', { method: 'POST', body: { surah: rs, ayah: ra, recited_text: recallText } });
       setRecall(d.comparison);
     } catch (e) { setErr(errorMessage(e)); }
     setBusy('');
@@ -129,7 +131,9 @@ export const QEPStudio: React.FC = () => {
 
   // ── lesson plans (provenance disclosed) ──
   const [rule, setRule] = useState('idgham');
-  const [lesson, setLesson] = useState<{ lesson_plan: string; served_by: string; floor_served: boolean; floor_note?: string; disclaimer: string } | null>(null);
+  // W613 (FU-477) — review_state / review_note / withheld_note are TYPED and RENDERED: a withheld lesson
+  // showed the "outline" chip and an empty box, and never the reason nothing appeared.
+  const [lesson, setLesson] = useState<{ lesson_plan: string | null; served_by: string; floor_served: boolean; floor_note?: string; disclaimer: string; review_state?: string; review_note?: string; withheld_note?: string | null } | null>(null);
   const runLesson = async () => {
     setBusy('lesson'); setErr(''); setLesson(null);
     try { setLesson(await apiJson('/api/v1/qep/tajweed/lesson', { method: 'POST', body: { rule_name: rule } })); }
@@ -355,8 +359,13 @@ export const QEPStudio: React.FC = () => {
                 </Button>
                 {recall && (recall.comparable ? (
                   <div className="mt-2">
-                    <p className="text-[11px] text-white">written similarity {Math.round((recall.text_similarity ?? 0) * 100)}% <span className="text-[9px] text-slate-600" title={recall.similarity_basis}>(normalised Levenshtein)</span></p>
+                    {/* W617 (FU-478) — the letters figure leads, and each figure says what it compares */}
+                    <p className="text-[11px] text-white" data-testid="recall-letters">letters similarity {Math.round((recall.text_similarity ?? 0) * 100)}% <span className="text-[9px] text-slate-500">(diacritics and Uthmani marks not counted)</span></p>
+                    {recall.exact_similarity != null && (
+                      <p className="text-[9px] text-slate-500" title={recall.exact_similarity_basis} data-testid="recall-exact">with every mark counted: {Math.round(recall.exact_similarity * 100)}% — {recall.exact_similarity_basis}</p>
+                    )}
                     {(recall.missing_rule_markers ?? []).map((m, i) => <p key={i} className="text-[9px] text-amber-400">{m}</p>)}
+                    {recall.markers_basis && <p className="text-[8px] text-slate-600" data-testid="recall-markers-basis">{recall.markers_basis}</p>}
                     <p className="text-[8px] text-slate-600 italic mt-1">{recall.scope}</p>
                   </div>
                 ) : <p className="text-[10px] text-amber-400 mt-2">{recall.reason}</p>)}
@@ -381,10 +390,14 @@ export const QEPStudio: React.FC = () => {
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
               <div className="flex gap-1.5 mb-1.5">
                 <Chip tone={lesson.floor_served ? 'warn' : 'ok'}>served by {lesson.served_by}</Chip>
-                {lesson.floor_served && <Chip tone="warn">outline, not a lesson</Chip>}
+                {lesson.lesson_plan == null
+                  ? <Chip tone="warn">withheld — not scholar-reviewed</Chip>
+                  : lesson.floor_served && <Chip tone="warn">outline, not a lesson</Chip>}
               </div>
               {lesson.floor_note && <p className="text-[9px] text-amber-200/70 italic mb-1.5">{lesson.floor_note}</p>}
-              <p className="text-[11px] text-slate-300 whitespace-pre-wrap max-h-40 overflow-y-auto">{lesson.lesson_plan}</p>
+              {lesson.lesson_plan == null
+                ? <p className="text-[11px] text-amber-200/80" data-testid="qep-lesson-withheld">{lesson.withheld_note || lesson.review_note || 'Withheld: this lesson has not been approved by a scholar.'}</p>
+                : <p className="text-[11px] text-slate-300 whitespace-pre-wrap max-h-40 overflow-y-auto">{lesson.lesson_plan}</p>}
               <p className="text-[8px] text-slate-600 italic mt-1.5">{lesson.disclaimer}</p>
             </div>
           )}
@@ -402,7 +415,7 @@ export const QEPStudio: React.FC = () => {
                 : 'unavailable — the floor cannot translate; Translate will refuse'}
             </Chip>
           </p>
-          <p className="text-[9px] text-slate-600 mb-2">A translation must come from a model. When only the deterministic floor is available, this REFUSES — the floor's output will never be presented as a translation of sacred text.{trStatus?.tajweed_note ? ` ${trStatus.tajweed_note}` : ''}</p>
+          <p className="text-[9px] text-slate-600 mb-2">{/* W631 (FU-546) */}Arabic / Qur'anic text is NOT translated here, by ruling, whatever model is available — Qur'an translations come only from licensed, sourced editions. This tool is for non-Arabic educational text, and even then only a model may translate; the floor refuses.{trStatus?.tajweed_note ? ` ${trStatus.tajweed_note}` : ''}</p>
           <textarea value={trText} onChange={e => setTrText(e.target.value)} rows={2}
             className="w-full text-[11px] bg-slate-950 border border-slate-900 rounded-lg p-2 text-slate-300 mb-2" placeholder="Arabic educational text…" />
           <Button onClick={runTranslate} disabled={busy === 'translate' || !trText.trim()} className="flex items-center gap-1.5 bg-slate-900 text-aura text-[10px]">

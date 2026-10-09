@@ -104,13 +104,42 @@ def _phrases(prompt: str, n: int = 6) -> List[str]:
     return out[:n]
 
 
+#  W631 (FU-557) - words that mark a request about a PERSON's work (pay, a role, a CV), not a venture's market
+_PERSONAL_MARKERS = ("salary", "negotiation coach", "compensation", "career", "curriculum vitae", " cv ",
+                     "résumé", "resume", "interview", "job offer", "pay rise", "target role")
+
+
 def _field(prompt: str, *labels: str) -> str:
-    """Extract the value after a 'Label:' marker (first match wins), one line, trimmed."""
+    """Extract the value after a 'Label:' marker (first match wins), one line, trimmed.
+
+    W627 (FU-530) - an exact-case label is tried first, as before, so the label order still decides. Only if
+    NO label matched exactly is each tried again ignoring case, as a whole word and with a colon only: Studio
+    writes 'CHALLENGE:' and the tree writes 'Overall goal:' / 'Your task:', and an exact-case scan dropped all
+    three and then told the reader the request had no subject. The hyphen separator stays exact-case so
+    'user-friendly' in running text is never read as a 'User' field."""
     for lab in labels:
         m = re.search(rf"{re.escape(lab)}\s*[:\-]\s*(.+)", prompt)
         if m:
             return m.group(1).strip().splitlines()[0].strip()[:140]
+    for lab in labels:
+        #  [ \t]* not \s*: a value on the NEXT line is a block, not this field ('Prior context:\n<carried
+        #  output>' was read as a 'Context' field and the previous stage's headings became the user's terms)
+        m = re.search(rf"(?<![A-Za-z]){re.escape(lab)}[ \t]*:[ \t]*(\S.*)", prompt, re.IGNORECASE)
+        if m:
+            return m.group(1).strip().splitlines()[0].strip()[:140]
     return ""
+
+
+#  W627 (FU-530) - a prompt that is ONE line and carries no 'Label:' marker at all IS the request: nothing
+#  the platform adds (a realm directive, a carried stage, a preamble) arrives on the same line without a label.
+_ANY_LABEL = re.compile(r"(?m)^\s*[A-Za-z][\w /&'-]{0,40}:\s")
+
+
+def _unlabelled_request(prompt: str) -> str:
+    text = (prompt or "").strip()
+    if not text or "\n" in text or _ANY_LABEL.search(text):
+        return ""
+    return text[:220]
 
 
 def _role(prompt: str) -> str:
@@ -128,7 +157,9 @@ def _role(prompt: str) -> str:
 _SUBJECT_LABELS = ("User", "Problem", "Challenge", "Objective", "Mission", "Concept", "Topic",
                    "Research question", "Question", "Task / question", "Task", "Hypothesis",
                    "Target role", "Current situation", "Concern", "Subject", "Search query",
-                   "Brief", "Design", "Vision", "Commercialisation", "Product", "Scope", "Description")
+                   "Brief", "Design", "Vision", "Commercialisation", "Product", "Scope", "Description",
+                   #  W627 (FU-530) - the tree's node prompt names its subject 'Overall goal:' / 'Goal:'
+                   "Goal")
 
 
 def _subject(prompt: str) -> str:
@@ -158,6 +189,11 @@ def _subject(prompt: str) -> str:
     field = _field(prompt, *_SUBJECT_LABELS)
     if len(field) > 8:
         return field[:220]
+    #  W627 (FU-530) - an unlabelled one-line request is its own subject ('Write a mission statement for a
+    #  bakery cooperative' was answered "the request carries no labelled subject")
+    _whole = _unlabelled_request(prompt)
+    if len(_whole) > 8:
+        return _whole
     #  NO LABEL MATCHED, SO THERE IS NO SUBJECT TO REPORT. This returned THE LONGEST SENTENCE, and in a
     #  prompt carrying a realm directive the longest sentence IS the directive - which is how a report on a
     #  Kenyan clinic opened "Subject: Lead with the decision and its cost...". A fall-through presented as a
@@ -176,7 +212,7 @@ _CONTENT_LABELS = ("User", "Problem", "Challenge", "Objective", "Concept", "Desi
                    "Profile", "Experience", "Subject", "Assessment", "Description",
                    "Current draft", "Refinement instruction", "Search query", "Scope",
                    "Product", "Ingredients", "Care setting", "Identified care needs",
-                   "Prior knowledge", "Context", "Task",
+                   "Prior knowledge", "Context", "Task", "Goal",
                    #  W593 — THE REALM IS PART OF THE REQUEST. It reached the composition only through
                    #  `_subject`'s fall-through to the longest sentence (the unlabelled realm DIRECTIVE
                    #  line), so removing that fall-through made two realms produce a byte-identical
@@ -195,6 +231,19 @@ _CONTENT_LABELS = ("User", "Problem", "Challenge", "Objective", "Concept", "Desi
 _CARRIED_LABELS = ("Prior context", "Realm")
 
 
+#  W618 (FU-500, M2 v8 R5.1) — FIELDS WHOSE VALUE IS A BLOCK, NOT A LINE. The Law Document Analyser sends
+#  "DOCUMENT:\n<the user's document>" and the Care tools "Patient profile:\n  key: value …"; `_field` reads one
+#  line after a label and its labels are case-sensitive, so none of these reached the floor, which printed
+#  "(no salient terms extracted)" under "Red Flags" over a document it never read. A block runs to the next
+#  blank line.
+_BLOCK_LABELS = ("DOCUMENT", "Patient profile", "Patient observations/data (as recorded)")
+
+
+def _block(prompt: str, label: str, limit: int = 3000) -> str:
+    m = re.search(rf"(?m)^{re.escape(label)}\s*:[ \t]*\n?(.*?)(?:\n[ \t]*\n|\Z)", prompt, re.S)
+    return m.group(1).strip()[:limit] if m else ""
+
+
 def _content_parts(prompt: str, *, for_terms: bool = False) -> List[str]:
     """The prompt's content-field values, ONE PER FIELD, so nothing is read across a field boundary.
 
@@ -209,7 +258,8 @@ def _content_parts(prompt: str, *, for_terms: bool = False) -> List[str]:
     """
     labels = tuple(lab for lab in _CONTENT_LABELS
                    if not (for_terms and lab in _CARRIED_LABELS))
-    return [v for lab in labels if (v := _field(prompt, lab))]
+    return ([v for lab in labels if (v := _field(prompt, lab))]
+            + [b for lab in _BLOCK_LABELS if (b := _block(prompt, lab))])
 
 
 def _content(prompt: str) -> str:
@@ -238,7 +288,8 @@ class NativeReasoningEngine:
         # list of the stage that followed.
         prompt = _strip_carried(prompt)
         subject = _subject(prompt)
-        domain = _field(prompt, "Domain") or "the stated domain"
+        #  W631 (FU-556) - an unnamed domain is WITHHELD, not filled with a placeholder that reads as a reading
+        domain = _field(prompt, "Domain") or "WITHHELD — the request named no domain"
         role = _role(prompt)
         content = _content(prompt)
         #  W593 (P2.20 a.ii) — THE TERMS COME FROM THE USER'S OWN FIELDS, PER FIELD. The carried labels are
@@ -261,6 +312,17 @@ class NativeReasoningEngine:
         #  precedent is this engine's own: a floor cannot act on a style directive, and the honest move is
         #  to say so rather than to look as though it did (W434's candidates ruling, W498's withheld
         #  sections). A served model DOES act on the directive, and then this line is still true.
+        #  W627 (FU-519) - ATTACHED MATERIAL IS NAMED IN EVERY STAGE. The terms above are counted over all
+        #  the labelled fields, and in a later stage the earlier stages' text outnumbers an attached survey,
+        #  so 212 households, rainwater and greywater reached no stage after the concept. The document's own
+        #  terms are listed under a line that says what they are.
+        _doc = _block(prompt, "DOCUMENT")
+        if _doc:
+            _dt = [p for p in _phrases(_doc)] + [k for k in _keywords(_doc, n=8)]
+            _dt = [t for i, t in enumerate(_dt) if t not in _dt[:i]][:10]
+            if _dt:
+                lead += (f"_Attached material considered — its most frequent terms: {', '.join(_dt)}. This "
+                         f"engine lists them; it does not analyse the material._\n\n")
         _realm_named = _field(prompt, "Realm")
         if _realm_named:
             lead += (f"_Composed for the {_realm_named} realm. This engine RECORDS the realm and does not "
@@ -268,7 +330,9 @@ class NativeReasoningEngine:
                      f"directive only a served model can follow._\n\n")
 
         if sections:
-            blocks = [f"## {title}\n{self._section_body(title, subject, domain, terms)}" for title in sections]
+            _personal = any(w in prompt.lower() for w in _PERSONAL_MARKERS)      # W631 (FU-557)
+            blocks = [f"## {title}\n{self._section_body(title, subject, domain, terms, personal=_personal)}"
+                      for title in sections]
             body = lead + "\n\n".join(blocks)
         else:
             #  W593 (P2.20 a.i) — WHAT THE UNDERSTANDING LINE SAYS WHEN NO LABEL NAMED A SUBJECT. `_subject`
@@ -284,14 +348,29 @@ class NativeReasoningEngine:
             #  a heading that says "in your request" would be false. Withholding is the house move: W489
             #  renamed this heading and dropped "grounded in the input", W498 made the hadith tool withhold
             #  bigram-filled sections, and the halal tool already withholds three.
-            _termsec = (f"## Terms most frequent in your request\n"
+            #  W615 (FU-494, FU-503, M1 v8 R4.0 R5.4) — THE HEADING STOPS CLAIMING WHOSE WORDS THESE ARE.
+            #  "most frequent in YOUR REQUEST" was a claim this engine cannot check: a labelled field reaches it
+            #  the same way whether the user typed it, the platform composed it (the Native AI page's default
+            #  "Task: Analyse the objective and key factors"), an upstream node produced it ("Subject:" in a
+            #  workflow tree), or it is the entity's own grounding (the avatar's Objectives line). W593 fixed
+            #  this by excluding labels, one at a time, and v8 found it on two more surfaces, because a label
+            #  list can never know provenance. So the claim is removed rather than chased (ACCEPT 4): the list
+            #  is named for what it is counted over, and says that is not necessarily the user's words.
+            #  AND THE WITHHELD REASON IS THE TRUE ONE. A request in Arabic carries a labelled field; it was
+            #  withheld because the tokeniser counts Latin-script words only, and was told "no labelled field".
+            _has_fields = bool(_term_parts)
+            _termsec = (f"## Terms most frequent in this prompt's labelled fields\n"
                         f"_Extracted by counting words and adjacent pairs — not an analysis of "
-                        f"the subject, and counted only over the fields the request itself carries._\n"
+                        f"the subject. The fields can hold text the platform composed (an instruction, a "
+                        f"previous step's output, the entity's own records), so these are not necessarily "
+                        f"your words._\n"
                         f"{self._bullets(terms, 6)}\n\n" if terms else
-                        f"## Terms most frequent in your request\n"
-                        f"_WITHHELD: the request carries no labelled field for this engine to count, so any "
-                        f"list here would be counted over the platform's own prompt and this heading would "
-                        f"be false._\n\n")
+                        f"## Terms most frequent in this prompt's labelled fields\n"
+                        + (f"_WITHHELD: the labelled fields hold no word this engine can count — it counts "
+                           f"Latin-script words only, so text in another script yields no list. Nothing "
+                           f"was counted in its place._\n\n" if _has_fields else
+                           f"_WITHHELD: the prompt carries no labelled field for this engine to count, so any "
+                           f"list here would be counted over the platform's own prompt._\n\n"))
             body = (
                 f"{lead}## Understanding\n{_understanding}"
                 # W489 (sweep S4.6, C3) — "Key factors" named an analysis nobody performed. The bullets
@@ -309,15 +388,17 @@ class NativeReasoningEngine:
         return f"{_MARKER}\n\n{body}"
 
     # ── per-archetype structured scaffolds (useful, grounded, never fabricated) ──
-    def _section_body(self, title: str, subject: str, domain: str, terms: List[str]) -> str:
+    def _section_body(self, title: str, subject: str, domain: str, terms: List[str], personal: bool = False) -> str:
         t = title.lower()
 
         def has(*ks: str) -> bool:
             return any(k in t for k in ks)
 
         if has("risk", "gap", "failure", "weakness", "threat", "limitation"):
-            return ("Structured risk frame for this dimension — surface, don't invent:\n"
-                    + self._dims(terms, "Exposure on") +
+            #  W633 (FU-569) - the terms are words FROM THE REQUEST, not identified risks: worded as things to check
+            return ("Structured risk frame for this dimension — surface, don't invent. The items below are terms "
+                    "taken from the request to CHECK, not risks this engine identified:\n"
+                    + self._dims(terms, "Check:") +
                     "\n- Likelihood × impact to be scored; mitigations and owners to be assigned.\n"
                     "- The native engine flags areas needing attention; a model resource details them.")
         if has("architecture", "component", "system", "technical", "build", "mvp", "stack", "blueprint"):
@@ -359,7 +440,10 @@ class NativeReasoningEngine:
                     "- Unit economics: cost-to-serve vs price; contribution margin (to be quantified).\n"
                     + self._dims(terms[:3], "Stream from") +
                     "\n- Sensitivity: the key drivers to stress-test.")
-        if has("market", "value", "business model", "go-to-market", "gtm",
+        #  W631 (FU-557) - the go-to-market frame (segment, CAC, moat) belongs to a VENTURE. A salary plan or a CV
+        #  that carries a "Market Positioning" heading is about a person in a labour market, and filling it with
+        #  CAC and a moat contradicted the floor note beside it. Outside a venture the generic frame is used.
+        if not personal and has("market", "value", "business model", "go-to-market", "gtm",
                "commercial", "demand", "customer", "segment"):
             return (f"Structured go-to-market frame for: {subject}.\n"
                     "- Segment & need: who is served and the job-to-be-done.\n"

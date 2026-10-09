@@ -738,7 +738,7 @@ export const VSBCockpit: React.FC = () => {
                   ))}
                 </div>
                 {swarm.org && (
-                  <p className="text-[10px] text-slate-500 mt-4">Native delivery swarm: <span className="text-aura font-bold">{swarm.name || swarm.cascade_id}</span> · {(swarm.stages || []).length} stages · posture {swarm.posture || 'in-house'}</p>
+                  <p className="text-[10px] text-slate-500 mt-4" data-testid="vsb-swarm-template-note">Native delivery swarm: <span className="text-aura font-bold">{swarm.name || swarm.cascade_id}</span> · {(swarm.stages || []).length} stages · posture {swarm.posture || 'in-house'} · {/* W627 (FU-532) */}started from the same fixed template every VSB receives — not synthesised or optimised for this solution; edit its stages to make it this entity's own</p>
                 )}
                 {/* W508 (P2.8(2)) — EDIT CASCADE. The Cockpit showed the entity's delivery swarm and offered
                     no way to reconfigure it, while PUT /resources/swarm/{id} has done exactly that since
@@ -1187,6 +1187,43 @@ export const VSBCockpit: React.FC = () => {
                     <p data-testid="cockpit-cycle-counts-basis" className="text-[9px] text-slate-500 mt-1 leading-relaxed">
                       {String(operating._counts_basis ?? operating.operating_cycles_basis ?? '')}
                     </p>
+                    {/* P3.26 clause (2) — the life cycle; dormancy is self-service and reversible */}
+                    <p data-testid="cockpit-lifecycle" className="text-[10px] text-slate-300 mt-2">
+                      Life cycle: {operating.lifecycle_state ? String(operating.lifecycle_state) : 'UNRECORDED (registered before the life cycle existed; operated as before)'}
+                      {' '}
+                      {operating.lifecycle_state !== 'retired' && (
+                        <button type="button" data-testid="cockpit-lifecycle-toggle"
+                          className="ml-2 px-2 py-0.5 rounded border border-slate-700 text-[9px] text-slate-300 hover:bg-slate-800"
+                          onClick={async () => {
+                            const to = operating.lifecycle_state === 'dormant' ? 'awake' : 'dormant';
+                            const r = await axios.post<Dict>(`/api/v1/economy/living-vsbs/${selected}/lifecycle`, { to }, { validateStatus: () => true });
+                            if (r.status === 200 && r.data) setOperating({ ...operating, lifecycle_state: (r.data as Dict).to, lifecycle_basis: (r.data as Dict).basis });
+                            else setOperatingErr(`The life-cycle change was refused (HTTP ${r.status}): ${JSON.stringify((r.data as any)?.detail?.basis ?? r.data)}`);
+                          }}>
+                          {operating.lifecycle_state === 'dormant' ? 'Wake' : 'Make dormant'}
+                        </button>
+                      )}
+                    </p>
+                    {operating.lifecycle_basis && <p className="text-[9px] text-slate-600 leading-relaxed">{String(operating.lifecycle_basis)}</p>}
+                    {/* FU-470 — the lineage: whom this entity descends from, and how deep it sits */}
+                    <p data-testid="cockpit-lineage" className="text-[9px] text-slate-500 mt-2 leading-relaxed">
+                      {operating.lineage_state === 'resolved'
+                        ? <>Lineage: child of {String(operating.parent_vsb)} · lineage depth {String(operating.lineage_generation ?? operating.generation ?? 'unrecorded')} (depth from its founder, NOT the number of evolutions applied)</>
+                        : operating.lineage_state === 'no_parent'
+                          ? <>Lineage: established directly by its founder · lineage depth 0 (a root)</>
+                          : operating.lineage_state === 'unresolved'
+                            ? <>Lineage: a parent was stated and could not be resolved, so the depth is UNKNOWN</>
+                            : <>Lineage: not recorded (this entity predates the lineage field)</>}
+                      {operating.lineage_basis && <span className="block text-slate-600">{String(operating.lineage_basis)}</span>}
+                    </p>
+                    {/* P3.28 clause (4) — the last money cycle's governance, with what the gate did NOT read */}
+                    <p data-testid="cockpit-last-governance" className="text-[9px] text-slate-500 mt-2 leading-relaxed">
+                      {operating.last_governance && typeof operating.last_governance === 'object'
+                        ? <>Last cycle governance: {String((operating.last_governance as Dict).status ?? 'unrecorded')} by {String((operating.last_governance as Dict).gate ?? 'an unnamed gate')}
+                            {(operating.last_governance as Dict).screened ? ` · screened: ${String((operating.last_governance as Dict).screened)} ("${String((operating.last_governance as Dict).label_screened ?? '')}")` : ''}
+                            {(operating.last_governance as Dict).coverage_limit ? <span className="block text-slate-600">Limit: {String((operating.last_governance as Dict).coverage_limit)}</span> : null}</>
+                        : <>No governed cycle is recorded for this entity yet, so no governance status is shown.</>}
+                    </p>
                     {/* the governing flags, per entity, with ABSENT distinguished from stated-off */}
                     <p data-testid="cockpit-tending-flags" className="text-[9px] text-slate-500 mt-2 leading-relaxed">
                       Tending: auto_economy {operating.auto_economy === false ? 'OFF' : 'on'}
@@ -1227,6 +1264,12 @@ export const VSBCockpit: React.FC = () => {
                       </p>
                     </div>
                   </div>
+                  {/* P3.2 clause (5) — the per-instance living-plan pillar, re-scored only after an APPLIED evolution */}
+                  <p className="text-[10px] text-slate-500 mt-3" data-testid="cockpit-living-pillar">
+                    {detail.living_pillar && typeof detail.living_pillar === 'object'
+                      ? <>Living-plan pillar: {String((detail.living_pillar as Dict).status ?? 'unrecorded')} at generation {String((detail.living_pillar as Dict).scored_at_generation ?? '—')}, scored {String((detail.living_pillar as Dict).scored_at ?? 'at an unrecorded time')} · {String((detail.living_pillar as Dict).basis ?? '')}</>
+                      : <>Living-plan pillar: not scored. It is re-scored only after an approved evolution is applied, and {Number(detail.generation ?? 0) > 0 ? 'none has been scored since this instance evolved' : 'this instance has not evolved yet'}.</>}
+                  </p>
                   {detail.evolution_pending_cca ? (
                     <p className="text-[10px] text-amber-400 mt-3" data-testid="cockpit-evolution-pending">
                       A review is pending: change record {String(detail.evolution_pending_cca)} is awaiting your decision
@@ -1357,11 +1400,16 @@ export const VSBCockpit: React.FC = () => {
                                 ? ' (advanced by this apply)'
                                 : ' (NOT advanced)'}
                               {growthResult.generation_basis && <span className="block text-slate-500">{String(growthResult.generation_basis)}</span>}
+                              {growthResult.living_pillar_rescore && (
+                                <span className="block text-slate-500" data-testid="cockpit-apply-pillar">
+                                  Living-plan pillar: {growthResult.living_pillar_rescore.rescored ? 're-scored' : `not re-scored (${String(growthResult.living_pillar_rescore.refused ?? 'no reason reported')})`} · {String(growthResult.living_pillar_rescore.basis ?? '')}
+                                </span>
+                              )}
                             </>
                           : <>Nothing was applied — {String(growthResult.reason ?? 'no reason reported')}{growthResult.detail ? `: ${String(growthResult.detail)}` : ''}. An evolution must be APPROVED in Change Control first; filing a proposal does not mutate the genome.</>}
                       </p>
                     ) : growthResult.kind === 'ship' ? (
-                      <p>Shipped {Object.values(growthResult.surfaces || {}).filter((s: any) => s && !s.error && !s.deferred).length} of {Object.keys(growthResult.surfaces || {}).length} surfaces · coherent whole: {String(growthResult.coherent_whole)} · commit {growthResult.version_control?.commit}</p>
+                      <p>Shipped {Object.values(growthResult.surfaces || {}).filter((s: any) => s && !s.error && !s.deferred).length} of {Object.keys(growthResult.surfaces || {}).length} surfaces · all surfaces written: {String(growthResult.coherent_whole)}{growthResult.coherent_whole_basis ? ` (${growthResult.coherent_whole_basis})` : ''} · commit {growthResult.version_control?.commit}</p>
                     ) : growthResult.kind === 'cascade' ? (
                       <p>Cascade run {growthResult.repo_run?.run_id} · plan: {growthResult.repo_run?.plan_binding?.result ?? '—'} · committed {growthResult.version_control?.commit}</p>
                     ) : (

@@ -6,6 +6,7 @@ from typing import Dict, Any, Optional
 from agentic_core.ueg.logger import VSBUEGLogger
 from agentic_core.cognitive.cascade_v16 import UltimateCognitiveCascade
 from agentic_core.consultation.interface import ConsultationRequest, ConsultationResponse, ValidationResult
+from agentic_core.consultation.constitutional_screen import screen as _constitutional_screen
 
 class MJMOrchestratorV4:
     """
@@ -99,7 +100,7 @@ class MJMOrchestratorV4:
     async def consult(self, request: ConsultationRequest) -> ConsultationResponse:
         """Standardized Mushawara consultation implementation for MJM v4.0."""
         res = await self.run_lifecycle(request.query)
-        return ConsultationResponse(
+        _resp = ConsultationResponse(
             engine="mjm",
             answer=f"MJM Lifecycle Result: {res.get('result', 'unknown')}",
             # P3.12 - a stated refusal, not a fabricated figure. MJM is a lifecycle, not a cognitive
@@ -108,6 +109,11 @@ class MJMOrchestratorV4:
             confidence_basis=("not computed: the MJM lifecycle returns a fixed marker and does not score its own judgement (P3.12)"),
             served_by="native-fixed-marker",
             is_external=False,
-            constitutional_validation=ValidationResult(passed=None, basis="no constitutional check ran: this engine performs none, so neither a pass nor a failure is claimed"),
+            constitutional_validation=ValidationResult(),
             reasoning_trace="Recursive MJM v4.0 (Mushahida-Jaiza-Muaina) lifecycle execution."
         )
+        #  P3.28 clause (1) — the verdict is COMPUTED by gaas.v5's own checks over the request and
+        #  this answer, replacing a literal that said no check ran. A screen may refuse, never clear:
+        #  a non-refusal keeps passed=None and states its coverage (consultation/constitutional_screen.py).
+        _resp.constitutional_validation = _constitutional_screen("mjm", request.query, _resp.answer)
+        return _resp

@@ -31,8 +31,9 @@ interface Status {
   recent_directives?: any[];
 }
 interface ChiefResult {
+  directive_reason?: string | null;   // W633 (FU-565)
   directive_id: string; owner: string; instruction: string;
-  chief_directive: string; ceo_action_plan: string; delegation_chain: string[]; created_at: string;
+  chief_directive: string; ceo_action_plan: string; delegation_chain: string[]; delegation_chain_basis?: string; created_at: string;
   // W270/W284 — the apex runs on the §6 fabric: provenance + gaas verdict + the plan objectives landed
   ai_provenance?: { served_by?: Record<string, number>; any_external?: boolean };
   governance?: { status?: string; screened?: string; covers_directive_content?: boolean; basis?: string };
@@ -107,7 +108,8 @@ export const BoardOfDirectors: React.FC = () => {
     return chiefModel.is_modelled_twin ? (
       <div data-testid="chief-model-twin" className="space-y-1">
         <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400">
-          Modelled twin — {chiefModel.instructions.count} instruction(s) you wrote ·{' '}
+          {/* W635 (FU-583) — nothing is modelled: the Chief carries what you wrote */}
+          Chief carrying your record — {chiefModel.instructions.count} instruction(s) you wrote ·{' '}
           {chiefModel.decisions.count} decision(s) you made
         </p>
         <p className="text-[10px] text-slate-400 leading-relaxed">{chiefModel.basis}</p>
@@ -161,9 +163,11 @@ export const BoardOfDirectors: React.FC = () => {
         <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed">
           The apex governance tier — above the AI CEO. Chaired by your <span className="text-highlight">Chief</span>,
           standing for you ({status?.represents_owner ?? 'the Owner'}) in your presence and absence and directing the
-          whole organism on your behalf. Today the Chief is your standing charter plus your last instructions, served
-          on the owned fabric — no digital-twin model is trained yet (Mode 2 is planned, P3.4).
+          whole organism on your behalf.
         </p>
+        {/* W623 (FU-528, M1 v9 R3.5) — this said "no digital-twin model… Mode 2 is planned" while the same page labelled
+            the Chief a modelled twin. The header now renders the one reading the page already computes. */}
+        <div className="mt-2 max-w-2xl" data-testid="chief-standing-header">{chiefStanding()}</div>
       </header>
 
       {loadErr && (
@@ -309,7 +313,7 @@ export const BoardOfDirectors: React.FC = () => {
       {result && (
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-[9px] font-mono text-slate-500">
-            <ShieldCheck size={12} className="text-slate-500" /> {result.directive_id} · chain: {result.delegation_chain.join(' → ')}
+            <ShieldCheck size={12} className="text-slate-500" /> {result.directive_id} · <span title={result.delegation_chain_basis}>ran: {result.delegation_chain.join(' → ')}</span>
           </div>
           {/* W270/W284 — apex honesty chips: which OWNED resource served, the gaas verdict, what landed on the plan */}
           <div className="flex flex-wrap items-center gap-1.5">
@@ -345,6 +349,7 @@ export const BoardOfDirectors: React.FC = () => {
               {/* P3.4 (W587) — the Chief's standing travels WITH its output: a reader of a directive sees
                   whether the Chief that issued it is a twin built from their record or a role. */}
               <div data-testid="chief-standing-with-output" className="mb-3 pb-3 border-b border-slate-800/50">{chiefStanding()}</div>
+              {result.directive_reason && <p data-testid="chief-directive-reason" className="text-[11px] text-amber-400 mb-2">{result.directive_reason}</p>}
               <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{result.chief_directive}</p></div>}
           </Card>
           {result.ceo_action_plan && (
@@ -369,6 +374,12 @@ export const BoardOfDirectors: React.FC = () => {
               <Card key={i} className="p-5 space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-500">{d.kind ?? 'chief_instruction'}</span>
+                  {(d as any).status && (
+                    <span data-testid="deliberation-status" title={(d as any).status_basis}
+                      className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${(d as any).status === 'resolved' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>
+                      {(d as any).status === 'resolved' ? 'resolved' : 'framed by the floor — not deliberated'}
+                    </span>
+                  )}
                   <p className="text-sm font-black text-white">{d.topic ?? d.instruction}</p>
                   <span className="text-[8px] text-slate-600 ml-auto">{d.created_at}</span>
                 </div>

@@ -57,11 +57,15 @@ def atp_depletion_state() -> dict:
     never binds), which is the defect class W494 removed from the CCA's basis strings.
     """
     max_consumption = 0.1 * 1.0                 # load is clamped to 1.0 in both the caller and the simulator
-    efficiencies = (1.0, 0.8)                   # every value _update_atp can pass
+    #  every value _update_atp can pass under the CURRENT switch (FU-308) — derived, so turning the circadian
+    #  link on changes this figure and its conclusion by itself rather than leaving a stale claim
+    efficiencies = (tuple(sorted(set(_CIRCADIAN_INTENSITY.values()), reverse=True)) if circadian_to_atp()
+                    else (1.0, 0.8))
     min_production = 0.5 * min(efficiencies)
     can_deplete = max_consumption > min_production
     return {
         "can_deplete": can_deplete,
+        "circadian_to_atp": circadian_to_atp(),
         "max_consumption_per_tick": round(max_consumption, 4),
         "min_production_per_tick": round(min_production, 4),
         "efficiencies_this_code_passes": list(efficiencies),
@@ -112,6 +116,22 @@ def _get_atp():
         return _get_atp._inst
     except Exception:
         return None
+
+
+#  OWNER RULING 2026-10-07 (FU-308) — THE CIRCADIAN MAP REACHES METABOLISM, BEHIND A SWITCH THAT DEFAULTS OFF. The
+#  heartbeat computes an intensity of 1.0/0.7/0.5/0.3 by phase, and _update_atp passed only 1.0 or 0.8, so the
+#  clock could not modulate energy. With the switch on, the phase's intensity IS the efficiency. Runtime only,
+#  like the other unpersisted levers: a restart returns it to off.
+_CIRCADIAN_INTENSITY = {"ACTIVE_FOCUS": 1.0, "ACTIVE_REST": 0.7, "MAINTENANCE_FOCUS": 0.5, "MAINTENANCE_REST": 0.3}
+_CIRCADIAN_TO_ATP = {"on": False}
+
+
+def set_circadian_to_atp(on: bool) -> None:
+    _CIRCADIAN_TO_ATP["on"] = bool(on)
+
+
+def circadian_to_atp() -> bool:
+    return bool(_CIRCADIAN_TO_ATP["on"])
 
 
 def _circadian_cycle() -> str:
@@ -228,7 +248,8 @@ class BiomimeticBus:
         atp = _get_atp()
         if atp:
             cycle = _circadian_cycle()
-            efficiency = 1.0 if cycle == "ACTIVE_FOCUS" else 0.8
+            efficiency = (_CIRCADIAN_INTENSITY.get(cycle, 0.5) if circadian_to_atp()
+                          else (1.0 if cycle == "ACTIVE_FOCUS" else 0.8))
             atp.update(dt=1.0, metabolic_load=metabolic_load, circadian_efficiency=efficiency)
             return round(max(0.0, min(1.0, atp.ratio / 15.0)), 3)
         return 0.8

@@ -133,7 +133,8 @@ class QualityManagementSystem:
         written before gate_failures existed is defects_total (the best available true count)."""
         st = self._load_state()
         gates = int(st.get("gates_run", 0))
-        return round(self._gate_failures(st) / gates, 4) if gates > 0 else 0.0
+        #  W635 (FU-575) - with NO gate run there is no rate: None, not a 0.0 defect rate nobody measured
+        return round(self._gate_failures(st) / gates, 4) if gates > 0 else None
 
     @staticmethod
     def _gate_failures(st: Dict[str, Any]) -> int:

@@ -7,8 +7,7 @@
   },
   "bundle_dir": "C:\\Users\\rehan\\data\\legal-matter",
   "bundle_dir_basis": "Created EMPTY by W566 at the Owner's instruction. The Owner's ruling of 2026-10-03c set the terms — read-only, local-only, ONE named folder, never sent to any external service, provenance per document, a human-approval gate on every filing-shaped artefact, the index in data/ and never committed — and named no folder. This path was proposed and the Owner accepted it. IT IS EMPTY UNTIL THE OWNER COPIES SOMETHING IN, which is the point: the act of copying a file in is the consent for that file, so no path is guessed, no desktop location is inferred, and no document is read that was not deliberately placed here.",
-  "bundle_indexing_may_start": false,
-  "bundle_indexing_basis": "false while the folder is empty. This flag is NOT an Owner switch and must never be flipped to mean 'the Owner approved indexing' — they did, in 2026-10-03c. It means 'there is something here to index', which is a measurement of the folder and nothing else.",
+  "bundle_indexing_basis": "COMPUTED, never stored: agentic_core/legal/bundle.py may_start() measures the folder every time it is asked, and GET /api/v1/law/bundle reports it. W605 removed the stored false that sat here, because a stored value is remembered rather than measured. It is NOT an Owner switch and must never be read as 'the Owner approved indexing' — they did, in 2026-10-03c. It means 'there is something here to index', which is a measurement of the folder and nothing else.",
   "nothing_produced_is_legal_advice": "Every artefact this platform produces about this matter says so where the work is read. The platform may be a meticulous clerk and never counsel; it assembles, cites and cross-checks with provenance per line, and it never forecasts an outcome (Owner ruling 2026-10-03c confirming the refusal of the tribunal outcome predictor).",
   "never": [
     "no document outside bundle_dir is opened",

@@ -44,6 +44,8 @@ from typing import Any, Dict, List
 from fastapi import APIRouter
 from pydantic import BaseModel
 
+from agentic_core.api._strict_models import STRICT
+
 from agentic_core.gaas.v5 import UnifiedConstitutionalInterceptorV16Omega, UEGLogger
 
 router = APIRouter(prefix="/api/v1/transformation", tags=["transformation-orchestration"])
@@ -127,6 +129,7 @@ class _NotAssessable(Exception):
 
 # ── Request ───────────────────────────────────────────────────────────────────
 class OrchestrateRequest(BaseModel):
+    model_config = STRICT   # W628 (FU-398): an undeclared field here is a lost instruction - see _strict_models
     objective: str = ""                 # the transformation objective (defaults to the live vision gap)
     scope: str = "workstation"          # business-plan scope (a vsb_id or 'workstation')
     owner_id: str = "Rehan"
@@ -267,6 +270,7 @@ async def orchestrate(req: OrchestrateRequest):
           "Integrate the living systems (BMS·QMS·DCS·EMS) + organism telemetry",
           {"living_systems": living_systems,
            "organism_health": organism.get("immune", {}).get("health"),
+           "organism_health_basis": ("the immune system's health: AI-call failures and compliance regressions only - route 5xx failures are not tracked"),   # W635 (FU-587)
            "arousal": organism.get("nervous", {}).get("arousal_state")},
           verified=(None if (organism.get("immune", {}) or {}).get("health") is not None else False),
           checks="presence",

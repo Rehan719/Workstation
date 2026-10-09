@@ -7,7 +7,8 @@ import { StageBadge, StageMark, FLOOR_STAGE_NOTE, stageOutcome, type StageData }
 interface Tier { tier: string; endpoint: string; role: string; connected: boolean;
   route_mounted?: boolean; connected_basis?: string }
 interface Wiring { tiers: Tier[]; connected: number; total: number; coherence: number; principle: string;
-  routes_mounted?: number; coherence_measured?: boolean; coherence_basis?: string }
+  routes_mounted?: number; coherence_measured?: boolean; coherence_basis?: string;
+  route_census?: { basis?: string; paths?: number } }
 interface Gap { gap: string; realisation: number; routed_to: string; endpoint: string; action: string; missing: string[] }
 // W496 (FU-111) — `measure` is the producer's own statement of what this figure counts
 interface Align { overall_realisation: number; measure?: string; gaps_routed: Gap[]; executed: any[] }
@@ -227,6 +228,8 @@ export const CognitionIntegration: React.FC = () => {
                   title={wiring.coherence_basis}>
               {wiring.routes_mounted ?? wiring.connected}/{wiring.total} tiers have a route mounted
             </span>
+            {/* W613 (FU-504) — what the mounted-route count was read from */}
+            {wiring.route_census?.basis && <span className="text-[9px] text-slate-600" data-testid="wiring-census">{wiring.route_census.basis}</span>}
           </div>
           <div className="grid grid-cols-1 @[560px]:grid-cols-2 gap-2">
             {wiring.tiers.map(t => (

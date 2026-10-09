@@ -203,7 +203,7 @@ async def genesis_status():
 
 def _bar_attestations(candidates: List[Dict[str, Any]], stage_5: Dict[str, Any], winner: Dict[str, Any],
                       realm: str, domain: str, stage_verifications: Dict[str, Any],
-                      stages_verified: int) -> "tuple[Dict[str, str], Dict[str, str]]":
+                      stages_verified: int, chosen: "set | None" = None) -> "tuple[Dict[str, str], Dict[str, str]]":
     """§10 (W419 → W449, ledger 3.11) — the journey's bar attestations, DERIVED from this run, and the
     criteria it DECLINES to attest, each with the reason. Returns (evidence, withheld).
 
@@ -220,7 +220,18 @@ def _bar_attestations(candidates: List[Dict[str, Any]], stage_5: Dict[str, Any],
     n = len(candidates)
     _tied = bool((stage_5.get("tie") or {}).get("detected"))
     _distinct = int(stage_5.get("candidates_distinct") or (n if n else 0))
-    ev["categorised"] = f"realm '{realm}' × domain '{domain}' categorisation"
+    #  W617 (FU-479, M2 v8 R1.6) — CATEGORISED IS ATTESTED ONLY FROM A CHOICE. Both axes default to
+    #  'enterprise', so a journey nobody categorised attested "categorised: met" from the request's own
+    #  defaults, and the record called the platform reading its defaults "caller evidence". `chosen` is the
+    #  set of fields the caller actually sent; a default is withheld with that reason.
+    _chosen = {"realm", "domain"} if chosen is None else set(chosen)
+    _defaulted = [ax for ax in ("realm", "domain") if ax not in _chosen]
+    if _defaulted:
+        wh["categorised"] = (f"the {' and '.join(_defaulted)} {'were' if len(_defaulted) > 1 else 'was'} not "
+                             f"chosen - the request's default ('enterprise') was used, and a default is not a "
+                             f"categorisation anyone made")
+    else:
+        ev["categorised"] = f"realm '{realm}' × domain '{domain}' categorisation, both chosen by the caller"
     if n > 1 and _distinct > 1:
         ev["modelled"] = (f"stage 5 modelled {n} candidates ({_distinct} distinct); form scores "
                           + " · ".join(f"{c['id']}={c.get('modelled_score')}" for c in candidates))
@@ -262,6 +273,22 @@ def _bar_attestations(candidates: List[Dict[str, Any]], stage_5: Dict[str, Any],
     return ev, wh
 
 
+def _deliverable_line(entity: dict) -> str:
+    """W631 (FU-552) - what establishment produced, from the entity's DERIVED status, not a fixed claim that a
+    'Living Enterprise ... generated, governed' exists while the status reads 'registered - not operating'."""
+    st = str(entity.get("status") or "status not derived")
+    if st == "operating":
+        return "VSB IDBO entity established and operating — persisted"
+    return f"VSB IDBO entity registered and persisted — {st}; it is not yet a living, operating enterprise"
+
+
+def _problem_detail(problem: str, limit: int = 3000) -> str:
+    """W627 (FU-519) - the part of a problem after its first line, blank lines folded, for a DOCUMENT block."""
+    lines = (problem or "").strip().splitlines()
+    rest = [l.rstrip() for l in lines[1:] if l.strip()]
+    return "\n".join(rest)[:limit]
+
+
 @router.post("/journey")
 async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_current_user)):
     """Run the full intelligently-autonomous Concept → Commercialisation cascade."""
@@ -285,7 +312,13 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
     # Stated as a labelled field so the owned floor reads it as one (engine.py:81).
     _realm_prefix = (f"{realm_directive(req.realm)}\n"
                      f"Realm: {REALM_LABELS.get(normalise_realm(req.realm), 'Enterprise')}\n"
-                     f"Problem: {(req.problem or '').strip()[:400]}\n\n")
+                     f"Problem: {(req.problem or '').strip()[:400]}\n"
+                     #  W627 (FU-519) - everything after the problem's first line (an attached survey, the
+                     #  Offering-1 bridge) rode only inside a 400-character cut and the floor reads one line
+                     #  of a field, so no stage carried any of it. It travels as a DOCUMENT block, blank
+                     #  lines folded so the block reads as one.
+                     + (f"DOCUMENT:\n{_detail}\n" if (_detail := _problem_detail(req.problem)) else "")
+                     + "\n")
 
     #  P3.1 — the journey's own id. The §4.6 artefact is stored under it, so a reader can fetch the
     #  bill of materials this journey produced; an artefact nobody can look up does not satisfy
@@ -492,20 +525,49 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
     _top = [c["id"] for c in _eligible if c["score"] == winner["score"]]
     _tied = len(_top) > 1
 
+    # W613 (FU-475, M1 v8 R1.0) — WHAT WAS MEASURED IS COMPUTED FROM THIS RUN. `criteria_measured` was the
+    # constant _CAND_MEASURED and `honesty` a fixed sentence saying compliance and safety "are measured here",
+    # so a run whose screens assessed nothing printed that claim beside weights {compliance: None, safety: None}
+    # and a method saying both "contributed NOTHING". The screens RAN in that case; they measured nothing, and
+    # a criterion is measured only when it contributed a figure.
+    _screen_scored = any(c["screen"].get("compliance") is not None for c in candidates)
+    _measured_now = dict(_CAND_MEASURED) if _screen_scored else {}
+    _unmeasured_now = dict(_CAND_UNMEASURED)
+    if not _screen_scored:
+        _unmeasured_now.update({k: ("the §11 screen ran (" + v + ") and could assess nothing - a keyword "
+                                    "screen can refuse a subject but cannot clear one, so it contributed no "
+                                    "figure") for k, v in _CAND_MEASURED.items()})
+    #  W630 (FU-550) - the twin stage is SAID to have run only when a model served it. On the floor its text is
+    #  the keyword frame under twin headings, and "FORWARD-SIMULATED through the owned digital-twin pattern"
+    #  was a claim about a simulation that did not happen; its score is not simulated evidence either.
+    _sba5 = provenance.get("served_by_agent", {}) or {}
+    _twin_floor = all(_sba5.get(f"genesis_twin_{c['id']}", "native") in ("native", "failed") for c in candidates)
+    if _twin_floor:
+        for c in candidates:
+            #  W635 (FU-574) - and the figures go: a 'simulation_score' for a simulation that did not run is a
+            #  number asserting one. The form score that ranked them stays, under its own name.
+            c["simulation_score"] = None
+            c["modelled_score"] = None
+            c["simulation_score_basis"] = ("NOT SIMULATED EVIDENCE - the twin stage was floor-served, so no "
+                                           "simulation or modelled score exists; the form score is the only figure")
     stage_5 = {
         # W483 (refutation) — the method now declares the weights that were APPLIED, not the ones
         # the design hoped for. Declaring "0.35 compliance · 0.25 safety" while every candidate
         # scored on form alone is the defect this round exists to remove.
-        "method": ("candidates modelled + FORWARD-SIMULATED through the owned digital-twin pattern, "
-                   "then screened by the deterministic §11 screen. Weights APPLIED to this run: "
+        "method": (("candidates modelled; forward-simulation NOT run: the twin stage was floor-served, so its "
+                    "text is a structured frame and not a simulation. They were " if _twin_floor else
+                    "candidates modelled + FORWARD-SIMULATED through the owned digital-twin pattern, then ")
+                   + "screened by the deterministic §11 screen. Weights APPLIED to this run: "
                    + ("0.40 form · 0.35 compliance · 0.25 safety"
                       if any(c["screen"].get("compliance") is not None for c in candidates)
                       else "1.00 form — compliance and safety contributed NOTHING because no §11 "
                            "framework could assess these candidates (they are keyword screens, and a "
                            "keyword screen can refuse but not clear). Form saturates, so a tie here "
                            "is expected and is disclosed below rather than resolved silently")
-                   + ". A candidate the screen FAILS is vetoed and cannot be selected. Real measured "
-                     "proxies, never fabricated."),
+                   + ". A candidate the screen FAILS is vetoed and cannot be selected. "
+                   + ("Real measured proxies, never fabricated." if _screen_scored else
+                      "The only figure in the ranking is FORM, a shape proxy - nothing fabricated, and "
+                      "nothing about solution quality measured.")),
         "weights_applied": ({"form": 0.40, "compliance": 0.35, "safety": 0.25}
                             if any(c["screen"].get("compliance") is not None for c in candidates)
                             else {"form": 1.0, "compliance": None, "safety": None}),
@@ -542,12 +604,17 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
                             "the framing that was meant to differentiate them ('pragmatic' / "
                             "'innovative' / 'lean') is prose it cannot act on. Show one answer, not "
                             "three ranked cards."),
-        "criteria_measured": _CAND_MEASURED,
-        "criteria_not_measured": _CAND_UNMEASURED,
-        "honesty": ("Two of the five criteria §4.5 names are measured here (compliance, safety); "
-                    "three are NOT measured at selection time and are named in "
-                    "criteria_not_measured. FORM is a shape proxy, not solution quality — it "
-                    "saturates at 1.000 for any candidate past ~2800 characters."),
+        "criteria_measured": _measured_now,
+        "criteria_not_measured": _unmeasured_now,
+        "honesty": (("Two of the five criteria §4.5 names are measured here (compliance, safety); "
+                     "three are NOT measured at selection time and are named in criteria_not_measured. ")
+                    if _screen_scored else
+                    ("NONE of the five criteria §4.5 names was measured in this run: the §11 screen ran on "
+                     "every candidate and could assess nothing, so compliance and safety contributed no "
+                     "figure, and the other three are not measurable at selection time. All five are named "
+                     "in criteria_not_measured. "))
+                   + ("FORM is a shape proxy, not solution quality — it saturates at 1.000 for any "
+                      "candidate past ~2800 characters."),
         "selection_basis": (
             (f"TIE at {winner['score']} across {len(_top)} candidates ({', '.join(_top)}) — resolved "
              f"by list order, NOT by evidence. ") if _tied else "") + (
@@ -710,7 +777,8 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
                       "verified", "tested", "validated", "best-in-class")}
     else:
         _bar_evidence, _bar_withheld = _bar_attestations(candidates, stage_5, winner, req.realm, req.domain,
-                                                         stage_verifications, stages_verified)
+                                                         stage_verifications, stages_verified,
+                                                         chosen=set(getattr(req, "model_fields_set", set()) or set()))
     # W449 (ledger 1.1) — the gate learns who served the design + commercialisation it measures.
     _gate_servers = [s for s in (_sba.get("genesis_design"), _sba.get("genesis_commercial")) if s]
     quality_assurance = await assure_delivery(
@@ -763,6 +831,10 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         #  declared (taxonomy.PRODUCTS is the canon).
         "product": normalise_product(getattr(req, "product", "reactor")),
         "product_label": PRODUCT_LABELS.get(normalise_product(getattr(req, "product", "reactor"))),
+        #  W619 (FU-502, M2 v8 R5.3) — whether anyone CHOSE the product. Every journey recorded 'reactor', the
+        #  model default, and no surface could send another value, so the record read as a choice nobody made.
+        "product_source": ("chosen by the caller" if "product" in (getattr(req, "model_fields_set", None) or set())
+                           else "the default - no product was chosen"),
         "phase_1_conceptualisation": {"cognitive_cascade": cognitive, "mjm_assessment": mjm, "concept": concept},
         "stage_3_innovate_research": research,     # §4.3 — best/latest approaches across science·tech·business·ops·law
         "stage_5_model_simulate_rank": stage_5,   # §4.5 — candidate solutions modelled + evidence-ranked → best selected
@@ -814,8 +886,16 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         # "Concept → Commercialisation" is the completion claim in its plainest form.
         "deliverable": ("No deliverable — the §11 screen vetoed every candidate, so the journey "
                         "stopped after Stage 5 and nothing was designed or commercialised" if _blocked else
-                        "The user's own VSB IDBO — Concept → Commercialisation"
-                        + (" → established living enterprise" if established_vsb and not (isinstance(established_vsb, dict) and established_vsb.get("error")) else "")),
+                        #  W623 (FU-534, M1 v9 R5.1) — THE DELIVERABLE NAMES WHAT EXISTS. This said "The user's own VSB
+                        #  IDBO" whether or not anything was established, and the page headed it "Sovereign Journey
+                        #  Complete". Without establishment the journey leaves a RECORD, not an enterprise; and when
+                        #  every agent was floor-served its stages are frames, which the sentence now says too.
+                        (("The user's own VSB IDBO — Concept → Commercialisation → established living enterprise"
+                          if (established_vsb and not (isinstance(established_vsb, dict) and established_vsb.get("error")))
+                          else "A journey record, Concept → Commercialisation — NO enterprise was established")
+                         + (" — frames only: every stage was served by the deterministic floor, so no stage was "
+                            "composed by a model" if (_sba and all(str(v) == "native" for v in _sba.values())) else ""))),
+        "enterprise_established": bool(established_vsb and not (isinstance(established_vsb, dict) and established_vsb.get("error"))),
         # W485 — a journey whose every candidate was vetoed did not complete.
         "status": ("blocked_by_screen" if _blocked else "complete"),
         **({"blocked_by_screen": {
@@ -859,7 +939,9 @@ class EstablishRequest(BaseModel):
 
 def _attach_delivery_swarm(entity: dict, vsb_id: str, name: str, problem: str,
                            domain: str, concept: str = "") -> None:
-    """Give the VSB its OWN bespoke, reconfigurable native swarm cascade — its in-house delivery org
+    """Give the VSB its own COPY of the platform's fixed four-stage delivery swarm — reconfigurable, but NOT
+    synthesised for its solution (W627, FU-532: this said "OWN bespoke"; every VSB gets the same stages and
+    instructions, and nothing optimises them) — its in-house delivery org
     (Chief → AI CEO → C-Suite → CoE → BTO) as a runnable, owned Resource-Fabric resource. Shared by
     the blocking /establish and the SSE /establish/stream. Best-effort (never blocks establishment)."""
     try:
@@ -1237,6 +1319,10 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
         #  declared (taxonomy.PRODUCTS is the canon).
         "product": normalise_product(getattr(req, "product", "reactor")),
         "product_label": PRODUCT_LABELS.get(normalise_product(getattr(req, "product", "reactor"))),
+        #  W619 (FU-502, M2 v8 R5.3) — whether anyone CHOSE the product. Every journey recorded 'reactor', the
+        #  model default, and no surface could send another value, so the record read as a choice nobody made.
+        "product_source": ("chosen by the caller" if "product" in (getattr(req, "model_fields_set", None) or set())
+                           else "the default - no product was chosen"),
         "concept": req.concept[:1000],
         "design": req.design[:1000],
         "commercialisation": req.commercialisation[:1000],
@@ -1258,6 +1344,10 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
         #  declared (taxonomy.PRODUCTS is the canon).
         "product": normalise_product(getattr(req, "product", "reactor")),
         "product_label": PRODUCT_LABELS.get(normalise_product(getattr(req, "product", "reactor"))),
+        #  W619 (FU-502, M2 v8 R5.3) — whether anyone CHOSE the product. Every journey recorded 'reactor', the
+        #  model default, and no surface could send another value, so the record read as a choice nobody made.
+        "product_source": ("chosen by the caller" if "product" in (getattr(req, "model_fields_set", None) or set())
+                           else "the default - no product was chosen"),
         "scope": "commercialise",
         "owner_id": req.owner_id,
         # §4.8 (W496, FU-100) - derived below from the gates, the body-pending map and whether
@@ -1428,7 +1518,7 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
         "governance": entity["governance"],
         "initial_ship": initial_ship,   # §4 (W302) — the body shipped at birth (or honestly not)
         "birth_vitals": birth_vitals,   # §3×§8×§12 (W309) — first screen + first cycle at birth
-        "deliverable": "Living Enterprise IDBO (VSB) generated, governed, and persisted",
+        "deliverable": _deliverable_line(entity),   # W631 (FU-552)
     }
 
 
@@ -1579,8 +1669,11 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
             # producer now names one of four outcomes and this reads it; an unrecognised value is
             # reported as unrecognised rather than defaulting to the good news.
             _oc = _fc.get("outcome")
-            _why = str(_fc.get("held") or (_fc.get("governance") or {}).get("status")
-                       or _fc.get("error") or "not recorded")
+            # W627 (FU-521) - governance arrives as a plain verdict string ('passed') as well as a dict;
+            # reading it only as a dict raised here and the except below overwrote the REAL cycle result
+            _gov = _fc.get("governance")
+            _gov_status = _gov.get("status") if isinstance(_gov, dict) else _gov
+            _why = str(_fc.get("held") or _gov_status or _fc.get("error") or "not recorded")
             yield _event("vitals", "First Economy Cycle",
                          ("cycle ran" if _oc == "ran" else
                           f"held: {_why}" if _oc == "held" else
@@ -1589,7 +1682,11 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
                           f"the first cycle failed: {_why}" if _oc == "raised" else
                           f"the first cycle's outcome was not reported ({_why})"), _fc)
         except Exception as exc:
-            birth_vitals["first_cycle"] = {"error": str(exc)[:160]}
+            #  a failure AFTER the cycle returned is a failure to REPORT it, not of the cycle: keep the result
+            if isinstance(birth_vitals.get("first_cycle"), dict) and "outcome" in birth_vitals["first_cycle"]:
+                birth_vitals["first_cycle"]["report_error"] = str(exc)[:160]
+            else:
+                birth_vitals["first_cycle"] = {"error": str(exc)[:160]}
 
         # 7 — §4 (W302): the newborn's WHOLE §13 living body ships at birth (watchable, honest)
         initial_ship = None
@@ -1637,7 +1734,7 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
             "birth_vitals": birth_vitals,
             # parity with the blocking path — the UI badge must reflect the REAL gate outcome
             "governance": entity["governance"],
-            "deliverable": "Living Enterprise IDBO (VSB) generated, governed, and persisted",
+            "deliverable": _deliverable_line(entity),   # W631 (FU-552)
         })
 
     return StreamingResponse(_stream(), media_type="text/event-stream",

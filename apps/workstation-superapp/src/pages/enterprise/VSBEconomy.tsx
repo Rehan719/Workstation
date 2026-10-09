@@ -19,9 +19,11 @@ interface EntityType {
 interface Cycle {
   intake_revenue: number; homeostasis_reserves: number; operating_costs?: number; distributable_profit: number;
   circulation: Record<string, { amount_wst: number; role: string }>;
-  giving_back: { grants: { cause: string; amount_wst: number; score: number }[] } | null;
+  giving_back: { grants: { cause: string; amount_wst: number; score: number; guaranteed_share?: number }[]; allocation_rule?: string;
+    priorities_unfunded?: { id: string; cause: string; rank: number | null; why: string }[] } | null;
   metabolic_energy: number | null; entity_name: string; capital_preserved: boolean;
   energy_state?: string; reserve_rate_applied?: number;   // §8→§12 economic survival instinct
+  metabolic_energy_basis?: string | null;   // W617 (FU-507) — null: the energy term was not measured
   biogeochemical_model: string;
   // W465 (FU-016) — whether this cycle's owner share was recorded in Owner Payments
   owner_accrual?: { accrued: boolean; amount_wst: number; error?: string; note?: string; ueg_logged?: boolean };
@@ -253,7 +255,7 @@ export const VSBEconomy: React.FC = () => {
         setClosing(false); return;
       }
       if (!d) { setCloseErr('The close returned a reply that could not be read — check the books before retrying.'); setClosing(false); return; }
-      setCloseMsg(`Books closed — net profit ${(d.close?.net_profit_wst ?? 0).toLocaleString()} WST → retained earnings ${(d.retained_earnings_wst ?? 0).toLocaleString()} WST. `
+      setCloseMsg(`Books closed — surplus after distributions ${(d.close?.net_profit_wst ?? 0).toLocaleString()} WST → retained earnings ${(d.retained_earnings_wst ?? 0).toLocaleString()} WST (the waterfall's pots are counted as spent in this chart). `
         + `Next period starts clean.${d.ueg_logged ? ' UEG-logged.' : ' (UEG event did NOT land — logging was unavailable.)'}`);
       loadBoardPack();
     } catch (e: any) { setCloseErr(e?.message ?? String(e)); }
@@ -531,9 +533,18 @@ export const VSBEconomy: React.FC = () => {
               <Metric label="Operating costs" value={cycle.operating_costs ?? 0} />
               <Metric label="Reserve" value={cycle.homeostasis_reserves} />
               <Metric label="Distributable" value={cycle.distributable_profit} tone="good" />
-              <Metric label="Metabolic Energy" value={cycle.metabolic_energy != null ? `${Math.round(cycle.metabolic_energy * 100)}%` : '—'} tone="good" />
+              {/* W617 (FU-507, M2 v8 R6.3) — an UNMEASURED energy term is not shown in the green 'good' tone:
+                  with no basis the figure is the simulator's default, and the cycle did not adjust on it. */}
+              <Metric label={cycle.metabolic_energy_basis ? 'Metabolic Energy' : 'Metabolic Energy (simulated, not measured)'}
+                value={cycle.metabolic_energy != null ? `${Math.round(cycle.metabolic_energy * 100)}%` : '—'}
+                tone={cycle.metabolic_energy_basis ? 'good' : undefined} />
             </div>
-            {cycle.energy_state && cycle.energy_state !== 'healthy' && (
+            {cycle.energy_state && String(cycle.energy_state).startsWith('not_adjusted') && (
+              <p className="text-[9px] font-bold text-slate-500 mt-2" data-testid="energy-unmeasured">
+                Energy term unmeasured — the reserve was NOT adjusted for it: {String(cycle.energy_state).replace(/^not_adjusted_term_unmeasured\s*—?\s*/, '')}
+              </p>
+            )}
+            {cycle.energy_state && cycle.energy_state !== 'healthy' && !String(cycle.energy_state).startsWith('not_adjusted') && (
               <p className="text-[9px] font-black uppercase tracking-widest text-amber-400 mt-2" title="§8→§12 — the living organism's energy is low, so the economic organism conserves more (raises reserves).">
                 §8→§12 survival instinct: {cycle.energy_state}{cycle.reserve_rate_applied != null ? ` · reserve ${Math.round(cycle.reserve_rate_applied * 100)}%` : ''}
               </p>
@@ -576,12 +587,19 @@ export const VSBEconomy: React.FC = () => {
           {cycle.giving_back && cycle.giving_back.grants.length > 0 && (
             <Card className="p-6 border-aura/30 bg-aura/5">
               <h3 className="text-[10px] font-black uppercase tracking-widest text-aura mb-4 flex items-center gap-2"><Gift size={14} /> Intelligent Charitable Giving (nutrient-return loop)</h3>
+              {/* W618 (FU-505) — a named priority that received nothing is said, with why */}
+              {(cycle.giving_back.priorities_unfunded || []).length > 0 && (
+                <p className="text-[10px] font-bold text-amber-300 mb-3" data-testid="charity-priorities-unfunded">
+                  Your priority {cycle.giving_back.priorities_unfunded!.map(p => `${p.cause} (${p.why})`).join('; ')}. It is already a priority, so no setting on these pages changes this - a weight or a guaranteed share is an Owner ruling.
+                </p>
+              )}
               <div className="space-y-2">
                 {cycle.giving_back.grants.map((g, i) => (
                   <div key={i} className="flex items-center justify-between p-3 bg-slate-950 rounded-lg border border-slate-900">
                     <div className="flex items-center gap-3">
                       <Recycle size={13} className="text-aura" />
                       <span className="text-sm text-slate-300 font-bold">{g.cause}</span>
+                      {(g.guaranteed_share ?? 0) > 0 && <span className="text-[9px] text-aura/80" title={cycle.giving_back?.allocation_rule}>priority · {Math.round((g.guaranteed_share ?? 0) * 100)}% guaranteed</span>}
                     </div>
                     <div className="flex items-center gap-3 text-[10px] font-mono">
                       <span className="text-slate-600" title="A weighted sum of editorial constants — nothing measures need, impact or trust. The arithmetic is real; the inputs are typed.">score {g.score} (editorial)</span>
@@ -678,7 +696,11 @@ export const VSBEconomy: React.FC = () => {
             <div className="grid grid-cols-1 @[560px]:grid-cols-3 gap-3 mt-3">
               <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
                 <p className="text-[8px] font-black uppercase tracking-widest text-slate-600 mb-1">P&L · this period</p>
-                <p className="text-sm font-black text-white">{(bp.statements.profit_and_loss?.net_profit_wst ?? 0).toLocaleString()} WST <span className="text-[9px] text-slate-500">net</span></p>
+                {/* W624 (FU-540) — the bottom line is the surplus AFTER distributions, and says so */}
+                <p className="text-sm font-black text-white" title={bp.statements.profit_and_loss?.net_profit_basis}>{(bp.statements.profit_and_loss?.net_profit_wst ?? 0).toLocaleString()} WST <span className="text-[9px] text-slate-500">surplus after distributions</span></p>
+                {bp.statements.profit_and_loss?.operating_result_before_distributions_wst != null && (
+                  <p className="text-[9px] text-slate-400" data-testid="pnl-operating">before distributions: {bp.statements.profit_and_loss.operating_result_before_distributions_wst.toLocaleString()} WST · distributed {(bp.statements.profit_and_loss.distributions_wst ?? 0).toLocaleString()} WST</p>
+                )}
                 <p className="text-[9px] text-slate-500 mt-0.5">income {(bp.statements.profit_and_loss?.total_income_wst ?? 0).toLocaleString()} · expenses {(bp.statements.profit_and_loss?.total_expenses_wst ?? 0).toLocaleString()}</p>
               </div>
               <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">

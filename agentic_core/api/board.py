@@ -35,6 +35,8 @@ from typing import Any, Dict, List, Literal, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from agentic_core.api._strict_models import STRICT
+
 from agentic_core.auth.core import auth_enabled, get_current_user, request_owner_id
 
 from agentic_core.ai.gateway import gateway
@@ -88,6 +90,29 @@ def _load() -> List[Dict[str, Any]]:
         except (json.JSONDecodeError, OSError):
             return []
     return []
+
+
+_ORGANISM_HEALTH_SCOPE = ("the immune system's health: AI-call failures and compliance regressions only - route "
+                          "5xx failures are not tracked, so this is not the health of the whole platform")
+
+
+def _load_strict() -> List[Dict[str, Any]]:
+    """W624 (FU-524, M1 v9 R3.1) — the board store read WHOLE or refused. `_load` answers a corrupt store with [],
+    which is right for a reader that only displays, and wrong for two kinds of caller: the founder model, which
+    then reported a corrupt store as "no instruction written", and every WRITER, which appended to that [] and
+    atomically replaced the Owner's whole directive history with one row. Those use this."""
+    from agentic_core.config import read_json_strict
+    return read_json_strict(_STORE, list, expect=list)
+
+
+def _load_for_write() -> List[Dict[str, Any]]:
+    from agentic_core.config import StoreUnavailable
+    try:
+        return _load_strict()
+    except StoreUnavailable as e:
+        raise HTTPException(status_code=503, detail=(
+            f"the board store could not be read whole ({e}), so nothing was written: appending to an empty read "
+            f"would replace every directive on record with this one"))
 
 
 def _save(rows: List[Dict[str, Any]]) -> None:
@@ -180,7 +205,7 @@ def _owner_decisions(limit: int = 5) -> List[Dict[str, Any]]:
     return out
 
 
-def founder_model() -> Dict[str, Any]:
+def founder_model(scope: "str | None" = None, owner: "str | None" = None) -> Dict[str, Any]:
     """The Chief's founder model as a STRUCTURE: three inputs, each counted and each naming its source.
 
     P3.4 clause (1). A Chief with NO instructions and NO decisions is reported as a ROLE and not as a
@@ -195,20 +220,28 @@ def founder_model() -> Dict[str, Any]:
     """
     instructions: List[Dict[str, Any]] = []
     instructions_readable = True
+    n_i_all: "int | None" = None
     try:
         #  ONLY THE OWNER'S OWN WORDS. A directive the twin issued unprompted carries an `instruction`
         #  too - its restatement of what the Owner last asked for - and counting that as a new input
         #  would make the model read its own output back as its principal's record: the count would rise
         #  without the Owner saying anything, and the beat's idempotence would never hold. A row with no
         #  marker predates the unprompted path and IS the Owner's.
-        for r in [x for x in _load()
-                  if x.get("instruction") and not x.get("unprompted")][-5:]:
+        #  W624 (FU-524) — THE COUNT IS EVERY INSTRUCTION, the recent list is the last five. The count was taken
+        #  from the five-row display slice, so it could never exceed 5; it ignored scope and owner, so one
+        #  entity's Chief counted every entity's instructions; and the read swallowed a corrupt store as [].
+        _own = [x for x in _load_strict()
+                if x.get("instruction") and not x.get("unprompted")
+                and (scope is None or x.get("business_plan_scope") == scope)
+                and (owner is None or x.get("owner") == owner)]
+        n_i_all = len(_own)
+        for r in _own[-5:]:
             instructions.append({"at": str(r.get("created_at") or "")[:19],
                                  "instruction": str(r.get("instruction"))[:200]})
     except Exception:
         instructions_readable = False
     decisions = _owner_decisions()
-    n_i, n_d = len(instructions), len(decisions)
+    n_i, n_d = (n_i_all or 0), len(decisions)
     is_twin = (n_i + n_d) > 0
 
     return {
@@ -218,17 +251,22 @@ def founder_model() -> Dict[str, Any]:
             #  NOT this Owner's declaration: a shared constant cannot be one
             "declared_by_owner": False,
         },
-        "instructions": {"count": n_i, "recent": instructions,
-                         "source": "the board store's instruction rows",
+        "instructions": {"count": (n_i_all if instructions_readable else None), "recent": instructions,
+                         "scope": scope, "owner": owner,
+                         "source": ("the board store's instruction rows"
+                                    + (f" for scope {scope!r}" if scope else " across every scope")
+                                    + (f" and owner {owner!r}" if owner else "")),
                          "readable": instructions_readable},
         "decisions": {"count": n_d, "recent": decisions,
                       "source": "the Owner's ratify/refuse decisions recorded by the Board in Change Control"},
         "owner_inputs": n_i + n_d,
         "is_modelled_twin": is_twin,
-        "reported_as": "modelled twin" if is_twin else "role",
+        #  W635 (FU-583) - nothing is fitted or evaluated, so the word 'modelled' is not used: the Chief CARRIES
+        #  what the Owner wrote (is_modelled_twin keeps its name for callers; its meaning is 'has an Owner record')
+        "reported_as": "chief carrying your record" if is_twin else "role",
         "basis": (
-            (f"MODELLED TWIN: built from {n_i} instruction(s) the Owner wrote and {n_d} decision(s) the "
-             f"Owner made. The standing canon is also carried and is the PLATFORM's, identical for every "
+            (f"CARRYING YOUR RECORD, NOT A FITTED MODEL: {n_i} instruction(s) the Owner wrote and {n_d} decision(s) "
+             f"the Owner made are handed to the Chief's prompt; nothing is trained, fitted or evaluated on them. The standing canon is also carried and is the PLATFORM's, identical for every "
              f"Chief - it is not counted as this Owner's own declaration."
              if is_twin else
              "A ROLE, NOT A MODELLED TWIN: this Owner has written no instruction and made no recorded "
@@ -393,6 +431,7 @@ async def board_status(scope: str = "workstation"):
     try:
         from agentic_core.organism.immune import immune
         snapshot["organism_health"] = immune.status().get("health")
+        snapshot["organism_health_basis"] = _ORGANISM_HEALTH_SCOPE      # W635 (FU-587)
     except Exception:
         pass
     if scope != "workstation":
@@ -520,7 +559,7 @@ async def twin_directive_unprompted(scope: str = "workstation") -> Dict[str, Any
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     try:
-        rows = _load()
+        rows = _load_for_write()
         rows.append(dict(out))
         _save(rows)
     except Exception:
@@ -529,14 +568,14 @@ async def twin_directive_unprompted(scope: str = "workstation") -> Dict[str, Any
 
 
 @router.get("/chief/model")
-async def chief_model():
+async def chief_model(scope: "str | None" = None, owner: "str | None" = None):
     """The Chief's founder model and its BASIS — which inputs it was built from, and how many.
 
     P3.4 clause (3): every twin output is rendered with its basis. The model itself is the thing a reader
     needs in order to know whether the Chief speaking to them is a modelled twin or a role, so it is a
     surface of its own rather than a field buried in a directive's response.
     """
-    m = founder_model()
+    m = founder_model(scope=scope, owner=owner)
     return {
         **m,
         "method": ("a Chief is a MODELLED TWIN only when the Owner has written an instruction or made a "
@@ -589,6 +628,7 @@ def _ratifying_board(vsb_id: str | None) -> Dict[str, Any]:
 
 
 class RatificationDecision(BaseModel):
+    model_config = STRICT   # W628 (FU-398): an undeclared field here is a lost instruction - see _strict_models
     decision: Literal["ratify", "refuse"]
     notes: str = ""
     # A ratification is the Owner's decision recorded by the Board, never incidental: required in BOTH auth modes
@@ -639,6 +679,7 @@ async def decide_ratification(cca_id: str, req: RatificationDecision,
 
 
 class ChiefInstruction(BaseModel):
+    model_config = STRICT   # W628 (FU-398): an undeclared field here is a lost instruction - see _strict_models
     instruction: str
     owner: str = "Rehan"
     cascade_to_ceo: bool = True
@@ -790,16 +831,29 @@ async def chief_instruct(req: ChiefInstruction, user: dict | None = Depends(get_
                                if req.unprompted else
                                "supplied directly by the caller as the Owner's own instruction"),
         "chief_directive": directive,
+        #  W633 (FU-565) - on the floor the directive is a structured frame that did not read the instruction;
+        #  said beside it, as /business-plan/generate does, instead of under a 'Modelled twin' banner alone
+        "directive_reason": (("the native floor composed this directive: it did NOT read your instruction, so the "
+                              "text below is a structured frame, not the Chief's response to it. Your instruction "
+                              "itself is recorded verbatim above")
+                             if str((provenance.get("served_by") or {}).get("board_chief", "native")).startswith("native")
+                             else None),
         "ceo_action_plan": action_plan,
         "business_plan_scope": req.scope,
         "objectives_added": objectives_added,
         "objectives_not_added_reason": objectives_not_added_reason,   # W488 — a 0 that says why, or None
         "ai_provenance": provenance,     # §6 — which OWNED resource served the apex (W270)
         "governance": governance,        # §11 — the gaas.v5 gate verdict over the apex direction
-        "delegation_chain": ["Chief", "Board", "AI CEO", "C-Suite", "CoE", "BTO"],
+        # W613 (FU-510, M1 v8 R3.6) — THE CHAIN NAMES THE TIERS THAT RAN. It was a constant six-tier list on
+        # every record, printed under the result as "chain: Chief → Board → AI CEO → C-Suite → CoE → BTO",
+        # while this path runs the Chief's prompt and, when cascading, the AI CEO's — nothing else. The
+        # C-Suite, CoE and BTO run in the org cascade (POST /api/v1/swarm/cascade), not here.
+        "delegation_chain": (["Chief", "AI CEO"] if req.cascade_to_ceo else ["Chief"]),
+        "delegation_chain_basis": ("the tiers whose prompts ran for this directive. The C-Suite, CoE and BTO "
+                                   "are NOT invoked by a directive; the org cascade runs them."),
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
-    rows = _load()
+    rows = _load_for_write()
     rows.append(record)
     _save(rows)
 
@@ -827,6 +881,7 @@ async def chief_instruct(req: ChiefInstruction, user: dict | None = Depends(get_
 
 
 class BoardDirective(BaseModel):
+    model_config = STRICT   # W628 (FU-398): an undeclared field here is a lost instruction - see _strict_models
     topic: str
     domain: str = "enterprise"
     # §14 (W300) — deliberate for a specific entity's plan (a vsb_id) instead of the apex
@@ -885,7 +940,15 @@ def _director_grounding(did: str, scope: str = "workstation") -> str:
             from agentic_core.config import data_path, read_json_reported
             dev, _why = read_json_reported(data_path("tier_development.json"), {})
             dev = dev if isinstance(dev, dict) else {}
-            return (f"active Development Actions: {len(dev)} tier edges under continual improvement"
+            #  W615 (FU-489) — only a model-written action counts as improvement. Rows stored before W615 carry
+            #  no served_by, and a floor-written one is boilerplate; both are named and not counted.
+            from agentic_core.vbs.quality import floor_served as _fl615
+            _model = [k for k, v in dev.items() if isinstance(v, dict) and v.get("served_by")
+                      and not _fl615(v.get("served_by"))]
+            _other = len(dev) - len(_model)
+            return (f"Development Actions written by a served model: {len(_model)} tier edge(s)"
+                    + (f"; {_other} other stored action(s) are floor-written or of unrecorded provenance and "
+                       f"are NOT counted as improvement" if _other else "")
                     + (f" (INCOMPLETE — the development record could not be read whole: {_why}; the "
                        f"true number is at least this)" if _why else ""))
     except Exception as exc:
@@ -943,6 +1006,7 @@ async def board_directive(req: BoardDirective, user: dict | None = Depends(get_c
         "## Board Position (the resolved direction)\n"
         "## Directive to the AI CEO (what to execute)\n"
         "## Guardrails (governance / arms-length constraints)", "board_directive", provenance)
+    from agentic_core.vbs.quality import floor_served as _floor623
     record = {
         "kind": "board_directive",
         "topic": req.topic,
@@ -953,11 +1017,18 @@ async def board_directive(req: BoardDirective, user: dict | None = Depends(get_c
         "directors_engaged": [d["id"] for d in directors],
         "ai_provenance": provenance,     # §6 — apex provenance (W270)
         "chaired_by": "Chief (the Owner's charter and instructions)",
-        "status": "resolved",
+        #  W623 (FU-527, M1 v9 R3.4) — THE STATUS IS WHAT HAPPENED. Every deliberation was stored "resolved", so a
+        #  board whose directors and Chief were all served by the deterministic floor - frames composed from the
+        #  topic, no director weighing anything - read as a decided question. A floor-served board FRAMED the
+        #  topic; only a model-served one deliberated.
+        "status": ("framed_floor_not_deliberated" if _floor623(provenance.get("served_by")) else "resolved"),
+        "status_basis": (("every director and the Chief were served by the deterministic floor, so the topic was "
+                          "FRAMED, not deliberated: nothing here weighed it") if _floor623(provenance.get("served_by"))
+                         else "a served model composed the directors' inputs and the resolution"),
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     # W270 — board deliberations PERSIST (previously the resolution evaporated at response time).
-    rows = _load()
+    rows = _load_for_write()
     rows.append(record)
     _save(rows)
     return record

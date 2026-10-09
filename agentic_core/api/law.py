@@ -13,12 +13,19 @@ import time
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
+
+from agentic_core.auth.core import get_current_user, require_admin
 from pydantic import BaseModel
 
 from agentic_core.api._ai_provenance import ai_text
 
 router = APIRouter(prefix="/api/v1/law", tags=["law"])
+
+#  W627 (FU-536) - the floor's disclaimer says what the floor did, which was no legal research at all
+_FLOOR_LAW = ("Composed by the native floor, not by a model: NO legal research or analysis was performed, no law "
+              "was looked up, and the 'Relevant Law' and 'Conclusion' headings hold terms from your question. "
+              "It is not legal advice - consult a qualified solicitor.")
 
 _TEMPLATES = [
     {"id": "nda", "name": "Non-Disclosure Agreement", "category": "Contracts", "jurisdiction": "England & Wales"},
@@ -66,6 +73,40 @@ _TEMPLATE_PROMPTS: dict[str, str] = {
         "and a compelling particulars of claim section. Mark with [SQUARE BRACKETS] where user input needed."
     ),
 }
+
+
+class AssembleRequest(BaseModel):
+    template_id: str
+    particulars: list = []        # [{name, words: [..]}] - each filled ONLY from a located bundle line
+    authorities: list = []        # names of statutes or cases - each resolved against the corpus or refused
+
+
+@router.post("/matter/assemble")
+async def matter_assemble(req: AssembleRequest, user: dict | None = Depends(get_current_user)):
+    """P3.23 / FU-278 — the legal specialist ASSEMBLES: every particular comes from a located line of a document in
+    the one named folder (with its document and line), or is a BLANK; every authority is resolved against the
+    corpus or refused; a filing-shaped artefact is a draft until the Owner approves it. Not legal advice."""
+    from agentic_core.legal import specialist
+    return specialist.assemble(req.template_id, req.particulars, req.authorities)
+
+
+@router.post("/matter/artefacts/{artefact_id}/approve")
+async def matter_approve(artefact_id: str, admin: dict = Depends(require_admin)):
+    """The Owner's approval of a filing-shaped artefact - the human gate the ruling of 2026-10-03c requires."""
+    from agentic_core.legal import specialist
+    res = specialist.approve(artefact_id, by=str(admin.get("username") or "owner"))
+    if not res["approved"]:
+        raise HTTPException(status_code=404 if res["refused"] == "not_found" else 409, detail=res)
+    return res
+
+
+@router.get("/bundle")
+async def matter_bundle():
+    """P3.23 (W605) — the live matter's ONE named folder: its state, whether indexing may start (MEASURED from
+    the folder, never stored), and how many documents it holds. Never a document's contents, and nothing about
+    the matter leaves this machine."""
+    from agentic_core.legal import bundle as _bundle
+    return _bundle.status()
 
 
 @router.get("/templates")
@@ -156,7 +197,8 @@ async def analyse_document(req: AnalyseRequest):
         "analysis": analysis,
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "disclaimer": (
+        #  W627 (FU-536) - "AI-generated" analysis is not what the floor produced
+        "disclaimer": (_FLOOR_LAW if provenance.get("floor_note") else
             "This analysis is AI-generated for informational purposes only. "
             "It does not constitute legal advice. Consult a qualified solicitor for legal matters."
         ),
@@ -204,7 +246,7 @@ async def legal_research(req: ResearchRequest):
         "method": "IRAC",
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "disclaimer": (
+        "disclaimer": (_FLOOR_LAW if provenance.get("floor_note") else
             "This legal research is AI-generated for informational purposes only and does NOT constitute "
             "legal advice. Laws change and outcomes are fact-specific — consult a qualified solicitor."
         ),
@@ -260,6 +302,8 @@ async def generate_document(req: GenerateRequest):
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "disclaimer": (
             "This document is AI-generated and provided as a starting point only. "
-            "It must be reviewed by a qualified solicitor before use."
+            "It must be reviewed by a qualified solicitor before use. "
+            #  P3.23 — the not-legal-advice statement is on EVERY response a person reads, not only the matter's
+            "Nothing here is legal advice."
         ),
     }

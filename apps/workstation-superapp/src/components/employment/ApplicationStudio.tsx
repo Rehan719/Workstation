@@ -23,6 +23,7 @@ interface GeneratedDoc {
   content: string;
   timestamp: string;
   ai_provenance?: { served_by?: string | null; is_external?: boolean };   // W454 — rendered, not dropped
+  unsupported_specifics?: string[];   // P3.23 — numbers/years in the output that the recorded profile does not contain
 }
 
 interface ClassificationNotice {
@@ -83,6 +84,7 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
   const [selectedOutputs, setSelectedOutputs] = useState<string[]>([]);
   const [generating, setGenerating] = useState(false);
   const [results, setResults] = useState<GeneratedDoc[] | null>(null);
+  const [careerRefusal, setCareerRefusal] = useState('');
   // W495 (FU-124, S12.2) - uploads this platform could not read contribute NOTHING to these outputs.
   // Before this round they arrived as invented text ("Primary topics identified: ..."), so the studio
   // wrote an application "from" a CV nobody had read. The user is told which files were not used.
@@ -196,6 +198,8 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
         output_types: selectedOutputs,
       });
       setResults(resp.data.results);
+      //  P3.23 — a refusal (nothing recorded) is SAID, never shown as an empty success
+      setCareerRefusal(resp.data.refused ? String(resp.data.basis || 'refused') : '');
       setUnread(resp.data.unread_files || []);
       setUnreadBasis(resp.data.unread_basis || '');
     } catch (err) {
@@ -544,6 +548,7 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
         {generating ? 'Generating...' : `Generate${selectedOutputs.length > 1 ? ` (${selectedOutputs.length} outputs)` : ''}`}
       </Button>
 
+      {careerRefusal && <p className="text-[11px] text-amber-300" data-testid="career-refused">{careerRefusal}</p>}
       {results && (
         <div className="space-y-4 pt-6 border-t border-slate-800">
           {unread.length > 0 && (
@@ -576,6 +581,11 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
                   <Download size={11} /> Download
                 </button>
               </div>
+              {doc.unsupported_specifics && doc.unsupported_specifics.length > 0 && (
+                <p className="text-[10px] text-vital" data-testid="career-unsupported">
+                  Not in your recorded profile — check before you send: {doc.unsupported_specifics.join(', ')}
+                </p>
+              )}
               <pre className="text-[11px] text-slate-300 font-mono whitespace-pre-wrap leading-relaxed max-h-64 overflow-y-auto bg-slate-950/50 rounded-xl p-4">
                 {doc.content}
               </pre>

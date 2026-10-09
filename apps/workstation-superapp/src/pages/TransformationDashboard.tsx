@@ -8,11 +8,11 @@ import { apiJson, errorMessage, provenanceBadge } from '../lib/api';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-interface Evidence { label: string; met: boolean }
+interface Evidence { label: string; met: boolean | null; basis?: string }
 interface Pillar { id: string; pillar: string; realisation: number; status: string; evidence: Evidence[] }
 interface Picture {
   vision_summary: string;
-  realisation: { overall_realisation: number; pillars: Pillar[]; evidence_counts: Record<string, any> };
+  realisation: { overall_realisation: number; pillars: Pillar[]; evidence_counts: Record<string, any>; route_census?: { basis?: string; paths?: number } };
   transformation_plan: { immediate_gaps: { pillar: string; realisation: number; missing: string[] }[]; short_term: string[]; long_term: string[] };
 }
 
@@ -189,6 +189,9 @@ export const TransformationDashboard: React.FC = () => {
           <span className="text-highlight"> current state realises it</span>, and the <span className="text-highlight">transformation plan</span> to close the gap.
           Continuously self-introspecting.
         </p>
+        {pic?.realisation.route_census?.basis && (
+          <p className="text-[10px] text-slate-600 mt-1" data-testid="route-census">Route census: {pic.realisation.route_census.basis}</p>
+        )}
       </header>
 
       {error && <p className="text-vital text-xs font-bold flex items-center gap-2"><AlertCircle size={14} /> {error}</p>}
@@ -325,7 +328,8 @@ export const TransformationDashboard: React.FC = () => {
                     {p.evidence.map((e, i) => (
                       <span key={i} className="flex items-center gap-1.5 text-[10px] font-bold">
                         {e.met ? <CheckCircle2 size={11} className="text-emerald-400" /> : <Circle size={11} className="text-slate-600" />}
-                        <span className={e.met ? 'text-slate-400' : 'text-slate-600'}>{e.label}</span>
+                        {/* W613 (FU-504) — null is NOT ASSESSED (the route census could not be read), never "not mounted" */}
+                        <span className={e.met ? 'text-slate-400' : 'text-slate-600'} title={e.basis}>{e.label}{e.met === null ? ' — not assessed' : ''}</span>
                       </span>
                     ))}
                   </div>

@@ -15,6 +15,9 @@ jobs:
   backend:
     name: Backend — boot + integration suite
     runs-on: ubuntu-latest
+    # W622 (FU-416, Owner-approved 2026-10-07) — a bound, because the suite now runs in parallel and FU-301
+    # records that a parallel run has stalled before: a stall must fail the job, not hold the runner for 6 hours.
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
         with:
@@ -30,13 +33,18 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest          # dev/test-only dependency (not in the runtime requirements Render installs)
+          # W622 (FU-416, Owner-approved 2026-10-07) — the suite ran SERIALLY on CI (48.8 min measured in W589 against
+          # ~13 locally at -n 4) because xdist was never installed. Pinned to the version every local round runs.
+          pip install pytest-xdist==3.8.0
       - name: Boot check
         run: python -c "import agentic_core.app_mvp; print('boot ok')"
       - name: Integration suite (AI tests auto-skip without a key)
         # THE CONFTEST IS LOADED HERE, deliberately. Skipping it ran a DIFFERENT suite from the one
         # every round runs: no isolated data root, no _assert_store_is_isolated, no collection hooks.
         # That is how CI stayed red for thirteen rounds on failures no local run could reproduce.
-        run: python -m pytest integration_tests -q
+        # W622 (FU-416) — -n 4, the mode every local round of this programme measures; the per-worker store
+        # isolation it relies on was delivered in W507 (FU-249) and has held across every round since.
+        run: python -m pytest integration_tests -q -n 4
 
   import-integrity:
     name: Import integrity — no dangling first-party imports

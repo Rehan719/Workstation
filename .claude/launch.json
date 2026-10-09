@@ -46,6 +46,15 @@
       ],
       "port": 8020,
       "autoPort": false
+    },
+    {
+      "name": "Backend M1 Audit (fresh store, AI_DISABLE_LOCAL :8031)",
+      "runtimeExecutable": "venv\\Scripts\\python.exe",
+      "runtimeArgs": [
+        "scripts/boot_audit_backend.py"
+      ],
+      "port": 8031,
+      "autoPort": false
     }
   ]
 }

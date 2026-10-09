@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional
 from agentic_core.biomimicry.cycles.utils import constitutional_guard
 from agentic_core.consultation.interface import (ConsultationRequest, ConsultationResponse,
                                                  ValidationResult)
+from agentic_core.consultation.constitutional_screen import screen as _constitutional_screen
 
 ENGINE_ID = "tawazun"
 BIOLOGICAL_ANALOGUE = "hypothalamus"
@@ -116,7 +117,7 @@ class TawazunEngine:
         else:
             answer = "Frontier: empty"
 
-        return ConsultationResponse(
+        _resp = ConsultationResponse(
             engine=ENGINE_ID,
             answer=answer,
             # A frontier is computed, but it is not an estimate, so there is no confidence to report.
@@ -128,12 +129,12 @@ class TawazunEngine:
                 if ok else f"nothing was computed: {res['basis']}"),
             served_by="native-computed" if ok else "native-refused",
             is_external=False,
-            constitutional_validation=ValidationResult(
-                passed=None,
-                basis=("no constitutional check ran: this engine computes a frontier and performs no "
-                       "constitutional validation, so neither a pass nor a failure is claimed. Its "
-                       f"declared bindings are articles {CONSTITUTIONAL_BINDING} and nothing enforces them "
-                       "here")),
+            constitutional_validation=ValidationResult(),
             reasoning_trace=res["basis"],
             metadata=res,
         )
+        #  P3.28 clause (1) — the verdict is COMPUTED by gaas.v5's own checks over the request and
+        #  this answer, replacing a literal that said no check ran. A screen may refuse, never clear:
+        #  a non-refusal keeps passed=None and states its coverage (consultation/constitutional_screen.py).
+        _resp.constitutional_validation = _constitutional_screen(ENGINE_ID, request.query, _resp.answer)
+        return _resp

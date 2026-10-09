@@ -592,6 +592,12 @@ class VirtualLedger:
     BALANCES_SCOPE = ("the waterfall pots maintained by record(); not the double-entry chart of "
                       "accounts, whose totals answer a different question and are not comparable")
 
+    def chart_balances(self) -> Dict[str, float]:
+        """W608 (P3.26 clause 3) — the DOUBLE-ENTRY chart's account balances (cash, reserve_fund, ...), which is
+        what an entity actually holds. balances() is the seven waterfall pots and is a different question."""
+        self.require_readable()
+        return {k: round(float(v), 2) for k, v in (self._data.get("accounts") or {}).items()}
+
     def balances(self) -> Dict[str, float]:
         self.require_readable()
         return dict(self._data["balances"])
@@ -644,9 +650,25 @@ class VirtualLedger:
         return {
             "period": {"from_posting": start, "postings": len(period),
                        "opened_after_close": len(self._data.get("closes", []))},
+            #  W624 (FU-540, M1 v9 R6.1) — WHAT THE BOTTOM LINE IS, SAID WHERE IT IS READ. This chart types every
+            #  distribution_* pot as an EXPENSE and has no liability account, so "net profit" is the surplus LEFT
+            #  AFTER the waterfall paid out - retained funds and the Owner's share included - not a profit; and an
+            #  owner share accrued but unpaid is booked as cash paid (owner_payments holds the payable). The
+            #  chart is not rebuilt here (that is a ledger migration, and these books are replay-verified); the
+            #  figures are labelled for what they are, and the operating result before distributions is added.
             "profit_and_loss": {"income": income_by, "expenses": expense_by,
                                 "total_income_wst": total_income, "total_expenses_wst": total_expense,
-                                "net_profit_wst": net_profit},
+                                "net_profit_wst": net_profit,
+                                "distributions_wst": round(sum(v for k, v in expense_by.items() if k.startswith("distribution_")), 2),
+                                "operating_result_before_distributions_wst": round(
+                                    total_income - sum(v for k, v in expense_by.items() if not k.startswith("distribution_")), 2),
+                                "net_profit_basis": ("SURPLUS AFTER WATERFALL DISTRIBUTIONS, not a profit: this chart types "
+                                                     "every distribution pot (owner, self-investment, capital fund, user "
+                                                     "projects, charity) as an expense and has no liability account, so "
+                                                     "retained funds and the Owner's share are counted as spent, and an "
+                                                     "owner share accrued but unpaid is booked as paid (the payable is in "
+                                                     "owner payments). operating_result_before_distributions_wst is the "
+                                                     "figure before the waterfall.")},
             "balance_sheet": {"assets": assets, "liabilities": liabilities, "equity": equity,
                               "assets_total_wst": assets_total,
                               "liabilities_and_equity_total_wst": liab_equity_total,

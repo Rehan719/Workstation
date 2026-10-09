@@ -96,17 +96,11 @@ Or go straight to `/factory` → New Production Line → Business Model → Prod
 
 ## Deploy
 
-**Frontend → Vercel**
-
-```bash
-cd apps/workstation-superapp
-# IMPORTANT: set your backend URL in apps/workstation-superapp/vercel.json — the
-# `/api/(.*)` rewrite destination. Vercel does NOT interpolate env vars in rewrites,
-# so it must be a literal URL. It currently defaults to the Render service
-# (https://workstation-api.onrender.com); change it to your actual backend URL.
-# (In local dev the Vite proxy handles /api → :8000; this rewrite is prod-only.)
-vercel deploy
-```
+**Frontend: Vercel is RETIRED (Owner, 2026-10-07).** Its config is archived at
+`_archive/deployment/vercel/workstation-superapp.vercel.json`. The planned target is **Google Cloud Platform**
+(free tier), with separate **development**, **beta** and **release** channels. That plan is not built yet; see
+`docs/DEPLOYMENT.md`. Until then the frontend runs locally with `npm run dev` (the Vite proxy sends /api to :8000),
+and `npm run build` produces the static `dist/`.
 
 **Backend → Render**
 
@@ -116,7 +110,7 @@ vercel deploy
 
 ```
 agentic_core/          — FastAPI backend (the real code)
-  app_mvp.py           — entrypoint; 532 API operations (method+path; 506 distinct paths, /api/ only — the SPA catch-all mounts only when the frontend is built), boots clean
+  app_mvp.py           — entrypoint; 549 API operations (method+path; 521 distinct paths, /api/ only — the SPA catch-all mounts only when the frontend is built), boots clean
   ai/                  — the NATIVE fabric: owned models, orchestration, swarm, memory, homeostasis
   ai/gateway.py        — in-house-first routing (native fabric → optional external providers)
   gaas/v5/             — constitutional interceptor engine + hash-chained UEG audit log

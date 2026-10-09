@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Eye, HelpCircle } from 'lucide-react';
+import ArchiveSearchPanel from '../../components/ArchiveSearchPanel';
 
 // P2.16 — THE COMPANION SURFACE: the record as the user sees it.
 //
@@ -358,6 +359,8 @@ export const HorizonCompanion: React.FC = () => {
             )}
           </>
         )}
+        {/* FU-462 — a SEARCH over the index, with located passages and what cannot be cited */}
+        <div className="mt-4"><ArchiveSearchPanel /></div>
       </section>
     </div>
   );

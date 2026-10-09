@@ -430,6 +430,7 @@ async def evo_metrics():
         pass
     return {"vision_realisation": real, "vision_realisation_measure": measure,
             "organism_health": imm.get("health"),
+            "organism_health_basis": ("the immune system's health: AI-call failures and compliance regressions only - route 5xx failures are not tracked"),   # W635 (FU-587)
             "threat_level": imm.get("threat_level"),
             "pillar_breakdown": pillars,
             "dimensions_realised": sum(1 for p in pillars if p["status"] == "realised"),

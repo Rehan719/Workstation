@@ -4,6 +4,7 @@ import { Card, Button } from '@workstation/ui';
 import { Target, Loader2, Sparkles, Plus, CheckCircle2, Clock, AlertCircle, Crown, PenLine } from 'lucide-react';
 import { provenanceMapBadge, provenanceMapFromTrace } from '../../lib/api';
 import { PlanOpening } from '../../components/PlanOpening';   // W505 (FU-074) — one component, both pages
+import { CadencePanel } from '../../components/CadencePanel';   // W620 (FU-492)
 
 interface Objective {
   id: string; title: string; kpi: string; timeline: string; owner_role: string;
@@ -160,7 +161,10 @@ export const BusinessPlan: React.FC = () => {
             <Card className="p-8 border-highlight/40 bg-gradient-to-br from-highlight/10 to-transparent" data-testid="chiefs-opening">
               <div className="flex items-center gap-3 mb-4 flex-wrap">
                 <Crown size={18} className="text-highlight" />
-                <h3 className="text-sm font-black text-white uppercase tracking-wide">Chief's Opening — Executive Summary · Concept · Vision</h3>
+                {/* W617 (FU-491, M2 v8 R3.4) — this heading named the Chief unconditionally, above PlanOpening's own
+                    heading that says when the Chief wrote nothing. The outer card names the section; the inner one
+                    decides whether it is the Chief's. */}
+                <h3 className="text-sm font-black text-white uppercase tracking-wide">Plan Opening — Executive Summary · Concept · Vision</h3>
                 {/* W471 (P1.14) — who wrote it: the generation's provenance through the shared map helper; pending fields named */}
                 {plan.provenance?.served_by && (() => { const b = provenanceMapBadge(plan.provenance.served_by, plan.provenance.any_external); return (
                   <span className={`text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded ${b.cls}`} title={b.title} data-testid="plan-provenance">{b.label}</span>
@@ -185,6 +189,16 @@ export const BusinessPlan: React.FC = () => {
             </div>
             {plan.mission && <Field label="Mission" value={plan.mission} edited={plan.owner_edits?.mission} />}
             {plan.strategy && <Field label="Strategy" value={plan.strategy} edited={plan.owner_edits?.strategy} />}
+            {/* W615 (FU-487) — a cadence refresh never overwrites the Owner's edit; it is kept as a proposal */}
+            {(() => {
+              const prop = ((plan as any).refreshes || []).filter((r: any) => r.plan_field === 'strategy' && r.applied === false).slice(-1)[0];
+              return prop ? (
+                <p className="text-[10px] text-amber-300/80 mt-1" data-testid="cadence-proposal" title={String(prop.content || '')}>
+                  The strategic cadence proposed a revision on {String(prop.at).slice(0, 10)} ({String(prop.served_by)}); {String(prop.withheld_reason)}.
+                </p>
+              ) : null;
+            })()}
+            <div className="mt-3"><CadencePanel scope={scope} /></div>
             {plan.aims?.length > 0 && (
               <div className="mt-3">
                 <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">Aims</p>

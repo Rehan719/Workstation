@@ -6,6 +6,7 @@ import axios from 'axios';
 import { Card, Badge, Button } from '@workstation/ui';
 import { Layers, Landmark, History, ScrollText, Loader2 } from 'lucide-react';
 import { useAdaptiveUI } from '../../components/AdaptiveUIProvider';
+import MatterAssemblyPanel from '../../components/MatterAssemblyPanel';
 import { DomainTool } from '../../components/DomainTool';
 import { toolsFor } from '../../lib/toolRegistry';
 
@@ -135,6 +136,10 @@ export const LawHub: React.FC = () => {
               </div>
             )}
          </div>
+      </Card>
+      {/* P3.23 — the matter specialist: provenance per particular, refused authorities, unresolved checks */}
+      <Card className="p-6">
+        <MatterAssemblyPanel />
       </Card>
     </div>
   );

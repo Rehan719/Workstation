@@ -181,7 +181,11 @@ export const VBSSystemsPanel: React.FC = () => {
           {defects && (
             <div className="flex items-center gap-1.5 flex-wrap mb-3">
               <Chip tone="dim">{defects.summary.gates_run} gates run</Chip>
-              <Chip tone={defects.summary.gate_failures > 0 ? 'warn' : 'ok'}>{defects.summary.gate_failures} failures</Chip>
+              {/* W625 (FU-516, M2 v9 R1.4) — with NO gate run, "0 failures" in green and a 0% rate read as a clean QMS that
+                  had assessed nothing; floor-served deliveries never run the gate. Both now say there is nothing to rate. */}
+              {defects.summary.gates_run === 0
+                ? <Chip tone="dim" data-testid="qms-no-gates">no gate has run — floor-served deliveries are not gated, so there is nothing to rate</Chip>
+                : <Chip tone={defects.summary.gate_failures > 0 ? 'warn' : 'ok'}>{defects.summary.gate_failures} failures</Chip>}
               {/* W489 (sweep S9.4, C3) — the title said "a real rate" of what the reader takes to be
                   this entity's deliveries. One QMS store serves the whole platform, and the Gate button
                   below fed it a coverage number the user types. The rate now says what it is over, and
@@ -193,7 +197,7 @@ export const VBSSystemsPanel: React.FC = () => {
               <Chip tone={defects.summary.counts_are_incomplete ? 'warn' : 'dim'}
                 title={defects.summary.rate_basis
                 || 'gate failures / gates run across all deliveries on this platform, 0.0 with no history'}>
-                non-conformance {Math.round(defects.summary.non_conformance_rate * 100)}% (platform-wide)
+                {defects.summary.gates_run === 0 ? 'non-conformance: not measured (0 gates run)' : `non-conformance ${Math.round(defects.summary.non_conformance_rate * 100)}% (platform-wide)`}
               </Chip>
               {defects.summary.counts_are_incomplete && (
                 <Chip tone="warn" title={defects.summary.store_incomplete

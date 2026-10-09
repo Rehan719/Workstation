@@ -2,12 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { HeartPulse, Loader2, Play, Square, Activity, Sun, Moon, ShieldCheck, Zap } from 'lucide-react';
 
-interface Beat { beat: number; phase: string; intensity: number; realisation: number | null; health: number | null; actions: string[]; at: string; self_recovery?: string | null }
+// W617 (FU-506, M2 v8 R6.2) — steps_failed is recorded per beat since W611 and was rendered by nothing
+interface Beat { beat: number; phase: string; intensity: number; realisation: number | null; health: number | null; actions: string[]; at: string; self_recovery?: string | null; steps_failed?: Record<string, string>; steps_failed_basis?: string }
 interface Status {
   running: boolean; beats: number; circadian_phase: string; phase_intensity: number;
   last_beat: string | null; last_realisation: number | null; interval_seconds: number;
   auto_evolve: boolean; auto_economy: boolean; auto_align: boolean; auto_compliance: boolean;
   auto_ship: boolean; autonomy_persisted?: boolean; autonomy_restored_at?: string | null;
+  auto_metabolic?: boolean; metabolic_every?: number; auto_metabolic_basis?: string;
+  circadian_to_atp?: boolean; circadian_to_atp_basis?: string;
+  // W627 (FU-542) — the immune quarantine as it stands in the config, whoever engaged it
+  immune_quarantine?: { engaged: boolean | null; engaged_by?: string | null; revert_with?: string | null; basis: string };
+  last_immune_defence?: { at?: string; threat?: string; reverted_at?: string; stood_down_because?: string } | null;
   evolution_auto_apply?: { enabled: boolean | null; readable: boolean; governed_by: string;
     consumer?: string; how_to_change?: string; why_not_a_toggle?: string; effect_when_off?: string };
   recent: Beat[]; integrations: string[];
@@ -50,6 +56,12 @@ const AUTONOMY: { key: keyof Status; label: string; does: string }[] = [
     does: 'Names the owning tier for each vision gap on the beat. Plan-only: nothing is sent to any tier and no code is written.' },
   { key: 'auto_ship', label: 'Self-ship',
     does: 'Re-ships ONE stale repo per beat, oldest first.' },
+  // FU-367 (W609) — the recirculation loop's lever, settable from the running backend for the first time
+  { key: 'auto_metabolic', label: 'Self-reflect',
+    does: 'Runs the six-stage recirculation loop every N beats; anything it would say is delivered only if all six clearance gates clear it. Runtime only: a restart turns it off.' },
+  // FU-308 (Owner ruling 2026-10-07) — default OFF
+  { key: 'circadian_to_atp', label: 'Circadian energy',
+    does: "Lets the time of day set the organism's ATP production rate (1.0 / 0.7 / 0.5 / 0.3 by phase). Off by default; runtime only: a restart turns it off." },
 ];
 
 const PHASE_ICON: Record<string, React.ComponentType<any>> = {
@@ -251,6 +263,23 @@ export const HeartbeatMonitor: React.FC = () => {
             )}
           </Card>
 
+          {s.immune_quarantine && (
+            <Card className="p-6" data-testid="heartbeat-immune-quarantine">
+              <div className={`text-xs font-bold ${s.immune_quarantine.engaged ? 'text-vital' : 'text-slate-400'}`}>
+                Immune quarantine: {s.immune_quarantine.engaged === null ? 'NOT KNOWN' : s.immune_quarantine.engaged ? 'ENGAGED' : 'off'}
+                {s.immune_quarantine.engaged_by ? ` — engaged by ${s.immune_quarantine.engaged_by}` : ''}
+              </div>
+              <p className="text-[11px] text-slate-500 mt-1">{s.immune_quarantine.basis}</p>
+              {s.immune_quarantine.revert_with && <p className="text-[11px] text-slate-500 mt-1">Revert: {s.immune_quarantine.revert_with}</p>}
+              {s.last_immune_defence?.reverted_at && (
+                <p className="text-[11px] text-slate-500 mt-1">
+                  Last defence ({s.last_immune_defence.threat}, {s.last_immune_defence.at}) stood down {s.last_immune_defence.reverted_at}
+                  {s.last_immune_defence.stood_down_because ? ` — ${s.last_immune_defence.stood_down_because}` : ''}
+                </p>
+              )}
+            </Card>
+          )}
+
           {(s.last_vsb_operated || s.last_vsb_failed || s.last_vsb_not_operated || s.last_vsb_evolved) && (
             <Card className="p-6" data-testid="heartbeat-vsb-visits">
               <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Living entities the beat tended</h3>
@@ -296,7 +325,9 @@ export const HeartbeatMonitor: React.FC = () => {
 
           {s.recent.length > 0 && (
             <Card className="p-6">
-              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Recent Beats</h3>
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Recent Beats</h3>
+              {/* W633 (FU-572) — said where the beats are read, not only in a hover title */}
+              <p data-testid="heartbeat-survival-note" className="text-[10px] text-slate-500 mb-4">The survival instinct and energy regulation run on a simulated ATP model in which ATP cannot fall, so they do not fire in practice.</p>
               <div className="space-y-2">
                 {s.recent.slice().reverse().map(b => (
                   <div key={b.beat} className="flex items-center justify-between p-3 bg-slate-950 rounded-lg border border-slate-900 text-xs">
@@ -306,8 +337,14 @@ export const HeartbeatMonitor: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-3 text-[9px] font-mono">
                       <span className="text-slate-500">{b.actions.join(' · ')}</span>
+                      {b.steps_failed && Object.keys(b.steps_failed).length > 0 && (
+                        <span className="text-vital font-black uppercase" data-testid="beat-steps-failed"
+                              title={Object.entries(b.steps_failed).map(([k, v]) => `${k}: ${v}`).join('\n')}>
+                          {Object.keys(b.steps_failed).length} step(s) FAILED: {Object.keys(b.steps_failed).join(', ')}
+                        </span>
+                      )}
                       {b.self_recovery && (
-                        <span className="text-amber-400 font-black uppercase" title="§8 survival instinct — the organism autonomously rested and restored its own energy on this beat">
+                        <span className="text-amber-400 font-black uppercase" title="§8 survival instinct — the organism rested and restored its own simulated energy on this beat. On the current energy model ATP cannot fall (see /api/v1/native-ai/homeostasis), so this does not fire in practice">
                           self-healed ATP {b.self_recovery}
                         </span>
                       )}

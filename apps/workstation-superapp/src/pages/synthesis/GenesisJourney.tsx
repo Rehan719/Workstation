@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { qmsChip, provenanceMapBadge, complianceChip, layerTitle } from '../../lib/api';
-import { REALMS as CANON_REALMS, DOMAINS as CANON_DOMAINS } from '../../lib/taxonomy';
+import { REALMS as CANON_REALMS, DOMAINS as CANON_DOMAINS, PRODUCTS, PRODUCT_LABELS } from '../../lib/taxonomy';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { saveOutput } from '../../lib/outputHistory';
 import { openExport } from '../../lib/download';
@@ -19,6 +19,7 @@ interface JourneyResult {
   problem: string;
   domain: string;
   realm: string;
+  product?: string; product_label?: string; product_source?: string;   // W620 — FU-502's record, shown
   phase_1_conceptualisation: { cognitive_cascade: string; mjm_assessment: string; concept: string };
   stage_3_innovate_research?: string;   // §4.3 — best/latest approaches + innovative options
   // §4.5 — candidate solutions modelled + evidence-ranked → best selected.
@@ -197,6 +198,8 @@ export const GenesisJourney: React.FC = () => {
   });
   const [domain, setDomain] = useState(() => { const d = sp.get('domain') || 'science'; return DOMAINS.includes(d) ? d : 'science'; });
   const [realm, setRealm] = useState(() => { const r = sp.get('realm') || 'enterprise'; return REALMS.includes(r) ? r : 'enterprise'; });
+  // W619 (FU-502) — the Products axis is chosen here; null means none chosen, and then none is sent
+  const [product, setProduct] = useState<string | null>(() => { const p = sp.get('product'); return p && (PRODUCTS as readonly string[]).includes(p) ? p : null; });
   const [running, setRunning] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<JourneyResult | null>(null);
@@ -249,6 +252,8 @@ export const GenesisJourney: React.FC = () => {
   const [pack, setPack] = useState<BoardPack | null>(null);
   const [packBusy, setPackBusy] = useState(false);
   const [gates, setGates] = useState<ReviewGates | null>(null);
+  // W614 (FU-482) — the entity's status is derived again by every gate decision; show what it now reads
+  const [entityStatus, setEntityStatus] = useState<{ status?: string; basis?: string } | null>(null);
   const [gatesOpen, setGatesOpen] = useState(false);
 
   const run = async () => {
@@ -264,9 +269,9 @@ export const GenesisJourney: React.FC = () => {
         // §5 — when "establish on completion" is on, ONE continuous workflow takes the challenge all the way
         // to a living VSB enterprise (W222 seam); else the journey stops at the blueprint (two-step establish).
         body: JSON.stringify(establishOnComplete
-          ? { problem, domain, realm, establish: true, entity_type: entityType,
+          ? { problem, domain, realm, establish: true, entity_type: entityType, ...(product ? { product } : {}),
               ...(enterpriseName.trim() ? { name: enterpriseName.trim() } : {}) }   // W450 — the founder's name, when given
-          : { problem, domain, realm }),
+          : { problem, domain, realm, ...(product ? { product } : {}) }),
       });
       if (!res.ok) { setError(`HTTP ${res.status}`); setRunning(false); return; }
       const data = await res.json();
@@ -483,6 +488,8 @@ export const GenesisJourney: React.FC = () => {
       });
       // Ledger cluster 1 — the Owner's gate decision must never silently no-op on a 4xx/5xx
       if (!res.ok) { setError(`Gate ${decision} failed (HTTP ${res.status}).`); return; }
+      const dj = await res.json();
+      setEntityStatus({ status: dj.entity_status, basis: dj.entity_status_basis });
       setGates(await fetch(`/api/v1/vsb/${vsb.vsb_id}/review-gates`).then(r => r.json()));
     } catch { setError('Action failed — backend unreachable; nothing changed.'); }   // W344
   };
@@ -543,8 +550,9 @@ export const GenesisJourney: React.FC = () => {
         <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed">
           One progressive, intelligently-autonomous workflow that takes a problem from
           <span className="text-highlight"> Conceptualisation → Design &amp; Development → Commercialisation</span> —
-          composing the six cognitive engines, MJM, the design and business engines, and the constitutional
-          gate into your own living VSB blueprint.
+          {/* W623 (FU-517, M1 v9 R2.0) — what the backend actually runs, as /genesis/status reports it */}
+          through one cognitive-lens prompt (six lenses), one MJM prompt, the journey's stage prompts and the
+          gaas.v5 intent gate — a blueprint you can establish as a living VSB.
         </p>
       </header>
 
@@ -677,6 +685,18 @@ export const GenesisJourney: React.FC = () => {
             </div>
           </div>
         </div>
+        <div>
+          <label className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2 block">Product (optional)</label>
+          <div className="flex flex-wrap gap-2" data-testid="genesis-product-picker">
+            {PRODUCTS.map(p => (
+              <button key={p} type="button" onClick={() => setProduct(product === p ? null : p)} title={PRODUCT_LABELS[p]}
+                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${product === p ? 'bg-highlight/20 text-highlight border border-highlight/40' : 'bg-slate-900 text-slate-500 border border-slate-800 hover:text-white'}`}>{p}</button>
+            ))}
+          </div>
+          <p className="text-[9px] text-slate-600 mt-1">{product ? PRODUCT_LABELS[product] : 'None chosen — the journey records that no product was chosen.'}</p>
+          {/* W628 (FU-537) — the choice is recorded with the journey and does not yet change how any stage runs */}
+          <p data-testid="genesis-product-record-only" className="text-[9px] text-amber-400/80 mt-1">Recorded only: the product is saved with this journey and its entity, but no stage runs differently by product yet.</p>
+        </div>
         {/* §5 — one continuous workflow: optionally take the challenge all the way to a living VSB enterprise */}
         <div className="pt-2 flex flex-col @[560px]:flex-row @[560px]:items-end gap-3 flex-wrap">
           <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -715,6 +735,11 @@ export const GenesisJourney: React.FC = () => {
       {/* Result */}
       {result && (
         <div className="space-y-4">
+          {result.product_source && (
+            <p className="text-[10px] text-slate-500" data-testid="journey-product">
+              Product: {result.product_label || result.product} — {result.product_source}
+            </p>
+          )}
           {/* §4.9 (W306) — take the journey out in any selectable live format */}
           <Card className="p-4 border-slate-800 flex items-center justify-between gap-3 flex-wrap">
             <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Export the journey (§4.9) — becomes a living, QMS-gated deliverable</p>
@@ -778,7 +803,7 @@ export const GenesisJourney: React.FC = () => {
                 {Object.entries(result.stage_verifications).map(([stage, v]) => (
                   <span key={stage} title={v.verified === null ? (v.basis || 'not assessable — floor-served') : `score ${v.score} · sections ${v.sections_present}`}
                     className={`text-[9px] font-black uppercase px-2 py-1 rounded ${v.verified === null ? 'bg-slate-800 text-slate-500' : v.verified ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>
-                    {v.verified === null ? '—' : v.verified ? '✓' : '⚠'} {stage} · {Math.round(v.score * 100)}%
+                    {v.verified === null ? '—' : v.verified ? '✓' : '⚠'} {stage} · {/* W631 (FU-551) — no percentage on a stage the backend calls not assessable */}{v.verified === null ? 'n/a' : `${Math.round(v.score * 100)}%`}
                   </span>
                 ))}
               </div>
@@ -852,8 +877,9 @@ export const GenesisJourney: React.FC = () => {
                         <span className="text-[9px] font-mono text-slate-500 shrink-0" title={`coverage ${c.coverage} · specificity ${c.specificity} · structure ${c.structure}`}>
                           score {c.score}
                           {/* §4.5 (W305) — the ranking's simulated-evidence component, declared */}
-                          {(c as any).simulation_score !== undefined && (
-                            <span className="text-aura/70 ml-1" title="forward-simulated through the owned digital-twin pattern (declared weights 60/40)">· sim {(c as any).simulation_score}</span>
+                          {/* W635 (FU-574) — shown only when a simulation produced one; the tooltip reads the record */}
+                          {(c as any).simulation_score != null && (
+                            <span className="text-aura/70 ml-1" title={(c as any).simulation_score_basis ?? 'forward-simulated through the owned digital-twin pattern (declared weights 60/40)'}>· sim {(c as any).simulation_score}</span>
                           )}
                         </span>
                       </div>
@@ -910,7 +936,14 @@ export const GenesisJourney: React.FC = () => {
           <Card className="p-6 border-highlight/30 bg-highlight/5">
             <div className="flex items-center gap-3 mb-3">
               <ShieldCheck size={18} className="text-highlight" />
-              <h3 className="font-black text-highlight uppercase tracking-widest text-sm">Sovereign Journey Complete</h3>
+              {/* W623 (FU-534) — the heading names what the journey produced, not a sovereign enterprise it may not have */}
+              <h3 className="font-black text-highlight uppercase tracking-widest text-sm" data-testid="journey-complete-heading">
+                {(result as any).status === 'blocked_by_screen' ? 'Journey Stopped — vetoed by the §11 screen'
+                  /* W633 (FU-562) — a body still pending is registered, not established */
+                  : (result as any).enterprise_established && Object.values(((result as any).established_vsb?.body_pending) || {}).some(Boolean) ? 'Enterprise Registered — body pending'
+                  : (result as any).enterprise_established ? 'Journey Complete — Enterprise Established'
+                  : 'Journey Complete — Record Only (no enterprise established)'}
+              </h3>
             </div>
             <p className="text-sm text-slate-300 leading-relaxed">{result.deliverable}</p>
             <div className="flex flex-wrap items-center gap-2 mt-4">
@@ -1082,7 +1115,7 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                     </button>
                   </div>
                   <p className="text-[9px] text-slate-500 mt-2 leading-relaxed">
-                    Its plan already opens with an Executive Summary · Concept · Vision, seeded from this journey.
+                    Its plan opens with TEMPLATED Executive Summary · Concept · Vision fields built from your request — edit them to make them yours.
                   </p>
                   {birthStages.length > 0 && (
                     <div className="mt-3 p-3 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-1.5">
@@ -1317,8 +1350,15 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                         {gatesOpen && gates && (
                           <div className="mt-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
                             <p className="text-[9px] text-slate-500">{gates.mode} — tap a stage to gate/ungate; each change is DCS-audited.</p>
+                            {entityStatus?.status && (
+                              <p className="text-[9px] text-slate-400" data-testid="gate-entity-status" title={entityStatus.basis}>
+                                entity status now: {entityStatus.status}{entityStatus.basis ? ` — ${entityStatus.basis}` : ''}
+                              </p>
+                            )}
                             {/* W452 (P1.4) — the copy says what a gate DOES: it used to say only that decisions were recorded */}
                             <p className="text-[9px] text-amber-300/90">A gated stage that is <b>pending</b> or <b>rejected</b> blocks this enterprise's lifecycle movers — ship, evolve, cascades, plan orchestration and the organism's autonomous re-ship/evolve — with a 409 that names the gate, until a human approves it (or ungates the stage).</p>
+                            {/* W620 (FU-483) — what a gate does NOT do: the journey has already run, so no stage is paused */}
+                            <p className="text-[9px] text-slate-500" data-testid="gates-scope-note">A gate does not pause the stage it is named after: the journey that composed this enterprise has already run. It holds the movers above. These eight gate stages are the gate vocabulary; the journey's own stages and a Project's three are different lists.</p>
                             <div className="flex flex-wrap gap-1.5">
                               {gates.lifecycle.map(stage => {
                                 const st = gates.statuses.find(s => s.stage === stage.id);

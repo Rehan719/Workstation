@@ -708,7 +708,12 @@ class WrittenRecallRequest(BaseModel):
     # max_length (refuter catch): the O(n*m) Levenshtein ran unbounded on the event loop — a 40k-char
     # body blocked every route for minutes. The longest ayah (2:282) is ~1.1k chars; 1500 bounds the
     # comparison at ~2.25M cells, and the compare runs in a worker thread besides.
-    ayah_text: str = Field(max_length=1500)     # Arabic text from the authoritative source
+    #  W630 (FU-545) - the reference is FETCHED by the server from surah + ayah. A caller-supplied ayah_text is
+    #  still compared (offline use, tests) but is labelled as supplied and asserts no transmission: it was
+    #  labelled qiraat 'Hafs' and "the authoritative text" for any string, Qur'anic or not.
+    surah: int | None = Field(default=None, ge=1, le=114)
+    ayah: int | None = Field(default=None, ge=1, le=286)
+    ayah_text: str | None = Field(default=None, max_length=1500)
     recited_text: str = Field(max_length=1500)  # the learner's TYPED Arabic recollection
 
 
@@ -723,11 +728,31 @@ async def tajweed_analyse(req: WrittenRecallRequest):
     What a text engine can honestly do, it now does, and it says exactly what it is NOT:
     no claim about pronunciation, recitation, or articulation is made anywhere in the payload."""
     from fastapi.concurrency import run_in_threadpool
+    if req.surah is not None and req.ayah is not None:
+        reference = await fetch_ayah_arabic(req.surah, req.ayah)
+        if not reference:
+            raise HTTPException(status_code=503, detail=(
+                f"the authoritative text of {req.surah}:{req.ayah} could not be fetched (source unreachable, no "
+                f"cache, or no such ayah) - nothing is compared against text the platform did not source"))
+        source = {"reference_source": "fetched", "reference": f"{req.surah}:{req.ayah} quran-uthmani",
+                  "reference_basis": "the reference Arabic was fetched by the server from the sourced edition"}
+    elif req.ayah_text:
+        reference = req.ayah_text
+        source = {"reference_source": "supplied_by_caller", "reference": None,
+                  "reference_basis": ("the reference text was SUPPLIED BY THE CALLER and not fetched, so this is a "
+                                      "comparison of two strings - it asserts NO Qur'anic text and NO riwayah. "
+                                      "Send surah + ayah to compare against the sourced edition")}
+    else:
+        raise HTTPException(status_code=422, detail="send surah + ayah (preferred) or ayah_text")
     comparison = await run_in_threadpool(
-        _tajweed_coach.compare_written_recall, req.ayah_text, req.recited_text)
+        _tajweed_coach.compare_written_recall, reference, req.recited_text)
+    if source["reference_source"] != "fetched":
+        comparison.pop("qiraat", None)
+        comparison.pop("qiraat_note", None)
     return {
         "comparison": comparison,
-        "ayah_text": req.ayah_text[:200],
+        **source,
+        "ayah_text": reference[:200],
         "kind": "written_recall_check",
         "disclaimer": ("Compares WRITTEN text only — it says nothing about your recitation or "
                        "pronunciation. Recitation assessment requires a qualified teacher "
@@ -788,10 +813,18 @@ async def tajweed_lesson(req: TajweedLessonRequest):
         "served_by": served_by,
         "is_external": bool(meta.get("is_external")),
         "floor_served": floor_served,
+        #  W613 (FU-477, M1 v8 R1.2) — THE NOTE DESCRIBES WHAT THE LEARNER RECEIVED. It was emitted whenever the
+        #  floor served the composition, including when the scholar gate WITHHELD it, so a learner was told to
+        #  treat "this outline" as a checklist above an empty box. A withheld lesson is not an outline the
+        #  learner has: the note now speaks only of a published body, and a withheld one says why it is empty.
         **({"floor_note": ("the deterministic native floor served this — it is a structured "
                            "OUTLINE composed from the request, not scholarly content; treat it as "
                            "a study checklist and verify every rule with a qualified teacher")}
-           if floor_served else {}),
+           if floor_served and _published is not None else {}),
+        "withheld_note": (None if _published is not None else
+                          "Nothing is shown because this lesson has not been approved by a scholar: "
+                          + str(_review_why or "it is awaiting review")
+                          + " The text was composed and queued for review; it is not shown until approved."),
         "ai_assisted": True,
         #  R11 (Owner ruling 2026-10-05b) — THE RIWAYAH IS DECLARED, so a rule set is not presented as
         #  universal. Tajwid rules differ between transmissions, and stating one set without saying which
@@ -823,6 +856,10 @@ async def get_gamification(uid: str):
     return _gami_state(_load_gami(uid))
 
 
+_RESERVED_ACHIEVEMENT_PREFIXES = ("hafiz", "hifz", "surah_complete", "ayah_memorised", "ayah_memorized",
+                                  "juz_complete", "khatm", "certif", "ijazah")
+
+
 class AwardRequest(BaseModel):
     uid: str
     achievement: str    # e.g. "ayah_memorised" | "daily_review" | "surah_complete"
@@ -836,8 +873,17 @@ async def award_xp(req: AwardRequest):
     W439 — the old fallback returned "Achievement recorded" while persisting NOTHING (the engine
     it deferred to lacks the method it probed for). "recorded: true" now means the write happened;
     the full recomputed state comes back with it."""
+    #  W631 (FU-548) - an achievement that CLAIMS memorisation or completion is the platform's own review path's
+    #  to award. Any caller could name 'hafiz_complete' here and be ranked for it.
+    _a = str(req.achievement or "").strip().lower()
+    if any(_a.startswith(p) for p in _RESERVED_ACHIEVEMENT_PREFIXES):
+        raise HTTPException(status_code=422, detail=(
+            f"'{req.achievement}' claims memorisation or completion, which only the platform's own review path "
+            f"records - an explicit award may not assert it"))
     state = _award(req.uid, req.achievement, req.xp, source="explicit_award")
-    return {"recorded": True, "achievement": req.achievement, "xp_awarded": req.xp, **state}
+    return {"recorded": True, "achievement": req.achievement, "xp_awarded": req.xp, "award_source": "caller_asserted",
+            "award_basis": "an explicit award records what the CALLER asserted; the platform did not observe it",
+            **state}
 
 
 @router.get("/leaderboard")
@@ -869,6 +915,9 @@ async def qep_leaderboard(limit: int = 20):
             #  trusting it. They can differ: history is capped at the last 500 awards while xp is a
             #  running total, and saying so is better than quietly presenting one as proof of the other.
             "xp_in_recorded_history": sum(int(h.get("xp", 0) or 0) for h in _hist),
+            #  W631 (FU-548) - how much of it a caller asserted rather than the platform observed
+            "caller_asserted_xp": sum(int(h.get("xp", 0) or 0) for h in _hist
+                                      if h.get("source") == "explicit_award"),
         })
 
     #  a tie is ordered by uid for determinism, and NAMED below rather than passed off as a ranking
@@ -1064,6 +1113,24 @@ def _contribution_entity(vsb_id: str) -> dict:
             "message": f"no entity {safe} is on the living roster or in the VSB store, so a contribution "
                        f"cannot be recorded against its books. Nothing was written.",
             "vsb_id": safe})
+    #  W622 (FU-512, M1 v9 R1.0) — A QEP CHANNEL CREDITS ONLY A QEP ENTITY. This checked only that the entity
+    #  existed, so a Zakat or Sponsor-a-Student gift could be posted to any entity, and the response then told
+    #  the donor "no owner share at all" and "A.8: owner 0%" about one whose own waterfall paid its owner 20%.
+    #  A.8's claims are true of the qep_waqf_trust form and of nothing else, so another form is refused, with
+    #  the owner share its own template carries, rather than credited under A.8's description.
+    _etype = rec.get("entity_type") or (rec.get("economy") or {}).get("entity_type")
+    if _etype != "qep_waqf_trust":
+        try:
+            from agentic_core.economy.entities import get_template
+            _owner = (get_template(_etype or "").get("waterfall") or {}).get("owner")
+        except Exception:
+            _owner = None
+        raise HTTPException(status_code=422, detail={
+            "message": (f"{safe} is not a QEP entity (its form is {_etype or 'not recorded'}"
+                        + (f", whose waterfall pays its owner {round(_owner * 100)}%" if isinstance(_owner, (int, float)) else "")
+                        + "), so A.8's Zakat and Sponsor-a-Student terms - no owner share, Zakat-designated "
+                          "charity funds - do not describe it. Nothing was recorded."),
+            "vsb_id": safe, "entity_type": _etype})
     return {"vsb_id": safe, "record": rec}
 
 

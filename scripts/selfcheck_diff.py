@@ -16,6 +16,7 @@ Checks
   keys       a dict key added in a changed .py, and who (if anyone) reads it
   renames    a dict key removed in a changed .py, and who still reads it
   routes     a @router decorator bound to a private helper (the insertion trap)
+  figures    a route added or removed — the README's operation count has moved (test_w499 reads it)
   returns    one function whose dict-literal returns carry different key sets
   selfmatch  a test assertion searching its own file for a literal it contains
   banned     a changed source comment quoting a literal some guard forbids
@@ -826,8 +827,14 @@ def check_selfmatch(rev: str, files: list[str]) -> list[str]:
     return out
 
 
+#  W602 (FU-439, P2.21 clause 1) — ANY path root, not three literal spellings. The old form accepted only
+#  `root`, `app` or `S` before the slash, so every guard reading a file as
+#  `_x = (_pl.Path(__file__).resolve().parents[1] / "...").read_text(...)` — the idiom most of the suite now
+#  uses — was INVISIBLE to check_banned. Measured before the swap: the old pattern found 190 file-read
+#  mappings in the suite, this one 357, losing none (the one the first wide draft dropped, `.gitignore`, is
+#  why the path group is permissive and anchored by `.read_text` rather than by an extension list).
 SRC_READ_RE = re.compile(
-    r"""(?P<var>\w+)\s*=\s*\(?\s*(?:root|app|S)\s*/\s*["'](?P<path>[^"']+)["']\s*\)?\s*\.read_text""")
+    r"""(?P<var>\w+)\s*=\s*\(?[^=]{0,300}?["'](?P<path>[^"'\n]+)["']\s*\)?\s*\.read_text""", re.S)
 
 
 def check_banned(rev: str, files: list[str]) -> list[str]:
@@ -875,8 +882,9 @@ def check_banned(rev: str, files: list[str]) -> list[str]:
 
 
 #  W600 — any `var = <expr> / "some/path.ext").read_text(...)`, however the path root is spelled. Kept
-#  separate from SRC_READ_RE, whose narrowness (root|app|S) is deliberate for check_banned's literal scoping
-#  — and is also why check_banned could not see this round's files at all.
+#  separate from SRC_READ_RE, which until W602 accepted only `root`, `app` or `S` as the path root - and that
+#  narrowness is why check_banned could not see W600's files at all. W602 widened SRC_READ_RE too; this one
+#  stays separate because it keeps an extension list, which check_presence needs to name a source file.
 #  `[^=]`, NOT `[^\n=]`: the read idiom this must catch SPANS LINES, so a character class excluding the
 #  newline can never match it. The first version of this leg used `[^\n=]` and flagged NOTHING on the very
 #  text it was written for - it would have shipped as an instrument that cannot fail, which is why it was
@@ -896,6 +904,14 @@ def _in_comment_only(target: Path, lit: str) -> tuple:
         raw = target.read_text(encoding="utf-8")
     except OSError:
         return (0, 0)
+    #  W636 — A DOCUMENT HAS NO COMMENTS. This applied JavaScript comment syntax to whatever file a guard
+    #  reads, the plan included. A register row quoting a shell glob put the two characters that open a block
+    #  comment into the plan, a path further down supplied the two that close one, and every line between
+    #  them became "a comment": a guard that had passed for forty rounds went red because the plan GREW.
+    #  Markdown, JSON and plain text carry no comment a render could be deleted from behind, so every hit in
+    #  them is content.
+    if target.suffix.lower() in (".md", ".json", ".txt"):
+        return (0, raw.count(lit))
     blocks = re.sub(r"/\*.*?\*/", lambda m: "\n" * m.group(0).count("\n"), raw, flags=re.S)
     code_lines, comment_lines = [], []
     for a, b in zip(raw.splitlines(), blocks.splitlines()):
@@ -968,6 +984,40 @@ def check_presence(rev: str, files: list[str]) -> list[str]:
                     f"reader or a surface - so it asserts a documented sentence while claiming a rendered "
                     f"one. Either assert what is rendered, or reword the message to say it checks the "
                     f"source's own comment.")
+    return out
+
+
+#  W602 (FU-455) — the same decorator pattern check_routes uses, so the two legs cannot disagree about
+#  what a route IS
+_ROUTE_DECO_RE = re.compile(r"@\s*\w*router\w*\.(get|post|put|patch|delete)\b")
+
+
+def check_figures(rev: str, files: list[str]) -> list[str]:
+    """A route was added or removed, so the README's operation count has moved and test_w499 will say so.
+
+    W596's suite went red on ('ops', 522, 524) for exactly this; W600 added three routes and caught it only by
+    running the measurement by hand. The pre-flight knew the diff and said nothing. It says so now, naming the
+    guard and the fix — without running the measurement, which lives in its own child process.
+    """
+    out: list[str] = []
+    net = 0
+    where: list[str] = []
+    for f in files:
+        if not f.endswith(".py") or "test_" in Path(f).name:
+            continue
+        added, removed = added_removed(rev, f)
+        a = sum(1 for _, ln in added if _ROUTE_DECO_RE.search(ln))
+        r = sum(1 for ln in removed if _ROUTE_DECO_RE.search(ln))
+        if a or r:
+            net += a - r
+            where.append(f"{f} (+{a}/-{r})")
+    if not where:
+        return out
+    out.append(f"route decorators changed in this round ({', '.join(where)}; net {net:+d}) — the README's "
+               f"API operation count has moved, and test_w499 asserts the README equals the tree. Run "
+               f"`python scripts/readme_figures.py --fix` BEFORE the suite, not after it goes red."
+               + ("" if net else " (net zero: added and removed balance, but the PATHS may still differ — "
+                                 "run the check anyway)"))
     return out
 
 
@@ -1194,6 +1244,10 @@ def check_register_change(rev: str, files: list[str]) -> list[str]:
     if not (reg_changed or plan_changed):
         return out
 
+    #  W602 (FU-439, P2.21 clause 1) — THE KINDS ARE DETAIL, NOT THE GATE. This used to return `ok` unless
+    #  one of four hardcoded kinds matched, and W601 closed six rows and edited the plan while this leg said
+    #  ok — because "a row was CLOSED", the most common register change there is, was not in the list. A
+    #  change to the register IS a register change by definition, so the gate is the diff itself.
     kinds: list[str] = []
     if plan_changed:
         added, removed = added_removed(rev, "docs/FABLE_DELIVERY_PROMPT.md")
@@ -1214,17 +1268,57 @@ def check_register_change(rev: str, files: list[str]) -> list[str]:
         if any('"slot"' in line for _, line in added):
             kinds.append("a row was RESLOTTED or added — assertions that count the rows riding an item "
                          "read that")
+        if any('"status"' in line for _, line in added) or any('"closed_by"' in line for _, line in added):
+            kinds.append("a row was CLOSED or reopened — every assertion over `open_rows`, the schedule, "
+                         "the forecast and the per-item counts reads that")
     if not kinds:
-        return out
+        kinds.append("the register or the plan changed in a way none of the named kinds classifies — "
+                     "which is still a register change, and the guards below still read it")
 
-    #  the guards that actually read the register and the plan, by name, so the round can run them
-    out.append("this round changed the register or the plan, which can invalidate assertions it did not "
-               "touch — run the register guards before the full suite: "
-               "-k 'plan_carries_every_followup or plan_projects or an_area_with_no_owner or "
-               "route_whose_matcher'")
+    #  THE GUARDS ARE COMPUTED, NOT NAMED. The previous version listed four by hand; a marker scan of the
+    #  suite finds thirty-five test functions that read the register or the plan, and W592's register change
+    #  broke seven that were in neither list. Biased toward INCLUSION: this names guards to RUN, so an extra
+    #  one costs seconds and a missing one is the defect this leg exists to catch.
+    guards = _register_reading_guards()
+    out.append(f"this round changed the register or the plan, which can invalidate assertions it did not "
+               f"touch — {len(guards)} guard(s) read them; run them before the full suite:")
+    out.append("  -k '" + " or ".join(guards) + "'")
     for k in kinds:
         out.append(f"  {k}")
     return out
+
+
+#  W602 — the markers that mean "this test reads the register or the plan". A test carrying any one of
+#  them is a guard a register change can invalidate. Kept as data so the list can be extended and so a
+#  guard can assert the scan finds a test it plants.
+REGISTER_READ_MARKERS = (
+    "FOLLOWUPS.json", "FABLE_DELIVERY_PROMPT.md", "WORKSTATION_IDBO_LIVING_PLAN.md",
+    "fu.raw_items", "fu.check(", "fu.schedule", "fu.forecast", "fu._routes", "fu.route_row",
+    "fu.render", "fu.plan_now", "fu.batches", "fu.bundles", "plan_followups", "scratch_reg(",
+)
+
+
+def _register_reading_guards(suite: "Path | None" = None) -> list[str]:
+    """Every test function in the suite whose body carries a register/plan marker, in file order.
+
+    A SCAN, and biased toward inclusion on purpose: a test that merely mentions FOLLOWUPS.json in a comment is
+    included, because the cost of running one extra guard is seconds and the cost of omitting one is a red
+    suite forty minutes later. The names are returned as data so the caller can count them and so a guard
+    can plant a test and assert it is found.
+    """
+    path = suite or (ROOT / "integration_tests/test_mvp_spine.py")
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return []
+    names: list[str] = []
+    for chunk in re.split(r"\n(?=def test_)", text):
+        m = re.match(r"def (test_\w+)", chunk)
+        if not m:
+            continue
+        if any(mk in chunk for mk in REGISTER_READ_MARKERS):
+            names.append(m.group(1))
+    return names
 
 
 CHECKS = {
@@ -1236,6 +1330,9 @@ CHECKS = {
     "claims": ("a basis asserting a numeric bound instead of reporting one", check_claims),
     "renames": ("a key removed while other files still read it", check_renames),
     "routes": ("a route decorator bound to a private helper", check_routes),
+    # W602 (FU-455) — a route added or removed moves a figure test_w499 reads; the pre-flight knew the diff
+    # and said nothing, and W596's suite went red on it.
+    "figures": ("a route added or removed, so the README's operation count has moved", check_figures),
     "returns": ("sibling returns with different key sets", check_returns),
     "selfmatch": ("a test assertion that matches its own text", check_selfmatch),
     "banned": ("a comment quoting a literal a guard forbids", check_banned),

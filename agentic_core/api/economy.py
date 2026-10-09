@@ -307,6 +307,14 @@ async def run_cycle(req: CycleRequest, user: dict | None = Depends(get_current_u
                                                     "living_registry" if attribution.startswith("living_registration")
                                                     else ("caller_claimed" if req.entity_type
                                                           else "platform_default"))}
+        #  W631 (FU-558) - a cycle for an id that is NOT a registered living entity is a SIMULATION, and says so:
+        #  it wrote books and an Owner accrual for nothing that exists, and the response never mentioned it
+        if not attribution.startswith("living_registration"):
+            result["registration"] = "UNREGISTERED"
+            result["registration_basis"] = (
+                f"'{req.vsb_id}' is not a registered living entity: this cycle is a SIMULATION run on request "
+                f"values, and the ledger entries and any Owner accrual it wrote belong to no entity that exists. "
+                f"Virtual WST only.")
         # §13 (W338) — USER-driven cycles drift the living record too: a cycle that genuinely
         # moved the ledger marks the shipped repo stale (the audit found only AUTONOMOUS cycles
         # marked drift — an owner-run cycle silently outdated the shipped body).
@@ -577,6 +585,71 @@ async def owner_payout(req: PayoutRequest, user: dict | None = Depends(get_curre
     except TimeoutError:
         raise HTTPException(status_code=503, detail=(
             "The owner-payments store is busy (another write held its lock) — no payout was recorded. Retry."))
+
+
+class LifecycleRequest(BaseModel):
+    to: str                       # juvenile · mature · senescent · dormant · awake (retired is refused)
+    note: str = ""
+
+
+@router.post("/living-vsbs/{vsb_id}/lifecycle")
+async def living_vsb_lifecycle(vsb_id: str, req: LifecycleRequest, user: dict | None = Depends(get_current_user)):
+    """P3.26 clause (2) — move an entity along its life cycle: dormancy is self-service and reversible, and
+    retirement is refused here because death is governed through Change Control. The transition is recorded
+    against the caller; a refusal names its rule and is a 409, so it cannot be read as a success."""
+    _require_economy_access(vsb_id, user)
+    from agentic_core.economy.living_vsbs import set_lifecycle
+    _who = ((user.get("username") or user.get("user_id")) if isinstance(user, dict) else None)
+    res = set_lifecycle(vsb_id, req.to, by=str(_who or "owner (single-user mode)"), note=req.note)
+    if res.get("refused"):
+        raise HTTPException(status_code=409, detail=res)
+    return res
+
+
+class RemovalRequest(BaseModel):
+    why: str
+
+
+class MitosisRequest(BaseModel):
+    child_name: str
+    amount_wst: float
+    why: str
+
+
+@router.post("/living-vsbs/{vsb_id}/propose-mitosis")
+async def living_vsb_propose_mitosis(vsb_id: str, req: MitosisRequest, user: dict | None = Depends(get_current_user)):
+    """P3.26 clause (5) — a MATURE entity proposes to divide through Change Control: the child inherits its
+    constitution verbatim and is funded from the parent's reserve fund. Nothing moves until implemented."""
+    _require_economy_access(vsb_id, user)
+    from agentic_core.economy.turnover import propose_mitosis
+    _who = ((user.get("username") or user.get("user_id")) if isinstance(user, dict) else None)
+    res = await propose_mitosis(vsb_id, req.child_name, req.amount_wst, req.why, by=str(_who or "owner (single-user mode)"))
+    if not res.get("filed"):
+        raise HTTPException(status_code=409, detail=res)
+    return res
+
+
+@router.post("/living-vsbs/{vsb_id}/propose-removal")
+async def living_vsb_propose_removal(vsb_id: str, req: RemovalRequest, user: dict | None = Depends(get_current_user)):
+    """P3.26 clause (7) — PROPOSE a removal through Change Control, naming what and why. Refused (409) for an
+    entity any never-auto-retire rule protects or cannot clear; nothing moves until the change is approved and
+    implemented, which re-checks before it retires anything."""
+    _require_economy_access(vsb_id, user)
+    from agentic_core.economy.turnover import propose_removal
+    _who = ((user.get("username") or user.get("user_id")) if isinstance(user, dict) else None)
+    res = await propose_removal(vsb_id, req.why, by=str(_who or "owner (single-user mode)"))
+    if not res.get("filed"):
+        raise HTTPException(status_code=409, detail=res)
+    return res
+
+
+@router.get("/living-vsbs/{vsb_id}/retirement-check")
+async def living_vsb_retirement_check(vsb_id: str, user: dict | None = Depends(get_current_user)):
+    """P3.26 clause (4) — every never-auto-retire rule for this entity, each with its verdict and basis. Read-only:
+    it retires nothing. An entity is refused when ANY rule protects it or cannot be checked."""
+    _require_economy_access(vsb_id, user)
+    from agentic_core.economy.turnover import retirement_refusal
+    return retirement_refusal(vsb_id)
 
 
 @router.get("/living-vsbs")

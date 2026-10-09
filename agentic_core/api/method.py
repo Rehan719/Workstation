@@ -1406,7 +1406,8 @@ def _rows_the_tree_moved_under(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
                   f"code it names, not a diff."
                   if candidates else
                   "no open row names a file changed by a later round, within the history read. A row whose "
-                  "files nobody touched can still be false - two were dropped as factually wrong in W507."),
+                  "files nobody touched can still be false - two were dropped as factually wrong in W507. "
+                  "This is NOT a statement that every row is current."),
         "limits": ("It reads the last 400 commits and only commits whose subject declares a round. A row "
                    "carrying no files, or found by a round the subject does not name, is invisible to it."),
     }

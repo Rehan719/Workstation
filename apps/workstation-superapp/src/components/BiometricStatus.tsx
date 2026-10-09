@@ -142,6 +142,9 @@ export const BiometricStatus: React.FC<BiometricStatusProps> = ({
   biometrics: b,
   compact = false,
 }) => {
+  // W617 (FU-497, M2 v8 R4.4) — the dot is HOST CPU HEADROOM under an anatomical name; there is no
+  // circulatory subsystem. The backend sends that basis and the shell never showed it.
+  const CARDIO_TITLE = `Cardiovascular — host CPU headroom ${b.cardiovascular.resource_flow != null ? Math.round(b.cardiovascular.resource_flow) + '%' : ''} (spare capacity on this machine, not workload; there is no circulatory subsystem)`;
   const cardioCol  = cardioClass(b.cardiovascular.resource_flow, b.live);
   const cardioDur  = cardioDuration(b.cardiovascular.resource_flow);
   const cogCol     = cognitionClass(b.cognition.state);
@@ -164,7 +167,7 @@ export const BiometricStatus: React.FC<BiometricStatusProps> = ({
       <div className="flex flex-col items-center gap-1 @[90px]:hidden">
         <span
           className={`w-1.5 h-1.5 rounded-full shrink-0 ${cardioCol} animate-pulse ${cardioDur}`}
-          title="Cardiovascular"
+          title={CARDIO_TITLE}
         />
         <Activity
           size={11}
@@ -173,7 +176,7 @@ export const BiometricStatus: React.FC<BiometricStatusProps> = ({
         />
         <span
           className={`w-1.5 h-1.5 rounded-full shrink-0 ${cogCol} animate-pulse ${cogDur} [animation-delay:300ms]`}
-          title="Cognition"
+          title={`Load state — ${(b.cognition as any).basis ?? "derived from host CPU and running projects; no cognitive engine is read"}`}
         />
         <span
           className={`w-1.5 h-1.5 rounded-full shrink-0 ${commCol} animate-pulse ${commDur} [animation-delay:600ms]`}
@@ -189,7 +192,7 @@ export const BiometricStatus: React.FC<BiometricStatusProps> = ({
         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-slate-700/60 bg-slate-900/60">
           <span
             className={`w-1.5 h-1.5 rounded-full shrink-0 ${cardioCol} animate-pulse ${cardioDur}`}
-            title="Cardiovascular"
+            title={CARDIO_TITLE}
           />
           <Activity
             size={12}
@@ -198,7 +201,7 @@ export const BiometricStatus: React.FC<BiometricStatusProps> = ({
           />
           <span
             className={`w-1.5 h-1.5 rounded-full shrink-0 ${cogCol} animate-pulse ${cogDur} [animation-delay:300ms]`}
-            title="Cognition"
+            title={`Load state — ${(b.cognition as any).basis ?? "derived from host CPU and running projects; no cognitive engine is read"}`}
           />
           <span
             className={`w-1.5 h-1.5 rounded-full shrink-0 ${commCol} animate-pulse ${commDur} [animation-delay:600ms]`}

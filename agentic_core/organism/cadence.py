@@ -53,6 +53,13 @@ SIGNAL_NAME = {STRATEGIC: "market signal", ACTION_PLAN: "KPI trigger"}
 #  which field of the plan each layer writes
 PLAN_FIELD = {STRATEGIC: "strategy", ACTION_PLAN: "action_plan"}
 
+#  W620 (FU-492, M2 v8 R3.5) — the cadence said a market signal or KPI trigger "would fire it regardless", and
+#  nothing in this repository observes a market or a KPI: the only producer of a signal is the refresh route's
+#  own `signal` parameter. The trigger is real; the observer is absent, and every reason that names the signal
+#  now says which.
+SIGNALS_OBSERVED_BY = ("nothing in this platform observes markets or KPIs, so a signal fires only when someone "
+                       "supplies one (POST /api/v1/organism/cadence/refresh?layer=...&signal=...)")
+
 TRIGGER_ELAPSED = "elapsed"
 TRIGGER_SIGNAL = "signal"
 TRIGGER_NEVER_REFRESHED = "never_refreshed"
@@ -119,7 +126,8 @@ def due(layer: str, last_refresh_at: Any, now: Optional[float] = None,
     return {"due": False, "trigger": None, "signal": None,
             "reason": (f"not due: {round(elapsed / 86400, 2)} day(s) since the last refresh, "
                        f"{PERIOD_NAME[layer]} period is {round(period / 86400)} day(s). A "
-                       f"{SIGNAL_NAME[layer]} would fire it regardless"),
+                       f"{SIGNAL_NAME[layer]} would fire it regardless, but only one a caller SUPPLIES - "
+                       f"{SIGNALS_OBSERVED_BY}"),
             "last_refresh_at": last_refresh_at, "elapsed_seconds": round(elapsed, 3),
             "period_seconds": period}
 
@@ -157,7 +165,9 @@ def history(scope: str, layer: Optional[str] = None) -> List[Dict[str, Any]]:
 
 
 def latest(scope: str, layer: str) -> Optional[Dict[str, Any]]:
-    rows = history(scope, layer)
+    #  W615 (FU-487) — the latest refresh that was WRITTEN. A proposal kept beside an Owner's edit is in the
+    #  history, but it is not the layer's content, and the Board Pack assembles its strategic layer from this.
+    rows = [r for r in history(scope, layer) if r.get("applied", True) is not False]
     return rows[-1] if rows else None
 
 
@@ -171,7 +181,9 @@ def _compose(plan: Dict[str, Any], layer: str) -> Dict[str, Any]:
     objectives = [o for o in (plan.get("objectives") or []) if isinstance(o, dict)]
     aims = [a for a in (plan.get("aims") or []) if a]
     if layer == STRATEGIC:
-        body = (f"Strategic position derived from the plan itself: {len(aims)} aim(s) and "
+        #  W635 (FU-581) - derived text goes stale between quarterly refreshes, so it carries the time it was derived
+        body = (f"[as of {time.strftime('%Y-%m-%d %H:%M UTC', time.gmtime())}] "
+                f"Strategic position derived from the plan itself: {len(aims)} aim(s) and "
                 f"{len(objectives)} objective(s) on the roadmap"
                 + (f"; vision on record: {str(plan.get('vision'))[:160]}" if plan.get("vision") else
                    "; no vision is on record")
@@ -236,7 +248,7 @@ def refresh(scope: str, layer: str, *, now: Optional[float] = None, signal: Opti
         verdict = due(layer, last_refresh_at(plan, layer), now=now, signal=signal)
         if not verdict["due"] and not force:
             return {"refreshed": False, "layer": layer, "scope": scope, "due": verdict,
-                    "basis": verdict["reason"]}
+                    "entry": None, "proposed": False, "basis": verdict["reason"]}
 
         if content is not None:
             composed = {"content": str(content),
@@ -268,12 +280,28 @@ def refresh(scope: str, layer: str, *, now: Optional[float] = None, signal: Opti
             "is_external": composed["is_external"],
             "provenance_basis": composed["provenance_basis"],
         }
-        plan[field] = composed["content"]
+        #  W615 (FU-487, M1 v8 R3.0) — THE OWNER'S OWN WORDS ARE NEVER OVERWRITTEN BY A CADENCE. The refresh
+        #  replaced plan[field] whatever its source, so a Strategy the Owner wrote was replaced by floor-derived
+        #  text while `owner_edits.strategy` stayed set and the page still badged it "owner-edited". A field
+        #  the Owner edited is theirs: the refresh is RECORDED as a proposal (so the layer is not re-proposed
+        #  every beat) and the plan is left as the Owner wrote it.
+        _owner_edited = bool((plan.get("owner_edits") or {}).get(field))
+        entry["applied"] = not _owner_edited
+        entry["withheld_reason"] = (("the Owner edited this field, so the cadence PROPOSES and does not "
+                                     "overwrite it; the Owner's text stands") if _owner_edited else None)
+        if not _owner_edited:
+            plan[field] = composed["content"]
         plan.setdefault("refreshes", []).append(entry)
         plan["updated_at"] = _stamp(now)
         atomic_write_json(_plan_path(scope), plan)
 
+    if _owner_edited:
+        return {"refreshed": False, "layer": layer, "scope": scope, "entry": entry, "due": verdict,
+                "proposed": True,
+                "basis": (f"{layer} composed and RECORDED AS A PROPOSAL: the Owner edited the plan's {field!r} "
+                          f"field, so it was not overwritten. Trigger: {entry['trigger']} - {entry['reason']}")}
     return {"refreshed": True, "layer": layer, "scope": scope, "entry": entry, "due": verdict,
+            "proposed": False,
             "basis": (f"{layer} refreshed and written to the plan's {field!r} field, with a history "
                       f"entry keeping what it replaced. Trigger: {entry['trigger']} - {entry['reason']}")}
 
@@ -300,6 +328,9 @@ def state(scope: str) -> Dict[str, Any]:
             "due": due(layer, last),
             "latest": rows[-1] if rows else None,
         }
+    #  W620 (FU-492, M2 v8 R3.5) — the signal triggers are real but nothing in the platform PRODUCES a signal, and
+    #  the state now says so wherever it is read, beside the elapsed-time trigger that does fire on its own.
+    out["signals_basis"] = SIGNALS_OBSERVED_BY
     out["basis"] = ("each layer reports when it was last refreshed, how many refreshes are on record and "
                     "whether it is due now. A layer that has NEVER been refreshed says so rather than "
                     "reporting an age of zero - never and just-now are opposite facts")

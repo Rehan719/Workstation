@@ -60,8 +60,16 @@ class TajwidCoach:
                                "scored whatever string arrived; nothing is scored that cannot be "
                                "compared")}
 
-        similarity = self._levenshtein_similarity(reference_text, recited_text)
-        missing_markers = self._missing_rule_markers(reference_text, recited_text)
+        # W617 (FU-478, M2 v8 R1.3) — THE FIGURE A LEARNER SEES COMPARES LETTERS. The single figure compared
+        # every character, so a word-perfect recall typed the way Arabic is normally typed (no harakat) scored
+        # 49% against the Uthmani text: its diacritics, Quranic annotation marks and the alif wasla (ٱ) a
+        # keyboard does not produce all counted as errors, and "normalised" in the label suggested otherwise.
+        # Both figures are now reported, each saying what it compares; the letters figure leads.
+        similarity = self._levenshtein_similarity(self._letters_only(reference_text),
+                                                  self._letters_only(recited_text))
+        exact_similarity = self._levenshtein_similarity(reference_text, recited_text)
+        _attempt_marked = any(self._is_mark(ch) for ch in recited_text)
+        missing_markers = (self._missing_rule_markers(reference_text, recited_text) if _attempt_marked else [])
 
         result = {
             "comparable": True,
@@ -70,12 +78,20 @@ class TajwidCoach:
                                f"compared using the Hafs marker set"}
                if self.qiraat_fallback else {}),
             "text_similarity": round(similarity, 4),
-            "similarity_basis": ("normalised Levenshtein distance between the typed attempt and "
-                                 "the authoritative text — a WRITTEN-recall measure only"),
+            "similarity_basis": ("LETTERS ONLY: Levenshtein similarity after removing harakat, Quranic "
+                                 "annotation marks and tatweel and reading the alif wasla as alif, so a recall "
+                                 "typed without diacritics is not marked down for them — a WRITTEN-recall "
+                                 "measure only"),
+            "exact_similarity": round(exact_similarity, 4),
+            "exact_similarity_basis": ("EVERY CHARACTER, diacritics and Uthmani marks included — a keyboard "
+                                       "cannot type several of them, so this figure is low for a correct recall "
+                                       "typed in ordinary Arabic"),
             "missing_rule_markers": missing_markers,
-            "markers_basis": ("madd/ghunnah character sequences present in the reference but "
-                              "absent from the written attempt — an aid for memorising the "
-                              "written text, not a judgement of pronunciation"),
+            "markers_basis": (("madd/ghunnah character sequences present in the reference but "
+                               "absent from the written attempt — an aid for memorising the "
+                               "written text, not a judgement of pronunciation") if _attempt_marked else
+                              ("NOT COMPARED: the attempt carries no harakat, so a mark sequence cannot be "
+                               "found in it either way, and listing every one as absent would be noise")),
             "scope": ("TEXT comparison only. This says NOTHING about recitation, pronunciation, "
                       "makharij, or sifat — assessing those requires hearing the recitation, and "
                       "no phonetic model is provisioned."),
@@ -83,6 +99,17 @@ class TajwidCoach:
         }
         logger.info("TajwidCoach: written recall compared, similarity %.3f", similarity)
         return result
+
+    @staticmethod
+    def _is_mark(ch: str) -> bool:
+        o = ord(ch)
+        return (0x064B <= o <= 0x065F) or o == 0x0670 or (0x06D6 <= o <= 0x06ED) or o == 0x0640
+
+    @classmethod
+    def _letters_only(cls, s: str) -> str:
+        """The letters of a text: marks removed, alif wasla read as alif, whitespace collapsed."""
+        out = "".join(("\u0627" if ch == "\u0671" else ch) for ch in str(s or "") if not cls._is_mark(ch))
+        return " ".join(out.split())
 
     def _levenshtein_similarity(self, ref: str, usr: str) -> float:
         """Real normalised Levenshtein similarity (1.0 = identical)."""

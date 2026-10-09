@@ -16,7 +16,7 @@ continuous, governed by gaas.v5 and audited to the UEG.
 from __future__ import annotations
 
 import time
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List, Optional, Set
 
 from fastapi import APIRouter
 from pydantic import BaseModel
@@ -24,15 +24,16 @@ from pydantic import BaseModel
 router = APIRouter(prefix="/api/v1/cognition", tags=["cognition-alignment"])
 
 
-def _routes() -> Set[str]:
-    try:
-        from agentic_core.app_mvp import app
-        return {getattr(r, "path", "") for r in app.routes}
-    except Exception:
-        return set()
+def _routes() -> Optional[Set[str]]:
+    #  W613 (FU-504, M1 v8 R6.0) — the shared census: OpenAPI paths plus flat routes, and None (not an empty
+    #  set) when it cannot be read, so an unreadable census is never reported as "not mounted".
+    from agentic_core.route_inventory import mounted_paths
+    return mounted_paths()[0]
 
 
-def _has(routes: Set[str], prefix: str) -> bool:
+def _has(routes: Optional[Set[str]], prefix: str) -> Optional[bool]:
+    if routes is None:
+        return None
     return any(p.startswith(prefix) for p in routes)
 
 
@@ -109,7 +110,8 @@ async def wiring_map():
     # green tick per tier, which the page read as the knowledge system being wired into each tier.
     # It says what it tests now, and the figure that cannot fail is named as such rather than being
     # presented as a coherence measurement.
-    routes = _routes()
+    from agentic_core.route_inventory import mounted_paths
+    routes, census = mounted_paths()
     tiers = [{**t, "route_mounted": _has(routes, t["endpoint"]),
               # kept for readers that already index it, with the meaning stated beside it
               "connected": _has(routes, t["endpoint"]),
@@ -118,6 +120,7 @@ async def wiring_map():
              for t in _TIERS]
     mounted = sum(1 for t in tiers if t["route_mounted"])
     return {
+        "route_census": census,
         "tiers": tiers,
         "connected": mounted,
         "routes_mounted": mounted,

@@ -99,6 +99,36 @@ def _repo_slug(s: str) -> str:
     return out.strip("-")[:40] or "vsb"
 
 
+def _owner_written(vsb: dict) -> dict:
+    """W615 (FU-486, FU-488, M1 v8 R2.6 R3.1) — the mission / vision / strategy the OWNER wrote in this entity's
+    business plan, and nothing else. Three surfaces (the repo's BUSINESS_PLAN.md, the web and phone apps' plan
+    tab, the Board Pack's Constitutional layer) printed the founder's problem statement under "Vision" and
+    "Deliver: <problem>" under "Mission", and none read the plan the Owner edits. Establishment seeds a
+    templated vision ("A self-running … VSB IDBO"), so only an OWNER-EDITED field stands as the entity's own.
+    Returns {field: text}, plus `_unreadable` when the plan could not be read whole."""
+    out: dict = {}
+    try:
+        from agentic_core.api.business_plan import _load as _bp_load615
+        plan = _bp_load615(vsb.get("business_plan_scope") or vsb.get("vsb_id")) or {}
+    except Exception as exc:
+        return {"_unreadable": f"{type(exc).__name__}: {exc}"}
+    edits = plan.get("owner_edits") or {}
+    for field in ("mission", "vision", "strategy"):
+        text = str(plan.get(field) or "").strip()
+        if text and edits.get(field):
+            out[field] = text
+    return out
+
+
+def _autonomy_phrase(vsb: dict) -> str:
+    """W623 (FU-518) — the entity's operating state in words, read from its derived status, never a constant."""
+    st = str(vsb.get("status") or "").strip()
+    return {"operating": "operating: the organism runs its economic cycles",
+            "held": "held: a review gate blocks progress",
+            "body pending": "body pending: sections still await the owned model",
+            }.get(st, f"{st or 'status not derived'}: not yet operating on its own")
+
+
 def _build_repo_files(vsb: dict) -> dict:
     """Build the bespoke repo file-set (path -> content) from REAL VSB entity data."""
     name = vsb.get("name") or vsb.get("vsb_id")
@@ -108,7 +138,10 @@ def _build_repo_files(vsb: dict) -> dict:
     concept, design, commercial = bp["concept"], bp["design"], bp["commercialisation"]
     f: dict = {}
     f["README.md"] = (
-        f"# {name}\n\n> Living, intelligently autonomous VSB IDBO enterprise — bespoke to: {challenge}\n\n"
+        #  W623 (FU-518, M1 v9 R2.1) — the tagline says what the entity IS, from its derived status. "Living,
+        #  intelligently autonomous" was a constant on every repository, including one whose own record says
+        #  nothing operates it (Self-run off).
+        f"# {name}\n\n> VSB IDBO enterprise — {_autonomy_phrase(vsb)} — bespoke to: {challenge}\n\n"
         f"- **Domain:** {domain} · **Realm:** {realm} · **Entity:** `{vsb.get('vsb_id')}`\n"
         # §4 (W573, M1 R2.1) - THE README IS A READER, and it shipped "Stage: commercialise" into
         # every repository a founder downloads. It now prints the derived stage and, where none is
@@ -122,10 +155,14 @@ def _build_repo_files(vsb: dict) -> dict:
         "document-control seal are recorded in `compliance/QUALITY.md`.\n\n"
         "## Structure\n"
         "- `IDENTITY.md` · `genome.json` — genome / identity\n"
-        "- `BUSINESS_PLAN.md` — Executive Summary · Concept · Vision · Mission · Strategy\n"
+        "- `BUSINESS_PLAN.md` — " + "{BP_SECTIONS}" + "\n"
         "- `ORGANISATION.md` — Chief → Board → AI CEO → C-Suite → CoE → Build-to-Order\n"
         "- `resources/cascades.json` — native AI-swarm cascades (reconfigurable, re-runnable)\n"
         "- `compliance/QUALITY.md` — live compliance + quality record (see `manifest.json`)\n"
+        #  W635 (FU-578) - said where the reader is sent: the download does not carry these two
+        "- NOTE: a downloaded archive carries the declared files only. `manifest.json` and the version history "
+        "(`.git`) stay in the platform's copy of this repository, so the pointers to `manifest.json` here "
+        "resolve there, not in a zip\n"
         # W574 (M1 R2.4) — this said "(scaffold)" unconditionally. The README is written BEFORE the
         # surfaces are generated, so at this point it genuinely cannot know which they are: it now
         # points at the one place that is computed from disk rather than guessing, instead of
@@ -155,13 +192,30 @@ def _build_repo_files(vsb: dict) -> dict:
     _sv = gj.get("stage_verifications") if isinstance(gj.get("stage_verifications"), dict) else {}
     _ev_lines = [f"# Selection & Verification Evidence — {name}", ""]
     if _cand:
-        _ev_lines += ["## Selected Candidate (§4.5 evidence-ranked)",
+        # W613 (FU-485, M1 v8 R2.5) — THE HEADING AND THE SIMULATION LINE ARE COMPUTED FROM THE RUN. Both were
+        # written unconditionally, so a file that later said "TIE" and "no comparison happened" opened by
+        # calling the winner "evidence-ranked", and printed "simulated evidence" for a digital-twin stage the
+        # same file calls "a structured frame, not a simulation". A tie or identical candidates mean nothing
+        # was ranked on evidence; a floor-served twin means nothing was simulated.
+        _tie0 = _cand.get("tie") if isinstance(_cand.get("tie"), dict) else {}
+        _nd0 = _cand.get("candidates_distinct")
+        _ranked = not _tie0.get("detected") and not (isinstance(_nd0, int) and _nd0 <= 1)
+        _sba0 = ((vsb.get("ai_provenance") or {}).get("served_by_agent") or {})
+        _sim_agents0 = [a for a in _sba0 if a.startswith(("genesis_twin_", "genesis_cand"))]
+        from agentic_core.vbs.quality import floor_served as _floor_served0
+        _sim_floor0 = (all(_sba0[a] == "native" for a in _sim_agents0) if _sim_agents0
+                       else _floor_served0((vsb.get("ai_provenance") or {}).get("served_by")))
+        _ev_lines += [("## Selected Candidate (§4.5 evidence-ranked)" if _ranked else
+                       "## Candidate Carried Forward (NOT evidence-ranked — see comparison below)"),
                       f"- id: {_cand.get('id')} · rank: {_cand.get('rank')} · score: {_cand.get('score')}",
                       f"- coverage {_cand.get('coverage')} · specificity {_cand.get('specificity')} · structure {_cand.get('structure')}",
                       f"- framing: {str(_cand.get('framing') or '')[:160]}"]
         if _cand.get("simulation_score") is not None:       # §4.5 (W305) — simulated evidence
-            _ev_lines += [f"- simulated evidence: {_cand.get('simulation_score')} "
-                          f"(modelled {_cand.get('modelled_score')}; declared weights 60/40)"]
+            _ev_lines += [(f"- simulated evidence: {_cand.get('simulation_score')} "
+                           f"(modelled {_cand.get('modelled_score')}; declared weights 60/40)") if not _sim_floor0 else
+                          (f"- twin-stage score: {_cand.get('simulation_score')} — NOT simulated evidence: the "
+                           f"deterministic floor served the digital-twin stage, so this scores the shape of a "
+                           f"frame (modelled {_cand.get('modelled_score')}; declared weights 60/40)")]
             if _cand.get("simulation"):
                 # W450 (P1.2) — the floor's "simulation" is a headings frame over the problem's
                 # bigrams; it shipped as evidence. When the twin/candidate agents were floor-served
@@ -189,7 +243,7 @@ def _build_repo_files(vsb: dict) -> dict:
             _ev_lines += ["- comparison: " + "; ".join(_notes)]
         _ev_lines += [""]
     if _sv:
-        _ev_lines += ["## Stage Verifications (§5 measured)"]
+        _ev_lines += ["## Stage Verifications (proxies; not assessable on the floor)"]   # W635 (FU-579)
         # W436 — `verified: None` means NOT ASSESSABLE (floor-served: the proxies cannot fail on
         # floor output). Rendering the raw None into a shipped evidence file would leave the reader
         # to guess; say what it means instead.
@@ -205,12 +259,27 @@ def _build_repo_files(vsb: dict) -> dict:
     f["genome.json"] = json.dumps({"vsb_id": vsb.get("vsb_id"), "name": name, "domain": domain,
                                    "realm": realm, "generation": vsb.get("generation"),
                                    "genome_spec": vsb.get("genome_spec")}, indent=2)
+    #  W615 (FU-486) — Vision, Mission and Strategy appear only when the Owner wrote them; the founder's problem
+    #  statement is headed as what it is. The README's list of sections is then READ FROM THIS FILE, so the two
+    #  cannot disagree (it promised Mission and Strategy sections this file never had).
+    _ow = _owner_written(vsb)
     f["BUSINESS_PLAN.md"] = (f"# Business Plan — {name}\n\n## Executive Summary\n{(concept or challenge)[:1200]}\n\n"
-                             f"## Concept\n{concept[:2000]}\n\n## Vision\n{challenge}\n\n"
-                             f"## Design & Development\n{str(design)[:2000]}\n\n"
+                             f"## Concept\n{concept[:2000]}\n\n"
+                             + "".join(f"## {k.title()}\n{_ow[k][:2000]}\n\n" for k in ("vision", "mission", "strategy") if _ow.get(k))
+                             + ("" if _ow.get("vision") else
+                                f"## Founder's Problem Statement\n{challenge}\n\n_No vision has been written by "
+                                f"the Owner; this is the problem the entity was founded on, not a vision._\n\n")
+                             + f"## Design & Development\n{str(design)[:2000]}\n\n"
                              f"## Commercialisation\n{str(commercial)[:2000]}\n")
+    import re as _re615
+    f["README.md"] = f["README.md"].replace("{BP_SECTIONS}", " · ".join(
+        _re615.findall(r"(?m)^## (.+)$", f["BUSINESS_PLAN.md"])))
     f["ORGANISATION.md"] = (f"# Organisation — {name}\n\nChief → Board → AI CEO → C-Suite → Centres of "
-                            f"Excellence → Build-to-Order.\n\n## AI CEO\n```json\n"
+                            f"Excellence → Build-to-Order.\n\n## AI CEO\n"
+                            #  W635 (FU-579) - the field holds the commercialisation text the founder gave, not a
+                            #  CEO charter; it is labelled as what it is
+                            f"_AI CEO charter pending the owned model. Recorded instead: the founder's "
+                            f"commercialisation text, which the AI CEO is handed._\n```json\n"
                             f"{json.dumps(vsb.get('ceo_specification') or {}, indent=2)[:2000]}\n```\n\n"
                             f"## Board\n```json\n{json.dumps(vsb.get('board') or {}, indent=2)[:2000]}\n```\n")
     f["resources/cascades.json"] = json.dumps({"native_swarm": vsb.get("native_swarm"),
@@ -382,6 +451,10 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
     # required sections = content headings that genuinely appear in the repo docs (not filenames)
     qa = await assure_delivery(combined, ["Business Plan", "Organisation", "Identity", "Executive Summary"],
                                label="vsb_repo",
+                               sections_by_construction=("the required sections are headings this generator writes into every "
+                               "entity's repository whatever its content, so coverage is 1.0 by construction "
+                               "and cannot say whether the repository is designed for this entity"),
+
                                served_by=_body_served_by(vsb))
     # §13 (W289) — compliance/QUALITY.md is the REAL record now (the sealed verdicts of THIS
     # generation), not a pointer note to a snapshot.
@@ -398,7 +471,7 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
         # W489 (refutation) — this line is SEALED as §10 evidence for THIS generation, so it must not
         # read as this entity's record: one QMS store serves every entity and tenant on the install.
         f"- Non-conformance rate (platform-wide, all entities and tenants — NOT this VSB's own record): "
-        f"{_q.get('qms_non_conformance_rate')}\n"
+        f"{_q.get('qms_non_conformance_rate') if _q.get('qms_non_conformance_rate') is not None else 'not measured (0 gates run)'}\n"
         f"- Document-control seal: {_q.get('quality_record_hash')}\n\n"
         f"## §11 Compliance ({_comp.get('overall', 'unscreened')})\n"
         + "".join(f"- {v['framework']}: {v['status']} — {v['reason'][:160]}\n"
@@ -625,16 +698,29 @@ def _esc(s) -> str:
     return (str(s or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;"))
 
 
+#  W627 (FU-522) - the cross-surface links the web app and phone app carry (relative: siblings in the repo)
+_SURFACE_LINKS_WEBAPP = ('<nav class="surfaces" data-surfaces="webapp"><a href="../web/index.html">Website</a> · '
+                         '<a href="../mobile/index.html">Phone app</a></nav>')
+_SURFACE_LINKS_MOBILE = ('<nav class="surfaces" data-surfaces="mobile"><a href="../web/index.html">Website</a> · '
+                         '<a href="../webapp/index.html">Web app</a></nav>')
+
+
 def _website_page(title: str, active: str, body: str) -> str:
     nav = "".join(
         f'<a href="{href}" class="{ "active" if active == key else "" }">{label}</a>'
         for key, href, label in (("index", "index.html", "Home"), ("about", "about.html", "About"),
-                                  ("solution", "solution.html", "Solution")))
+                                  ("solution", "solution.html", "Solution"),
+                                  #  W627 (FU-522) - the three surfaces were unconnected folders labelled
+                                  #  'integrated'; each now links the other two (siblings in the repo)
+                                  ("webapp", "../webapp/index.html", "Web app"),
+                                  ("mobile", "../mobile/index.html", "Phone app")))
     return (f"<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
             f"<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
             f"<title>{_esc(title)}</title><link rel=\"stylesheet\" href=\"styles.css\"></head><body>"
             f"<header class=\"nav\"><nav>{nav}</nav></header><main>{body}</main>"
-            f"<footer>Living VSB IDBO enterprise · generated in-house on Workstation's own AI fabric · "
+            #  W633 (FU-561) - the footer no longer says 'Living': it ships on bodies that are pending and entities
+            #  that do not operate, and the entity's own record carries its status
+            f"<footer>VSB IDBO enterprise · generated in-house on Workstation's own AI fabric · "
             f"quality record and compliance screen in the entity repository (compliance/QUALITY.md).</footer></body></html>")
 
 
@@ -751,7 +837,8 @@ def _entity_fallback_copy(name: str, challenge: str, concept: str, kind: str) ->
         return base + (f" Its approach: {concept.strip()[:400]}" if concept.strip() else "")
     return (f"{name} exists to solve {subj}. "
             + (concept.strip()[:400] if concept.strip()
-               else "Its solution is developed and delivered in-house, end to end."))
+               #  W630 (FU-549) - with no concept recorded nothing was designed; this claimed delivery
+               else "content pending the owned model — this enterprise has not yet composed its own solution."))
 
 
 @router.post("/{vsb_id}/website")
@@ -848,6 +935,7 @@ async def generate_vsb_website(vsb_id: str, user: dict | None = Depends(get_curr
         "pages": [w for w in written if w["path"].endswith(".html")],
         "assets": [w for w in written if not w["path"].endswith(".html")],
         "page_count": sum(1 for w in written if w["path"].endswith(".html")),
+        "file_count": len(written),        # W627 (FU-522) - the ship manifest read page_count as files
         "total_bytes": sum(w["bytes"] for w in written),
         "nav": [{"label": "Home", "href": "index.html"}, {"label": "About", "href": "about.html"},
                 {"label": "Solution", "href": "solution.html"}],
@@ -911,8 +999,8 @@ _WEBAPP_APP_JS = r"""(async function () {
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const title = (k) => k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
   function section(id) {
-    if (id === 'overview') return '<h2>' + esc(d.name) + '</h2><p class="muted">' + esc(d.domain) + ' · ' + esc(d.realm || '') + '</p><p>' + esc(d.challenge) + '</p><p>' + esc(d.concept || '') + '</p>';
-    if (id === 'plan') { const bp = d.business_plan || {}; return '<h2>Business Plan</h2>' + ['executive_summary', 'concept', 'vision', 'mission', 'strategy'].map((k) => bp[k] ? '<h3>' + title(k) + '</h3><p>' + esc(bp[k]) + '</p>' : '').join(''); }
+    if (id === 'overview') return '<p class="muted" id="template-note">' + esc(d.template_note || '') + '</p><h2>' + esc(d.name) + '</h2><p class="muted">' + esc(d.domain) + ' · ' + esc(d.realm || '') + '</p><p>' + esc(d.challenge) + '</p><p>' + esc(d.concept || '') + '</p>';
+    if (id === 'plan') { const bp = d.business_plan || {}; return '<h2>Business Plan</h2>' + ['executive_summary', 'concept', 'problem_statement', 'vision', 'mission', 'strategy'].map((k) => bp[k] ? '<h3>' + title(k) + '</h3><p>' + esc(bp[k]) + '</p>' : '').join(''); }
     if (id === 'org') return '<h2>Organisation</h2><p>Chief → Board → AI CEO → C-Suite → Centres of Excellence → Build-to-Order</p><h3>AI CEO</h3><pre>' + esc(JSON.stringify((d.organisation || {}).ceo || {}, null, 2)) + '</pre>';
     if (id === 'resources') { const list = (d.resources || []).filter((r) => String(r).toLowerCase().includes(filter.toLowerCase())); return '<h2>Resources</h2><input id="rfilter" placeholder="Filter resources…" value="' + esc(filter) + '"><ul>' + (list.map((r) => '<li>' + esc(r) + '</li>').join('') || '<li class="muted">No resources.</li>') + '</ul>'; }
     return '';
@@ -985,10 +1073,18 @@ def _entity_appdata(vsb: dict) -> dict:
     return {
         "name": name, "domain": domain, "realm": realm, "challenge": challenge,
         "concept": concept[:1500],
+        #  W615 (FU-486) — vision / mission only when the Owner wrote them; the problem statement is named as one
         "business_plan": {"executive_summary": (concept or challenge)[:600], "concept": concept[:800],
-                          "vision": challenge, "mission": f"Deliver: {challenge}"[:300]},
+                          "problem_statement": challenge,
+                          **{k: _public_prose(v)[:300] for k, v in _owner_written(vsb).items() if not k.startswith("_")}},
         "organisation": {"ceo": vsb.get("ceo_specification") or {}, "board": vsb.get("board") or {}},
         "resources": roles[:24],
+        #  W618 (FU-484, M2 v8 R2.4) — the web and phone apps are ONE fixed template, byte-identical across
+        #  entities apart from this data file, and they display the entity's own plan record; none of the
+        #  solution is delivered through them. The app now says so on its first screen.
+        "template_note": ("This app is the platform's standard template: it displays this entity's plan record "
+                          "(overview, plan, organisation, resources) and is the same app for every entity. It "
+                          "does not deliver the solution itself."),
     }
 
 
@@ -1001,7 +1097,7 @@ def _build_webapp_files(vsb: dict) -> dict:
         "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
         "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
         f"<title>{_esc(name)} — Web app</title><link rel=\"stylesheet\" href=\"styles.css\"></head>"
-        "<body><div id=\"app\"></div><script src=\"app.js\"></script></body></html>")
+        "<body><div id=\"app\"></div>" + _SURFACE_LINKS_WEBAPP + "<script src=\"app.js\"></script></body></html>")
     f["webapp/app.js"] = _WEBAPP_APP_JS
     f["webapp/data.json"] = json.dumps(appdata, indent=2)
     f["webapp/styles.css"] = (
@@ -1039,6 +1135,10 @@ async def generate_vsb_webapp(vsb_id: str, user: dict | None = Depends(get_curre
                 f"Organisation · Resources.\n{vsb.get('challenge', '')}\n" + files["webapp/data.json"])
     qa = await assure_delivery(combined, ["Overview", "Business Plan", "Organisation", "Resources"],
                                label="vsb_webapp",
+                               sections_by_construction=("the required sections are headings this generator writes into every "
+                               "entity's web app whatever its content, so coverage is 1.0 by construction "
+                               "and cannot say whether the web app is designed for this entity"),
+
                                served_by=_body_served_by(vsb))
     root = _REPO_STORE / vsb_id
     written = []
@@ -1120,7 +1220,7 @@ def _build_mobile_files(vsb: dict) -> dict:
         "<meta name=\"theme-color\" content=\"#4f46e5\"><meta name=\"mobile-web-app-capable\" content=\"yes\">"
         f"<link rel=\"manifest\" href=\"manifest.webmanifest\"><link rel=\"icon\" href=\"icon.svg\">"
         f"<link rel=\"stylesheet\" href=\"styles.css\"><title>{_esc(name)}</title></head>"
-        "<body><div id=\"app\"></div><script src=\"app.js\"></script>"
+        "<body><div id=\"app\"></div>" + _SURFACE_LINKS_MOBILE + "<script src=\"app.js\"></script>"
         "<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){});}</script>"
         "</body></html>")
     f["mobile/app.js"] = _WEBAPP_APP_JS
@@ -1176,6 +1276,10 @@ async def generate_vsb_mobile(vsb_id: str, user: dict | None = Depends(get_curre
                 f"Organisation · Resources.\n{vsb.get('challenge', '')}\n" + files["mobile/data.json"])
     qa = await assure_delivery(combined, ["Overview", "Business Plan", "Organisation", "Resources"],
                                label="vsb_mobile",
+                               sections_by_construction=("the required sections are headings this generator writes into every "
+                               "entity's phone app whatever its content, so coverage is 1.0 by construction "
+                               "and cannot say whether the phone app is designed for this entity"),
+
                                served_by=_body_served_by(vsb))
     root = _REPO_STORE / vsb_id
     written = []
@@ -1343,12 +1447,21 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
     if isinstance(_own_values, (list, tuple)):
         _own_values = " · ".join(str(v).strip() for v in _own_values if str(v).strip()) or None
     _own_values = str(_own_values).strip() if _own_values else None
-    constitutional = {"mission": f"Deliver: {challenge}"[:280], "vision": challenge,
+    #  W615 (FU-488) — the Owner's recorded mission and vision come first; the derivation is the named fallback
+    _ow615 = _owner_written(vsb)
+    _why615 = (f" (the business plan could not be read: {_ow615['_unreadable']})" if _ow615.get("_unreadable")
+               else "; the business plan holds no Owner-written {}")
+    constitutional = {"mission": (_ow615.get("mission") or f"Deliver: {challenge}")[:280],
+                      "vision": (_ow615.get("vision") or challenge)[:280],
                       "values": _own_values if _own_values else
                                 "NOT DECLARED - this entity has declared no values of its own",
                       "values_declared": bool(_own_values),
-                      "mission_source": "derived from the founder's problem statement - not authored",
-                      "vision_source": "the founder's problem statement, verbatim - not authored",
+                      "mission_source": ("written by the Owner in the business plan" if _ow615.get("mission") else
+                                         "derived from the founder's problem statement - not authored"
+                                         + _why615.replace("{}", "mission")),
+                      "vision_source": ("written by the Owner in the business plan" if _ow615.get("vision") else
+                                        "the founder's problem statement, verbatim - not authored"
+                                        + _why615.replace("{}", "vision")),
                       "values_source": (("declared by this entity itself" if _own_values else
                                          "this entity has declared no values of its own, and the "
                                          "platform's standing values line is NOT shown in their place - "
@@ -1386,11 +1499,19 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
     # live data". The constitutional layer is DERIVED from the founder's problem plus a constant values
     # line, and the strategic layer is empty whenever no CEO specification was composed - which is the
     # same condition that makes this narrative pending in the first place.
-    narrative = (("narrative pending the owned model — this board pack has not been composed. The "
-                  "operational snapshot below is live; the constitutional layer is DERIVED from the "
-                  "founder's problem statement and the platform's standing values line; the strategic "
-                  "and action layers are present only if this entity carries a CEO specification and a "
-                  "board (each says which below)")
+    #  W624 (FU-523, M1 v9 R3.0) — THE PENDING NARRATIVE IS COMPOSED FROM THE LAYERS IT INTRODUCES. It was a literal
+    #  written before W585 and W615 and never updated, so it told the reader the constitutional layer came from
+    #  "the platform's standing values line" (which W585 stopped showing) beside a values field reading NOT
+    #  DECLARED, and from the founder's problem when the Owner had written a mission. It now reads each source.
+    _c = constitutional
+    narrative = (("narrative pending the owned model — this board pack has not been composed. The operational "
+                  "snapshot below is live. Constitutional layer: mission " + str(_c.get("mission_source"))
+                  + "; vision " + str(_c.get("vision_source")) + "; values "
+                  + ("declared by this entity" if _c.get("values_declared") else
+                     "NOT DECLARED - this entity has declared none and no platform line stands in for them")
+                  + ". The strategic and action-plan layers each state their own source below: a CEO "
+                    "specification, or the latest §17.3 cadence refresh, which is DERIVED from the plan's own "
+                    "state and is not an analysis.")
                  if sb == "native" else _public_prose(meta.get("output", "") or "").strip())
 
     from agentic_core.vbs.quality import assure_delivery
@@ -1470,6 +1591,15 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
     # old membership test did and what made the count unfalsifiable for two of the four.
     for _k in ("constitutional", "operational"):
         layers[_k].setdefault("holds", "content")
+    #  W635 (FU-584) - ONE VISION PER PACK, or the difference is named. The strategic refresh quotes the plan's
+    #  vision field, which may be the platform's template; the constitutional layer uses only an Owner-written one.
+    _sc584 = str((layers.get("strategic") or {}).get("content") or "")
+    _cv584 = str(constitutional.get("vision") or "")
+    if "vision on record:" in _sc584 and _cv584 and _cv584[:60] not in _sc584:
+        layers["strategic"]["vision_note"] = (
+            "the vision quoted in this strategic refresh is the business plan's vision FIELD, which is not "
+            "Owner-written here (a platform template); the pack's vision is the constitutional layer's: "
+            + str(constitutional.get("vision_source")))
         layers[_k].setdefault("present", True)
         layers[_k].setdefault("basis", "derived fresh from this entity when the pack was assembled; "
                                        "each field above carries its own source")
@@ -1620,6 +1750,21 @@ def _gate_block_reason(vsb: dict) -> str | None:
 #  when the writer wrote "operational", and after W496 derived the status the Organism page
 #  still counted "operational"/"active" while this function returned "operating".
 OPERATING_STATUS = "operating"
+
+
+def _rederive(vsb: dict) -> dict:
+    """W614 (FU-482, M1 v8 R2.2) — RE-DERIVE THE STATUS AND STAGE WHEREVER THE FACTS THEY ARE READ FROM CHANGE.
+
+    _derived_status ran once, at birth. A gate approved afterwards, and a body shipped after that, left the
+    entity reading "held — a review gate blocks progress: design pending", and the shipped README repeated it.
+    A status derived from facts is only as current as the last time it was derived, so every writer of those
+    facts (the gate configuration, a gate decision, the ship) derives it again. Mutates and returns `vsb`.
+    """
+    _st, _st_basis = _derived_status(vsb)
+    _sg, _sg_basis = _derived_stage(vsb)
+    vsb.update(status=_st, status_basis=_st_basis, stage=_sg, stage_basis=_sg_basis,
+               status_derived_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
+    return vsb
 
 
 def _derived_status(vsb: dict) -> tuple:
@@ -1946,7 +2091,12 @@ async def get_review_gates(vsb_id: str, user: dict | None = Depends(get_current_
     return {"vsb_id": vsb_id, "mode": "Mode 3 — optional human review gates (set in the VSB genome)",
             "stages": rg.get("stages", []), "lifecycle": _lifecycle_meta(),
             "statuses": [_gate_status(rg, s[0]) for s in _CONCEPT_TO_COMMERCIALISE_STAGES],
-            "gated_count": len(rg.get("stages", []))}
+            "gated_count": len(rg.get("stages", [])),
+            #  W633 (FU-564) - these stages are NOT the Genesis journey's: said, so no reader takes them for one lifecycle
+            "lifecycle_basis": (f"these {len(_CONCEPT_TO_COMMERCIALISE_STAGES)} stages are the entity's GOVERNANCE "
+                                "lifecycle, a separate list from the Genesis journey's own stages (GET "
+                                "/api/v1/genesis/status). A gate here pauses the entity's lifecycle movers (ship, "
+                                "evolve, cascade), not a journey stage, and every gate is OFF until the founder sets one")}
 
 
 @router.post("/{vsb_id}/review-gates")
@@ -1964,6 +2114,7 @@ async def set_review_gates(vsb_id: str, req: ReviewGatesRequest, user: dict | No
     vsb["review_gates"] = rg
     from agentic_core.vbs.registry import qms
     dcs_hash = await qms.control_document(f"vsb_review_gates:{vsb_id}", {"stages": rg["stages"]}, "Owner")
+    _rederive(vsb)   # W614 — the gates changed, so the status read from them is derived again
     _save_vsb(vsb)
     try:
         biobus.fire_signal("cognitive", "vsb.review_gates", f"{vsb.get('name')}: {len(rg['stages'])} gated", 0.5)
@@ -2002,8 +2153,10 @@ async def decide_review_gate(vsb_id: str, stage: str, req: GateDecisionRequest, 
     vsb["review_gates"] = rg
     from agentic_core.vbs.registry import qms
     dcs_hash = await qms.control_document(f"vsb_review_decision:{vsb_id}:{stage}", rec, "human-reviewer")
+    _rederive(vsb)   # W614 — a decision moves the gate, so the status read from it is derived again
     _save_vsb(vsb)
-    return {"vsb_id": vsb_id, **_gate_status(rg, stage), "dcs_hash": dcs_hash}
+    return {"vsb_id": vsb_id, **_gate_status(rg, stage), "dcs_hash": dcs_hash,
+            "entity_status": vsb.get("status"), "entity_status_basis": vsb.get("status_basis")}
 
 
 def _list_vsbs() -> list[dict]:
@@ -2358,7 +2511,12 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
             "CLO":  "Legal and regulatory compliance",
             "CoE":  ["Research", "Design", "Engineering", "Science", "Commercial", "Compliance"],
         }
-        yield _event("swarm_complete", "Swarm Configured", f"Agent hierarchy set for {req.domain} domain.", {"swarm": swarm_config})
+        # W617 (FU-498, M2 v8 R4.5) — the hierarchy is a FIXED TEMPLATE with the domain name substituted, and
+        # the event now says so, as the cascade's "(fixed markers)" event beside it already does.
+        yield _event("swarm_complete", "Swarm Configured (fixed template)",
+                     f"A fixed CEO + C-Suite + CoE template, with the {req.domain} domain named in two roles - "
+                     f"nothing was designed for this entity at this step.",
+                     {"swarm": swarm_config, "swarm_is_template": True})
 
         # ── Persist VSB Entity ────────────────────────────────────────────────
         # W450 (refuter F1) — never `VSB — {challenge[:60]}`: the founder's name, else a pending slug
@@ -2458,6 +2616,8 @@ async def ship_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current_use
     vsb = _require_vsb_access(vsb_id, user)
     _refuse_pending_name(vsb)   # W450 — no public surface under a pending working name
     _refuse_gated(vsb, "ship")  # W452 — Mode 3: a pending/rejected human review gate blocks the ship
+    #  W614 (FU-482) — the README and manifest print the status, so it is derived from the facts AS SHIPPED
+    _save_vsb(_rederive(vsb))
     surfaces: Dict[str, Any] = {}
     #  W593 (FU-422, M1 R2.0) - "repo" MOVED TO LAST. generate_vsb_repo writes manifest.json first,
     #  so running it first wrote a manifest against a disk holding 13 of the eventual 29 files, with
@@ -2500,6 +2660,13 @@ async def ship_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current_use
         "vsb_id": vsb_id, "name": vsb.get("name"), "shipped": True,
         "surfaces": surfaces,
         "coherent_whole": all("error" not in s and "deferred" not in s for s in surfaces.values()),
+        #  W631 (FU-553) - 'coherent whole' means every surface was WRITTEN; said beside the gates it did not pass
+        "coherent_whole_basis": (
+            f"every surface was WRITTEN; {sum(1 for v in _vals if v is None)} of {len(_vals)} surface quality gate(s) "
+            f"were not assessable and compliance is {_agg_qa['quality']['compliance']['overall'] or 'not screened'} "
+            f"- written, not verified" if any(v is None for v in _vals) or
+            (_agg_qa['quality']['compliance']['overall'] or 'pass') != 'pass' else
+            "every surface was written and every surface's quality gate passed"),
         "surfaces_shipped": sorted(k for k, s in surfaces.items() if "error" not in s and "deferred" not in s),
         "surfaces_refused": {k: (s.get("error") or s.get("deferred")) for k, s in surfaces.items()
                              if "error" in s or "deferred" in s},
@@ -2559,6 +2726,15 @@ class RepoCascadeRequest(BaseModel):
     objective_id: str | None = None
 
 
+def _tier_text(v: Any, limit: int = 1500) -> Any:
+    """A tier's output as kept in the repo's run file: text trimmed, a per-role dict trimmed per role."""
+    if isinstance(v, dict):
+        return {str(k): _tier_text(x, 600) for k, x in list(v.items())[:12]}
+    if isinstance(v, list):
+        return [_tier_text(x, 600) for x in v[:12]]
+    return str(v if v is not None else "")[:limit]
+
+
 @router.post("/{vsb_id}/repo/cascade")
 async def run_repo_cascade(vsb_id: str, req: RepoCascadeRequest, user: dict | None = Depends(get_current_user)):
     """§13 (W291) — the repo's AI-swarm cascades are RE-RUNNABLE: execute the entity's stored
@@ -2584,8 +2760,12 @@ async def run_repo_cascade(vsb_id: str, req: RepoCascadeRequest, user: dict | No
     _sc = (stored.get("swarm_config") or {}) if isinstance(stored, dict) else {}
     _csuite = [k for k in _sc if k in _AGENTS and k != "CEO"]
     _coe = [str(x) for x in (_sc.get("CoE") or []) if isinstance(x, str)][:8]
+    #  W628 (FU-520) - the founder's problem travels with the run (the W434 lesson): the default mission named
+    #  only the enterprise, so 23 floor calls reasoned about a sentence and not about bees
+    _problem = str(vsb.get("challenge") or vsb.get("problem") or "").strip()
     run = await cascade_orchestration(CascadeRequest(
-        mission=req.mission or f"Operate and advance {vsb.get('name')} per its living plan",
+        mission=req.mission or (f"Operate and advance {vsb.get('name')} per its living plan"
+                                + (f" — for the problem it was founded on: {_problem[:400]}" if _problem else "")),
         domain=vsb.get("domain", "enterprise"),
         csuite_roles=_csuite, coe_specialisms=_coe,
         scope=vsb_id, objective_id=req.objective_id))
@@ -2599,6 +2779,8 @@ async def run_repo_cascade(vsb_id: str, req: RepoCascadeRequest, user: dict | No
                                 for f in (run.get("fabric_requisitions") or [])],
         "served_by": (run.get("ai_provenance") or {}).get("served_by"),
         "ran_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        #  W628 (FU-520) - what each tier PRODUCED is kept in the commit; the run file held none of it
+        "tier_outputs": {k: _tier_text(run.get(k)) for k in sorted(run) if k.startswith("level_")},
     }
     runs_dir = root / "resources" / "runs"
     runs_dir.mkdir(parents=True, exist_ok=True)
@@ -2702,11 +2884,21 @@ async def evolve_vsb(vsb_id: str, req: EvolveRequest, user: dict | None = Depend
             from agentic_core.economy.living_vsbs import _latest_screen
             _scr = _latest_screen(vsb_id)
             if _scr and _scr not in ("pass", "unreadable") and len(proposals) < 3:   # W472 — 'unreadable' is no posture
+                #  W615 (FU-481, M1 v8 R2.1) — THE PROPOSAL SAYS WHAT APPLYING IT DOES. It promised to "remediate
+                #  the §11 posture across the plan and registration text" with the impact "the screen returns to
+                #  pass", and applying it sets ONE TRAIT STRING: no plan or registration text is edited and no
+                #  screen is re-run. Nor can the promised impact happen for this subject — every §11 framework is a
+                #  keyword screen, which can refuse a subject but never clear one, so "pass" is unreachable. The
+                #  claim is removed rather than built (ACCEPT 4): the trait records the Owner's intent to remediate,
+                #  and the text says that is all it is.
                 proposals.append({
                     "trait": "compliance_posture",
-                    "proposed_change": (f"remediate the §11 screen posture (currently '{_scr}') "
-                                        "across the entity's plan and registration text"),
-                    "expected_impact": "the screen returns to pass; distributions are never held",
+                    "proposed_change": (f"record the intent to remediate the §11 screen posture (currently "
+                                        f"'{_scr}'). Applying this sets this trait only: the plan and "
+                                        "registration text are NOT edited and the screen is NOT re-run"),
+                    "expected_impact": ("none measurable from applying it: the screen changes only when the "
+                                        "entity's text is edited and screened again, and a keyword screen can "
+                                        "refuse a subject but not clear it, so it cannot return 'pass' here"),
                     "basis": "latest §11 compliance screen (evidence-based, owned)"})
         except Exception:
             pass
@@ -2804,6 +2996,67 @@ async def evolve_vsb(vsb_id: str, req: EvolveRequest, user: dict | None = Depend
         "trigger": req.trigger,
         "repo_refresh": repo_refresh,
     }
+
+
+#  P3.2 clause (5) (FU-466, W603) — THE PER-INSTANCE LIVING-PLAN PILLAR, re-scored only on evolution.
+#  Measured W600: every `pillar` in agentic_core/ was PLATFORM-level, so the clause's subject did not exist and
+#  a "no re-score at generation 0" guard would have been green at every generation. The pillar this instance
+#  answers for is the plan's own "living Enterprise IDBO" pillar, and what makes an instance LIVING in that
+#  sense is that it has evolved. So the score is a record of MEASURED facts about this instance's evolution,
+#  never a graded number: the status is met only because an applied generation exists, and says so.
+LIVING_PILLAR = "Generate a living Enterprise IDBO (VSB) for the user"
+#  every answer carries these keys, so a refusal is never read as a missing field (P2.21 clause (2))
+_PILLAR_KEYS = ("rescored", "refused", "pillar", "generation", "scored_at_generation", "score", "basis")
+
+
+def rescore_living_pillar(vsb: Dict[str, Any], now: str | None = None) -> Dict[str, Any]:
+    """Re-score this instance's living-plan pillar, or REFUSE and say why. Mutates `vsb` only on a re-score.
+
+    GATED ON vsb["generation"], which counts APPLIED EVOLUTIONS (one writer: the approved-apply path) and
+    NEVER on the living roster's lineage_generation — a child established from a parent has lineage depth 1
+    and has evolved nothing (FU-465). A refusal is RETURNED, never swallowed, because an absent re-score and
+    a refused one are different facts and the clause's caller must be able to receive the second.
+    """
+    out: Dict[str, Any] = {k: None for k in _PILLAR_KEYS}
+    out.update(rescored=False, pillar=LIVING_PILLAR)
+    _prev = vsb.get("living_pillar") if isinstance(vsb.get("living_pillar"), dict) else {}
+    out["scored_at_generation"] = _prev.get("scored_at_generation")
+    _g = vsb.get("generation", 0)
+    if isinstance(_g, bool) or not isinstance(_g, int):
+        out.update(refused="generation_unreadable",
+                   basis=(f"this instance's applied-evolution count is {_g!r}, not a whole number, so whether it "
+                          f"has evolved is NOT KNOWN - and a pillar re-scored on an unknown would be the defect "
+                          f"this gate exists to prevent"))
+        return out
+    out["generation"] = _g
+    if _g < 1:
+        out.update(refused="not_evolved",
+                   basis=("REFUSED: this instance has applied 0 evolutions, and the living-plan pillar is "
+                          "re-scored only once an instance has evolved at least one generation. Nothing about "
+                          "it has changed that the pillar measures, so a re-score would restate the founding "
+                          "plan as though it had been re-assessed"))
+        return out
+    if _prev.get("scored_at_generation") == _g:
+        out.update(refused="already_scored_at_this_generation", score=_prev,
+                   basis=(f"REFUSED: the pillar was already scored at generation {_g}, and nothing has evolved "
+                          f"since - re-scoring it again would count one evolution twice"))
+        return out
+    _traits = vsb.get("epigenetic_traits") if isinstance(vsb.get("epigenetic_traits"), dict) else {}
+    _muts = vsb.get("applied_mutations") if isinstance(vsb.get("applied_mutations"), list) else []
+    score = {
+        "pillar": LIVING_PILLAR, "status": "met", "scored_at_generation": _g,
+        "scored_at": now or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "applied_evolutions": _g, "applied_mutations": len(_muts), "traits": len(_traits),
+        "last_evolved": vsb.get("last_evolved"),
+        "basis": (f"met for THIS instance because it has applied {_g} approved evolution(s) - "
+                  f"{len(_muts)} mutation(s) across {len(_traits)} trait(s) - which is what makes it living "
+                  f"rather than generated once. These are counts of what happened, not a grade; the "
+                  f"platform-level pillar status in /plan is a different, aggregate judgement"),
+    }
+    vsb["living_pillar"] = score
+    out.update(rescored=True, score=score, scored_at_generation=_g,
+               basis=f"re-scored at generation {_g}, the first score since this instance last evolved")
+    return out
 
 
 def apply_approved_evolution(vsb_id: str) -> Dict[str, Any]:
@@ -2916,6 +3169,9 @@ def apply_approved_evolution(vsb_id: str) -> Dict[str, Any]:
     if applied:
         vsb["generation"] = int(vsb.get("generation", 0)) + 1
         vsb["last_evolved"] = now
+    #  P3.2 clause (5) — AFTER the generation moves and BEFORE the save, so a re-score lands in the same
+    #  write as the evolution it answers for, and an apply that landed nothing gets the refusal back
+    _pillar = rescore_living_pillar(vsb, now)
     try:
         _save_vsb(vsb)
     except Exception:
@@ -2979,7 +3235,8 @@ def apply_approved_evolution(vsb_id: str) -> Dict[str, Any]:
                                  if applied else
                                  "NOT advanced: the approval was consumed but no mutation was "
                                  "applicable, so the traits are unchanged"),
-            "mutations_applied": len(applied), "applied_mutations": applied}
+            "mutations_applied": len(applied), "applied_mutations": applied,
+            "living_pillar_rescore": _pillar}
 
 
 @router.post("/{vsb_id}/evolution/apply")

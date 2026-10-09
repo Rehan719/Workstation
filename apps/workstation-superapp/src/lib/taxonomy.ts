@@ -4,6 +4,13 @@
 // now imports from here instead of re-declaring its own variant.
 export const REALMS = ['enterprise', 'learning', 'developing', 'scholarship'] as const;
 export const DOMAINS = ['religion', 'science', 'education', 'law', 'employment', 'care'] as const;
+// W619 (FU-502) — §17.1's third axis, mirroring agentic_core/taxonomy.py PRODUCTS. It had no frontend source,
+// so no surface could choose a product and every journey recorded the backend's default.
+export const PRODUCTS = ['reactor', 'incubator', 'factory', 'laboratory'] as const;
+export const PRODUCT_LABELS: Record<string, string> = {
+  reactor: 'Reactor — rapid AI generation', incubator: 'Incubator — iterative development',
+  factory: 'Factory — production-grade delivery', laboratory: 'Laboratory — experimental and research',
+};
 
 export const REALM_LABELS: Record<string, string> = {
   enterprise: 'Enterprise', learning: 'Learning', developing: 'Developing', scholarship: 'Scholarship',

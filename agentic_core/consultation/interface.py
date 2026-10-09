@@ -28,6 +28,12 @@ class ValidationResult(BaseModel):
     passed: Optional[bool] = None
     basis: Optional[str] = None
     violations: List[str] = []
+    #  P3.28 clause (1) — COVERAGE, kept apart from `passed`. A screen may REFUSE, never CLEAR, so a screened
+    #  consultation that nothing refused keeps passed=None and says what screened it and within what limit.
+    #  refused: True a screen refused · False screened and nothing refused · None no screen ran.
+    refused: Optional[bool] = None
+    screened_by: List[str] = []
+    coverage_limit: Optional[str] = None
     merkle_root: Optional[str] = None
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 

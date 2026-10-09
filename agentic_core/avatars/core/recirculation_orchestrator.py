@@ -140,6 +140,23 @@ class _RefusingFixpoint:
         return False
 
 
+def clearance_inputs(user_id: Any, mode: str, drafts: Dict[str, Any]) -> Dict[str, Any]:
+    """The RECORDED inputs clearance gates 2 and 3 read (FU-471, option 3). Shared by the loop and the chat route.
+
+    Gate 2: the signatures on this learner's active approvals for this mode, and the quorum that mode needs.
+    Gate 3: the Owner's goals, and each draft held with its measured properties; the emitted draft is named.
+    Nothing here is supplied when its record does not exist: a missing record reaches the gate as missing.
+    """
+    from agentic_core.avatars.core import balance_objectives as _bo
+    from agentic_core.avatars.core import ratifications as _rat
+    _sig = _rat.signatures_for(str(user_id or ""), mode)
+    _goals = _bo.get()
+    return {"signatures": _sig["signatures"], "quorum_required": _sig["quorum_required"],
+            "signatures_basis": _sig["basis"], "objectives": _goals["objectives"],
+            "objectives_basis": _goals["basis"], "candidates": _bo.candidates(drafts),
+            "emitted_candidate": "emitted" if "emitted" in drafts else None}
+
+
 class AvatarRecirculationOrchestrator:
     """
     IDBO Layer 9/10/11: Orchestration & Evolution.
@@ -299,6 +316,18 @@ class AvatarRecirculationOrchestrator:
             })
             raise e
 
+    def _numeric_state(self) -> Dict[str, float]:
+        """The avatar's numeric state, flattened, for a drift baseline. Only recorded numbers; nothing derived."""
+        out: Dict[str, float] = {}
+        for dom, vals in (getattr(self.state, "skill_profile", None) or {}).items():
+            for k, v in (vals or {}).items():
+                if isinstance(v, (int, float)) and not isinstance(v, bool):
+                    out[f"skill.{dom}.{k}"] = float(v)
+        _e = getattr(self.state, "energy_budget_j", None)
+        if isinstance(_e, (int, float)) and not isinstance(_e, bool):
+            out["energy_budget_j"] = float(_e)
+        return out
+
     async def _stage_sense(self, ctx: Dict):
         """Observe environment via VSB + tool interception."""
         _bits, _bits_basis = _payload_bits(ctx.get("input"))
@@ -356,8 +385,21 @@ class AvatarRecirculationOrchestrator:
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
+        # P3.28 — TAFAKKUR'S BASELINE IS A RECORDED STATE, never invented. The avatar's numeric state (its
+        # learner skill profile and its energy budget) is snapshotted at the end of each cycle and the next
+        # cycle's gate 4 measures drift FROM it. The first cycle has no baseline, and gate 4 says so.
+        _current = self._numeric_state()
+        ctx["baseline"] = getattr(self, "_drift_baseline", None)
+        ctx["current"] = _current
+        # FU-471 (Owner ruling 2026-10-06, option 3) — gates 2 and 3 get RECORDED inputs, never invented ones:
+        # the learner's standing approvals for this mode (a request is not a signature), and the Owner's goals
+        # over the drafts this loop actually holds, each measured from its text.
+        ctx.update(clearance_inputs(ctx.get("user_id"), self.mode_manager.current_mode.value,
+                                    {"draft": draft_text, "refined": vrpr_res.content,
+                                     "emitted": personalized_text}))
         # 5-gate constitutional clearance mandatory per emission
         clearance_res = await self.clearance.validate_emission(emission, ctx)
+        self._drift_baseline = _current
         if not clearance_res.passed:
             # W533 — this raised, so a gate DOING ITS JOB killed the organism's metabolic cycle: the three
             # stages after this one went unmeasured, and the refusal was filed as a metabolic FAILURE, which

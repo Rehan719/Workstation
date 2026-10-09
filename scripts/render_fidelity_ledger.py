@@ -153,6 +153,27 @@ def standing(f, v):
         return f.get("verdict", "?").upper(), "unrefuted"
     cv = (v.get("corrected_verdict") or f.get("verdict") or "?").upper()
     if v.get("refuted"):
+        # W612 — A REFUTER THAT RAISES THE TIER HAS REPRODUCED THE GAP. The refuter is told to refute
+        # "when the verdict is the wrong one", so `refuted` also marks a finding it reproduced and judged
+        # TOO KIND. v8's R3.6 was exactly that: reproduced, raised tier 2 -> 1, and struck from the tier
+        # table as if nobody could reproduce it, so the count the milestone is scored on read 17 while its
+        # own tier-1 headings numbered 18. A finding cannot be made harsher unless it exists, so an
+        # escalation STANDS at the raised tier. A refutation that strikes or lowers still has no standing,
+        # as W572 ruled. Tier 0 is DELIVERED, the MILDEST state, so a DELIVERED claim refuted into a gap
+        # (v7's R3.9 and R5.9) is an escalation too — severity is not the tier's numeric order there.
+        _ct, _at = v.get("corrected_tier"), f.get("tier")
+        _sev = lambda t: 4 if t == 0 else t
+        if (isinstance(_ct, int) and isinstance(_at, int) and _ct >= 1 and _sev(_ct) < _sev(_at)
+                and cv != "DELIVERED"):
+            return cv, "escalated"
+        #  W636 — REPRODUCED AND RELABELLED AT THE SAME TIER. v13's R5.2 was marked refuted with the words
+        #  "the defect is real and reproduced … Tier 1 stands": only the verdict WORD was wrong. Striking it
+        #  made the table read 11 above twelve tier-1 headings. A changed gap verdict at an unchanged tier
+        #  is a correction, and it stands; a refutation that keeps the verdict, lowers the tier or corrects
+        #  to DELIVERED has no standing, as before.
+        if (cv not in ("DELIVERED", "?") and cv != str(f.get("verdict") or "").upper()
+                and (_ct is None or _ct == _at)):
+            return cv, "corrected"
         return cv, "refuted"
     if cv != f.get("verdict", "").upper():
         return cv, "corrected"
@@ -195,9 +216,9 @@ def main(src, dst, head, date, port="8024", version="3", round_name="W446"):
     assessed = Counter(f.get("verdict", "?").upper() for _, _, f, _, _, _ in rows)
     stands = Counter(sv for *_, sv, _ in rows)
     hows = Counter(how for *_, how in rows)
-    refuted_up = sum(1 for _, _, f, v, sv, how in rows if how in ("refuted", "corrected")
+    refuted_up = sum(1 for _, _, f, v, sv, how in rows if how in ("refuted", "corrected", "escalated")
                      and VERDICTS.index(sv) > VERDICTS.index(f.get("verdict", "PARTIAL").upper()))
-    refuted_down = sum(1 for _, _, f, v, sv, how in rows if how in ("refuted", "corrected")
+    refuted_down = sum(1 for _, _, f, v, sv, how in rows if how in ("refuted", "corrected", "escalated")
                        and VERDICTS.index(sv) < VERDICTS.index(f.get("verdict", "PARTIAL").upper()))
     # W572 — DIRECTION ON THE TIER, WHICH IS THE AXIS M1 IS SCORED ON. The two counters above compare
     # VERDICT INDEX only, so they cannot see a refuter tightening a tier — and in v6 every one of the
@@ -219,7 +240,7 @@ def main(src, dst, head, date, port="8024", version="3", round_name="W446"):
     #  lies, which is the FU-365 class (a guard pinned to today's state fails on success).
     tier_into_1_read_milder = sum(
         1 for _, _, f, v, sv, how in rows
-        if how == "corrected" and sv != "DELIVERED"
+        if how in ("corrected", "escalated") and sv != "DELIVERED"
         and standing_tier(f, v) == 1 and isinstance(f.get("tier"), int) and f["tier"] != 1
         and VERDICTS.index(sv) > VERDICTS.index(f.get("verdict", "PARTIAL").upper()))
 
@@ -291,7 +312,7 @@ def main(src, dst, head, date, port="8024", version="3", round_name="W446"):
     w("   remains, but to report DELIVERED where they verified it. Read the DELIVERED entries as the")
     w("   floor of what works, not the ceiling.")
     w(f"2. **Every one of the {total} findings was individually refuted.** The refuters reproduced")
-    w(f"   {hows['survived']} as stated and overturned {hows['refuted'] + hows['corrected']} — {refuted_down} moved to a")
+    w(f"   {hows['survived']} as stated and overturned {hows['refuted'] + hows['corrected'] + hows['escalated']} — {refuted_down} moved to a")
     w(f"   HARSHER verdict (a DELIVERED claim that was not), {refuted_up} to a MILDER one (a STUB that was real")
     w("   machinery with an undisclosed shortfall). The verdict in each heading is the one the REFUTER")
     w("   stands behind; the assessor's original is shown where it differs.")
@@ -368,7 +389,12 @@ def main(src, dst, head, date, port="8024", version="3", round_name="W446"):
             if v4 and sv != "DELIVERED":
                 st = standing_tier(f, v)
                 at = f.get("tier")
-                tag += f" · tier {st if st is not None else '?'}" + (f" *(assessed tier {at})*" if v and v.get("corrected_tier") not in (None, at) else "")
+                if how == "refuted":
+                    #  W636 — no standing, so no bare tier tag: the table does not count this finding and
+                    #  the heading must not look as if it does.
+                    tag += f" · *(refuted — assessed tier {at if at is not None else '?'}, not counted)*"
+                else:
+                    tag += f" · tier {st if st is not None else '?'}" + (f" *(assessed tier {at})*" if v and v.get("corrected_tier") not in (None, at) else "")
             #  W572 — A NAMELESS FINDING IS NOT WRITEABLE. The first v6 draft rendered all 60 headings
             #  as "### R1.0 ·  — **DOC_OVERCLAIM**" because the caller's field was `title` and this
             #  reads `section`; `.get(..., '')` turned a lost field into blank prose instead of an
@@ -397,6 +423,9 @@ def main(src, dst, head, date, port="8024", version="3", round_name="W446"):
                 w(f"- **disclosed to the user:** {clip(f['disclosed_to_user'], 400)}")
             if v is None:
                 w("- **refutation:** NOT individually refuted — treat as a lead, not settled")
+            elif how == "escalated":
+                w(f"- **refutation: REFUTED AS TOO KIND — reproduced, and the tier RAISED {f.get('tier')} → "
+                  f"{standing_tier(f, v)}; it stands at the raised tier.** {clip(v.get('reason'), 1400)}")
             elif how == "refuted":
                 w(f"- **refutation: REFUTED — corrected to {sv}.** {clip(v.get('reason'), 1400)}")
             elif how == "corrected":

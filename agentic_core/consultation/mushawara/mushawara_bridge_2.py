@@ -37,11 +37,25 @@ class MushawaraBridge2:
         # It is now derived from the verdicts the perspectives actually returned, and an unassessed
         # deliberation is NOT a cleared one.
         _verdicts = [(p.get("trace") or {}).get("passed") for p in ps]
+        #  P3.28 clause (2) — COVERAGE, read beside the verdict. An engine's screen may REFUSE (passed False) or
+        #  report that it screened and nothing refused (refused False, passed still None): the second is a
+        #  fact about what was LOOKED AT, never an approval, and it gets its own status so no reader can
+        #  confuse the two.
+        _refused = [(p.get("trace") or {}).get("refused") for p in ps]
         _unassessed = sum(1 for v in _verdicts if v is None)
+        _unscreened = [p.get("engine") for p, r in zip(ps, _refused) if r is None]
+        _coverage = sorted({s for p in ps for s in ((p.get("trace") or {}).get("screened_by") or [])})
+        _limit = next(((p.get("trace") or {}).get("coverage_limit") for p in ps
+                       if (p.get("trace") or {}).get("coverage_limit")), None)
         if False in _verdicts:
             _status = "BLOCKED"
             _reason = (f"{_verdicts.count(False)} of {len(_verdicts)} perspective(s) returned a failing "
                        "constitutional verdict")
+        elif ps and all(r is False for r in _refused):
+            _status = "SCREENED_NO_REFUSAL"
+            _reason = (f"all {len(ps)} perspective(s) were screened by {', '.join(_coverage)} and none refused. "
+                       f"This is NOT an approval and claims no pass: a screen may refuse, never clear, and its "
+                       f"stated limit is: {_limit}")
         elif _unassessed:
             _status = "NOT ASSESSED"
             # W582 — THE CAUSE NAMED HERE WAS WRONG, and a basis asserting a cause measurement
@@ -52,15 +66,19 @@ class MushawaraBridge2:
             # any hardware, changes this outcome, and a reader told otherwise waits for the wrong thing.
             # This matters downstream: the avatar path is HELD on a release condition phrased as a model
             # path, and a hold whose condition cannot be met by what it names is permanent.
+            #  W604 — the cause is no longer "they perform no check at all": since P3.28 every engine runs the
+            #  gaas.v5 screen. What remains unassessed is a perspective whose screen did not run, named.
             _reason = (f"{_unassessed} of {len(_verdicts)} perspective(s) supplied no constitutional "
                        "verdict, so this deliberation did not clear; an unassessed outcome is not an "
-                       "approval. The perspectives did not refuse for want of a model: they perform no "
-                       "constitutional check at all, so this outcome is unchanged by any model being "
-                       "available and is released only by a check being implemented")
+                       f"approval. Unscreened: {', '.join(str(e) for e in _unscreened) or 'none'} - those "
+                       "perspectives perform no constitutional check that ran, and the outcome is "
+                       "released only by a check being implemented (or able to run) for them, never by a "
+                       "model being available")
         else:
             _status = "APPROVED"
             _reason = f"all {len(_verdicts)} perspective(s) returned a passing constitutional verdict"
         res = {"status": _status, "reason": _reason, "status_basis": _reason,
+               "coverage": {"screened_by": _coverage, "coverage_limit": _limit, "unscreened": _unscreened},
                "outcome": agg, "duration_ms": (time.time()-start)*1000}
         if self.ueg: await self.ueg.log_minimisation_event("mushawara_complete", res)
         return res
@@ -80,7 +98,11 @@ class MushawaraBridge2:
             "confidence_basis": res.confidence_basis,
             "served_by": res.served_by,
             "trace": {"passed": res.constitutional_validation.passed,
-                      "basis": res.constitutional_validation.basis},
+                      "basis": res.constitutional_validation.basis,
+                      #  P3.28 — the coverage travels with the verdict, so the deliberation can decide by it
+                      "refused": res.constitutional_validation.refused,
+                      "screened_by": list(res.constitutional_validation.screened_by or []),
+                      "coverage_limit": res.constitutional_validation.coverage_limit},
             # W533 — a 10000-element vector of ones used to sit here, presented as an embedding.
             # Nothing computed it. It is reported as absent rather than fabricated; registered.
             "vector": None,
