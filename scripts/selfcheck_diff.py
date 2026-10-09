@@ -904,6 +904,14 @@ def _in_comment_only(target: Path, lit: str) -> tuple:
         raw = target.read_text(encoding="utf-8")
     except OSError:
         return (0, 0)
+    #  W636 — A DOCUMENT HAS NO COMMENTS. This applied JavaScript comment syntax to whatever file a guard
+    #  reads, the plan included. A register row quoting a shell glob put the two characters that open a block
+    #  comment into the plan, a path further down supplied the two that close one, and every line between
+    #  them became "a comment": a guard that had passed for forty rounds went red because the plan GREW.
+    #  Markdown, JSON and plain text carry no comment a render could be deleted from behind, so every hit in
+    #  them is content.
+    if target.suffix.lower() in (".md", ".json", ".txt"):
+        return (0, raw.count(lit))
     blocks = re.sub(r"/\*.*?\*/", lambda m: "\n" * m.group(0).count("\n"), raw, flags=re.S)
     code_lines, comment_lines = [], []
     for a, b in zip(raw.splitlines(), blocks.splitlines()):

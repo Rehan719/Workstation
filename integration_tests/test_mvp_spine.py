@@ -37260,6 +37260,37 @@ def test_w572_the_fidelity_ledger_cannot_misreport_its_own_measure(client):
     assert _row.group(1) == "1", (
         "a REFUTED finding still contributes its tier, so a claim nobody could reproduce puts work "
         "into a phase bucket — v6 read tier 3 as 15 when 12 stood", _row.group(1))
+    #  W636 — and the struck finding's HEADING carries no bare tier tag, so headings and table cannot disagree
+    assert len(_re572.findall(r"^### R1\.\d+ .*· tier 3(?: |\*|$)", _text, _re572.M)) == 1, (
+        "a finding with no standing still prints a tier tag in its heading, so the ledger's tier headings "
+        "outnumber the table that the milestone is scored on")
+
+    # ── L1b. REPRODUCED AND RELABELLED AT THE SAME TIER STANDS (W636, v13's R5.2) ────────────────
+    #  The refuter marks `refuted` when the verdict WORD is wrong, including on a gap it reproduced. v13's
+    #  R5.2 said "the defect is real and reproduced ... Tier 1 stands" and was struck: the table read 11
+    #  above twelve tier-1 headings. A changed gap verdict at an unchanged tier is a correction.
+    _regions1b = [{"region": "R1", "summary": "", "findings": [
+        _f(0, "DOC_OVERCLAIM", 1), _f(1, "STUB", 1), _f(2, "STUB", 1)], "verdicts": [
+        {"index": 0, "corrected_verdict": "PARTIAL", "corrected_tier": 1, "refuted": True,
+         "reason": "real and reproduced; tier 1 stands", "evidence": "x"},
+        #  the two shapes that must STILL have no standing: corrected to DELIVERED, and tier lowered
+        {"index": 1, "corrected_verdict": "DELIVERED", "corrected_tier": 1, "refuted": True,
+         "reason": "r", "evidence": "x"},
+        {"index": 2, "corrected_verdict": "PARTIAL", "corrected_tier": 3, "refuted": True,
+         "reason": "r", "evidence": "x"}]}]
+    _rc1b, _out1b, _text1b = _render(_regions1b, "out1b.md")
+    assert _rc1b == 0, _out1b
+    _t1b = _re572.search(r"^\| \*\*1\*\* \| \*\*(\d+)\*\* \|", _text1b, _re572.M)
+    assert _t1b and _t1b.group(1) == "1", (
+        "a finding its refuter REPRODUCED and only relabelled at the same tier is not exactly the one "
+        "counted at tier 1 (0 = it was struck, as v13's R5.2 was; more = a real refutation now stands)",
+        _t1b and _t1b.group(1))
+    assert len(_re572.findall(r"^### R1\.\d+ .*· tier 1(?: |\*|$)", _text1b, _re572.M)) == 1, (
+        "the tier-1 headings and the tier-1 table disagree on the crafted record")
+    _t3b = _re572.search(r"^\| 3 \| (\d+) \|", _text1b, _re572.M)
+    assert _t3b is None or _t3b.group(1) == "0", (
+        "a refutation that LOWERED the tier stands at the lower tier - W572 ruled it has no standing",
+        _t3b and _t3b.group(1))
 
     # ── L2. A TIER ESCALATION IS HARSHER, EVEN WHEN THE VERDICT INDEX RISES ─────────────────────
     #  The exact v6 shape: STUB -> API_ONLY is a HIGHER verdict index (reads as milder) while the
@@ -45914,6 +45945,21 @@ def test_w611_p221_no_beat_step_fails_silently_and_no_presence_check_reads_a_com
     _spec.loader.exec_module(_scd)
     _leads = _scd.check_presence("HEAD", ["integration_tests/test_mvp_spine.py"])
     assert _leads == [], ("a presence check can still be satisfied by a comment alone", _leads[:3])
+    #  W636 — A DOCUMENT HAS NO COMMENTS. The leg above went red because the plan GREW: a register row quoting a
+    #  shell glob and a path further down opened and closed a JavaScript block comment across the plan, and
+    #  every line between them was read as one. Driven on crafted files, so it does not depend on what the
+    #  plan happens to contain today: the same text is content in a document and a comment in source.
+    import tempfile as _tf636
+    _d636 = __import__("pathlib").Path(_tf636.mkdtemp())
+    _body636 = "run grep over pages/" + "*" + ".tsx\nphrase-w636-doc is here\nthen a path a/b*" + "/c\n"
+    (_d636 / "plan.md").write_text(_body636, encoding="utf-8")
+    assert _scd._in_comment_only(_d636 / "plan.md", "phrase-w636-doc") == (0, 1), (
+        "text in a markdown document is read as a block comment, so a guard over the plan fails when a row "
+        "quotes a glob", _scd._in_comment_only(_d636 / "plan.md", "phrase-w636-doc"))
+    #  ...and the instrument still sees the real thing in SOURCE: the fix must not blind it
+    (_d636 / "x.tsx").write_text(_body636, encoding="utf-8")
+    assert _scd._in_comment_only(_d636 / "x.tsx", "phrase-w636-doc")[0] == 1, (
+        "a phrase inside a real block comment in a source file is no longer seen as a comment")
 
 
 def test_w612_a_refuter_that_raises_a_tier_has_reproduced_the_gap(client):

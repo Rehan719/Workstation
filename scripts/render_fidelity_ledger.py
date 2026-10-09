@@ -166,6 +166,14 @@ def standing(f, v):
         if (isinstance(_ct, int) and isinstance(_at, int) and _ct >= 1 and _sev(_ct) < _sev(_at)
                 and cv != "DELIVERED"):
             return cv, "escalated"
+        #  W636 — REPRODUCED AND RELABELLED AT THE SAME TIER. v13's R5.2 was marked refuted with the words
+        #  "the defect is real and reproduced … Tier 1 stands": only the verdict WORD was wrong. Striking it
+        #  made the table read 11 above twelve tier-1 headings. A changed gap verdict at an unchanged tier
+        #  is a correction, and it stands; a refutation that keeps the verdict, lowers the tier or corrects
+        #  to DELIVERED has no standing, as before.
+        if (cv not in ("DELIVERED", "?") and cv != str(f.get("verdict") or "").upper()
+                and (_ct is None or _ct == _at)):
+            return cv, "corrected"
         return cv, "refuted"
     if cv != f.get("verdict", "").upper():
         return cv, "corrected"
@@ -381,7 +389,12 @@ def main(src, dst, head, date, port="8024", version="3", round_name="W446"):
             if v4 and sv != "DELIVERED":
                 st = standing_tier(f, v)
                 at = f.get("tier")
-                tag += f" · tier {st if st is not None else '?'}" + (f" *(assessed tier {at})*" if v and v.get("corrected_tier") not in (None, at) else "")
+                if how == "refuted":
+                    #  W636 — no standing, so no bare tier tag: the table does not count this finding and
+                    #  the heading must not look as if it does.
+                    tag += f" · *(refuted — assessed tier {at if at is not None else '?'}, not counted)*"
+                else:
+                    tag += f" · tier {st if st is not None else '?'}" + (f" *(assessed tier {at})*" if v and v.get("corrected_tier") not in (None, at) else "")
             #  W572 — A NAMELESS FINDING IS NOT WRITEABLE. The first v6 draft rendered all 60 headings
             #  as "### R1.0 ·  — **DOC_OVERCLAIM**" because the caller's field was `title` and this
             #  reads `section`; `.get(..., '')` turned a lost field into blank prose instead of an

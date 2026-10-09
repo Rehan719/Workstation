@@ -17,10 +17,20 @@ def _torch():
             f"{exc.__class__.__name__}: {exc}. Nothing was computed."
         ) from exc
 
+#  W636 — AN OPTIONAL LIBRARY THAT FAILS TO LOAD IS ABSENT, WHATEVER IT RAISED. This caught ImportError
+#  only. POT imports scikit-learn, which imports scipy.stats, and with torch blocked that chain raised an
+#  AttributeError at import — so on a machine where POT is installed the whole platform failed to boot,
+#  through a library every caller already treats as optional. Not seen on CI, which does not install POT.
+#  The reason is kept and reported by availability(), so "not installed" is never said of a library that
+#  is installed and broken.
+_OT_IMPORT_ERROR = ""
 try:
     import ot
 except ImportError:
     ot = None
+except Exception as _ot_exc:  # noqa: BLE001 — any import-time failure of an optional dependency
+    ot = None
+    _OT_IMPORT_ERROR = f"{_ot_exc.__class__.__name__}: {str(_ot_exc)[:160]}"
 from typing import Dict, Tuple, Optional, Any
 from ._utils import get_backend, to_numpy
 
@@ -50,6 +60,11 @@ class OptimalTransportRouter:
             "tolerance": self.tol,
             "basis": ("the POT solver is importable, so this router can compute a transport plan"
                       if ot is not None else
+                      #  W636 — installed-but-failed-to-load is a different fact from not installed
+                      (f"NOT AVAILABLE: the POT solver (`ot`) is installed but failed to load "
+                       f"({_OT_IMPORT_ERROR}), so no transport plan and no Wasserstein distance can be "
+                       "computed. Nothing is estimated in its place.")
+                      if _OT_IMPORT_ERROR else
                       "NOT AVAILABLE: the POT solver (`ot`) is not installed in this deployment, so no "
                       "transport plan and no Wasserstein distance can be computed. Nothing is estimated "
                       "in its place — an entropic optimal transport problem has no cheap approximation "
