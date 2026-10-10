@@ -50609,3 +50609,318 @@ def test_w656_what_an_entitys_records_and_pages_say_is_what_happened(client):
     assert _lesson.status_code == 200 and _lesson.json().get("review_state") == "withheld" \
         and _lesson.json().get("lesson_plan") is None, (
         "the sentence says outlines are withheld, and the route does not withhold one", _lesson.status_code, _lesson.text[:300])
+
+
+def test_w657_a_realm_sets_the_register_and_selects_no_stage(client):
+    """FU-653 and FU-656 (Owner ruling 2026-10-10: the Developing realm means BOTH innovation / technical work
+    and a resource-constrained setting).
+
+    THE PROPERTIES: the platform's own realm note never adds a stage to a journey - two journeys that differ
+    only in realm derive the same stages; a person who writes the keyword themselves still gets the stage,
+    in any realm; the Developing register carries both meanings and stays one imperative paragraph with no
+    second "Label:"; and Settings says what the chosen realm means and that it applies to domain tools.
+    """
+    import pathlib as _pl
+    import re
+    from agentic_core import taxonomy as _tx
+
+    _plain = "Rural carers in Kashmir lack respite support and training"
+    _stages = {}
+    for _realm in ("developing", "learning"):
+        _r = client.post("/api/v1/genesis/journey", json={"problem": _plain, "domain": "care", "product": "factory",
+                                                          "realm": _realm})
+        assert _r.status_code == 200, (_realm, _r.text[:300])
+        _stages[_realm] = sorted((_r.json().get("derived_stages") or {}).keys())
+    assert _stages["developing"] == _stages["learning"], (
+        "choosing a realm changed which stages the journey ran, and the page attributes those to the person's text",
+        _stages)
+
+    #  the person's OWN word still selects the stage - in both realms
+    _own = "We need to develop and roll out a respite rota for rural carers"
+    for _realm in ("developing", "learning"):
+        _r = client.post("/api/v1/genesis/journey", json={"problem": _own, "domain": "care", "product": "factory",
+                                                          "realm": _realm})
+        assert _r.status_code == 200, (_realm, _r.text[:300])
+        _d = _r.json().get("derived_stages") or {}
+        assert "implementation" in _d and "develop" in " ".join(_d["implementation"].get("matched") or []), (
+            "a stage the person's own words call for was lost with the realm note", _realm, sorted(_d))
+
+    #  THE REGISTER: both meanings, one directive, no second label (engine.py reads a field to end of line)
+    _reg = _tx.REALM_REGISTER["developing"]
+    assert "resource-constrained" in _reg and "technical" in _reg and "new" in _reg, _reg
+    assert _reg.startswith("Write for ") and not re.search(r"\b[A-Z][a-z]+: ", _reg), (
+        "the register is no longer a single imperative directive, or carries a second Label:", _reg)
+    for _other in ("enterprise", "learning", "scholarship"):
+        assert _tx.REALM_REGISTER[_other].startswith("Write for "), _other
+
+    #  THE CANON says both, where it lists the realms
+    _vision = (_pl.Path(__file__).resolve().parents[1] / "docs/WORKSTATION_IDBO_WHOLE_VISION.md").read_text(encoding="utf-8")
+    _line = next(l for l in " ".join(_vision.split()).split(" - **") if l.startswith("Realms (who the user is)"))
+    assert "innovation/technical" in _line and "resource-constrained" in _line, _line[:300]
+
+    #  THE PAGE: what the realm means, from the one frontend source, and where it applies
+    _src = _pl.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    _ts = (_src / "lib/taxonomy.ts").read_text(encoding="utf-8")
+    _means = re.search(r"export const REALM_MEANS[^=]*= \{(.*?)\n\};", _ts, re.S)
+    assert _means, "the frontend has no one-line meaning per realm"
+    assert sorted(re.findall(r"^\s*(\w+): '", _means.group(1), re.M)) == sorted(_tx.REALMS), (
+        "the frontend's realm meanings do not cover exactly the canonical realms")
+    _settings = _code_only((_src / "pages/Settings.tsx").read_text(encoding="utf-8"))
+    assert 'data-testid="realm-means"' in _settings and "REALM_MEANS[prefs.defaultRealm]" in _settings
+    assert "every domain tool" in _settings, "Settings does not say the realm is sent with domain tools too"
+
+
+def test_w657_the_visions_bar_note_lists_what_the_gate_actually_measures():
+    """FU-625 (Owner ruling 2026-10-10: the bar says BOTH which criteria are measured and which are only attested).
+
+    The vision's lists are PARSED and compared with what the gate produces, so the note cannot drift from the
+    code: gate- or screen-sourced criteria are the measured list, caller-sourced the attested list, the rest
+    are established by nothing, and the three together are the bar's sixteen.
+    """
+    import pathlib as _pl
+    import re
+    from agentic_core.vbs import quality as _q
+
+    _vision = " ".join((_pl.Path(__file__).resolve().parents[1]
+                        / "docs/WORKSTATION_IDBO_WHOLE_VISION.md").read_text(encoding="utf-8").replace(">", " ").split())
+
+    def _list(label):
+        _m = re.search(re.escape(label) + r"\s*\(\d+\):\*\*\s*(.*?)\.", _vision)
+        assert _m, ("the status note has no list headed", label)
+        return sorted(x.strip() for x in _m.group(1).split("·"))
+    _measured, _attested, _nothing = (_list("**Measured by the gate"),
+                                      _list("**Attested by the journey, never measured"),
+                                      _list("**Established by nothing"))
+    assert sorted(_measured + _attested + _nothing) == sorted(_q.SOLUTION_QUALITY_BAR), (
+        "the three lists are not the bar's sixteen", _measured, _attested, _nothing)
+
+    #  what the gate itself does with a model-served delivery whose caller attests everything it may
+    _ev = {c: "driven" for c in _q.SOLUTION_QUALITY_BAR}
+    _bar = _q._measure_bar(1.0, False, True, 0.8, {"verdicts": [{"framework": "ehs", "status": "pass"}]}, _ev)
+    _crit = _bar["criteria"] if "criteria" in _bar else _bar
+    _by = {}
+    for _name, _c in _crit.items():
+        if isinstance(_c, dict) and "source" in _c:
+            _by.setdefault(_c["source"], []).append(_name)
+    assert sorted(_by.get("gate", []) + _by.get("screen", [])) == _measured, (
+        "the vision's measured list is not what the gate measures", _by)
+    #  a caller may attest any of the twelve the gate does not measure; the JOURNEY attests exactly these seven
+    import inspect
+    from agentic_core.api import genesis as _g
+    _src = inspect.getsource(_g._bar_attestations)
+    assert sorted(set(re.findall(r'ev\["([a-z -]+)"\]', _src))) == _attested, (
+        "the vision's attested list is not what the journey attests")
+
+
+def test_w657_a_founder_can_write_every_body_section_and_what_they_wrote_is_no_longer_absent(client):
+    """FU-679, and a defect found reading for it.
+
+    THE PROPERTIES: a section a founder writes is no longer pending AND no longer absent - an entity born with
+    an empty concept stopped at "was never provided" after its founder recorded one; design, commercialisation
+    and operations each have a founder route with the concept route's rules; the status and stage are derived
+    again; a body shipped before the edit is marked stale; and nothing else can be written through the route.
+    """
+    from agentic_core.api import vsb as _vsb
+
+    _e = client.post("/api/v1/genesis/establish", json={"problem": "A village bakery cooperative for the school",
+                                                        "domain": "enterprise", "name": "W655 Sections Probe",
+                                                        "ship_output": False})
+    assert _e.status_code == 200, _e.text[:300]
+    _vid = _e.json()["vsb_id"]
+    _rec = _vsb._load_vsb(_vid)
+    _absent0 = dict(_rec.get("body_absent") or {})
+    assert _absent0.get("concept") is True and _absent0.get("design") is True, (
+        "the probe entity was not born with an empty body, so the legs below prove nothing", _absent0)
+
+    # (1) THE CONCEPT, recorded by the founder, is no longer absent - and the stage basis stops saying it was
+    _c = client.post(f"/api/v1/vsb/{_vid}/concept", json={"concept": "A member-owned bakery supplying the primary school."})
+    assert _c.status_code == 200, _c.text[:300]
+    _rec = _vsb._load_vsb(_vid)
+    assert (_rec.get("body_absent") or {}).get("concept") is False, (
+        "a concept its founder recorded is still marked as never provided", _rec.get("body_absent"))
+    assert "concept was never provided" not in str(_rec.get("stage_basis") or "").lower().replace("the concept", "concept"), (
+        _rec.get("stage_basis"))
+
+    # (2) EACH OTHER SECTION has a founder route, and writing it clears both maps and records whose words they are
+    _TEXT = {"design": "Two ovens, a morning shift and a delivery round to the school gate.",
+             "commercialisation": "A weekly bread subscription paid termly by the parents' association.",
+             "operations": "Bake from five, deliver by eight, close the books each Friday."}
+    for _section, _text in _TEXT.items():
+        _r = client.post(f"/api/v1/vsb/{_vid}/body/{_section}", json={"text": _text})
+        assert _r.status_code == 200, (_section, _r.status_code, _r.text[:300])
+        _rec = _vsb._load_vsb(_vid)
+        assert (_rec.get("body_absent") or {}).get(_section) is False, (_section, _rec.get("body_absent"))
+        assert not (_rec.get("body_pending") or {}).get(_section), (_section, _rec.get("body_pending"))
+        assert (_rec.get("body_sources") or {}).get(_section) == "founder", (_section, _rec.get("body_sources"))
+        _holder = _rec.get(_vsb._FOUNDER_SECTIONS[_section]) or {}
+        assert _holder.get(_section) == _text, ("the section was not written where the entity keeps it", _section)
+        assert _r.json()["stage_basis"] == _rec.get("stage_basis"), "the answer does not carry the re-derived stage"
+    #  ...and with every section written the stage basis names none of them as missing
+    _basis = str(_vsb._load_vsb(_vid).get("stage_basis") or "")
+    assert "never provided" not in _basis and "awaits the owned model" not in _basis, _basis
+
+    # (3) THE RULES: an unknown section, too little text, and the floor's own marker are all refused
+    assert client.post(f"/api/v1/vsb/{_vid}/body/name", json={"text": "A perfectly good length of text"}).status_code == 404
+    assert client.post(f"/api/v1/vsb/{_vid}/body/concept", json={"text": "A perfectly good length of text"}).status_code == 404
+    assert client.post(f"/api/v1/vsb/{_vid}/body/design", json={"text": "too short"}).status_code == 422
+    assert client.post(f"/api/v1/vsb/{_vid}/body/design",
+                       json={"text": "content pending the owned model - not the founder's words"}).status_code == 422
+    assert (_vsb._load_vsb(_vid).get(_vsb._FOUNDER_SECTIONS["design"]) or {}).get("design") == _TEXT["design"], (
+        "a refused write changed the section")
+
+    # (4) A BODY SHIPPED BEFORE THE EDIT is marked stale by it
+    _s = client.post(f"/api/v1/vsb/{_vid}/repo/ship")
+    assert _s.status_code == 200 and _s.json().get("shipped") is True, (_s.status_code, _s.text[:300])
+    assert client.post(f"/api/v1/vsb/{_vid}/body/operations",
+                       json={"text": "Bake from four on market days, deliver by seven."}).status_code == 200
+    _ship = client.get(f"/api/v1/vsb/{_vid}/repo").json().get("ship_status") or {}
+    assert _ship.get("stale") is True and "operations" in str(_ship.get("stale_reason") or ""), _ship
+
+
+def test_w657_who_wrote_each_opening_field_is_derived_from_every_write_so_far(client, monkeypatch):
+    """FU-680.
+
+    THE PROPERTIES: the plan's statement of who wrote its opening is derived from the record of every write so
+    far - a second Owner edit keeps the first (it always did: a regression leg for the refactor); a field a model
+    writes is recorded as model-composed, with what served it, and is neither a template nor the Owner's; on
+    the floor nothing is written and the statement does not move.
+    """
+    from agentic_core.api import business_plan as _bp
+
+    _e = client.post("/api/v1/genesis/establish", json={"problem": "A village bakery cooperative for the school",
+                                                        "domain": "enterprise", "name": "W657 Opening Probe",
+                                                        "ship_output": False})
+    assert _e.status_code == 200, _e.text[:300]
+    _scope = _e.json()["vsb_id"]
+
+    def _prov():
+        return (_bp._load(_scope).get("provenance") or {})
+    _birth = list(_prov().get("templated_fields") or [])
+    assert "vision" in _birth and "mission" in _birth, (
+        "establishment templated no opening field here, so the legs below prove nothing", _birth)
+
+    # (1) one Owner edit
+    assert client.post("/api/v1/business-plan/set", json={"scope": _scope, "vision": "Fresh bread at every school gate by eight."}).status_code == 200
+    _p1 = _prov()
+    assert _p1["field_sources"]["vision"] == "owner_supplied" and "vision" not in _p1["templated_fields"], _p1
+
+    # (2) A SECOND EDIT DOES NOT FORGET THE FIRST
+    assert client.post("/api/v1/business-plan/set", json={"scope": _scope, "mission": "Bake and deliver, every school day."}).status_code == 200
+    _p2 = _prov()
+    assert "vision" not in _p2["templated_fields"] and "mission" not in _p2["templated_fields"], (
+        "a second Owner edit put the first edit's field back on the template list", _p2["templated_fields"])
+    _sent = _p2["opening_written_by"]
+    _owner_part = _sent.split(".")[0]
+    assert "vision" in _owner_part and "mission" in _owner_part, ("the sentence names only the latest edit", _sent)
+    assert _p2["field_sources"]["vision"] == "owner_supplied", _p2["field_sources"]
+
+    # (3) A MODEL'S WRITE is recorded as a model's
+    _real = _bp.gateway.query_meta
+
+    async def _model(prompt, **k):
+        if k.get("agent") == "business_plan_chief":
+            return {"output": "## Strategy" + chr(10) + "Win the school contract first, then the two nurseries.",
+                    "served_by": "llama3", "is_external": False}
+        return await _real(prompt, **k)
+    #  a model only fills a field that is UNSET, and establishment seeds the strategy: the Owner clears it first
+    assert client.post("/api/v1/business-plan/set", json={"scope": _scope, "clear": ["strategy"]}).status_code == 200
+    assert _prov()["field_sources"]["strategy"] == "cleared_by_owner", _prov()["field_sources"]
+    monkeypatch.setattr(_bp.gateway, "query_meta", _model)
+    _g = client.post("/api/v1/business-plan/generate", json={"scope": _scope})
+    assert _g.status_code == 200, _g.text[:300]
+    _written = _g.json().get("written") or []
+    assert _written, ("the spied model wrote no opening field, so the model leg proves nothing", _g.json().get("reason"))
+    _p3 = _prov()
+    for _f in _written:
+        if _f in _bp._OPENING_FIELDS:
+            assert _p3["field_sources"][_f] == "model_composed" and _f not in _p3["templated_fields"], (_f, _p3)
+    assert "Composed by a model (llama3" in _p3["opening_written_by"], _p3["opening_written_by"]
+    assert "vision" in _p3["opening_written_by"].split(".")[0], "a model's write erased what the Owner wrote from the sentence"
+    monkeypatch.undo()
+
+    # (4) ON THE FLOOR nothing is written and the statement does not move
+    _before = dict(_prov())
+    _f = client.post("/api/v1/business-plan/generate", json={"scope": _scope}).json()
+    assert not _f.get("written"), _f.get("written")
+    assert _prov().get("opening_written_by") == _before.get("opening_written_by")
+    assert _prov().get("field_sources") == _before.get("field_sources")
+
+
+def test_w657_a_tool_says_what_own_ai_delivers_and_a_preview_serves_what_its_own_pages_link(client):
+    """FU-657, and the generated surfaces' preview (ledger v14 FU-635; ledger v15, the unstyled website).
+
+    THE PROPERTIES: every domain tool's description is followed by one statement of what "own AI" delivers
+    when no owned model is serving - said once, in the component every hub renders its tools through; and
+    every link a previewed surface CONTAINS answers when followed through the platform: its stylesheet, its
+    other pages, and the other two surfaces. The links are READ from the served HTML, not typed here, and the
+    file on disk keeps the relative links a downloaded body needs.
+    """
+    import pathlib as _pl
+    import re
+    from agentic_core.api import vsb as _vsb
+    _src = _pl.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+
+    # ── the hubs ─────────────────────────────────────────────────────────────────────────────────────
+    _tool = _code_only((_src / "components/DomainTool.tsx").read_text(encoding="utf-8"))
+    _i = _tool.index("{description}</p>")
+    assert 'data-testid="tool-serving-note"' in _tool[_i:_i + 400], (
+        "the statement of what own AI delivers does not directly follow the description")
+    assert "not model-written work" in _tool[_i:_i + 700]
+    _hubs = sorted((_src / "pages/domains").glob("*Hub.tsx"))
+    assert len(_hubs) >= 5, _hubs
+    for _h in _hubs:
+        _t = _h.read_text(encoding="utf-8")
+        if "own</span> AI" in _t or "own AI" in _t:
+            assert "<DomainTool" in _t, (_h.name, "claims own AI in a description that is not rendered by the shared tool")
+
+    # ── the preview ──────────────────────────────────────────────────────────────────────────────────
+    _e = client.post("/api/v1/genesis/establish", json={"problem": "A village bakery cooperative for the school",
+                                                        "domain": "enterprise", "name": "W657 Preview Probe",
+                                                        "concept": "A member-owned bakery supplying the school.",
+                                                        "design": "Two ovens and a delivery round.",
+                                                        "commercialisation": "A termly bread subscription.",
+                                                        "ship_output": False})
+    assert _e.status_code == 200, _e.text[:300]
+    _vid = _e.json()["vsb_id"]
+    for _route in ("website", "webapp", "mobile"):
+        assert client.post(f"/api/v1/vsb/{_vid}/{_route}").status_code == 200, _route
+    _followed = 0
+    for _surface in ("website", "webapp", "mobile"):
+        _base = f"/api/v1/vsb/{_vid}/{_surface}/page/"
+        _page = client.get(_base + "index")
+        assert _page.status_code == 200, (_surface, _page.status_code)
+        _refs = set(re.findall(r'(?:href|src)="([^"#]+)"', _page.text))
+        assert _refs, ("the served page links nothing, so this leg proves nothing", _surface)
+        #  THE PAGE SAYS WHERE ITS OWN RELATIVE LINKS LIVE (ledger v15: the Genesis page opens a preview as a blob
+        #  document, which has no base address, so app.js / styles.css / data.json never loaded). One absolute
+        #  <base>, naming THIS surface's page route for THIS entity. What the suite cannot show is the browser
+        #  loading the assets through it: that is driven in the preview, not claimed here.
+        _bases = re.findall(r'<base href="([^"]+)">', _page.text)
+        assert len(_bases) == 1 and _bases[0].startswith("http") and _bases[0].endswith(_base), (
+            "the served page carries no base address for its own surface", _surface, _bases)
+        for _ref in sorted(_refs):
+            if _ref.startswith(("http:", "https:", "data:", "mailto:")):
+                continue
+            _url = _ref if _ref.startswith("/") else _base + _ref
+            _got = client.get(_url)
+            assert _got.status_code == 200, (
+                "a link the previewed page itself contains is dead when the platform serves it",
+                _surface, _ref, _got.status_code)
+            _followed += 1
+        #  the same names with their file suffix, which is what a relative link asks for
+        assert client.get(_base + "index.html").status_code == 200, (_surface, "index.html")
+    assert _followed >= 8, ("too few links were followed for this leg to mean anything", _followed)
+    #  no traversal: a name that is not a known page is still refused
+    assert client.get(f"/api/v1/vsb/{_vid}/website/page/..%2Fwebapp%2Findex").status_code == 404
+    assert client.get(f"/api/v1/vsb/{_vid}/website/page/secrets.html").status_code == 404
+    #  ...and ON DISK the links stay relative: that is what a downloaded body needs
+    _disk = (_vsb._REPO_STORE / _vid / "web" / "index.html").read_text(encoding="utf-8")
+    assert 'href="../webapp/index.html"' in _disk and "/api/v1/vsb/" not in _disk and "<base " not in _disk, (
+        "the preview's rewrite was applied to the file that ships")
+    #  ...and a non-HTML file is served as it is
+    assert "<base " not in client.get(f"/api/v1/vsb/{_vid}/webapp/page/app.js").text
+    #  THE PHONE APP'S CHIPS state their condition: installable and offline hold once it is hosted, and the
+    #  platform previews it without hosting it
+    _gj = _code_only((_src / "pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8"))
+    assert ">installable when hosted<" in _gj and ">offline when hosted<" in _gj, "a chip states no condition"
+    assert ">installable</span>" not in _gj and ">offline</span>" not in _gj, "a bare 'installable' or 'offline' chip remains"

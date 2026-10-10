@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { REALMS as CANON_REALMS, DOMAINS as CANON_DOMAINS } from '../lib/taxonomy';
+import { REALMS as CANON_REALMS, DOMAINS as CANON_DOMAINS, REALM_MEANS } from '../lib/taxonomy';
 import { Card, Button } from '@workstation/ui';
 import { Check, Trash2, User, Settings as SettingsIcon } from 'lucide-react';
 import { interfaceLanguages, useT } from '../lib/i18n';
@@ -99,6 +99,11 @@ export const Settings: React.FC = () => {
               <option value="">No default</option>
               {REALMS.map(r => <option key={r} value={r}>{r}</option>)}
             </select>
+            {/* W654 (FU-656) - what the choice changes, and where: Genesis and the domain tools alike */}
+            <p data-testid="realm-means" className="text-[10px] text-slate-600 mt-1">
+              {prefs.defaultRealm && REALM_MEANS[prefs.defaultRealm] ? `${REALM_MEANS[prefs.defaultRealm]} ` : ''}
+              The realm sets how results are written. It applies to Genesis journeys and to every domain tool.
+            </p>
           </div>
           <div>
             <label htmlFor="pref-domain" className="text-[9px] font-black uppercase tracking-widest text-slate-500">Default domain</label>

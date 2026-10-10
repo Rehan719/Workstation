@@ -68,7 +68,11 @@ REALM_REGISTER: dict[str, str] = {
         "conclusion. Prefer one worked example over three abstract ones."
     ),
     "developing": (
-        "Write for a resource-constrained setting. Assume limited capital, intermittent "
+        #  OWNER RULING 2026-10-10 (FU-656): BOTH meanings stand - innovation / technical work (the
+        #  vision's) and a resource-constrained setting (this register's until W654).
+        "Write for someone building something new, with technical work to do and limited means to do it. "
+        "Be specific about how it is built and what is being tried for the first time. Write for a "
+        "resource-constrained setting: assume limited capital, intermittent "
         "infrastructure and thin specialist staffing; prefer what can be run and maintained "
         "locally, name what each step actually requires, and offer a low-resource path first."
     ),

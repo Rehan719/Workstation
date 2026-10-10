@@ -15,6 +15,14 @@ export const PRODUCT_LABELS: Record<string, string> = {
 export const REALM_LABELS: Record<string, string> = {
   enterprise: 'Enterprise', learning: 'Learning', developing: 'Developing', scholarship: 'Scholarship',
 };
+// W654 (FU-656, Owner ruling 2026-10-10) - what choosing a realm changes, in one line each. The realm sets the
+// depth and register of what is written (agentic_core/taxonomy.py REALM_REGISTER holds the full instruction).
+export const REALM_MEANS: Record<string, string> = {
+  enterprise: 'Written for a commercial operator who has to act: decisions, costs, numbers, owners.',
+  learning: 'Written for someone building understanding: terms defined, reasoning shown, worked examples.',
+  developing: 'Written for building something new with limited means: innovation and technical work, in a resource-constrained setting.',
+  scholarship: 'Written for a scholarly reader: precise claims, the limits of the evidence, competing readings.',
+};
 export const DOMAIN_LABELS: Record<string, string> = {
   religion: 'Religion', science: 'Science', education: 'Education',
   law: 'Law', employment: 'Employment', care: 'Care',

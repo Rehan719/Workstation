@@ -709,7 +709,17 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
     # Derived from the problem AND the concept: the problem is the user's own words and the concept is what
     # the platform made of them, so taking only one would miss a risk the other names.
     from agentic_core.ai.native.orchestrator import derived_branches as _derived_branches
-    _derived = [d for d in _derived_branches(f"{req.problem} {concept}")
+    #  W654 (FU-653) - THE PLATFORM'S OWN REALM NOTE IS NOT THE PERSON'S TEXT, AND IT SELECTS NOTHING. Every
+    #  stage prompt opens with the realm's register sentence and "Realm: <label>"; the floor echoes them into
+    #  the concept; and the 'implementation' rule matches the substring 'develop' - so choosing the Developing
+    #  realm added a stage to the journey and the page said the person's text had called for it. The realm
+    #  note is removed from the CONCEPT before matching. The problem is the person's own words and is matched
+    #  whole: a person who writes "develop" still gets the stage.
+    _realm_label654 = REALM_LABELS.get(normalise_realm(req.realm), "Enterprise")
+    _concept654 = (concept or "").replace(realm_directive(req.realm), " ")
+    _concept654 = __import__("re").sub(r"(?i)\bRealm:\s*" + __import__("re").escape(_realm_label654) + r"\b", " ", _concept654)
+    _concept654 = __import__("re").sub(r"(?i)\b" + __import__("re").escape(_realm_label654) + r"\s+realm\b", " ", _concept654)
+    _derived = [d for d in _derived_branches(f"{req.problem} {_concept654}")
                 if d["id"] in _DERIVED_STAGE_SPECS]
     derived_stages: Dict[str, Any] = {}
     for _d in _derived:
