@@ -238,7 +238,7 @@ documents and neither cloned the tree nor ran anything. Each claim was checked a
 | 4a | The README's test baseline is of the W498 tree | README line 134 | TRUE. The line said so itself and gave its reason (a count is only true of a tree), but 405 at W498 beside a plan at W650 reads as neglect. RE-DATED in W652 to the W650 run |
 | 4b | The plan contradicts itself on the Stripe key rotation | the plan and the vision | TRUE, AND WORSE THAN STATED: the vision carried the same "still owed" sentence. BOTH CORRECTED in W652. That the dead key remains in git history is still true and still stated |
 | 5 | "80 of 96 entries done" is not a measure of the vision delivered | the plan's own PLAN NOW block | TRUE. The plan counts entries and rows and projects in rounds; it claims no percentage of the vision. Nothing to change, but the distinction is worth keeping in front of any reader |
-| - | "39 of 41 registered resources executable" | the plan's P3.31 text | NOT FOUND in that form. The plan says two spawner resources add a prompt stage and run no engine; the 39/41 figure is the reviewer's arithmetic, not a statement in the tree |
+| - | "39 of 41 registered resources executable" | the plan's P3.31 text | TRUE. CORRECTED W658: this row said the figure was "not found in that form" and was the reviewer's arithmetic. That was wrong. The plan's P3.31 record says "of 41 registered resources the fabric can run 39; two spawners add a prompt stage and run no engine" (see section 13, row 8) |
 
 **What the review gets right that is worth holding onto.** A registered resource, a passing test and a 200 are
 not a capability a person can use. That is the audit's own premise (reach, then truth), and the review
@@ -261,3 +261,95 @@ RECORDED as a register row for the Owner's sequencing, not started.
 
 **Acted on in W652:** the two "rotation still owed" sentences; the README's dated count; one register row
 (the single end-to-end journey proof). **Not acted on:** a second audit format; any reordering of the plan.
+
+## 13. Addendum (W658): three external "master prompts" (business strategy, founder action plan, living strategy, LGC-03), assessed
+
+Received from the Owner 2026-10-10 with the instruction to verify them and add work to the plan. All three were
+written from the PUBLIC repository's documents; none cloned the tree or ran anything, and each says its figures
+are leads to re-verify. Each claim was checked against the tree at W657 (branch head a687f2ce plus the W657
+working tree; `main` at bb91d3a3).
+
+### 13.1 Status claims
+
+| # | Claim | Checked against | Verdict |
+|---|---|---|---|
+| 1 | PLAN NOW names P2.35 next; its leading rows are FU-679, FU-635, FU-625, FU-680, FU-653 | the register | TRUE WHEN READ, STALE NOW: all five closed in W657 |
+| 2 | 81 of 98 plan entries done; 75 open rows, 74 scheduled and one awaiting the Owner | the register | AS THE PLAN STOOD AT W654 (not re-derived here). At W657 the register holds 66 open rows (P2.37 23, P3.30 23, P5.1 9, the rest 11), one awaiting the Owner (FU-473, deferred) |
+| 3 | Ledger v15: measured at ab829862 on the floor, 118 findings, tier-1 16, tier-2 27, tier-3 48, delivered 27; five of six regions at the cap; does not count toward the two zero runs | the ledger | TRUE, and correctly caveated. All 16 tier-1 rows have since closed (W655, W656) |
+| 4 | One prompt says the plan records work through W652, another through W656 | each other | THEY DISAGREE; the tree is at W657. Neither is a defect of the tree: each read a different day |
+| 5 | The README's test count is of the W650 tree | README | TRUE. The line dates itself. RE-DATED in W658 to the W657 run |
+| 6 | The Living Plan's header says "last reconciled 2026-09-05 (W446)" over a body with far newer records | the file | TRUE. The header also gave a suite figure from W481. CORRECTED in W658: the header now says what it is a record of and where the current figures are |
+| 7 | Older text says the Stripe rotation is still owed | the vision | TRUE, AND TWO SENTENCES SURVIVED W652: the vision's list of Owner-held switches still named the rotation, and its "deployment honesty" line still said rotation was required. BOTH CORRECTED in W658. W652 fixed two writers of this sentence and not the other two |
+| 8 | "39 of 41 registered resources executable; two spawners add a prompt stage" | the plan's P3.31 record | TRUE, and MY W652 VERDICT IN SECTION 12 WAS WRONG. The plan says exactly this ("of 41 registered resources the fabric can run 39"). I had searched for the reviewer's wording and not for the figure. Section 12 is corrected |
+| 9 | The vision names neither a "Latent Cell" nor a "growing tip" | the vision | TRUE (no occurrence of either, nor of "Instrument Cell"). They are plan items P3.31 and P3.32, chartered on the Owner's request, not canon |
+| 10 | FU-710 (the action-plan sentence can say zero open objectives beside open ones, and carries no date), FU-716 (the twin routes are prompts with no provenance and no page), FU-473 (16 unchecked constraints, Owner-deferred) | the register | TRUE, all three open and slotted: FU-710 and FU-716 in P2.37, FU-473 with the Owner |
+| 11 | Vercel retired 2026-10-07; Google Cloud planned and not built; `render.yaml` present; no native mobile app; no analytics or error monitoring | README, the tree | TRUE |
+| 12 | `scripts/recovery_audit.py`, `docs/DEPLOYMENT.md` and the ledgers named exist | the tree | TRUE, every file named exists |
+| 13 | A `CONSTITUTIONAL_OVERRIDE` mechanism may exist; explain it or say it does not | the tree | IT EXISTS AS UNREACHED CODE AND IS NOT A CONTROL. One class (`avatars/frontend/avatar_interface.py`) halts an avatar session when a message equals that word, and returns a "signature" that is the digest of a fixed string under a comment reading "mock signed receipt". Nothing constructs the class: no route, no page, no test. There is no Owner override an operator could use, and none should be documented as one. NOT ARCHIVED, AND MY RECOMMENDATION TO ARCHIVE IT WAS WRONG: I made it before reading the plan, which records this module as the HELD avatar path whose wiring the Owner deferred (held until a constitutional check produces a real verdict). Archiving it would have removed deferred work. What W658 changes is the false part only: the answer no longer calls a digest of a constant a signature. Found with it: the plan says the package "exports the orchestrator and not the interface"; it exports both |
+| 14 | `inputs/` holds Business Model Canvas material | the folder | PARTLY. It holds a blank third-party canvas TEMPLATE (a PDF and two images of the same empty nine-box form). No Workstation canvas has ever been written; no `docs/business/` or `outputs/` exists |
+| 15 | Candidate living-strategy routes: `GET /api/v1/business-plan/roadmap`, `GET /api/v1/plan`, `GET /api/v1/plan/followups` | the routers | TRUE, all three are served; the Board Pack is `POST` and `GET /api/v1/vsb/{id}/board-pack` |
+
+### 13.2 What the prompts ask for, against what exists
+
+**A fresh ten-part audit with a vision-to-reality matrix before any code.** Refused for the reason in section
+12: the repository's audit is a twelve-agent, refuted, coverage-stating instrument whose output is the ledger
+and register rows, and the Owner has ruled when it next runs (after the tier-2 work, pointed at what v15 did
+not exercise). A second audit in a different shape would be a second source of truth.
+
+**"Do not commit, push or merge", and "at most one code slice".** These are the prompts' own boundaries for
+whoever runs them. They are not the Owner's: the Owner's standing ruling is that each round reaches `main`
+by its own pull request once every check is green. The Owner-held switches the prompts list (external AI,
+authentication, signup, real money, deploy, Postgres) are the same ones the plan already holds, and stay held.
+
+**A seven-word truth vocabulary and a second outcome vocabulary for the cell.** Refused for the product (the
+fabric's outcomes and the ledger's tiers already exist, section 4). ADOPTED FOR THE BUSINESS DOCUMENTS ONLY,
+where nothing like it exists: every statement in them carries one of observed, owner-defined, inference,
+hypothesis, deferred, owner decision.
+
+**LGC-03, a third cell.** Assessed twice already (sections 1 to 8 and 11). Nothing new in these prompts beyond
+those briefs; the identity is still not adopted; the work is P3.31 and P3.32. One sentence is worth keeping
+in front of both items: a catalogue row is not an executable, and declared, available, executed and verified
+are four different states.
+
+**A living strategy system.** The prompts say to map what exists before building, and what exists is most of
+it: the Chief-owned plan with its opening and layers, the Owner-edit route, the roadmap derived on read, the
+Board Pack, the cadence, Change Control and the audit log. The defects they suspect are already rows from
+ledger v15 (FU-705 the pack omits the Strategy the Owner wrote, FU-706 a directive re-filed as a duplicate
+objective, FU-707, FU-708 a Chief prompted with every scope's instructions, FU-710, FU-711) and are the
+prepared rounds after the two Owner rulings. No second planner, scheduler or ledger is built. What does NOT
+exist and the prompts are right to name: real product telemetry. Nothing measures a person completing a task,
+returning, or accepting an output; a "living" strategy that reads customer evidence has none to read. That
+is stated in the KPI dictionary below as NOT MEASURED, not filled with a number.
+
+**A business case for Workstation itself.** THIS IS THE NEW WORK. Nothing in the tree is a business model
+canvas, a business plan for Workstation as a business, a founder's operating guide or a list of what is and
+is not measured. Phase 5 rehearses commercialisation on virtual WST (one tenant end to end, a derived price,
+support, handover, what is not for sale) and never says who the first customer is, what it costs to run, or
+what would show the thesis wrong.
+
+### 13.3 The plan item (chartered W658): P5.6
+
+WORKSTATION'S OWN BUSINESS CASE, WRITTEN DOWN, EVERY STATEMENT LABELLED. Five documents under `docs/business/`:
+the canvas (nine blocks), the business plan in the canon's order (executive summary, concept, vision, mission,
+strategy, aims, objectives, roadmap), the founder's guide for a Windows machine, the evidence and KPI
+dictionary, and the living-strategy map. The clauses and the bar are in the plan. Two rules carried from the
+prompts because they are right: no figure without a source (an unmeasured metric says NOT MEASURED), and no
+promise of a zero bill.
+
+**Refused from the prompts' business content:** every inherited number (monthly prices, a return on
+investment, assets under management, user and subscriber counts, a support-resolution rate), every named
+partner with no agreement behind it, and every claim of certification or proof. They appear in the documents
+only as rejected historical statements, if at all.
+
+### 13.4 For the Owner
+
+RULED by the Owner 2026-10-10, on the recommendations put with this assessment: (1) the first segment to test
+is individuals and small organisations using the Domain Working tools (Law, Employment and Career, Education),
+stated in the documents as a hypothesis with the test that would show it wrong; the Quran Education Platform
+stays free and is not a paid segment. (2) The drafted plan is NOT entered into the product's own Chief-owned
+plan as the Owner's words: it ships as a draft document, and the Owner enters what they agree with through the
+plan's own edit page. (3) The Owner accepted my recommendation to archive the unreachable override handler;
+that recommendation was withdrawn the same day (row 13): the module is the held avatar path and stays. (4) A retired entity stays on the
+roster and still counts as registered under the simulation ruling; left as it is and stated, to be decided
+when retirement is next worked on. STILL THE OWNER'S: the legal form of the business, which needs qualified
+advice and is not decided by a document.

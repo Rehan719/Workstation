@@ -319,6 +319,18 @@ export const qmsChip = (q: QmsQuality, prefix = 'QMS') => {
  * that nothing calls. Two readers asserting a claim its writer has stopped making is how an untruth survives a
  * fix, so both now read the same fields through this one helper.
  */
+/**
+ * W658 (Owner ruling 2026-10-10) - the immune figure, said with what it rests on. The sensor hears failures; with
+ * no call observed in its window "no failure" is not a reading, and seven places printed it as 100%.
+ * A record stored before the count existed carries no count: its figure is printed as it was, since nothing can
+ * say now how many calls stood behind it.
+ */
+export const immuneReading = (imm: { health?: number | null; observations_in_window?: number | null } | null | undefined): string => {
+  if (!imm || imm.health === null || imm.health === undefined) return 'not read';
+  if (imm.observations_in_window === 0) return 'nothing observed';
+  return `${Math.round(imm.health * 100)}%`;
+};
+
 export const layerTitle = (bio: {
   layers?: string[];
   layers_declared?: string[];

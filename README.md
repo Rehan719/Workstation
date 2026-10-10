@@ -131,7 +131,7 @@ apps/workstation-superapp/  — Vite + React 18 + TypeScript frontend
                          + domain hubs + all product pages
 ```
 
-> Verified in CI on every push: backend boots clean; **664 integration tests passing / 15 skipped** (full run on the W650 tree, 2026-10-10; the figures above it are recomputed by `scripts/readme_figures.py` and asserted by the suite, so they cannot drift again — this one is dated because a test count is only true of a tree); production
+> Verified in CI on every push: backend boots clean; **676 integration tests passing / 15 skipped / 1 failing** (full run on the W657 tree, 2026-10-10; the one failure was that round's own guard catching its own comment, fixed and re-run before the commit; the figures above it are recomputed by `scripts/readme_figures.py` and asserted by the suite, so they cannot drift again — this one is dated because a test count is only true of a tree); production
 > build (`tsc && vite build`) succeeds.
 
 Data persists under `data/` as atomically-written JSON files.

@@ -106,6 +106,7 @@ async def generate_proposals(req: GenerateRequest):
         system_context += (
             f"Immune health: {imm['health']} ({imm['threat_level']}), "
             f"errors in window: {imm['errors_in_window']}\n"
+            f"({imm.get('observed_basis') or 'calls observed: not reported'})\n"      # W658
         )
     except Exception:
         system_context += "Immune: unavailable\n"

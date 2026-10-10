@@ -110,6 +110,13 @@ def contribute_from_cycle(vsb_id: str, amount_wst: float) -> dict:
     # lock (heartbeat contributions raced /fund/allocate as last-writer-wins).
     from agentic_core.config import store_lock
     amt = round(float(amount_wst), 2)
+    #  W658 (Owner ruling 2026-10-10) - the SHARED fund takes no contribution from a simulation. An unregistered
+    #  scope's cycle used to compound its simulated share into the fund every registered entity draws on.
+    from agentic_core.economy.living_vsbs import is_registered as _is_registered
+    if not _is_registered(vsb_id):
+        return {"vsb_id": vsb_id, "amount_wst": amt, "contributed": False,
+                "reason": (f"'{vsb_id}' is not a registered living entity: its cycle is a simulation, and a "
+                           f"simulation's share is not paid into the shared capital fund")}
     with store_lock(_FUND_STORE):
         # W496 (FU-119b) - a writer refuses rather than writing back over a quarantined store
         fund = _load_fund(strict=True)

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { immuneReading } from '../../lib/api';
 import { motion } from 'framer-motion';
 import { Activity, Brain, Zap, Heart, Wind, Shield, Cpu, FlaskConical, Radio } from 'lucide-react';
 
@@ -7,7 +8,7 @@ interface Biometrics {
   circadian:      { cycle: string };
   cardiovascular: { resource_flow: number; peristaltic_delay: number };
   cognition:      { state: string; primary_drive: string; basis?: string };
-  immune:         { health: number; threat_level: string; error_rate: number };
+  immune:         { health: number; observations_in_window?: number | null; observed_basis?: string | null; threat_level: string; error_rate: number };
   metabolic:      { efficiency: number; atp_ratio: number; total_projects: number };
   nervous:        { arousal_state: string; signal_rate: number };
   communication:  { neurotransmitter: string; is_active: boolean };
@@ -95,7 +96,7 @@ export const Introspection: React.FC = () => {
           ></motion.div>
           <Activity size={80} className="text-vital mb-8 animate-pulse z-10" />
           <h3 className="text-4xl font-black z-10">Immune Health</h3>
-          <p className="text-6xl font-black neon-text mt-2 z-10" data-testid="introspection-immune-health">{(immuneHealth * 100).toFixed(2)}%</p>
+          <p className="text-6xl font-black neon-text mt-2 z-10" data-testid="introspection-immune-health" title={bio.immune.observed_basis ?? undefined}>{bio.immune.observations_in_window === 0 ? immuneReading(bio.immune) : `${(immuneHealth * 100).toFixed(2)}%`}</p>
           <p className="text-slate-500 mt-3 text-[10px] z-10 max-w-sm text-center leading-relaxed">
             The immune subsystem reporting on itself — not a whole-system figure. Nothing on this page
             measures the platform overall.
@@ -120,7 +121,7 @@ export const Introspection: React.FC = () => {
              {/* W489 (sweep S11.14, C3) — this bar is 100 − host CPU%: a full bar means the HOST IS
                  IDLE, which read as a healthy platform. Labelled for what it measures. */}
              <LoadVisual label={`Host CPU headroom`} value={Math.round(bio.cardiovascular.resource_flow)} color="bg-highlight" />
-             <LoadVisual label={`Immune Health`} value={Math.round(bio.immune.health * 100)} color="bg-vital" />
+             {bio.immune.observations_in_window !== 0 && <LoadVisual label={`Immune Health`} value={Math.round(bio.immune.health * 100)} color="bg-vital" />}
           </div>
           <div className="grid grid-cols-2 gap-3 mt-4">
             {[

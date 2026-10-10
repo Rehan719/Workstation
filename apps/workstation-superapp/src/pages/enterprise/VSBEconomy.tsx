@@ -65,6 +65,8 @@ export const VSBEconomy: React.FC = () => {
   const [error, setError] = useState('');
   const [cycle, setCycle] = useState<Cycle | null>(null);
   const [gov, setGov] = useState<string>('');
+  // W658 (Owner ruling 2026-10-10) - the cycle's own statement that it was a SIMULATION (an unregistered scope)
+  const [simBasis, setSimBasis] = useState<string>('');
   // Ledger cluster 1 — a MATERIAL cycle returns 200 {cycle:null, governance:held...}; that hold
   // must be VISIBLE (it is exactly the flow the Owner has to approve), never a silent no-op.
   const [hold, setHold] = useState<{ status?: string; cca_id?: string; note?: string; follows_rejection?: string; rejected_by?: string; decided_concurrently?: boolean } | null>(null);
@@ -151,7 +153,7 @@ export const VSBEconomy: React.FC = () => {
   // waterfall save or transfer runs, so none of those can finish under a different entity than the one it acted on
   useEffect(() => {
     setPay(null); setBp(null); setPayLoadErr(''); setBpLoadErr('');
-    setCycle(null); setGov(''); setHold(null); setError('');
+    setCycle(null); setGov(''); setHold(null); setError(''); setSimBasis('');
     setPayMsg(''); setPayErr(''); setCloseMsg(''); setCloseErr('');
     loadOwnerPay(); loadBoardPack();
   }, [vsbId]);
@@ -220,11 +222,12 @@ export const VSBEconomy: React.FC = () => {
         // W503 (FU-059) — the PREVIOUS cycle's report and governance status stayed on screen
         // underneath this refusal, so a founder read last week's distribution as this click's result.
         // Nothing ran, so nothing is shown.
-        setCycle(null); setGov(''); setHold(null);
+        setCycle(null); setGov(''); setHold(null); setSimBasis('');
         setError(why || `HTTP ${r.status}`); setRunning(false); return;
       }
       const d = await r.json();
       setCycle(d.cycle); setGov(d.governance?.status ?? '');
+      setSimBasis(d.registration === 'UNREGISTERED' && typeof d.registration_basis === 'string' ? d.registration_basis : '');
       setHold(d.cycle == null ? (d.governance ?? { status: 'no_cycle', note: 'The cycle returned no result.' }) : null);
       loadOwnerPay();   // refresh the ledger (the cycle's report says whether the Owner's §4 share was recorded)
       loadBoardPack();  // refresh the live financial Board Pack
@@ -522,6 +525,12 @@ export const VSBEconomy: React.FC = () => {
         </Card>
       )}
 
+      {/* W658 - a simulated cycle says so, above its figures: nothing below belongs to an entity that exists */}
+      {simBasis && (
+        <p data-testid="economy-simulation-notice" className="text-[11px] text-amber-400 font-bold leading-relaxed border border-amber-500/30 rounded-xl p-3">
+          SIMULATION — {simBasis} Its funds are not transferred or invested into registered entities, and it pays nothing into the shared capital fund.
+        </p>
+      )}
       {/* Cycle result */}
       {cycle && (
         <div className="space-y-6">

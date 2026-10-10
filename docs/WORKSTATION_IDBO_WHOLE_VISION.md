@@ -607,7 +607,8 @@ individually and collectively.
 Owner by design (cost, account, infrastructure):** registration is Owner-curated today with self-serve
 signup behind an Owner flag (`SELF_SERVE_SIGNUP`); authentication on (`AUTH_ENABLED`); external AI
 accelerants (`AI_ALLOW_EXTERNAL` + a key); real-money rails (`REAL_MONEY_ENABLED`, after compliance /
-KYC); managed Postgres; production hosting; and the rotation of the exposed Stripe key. Democratisation
+KYC); managed Postgres; and production hosting. (The Stripe key rotation stood in this list until W658;
+the Owner rotated the keys and expired the old ones on 2026-10-09, so it is no longer a held switch.) Democratisation
 is therefore **measurable as which switches the Owner has flipped**, not asserted — and each switch has
 its pre-flight built and proven before it is offered (delivery-plan P4).
 
@@ -954,7 +955,8 @@ updates (each verified in code, file:line evidence in the Round-7 audit journal)
 - **Deployment honesty:** the shipped Docker image omitted config/ + src/ and died at import; the
   prod compose was unbuildable fiction — both fixed (W354). A live Stripe key + webhook secret found
   committed in three archived files were redacted from the working tree; **they remain in git
-  history — rotation at Stripe is still required to fully close the exposure.**
+  history, and the Owner rotated the keys and expired the old ones at Stripe on 2026-10-09, so what history
+  holds is a dead key.** (Status corrected W658.)
 - **Shipped public copy is grounded + floor-safe** (W355/W356); the §17.5 invariants were
   live-verified incl. arms-length falsification (W345); the evolution-apply loop was driven
   end-to-end (W346).

@@ -296,8 +296,23 @@ class BiomimeticBus:
             # W438 refuter catch: with the breaker registry untracked, sh_health is a DEFAULT, so
             # folding it into a score named "measured only" at 50% weight made a fresh process read
             # 100% measured health; measured-only is immune-alone until self-healing has evidence
-            _measured_only = round(immune_health, 3) if sh_untracked else round(
-                (immune_health * 0.5 + sh_health * 0.5), 3)
+            #  W658 (Owner ruling 2026-10-10) - IMMUNE IS A READING ONLY WHEN SOMETHING WAS OBSERVED. The sensor
+            #  heard failures and nothing else, so "no failure" read 1.0 whether a thousand calls ran or none
+            #  did, and this score was never None: every gate written to hold on absent evidence could not.
+            #  a failure is an observation: a status that reports errors and no count (an older shape, or a
+            #  stand-in) has still SEEN those calls, and must not read as "nothing observed" at threat CRITICAL
+            _imm_obs = max(int(imm.get("observations_in_window") or 0), int(imm.get("errors_in_window") or 0))
+            _imm_measured = _imm_obs > 0
+            if _imm_measured and not sh_untracked:
+                _measured_only = round((immune_health * 0.5 + sh_health * 0.5), 3)
+            elif _imm_measured:
+                _measured_only = round(immune_health, 3)
+            elif not sh_untracked:
+                _measured_only = round(sh_health, 3)
+            else:
+                _measured_only = None
+            _mnames = " and ".join(n for n, ok in (("immune", _imm_measured), ("self-healing", not sh_untracked))
+                                   if ok) or "nothing"
 
             # §8 (W494, FU-116/FU-110/FU-107) — THE MODE IS DECIDED ON WHAT WAS MEASURED.
             # This used to branch on the BLENDED score, of which 60% is not a measurement when no
@@ -307,8 +322,12 @@ class BiomimeticBus:
             # operations active", because 0.4·0.0 + 0.4 + 0.2·1.0 = 0.6. The blend could not fall
             # below 0.6 for ANY immune value, so the mode was not an assessment of anything.
             # An unmeasured term contributes no evidence either way, so it cannot vote.
-            _measured_weight = 0.4 if sh_untracked else 0.8   # metabolic is never measured
-            _decider = _measured_only
+            _measured_weight = (0.4 if _imm_measured else 0.0) + (0.0 if sh_untracked else 0.4)   # metabolic never
+            #  W658 - with NOTHING measured the mode is a DEFAULT, not an assessment: a quiet platform is not
+            #  throttled for being quiet. 0.75 lands on NOMINAL / neutral / no throttle / full parallelism, and
+            #  every basis below says it is the default. The gates do not read this: they read the None above.
+            _nothing_measured = _measured_only is None
+            _decider = 0.75 if _nothing_measured else _measured_only
             if _decider >= 0.8 and cycle == "ACTIVE_FOCUS":
                 mode = "FULL_POWER"
                 temperature = "creative"
@@ -322,9 +341,11 @@ class BiomimeticBus:
                 mode = "EMERGENCY"
                 temperature = "precise"
             _mode_basis = (
-                f"decided on the MEASURED-only score {_decider} "
-                f"({_measured_weight:.0%} of the blend's weight is measured: immune"
-                + ("" if sh_untracked else " and self-healing")
+                ((f"THE DEFAULT - nothing was measured in the last {int(imm.get('window_seconds') or 300) // 60} "
+                  f"minutes (no call observed, no circuit tracked), so this mode is not an assessment "
+                  f"(0% of the blend's weight is measured") if _nothing_measured else
+                 (f"decided on the MEASURED-only score {_decider} "
+                  f"({_measured_weight:.0%} of the blend's weight is measured: {_mnames}"))
                 + f"). The blended figure {composite_health} also carries "
                 + ("a self-healing term defaulted to 1.0 and " if sh_untracked else "")
                 + "a simulated metabolic term, so it cannot be read as a measurement.")
@@ -352,15 +373,20 @@ class BiomimeticBus:
                 # W494 — only the error fallback carried a basis, so the healthy path handed every
                 # consumer a blended number with nothing attached. Each reader had to re-derive it.
                 "composite_health_basis": (
-                    f"{_measured_weight:.0%} of this figure's weight is measured (immune"
-                    + ("" if sh_untracked else " and self-healing")
+                    f"{_measured_weight:.0%} of this figure's weight is measured ({_mnames}"
                     + "); the rest is "
+                    + ("" if _imm_measured else "an immune term with NO call observed in its window (the "
+                                                "absence of failures, not a reading), ")
                     + ("a self-healing term defaulted to 1.0 and " if sh_untracked else "")
                     + "a simulated metabolic term. The measured-only score is "
                     + f"{_measured_only}, and that is what decides the mode and every gate."),
                 "composite_health_measured_only": _measured_only,
                 "composite_health_terms": {
-                    "immune_health": {"weight": 0.4, "value": immune_health, "measured": True},
+                    "immune_health": {"weight": 0.4, "value": immune_health, "measured": _imm_measured,
+                                      "observations": _imm_obs,
+                                      **({} if _imm_measured else
+                                         {"basis": "no call was observed in the sensor's window - this value is "
+                                                   "the absence of failures, not a measurement"})},
                     "self_healing_health": {"weight": 0.4, "value": sh_health,
                                             "measured": not sh_untracked,
                                             **({"basis": "no circuits tracked yet — defaulted to 1.0, "
@@ -382,10 +408,12 @@ class BiomimeticBus:
                 # the plain fact it is, with no instruction attached.
                 "mode_decidable": _measured_only is not None,
                 "mode_decidable_basis": (
-                    f"at least one term is measured (immune"
-                    + ("" if sh_untracked else " and self-healing")
-                    + f"), so the mode and every gate decide on the measured-only score "
-                    + f"{_measured_only}. This is the same test the gates apply."),
+                    (f"at least one term is measured ({_mnames}"
+                     + f"), so the mode and every gate decide on the measured-only score "
+                     + f"{_measured_only}. This is the same test the gates apply.") if not _nothing_measured else
+                    ("NOTHING is measured: no call was observed in the immune sensor's window and no circuit is "
+                     "tracked. The measured-only score is None, so every gate that tests it HOLDS for an "
+                     "explicit decision; the mode shown is the default.")),
                 "measured_weight_below_half": bool(_measured_weight < 0.5),
                 "measured_weight_basis": (
                     f"{_measured_weight:.0%} of the blend's weight is measured"
@@ -397,6 +425,8 @@ class BiomimeticBus:
                     "health": immune_health,
                     "threat_level": imm["threat_level"],
                     "errors_in_window": imm["errors_in_window"],
+                    "observations_in_window": _imm_obs,          # W658 - how much the two figures above rest on
+                    "observed_basis": imm.get("observed_basis"),
                 },
                 "nervous": {
                     "arousal_state": ns["arousal_state"],
@@ -431,9 +461,16 @@ class BiomimeticBus:
                     "preferred_provider": reconfig.get("gateway", {}).get("preferred_provider", "auto"),
                     "features": reconfig.get("features", {}),
                 },
-                "health_summary": self._health_summary(_decider, mode, cycle,
-                                                       measured_weight=_measured_weight,
-                                                       blended=composite_health),
+                #  W658 - the summary quotes the deciding score as "measured health N%"; with nothing measured
+                #  that score is the DEFAULT, and printing it as a measurement is the defect this round removes
+                "health_summary": (
+                    (f"Nothing was measured in the last {int(imm.get('window_seconds') or 300) // 60} minutes: no "
+                     f"call was observed and no circuit is tracked. The mode shown ({mode}) is the default, not "
+                     f"an assessment; health-gated changes are held for an explicit decision.")
+                    if _nothing_measured else
+                    self._health_summary(_decider, mode, cycle,
+                                         measured_weight=_measured_weight,
+                                         blended=composite_health)),
             }
         except Exception as e:
             # W438 — this fallback used to omit "recommended"/"circadian", so /health-summary

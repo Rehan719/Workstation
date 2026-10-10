@@ -31,6 +31,11 @@ class SenderLedgerUnavailable(LedgerUnavailable):
     of LedgerUnavailable, raised from the ledger's own strict read."""
 
 
+class SimulationCannotFund(ValueError):
+    """W658 - the sender is not a registered entity. A ValueError, so every caller's existing 400 path answers
+    it with this message and nothing is posted."""
+
+
 class TransferNotDebited(RuntimeError):
     """W466 — a replay-only call (require_debit=True) found no debit for its transfer id on the sender's ledger.
     Nothing was posted: a reconciliation never debits."""
@@ -157,6 +162,15 @@ def validate_transfer(from_vsb: str, to_vsb: str, amount: float) -> float:
     # W442 — NaN passed EVERY guard below (nan <= 0 and reserve < nan are both False), and one
     # NaN posting set reserve_fund=NaN, permanently disabling the insufficient-funds check.
     amount = _validate_shape(from_vsb, to_vsb, amount)
+    #  W658 (Owner ruling 2026-10-10) - A SIMULATION DOES NOT FUND AN ENTITY. The receiver has always had to be
+    #  registered; the sender did not, so an unregistered scope's simulated reserve could be moved into a
+    #  registered entity's books. Refused here, before anything is read or posted. StoreUnavailable propagates
+    #  (-> 503): an unreadable roster is not an answer.
+    from agentic_core.economy.living_vsbs import is_registered as _is_registered
+    if not _is_registered(from_vsb):
+        raise SimulationCannotFund(
+            f"'{from_vsb}' is not a registered living entity: its books are a simulation, and a simulation's "
+            f"funds are not transferred into a registered entity. Nothing was debited or credited.")
     from agentic_core.economy.ledger import VirtualLedger
     sender = VirtualLedger(from_vsb)
     if sender.load_error:
@@ -242,8 +256,13 @@ def record_transfer(from_vsb: str, to_vsb: str, amount: float, memo: str = "",
             raise TransferNotDebited(f"no debit for transfer {transfer_id} on {from_vsb}'s ledger — nothing was posted")
         else:
             from agentic_core.economy.living_vsbs import _load as _living
-            if to_vsb not in _living():
+            _roster658 = _living()
+            if to_vsb not in _roster658:
                 raise KeyError(f"Receiver '{to_vsb}' is not a registered living VSB — no transfers into the void.")
+            if from_vsb not in _roster658:
+                raise SimulationCannotFund(
+                    f"'{from_vsb}' is not a registered living entity: its books are a simulation, and a "
+                    f"simulation's funds are not transferred into a registered entity. Nothing was debited.")
             if reserve < amount:
                 raise ValueError(f"Insufficient virtual funds: {from_vsb} reserve fund holds "
                                  f"{reserve} WST < transfer {amount} WST.")

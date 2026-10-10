@@ -12695,11 +12695,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.35",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W658",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v14 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "RULED by the Owner 2026-10-10 and built as ruled, including that it applies whenever nothing was observed in the last five minutes: the immune system counts the calls it has seen, floor-served ones included; with none seen the term is not a measurement, the measured-only score is None when no circuit is tracked either, and the health gates hold a change for an explicit decision. A LOW-tier change on a quiet platform is held for review, not auto-approved. The mode keeps its default and says it is a default; a quiet platform is not throttled."
     },
     {
       "id": "FU-659",
@@ -12714,11 +12717,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.35",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W658",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v14 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "RULED by the Owner 2026-10-10 and built as ruled: the apex stays a simulation. A scope that is not a registered living entity cannot transfer into a registered one, credits no investee, pays nothing into the shared capital fund, and its Owner accrual is marked simulated on the account and on each entry. The Economy page shows the simulation notice. Past entries were NOT reversed. NOT DONE: registering the apex as a living entity, which the Owner reserved for later."
     },
     {
       "id": "FU-660",
@@ -14029,11 +14035,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.37",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W658",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v15 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "RULED by the Owner 2026-10-10 and built as ruled: the apex stays a simulation. A scope that is not a registered living entity cannot transfer into a registered one, credits no investee, pays nothing into the shared capital fund, and its Owner accrual is marked simulated on the account and on each entry. The Economy page shows the simulation notice. Past entries were NOT reversed. NOT DONE: registering the apex as a living entity, which the Owner reserved for later. (The ledger v15 row for the same finding.)"
     },
     {
       "id": "FU-729",
@@ -14045,11 +14054,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.37",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W658",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v15 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "RULED by the Owner 2026-10-10 and built as ruled, including that it applies whenever nothing was observed in the last five minutes: the immune system counts the calls it has seen, floor-served ones included; with none seen the term is not a measurement, the measured-only score is None when no circuit is tracked either, and the health gates hold a change for an explicit decision. A LOW-tier change on a quiet platform is held for review, not auto-approved. The mode keeps its default and says it is a default; a quiet platform is not throttled. (The ledger v15 row for the same finding.)"
     },
     {
       "id": "FU-730",
@@ -14221,6 +14233,114 @@
       "closed_by": null,
       "note": "",
       "slot_source": "a tier-3 remainder of a ledger row closed in W657",
+      "tier": 3
+    },
+    {
+      "id": "FU-740",
+      "title": "Workstation has no business model canvas of its own",
+      "why": "The inputs folder holds a blank canvas template and nothing else. Write the nine blocks for Workstation as a business, each statement labelled observed, owner-defined, inference, hypothesis, deferred or owner decision; name user, buyer, payer and beneficiary separately; recommend a first segment with the test that would show it wrong.",
+      "source": "W658 (three external prompts verified, 2026-10-10)",
+      "found": "2026-10-10",
+      "files": [
+        "docs/FABLE_DELIVERY_PROMPT.md"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.6",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner asked 2026-10-10 for this work to be added to the plan",
+      "tier": 3
+    },
+    {
+      "id": "FU-741",
+      "title": "Workstation has no business plan for itself as a business",
+      "why": "The product keeps a Chief-owned plan per scope; no document sets out Workstation's own business in the canon's order (executive summary, concept, vision, mission, strategy, aims, objectives, roadmap) with costs, risks and what must be true before launch. Objectives must tie to plan items that exist; no inherited figure is a target.",
+      "source": "W658 (three external prompts verified, 2026-10-10)",
+      "found": "2026-10-10",
+      "files": [
+        "docs/FABLE_DELIVERY_PROMPT.md"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.6",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner asked 2026-10-10 for this work to be added to the plan",
+      "tier": 3
+    },
+    {
+      "id": "FU-742",
+      "title": "There is no founder's guide whose commands were run on the tree it ships with",
+      "why": "Set-up, start, health check, tests, backup and restore of the file stores on a Windows machine, then the launch gates in order. The deployment section states what each channel costs to run and promises no zero bill; provider facts are cited from the provider's own pages with the date read.",
+      "source": "W658 (three external prompts verified, 2026-10-10)",
+      "found": "2026-10-10",
+      "files": [
+        "docs/FABLE_DELIVERY_PROMPT.md"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.6",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner asked 2026-10-10 for this work to be added to the plan",
+      "tier": 3
+    },
+    {
+      "id": "FU-743",
+      "title": "No document says which business and product metrics are measured and which are not",
+      "why": "No product telemetry exists: nothing records a person completing a task, returning, or accepting an output. Each metric needs a definition, source, denominator and freshness, or NOT MEASURED and what would measure it.",
+      "source": "W658 (three external prompts verified, 2026-10-10)",
+      "found": "2026-10-10",
+      "files": [
+        "docs/FABLE_DELIVERY_PROMPT.md"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.6",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner asked 2026-10-10 for this work to be added to the plan",
+      "tier": 3
+    },
+    {
+      "id": "FU-744",
+      "title": "No map says which existing component performs each step of the living strategy, and what verified it",
+      "why": "Observe, propose, review, authorise, apply, record: the plan, its Owner-edit route, the roadmap, the Board Pack, the cadence, Change Control and the audit log already do most of these. The map names each with its file and the open rows that stand between it and being relied on, so no second planner is built.",
+      "source": "W658 (three external prompts verified, 2026-10-10)",
+      "found": "2026-10-10",
+      "files": [
+        "docs/FABLE_DELIVERY_PROMPT.md"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.6",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner asked 2026-10-10 for this work to be added to the plan",
+      "tier": 3
+    },
+    {
+      "id": "FU-745",
+      "title": "Past transfers and venture credits from an unregistered scope into registered entities are not flagged",
+      "why": "The Owner ruled 2026-10-10 that what a simulation already moved into registered entities is not reversed but is flagged. W658 stops new ones and marks new Owner accruals; nothing yet reads a registered entity's intake or ledger and says which past credits came from a scope that was never registered.",
+      "source": "W658",
+      "found": "2026-10-10",
+      "files": [
+        "agentic_core/economy/transfers.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the undone part of an Owner ruling closed in W658",
       "tier": 3
     }
   ],

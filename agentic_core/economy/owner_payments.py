@@ -200,7 +200,7 @@ def pending_missed(vsb_id: str | None = None) -> Dict[str, Any]:
 
 
 def accrue(vsb_id: str, amount: float, owner: str = "Rehan", memo: str = "cycle owner share",
-           ref: str | None = None) -> Dict[str, Any] | None:
+           ref: str | None = None, simulated: bool | None = None) -> Dict[str, Any] | None:
     """Accrue the Owner's share from a cycle (virtual WST). Returns the account, or None for a zero amount.
     Raises ValueError for a non-finite amount and OwnerPaymentsUnavailable / TimeoutError when the store cannot be
     read or locked — the caller must say so (an accrual is never silently dropped)."""
@@ -209,12 +209,25 @@ def accrue(vsb_id: str, amount: float, owner: str = "Rehan", memo: str = "cycle 
     amount = round(max(0.0, float(amount)), 2)
     if amount <= 0:
         return None
+    if simulated is None:
+        try:
+            from agentic_core.economy.living_vsbs import is_registered as _is_registered
+            simulated = not _is_registered(vsb_id)
+        except Exception:
+            simulated = False                 # unknown is not marked: a mark is a statement, and this is not known
 
     def change(d: Dict[str, Any]) -> Dict[str, Any]:
         a = d.get(vsb_id) or _new_account(vsb_id, owner)
         d[vsb_id] = a
         a["accrued"] = round(a["accrued"] + amount, 2)
+        if simulated:
+            #  W658 (Owner ruling 2026-10-10) - MARKED, on the account and on the entry: this accrual came from
+            #  a cycle of a scope that is not a registered entity. Virtual WST, and a simulation's at that.
+            a["simulated"] = True
+            a["simulated_basis"] = ("this account belongs to a scope that is not a registered living entity; "
+                                    "its accruals come from simulated cycles")
         a["entries"].append({"id": uuid.uuid4().hex[:8], "type": "accrual",
+                             **({"simulated": True} if simulated else {}),
                              "amount_wst": amount, "memo": memo, "at": _now(),
                              # W505 (FU-036) — the reconciliation's idempotence key: a re-applied accrual
                              # carries the pending row's id, so a second attempt can see its own work.
@@ -236,6 +249,8 @@ def status(vsb_id: str, owner: str = "Rehan") -> Dict[str, Any]:
         # the whole picture while credits sit unapplied in the pending store, which is the same silence the row
         # is about one layer along.
         "pending_from_failed_accruals": pending_missed(vsb_id),
+        #  W658 - the mark, read back where the balance is read
+        "simulated": bool(a.get("simulated")), "simulated_basis": a.get("simulated_basis"),
         "real_money_rails": "DISABLED", "real_money_enabled": REAL_MONEY_ENABLED,
         "note": "Virtual/simulated WST only. Real-money payouts are gated until the Owner explicitly "
                 "authorises real rails AND a compliance/KYC review passes — no real funds move.",
@@ -260,10 +275,13 @@ def payout(vsb_id: str, amount: float, owner: str = "Rehan") -> Dict[str, Any]:
         a["entries"].append({"id": uuid.uuid4().hex[:8], "type": "payout_virtual", "amount_wst": amount,
                              "memo": "virtual payout — no real funds moved (rails disabled)", "at": _now()})
         a["entries"] = a["entries"][-200:]
+        _sim658.append(bool(a.get("simulated")))
         return round(a["accrued"] - a["paid_out"], 2)
+    _sim658: list = []
     remaining = _mutate(change)
     return {
         "paid_wst": amount, "remaining_balance_wst": remaining,
+        "simulated": bool(_sim658 and _sim658[-1]),
         "real_money_moved": False, "real_money_rails": "DISABLED",
         "note": "Virtual payout recorded. No real money moved — real rails are gated pending Owner "
                 "authorisation + a compliance/KYC review.",

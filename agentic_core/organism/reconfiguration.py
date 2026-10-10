@@ -343,6 +343,7 @@ async def ai_suggest_config(req: AISuggestRequest):
         from agentic_core.organism.immune import immune
         imm = immune.status()
         state_context += f"Immune health: {imm['health']} ({imm['threat_level']}), errors: {imm['errors_in_window']}\n"
+        state_context += f"({imm.get('observed_basis') or 'calls observed: not reported'})\n"      # W658
     except Exception:
         pass
 

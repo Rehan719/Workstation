@@ -14560,7 +14560,9 @@ def test_w466_a_stranded_transfer_is_found_and_completed_once(client, monkeypatc
     assert tr._close_receiver_leg(bom_vsb, xb) is False and bom_path.read_bytes() == bom_open
     # a sender whose ledger cannot be read whole posts no new transfer (a tolerant read would debit against the valid
     # prefix while a stranded debit on the rest stays hidden) — directly and through the route
-    dirty = uid("dirty")
+    #  W658 - a REGISTERED sender: this leg is about a ledger that cannot be read, and an unregistered sender is
+    #  now refused for being a simulation before its ledger is ever opened
+    dirty = living("dirty")
     dirty_path = tr._ledger_path(dirty)
     dirty_bytes = _json.dumps({"vsb_id": dirty, "currency": "WST", "entries": [], "balances": {}, "closes": [],
                                "accounts": {"reserve_fund": 500.0}, "postings": []}).encode() + b"\n}"
@@ -21155,7 +21157,10 @@ def test_w494_a_verdict_that_cannot_come_out_otherwise_is_not_an_assessment(clie
     _real_healer = _bb.self_healer.status
 
     def _immune(health, threat, errs=0):
-        return lambda: {"health": health, "threat_level": threat, "errors_in_window": errs}
+        #  W658 - immune is a measured term only when the sensor OBSERVED something. Every leg below is about a
+        #  gate deciding on a measured immune reading, so the stand-in states that a call was seen.
+        return lambda: {"health": health, "threat_level": threat, "errors_in_window": errs,
+                        "observations_in_window": max(errs, 1)}
 
     # THE DISCRIMINATING STATE. ATP is pinned at its ceiling, which is where a process spends all but
     # its first half-minute: the blend is then 0.4*immune + 0.4 (self-healing defaulted) + 0.2 = 0.6 +
@@ -46847,7 +46852,13 @@ def test_w623_p224_the_surface_names_what_was_produced(client, monkeypatch):
     assert "framed by the floor — not deliberated" in _bd
 
     # ── FU-539: each position's funding state agrees with what the round credited ──────────────────
-    _vid = f"w623-{_uu623.uuid4().hex[:6]}"
+    #  W658 - the INVESTOR is a registered entity: an unregistered scope is a simulation and credits no investee,
+    #  so the ad-hoc id this leg used now funds nothing by rule
+    _inv623 = client.post("/api/v1/genesis/establish", json={"problem": "w623 investor cooperative",
+                                                            "name": f"W623 Investor {_uu623.uuid4().hex[:4]}",
+                                                            "domain": "enterprise", "ship_output": False})
+    assert _inv623.status_code == 200, _inv623.text[:300]
+    _vid = _inv623.json()["vsb_id"]
     #  DRIVE THE PRECONDITION: a live investee exists and the investor funds at a non-zero share, so a position is
     #  actually credited - without both the leg holds trivially (nothing funded, nothing to contradict)
     client.post("/api/v1/genesis/establish", json={"problem": "w623 investee bakery", "name": f"W623 Investee {_uu623.uuid4().hex[:4]}",
@@ -50924,3 +50935,341 @@ def test_w657_a_tool_says_what_own_ai_delivers_and_a_preview_serves_what_its_own
     _gj = _code_only((_src / "pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8"))
     assert ">installable when hosted<" in _gj and ">offline when hosted<" in _gj, "a chip states no condition"
     assert ">installable</span>" not in _gj and ">offline</span>" not in _gj, "a bare 'installable' or 'offline' chip remains"
+
+
+def test_w658_a_simulations_funds_enter_nothing_real(client):
+    """FU-659 and ledger v15's row for the same finding, as the Owner ruled 2026-10-10.
+
+    THE INVARIANT: a cycle run for a scope that is not a registered living entity is a simulation, and nothing
+    it produces enters a registered entity or the shared fund. Four paths, each driven for an UNREGISTERED scope
+    (refused / not credited / not contributed / marked) and for a REGISTERED one (which behaves as before), so
+    each leg can be seen to turn on registration and on nothing else.
+    """
+    from agentic_core.api import capital_fund as _cf
+    from agentic_core.economy import living_vsbs as _lv
+    from agentic_core.economy import owner_payments as _op
+
+    def _establish(name):
+        _r = client.post("/api/v1/genesis/establish", json={"problem": f"{name}: a bakery cooperative for a school",
+                                                            "domain": "enterprise", "name": name,
+                                                            "ship_output": False})
+        assert _r.status_code == 200, _r.text[:300]
+        return _r.json()["vsb_id"]
+    _reg_a, _reg_b = _establish("W658 Registered A"), _establish("W658 Registered B")
+    _sim = "w658-unregistered-scope"
+    assert _lv.is_registered(_reg_a) is True and _lv.is_registered(_sim) is False
+
+    def _cycle(vsb_id):
+        _r = client.post("/api/v1/economy/cycle", json={"vsb_id": vsb_id, "revenue": 1000, "costs": 100})
+        assert _r.status_code == 200, (vsb_id, _r.status_code, _r.text[:300])
+        return _r.json()
+
+    def _fund_total():
+        return float(_cf._load_fund(strict=True).get("total_capital", 0))
+
+    def _pending(vsb_id):
+        _r = client.get(f"/api/v1/economy/ledger/{vsb_id}")
+        return _r.json() if _r.status_code == 200 else {}
+
+    # ── the simulation ───────────────────────────────────────────────────────────────────────────────
+    _fund0 = _fund_total()
+    _b0 = _pending(_reg_b)
+    _c = _cycle(_sim)
+    _body = _c.get("cycle") or _c
+    assert (_c.get("registration") or _body.get("registration")) == "UNREGISTERED", "the cycle does not say it is a simulation"
+    #  (c) the shared fund took nothing
+    assert _fund_total() == _fund0, ("a simulated cycle paid into the shared capital fund", _fund0, _fund_total())
+    #  (b) no registered investee was credited
+    for _pos in ((_body.get("venture_investment") or {}).get("positions") or []):
+        assert _pos.get("funding_state") != "funded", ("a simulation funded a position", _pos)
+        assert "not a registered living entity" in str(_pos.get("funding_basis")), _pos
+    #  (d) the Owner accrual is marked
+    _acct = _op._read().get(_sim) or {}
+    assert _acct.get("simulated") is True and all(e.get("simulated") for e in _acct.get("entries", [])
+                                                  if e.get("type") == "accrual"), _acct
+    #  (a) its reserve cannot be moved into a registered entity
+    _t = client.post("/api/v1/economy/transfer", json={"from_vsb": _sim, "to_vsb": _reg_b, "amount": 5})
+    assert _t.status_code == 400 and "not a registered living entity" in _t.text, (_t.status_code, _t.text[:300])
+    assert _pending(_reg_b) == _b0, "a refused transfer changed the receiver's books"
+    #  (d2) the cycle's own answer says its accrual was a simulation's, read from the entry it wrote
+    assert (_body.get("owner_accrual") or {}).get("simulated") is True, _body.get("owner_accrual")
+    #  (a2) the VALIDATOR itself refuses (the route above cannot tell the validator from the floor below it)
+    from agentic_core.economy import transfers as _tr
+    try:
+        _tr.validate_transfer(_sim, _reg_b, 5)
+        raise AssertionError("validate_transfer accepted an unregistered sender")
+    except _tr.SimulationCannotFund:
+        pass
+    #  (e) AND AT THE FLOOR: three callers post through record_transfer without the validator
+    try:
+        _tr.record_transfer(_sim, _reg_b, 5, "w658 floor leg")
+        raise AssertionError("record_transfer opened a new debit for an unregistered sender")
+    except _tr.SimulationCannotFund:
+        pass
+    assert _pending(_reg_b) == _b0, "the floor's refusal still changed the receiver's books"
+    #  (f) a PARKED accrual, re-applied later by a function that knows nothing of registration, lands marked
+    _row = _op.record_missed(_sim, 3.0, "Rehan", "w658 parked", "driven by the guard")
+    assert _row and _row.get("id"), _row
+    _rec = _op.reconcile_missed(_sim)
+    assert any(x.get("id") == _row["id"] for x in _rec["applied"]), _rec
+    _again = (_op._read().get(_sim) or {})
+    _mine = [e for e in _again.get("entries", []) if e.get("ref") == _row["id"]]
+    assert _mine and _mine[0].get("simulated") is True, ("a reconciled accrual lost the mark", _mine)
+    #  (g) and the mark is read back where the balance is read
+    _st = client.get(f"/api/v1/economy/owner-payments?vsb_id={_sim}")
+    assert _st.status_code == 200 and _st.json().get("simulated") is True, (_st.status_code, _st.text[:300])
+
+    # ── a REGISTERED entity does all four as before ──────────────────────────────────────────────────
+    _fund1 = _fund_total()
+    _cr = _cycle(_reg_a)
+    _rbody = _cr.get("cycle") or _cr
+    assert (_cr.get("registration") or _rbody.get("registration")) != "UNREGISTERED"
+    assert _fund_total() > _fund1, "a registered entity's cycle no longer compounds into the shared fund"
+    _racct = _op._read().get(_reg_a) or {}
+    assert not _racct.get("simulated"), "a registered entity's Owner account is marked simulated"
+    assert not (_rbody.get("owner_accrual") or {}).get("simulated"), _rbody.get("owner_accrual")
+
+    # ── THE PAGE says a cycle was a simulation (source legs; the browser check is recorded in the commit) ──
+    import pathlib as _pl658
+    _pg = (_pl658.Path(__file__).resolve().parents[1]
+           / "apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx").read_text(encoding="utf-8")
+    _i = _pg.find('data-testid="economy-simulation-notice"')
+    assert _i > 0, "the Economy page has no simulation notice"
+    assert "{simBasis && (" in _pg[_i - 160:_i], "the notice is not gated on the cycle's own statement"
+    assert "{simBasis}" in _pg[_i:_i + 420], "the notice does not print the cycle's own statement"
+    assert "d.registration === 'UNREGISTERED'" in _pg, "the page never reads the cycle's registration"
+    assert _pg.count("setSimBasis('')") >= 2, "a stale notice survives a new load or a failed run"
+    _tr = client.post("/api/v1/economy/transfer", json={"from_vsb": _reg_a, "to_vsb": _reg_b, "amount": 1})
+    assert _tr.status_code in (200, 202), ("a transfer between two registered entities is refused",
+                                           _tr.status_code, _tr.text[:300])
+
+
+def test_w658_health_with_nothing_observed_is_not_a_measurement_and_the_gate_holds(client, monkeypatch):
+    """FU-658 and ledger v15's row for the same finding, as the Owner ruled 2026-10-10 - including that it applies
+    whenever nothing was observed in the last five minutes, not only after a restart.
+
+    THE INVARIANT: the immune term is a measurement only when the sensor observed at least one call in its
+    window. With nothing observed and no circuit tracked, the measured-only score is None, the health gate HOLDS
+    a LOW-tier change for review, and the mode says it is the default. After one observed call the same change
+    is auto-approved. Both are driven, so the gate can be seen to turn on the observation and on nothing else.
+    """
+    from agentic_core.organism import immune as _im
+    from agentic_core.organism.biobus import biobus
+
+    #  A FRESH SENSOR, driven: the ambient one has seen whatever earlier tests did (a guard must drive its state)
+    _fresh = _im.ImmuneSystem()
+    monkeypatch.setattr(_im, "immune", _fresh)
+    import agentic_core.organism.biobus as _bb
+    monkeypatch.setattr(_bb, "immune", _fresh, raising=False)
+    #  ...and a fresh breaker registry: earlier tests track circuits, and with one tracked the score is never None,
+    #  so every leg about the hold would be skipped while the test stayed green
+    from agentic_core.organism.self_healing import SelfHealingSystem as _SH658
+    monkeypatch.setattr(_bb, "self_healer", _SH658(), raising=False)
+    _st = _fresh.status()
+    assert _st["observations_in_window"] == 0 and "NO call was observed" in _st["observed_basis"], _st
+    assert _st["health"] == 1.0, "the value is kept for its readers; what changes is what it is said to be"
+
+    _ctx = biobus.organism_context()
+    assert "error" not in _ctx, ("the organism context raised with nothing observed", _ctx.get("error"))
+    _terms = _ctx["composite_health_terms"]
+    assert _terms["immune_health"]["measured"] is False and _terms["immune_health"]["observations"] == 0, _terms["immune_health"]
+    assert _terms["self_healing_health"]["measured"] is False, (
+        "the guard did not start from an untracked breaker registry, so the hold below cannot be driven", _terms)
+    if not _terms["self_healing_health"]["measured"]:
+        assert _ctx["composite_health_measured_only"] is None and _ctx["mode_decidable"] is False, (
+            "nothing is measured and the organism still reports a measured score",
+            _ctx["composite_health_measured_only"])
+        assert _ctx["mode"] == "NOMINAL" and "THE DEFAULT" in _ctx["mode_basis"], (_ctx["mode"], _ctx["mode_basis"])
+        assert _ctx["recommended"]["should_throttle"] is False, "a quiet platform is throttled for being quiet"
+        assert "Nothing was measured" in _ctx["health_summary"] and "measured health" not in _ctx["health_summary"], _ctx["health_summary"]
+
+        # THE GATE HOLDS: a LOW change is not auto-approved on no evidence
+        _c = client.post("/api/v1/cca/submit", json={"title": "W658 quiet-platform probe", "description": "Rename a label.",
+                                                     "change_type": "config_minor",
+                                                     "rationale": "The label is misspelt.",
+                                                     "affected_systems": ["frontend"],
+                                                     "rollback_plan": "Restore the previous label."})
+        assert _c.status_code == 200, _c.text[:300]
+        _cj = _c.json()
+        _chg = _cj.get("change") or _cj
+        assert (_chg.get("health_gate") or {}).get("verdict") == "held_not_decidable", _chg.get("health_gate")
+        #  and the record names the TRUE cause: nothing observed, not an error that did not happen
+        assert "errored" not in _chg["health_gate"]["basis"] and "no call was observed" in _chg["health_gate"]["basis"], (
+            _chg["health_gate"]["basis"])
+        from agentic_core.api.change_control import _measured_phrase658
+        assert "NOT MEASURED" in _measured_phrase658(_ctx) and "0%" not in _measured_phrase658(_ctx), (
+            "a reviewer's prompt is told the measured health is 0% when nothing was measured")
+        assert _chg.get("decision") != "auto_approved" and _chg.get("status") != "approved", (
+            "a LOW change was auto-approved with nothing observed", _chg.get("status"), _chg.get("decision"))
+
+    # ONE CALL OBSERVED: the term is a measurement, and the same change is decided
+    _fresh.observe("model:native")
+    assert _fresh.status()["observations_in_window"] == 1
+    _ctx2 = biobus.organism_context()
+    assert _ctx2["composite_health_terms"]["immune_health"]["measured"] is True
+    assert _ctx2["composite_health_measured_only"] is not None and _ctx2["mode_decidable"] is True
+    _c2 = client.post("/api/v1/cca/submit", json={"title": "W658 observed-platform probe", "description": "Rename a label.",
+                                                  "change_type": "config_minor",
+                                                     "rationale": "The label is misspelt.",
+                                                     "affected_systems": ["frontend"],
+                                                     "rollback_plan": "Restore the previous label."})
+    _chg2 = _c2.json().get("change") or _c2.json()
+    assert (_chg2.get("health_gate") or {}).get("verdict") == "pass", _chg2.get("health_gate")
+    assert _chg2.get("status") == "approved", (
+        "with a call observed and no failure, a LOW change was not auto-approved", _chg2.get("status"), sorted(_chg2))
+
+    #  A FAILURE IS AN OBSERVATION TOO, and the window forgets
+    _f2 = _im.ImmuneSystem()
+    _f2.record("model:x", "ai_failure")
+    assert _f2.status()["observations_in_window"] == 1
+    import time as _t
+    _now = _t.monotonic()
+    monkeypatch.setattr(_im.time, "monotonic", lambda: _now + _f2.WINDOW_SECONDS + 1)
+    assert _f2.status()["observations_in_window"] == 0, "an observation older than the window is still counted"
+
+    #  A REAL FLOOR-SERVED CALL IS SEEN (W658 blind: with the observation removed at a serving site nothing above
+    #  noticed, because nothing above made a call). Two of the four places the floor serves are driven here:
+    #  the orchestrator's floor step, through a domain tool; and the gateway's own fallback, with the
+    #  orchestrator made to raise. The stream's fallback is not driven.
+    _before = _fresh.status()["observations_in_window"]
+    _t = client.post("/api/v1/religion/interfaith", json={"topic": "Charity"})
+    assert _t.status_code == 200, _t.text[:200]
+    _mid = _fresh.status()["observations_in_window"]
+    assert _mid > _before, ("a floor-served tool call was not seen by the immune sensor", _before, _mid)
+    import asyncio as _aio658i
+    from agentic_core.ai.gateway import gateway as _gw658
+    from agentic_core.ai.native import orchestrator as _no658
+
+    async def _raise658(*_a, **_k):
+        raise RuntimeError("w658 probe: the orchestrator is unavailable")
+    monkeypatch.setattr(_no658, "complete", _raise658)
+    _res = _aio658i.run(_gw658.query_meta("Summarise the rota.", agent="w658-probe", augment=False))
+    assert (_res.get("served_by") or "native") == "native", _res.get("served_by")
+    assert _fresh.status()["observations_in_window"] > _mid, (
+        "the gateway's own floor fallback served a call the immune sensor did not see")
+
+
+def test_w658_every_carrier_of_the_health_figure_says_what_it_rests_on(client):
+    """Owner ruling 2026-10-10: immune health with nothing observed is not a measurement. The sensor fix makes
+    the status say how many calls it saw; this guard is about the READERS. Eight places copied the figure into
+    a response through a fixed key set and seven places on pages printed it as a percentage, so a count added
+    at the sensor reached none of them.
+
+    THE INVARIANT: wherever the figure is carried, the count it rests on is carried with it and is the
+    sensor's own; and no page prints the figure as a percentage without first asking whether anything was seen.
+    """
+    import pathlib as _pl
+    import re as _re
+    from agentic_core.organism import immune as _im
+    _st = _im.immune.status()
+    assert "observations_in_window" in _st and "observed_basis" in _st, sorted(_st)
+
+    #  ONE FUNCTION composes the four fields, and the scope sentence is still the one beside the computation
+    _hf = _im.health_fields(_st)
+    assert _hf["organism_health"] == _st["health"] and _hf["organism_health_basis"] == _im.HEALTH_SCOPE
+    assert _hf["organism_health_observations"] == _st["observations_in_window"]
+    assert _hf["organism_health_observed_basis"] == _st["observed_basis"]
+
+    #  EACH CARRIER, driven. A carrier that omits the figure altogether is not this guard's subject; one that
+    #  carries the figure MUST carry the count.
+    def _carries(body, where, fig="organism_health", n="organism_health_observations"):
+        assert fig in body, (where, "the response no longer carries the figure this leg is about", sorted(body)[:30])
+        assert n in body and isinstance(body[n], int), (where, "the figure is carried without the count", body.get(n))
+    _r = client.get("/api/v1/plan/state")
+    assert _r.status_code == 200, _r.text[:200]
+    _carries(_r.json(), "plan/state")
+    _r = client.get("/api/v154/status")
+    assert _r.status_code == 200, _r.text[:200]
+    _carries(_r.json(), "v154/status", "health", "health_observations")
+    _r = client.get("/api/v154/security/status")
+    assert _r.status_code == 200, _r.text[:200]
+    _carries(_r.json(), "v154/security/status", "immune_health", "immune_health_observations")
+    _r = client.get("/api/v1/organism/status")
+    assert _r.status_code == 200, _r.text[:200]
+    _carries(_r.json()["systems"]["immune"], "organism/status systems.immune", "health", "observations_in_window")
+    _r = client.get("/api/v1/board/status")
+    assert _r.status_code == 200, _r.text[:200]
+    _carries(_r.json().get("live") or {}, "board/status live")
+
+    #  NO TYPED COPY of the scope sentence is left in a route module (W637 gave it one home and missed one)
+    _root = _pl.Path(__file__).resolve().parents[1]
+    _frag = "AI-call failures and compliance regressions"
+    _typed = [str(_p.relative_to(_root)).replace(chr(92), "/") for _p in (_root / "agentic_core").rglob("*.py")
+              if _frag in _p.read_text(encoding="utf-8", errors="replace")]
+    assert _typed == ["agentic_core/organism/immune.py"], ("the scope sentence is typed outside its home", _typed)
+
+    #  THE PAGES: the helper says "nothing observed" at a zero count, and no page prints the percentage unasked
+    _src = _root / "apps/workstation-superapp/src"
+    _api = (_src / "lib/api.ts").read_text(encoding="utf-8")
+    _h = _api[_api.find("export const immuneReading"):][:700]
+    assert _re.search(r"observations_in_window === 0\)\s*return 'nothing observed'", _h), (
+        "the helper prints a figure when nothing was observed", _h[:300])
+    _raw = _re.compile(r"immune\.health(\s*\?\?\s*0\))?\s*\*\s*100|immuneHealth\s*\*\s*100|pct\(systems\.immune\.health\)")
+    _bad = []
+    for _p in _src.rglob("*.tsx"):
+        _t = _p.read_text(encoding="utf-8")
+        for _m in _raw.finditer(_t):
+            if "observations_in_window" not in _t[max(0, _m.start() - 200):_m.start()]:
+                _bad.append((_p.name, _t[max(0, _m.start() - 40):_m.end() + 10].replace(chr(10), " ")))
+    assert not _bad, ("a page prints the immune figure as a percentage without asking whether anything was "
+                      "observed", _bad)
+
+
+def test_w658_a_done_owner_action_is_not_stated_as_owed_and_a_dated_header_says_what_it_dates():
+    """Three external prompts (2026-10-10) each noticed a document still saying the Stripe key rotation was owed,
+    and a Living Plan header dated W446 over a body recording W656. W652 had corrected two of the four
+    sentences about the rotation; the other two stood. The property, on every canon document:
+
+      wherever a document mentions the key rotation, the date the Owner did it is within reach of the reader
+      (the same passage), so no passage can be read as "still to do";
+      and a header that carries a reconciliation date says the body is newer and where the current queue is.
+    """
+    import pathlib as _pl
+    import re as _re
+    _root = _pl.Path(__file__).resolve().parents[1]
+    _seen = 0
+    for _name in ("docs/WORKSTATION_IDBO_WHOLE_VISION.md", "docs/WORKSTATION_IDBO_LIVING_PLAN.md", "README.md",
+                  "docs/DEPLOYMENT.md"):
+        _lines = (_root / _name).read_text(encoding="utf-8").splitlines()
+        for _i, _line in enumerate(_lines):
+            _win = " ".join(_lines[max(0, _i - 3): _i + 4])
+            if "stripe" in _line.lower() and _re.search(r"rotat", _win, _re.I) and _re.search(r"\bkeys?\b", _win, _re.I):
+                _seen += 1
+                assert "2026-10-09" in _win, (
+                    "a passage mentions the Stripe key rotation without the date the Owner did it, so it can be "
+                    "read as still to do", _name, _i + 1, _line[:160])
+    assert _seen >= 2, ("the guard found no passage about the rotation to check - it is asserting nothing", _seen)
+
+    _lp = (_root / "docs/WORKSTATION_IDBO_LIVING_PLAN.md").read_text(encoding="utf-8")
+    _status = next((_l for _l in _lp.splitlines() if _l.startswith("**Status:**")), "")
+    assert _status, "the Living Plan has no status line"
+    if _re.search(r"reconciled", _status, _re.I):
+        assert "PLAN NOW" in _status and "NEWER" in _status.upper(), (
+            "the Living Plan's header carries a reconciliation date and does not say that its body is newer or "
+            "where the current queue is - a reader takes the date for the document's", _status[:220])
+
+    #  P5.6 is chartered with a bar, and the assessment that chartered it exists
+    _plan = (_root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    _m = _re.search(r"\n P5\.6 .*?(?=\n COMPLETE when)", _plan, _re.S)
+    assert _m, "P5.6 is not in the plan"
+    assert "ACCEPT:" in _m.group(0) and "CLAUSES" in _m.group(0), "P5.6 states no bar to close on"
+    _assess = (_root / "docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md").read_text(encoding="utf-8")
+    assert "## 13." in _assess, "the plan cites an assessment section that does not exist"
+
+    #  THE HELD AVATAR INTERFACE DOES NOT CALL A DIGEST A SIGNATURE. Nothing routes to it (its wiring is deferred),
+    #  so it is constructed here with two stubs: that is the only way to drive what it would answer.
+    import asyncio as _aio658
+
+    class _Ueg658:
+        def __init__(self):
+            self.events = []
+
+        async def log_event(self, name, payload):
+            self.events.append((name, payload))
+    from agentic_core.avatars.frontend.avatar_interface import AvatarFrontendInterface as _AFI658
+    _ueg658 = _Ueg658()
+    _ans = _aio658.run(_AFI658(object(), _ueg658).handle_user_message("constitutional_override", {}))
+    assert _ans.get("status") == "HALTED" and "receipt_basis" in _ans, _ans
+    assert not [k for k in _ans if "sign" in k.lower()], ("the halt answer names something as signed", sorted(_ans))
+    assert "not a signature" in _ans["receipt_basis"], _ans["receipt_basis"]
+    assert _ueg658.events and not [k for k in _ueg658.events[0][1] if "sign" in k.lower()], _ueg658.events

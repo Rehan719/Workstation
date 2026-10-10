@@ -889,8 +889,10 @@ class OrganismHeartbeat:
         out: Dict[str, Any] = {"read": False, "health": None, "alerted": False}
         try:
             from agentic_core.organism.immune import immune
-            health = immune.status().get("health")
+            _st658 = immune.status()
+            health = _st658.get("health")
             out["read"], out["health"] = True, health
+            out["observations_in_window"] = _st658.get("observations_in_window")     # W658 - what `health` rests on
             if health is not None and health < 0.5:
                 from agentic_core.organism.biobus import biobus
                 biobus.fire_signal("reflex", "organism.heartbeat.alert", f"health {health}", 0.9)

@@ -34,10 +34,20 @@ class ImmuneSystem:
 
     def __init__(self):
         self._events: Deque[_ErrorEvent] = deque()
+        #  W658 (Owner ruling 2026-10-10) - WHAT WAS SEEN, not only what failed: one timestamp per call observed
+        self._seen: Deque[float] = deque()
         self._lock = threading.Lock()
+
+    def observe(self, endpoint: str = "") -> None:
+        """W658 - a call was SEEN (it succeeded, failed, or the floor served it). Without this the sensor hears
+        only failures, and "no failure" reads as full health whether a thousand calls ran or none did."""
+        with self._lock:
+            self._seen.append(time.monotonic())
+            self._purge()
 
     def record(self, endpoint: str, error_type: str = "ai_failure") -> None:
         with self._lock:
+            self._seen.append(time.monotonic())          # a failure is an observation too
             self._events.append(_ErrorEvent(
                 ts=time.monotonic(),
                 endpoint=endpoint,
@@ -49,11 +59,14 @@ class ImmuneSystem:
         cutoff = time.monotonic() - self.WINDOW_SECONDS
         while self._events and self._events[0].ts < cutoff:
             self._events.popleft()
+        while self._seen and self._seen[0] < cutoff:
+            self._seen.popleft()
 
     def status(self) -> dict:
         with self._lock:
             self._purge()
             events = list(self._events)
+            observed = len(self._seen)
 
         total = len(events)
         by_type: dict[str, int] = {}
@@ -112,6 +125,12 @@ class ImmuneSystem:
                              f"{review_flags} compliance review flag(s) are reported beside them and are NOT "
                              f"counted — a flag asks a human to look, it is not a finding of harm"),
             "window_seconds": self.WINDOW_SECONDS,
+            #  W658 - how much this reading rests on. Zero is not "healthy": it is "nothing was observed".
+            "observations_in_window": observed,
+            "observed_basis": (f"{observed} call(s) were observed in the last {self.WINDOW_SECONDS // 60} minutes"
+                               if observed else
+                               f"NO call was observed in the last {self.WINDOW_SECONDS // 60} minutes, so the "
+                               f"health figure is the absence of failures and not a reading of anything"),
             "by_type": by_type,
             "hot_endpoint": hot_endpoint,
             "response_playbook": _response_playbook(threat_level),
@@ -148,3 +167,14 @@ HEALTH_SCOPE = ("the immune system's health: AI-call failures and compliance reg
                 "tracked, so this is not the health of the whole platform")
 
 immune = ImmuneSystem()
+
+
+def health_fields(status: "dict | None" = None) -> dict:
+    """W658 (Owner ruling 2026-10-10) - the health figure WITH what it rests on, for every response that carries
+    it. One function, so a carrier cannot copy the figure and leave behind the count that says whether it is a
+    reading. `organism_health_basis` is unchanged (the scope sentence); the two fields after it are new."""
+    st = status if isinstance(status, dict) else immune.status()
+    return {"organism_health": st.get("health"),
+            "organism_health_basis": HEALTH_SCOPE,
+            "organism_health_observations": st.get("observations_in_window"),
+            "organism_health_observed_basis": st.get("observed_basis")}
