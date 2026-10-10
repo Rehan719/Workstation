@@ -244,7 +244,8 @@ async def run_lab_cascade(challenge: str, realm: str = "enterprise", domain: str
         prompt = _STAGE_PROMPTS[stage_key].format(
             challenge=challenge, domain=domain, realm=realm, solution_name=solution_name,
             solution=results.get("solution_concept", "")[:200])
-        meta = await gateway.query_meta(prompt, agent=f"studio_{stage_key}", augment=False)
+        meta = await gateway.query_meta(prompt, agent=f"studio_{stage_key}", augment=False,
+                                        user_text=(challenge or None))   # W640
         results[stage_key] = meta.get("output", "") or ""
         sb = meta.get("served_by", "native")
         served[sb] = served.get(sb, 0) + 1
@@ -298,7 +299,8 @@ async def synthesise(req: SynthesiseRequest,
             # explicitly; a reader watching the stream must not have to wait for the final record.
             # §17.5 invariant 1 (W343, FU-276) — the caller's identity reaches the memory layer, or what they asked for is stored where even they cannot recall it.
             _owner_id = user.get("username") if isinstance(user, dict) else None
-            _st = await gateway.query_meta(prompt, agent=f"studio_{stage_key}", augment=False, owner_id=_owner_id)
+            _st = await gateway.query_meta(prompt, agent=f"studio_{stage_key}", augment=False, owner_id=_owner_id,
+                                           user_text=(req.challenge or None))   # W640
             stage_content = _st.get("output", "")
             results[stage_key] = stage_content
             _stage_served = _st.get("served_by")

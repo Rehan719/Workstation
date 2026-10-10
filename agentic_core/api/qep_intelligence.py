@@ -224,9 +224,10 @@ async def recommendation_update(req: RecommendationUpdate,
 
 _SACRED_REFUSAL = ("translation of Arabic / Qur'anic text is NOT OFFERED, by ruling (A.9.3): it refuses rather "
                    "than approximates, whatever model is available. Translations of the Qur'an come only from "
-                   "licensed, sourced editions (A.12.1), and no translation edition is served on this deployment: "
-                   "the sourced text here is the Arabic. AI-composed religious text is withheld until a named scholar "
-                   "approves it (A.12.3).")
+                   "licensed, sourced editions (A.12.1). One is served, fetched and never composed: a named "
+                   "translator's rendering of the meanings, at GET /api/v1/qep/translation/{surah}/{ayah} (the "
+                   "editions and the basis each was chosen on: GET /api/v1/qep/translation/editions). "
+                   "AI-composed religious text is withheld until a named scholar approves it (A.12.3).")
 
 
 def _is_sacred_source(req: "TranslateRequest") -> bool:
@@ -382,7 +383,8 @@ async def adaptation_execute(req: AdaptationRequest,
     try:
         # §17.5 invariant 1 (W343, FU-276) — the caller's identity reaches the memory layer, or what they asked for is stored where even they cannot recall it.
         _owner_id = user.get("username") if isinstance(user, dict) else None
-        _meta = await gateway.query_meta(prompt, agent="qep_adapter", augment=False, owner_id=_owner_id)
+        _meta = await gateway.query_meta(prompt, agent="qep_adapter", augment=False, owner_id=_owner_id,
+                                         user_text=(req.pattern or None))   # W640 - the pattern typed
         blueprint = _meta.get("output") or ""
         _served_by = _meta.get("served_by", "native")
         _bp_status = "blueprint_generated"

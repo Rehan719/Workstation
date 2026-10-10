@@ -653,7 +653,7 @@ async def generate_plan(req: GenerateRequest):
     # content could be written into the plan as the founder's own words. The apex reads the Owner's
     # words and nothing else, on every path that speaks for the Chief.
     try:
-        meta = await gateway.query_meta(prompt, agent="business_plan_chief", augment=False)
+        meta = await gateway.query_meta(prompt, agent="business_plan_chief", augment=False, user_text=(req.context or None))
     except Exception as e:
         meta = {"output": f"[business_plan_chief unavailable: {e}]", "served_by": "unavailable", "is_external": False}
     draft = str(meta.get("output") or "")

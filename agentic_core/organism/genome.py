@@ -194,7 +194,7 @@ async def encode_genome(req: EncodeRequest):
     )
 
     # augment=False — W332: generation-class output that PERSISTS never gets cross-request recall
-    meta = await gateway.query_meta(prompt, agent="genome_encoder", augment=False)
+    meta = await gateway.query_meta(prompt, agent="genome_encoder", augment=False, user_text=(chr(10).join(x for x in (req.description, req.entity_name) if isinstance(x, str) and x.strip()) or None))
     raw = meta.get("output") or ""
     served_by = meta.get("served_by", "native")
     is_external = bool(meta.get("is_external"))

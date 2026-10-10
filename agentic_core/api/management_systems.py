@@ -22,19 +22,24 @@ import uuid
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from agentic_core.api._ai_provenance import ai_text
+from agentic_core.api._ai_provenance import ai_text, person_said
 from agentic_core.organism.biobus import biobus
 
 
-async def _compose(prompt: str, agent: str):
+async def _compose(prompt: str, agent: str, said: str | None = None):
     """W475 (ledger v4 R1.2) — a generated document is composed WITHOUT memory recall (the QMS for one organisation
     carried another's recalled interaction as its 'salient terms') and carries its provenance; on the native floor
     the response says the frame is not model analysis."""
-    text, prov = await ai_text(prompt, agent, augment=False)
+    #  W640 - `said` is what the person typed for this document; each generator names its fields
+    text, prov = await ai_text(prompt, agent, augment=False, user_text=(said or None))
     prov = dict(prov or {})
     if (prov.get("served_by") or "native") == "native":
-        prov["floor_note"] = ("structured floor — the owned fabric composed this frame from your inputs; it is not "
-                              "model analysis. Review every clause before use.")
+        #  W640 - "from your inputs" is said only when the generator told the floor what they were
+        prov["floor_note"] = (("structured floor — the owned fabric composed this frame from the inputs you "
+                               "typed; it is not model analysis. Review every clause before use.") if said else
+                              ("structured floor — a generic frame: this generator did not tell the floor "
+                               "which inputs were yours, so nothing in it is drawn from them. It is not "
+                               "model analysis. Review every clause before use."))
     # (refutation) the delivery is recorded by the living QMS like every other generated document; on the floor it is
     # 'not assessable', never a pass
     try:
@@ -101,7 +106,7 @@ async def generate_qms(req: QMSRequest):
     )
 
     biobus.fire_signal("sensory", "mgmt.qms", f"QMS generation: {req.organisation_name}", 0.5)
-    framework, _prov = await _compose(prompt, "mgmt_qms")
+    framework, _prov = await _compose(prompt, "mgmt_qms", said=person_said(req.organisation_name, req.products_services))
     biobus.record_operation("qms_generate", "mgmt.qms", success=True, payload=f"{req.organisation_name} QMS")
 
     return {
@@ -145,7 +150,7 @@ async def generate_bms(req: BMSRequest):
     )
 
     biobus.fire_signal("sensory", "mgmt.bms", f"BMS generation: {req.organisation_name}", 0.5)
-    framework, _prov = await _compose(prompt, "mgmt_bms")
+    framework, _prov = await _compose(prompt, "mgmt_bms", said=person_said(req.organisation_name, req.mission))
     biobus.record_operation("bms_generate", "mgmt.bms", success=True, payload=f"{req.organisation_name} BMS")
 
     return {
@@ -187,7 +192,7 @@ async def generate_dcs(req: DCSRequest):
     )
 
     biobus.fire_signal("sensory", "mgmt.dcs", f"DCS generation: {req.organisation_name}", 0.4)
-    framework, _prov = await _compose(prompt, "mgmt_dcs")
+    framework, _prov = await _compose(prompt, "mgmt_dcs", said=person_said(req.organisation_name, req.document_types))
     biobus.record_operation("dcs_generate", "mgmt.dcs", success=True, payload=f"{req.organisation_name} DCS")
 
     return {
@@ -228,7 +233,7 @@ async def generate_audit_schedule(req: AuditScheduleRequest):
     )
 
     biobus.fire_signal("sensory", "mgmt.audit", f"Audit schedule: {req.organisation_name}", 0.4)
-    schedule, _prov = await _compose(prompt, "mgmt_audit")
+    schedule, _prov = await _compose(prompt, "mgmt_audit", said=person_said(req.organisation_name, req.processes))
     biobus.record_operation("audit_schedule", "mgmt.audit", success=True)
 
     return {
@@ -272,7 +277,7 @@ async def generate_risk_register(req: RiskRegisterRequest):
     )
 
     biobus.fire_signal("cognitive", "mgmt.risk", f"Risk register: {req.organisation_name}", 0.6)
-    register, _prov = await _compose(prompt, "mgmt_risk")
+    register, _prov = await _compose(prompt, "mgmt_risk", said=person_said(req.organisation_name, req.context))
     biobus.record_operation("risk_register", "mgmt.risk", success=True)
 
     return {
@@ -321,7 +326,7 @@ async def generate_ems(req: EMSRequest):
     )
 
     biobus.fire_signal("sensory", "mgmt.ems", f"EMS generation: {req.organisation_name}", 0.5)
-    framework, _prov = await _compose(prompt, "mgmt_ems")
+    framework, _prov = await _compose(prompt, "mgmt_ems", said=person_said(req.organisation_name, req.scope))
     biobus.record_operation("ems_generate", "mgmt.ems", success=True, payload=f"{req.organisation_name} EMS")
 
     return {
@@ -379,7 +384,7 @@ async def record_nonconformance(req: NonConformanceRequest):
         f"4. Preventive actions (systemic changes)\n"
         f"5. Effectiveness verification method\n"
     )
-    capa, _prov = await _compose(prompt, "mgmt_capa")
+    capa, _prov = await _compose(prompt, "mgmt_capa", said=person_said(req.organisation_name, req.description))
 
     return {
         "ai_provenance": _prov,

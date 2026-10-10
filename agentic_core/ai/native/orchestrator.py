@@ -250,7 +250,10 @@ class NativeOrchestrator:
 
     async def complete(self, prompt: str, agent: str = "assistant",
                        timeout: float = 30.0, prefer_external: bool = False,
-                       prefer: str = "auto") -> Dict[str, Any]:
+                       prefer: str = "auto", user_text: Optional[str] = None) -> Dict[str, Any]:
+        #  W640 - `user_text` is the caller's statement of which words the PERSON wrote. Only the floor
+        #  reads it (a served model is given the whole prompt and nothing is duplicated into it); without
+        #  it the floor attributes nothing to the person.
         # §6/§7 user design control over WHICH owned tier serves:
         #   "auto"   — in-house-first selection (local model → native floor → opt-in external)
         #   "native" — force the deterministic native FLOOR (fast · free · reproducible)
@@ -273,7 +276,7 @@ class NativeOrchestrator:
             tried.append(name)
             if name == "native":
                 _t0 = time.monotonic()
-                out = native_engine.generate(prompt, agent)
+                out = native_engine.generate(prompt, agent, user_text=user_text)
                 _record_floor_serve(_t0)   # W458 — the floor serve is RECORDED (throttled), so status can follow it
                 _fire("motor", f"native.{agent}", "served by native engine", 0.4)
                 return {"output": out, "served_by": "native", "is_external": False, "resources_tried": tried}
@@ -305,7 +308,7 @@ class NativeOrchestrator:
                 _organism_report(name, False)
                 continue
         # the native floor guarantees we never reach here, but be safe:
-        out = native_engine.generate(prompt, agent)
+        out = native_engine.generate(prompt, agent, user_text=user_text)
         return {"output": out, "served_by": "native", "is_external": False, "resources_tried": tried}
 
     async def ensemble(self, prompt: str, agent: str = "ensemble", models: Optional[List[str]] = None,
@@ -880,7 +883,7 @@ class NativeOrchestrator:
 
     async def swarm(self, agent: str, stages: List[Dict[str, str]],
                     context: str = "", prefer_external: bool = False,
-                    timeout: float = 30.0) -> Dict[str, Any]:
+                    timeout: float = 30.0, user_text: Optional[str] = None) -> Dict[str, Any]:
         """Run a bespoke agent-cascade tree: each stage = {role, instruction}. Each stage is
         completed in-house-first and feeds the next — a reconfigurable, reusable swarm resource.
         `timeout` bounds each stage's model attempt (a slow local model falls to the native floor)."""
@@ -906,8 +909,11 @@ class NativeOrchestrator:
             prompt = (f"You are the '{role}' agent in Workstation's native swarm.\n"
                       f"{prior}"
                       f"Task: {instruction}\n\n## {role} output")
+            #  W640 - every stage is about the same thing the person asked for; `context` is NOT passed as
+            #  theirs, because a caller may compose it (grounding, a saved cascade's own text)
             res = await self.complete(prompt, agent=f"{agent}:{role}", timeout=timeout,
-                                      prefer_external=prefer_external, prefer=requested)
+                                      prefer_external=prefer_external, prefer=requested,
+                                      user_text=user_text)
             external_used = external_used or res.get("is_external", False)
             carry = res["output"]
             trace.append({"step": i + 1, "role": role, "served_by": res["served_by"],

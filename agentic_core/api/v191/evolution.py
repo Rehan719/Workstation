@@ -140,7 +140,7 @@ async def generate_proposals(req: GenerateRequest):
     # W506 (P2.2) - a LEGACY namespace, but a MOUNTED one (/api/v191), so it is converted rather than
     # retired: removing a mounted route is an API-surface change and P2.4's bar requires that to be
     # stated explicitly by the round that does it.
-    _er = await gateway.query_meta(prompt, agent="evolution_engine", augment=False)
+    _er = await gateway.query_meta(prompt, agent="evolution_engine", augment=False, user_text=(req.context or None))
     raw = _er.get("output", "")
 
     proposals = _load()

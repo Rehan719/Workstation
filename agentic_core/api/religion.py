@@ -19,7 +19,7 @@ from pydantic import BaseModel
 
 import functools
 
-from agentic_core.api._ai_provenance import ai_text as _ai_text
+from agentic_core.api._ai_provenance import ai_text as _ai_text, person_said
 
 #  W637 (FU-597) — this router's domain, bound once. Every ai_text call below carries it, so the native floor
 #  prints the real domain instead of "the request named no domain".
@@ -89,7 +89,8 @@ async def fatwa_research(req: FatwaResearchRequest):
         "and recommend consulting a qualified mufti for personal rulings."
     )
 
-    research, provenance = await ai_text(prompt, "religion_fiqh", realm=req.realm)
+    research, provenance = await ai_text(prompt, "religion_fiqh", realm=req.realm,
+        user_text=person_said(req.question))
 
     # §15 (W498, FU-185, class C6) — THE TAFSIR PATTERN, APPLIED HERE. On the deterministic floor these
     # headings came back filled with keyword bigrams and a "service frame", and the response carried no
@@ -171,7 +172,8 @@ async def hadith_study(req: HadithStudyRequest):
         "collections and a qualified scholar."
     )
 
-    research, provenance = await ai_text(prompt, "religion_hadith", realm=req.realm)
+    research, provenance = await ai_text(prompt, "religion_hadith", realm=req.realm,
+        user_text=person_said(req.focus))
 
     # §15 (W498, FU-185, class C6) — the same pattern, and here it matters most. The prompt itself says
     # "fabricating a hadith grade or attribution is a serious error", and on the floor the response came
@@ -552,7 +554,8 @@ async def halal_pre_assessment(req: HalalReviewRequest):
         + "Note: This is a pre-assessment tool only; formal certification requires an accredited certifying body."
     )
 
-    assessment, provenance = await ai_text(prompt, "religion_halal", realm=req.realm)
+    assessment, provenance = await ai_text(prompt, "religion_halal", realm=req.realm,
+        user_text=person_said(req.product_name, req.product_description))
 
     _judging = ("Halal Status Assessment", "Critical Issues", "Flagged Ingredients")
     sections_withheld: list[str] = []
@@ -643,7 +646,8 @@ async def interfaith_dialogue(req: InterfaithRequest):
         "noting internal diversity where significant."
     )
 
-    analysis, provenance = await ai_text(prompt, "religion_interfaith", realm=req.realm)
+    analysis, provenance = await ai_text(prompt, "religion_interfaith", realm=req.realm,
+        user_text=person_said(req.topic, req.dialogue_purpose))
 
     # §15 (W593, FU-421, M1 R1.2) — THE TAFSIR PATTERN, APPLIED TO THE ONE RELIGION TOOL THAT LACKED IT.
     # Its four siblings all withhold on the floor and say so; this route returned a scholar persona over

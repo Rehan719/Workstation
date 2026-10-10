@@ -17,7 +17,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from agentic_core.auth.core import get_current_user, require_admin
 from pydantic import BaseModel
 
-from agentic_core.api._ai_provenance import ai_text
+from agentic_core.api._ai_provenance import ai_text, person_said
 
 router = APIRouter(prefix="/api/v1/science", tags=["science"])
 
@@ -82,7 +82,8 @@ async def synthesise_research(req: SynthesiseRequest):
         "Where evidence is absent, state this explicitly rather than speculating."
     )
 
-    report, provenance = await ai_text(prompt, "science_synthesiser", realm=req.realm)
+    report, provenance = await ai_text(prompt, "science_synthesiser", realm=req.realm,
+        user_text=person_said(req.research_question))
 
     return {
         "synthesis_id": uuid.uuid4().hex[:10],
@@ -129,7 +130,8 @@ async def generate_hypotheses(req: HypothesisRequest):
         f"Then add a RECOMMENDATION line: which hypothesis to pursue first and why."
     )
 
-    raw, provenance = await ai_text(prompt, "science_hypothesis", realm=req.realm)
+    raw, provenance = await ai_text(prompt, "science_hypothesis", realm=req.realm,
+        user_text=person_said(req.research_question))
 
     hypotheses = []
     recommendation = ""
@@ -192,7 +194,8 @@ async def experiment_design(req: ExperimentDesignRequest):
         "state assumptions explicitly and acknowledge uncertainty."
     )
 
-    design, provenance = await ai_text(prompt, "science_experiment", realm=req.realm)
+    design, provenance = await ai_text(prompt, "science_experiment", realm=req.realm,
+        user_text=person_said(req.hypothesis))
 
     return {
         "design_id": uuid.uuid4().hex[:10],
@@ -239,7 +242,8 @@ async def literature_review_outline(req: LiteratureRequest):
         "Be specific and actionable. Tailor to the domain."
     )
 
-    outline, provenance = await ai_text(prompt, "science_literature", realm=req.realm)
+    outline, provenance = await ai_text(prompt, "science_literature", realm=req.realm,
+        user_text=person_said(req.research_question))
 
     return {
         "review_id": uuid.uuid4().hex[:10],

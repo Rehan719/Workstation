@@ -652,7 +652,7 @@ async def trigger_homeostasis(req: HomeostasisRequest):
             # W495 (FU-129, S8.6) - this used gateway.query, which discards served_by, so the text was
             # printed into the result box with nothing saying whether a model wrote it or the
             # deterministic floor composed it. query_meta carries the provenance the page needs.
-            _meta = await gateway.query_meta(prompt, agent="homeostasis", augment=False)
+            _meta = await gateway.query_meta(prompt, agent="homeostasis", augment=False, user_text=(req.reason or None))
             recommendation = _meta.get("output") if isinstance(_meta, dict) else str(_meta)
             recommendation_served_by = (_meta or {}).get("served_by") if isinstance(_meta, dict) else None
             recommendation_is_external = bool((_meta or {}).get("is_external")) if isinstance(_meta, dict) else False

@@ -11667,10 +11667,13 @@
       "severity": "low",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W640",
       "note": "",
-      "slot_source": "an Owner decision with no build work until it is taken; parked with the Owner's hand items"
+      "slot_source": "an Owner decision with no build work until it is taken; parked with the Owner's hand items",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "RULED by the Owner 2026-10-09 (late): one edition may be served and the choice was delegated. Chosen: en.pickthall (Pickthall 1930) on a public-domain basis, fetched from alquran.cloud, never composed; its own allowlist, route and field. The Owner may replace it."
     },
     {
       "id": "FU-609",
@@ -12770,6 +12773,171 @@
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region on the M3 item",
       "tier": 3
+    },
+    {
+      "id": "FU-669",
+      "title": "Count how many standing ledger findings are a surface offering a capability that cannot run here",
+      "why": "The assessment suspects availability is a defect class the audits find one surface at a time, and says it has not counted. Classify the standing tier-1 and tier-2 findings of the current ledger by whether a declared, checked availability on the resource would have prevented them. The count decides how much of clause 1 of the Instrument Cell is truth work rather than new capability.",
+      "source": "W640 assessment of the Instrument Cell briefs (docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md)",
+      "found": "2026-10-09",
+      "files": [
+        "agentic_core/api/resource_fabric.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.31",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2,
+      "slot_source": "a finding of the Instrument Cell brief assessment; it is that item's own work (docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md)"
+    },
+    {
+      "id": "FU-670",
+      "title": "A composition whose resource cannot run may still be marked commit_ready - measure it",
+      "why": "commit_ready is decided from the QMS gate on the plan text and the usage-area check. Neither reads whether each selected resource can run now. Drive a configuration holding a resource whose engine is unavailable and record what the preview says; if it says ready, that is a tier-1 statement.",
+      "source": "W640 assessment of the Instrument Cell briefs (docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md)",
+      "found": "2026-10-09",
+      "files": [
+        "agentic_core/api/resource_fabric.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.31",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 1,
+      "slot_source": "a finding of the Instrument Cell brief assessment; it is that item's own work (docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md)"
+    },
+    {
+      "id": "FU-671",
+      "title": "Verification scripts that print ok do not state what they examined",
+      "why": "W638 made the fidelity audit refuse to render without stated coverage. The other scripts under scripts/ that report a pass (checks, scans, gates, guards) carry no such statement, so an ok from one that examined nothing reads the same as an ok from one that examined everything. Inventory them by what each does (a name count is not a classification), then give each a stated scope.",
+      "source": "W640 assessment of the Instrument Cell briefs (docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md)",
+      "found": "2026-10-09",
+      "files": [
+        "scripts/followups.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.31",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 3,
+      "slot_source": "a finding of the Instrument Cell brief assessment; it is that item's own work (docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md)"
+    },
+    {
+      "id": "FU-672",
+      "title": "OWNER: may the fabric try one declared alternative automatically when a resource fails",
+      "why": "Clause 6 of the Instrument Cell tries a declared equivalent once when a resource raises or is unavailable. Whether that may happen without a person confirming each time is the Owner's. Recommendation put to the Owner 2026-10-09: yes, once, for resources that only read or compose; never for one that writes. Nothing waits on it until clause 6.",
+      "source": "W640 assessment of the Instrument Cell briefs (docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md)",
+      "found": "2026-10-09",
+      "files": [
+        "agentic_core/api/resource_fabric.py"
+      ],
+      "severity": "low",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "done",
+      "closed_by": "W640",
+      "note": "",
+      "slot_source": "an Owner decision that gates one clause of the Instrument Cell; no build work until taken",
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "RULED by the Owner 2026-10-10 (yes, once, for resources that only read or compose; never for one that writes). Built in the composition runner for a failed status read with a declared equivalent: one attempt, filed as a stand-in, and a failed stand-in is not replaced."
+    },
+    {
+      "id": "FU-673",
+      "title": "The model evaluate route has never been measured against a stated evaluation standard",
+      "why": "POST /api/v1/native-ai/lifecycle/evaluate records evaluations that promotion and retirement read. Nobody has written down what an evaluation there establishes: whether it has a fixed case set, held-out cases, a control, or keeps a failed case as a result. Read it and say what it does and does not establish, on the page that shows the result.",
+      "source": "W640 assessment of the Latent Cell brief (docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md section 11)",
+      "found": "2026-10-10",
+      "files": [
+        "agentic_core/api/native_ai.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.32",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the first clause of the item chartered for it",
+      "tier": 2
+    },
+    {
+      "id": "FU-674",
+      "title": "Two registered spawner resources add a prompt stage and run no engine when composed",
+      "why": "vsb_spawn and genesis_establish are in the fabric registry, selectable and described as spawners. The real-resource handler has no branch for either, so composing one adds a prompt stage and nothing is spawned. The Instrument Cell now reports them as prompt-stage only; the fabric's own list and its compose preview still present them as ordinary resources. Either give each a real handler, or say on the list and the preview what composing them does.",
+      "source": "W640 first measurement of availability",
+      "found": "2026-10-10",
+      "files": [
+        "agentic_core/api/resource_fabric.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.31",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "a finding of the Instrument Cell brief assessment; it is that item's own work (docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md)",
+      "tier": 1
+    },
+    {
+      "id": "FU-675",
+      "title": "About sixty gateway call sites still do not say which text the person wrote",
+      "why": "W640 flipped the floor's default to withholding. The domain tools, the journey, the cascade, the intelligence engines, the studio, the CEO chat and the composition runner now say; the rest (deliverables, products, change control, the digital twin, the VSB routes, the avatar and others) do not, so on the floor each tells its reader it was not told what they wrote. True, and less useful than it could be. The W640 floor guard prints the two counts; upgrade them in batches, reading each prompt to find the field the person typed.",
+      "source": "W640 floor census",
+      "found": "2026-10-10",
+      "files": [
+        "agentic_core/ai/native/engine.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.34",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the remainder of the mechanism P2.34's wrapper-as-request findings are closed by",
+      "tier": 2
+    },
+    {
+      "id": "FU-676",
+      "title": "Tests that save the single user's profile race each other across suite workers",
+      "why": "Seven sites in the suite PUT or DELETE /api/v1/user/profile for the one unauthenticated user, and the four workers share one store. A test reading its 'no profile' state can run while another worker's profile exists; in W640's suite that turned the profile-verdict guard red with identical readings. The guard now removes the profile first, which narrows the window and does not close it. Give each such test its own user or its own store.",
+      "source": "W640 suite (one red, diagnosed)",
+      "found": "2026-10-10",
+      "files": [
+        "integration_tests/test_mvp_spine.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "a suite-reliability rider, beside the parallel-stall row on the same item",
+      "tier": 3
+    },
+    {
+      "id": "FU-677",
+      "title": "Shared floor notes say 'built from your request' on surfaces whose caller has not said what the person wrote",
+      "why": "W640 made the floor attribute nothing to a person unless the caller names their words. Several shared notes still describe floor output as built 'from your request' or 'from your inputs' regardless of the caller: the stage-outcome label, the Digital Reactor page's floor note, the intelligence engines' summary line, the Genesis journey's provenance paragraph and the shared provenance badge title. For an upgraded caller the sentence is true; for the rest it is not. Either make each note conditional on the server's own statement, or upgrade the caller behind it.",
+      "source": "W640, found while preparing the management-generator fix",
+      "found": "2026-10-10",
+      "files": [
+        "apps/workstation-superapp/src/components/StageOutcome.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.34",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the same mechanism P2.34's wrapper-as-request findings are closed by",
+      "tier": 1
     }
   ],
   "routes": [

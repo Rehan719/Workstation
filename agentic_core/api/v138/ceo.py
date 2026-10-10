@@ -554,7 +554,8 @@ async def generate_ceo_stream(prompt: str, scope: str, owner_id: Optional[str]):
     # grounding says is empty may not come back with content under it.
     _answer: list = []
     try:
-        async for ev in gateway.stream_meta(full_prompt, agent="ai-ceo", owner_id=owner_id, augment=True):
+        async for ev in gateway.stream_meta(full_prompt, agent="ai-ceo", owner_id=owner_id, augment=True,
+                                            user_text=(prompt or None)):   # W640 - the question typed
             if "token" in ev:
                 _answer.append(str(ev["token"]))
                 yield f"data: {json.dumps({'content': ev['token'], 'done': False})}\n\n"

@@ -29,7 +29,7 @@ from typing import Any, Dict, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from agentic_core.api._ai_provenance import ai_text
+from agentic_core.api._ai_provenance import ai_text, person_said
 from agentic_core.attestation import attest
 from agentic_core.auth.core import get_current_user
 from agentic_core.support import satisfaction, tickets
@@ -119,7 +119,8 @@ async def support_ask(req: AskRequest, user: dict | None = Depends(get_current_u
         text, prov = await ai_text(
             f"A user of this platform asks for technical support:\n\n{req.query}\n\n"
             f"Answer plainly. If you do not know, say so and say what would establish it.",
-            agent="support_answer", owner_id=_uid, augment=False)
+            agent="support_answer", owner_id=_uid, augment=False,
+            user_text=person_said(req.query))
         #  An empty completion is NOT an answer. The archived agent returned a formatted string whatever
         #  happened, which is why its success field could be a literal.
         failed = not str(text or "").strip()

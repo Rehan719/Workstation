@@ -20,7 +20,7 @@ from pydantic import BaseModel
 
 import functools
 
-from agentic_core.api._ai_provenance import ai_text as _ai_text
+from agentic_core.api._ai_provenance import ai_text as _ai_text, person_said
 
 #  W637 (FU-597) — this router's domain, bound once. Every ai_text call below carries it, so the native floor
 #  prints the real domain instead of "the request named no domain".
@@ -69,7 +69,8 @@ async def tailor_cv(req: CVRequest):
         "## Suggested Keywords (ATS terms to include for this role)\n"
         "## Gaps & Recommendations (honest gaps for this role and how to address them)"
     )
-    cv, provenance = await ai_text(prompt, "employment_cv", realm=req.realm)
+    cv, provenance = await ai_text(prompt, "employment_cv", realm=req.realm,
+        user_text=person_said(req.target_role))
     return {
         "cv_id": uuid.uuid4().hex[:10],
         "target_role": req.target_role,
@@ -102,7 +103,8 @@ async def cover_letter(req: CoverLetterRequest):
         "a body evidencing fit with concrete examples, a paragraph on motivation/fit with the employer, "
         "and a confident close. Avoid clichés and generic filler."
     )
-    letter, provenance = await ai_text(prompt, "employment_cover_letter", realm=req.realm)
+    letter, provenance = await ai_text(prompt, "employment_cover_letter", realm=req.realm,
+        user_text=person_said(req.target_role, req.company))
     return {
         "letter_id": uuid.uuid4().hex[:10],
         "target_role": req.target_role,
@@ -136,7 +138,8 @@ async def interview_prep(req: InterviewPrepRequest):
         "## Red Flags to Avoid\n"
         "## Preparation Checklist"
     )
-    prep, provenance = await ai_text(prompt, "employment_interview", realm=req.realm)
+    prep, provenance = await ai_text(prompt, "employment_interview", realm=req.realm,
+        user_text=person_said(req.target_role))
     return {
         "prep_id": uuid.uuid4().hex[:10],
         "target_role": req.target_role,
@@ -172,7 +175,8 @@ async def career_path(req: CareerPathRequest):
         "## Quick Wins (things achievable in the next 90 days)\n"
         "## Risks & Honest Assessment (how realistic the transition is, and key dependencies)"
     )
-    roadmap, provenance = await ai_text(prompt, "employment_career_path", realm=req.realm)
+    roadmap, provenance = await ai_text(prompt, "employment_career_path", realm=req.realm,
+        user_text=person_said(req.target_role, req.current_role))
     return {
         "path_id": uuid.uuid4().hex[:10],
         "current_role": req.current_role,
@@ -223,7 +227,8 @@ async def salary_negotiation(req: SalaryNegotiationRequest):
         "Be specific and practical. Never fabricate precise market figures as if they were data — frame ranges "
         "as reasoned estimates to validate."
     )
-    plan, provenance = await ai_text(prompt, "employment_salary", realm=req.realm)
+    plan, provenance = await ai_text(prompt, "employment_salary", realm=req.realm,
+        user_text=person_said(req.target_role, req.location))
     return {
         "negotiation_id": uuid.uuid4().hex[:10],
         "target_role": req.target_role,
@@ -279,7 +284,8 @@ async def application_support(req: ApplicationRequest):
         "## Criteria Coverage Check\n"
         "A short checklist of which person-spec criteria are well-evidenced, partially evidenced, or a gap."
     )
-    statement, provenance = await ai_text(prompt, "employment_application", realm=req.realm)
+    statement, provenance = await ai_text(prompt, "employment_application", realm=req.realm,
+        user_text=person_said(req.target_role, req.organisation))
     return {
         "application_id": uuid.uuid4().hex[:10],
         "target_role": req.target_role,

@@ -381,7 +381,7 @@ async def generate_fund_report(req: FundReportRequest):
 
     biobus.fire_signal("cognitive", "fund.report", f"Fund report: {req.focus}/{req.period}", 0.5)
     # W444 — provenance: a floor-served scaffold used to ship as an unlabelled CIO analysis.
-    meta = await gateway.query_meta(prompt, agent="fund_manager", augment=False)
+    meta = await gateway.query_meta(prompt, agent="fund_manager", augment=False, user_text=(req.focus or None))
     biobus.record_operation("fund_report", "fund.report", success=True)
 
     return {
@@ -438,7 +438,7 @@ async def ai_valuation(req: ValuationRequest, user: dict | None = Depends(get_cu
 
     # §17.5 invariant 1 (W343, FU-276) — the caller's identity reaches the memory layer, or what they asked for is stored where even they cannot recall it.
     _owner_id = user.get("username") if isinstance(user, dict) else None
-    meta = await gateway.query_meta(prompt, agent="marketplace_valuation", augment=False, owner_id=_owner_id)
+    meta = await gateway.query_meta(prompt, agent="marketplace_valuation", augment=False, owner_id=_owner_id, user_text=(chr(10).join(x for x in (req.title, req.description) if isinstance(x, str) and x.strip()) or None))
     if meta.get("served_by") == "native":
         raise HTTPException(status_code=503, detail=(
             "No model is available to produce a valuation — the deterministic floor can only "

@@ -18,7 +18,7 @@ from typing import Optional
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from agentic_core.api._ai_provenance import ai_text
+from agentic_core.api._ai_provenance import ai_text, person_said
 
 router = APIRouter(prefix="/api/v1/mega-project", tags=["mega-project"])
 
@@ -47,7 +47,8 @@ async def synthesise(req: SynthesiseRequest):
         f"Concept: {req.concept}\nDomain: {req.domain}\n\n"
         + "\n".join(f"## {s}" for s in _SECTIONS)
     )
-    text, provenance = await ai_text(prompt, "mega_project", timeout=40.0)
+    text, provenance = await ai_text(prompt, "mega_project", timeout=40.0,
+        user_text=person_said(req.concept))
     return {
         "synthesis_id": f"mega-{uuid.uuid4().hex[:8]}",
         "concept": req.concept,

@@ -297,7 +297,7 @@ _COGNITIVE_LENSES = [
 ]
 
 
-async def _staged_query(prompt: str, agent: str, label: str) -> tuple[str, dict]:
+async def _staged_query(prompt: str, agent: str, label: str, said: str | None = None) -> tuple[str, dict]:
     """W479 (FU-121) — ONE gateway call for one pipeline stage, returning (text, provenance).
 
     Every stage of every engine here goes through this, so every stage event can say what served it:
@@ -311,7 +311,8 @@ async def _staged_query(prompt: str, agent: str, label: str) -> tuple[str, dict]
     ('[native engine unavailable]', '[POLICY VIOLATION] …') as output. Those, and an empty reply, are
     failures too — never a stage that 'ran', and never fed forward."""
     try:
-        meta = await gateway.query_meta(prompt, agent=agent, augment=False)
+        #  W640 - `said` is the person's own words for this engine run; every caller names them
+        meta = await gateway.query_meta(prompt, agent=agent, augment=False, user_text=(said or None))
     except Exception as e:
         return f"[{label} did not run — {e}]", {"served_by": None, "is_external": False, "failed": True}
     out = meta.get("output") or ""
@@ -409,7 +410,7 @@ async def _ai_cognitive_prime_meta(problem: str, domain: str, engines: list | No
         f"{lenses}"
         "For each engine, provide 3-4 sharp, specific insights. Be concrete and analytical."
     )
-    return await _staged_query(prompt, "cognitive_cascade_ai", "Cognitive lenses")
+    return await _staged_query(prompt, "cognitive_cascade_ai", "Cognitive lenses", said=problem)
 
 
 async def _ai_cognitive_prime(problem: str, domain: str, engines: list | None = None) -> str:
@@ -450,7 +451,7 @@ async def _ai_mjm_lifecycle_meta(problem: str, domain: str, cognitive_context: s
         "In 2-3 sentences: the single most important insight from this full MJM lifecycle, "
         "and the overarching direction it prescribes."
     )
-    return await _staged_query(prompt, "mjm_orchestrator_ai", "MJM assessment")
+    return await _staged_query(prompt, "mjm_orchestrator_ai", "MJM assessment", said=problem)
 
 
 async def _run_intelligence_stream(
@@ -531,7 +532,7 @@ async def _run_intelligence_stream(
             context=(context_accumulator[-600:] if context_accumulator else "") + enrichment,
         )
 
-        result, prov = await _staged_query(prompt, f"{engine_name}_{stage_key}", stage_label)
+        result, prov = await _staged_query(prompt, f"{engine_name}_{stage_key}", stage_label, said=challenge)
         provs.append(prov)
         if not prov["failed"]:
             context_accumulator += f"\n\n## {stage_label}\n{result[:600]}"
@@ -652,7 +653,7 @@ async def solve_with_cognitive_stack(req: SolveRequest):
         "## Risks & Mitigations (top 3 risks with specific countermeasures)\n"
         "## Synergistic Opportunities (what cross-domain or cross-engine insights open up)"
     )
-    synthesis, _p_syn = await _staged_query(synthesis_prompt, "cognitive_solve", "Synthesis")
+    synthesis, _p_syn = await _staged_query(synthesis_prompt, "cognitive_solve", "Synthesis", said=req.problem)
 
     # (W479 refutation) engines_used lists only what RAN: the selected lenses if the lens call ran, MJM if
     # its call ran, the gateway synthesis if it ran; never a call that failed.
@@ -794,7 +795,7 @@ async def _nexus_auto_select(challenge: str, domain: str, cognitive_result: str)
         "- ddpie: Design & Development (software, systems, architecture, engineering)\n\n"
         "Respond with ONLY one of: bdp, spi, apie, ddpie"
     )
-    reply, prov = await _staged_query(prompt, "nexus_router", "Routing")
+    reply, prov = await _staged_query(prompt, "nexus_router", "Routing", said=challenge)
     decision = {"decided": False, **prov}
     if prov["failed"]:
         decision["reason"] = "the routing call failed"
@@ -899,7 +900,7 @@ async def _run_nexus_stream(req: NexusRequest):
             continue
         prompt = prompt_template.format(
             context=(context_accumulator[-400:] if context_accumulator else "") + enrichment, **fmt)
-        result, prov = await _staged_query(prompt, f"nexus_{selected_engine}_{stage_key}", stage_label)
+        result, prov = await _staged_query(prompt, f"nexus_{selected_engine}_{stage_key}", stage_label, said=req.challenge)
         stage_provs.append(prov)
         if not prov["failed"]:
             context_accumulator += f"\n\n## {stage_label}\n{result[:500]}"
@@ -925,7 +926,7 @@ async def _run_nexus_stream(req: NexusRequest):
         "## Coherence Assessment (how well the findings align — and where tensions exist)\n"
         "## Sovereign Recommendation (the definitive direction this intelligence prescribes)"
     )
-    synthesis, p_syn = await _staged_query(synthesis_prompt, "nexus_synthesis", "Synthesis")
+    synthesis, p_syn = await _staged_query(synthesis_prompt, "nexus_synthesis", "Synthesis", said=req.challenge)
     provs.append(p_syn)
     layers_ran += 0 if p_syn["failed"] else 1
 
@@ -1204,7 +1205,7 @@ async def _run_authorship_stream(req: AuthorshipRequest):
             context=directive + (context_accumulator[-900:] if context_accumulator else ""),
         )
 
-        result, prov = await _staged_query(prompt, f"apie_{stage_key}", stage_label)
+        result, prov = await _staged_query(prompt, f"apie_{stage_key}", stage_label, said=req.topic)
         provs.append(prov)
         if not prov["failed"]:
             context_accumulator += f"\n\n## {stage_label}\n{result[:700]}"
@@ -1443,7 +1444,7 @@ async def _run_design_dev_stream(req: DesignDevRequest):
             context=directive + (context_accumulator[-900:] if context_accumulator else ""),
         )
 
-        result, prov = await _staged_query(prompt, f"ddpie_{stage_key}", stage_label)
+        result, prov = await _staged_query(prompt, f"ddpie_{stage_key}", stage_label, said=req.system)
         provs.append(prov)
         if not prov["failed"]:
             context_accumulator += f"\n\n## {stage_label}\n{result[:700]}"
