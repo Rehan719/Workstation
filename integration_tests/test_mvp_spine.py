@@ -47377,8 +47377,10 @@ def test_w633_p229_the_ten_v11_tier2_shortfalls_are_said(client):
     # FU-565: a floor-served Chief directive says it did not read the instruction
     _ci = client.post("/api/v1/board/chief/instruct", json={"instruction": "Prioritise W633 bakery outreach",
                                                             "cascade_to_ceo": False}).json()
-    if str(((_ci.get("ai_provenance") or {}).get("served_by") or {}).get("board_chief", "native")).startswith("native"):
-        assert "did NOT read your instruction" in (_ci.get("directive_reason") or ""), _ci.get("directive_reason")
+    #  W653 - this leg sat behind a lookup that could never miss (the map is keyed by resource, not agent), and
+    #  asserted a sentence W651 made false. The suite serves from the floor; that is asserted, not assumed.
+    assert ((_ci.get("ai_provenance") or {}).get("served_by_agent") or {}).get("board_chief") == "native", _ci.get("ai_provenance")
+    assert "did not interpret them" in (_ci.get("directive_reason") or ""), _ci.get("directive_reason")
     assert "result.directive_reason" in _fe("pages/enterprise/BoardOfDirectors.tsx")
 
     # FU-566: a not-assessable cascade withholds the proxies instead of reading them as passes
@@ -50191,3 +50193,80 @@ def test_w652_the_ledger_prints_the_cap_the_run_was_given():
     assert "Up to ${CAP} findings" in _wf and "Up to 10 findings" not in _wf, "the assessor is told a typed cap"
     assert _wf.count("cap: CAP") >= 2, "a region - the empty one included - is returned without the cap it ran under"
     assert "const CAP = " in _wf and "A.cap" in _wf, "the cap is not taken from the run's arguments"
+
+
+def test_w653_the_board_says_who_composed_each_part_from_who_did(client, monkeypatch):
+    """FU-641, and a defect found preparing it.
+
+    THE PROPERTIES: each part of the Chief's answer - the directive and the AI CEO's plan - says the floor
+    composed it WHEN THE FLOOR DID, decided from who served that agent; a part a model composed carries no
+    such statement; a plan that was never asked for carries none; and the page shows the plan's reason and
+    no longer promises "faithfully interpreted". The floor statement no longer says the floor did not read
+    the instruction: since W651 it is handed the Owner's words.
+    """
+    import pathlib as _pl
+    from agentic_core.api import board as _b
+
+    _said = "Open a second bakery counter at the primary school"
+
+    # (a) THE FLOOR: both parts say so, and the record says who served each agent
+    _f = client.post("/api/v1/board/chief/instruct", json={"instruction": _said, "scope": "w653-floor"})
+    assert _f.status_code == 200, _f.text[:300]
+    _fj = _f.json()
+    _sba = (_fj.get("ai_provenance") or {}).get("served_by_agent") or {}
+    assert _sba.get("board_chief") == "native" and _sba.get("board_ceo_delegate") == "native", (
+        "the record does not say who served each agent, so no reader can tell which part the floor composed", _sba)
+    assert "native floor composed this directive" in (_fj.get("directive_reason") or ""), _fj.get("directive_reason")
+    assert "did NOT read your instruction" not in (_fj.get("directive_reason") or ""), (
+        "the directive still says the floor did not read the instruction - it is handed the Owner's words")
+    _pr = _fj.get("ceo_plan_reason") or ""
+    assert "native floor composed this plan" in _pr and "ONE objective" in _pr, (
+        "the delegated plan does not say the floor composed it and that the instruction was filed in its place", _pr)
+    #  ...and what the floor was handed really is in the directive it framed (the claim the wording now makes)
+    assert "bakery counter" in (_fj.get("chief_directive") or ""), (
+        "the reason says the floor framed the Owner's words, and the directive does not carry them",
+        (_fj.get("chief_directive") or "")[:300])
+
+    # (b) NO CASCADE: there is no plan, so there is no statement about one
+    _n = client.post("/api/v1/board/chief/instruct",
+                     json={"instruction": _said, "scope": "w653-nocascade", "cascade_to_ceo": False}).json()
+    assert _n.get("ceo_plan_reason") is None, _n.get("ceo_plan_reason")
+
+    #  ...and AN AGENT THAT WAS NEVER CALLED composed nothing (a refused gate, a cascade that did not run): asked
+    #  directly, because the route legs here never reach it and a blind showed that
+    assert _b._floor_composed({"served_by_agent": {}}, "board_chief") is False
+    assert _b._floor_composed({}, "board_ceo_delegate") is False
+    assert _b._floor_composed({"served_by_agent": {"board_chief": "native"}}, "board_chief") is True
+    assert _b._floor_composed({"served_by_agent": {"board_chief": "llama3"}}, "board_chief") is False
+
+    # (c) A MODEL: neither part is told the floor wrote it
+    _real = _b.gateway.query_meta
+
+    async def _model(prompt, **k):
+        _agent = k.get("agent")
+        if _agent == "board_ceo_delegate":
+            return {"output": "## Strategic Objectives" + chr(10) + "Fit the counter | Counter open | 2027-Q1 | COO",
+                    "served_by": "llama3", "is_external": False}
+        if _agent == "board_chief":
+            return {"output": "## Owner Intent" + chr(10) + "Open the second counter at the school.",
+                    "served_by": "llama3", "is_external": False}
+        return await _real(prompt, **k)
+    monkeypatch.setattr(_b.gateway, "query_meta", _model)
+    _m = client.post("/api/v1/board/chief/instruct", json={"instruction": _said, "scope": "w653-model"})
+    assert _m.status_code == 200, _m.text[:300]
+    _mj = _m.json()
+    assert ((_mj.get("ai_provenance") or {}).get("served_by_agent") or {}).get("board_chief") == "llama3", _mj.get("ai_provenance")
+    assert _mj.get("directive_reason") is None, (
+        "a directive a model composed is told the native floor composed it", _mj.get("directive_reason"))
+    assert _mj.get("ceo_plan_reason") is None, (
+        "a plan a model composed is told the native floor composed it", _mj.get("ceo_plan_reason"))
+    assert _mj.get("objectives_fallback") is False and _mj.get("objectives_parsed") == 1, _mj
+    monkeypatch.undo()
+
+    # (d) THE PAGE: the plan's reason is shown, as text only; the fallback is said on the chip; the old promise is gone
+    _page = _code_only((_pl.Path(__file__).resolve().parents[1]
+                        / "apps/workstation-superapp/src/pages/enterprise/BoardOfDirectors.tsx").read_text(encoding="utf-8"))
+    assert "Faithfully interpreted" not in _page, "the page still promises a faithful interpretation it cannot show"
+    assert "typeof result.ceo_plan_reason === 'string' && result.ceo_plan_reason && <p" in _page, (
+        "the plan's reason is not rendered, or is rendered without checking it is text")
+    assert "result.objectives_fallback === true ? " in _page, "the chip does not say the instruction was filed as written"

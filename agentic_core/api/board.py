@@ -121,6 +121,14 @@ def _save(rows: List[Dict[str, Any]]) -> None:
     atomic_write_json(_STORE, rows)
 
 
+def _floor_composed(provenance: Dict[str, Any], agent: str) -> bool:
+    """W653 - did the deterministic floor compose what THIS agent returned? Read from who served the agent.
+    An agent that was never called (a refused gate, no cascade) composed nothing, so: False."""
+    from agentic_core.vbs.quality import floor_served
+    sb = (provenance.get("served_by_agent") or {}).get(agent)
+    return bool(sb) and floor_served(sb)
+
+
 async def _q(prompt: str, agent: str, provenance: Dict[str, Any] | None = None,
              user_text: str | None = None) -> str:
     """§6 (W270) — the APEX tier runs on the same in-house-first fabric as every lower tier:
@@ -144,6 +152,9 @@ async def _q(prompt: str, agent: str, provenance: Dict[str, Any] | None = None,
             sb = res.get("served_by", "native")
             provenance["served_by"][sb] = provenance["served_by"].get(sb, 0) + 1
             provenance["any_external"] = provenance["any_external"] or bool(res.get("is_external"))
+            #  W653 - WHO SERVED EACH AGENT. `served_by` counts by resource, so it cannot answer "was THIS part
+            #  composed by the floor"; a reader that asked it by agent name always got the default.
+            provenance.setdefault("served_by_agent", {})[agent] = sb
         # §5×§6 (W275) — the APEX accrues real operational rows like every lower tier (it was the
         # only AI-driven tier invisible to the learning loop and the measured-outcomes blocks).
         try:
@@ -861,12 +872,20 @@ async def chief_instruct(req: ChiefInstruction, user: dict | None = Depends(get_
         "chief_directive": directive,
         #  W633 (FU-565) - on the floor the directive is a structured frame that did not read the instruction;
         #  said beside it, as /business-plan/generate does, instead of under a 'Modelled twin' banner alone
-        "directive_reason": (("the native floor composed this directive: it did NOT read your instruction, so the "
-                              "text below is a structured frame, not the Chief's response to it. Your instruction "
+        "directive_reason": (("the native floor composed this directive. It was told which words are yours and "
+                              "built a structured frame around them; it did not interpret them, so the text "
+                              "below is a frame, not the Chief's response to your instruction. Your instruction "
                               "itself is recorded verbatim above")
-                             if str((provenance.get("served_by") or {}).get("board_chief", "native")).startswith("native")
-                             else None),
+                             if _floor_composed(provenance, "board_chief") else None),
         "ceo_action_plan": action_plan,
+        #  W653 (FU-641) - the delegated half says what composed it too, and what landed in its place
+        "ceo_plan_reason": ((("the native floor composed this plan: a structured frame, not a plan the AI CEO "
+                              "produced. ")
+                             + ("It yielded no readable objective, so your instruction was recorded as ONE "
+                                "objective on the living plan in its place."
+                                if objectives_added and not objectives_parsed else
+                                "No objective was added to the living plan." if not objectives_added else ""))
+                            if req.cascade_to_ceo and _floor_composed(provenance, "board_ceo_delegate") else None),
         "business_plan_scope": req.scope,
         "objectives_added": objectives_added,
         #  W651 (FU-686) - WHICH KIND LANDED. An objective parsed from the AI CEO's plan is a delegated plan;

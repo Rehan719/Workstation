@@ -32,6 +32,8 @@ interface Status {
 }
 interface ChiefResult {
   directive_reason?: string | null;   // W633 (FU-565)
+  ceo_plan_reason?: string | null;    // W653 (FU-641)
+  objectives_fallback?: boolean;      // W651 (FU-686) - the instruction itself, filed in place of a plan
   directive_id: string; owner: string; instruction: string;
   chief_directive: string; ceo_action_plan: string; delegation_chain: string[]; delegation_chain_basis?: string; created_at: string;
   // W270/W284 — the apex runs on the §6 fabric: provenance + gaas verdict + the plan objectives landed
@@ -286,7 +288,7 @@ export const BoardOfDirectors: React.FC = () => {
           <div className="w-10 h-10 rounded-2xl bg-highlight/20 flex items-center justify-center"><Crown size={18} className="text-highlight" /></div>
           <div>
             <h3 className="font-black text-white text-sm uppercase tracking-wide">Instruct your Chief</h3>
-            <p className="text-[10px] text-slate-500 font-bold">Faithfully interpreted → board directive → delegated to the AI CEO</p>
+            <p className="text-[10px] text-slate-500 font-bold">Recorded → Chief directive → AI CEO plan. Each part says what composed it.</p>
           </div>
         </div>
         <textarea
@@ -336,7 +338,7 @@ export const BoardOfDirectors: React.FC = () => {
             )}
             {typeof result.objectives_added === 'number' && (
               <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${result.objectives_added > 0 ? 'bg-highlight/15 text-highlight' : 'bg-slate-800 text-slate-500'}`}>
-                {result.objectives_added} objective{result.objectives_added === 1 ? '' : 's'} → living plan{result.business_plan_scope ? ` (${result.business_plan_scope})` : ''}
+                {result.objectives_added} objective{result.objectives_added === 1 ? '' : 's'} → living plan{result.business_plan_scope ? ` (${result.business_plan_scope})` : ''}{result.objectives_fallback === true ? ' · your instruction, filed as written' : ''}
               </span>
             )}
           </div>
@@ -358,7 +360,9 @@ export const BoardOfDirectors: React.FC = () => {
                 <div className="flex items-center gap-3"><GitBranch size={14} className="text-aura" /><p className="font-black text-white text-sm">AI CEO Action Plan (delegated)</p></div>
                 {open === 'plan' ? <ChevronUp size={14} className="text-slate-500" /> : <ChevronDown size={14} className="text-slate-500" />}
               </button>
-              {open === 'plan' && <div className="px-5 pb-6 border-t border-slate-800/50 pt-4"><p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{result.ceo_action_plan}</p></div>}
+              {open === 'plan' && <div className="px-5 pb-6 border-t border-slate-800/50 pt-4">
+                {typeof result.ceo_plan_reason === 'string' && result.ceo_plan_reason && <p data-testid="ceo-plan-reason" className="text-[11px] text-amber-400 mb-2">{result.ceo_plan_reason}</p>}
+                <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{result.ceo_action_plan}</p></div>}
             </Card>
           )}
         </div>
