@@ -103,6 +103,11 @@ def _weakest_sections(content: str, secs: List[str]) -> List[str]:
 async def _generate(d_type: str, title: str, brief: str, domain: str,
                     vsb_id: Optional[str], sections: List[str],
                     prior: str = "", realm: str = "enterprise") -> Dict[str, Any]:
+    #  W659 (Owner ruling 2026-10-10; ledger v15 FU-689) - a GENERAL document is not refused for its subject.
+    #  Two things are: a request for a religious ruling is refused before anything is composed, and Arabic
+    #  script in what IS composed is withheld (at the return below). A verbatim ingest never reaches here.
+    from agentic_core.religious_domain.composed_text import refuse_faith_ruling, withhold_arabic
+    refuse_faith_ruling(f"{title} {brief}", "brief")
     secs = sections or _TYPES.get(d_type, _TYPES["report"])
     # §17.1 (W427) — the realm directive is IMPERATIVE, never a persona: engine.py:90 takes the
     # first "You are/As a" match, so a persona sentence prepended here would replace this caller's
@@ -137,8 +142,10 @@ async def _generate(d_type: str, title: str, brief: str, domain: str,
     meta = await gateway.query_meta(prompt, agent=f"deliverable:{d_type}", timeout=30.0,
                                     user_text=(chr(10).join(x for x in (title, brief) if isinstance(x, str) and x.strip()) or None),   # W641
                                     augment=False)   # W332 — deliverables are saved+exported: no cross-request recall
+    _content659, _faith659 = withhold_arabic(meta.get("output", ""))
     return {
-        "content": meta.get("output", ""),
+        "content": _content659,
+        "faith_content": _faith659,          # W659 - what was withheld from the composed text, and why
         "sections": secs,
         # W425 — reported by the function that actually built the prompt, NOT inferred by the caller
         # from whether it MEANT to pass a prior draft. A first cut set this flag from the caller's own
@@ -290,6 +297,9 @@ async def produce(req: ProduceRequest, user: dict | None = Depends(get_current_u
         "sections": gen["sections"],
         "content": gen["content"],
         "ai_provenance": gen["ai_provenance"],
+        #  W659 - what was withheld from the COMPOSED text, stored with it; None for a verbatim ingest, whose
+        #  text the person supplied and which is never passed through the withholding
+        "faith_content": gen.get("faith_content"),
         "quality_assurance": qa,
         "homeostasis": homeo,
         "versions": [{"brief": req.brief, "content": gen["content"],
@@ -1125,6 +1135,7 @@ async def regenerate(deliverable_id: str, req: RegenerateRequest,
             d["sections"] = gen["sections"]
             d["content"] = gen["content"]
             d["ai_provenance"] = gen["ai_provenance"]
+            d["faith_content"] = gen.get("faith_content")     # W659 - follows the version now stored
             d["quality_assurance"] = qa
             d["improvement"] = improvement
             d["updated_at"] = now

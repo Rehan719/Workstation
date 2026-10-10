@@ -231,9 +231,11 @@ _SACRED_REFUSAL = ("translation of Arabic / Qur'anic text is NOT OFFERED, by rul
 
 
 def _is_sacred_source(req: "TranslateRequest") -> bool:
-    import re as _re
+    #  W659 - one definition of "Arabic script" for the platform (it was typed here and again where composed text
+    #  is screened)
+    from agentic_core.religious_domain.composed_text import ARABIC_SCRIPT_RE
     return (str(req.source_language or "").strip().lower() in ("arabic", "ar", "quranic arabic", "classical arabic")
-            or bool(_re.search(r"[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]", req.text or "")))
+            or bool(ARABIC_SCRIPT_RE.search(req.text or "")))
 
 
 class TranslateRequest(BaseModel):

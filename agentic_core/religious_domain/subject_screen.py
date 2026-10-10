@@ -45,6 +45,37 @@ CANNOT_CLEAR = ("this screen can only FLAG a subject as religious teaching; it C
                 "match, which is the absence of evidence and not evidence of absence.")
 
 
+def refuse_if_religious_teaching(what: str, subject: Any, *more: Any) -> Dict[str, Any]:
+    """W659 (ledger v15) - THE REFUSAL, in one place, for every route that composes TEACHING content.
+
+    The screen had one caller. A lesson plan, an assessment and marking feedback are learner-facing teaching
+    content exactly as a curriculum is, and each composed a religious subject without a word about the scholar
+    gate. Raises the 409 the curriculum route has always raised; when nothing matched it RETURNS THE SCREEN'S
+    OWN RECORD (unflagged, with what it cannot clear), so a route can carry it with what it composed - which is
+    NOT a clearance (see CANNOT_CLEAR).
+
+    THE DETAIL IS SHAPED FOR THE READER IT REACHES. apps/.../lib/api.ts turns a non-string `detail` into
+    JSON.stringify(detail).slice(0, 300) and the hub renders that, so `message` carries ONE readable sentence
+    and comes first, and the whole dict stringifies well inside the 300 characters that survive."""
+    from fastapi import HTTPException
+    _screen = screen_subject(subject, *more)
+    if not _screen["flagged"]:
+        return _screen
+    raise HTTPException(
+        status_code=409,
+        detail={
+            "message": (
+                f"Not composed here: \"{subject}\" is religious teaching content, which needs a "
+                f"named scholar's approval before a learner sees it. Use /api/v1/qep/curriculum, "
+                f"which submits it for review. Matched: {', '.join(_screen['matched'][:3])}."),
+            "where_instead": "/api/v1/qep/curriculum",
+            "matched": _screen["matched"],
+            "ruling": "2026-10-05b R7 (§A.12.3)",
+            "refused": what,
+        },
+    )
+
+
 def _norm(text: str) -> str:
     #  punctuation to spaces so "Qur'an:" and "Quran" screen alike, then collapse runs
     return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9']+", " ", str(text or "").lower())).strip()

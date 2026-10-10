@@ -20,6 +20,7 @@ from pydantic import BaseModel
 import functools
 
 from agentic_core.api._ai_provenance import ai_text as _ai_text, person_said, disclaimer_for
+from agentic_core.api._ai_provenance import note_withheld as _note_withheld659      # W659
 
 #  W637 (FU-597) — this router's domain, bound once. Every ai_text call below carries it, so the native floor
 #  prints the real domain instead of "the request named no domain".
@@ -128,7 +129,7 @@ async def fatwa_research(req: FatwaResearchRequest):
         "research": research,
         "sections_withheld": sections_withheld,
         **({"floor_note": floor_note} if floor_note else {}),
-        "ai_provenance": provenance,
+        "ai_provenance": _note_withheld659(provenance, sections_withheld),
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "disclaimer": (
             ("NO RESEARCH WAS PERFORMED — the deterministic floor served this, so what remains is a "
@@ -210,7 +211,7 @@ async def hadith_study(req: HadithStudyRequest):
         "study": research,
         "sections_withheld": sections_withheld,
         **({"floor_note": floor_note} if floor_note else {}),
-        "ai_provenance": provenance,
+        "ai_provenance": _note_withheld659(provenance, sections_withheld),
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "disclaimer": (
             ("NOTHING WAS GRADED OR ATTRIBUTED — the deterministic floor served this, so no narration was "
@@ -384,7 +385,7 @@ async def quran_tafsir(req: QuranTafsirRequest):
         "tafsir": tafsir,
         "sections_withheld": sections_withheld,
         **({"floor_note": floor_note} if floor_note else {}),
-        "ai_provenance": provenance,
+        "ai_provenance": _note_withheld659(provenance, sections_withheld),
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         # W456 — the §11 disclaimer the fatwa and halal tools carried and this one did not
         #  W635 (FU-577) - the disclaimer says what THIS response carries: no Arabic when none was fetched, and
@@ -597,7 +598,7 @@ async def halal_pre_assessment(req: HalalReviewRequest):
         "ingredient_screen": _screen_ingredients(req.ingredients),
         "sections_withheld": sections_withheld,
         **({"floor_note": floor_note} if floor_note else {}),
-        "ai_provenance": provenance,
+        "ai_provenance": _note_withheld659(provenance, sections_withheld),
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "disclaimer": disclaimer_for(
             provenance, "This is an AI pre-assessment tool only.",
@@ -686,7 +687,7 @@ async def interfaith_dialogue(req: InterfaithRequest):
         "analysis": analysis,
         "sections_withheld": sections_withheld,
         **({"floor_note": floor_note} if floor_note else {}),
-        "ai_provenance": provenance,
+        "ai_provenance": _note_withheld659(provenance, sections_withheld),
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "disclaimer": disclaimer_for(
             provenance, "AI-assisted comparative material.",

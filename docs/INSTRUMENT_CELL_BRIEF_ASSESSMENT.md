@@ -353,3 +353,66 @@ that recommendation was withdrawn the same day (row 13): the module is the held 
 roster and still counts as registered under the simulation ruling; left as it is and stated, to be decided
 when retirement is next worked on. STILL THE OWNER'S: the legal form of the business, which needs qualified
 advice and is not decided by a document.
+
+## 14. Addendum (W659): an external "initial strategic assessment" and three revisions of its audit prompt, assessed
+
+Received from the Owner 2026-10-10 (evening). Its author read the public repository's documents through W657
+and says plainly that nothing was cloned or run. It is the best-informed of the external reviews so far: it
+read the dated rulings and it separates what a document says from what a tree does. Checked against the tree
+at W658.
+
+### 14.1 Claims
+
+| # | Claim | Checked against | Verdict |
+|---|---|---|---|
+| 1 | The README's suite count is of the W650 tree while the plan records work through W657 | README | TRUE WHEN READ. Re-dated in W658 to the W657 run, and it will lag again by one round by construction: a count is of a tree |
+| 2 | 81 of 98 plan entries done, 66 open rows, 655 done, 18 dropped | the register at W657 | TRUE, exactly |
+| 3 | Ledger v15: 118 findings, 16 / 27 / 48 / 27, five of six regions at the cap, 253 of 559 routes and 24 of 55 pages exercised; a capped count is not a count of all defects | the ledger | TRUE, and the ledger says the same of itself |
+| 4 | The README counts 556 API operations and the ledger's census 559 routes; reconcile, do not assume one is wrong | the two instruments | RECONCILED: they count different populations. The README counts method-and-path under `/api/` only; the census counts every route the app registers, less the framework's own. Both are computed, neither is typed. (557 at W657: one route was added.) |
+| 5 | PLAN NOW names the tier-2 item P2.35 as next while the tier-1 item P2.36 is open; is that order or staleness? | the plan and the register | NEITHER ITEM HAS AN OPEN ROW. P2.36's sixteen rows closed in W655 and W656; P2.35's last two closed in W658. Both stay open because an item closes on its ACCEPT clause, and theirs is the re-run of the audit, which the Owner ruled runs after the tier-2 work and must be pointed at what v15 did not exercise. PLAN NOW lists items in id order and says of each "every row closed, which is not the same as the item being done" |
+| 6 | Ledger rows to re-test: the Board Pack hash that did not cover the pack (R3.1), "2 of 2 owned models produced output" on the floor (R4.1), pillar percentages from mounted routes (R6.0), "every change is gated" beside direct levers (R3.0), entity status disagreeing between readers (R2.4, R2.5), quality attestations (R1.2), immune health with nothing observed (R6.2), a keyword screen reported as compliant (R6.4) | the register | ALL ARE TIER-1 ROWS OF LEDGER v15 AND ALL ARE CLOSED (W655, W656; the immune row in W658), each with a guard driven red. "Closed" here means the row's guard, not a re-audit: whether they stay closed is what the next audit run measures, and the review is right to say so |
+| 7 | Rows to re-check: FU-708, FU-706, FU-715, FU-716, FU-718, FU-728, FU-730 | the register | FU-728 closed W658. The other six are open and are the prepared rounds (faith content, silent drops, Board and Chief) |
+| 8 | The delivery prompt's header still says "v11, revision 2" and names an earlier model | the file | TRUE. The header records how the prompt was derived at W446 and points to a handover file that exists. It is a dated record, like the Living Plan header corrected in W658; left, and noted here |
+| 9 | THE CANON HAS A STALE LIST: a "still with the Owner" paragraph names the lifecycle, the Products axis, the KPI gate, Mode 2, the Stripe key roll and the 162 entities as open | the vision, section 18 | TRUE, AND IT IS THE FIFTH SENTENCE ABOUT THE KEY ROLL. W652 corrected two, W658 two more and added a guard, and the guard could not see this one because it says "roll" and not "rotation". CORRECTED in W659: the list is kept as the W446 record it is and is followed by what became of each entry; the guard now reads both words. The plan's own "ordering" paragraph called the same three items "genuinely unbuilt"; it gains its status too |
+| 10 | Every file the prompts name exists (`scripts/entity_coverage_scan.py`, `scripts/reach_audit.py`, the handover file) | the tree | TRUE |
+| 11 | The rulings it lists as binding (apex simulation, immune five-minute rule, heartbeat levers audited, Developing means both, faith content on general routes, Pickthall, no direct push to main) | the plan's rulings blocks | TRUE, each as ruled |
+
+### 14.2 Its recommendations, against what is already ruled
+
+**"Establish one reproducible baseline before authorising more development."** The exact-commit discipline it
+asks for exists: every ledger names the commit it booted, the suite count is dated with its tree, and CI runs
+the whole suite on each round's own pull request before it merges. What it adds that is worth keeping: say of
+each number WHICH tree it measured, in the sentence that states it. W658 did that for the Living Plan header;
+row 8 above is the one place still not done.
+
+**"Close tier-1 through the existing plan; two consecutive qualifying audits."** This is the Owner's stopping
+rule of 2026-10-09, restated accurately. Nothing to change.
+
+**"A report-only first phase; change nothing during the audit."** Its own boundary for whoever runs it. The
+repository's audit already changes nothing while it measures; the rounds between audits are the Owner's
+standing instruction.
+
+**A second, differently-shaped audit.** Refused, as in sections 12 and 13: one instrument, one ledger.
+
+### 14.3 Worth adopting, and where each goes
+
+- **A common evidence contract for a deliverable or status:** what was requested, what ran, what served it,
+  what was measured, what was not assessed, which gate decided, what was hashed, who owns the record. Most of
+  these exist as separate fields added round by round (the silent-drops round adds "requested / ran / not
+  run"). Nobody has checked ONE deliverable against all eight. REGISTERED as a tier-3 row: take the eight as a
+  checklist against the three kinds of stored output (a deliverable, a composition run, a Board Pack) and
+  record which each lacks.
+- **"Forever" as bounded operational promises:** backup and restore, a protected shutdown, retirement that
+  keeps obligations. Belongs in the founder's guide (P5.6) and the deployment pre-flight (P4.5), stated as what
+  is and is not built. Carried into both; no new item.
+- **A causal chain per biomimetic claim** (stimulus, measurement, decision, action, recorded outcome,
+  feedback), with a missing link making the loop partial. The immune work in W658 is exactly this for one
+  layer. Carried as a way of reading the next audit's region 6, not a new item.
+- **Customer satisfaction with consent and provenance.** No telemetry exists; stated as NOT MEASURED in the
+  P5.6 dictionary, which is where what would measure it is written down.
+
+### 14.4 For the Owner
+
+Nothing new to rule. One thing to know: rows 5 and 6 mean the plan now has NO open tier-1 row and the older
+tier-2 item has none either; what stands between the plan and the next audit is the 21 open tier-2 rows of ledger
+v15, of which the prepared rounds cover the first batches.

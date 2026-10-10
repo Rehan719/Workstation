@@ -43242,8 +43242,9 @@ def test_w597_a_structured_refusal_never_reaches_react_as_a_child():
     #  P3.10's 409 detail carries `message` first precisely so this helper, and the fetch path's own
     #  errorMessage, both render a sentence rather than JSON. Asserted on the SOURCE OF THE REFUSAL so
     #  the two cannot drift apart silently.
+    #  W659 - the refusal moved to ONE function the four teaching routes call, so its source is read there
     _edu_src = (_pld.Path(__file__).resolve().parents[1]
-                / "agentic_core/api/education.py").read_text(encoding="utf-8")
+                / "agentic_core/religious_domain/subject_screen.py").read_text(encoding="utf-8")
     assert '"message": (' in _edu_src, (
         "the religious-subject refusal carries no `message` key, so axiosDetail falls through to "
         "JSON.stringify and a teacher is shown a serialised dict")
@@ -51233,7 +51234,9 @@ def test_w658_a_done_owner_action_is_not_stated_as_owed_and_a_dated_header_says_
         _lines = (_root / _name).read_text(encoding="utf-8").splitlines()
         for _i, _line in enumerate(_lines):
             _win = " ".join(_lines[max(0, _i - 3): _i + 4])
-            if "stripe" in _line.lower() and _re.search(r"rotat", _win, _re.I) and _re.search(r"\bkeys?\b", _win, _re.I):
+            #  W659 - "roll" as well as "rotation": a fifth sentence said "the Stripe key roll" and this guard,
+            #  written for the word the first four used, could not see it
+            if "stripe" in _line.lower() and _re.search(r"rotat|\broll", _win, _re.I) and _re.search(r"\bkeys?\b", _win, _re.I):
                 _seen += 1
                 assert "2026-10-09" in _win, (
                     "a passage mentions the Stripe key rotation without the date the Owner did it, so it can be "
@@ -51273,3 +51276,264 @@ def test_w658_a_done_owner_action_is_not_stated_as_owed_and_a_dated_header_says_
     assert not [k for k in _ans if "sign" in k.lower()], ("the halt answer names something as signed", sorted(_ans))
     assert "not a signature" in _ans["receipt_basis"], _ans["receipt_basis"]
     assert _ueg658.events and not [k for k in _ueg658.events[0][1] if "sign" in k.lower()], _ueg658.events
+
+
+def test_w659_every_teaching_route_refuses_a_religious_subject(client, monkeypatch):
+    """Ledger v15 FU-689, the teaching half. A.12.3: a named scholar approves AI-composed religious teaching content
+    before a learner sees it; a disclaimer is not a review.
+
+    THE INVARIANT: every route in the teaching module that composes refuses a religious subject and says where it
+    goes instead - checked two ways, because either alone can be fooled: a syntax walk that fails a route added
+    later without the call, and one driven request per route that reads what the gateway was (not) asked.
+    """
+    import ast
+    import pathlib as _pl
+    _path = _pl.Path(__file__).resolve().parents[1] / "agentic_core/api/education.py"
+    _tree = ast.parse(_path.read_text(encoding="utf-8"))
+    _posts, _missing = [], []
+    for _fn in _tree.body:
+        if not isinstance(_fn, ast.AsyncFunctionDef):
+            continue
+        if not any(isinstance(d, ast.Call) and getattr(d.func, "attr", "") == "post" for d in _fn.decorator_list):
+            continue
+        _posts.append(_fn.name)
+        if not any(isinstance(c, ast.Call) and getattr(c.func, "id", "") == "refuse_if_religious_teaching"
+                   for c in ast.walk(_fn)):
+            _missing.append(_fn.name)
+    assert len(_posts) >= 4, ("the walk found fewer teaching routes than exist, so it proves nothing", _posts)
+    assert not _missing, ("a teaching route composes without asking whether its subject is religious teaching "
+                          "content", _missing)
+
+    from agentic_core.ai.gateway import gateway as _gw
+    _asked = []
+    _real = _gw.query_meta
+
+    async def _spy(prompt, **k):
+        _asked.append(k.get("agent"))
+        return await _real(prompt, **k)
+    monkeypatch.setattr(_gw, "query_meta", _spy)
+    _RELIGIOUS = (
+        ("/api/v1/education/curriculum", {"subject": "Quran and Tajwid", "level": "KS2"}),
+        ("/api/v1/education/lesson-plan", {"subject": "Quran and Tajwid", "topic": "Rules of Idgham", "level": "KS2"}),
+        ("/api/v1/education/assessment", {"subject": "Islamic Studies", "topic": "The five pillars", "level": "KS3"}),
+        ("/api/v1/education/feedback", {"student_work": "An essay.", "subject": "Hadith studies", "task": "Explain isnad."}),
+    )
+    for _path_, _body in _RELIGIOUS:
+        _asked.clear()
+        _r = client.post(_path_, json=_body)
+        assert _r.status_code == 409, ("a teaching route composed a religious subject", _path_, _r.status_code, _r.text[:200])
+        _d = _r.json()["detail"]
+        assert _d["where_instead"] == "/api/v1/qep/curriculum" and _d["matched"] and "scholar" in _d["message"], (_path_, _d)
+        assert _asked == [], ("the refusal came AFTER the model was asked", _path_, _asked)
+    #  ...and a secular subject is composed on every one of them
+    _SECULAR = (
+        ("/api/v1/education/curriculum", {"subject": "Biology", "level": "GCSE"}),
+        ("/api/v1/education/lesson-plan", {"subject": "Biology", "topic": "Cells", "level": "GCSE"}),
+        ("/api/v1/education/assessment", {"subject": "Biology", "topic": "Photosynthesis", "level": "GCSE"}),
+        ("/api/v1/education/feedback", {"student_work": "An essay on the causes of the First World War.", "subject": "History"}),
+    )
+    for _path_, _body in _SECULAR:
+        assert client.post(_path_, json=_body).status_code == 200, ("a secular subject is refused", _path_)
+
+
+def test_w659_a_general_route_refuses_a_ruling_and_withholds_composed_arabic(client, monkeypatch):
+    """Ledger v15 FU-709 and the general half of FU-689, as the Owner ruled 2026-10-10: a general document is NOT
+    refused because of its subject. Two things are: a request for a religious ruling, and Arabic script in text
+    the platform composed.
+
+    Each rule is driven both ways - the case it refuses or withholds, and the nearest case it must leave alone.
+    """
+    from agentic_core.religious_domain import composed_text as _ct
+    from agentic_core.ai.gateway import gateway as _gw
+    _ARABIC = chr(0x628) + chr(0x633) + chr(0x645) + " " + chr(0x627) + chr(0x644) + chr(0x644) + chr(0x647)
+    _RULING = "Is it permissible to combine prayers when travelling? Give a ruling."
+
+    # (a) the module: withholding is a script test, and says what it did
+    _t, _rec = _ct.withhold_arabic(f"The verse reads {_ARABIC} and continues in English.")
+    assert _rec["arabic_passages_withheld"] == 1 and not _ct.ARABIC_SCRIPT_RE.search(_t), (_rec, _t)
+    assert "continues in English" in _t and "sourced edition" in _rec["basis"]
+    assert _ct.withhold_arabic("Plain English.")[1]["arabic_passages_withheld"] == 0
+
+    # (b) a request for a ruling is refused at the swarm, before anything is asked
+    _asked = []
+    _real = _gw.query_meta
+
+    async def _spy(prompt, **k):
+        _asked.append(k.get("agent"))
+        return await _real(prompt, **k)
+    monkeypatch.setattr(_gw, "query_meta", _spy)
+    for _path_, _body in (("/api/v1/swarm/delegate", {"task": _RULING, "agent_ids": ["religion"]}),
+                          ("/api/v1/swarm/cascade", {"mission": _RULING}),
+                          ("/api/v1/deliverables/produce", {"type": "report", "brief": _RULING})):
+        _asked.clear()
+        _r = client.post(_path_, json=_body)
+        assert _r.status_code == 409, ("a request for a religious ruling was accepted", _path_, _r.status_code, _r.text[:200])
+        assert _r.json()["detail"]["refused_by"], _r.json()["detail"]
+        assert _asked == [], ("the refusal came after the model was asked", _path_, _asked)
+    #  ...and an ordinary task is not refused
+    assert client.post("/api/v1/swarm/delegate", json={"task": "Draft a rota for two bakers.", "agent_ids": ["COO"]}).status_code == 200
+    #  THE FALSE REFUSALS THE GATE ALONE WOULD MAKE. Its patterns match "is ... allowed" and "ruling on" - ordinary
+    #  enterprise sentences. Each of these fires the gate and carries NO faith term, so it must be served.
+    from agentic_core.gaas.v5 import horizon_guardrails as _hg
+    for _ordinary in ("Is remote work allowed under our staff policy?",
+                      "Summarise the tribunal's ruling on unfair dismissal for the board."):
+        assert _hg.religious_ruling_gate(_ordinary)["escalate"] is True, (
+            "this sentence no longer fires the gate, so the leg below proves nothing - pick one that does", _ordinary)
+        assert _ct.refuse_faith_ruling(_ordinary, "task") is None
+    assert client.post("/api/v1/swarm/delegate", json={"task": "Is remote work allowed under our staff policy?",
+                                                       "agent_ids": ["CLO"]}).status_code == 200, (
+        "an ordinary workplace question was refused as a request for a religious ruling")
+    assert client.post("/api/v1/deliverables/produce",
+                       json={"type": "report", "brief": "Summarise the tribunal's ruling on unfair dismissal for the board."}
+                       ).status_code == 200, "a legal brief was refused as a request for a religious ruling"
+    monkeypatch.undo()
+
+    # (c) THE OWNER'S BOUNDARY: a general document about a faith-related enterprise is composed, not refused
+    _d = client.post("/api/v1/deliverables/produce", json={"type": "report", "brief": "An Islamic finance prospectus for a village bakery cooperative"})
+    assert _d.status_code == 200, ("a general document was refused for its subject", _d.status_code, _d.text[:200])
+
+    # (d) Arabic script the platform COMPOSED is withheld, and the stored deliverable says so
+    async def _composes_arabic(prompt, **k):
+        return {"output": f"## Summary{chr(10)}The opening is {_ARABIC} and the plan follows.", "served_by": "llama3", "is_external": False}
+    monkeypatch.setattr(_gw, "query_meta", _composes_arabic)
+    _c = client.post("/api/v1/deliverables/produce", json={"type": "report", "brief": "A note for the mosque committee on the bakery rota"})
+    assert _c.status_code == 200, _c.text[:200]
+    _cj = _c.json()
+    _dv = _cj.get("deliverable") or _cj
+    assert not _ct.ARABIC_SCRIPT_RE.search(_dv["content"]), "Arabic script a model composed was stored on a general deliverable"
+    assert (_dv.get("faith_content") or {}).get("arabic_passages_withheld") == 1, _dv.get("faith_content")
+    monkeypatch.undo()
+
+    # (e) A PERSON'S OWN TEXT is not composed text: a verbatim ingest keeps what they supplied
+    _own = f"## Notes{chr(10)}My own notes, including {_ARABIC} which I typed myself."
+    _v = client.post("/api/v1/deliverables/produce", json={"type": "report", "brief": "my notes", "content": _own})
+    assert _v.status_code == 200, _v.text[:200]
+    _vd = _v.json().get("deliverable") or _v.json()
+    assert _ARABIC in _vd["content"], "text a person supplied verbatim was altered by a rule about composed text"
+
+    # (f) the roster no longer advertises jurisprudence
+    _agents = client.get("/api/v1/swarm/agents").json()
+    _flat = str(_agents)
+    assert "jurisprudence" not in _flat.lower() and "NO religious ruling" in _flat, "the swarm roster still offers jurisprudence"
+
+
+def test_w659_a_figure_measured_before_withholding_is_not_reported_for_what_was_returned(client):
+    """Ledger v15: a religion tool whose scholarly sections were WITHHELD still answered delivery_coverage 1.0
+    and stub_found false. The gate measured the composed text; the route then removed sections; the figure
+    stayed. THE INVARIANT: a coverage figure in a response is of the text in that response. When sections were
+    withheld nothing was measured on what remained, so the figure is None, the basis says why, and what WAS
+    measured is kept under a name that says what it is of.
+    """
+    import ast as _ast
+    import pathlib as _pl
+    _driven = 0
+    for _path, _body, _key in (
+            ("/api/v1/religion/fatwa-research", {"question": "May a traveller shorten the prayer?"}, "research"),
+            ("/api/v1/religion/hadith-study", {"hadith": "Actions are judged by intentions."}, "study"),
+            ("/api/v1/religion/halal-review", {"product_name": "Oat bar", "product_description": "A baked oat bar.",
+                                               "ingredients": ["oats", "gelatine"]}, "assessment"),
+            ("/api/v1/religion/interfaith", {"topic": "Charity"}, "analysis")):
+        _r = client.post(_path, json=_body)
+        assert _r.status_code == 200, (_path, _r.status_code, _r.text[:300])
+        _j = _r.json()
+        _qa = (_j.get("ai_provenance") or {}).get("quality_assurance")
+        assert isinstance(_qa, dict), (_path, "no quality record on the provenance", sorted(_j.get("ai_provenance") or {}))
+        if _j.get("sections_withheld"):
+            _driven += 1
+            assert _qa.get("delivery_coverage") is None and _qa.get("stub_found") is None, (
+                _path, "a figure measured before the sections were withheld is reported for what was returned", _qa)
+            assert "delivery_coverage_before_withholding" in _qa, (_path, "the measured figure was discarded", _qa)
+            assert _qa.get("sections_withheld_count") == len(_j["sections_withheld"]), (_path, _qa)
+            assert "BEFORE" in str(_qa.get("qms_basis")), (_path, "the basis does not say what the figure was of", _qa)
+        else:
+            assert "delivery_coverage_before_withholding" not in _qa, (
+                _path, "nothing was withheld, yet the figure was moved aside", _qa)
+    assert _driven >= 3, ("fewer than three tools withheld anything on the floor, so the withholding legs above "
+                          "barely ran - read which tools stopped withholding", _driven)
+
+    #  THE UNTOUCHED CALLER: every dict literal in an API module that carries `sections_withheld` builds its
+    #  `ai_provenance` through note_withheld. A sixth tool that copies an older return fails here.
+    _root = _pl.Path(__file__).resolve().parents[1] / "agentic_core" / "api"
+    _seen, _bad = 0, []
+    for _f in sorted(_root.rglob("*.py")):
+        _tree = _ast.parse(_f.read_text(encoding="utf-8"))
+        for _n in _ast.walk(_tree):
+            if not isinstance(_n, _ast.Dict):
+                continue
+            _keys = {(_k.value if isinstance(_k, _ast.Constant) else None): _v for _k, _v in zip(_n.keys, _n.values)}
+            if "sections_withheld" not in _keys or "ai_provenance" not in _keys:
+                continue
+            _seen += 1
+            _v = _keys["ai_provenance"]
+            _name = (_v.func.id if isinstance(_v, _ast.Call) and isinstance(_v.func, _ast.Name) else "")
+            if "note_withheld" not in _name:
+                _bad.append((_f.name, _n.lineno))
+    assert _seen >= 5, ("the walk found fewer returns than the five religion tools - it is checking nothing", _seen)
+    assert not _bad, ("a return carries sections_withheld and a provenance that did not pass through "
+                      "note_withheld", _bad)
+
+    #  A MISSION OR A SYNTHESIS REQUEST THAT ASKS FOR A RULING IS REFUSED BEFORE ANYTHING RUNS; an ordinary
+    #  sentence with the same grammar is not.
+    _ask = "Give a fatwa on whether riba is haram for our cooperative"
+    _c = client.post("/api/v1/swarm/cascade", json={"mission": _ask})
+    assert _c.status_code == 409 and "refused_by" in str(_c.json().get("detail")), (_c.status_code, _c.text[:300])
+    _ok = client.post("/api/v1/swarm/cascade", json={"mission": "Is remote work allowed under our staff policy?"})
+    assert not (_ok.status_code == 409 and "refused_by" in _ok.text), (
+        "an ordinary policy question was refused as a request for a religious ruling", _ok.text[:300])
+    for _sp in ("/api/v1/synthesis/generate", "/api/v1/synthesis/stream"):
+        _s = client.post(_sp, json={"content_ids": [], "instructions": _ask, "output_type": "report"})
+        assert _s.status_code == 409, (_sp, _s.status_code, _s.text[:300])
+        assert "text/event-stream" not in _s.headers.get("content-type", ""), (
+            _sp, "the refusal arrived inside a stream, after a 200")
+
+
+def test_w659_composed_arabic_is_withheld_from_synthesis_whole_and_streamed(client, monkeypatch):
+    """The faith-content constitution, rule 1: Qur'anic Arabic is never AI-generated. A general route has no
+    sourced edition in hand, so Arabic script in text it COMPOSED is withheld and the answer says how many
+    passages and why. THE INVARIANT, on both synthesis routes: no Arabic script reaches the response, the
+    stored row or the file on disk; the record of what was withheld travels with all three; and a text that
+    arrives a token at a time is treated exactly as the same text arriving whole.
+    """
+    import json as _json
+    from agentic_core.religious_domain import composed_text as _ct
+    from agentic_core.synthesis import api as _sa
+    _ar = chr(0x628) + chr(0x633) + chr(0x645) + " " + chr(0x627) + chr(0x644) + chr(0x644) + chr(0x647)
+    _text = "## Findings" + chr(10) + "The opening reads " + _ar + " and the report continues. Again: " + _ar + "."
+
+    #  THE UNIT PROPERTY: streamed == whole, with a run split in the middle of a word
+    _whole, _rec = _ct.withhold_arabic(_text)
+    _cut = _text.index(_ar) + 2
+    _f = _ct.ArabicStreamFilter()
+    _streamed = "".join(_f.feed(_t) for _t in (_text[:_cut], _text[_cut:_cut + 3], _text[_cut + 3:]))
+    assert _streamed == _whole and _f.passages == _rec["arabic_passages_withheld"] == 2, (_f.passages, _rec)
+    assert not _ct.ARABIC_SCRIPT_RE.search(_whole) and _ct.WITHHELD_MARK in _whole
+    assert _ct.withhold_arabic("No such script here.")[1]["arabic_passages_withheld"] == 0
+
+    #  THE PLAIN ROUTE, with the composer returning the text above
+    async def _fake_query(self, prompt, otype, said=None, **_kw):
+        return _text
+    monkeypatch.setattr(_sa.SynthesisManager, "_query", _fake_query)
+    _r = client.post("/api/v1/synthesis/generate", json={"content_ids": [], "instructions": "a report on a bakery",
+                                                         "output_type": "report"})
+    assert _r.status_code == 200, _r.text[:300]
+    _j = _r.json()
+    assert not _ct.ARABIC_SCRIPT_RE.search(_j["content"]), "composed Arabic reached the response"
+    assert (_j.get("faith_content") or {}).get("arabic_passages_withheld") == 2, _j.get("faith_content")
+    _disk = [p for p in _sa.synthesis_manager.output_dir.glob(_j["output_id"] + ".*")]
+    assert _disk and not _ct.ARABIC_SCRIPT_RE.search(_disk[0].read_text(encoding="utf-8")), (
+        "the file a person downloads carries the composed Arabic")
+
+    #  THE STREAM, with the run split across two tokens
+    async def _fake_stream(prompt, **_kw):
+        for _t in (_text[:_cut], _text[_cut:_cut + 3], _text[_cut + 3:]):
+            yield {"token": _t}
+        yield {"done": True, "served_by": "native", "is_external": False, "guardrail_passed": True}
+    monkeypatch.setattr(_sa.gateway, "stream_meta", _fake_stream)
+    _s = client.post("/api/v1/synthesis/stream", json={"content_ids": [], "instructions": "a report on a bakery",
+                                                       "output_type": "report"})
+    assert _s.status_code == 200, _s.text[:300]
+    _frames = [_json.loads(_l[6:]) for _l in _s.text.splitlines() if _l.startswith("data: ")]
+    assert _frames and _frames[-1].get("done"), _frames[-2:]
+    assert not any(_ct.ARABIC_SCRIPT_RE.search(_fr.get("token", "")) for _fr in _frames), (
+        "a token frame carried composed Arabic")
+    assert (_frames[-1].get("faith_content") or {}).get("arabic_passages_withheld") == 2, _frames[-1]
