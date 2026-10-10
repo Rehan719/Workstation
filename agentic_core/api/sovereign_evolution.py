@@ -139,7 +139,7 @@ def _prov_snapshot() -> dict:
                       "which is not the same as the deterministic floor serving one")}
 
 
-async def _q_meta(prompt: str, agent: str) -> tuple:
+async def _q_meta(prompt: str, agent: str, user_text: str | None = None) -> tuple:
     """W506 (P2.2) - the PROVENANCE form. `query` returns bare text, so every caller of this helper
     dropped which resource served it. P2.2 requires that no bare text-only gateway call remains in
     agentic_core/api. `augment=False` is STATED rather than inherited: a repo-wide guard requires it at
@@ -147,7 +147,7 @@ async def _q_meta(prompt: str, agent: str) -> tuple:
     request's content as analysis of their own subject.
     """
     try:
-        r = await gateway.query_meta(prompt, agent=agent, augment=False)
+        r = await gateway.query_meta(prompt, agent=agent, augment=False, user_text=user_text)   # W651 (FU-675)
         _served = r.get("served_by") or "unknown"
         _PROV["served_by"][_served] = _PROV["served_by"].get(_served, 0) + 1
         if r.get("is_external"):
@@ -157,10 +157,10 @@ async def _q_meta(prompt: str, agent: str) -> tuple:
         return f"[AI unavailable: {e}]", None, False
 
 
-async def _q(prompt: str, agent: str) -> str:
+async def _q(prompt: str, agent: str, user_text: str | None = None) -> str:
     """Text only. Delegates to `_q_meta`, so a call is counted even when the caller ignores it."""
     try:
-        return (await _q_meta(prompt, agent))[0]
+        return (await _q_meta(prompt, agent, user_text=user_text))[0]
     except Exception as e:
         return f"[{agent} unavailable: {e}]"
 
@@ -239,7 +239,7 @@ async def run_cycle(req: CycleRequest):
         "PRIORITY = P1|P2|P3\n"
         "TITLE = max 9 words. RATIONALE = what observation triggered it. No other text."
     )
-    ceo_raw = await _q(ceo_prompt, "sovereign_evo_ceo")
+    ceo_raw = await _q(ceo_prompt, "sovereign_evo_ceo", user_text=(req.focus or None))
     directives = _parse_directives(ceo_raw)
     if not directives:
         # §8 (W496, FU-120) - the rationale said so honestly and nothing else did: the response still
@@ -268,7 +268,7 @@ async def run_cycle(req: CycleRequest):
         "TITLE | VERDICT | EFFORT | EXECUTION_NOTE\n"
         "VERDICT = proceed|defer|reject. EFFORT = S|M|L. EXECUTION_NOTE = one sentence. No other text."
     )
-    csuite_raw = await _q(csuite_prompt, "sovereign_evo_csuite")
+    csuite_raw = await _q(csuite_prompt, "sovereign_evo_csuite", user_text=(req.focus or None))
 
     # Merge verdicts back onto directives (best-effort title match)
     verdicts: Dict[str, Dict[str, str]] = {}
@@ -317,7 +317,7 @@ async def run_cycle(req: CycleRequest):
         "  - NOW (this cycle): items\n  - NEXT: items\n  - LATER: items\n"
         "## Governance (which items must go to the Change Control Agency, and why)"
     )
-    bto_roadmap = await _q(bto_prompt, "sovereign_evo_bto")
+    bto_roadmap = await _q(bto_prompt, "sovereign_evo_bto", user_text=(req.focus or None))
 
     roadmap = {
         "cycle_id": cycle_id,

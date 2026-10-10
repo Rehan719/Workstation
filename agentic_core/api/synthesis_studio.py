@@ -419,7 +419,8 @@ async def spawn_vsb_entity(req: SpawnRequest, user: dict | None = Depends(get_cu
 
     # §17.5 invariant 1 (W343, FU-276) — the caller's identity reaches the memory layer, or what they asked for is stored where even they cannot recall it.
     _owner_id = user.get("username") if isinstance(user, dict) else None
-    _vs = await gateway.query_meta(prompt, agent="vsb_spawner", augment=False, owner_id=_owner_id)
+    _vs = await gateway.query_meta(prompt, agent="vsb_spawner", augment=False, owner_id=_owner_id,   # W651 (FU-675)
+                                   user_text=(chr(10).join(x for x in (req.solution_name, req.challenge) if x) or None))
     structure = _vs.get("output", "")
 
     entity = {

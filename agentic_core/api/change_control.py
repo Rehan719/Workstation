@@ -1340,6 +1340,14 @@ async def get_change(cca_id: str):
             "awaiting_board_ratification": awaiting_board_ratification(c)}
 
 
+def _change_said(change: dict) -> str | None:
+    """W651 (FU-675) - the words a PERSON wrote on this change: its title and its description. The prompts
+    built around a change also carry system names, organism readings and instructions; none of that is
+    theirs, and the floor attributes to the proposer only what this returns. None when both are empty."""
+    said = [str(change.get(k) or "").strip() for k in ("title", "description")]
+    return chr(10).join(x for x in said if x) or None
+
+
 async def _twin_prevalidate(change: dict) -> dict:
     """§17.5 invariant — pre-validation before a MAJOR change (HIGH/CRITICAL). There is no registered
     twin model: the serving resource is ASKED to forward-simulate the change over the live organism
@@ -1369,7 +1377,8 @@ async def _twin_prevalidate(change: dict) -> dict:
     try:
         # W506 (P2.2) - the pre-validation names the resource that ran it, beside the source label W459
         # already records. A verdict whose origin is unnamed is what the 17.5 invariant reads as holding.
-        _tr = await gateway.query_meta(prompt, agent="cca_twin_prevalidation", timeout=25, augment=False)
+        _tr = await gateway.query_meta(prompt, agent="cca_twin_prevalidation", timeout=25, augment=False,
+                                       user_text=_change_said(change))   # W651 (FU-675)
         sim = _tr.get("output", "")
         _twin_served = _tr.get("served_by")
     except Exception as e:
@@ -1575,7 +1584,8 @@ async def review_change(cca_id: str, req: ReviewDecision,
         # inherited default is exactly what let that go unnoticed for 29 sites.
         # §17.5 invariant 1 (W343, FU-276) — the caller's identity reaches the memory layer, or what they asked for is stored where even they cannot recall it.
         _owner_id = user.get("username") if isinstance(user, dict) else None
-        _rv = await gateway.query_meta(prompt, agent="cca_review", augment=False, owner_id=_owner_id)
+        _rv = await gateway.query_meta(prompt, agent="cca_review", augment=False, owner_id=_owner_id,
+                                       user_text=_change_said(c))   # W651 (FU-675)
         review_text = _rv.get("output", "")
         _served = str(_rv.get("served_by") or "unknown")
         # the GATEWAY's own floor test, which imports the engine's declared name instead of matching a
@@ -2094,7 +2104,8 @@ async def impact_assessment(cca_id: str):
         f"## Recommended Implementation Window (best time relative to circadian cycle)\n"
     )
     # W506 (P2.2)
-    _ia = await gateway.query_meta(prompt, agent="cca_impact", augment=False)
+    _ia = await gateway.query_meta(prompt, agent="cca_impact", augment=False,   # W651 (FU-675)
+                                   user_text=_change_said(c))
     assessment = _ia.get("output", "")
     biobus.fire_signal("cognitive", "cca.impact", f"Impact assessed: {c['title']}", 0.4)
     return {"cca_id": cca_id, "assessment": assessment, "organism_mode": ctx["mode"]}

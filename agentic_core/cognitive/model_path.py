@@ -91,7 +91,8 @@ async def serve(engine: str, prompt: str, *, risk: str = "normal",
     try:
         from agentic_core.api._ai_provenance import ai_text
         text, served = await ai_text(prompt, agent=f"cognitive_{engine}", owner_id=owner_id,
-                                     augment=False)
+                                     augment=False,
+                                     user_text=(prompt or None))   # W651 (FU-675) - the engine is handed the person's query
         prov["served_by"] = served.get("served_by")
         prov["is_external"] = bool(served.get("is_external"))
         prov["basis"] = (

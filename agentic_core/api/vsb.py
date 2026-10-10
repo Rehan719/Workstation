@@ -910,7 +910,8 @@ async def generate_vsb_website(vsb_id: str, user: dict | None = Depends(get_curr
     async def _public_copy(prompt: str, kind: str, one_line: bool = False) -> str:
         # §17.5 invariant 1 (W343, FU-276) — the caller's identity reaches the memory layer, or what they asked for is stored where even they cannot recall it.
         _owner_id = user.get("username") if isinstance(user, dict) else None
-        m = await gateway.query_meta(prompt, agent="vsb-website", augment=False, owner_id=_owner_id)   # W332 — no cross-request recall
+        m = await gateway.query_meta(prompt, agent="vsb-website", augment=False, owner_id=_owner_id,   # W332 — no cross-request recall
+                                     user_text=(challenge or None))   # W651 (FU-675) - what the founder wrote
         sb = m.get("served_by", "native")
         prov["served_by"][sb] = prov["served_by"].get(sb, 0) + 1
         prov["any_external"] = prov["any_external"] or bool(m.get("is_external"))
@@ -1563,7 +1564,7 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
         f"{commercial[:400]}.\n\nProduce a concise board pack:\n## Executive Summary\n## Strategic Position\n"
         "## Action Priorities (this period)\n## Key Risks\n## Recommendation",
         agent="vsb-board-pack", augment=False,   # W332 — persisted board pack: no cross-request recall
-        owner_id=_owner_id)
+        owner_id=_owner_id, user_text=(str(vsb.get("challenge") or "") or None))   # W651 (FU-675)
     sb = meta.get("served_by", "native")
     prov["served_by"][sb] = prov["served_by"].get(sb, 0) + 1
     prov["any_external"] = bool(meta.get("is_external"))
@@ -2582,7 +2583,8 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
         try:
             # §17.5 invariant 1 (W343, FU-276) — the caller's identity reaches the memory layer, or what they asked for is stored where even they cannot recall it.
             _owner_id = user.get("username") if isinstance(user, dict) else None
-            _cm = await gateway.query_meta(ceo_prompt, agent="vsb_ceo", augment=False, owner_id=_owner_id)   # W332 — no cross-request recall
+            _cm = await gateway.query_meta(ceo_prompt, agent="vsb_ceo", augment=False, owner_id=_owner_id,   # W332 — no cross-request recall
+                                           user_text=(req.challenge or None))   # W651 (FU-675)
             _csb = _cm.get("served_by", "native")
             _spawn_prov["served_by"][_csb] = 1
             _spawn_prov["served_by_agent"] = {"vsb_ceo": _csb}
@@ -2972,7 +2974,8 @@ async def evolve_vsb(vsb_id: str, req: EvolveRequest, user: dict | None = Depend
     # this output drives PERSISTED mutations, so it must carry no cross-request recall.
     # §17.5 invariant 1 (W343, FU-276) — the caller's identity reaches the memory layer, or what they asked for is stored where even they cannot recall it.
     _owner_id = user.get("username") if isinstance(user, dict) else None
-    _vr = await gateway.query_meta(prompt, agent=f"vsb_evolution_{vsb_id}", augment=False, owner_id=_owner_id)
+    _vr = await gateway.query_meta(prompt, agent=f"vsb_evolution_{vsb_id}", augment=False, owner_id=_owner_id,
+                                   user_text=(req.context or None))   # W651 (FU-675) - only the context is typed here
     raw = _vr.get("output", "")
     _evo_served, _evo_ext = _vr.get("served_by"), bool(_vr.get("is_external"))
     proposals = []

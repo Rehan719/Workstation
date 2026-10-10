@@ -58,7 +58,8 @@ async def horizon_observe(req: ObserveRequest,
     text, prov, failed = "", {}, False
     try:
         text, prov = await ai_text(_COMPRESS_PROMPT + req.raw_text,
-                                   agent="horizon_compress", owner_id=_uid, augment=False)
+                                   agent="horizon_compress", owner_id=_uid, augment=False,
+                                   user_text=(req.raw_text or None))   # W651 (FU-675)
         failed = not str(text or "").strip()
     except Exception as e:                       # noqa: BLE001 — a failed call is not a compression
         failed, text = True, ""

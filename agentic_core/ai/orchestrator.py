@@ -23,7 +23,7 @@ class CrewManager:
         # P2.2 (W511) — the recall decision STATED. An agent-role prompt carries its own role and task;
         # there is no user context to recall, and a call that does not say leaves the next reader to look
         # up a default that has already changed once (W489).
-        response = await gateway.query(prompt, augment=False)
+        response = await gateway.query(prompt, augment=False, user_text=(task or None))   # W651 (FU-675)
 
         return {
             "agent": agent_role,

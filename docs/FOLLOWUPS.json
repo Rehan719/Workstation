@@ -12990,11 +12990,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W651",
       "note": "",
       "slot_source": "the remainder of the mechanism P2.34's wrapper-as-request findings are closed by",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Every call into the gateway now either says which text the person wrote or is named, by file and function, with the reason no person's text exists there: 98 calls say, 8 are named. A silent call that is not named fails the guard, and so does a name whose site has changed. A second guard drives three tools and reads what reached the gateway, because a helper that accepts the person's words counts as saying whether or not a caller hands them over. Two helpers nothing called were removed from the business-plan module."
     },
     {
       "id": "FU-676",
@@ -13146,11 +13149,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.35",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W651",
       "note": "",
       "slot_source": "an invisible shortfall left by a tier-1 row's fix",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The three fabric stages that reach the orchestrator directly (the orchestrator stage, the twin stage and the swarm stage) run the pre-gate a gateway call runs and carry the same checkpoint. A refused stage does not call the orchestrator and reports a constitutional refusal as its error. NOT DONE: the vision's wording that describes the twin stage as a simulator is unchanged."
     },
     {
       "id": "FU-684",
@@ -13200,11 +13206,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.35",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W651",
       "note": "",
       "slot_source": "an invisible shortfall left by a tier-1 row's fix",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The Chief's answer now says how many objectives the AI CEO's plan itself yielded and whether the instruction was filed as one objective in its place. The unprompted directive carries filed_as_fallback and its basis says which happened; it no longer says it executes when only the instruction was filed. `executed` keeps its meaning (an objective reached the living plan)."
     },
     {
       "id": "FU-687",

@@ -563,6 +563,24 @@ def _cfg_num(v, default, cast=int):
         return default
 
 
+def _stage_pre_gate(rid: str, agent: str) -> Optional[Dict[str, Any]]:
+    """W651 (FU-683) - a stage that reaches the orchestrator directly runs the gate a gateway call would.
+    None when allowed. When refused: the stage's result, carrying the halt record - an `error`, so the fabric
+    reports the stage as not run rather than as a stage that produced an empty output."""
+    from agentic_core.ai.gateway import console_pre_gate
+    halt = console_pre_gate(agent)
+    if not halt:
+        return None
+    return {"resource": rid, "governance_checkpoint": halt,
+            "error": f"constitutional refusal: {str(halt.get('refused_reason') or 'refused by the policy gate')[:120]}"}
+
+
+def _stage_checkpoint(agent: str, output) -> Dict[str, Any]:
+    """...and the checkpoint such a completion carries, recorded as the console's is."""
+    from agentic_core.ai.gateway import console_post_gate
+    return console_post_gate(agent, str(output or ""))
+
+
 async def _run_real_resource_handler(rid: str, config: dict, objective: str, domain: str) -> Optional[Dict[str, Any]]:
     """§7 deep integration — invoke a composed resource's REAL endpoint logic (not a prompt approximation),
     built from the user's reconfigured params, so a committed composition runs the ACTUAL engines/resources.
@@ -921,6 +939,10 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
                                          default=str)[:500]}
         if rid == "native_orchestrator":
             from agentic_core.ai.native import orchestrator
+            _agent651 = str(cfg.get("agent") or "fabric-composition")
+            _halt651 = _stage_pre_gate("native_orchestrator", _agent651)      # W651 (FU-683)
+            if _halt651:
+                return _halt651
             res = await orchestrator.complete(str(cfg.get("prompt") or objective),
                                               agent=str(cfg.get("agent") or "fabric-composition"),
                                               prefer_external=bool(cfg.get("prefer_external", False)),
@@ -929,6 +951,7 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
                                               #  design prompt is not passed off as theirs
                                               user_text=(objective or None))
             return {"resource": "native_orchestrator", "ran": "/api/v1/native-ai/complete",
+                    "governance_checkpoint": _stage_checkpoint(_agent651, res.get("output")),
                     "served_by": res.get("served_by"), "is_external": res.get("is_external"),
                     "output": (res.get("output") or "")[:600]}
         if rid == "native_ensemble":
@@ -1023,10 +1046,15 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
             prompt = (f"You are a digital-twin simulator. System under twin: {system} (domain {domain}). "
                       f"Forward-simulate the scenario: {scenario}.\n## State Trajectory (t0→tN)\n"
                       "## Emergent Behaviour\n## Stress / Failure Points\n## Recommended Setpoints")
+            _halt651 = _stage_pre_gate("digital_twin", "digital-twin")      # W651 (FU-683)
+            if _halt651:
+                return _halt651
             res = await orchestrator.complete(prompt, agent="digital-twin",
-                                              prefer=str(cfg.get("model") or "auto"))
+                                              prefer=str(cfg.get("model") or "auto"),
+                                              user_text=(objective or None))   # W651 (FU-675)
             #  W645 (FU-644) - no "ran": the twin's own route is not called here, so it is not named as run
             return {"resource": "digital_twin", "served_by": res.get("served_by"),
+                    "governance_checkpoint": _stage_checkpoint("digital-twin", res.get("output")),
                     "invoked": "orchestrator.complete with a simulator persona - /api/v1/twin/simulate was NOT called",
                     "is_external": bool(res.get("is_external")), "scenario": scenario,
                     "output": (res.get("output") or "")[:600]}
@@ -1080,12 +1108,18 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
                 stages = [s if isinstance(s, dict) else {"role": "stage", "instruction": str(s)} for s in raw]
             else:
                 stages = [{"role": "synthesist", "instruction": f"Advance the objective: {objective}"}]
+            _agent651 = str(cfg.get("agent") or "fabric-swarm")
+            _halt651 = _stage_pre_gate("native_swarm", _agent651)      # W651 (FU-683)
+            if _halt651:
+                return _halt651
             res = await orchestrator.swarm(str(cfg.get("agent") or "fabric-swarm"), stages,
-                                           context=str(cfg.get("context") or objective))
+                                           context=str(cfg.get("context") or objective),
+                                           user_text=(objective or None))
             # W509 (FU-009) — third site of the same credit: stage one stood for the whole nested
             # cascade, and this return feeds the fabric_resource outcome row that routing reads.
             _sb = [str(t.get("served_by")) for t in (res.get("trace") or []) if t.get("served_by")]
             return {"resource": "native_swarm", "ran": "/api/v1/resources/swarm/run",
+                    "governance_checkpoint": _stage_checkpoint(_agent651, res.get("final")),
                     "stages_run": len(stages), "served_by": (_sb[0] if _sb else "native"),
                     "served_by_all": sorted(set(_sb)) or None,
                     "output": (res.get("final") or "")[:600]}
