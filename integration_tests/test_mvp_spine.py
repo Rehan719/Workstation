@@ -50165,6 +50165,14 @@ def test_w651_a_fabric_stage_runs_the_gate_and_a_fallback_objective_is_called_on
     assert _fj["objectives_added"] == 1 and _fj["objectives_parsed"] == 0 and _fj["objectives_fallback"] is True, (
         "an instruction filed in place of a plan is not reported as a fallback",
         {k: _fj.get(k) for k in ("objectives_added", "objectives_parsed", "objectives_fallback")})
+    #  W661 - the objective the instruction above filed is FINISHED first. Left open, the unprompted directive
+    #  would restate the same instruction and (rightly, since W661) file nothing: the second filing this leg
+    #  used to assert was the duplicate ledger v15 found. A finished objective does not block a fresh one.
+    from agentic_core.api import business_plan as _bp661m
+    _pl661 = _bp661m._load("w651-fallback")
+    for _o661 in _pl661.get("objectives", []):
+        _o661["status"] = "done"
+    _bp661m._save(_pl661)
     _u = asyncio.run(_b.twin_directive_unprompted("w651-fallback"))
     assert _u["issued"] is True, _u
     assert _u["filed_as_fallback"] is True and "ONE fallback objective" in _u["basis"], (
@@ -51670,3 +51678,184 @@ def test_w660_the_minimisation_status_says_one_thing_about_its_solver_and_the_le
     assert "MINIMUM to erase 800" not in _eb, "the ledger still says the bits were erased"
     _op2 = _led.meter_operation("w660-probe-2", bits=8.0)
     assert "no account of it was given" in _op2["energy_basis"], _op2["energy_basis"]
+
+
+def test_w661_a_chief_is_prompted_with_its_own_record_files_an_instruction_once_and_a_decision_names_who(client, monkeypatch):
+    """Ledger v15, three rows about the Board and the Chief.
+
+    (1) FU-708  A VSB's Chief was PROMPTED with every scope's instructions: the page showing its model counted
+        only its own, and the text it was actually handed did not. The floor does not interpret a prompt, so
+        nothing shows in floor output; this reads the PROMPT.
+    (2) FU-706  The unprompted directive restated the Owner's last instruction and it was filed as a second,
+        identical objective. An instruction already standing as an open objective is not filed again; a
+        finished one does not block a fresh instruction; the answer says which objective already records it.
+    (3) FU-711  A "human review" gate decision recorded no reviewer and named its author 'human-reviewer'
+        whoever called. The decision records who decided, or that nobody could be identified; an undeclared
+        field is refused, not dropped.
+    """
+    import ast as _ast
+    import asyncio as _aio
+    import pathlib as _pl
+    import uuid as _uuid
+    import agentic_core.api.board as _b
+    from agentic_core.api import business_plan as _bp
+    _tag = _uuid.uuid4().hex[:6]
+    _a, _c = f"w661-a-{_tag}", f"w661-c-{_tag}"
+    _ia = f"Scope A only {_tag}: open a counter at the school"
+    _ic = f"Scope C only {_tag}: buy a second oven"
+    _iw = f"Apex only {_tag}: publish the annual review"
+
+    # ── (1) the prompt carries this scope's instructions and no other's ──────────────────────────────
+    for _scope, _text in ((_c, _ic), ("workstation", _iw), (_a, _ia)):
+        _r = client.post("/api/v1/board/chief/instruct", json={"instruction": _text, "scope": _scope,
+                                                               "cascade_to_ceo": False})
+        assert _r.status_code == 200, _r.text[:300]
+    _seen = []
+    _real_q = _b._q
+
+    async def _spy(prompt, agent, provenance, *a, **k):
+        _seen.append((agent, prompt))
+        return await _real_q(prompt, agent, provenance, *a, **k)
+    monkeypatch.setattr(_b, "_q", _spy)
+    _r = client.post("/api/v1/board/chief/instruct", json={"instruction": f"Second for A {_tag}: hire a baker",
+                                                           "scope": _a, "cascade_to_ceo": False})
+    assert _r.status_code == 200, _r.text[:300]
+    _chief = [p for ag, p in _seen if "chief" in str(ag)]
+    assert _chief, ("no Chief prompt was captured - the spy is on the wrong seam", [ag for ag, _ in _seen])
+    assert _ia in _chief[0], "the Chief for scope A was not handed scope A's own earlier instruction"
+    assert _ic not in _chief[0] and _iw not in _chief[0], (
+        "a VSB's Chief was prompted with another scope's instructions", [t for t in (_ic, _iw) if t in _chief[0]])
+    monkeypatch.setattr(_b, "_q", _real_q)
+    assert _iw in _b.founder_profile("workstation") and _ia not in _b.founder_profile("workstation")
+    #  the untouched caller: nothing in the tree builds the profile with no scope at all
+    _bare = []
+    for _f in (_pl.Path(__file__).resolve().parents[1] / "agentic_core").rglob("*.py"):
+        for _n in _ast.walk(_ast.parse(_f.read_text(encoding="utf-8"))):
+            if (isinstance(_n, _ast.Call) and getattr(_n.func, "id", getattr(_n.func, "attr", "")) in
+                    ("founder_profile", "_founder_profile") and not _n.args and not _n.keywords):
+                _bare.append((_f.name, _n.lineno))
+    assert not _bare, ("the founder profile is built with no scope, so it carries every scope's record", _bare)
+
+    # ── (2) the same instruction is filed once ───────────────────────────────────────────────────────
+    _s = f"w661-dup-{_tag}"
+    _said = f"Open a second counter {_tag}"
+
+    def _instruct():
+        _r = client.post("/api/v1/board/chief/instruct", json={"instruction": _said, "scope": _s})
+        assert _r.status_code == 200, _r.text[:300]
+        return _r.json()
+
+    def _fallbacks():
+        return [o for o in _bp._load(_s).get("objectives", []) if o.get("source") == "chief_instruct_fallback"]
+    _first = _instruct()
+    assert _first["objectives_added"] == 1 and _first["objectives_fallback"] is True, _first
+    _again = _instruct()
+    assert _again["objectives_added"] == 0 and len(_fallbacks()) == 1, (
+        "the same instruction was filed as a second objective", _again.get("objectives_added"), len(_fallbacks()))
+    assert _fallbacks()[0]["id"] in str(_again.get("objectives_not_added_reason")), _again.get("objectives_not_added_reason")
+    _u = _aio.run(_b.twin_directive_unprompted(_s))
+    assert _u["issued"] is True and _u["objectives_added"] == 0 and _u["executed"] is False, _u
+    assert "already stands" in _u["basis"] and len(_fallbacks()) == 1, _u["basis"]
+    #  a DIFFERENT instruction is filed; and a FINISHED objective does not block the same words again
+    _other = client.post("/api/v1/board/chief/instruct", json={"instruction": f"Buy flour {_tag}", "scope": _s}).json()
+    assert _other["objectives_added"] == 1, _other
+    _plan = _bp._load(_s)
+    for _o in _plan["objectives"]:
+        _o["status"] = "done"
+    _bp._save(_plan)
+    assert _instruct()["objectives_added"] == 1, "a finished objective blocked a fresh instruction"
+
+    # ── (3) a gate decision names who decided, and an undeclared field is refused ────────────────────
+    _est = client.post("/api/v1/genesis/establish", json={"problem": f"w661 gate bakery {_tag}", "domain": "enterprise",
+                                                          "name": f"W661 Gate {_tag}", "ship_output": False})
+    assert _est.status_code == 200, _est.text[:300]
+    _vid = _est.json()["vsb_id"]
+    assert client.post(f"/api/v1/vsb/{_vid}/review-gates", json={"stages": ["design"]}).status_code == 200
+    _bad = client.post(f"/api/v1/vsb/{_vid}/review-gates/design/decision",
+                       json={"decision": "approve", "note": "ok", "reviewer": "an automated caller"})
+    assert _bad.status_code == 422, ("an undeclared field was accepted and dropped", _bad.status_code)
+    assert client.get(f"/api/v1/vsb/{_vid}/review-gates/design").json()["status"] == "pending", (
+        "a refused decision changed the gate")
+    _ok = client.post(f"/api/v1/vsb/{_vid}/review-gates/design/decision", json={"decision": "approve", "note": "ok"})
+    assert _ok.status_code == 200, _ok.text[:300]
+    from agentic_core.api.vsb import _load_vsb as _lv661
+    _dec = ((_lv661(_vid) or {}).get("review_gates") or {}).get("decisions", {}).get("design") or {}
+    assert _dec.get("decided_by") and _dec.get("decided_by_source"), ("the decision records nobody", _dec)
+    assert "human" not in str(_dec["decided_by"]).lower(), (
+        "with authentication off the record claims a human it cannot identify", _dec["decided_by"])
+    assert "not identified" in _dec["decided_by"], _dec["decided_by"]
+
+
+def test_w661_a_pack_carries_what_the_owner_wrote_and_counts_of_now(client):
+    """Ledger v15 (FU-705, FU-710). The Board Pack's strategic layer is the last APPLIED cadence refresh; once
+    the Owner edits a field the cadence only proposes, so the pack kept a derived sentence from before the
+    edit, omitted the Strategy the Owner wrote, counted an earlier day's objectives and called itself unchanged.
+    And the action-plan sentence carried no date although it can stand for seven days.
+
+    THE INVARIANT: a pack assembled after an Owner's edit shows the Owner's words, says when the derived
+    sentence predates them, counts the plan as it is now, and is a different pack; and both derived sentences
+    say when they were derived.
+    """
+    import uuid as _uuid
+    from agentic_core.api import business_plan as _bp
+    _tag = _uuid.uuid4().hex[:6]
+    _est = client.post("/api/v1/genesis/establish", json={"problem": f"w661 pack bakery {_tag}", "domain": "enterprise",
+                                                          "name": f"W661 Pack {_tag}", "ship_output": False})
+    assert _est.status_code == 200, _est.text[:300]
+    _vid = _est.json()["vsb_id"]
+    for _layer in ("strategic", "action_plan"):
+        _r = client.post(f"/api/v1/organism/cadence/refresh?layer={_layer}&scope={_vid}&force=true")
+        assert _r.status_code == 200, (_layer, _r.status_code, _r.text[:300])
+
+    def _pack():
+        _p = client.post(f"/api/v1/vsb/{_vid}/board-pack")
+        assert _p.status_code == 200, _p.text[:300]
+        _j = _p.json()
+        return _j.get("pack") or _j
+    _before = _pack()
+    _sb = _before["layers"]["strategic"]
+    assert "owner_written" not in _sb, "a layer says the Owner wrote something before the Owner wrote anything"
+    assert str(_before["layers"]["action_plan"].get("content") or "").startswith("[as of "), (
+        "the action-plan sentence is undated", _before["layers"]["action_plan"].get("content"))
+
+    _mine = f"Sell bread to the school first, the market second ({_tag})."
+    _s = client.post("/api/v1/business-plan/set", json={"scope": _vid, "strategy": _mine})
+    assert _s.status_code == 200, _s.text[:300]
+    _o = client.post("/api/v1/business-plan/objective", json={"scope": _vid, "title": f"Sign the school contract {_tag}"})
+    assert _o.status_code == 200, _o.text[:300]
+    _plan = _bp._load(_vid)
+    _n_all = len([x for x in _plan.get("objectives") or [] if isinstance(x, dict)])
+    _n_open = len([x for x in _plan.get("objectives") or [] if isinstance(x, dict) and x.get("status") != "done"])
+
+    _after = _pack()
+    _sa, _aa = _after["layers"]["strategic"], _after["layers"]["action_plan"]
+    assert (_sa.get("owner_written") or {}).get("strategy", {}).get("text") == _mine, (
+        "the Strategy the Owner wrote is not in the pack", sorted(_sa))
+    assert _sa["owner_written"]["strategy"].get("edited_at"), _sa["owner_written"]
+    assert "BEFORE the Owner's edit of strategy" in _sa["basis"], (
+        "the layer does not say its derived sentence predates the Owner's edit", _sa["basis"][:300])
+    assert _sa["objectives_on_plan_now"] == _n_all and _aa["open_objectives_now"] == _n_open, (
+        "the pack's counts are not the plan's", _sa.get("objectives_on_plan_now"), _n_all,
+        _aa.get("open_objectives_now"), _n_open)
+    assert _after["content_hash"] != _before["content_hash"], (
+        "the pack reports itself unchanged across the Owner's edit")
+    #  the page's layer chips read layers_state: the Owner's-words sentence reaches it there
+    assert "THE OWNER WROTE" in str((_after.get("layers_state") or {}).get("strategic", {}).get("basis")), (
+        _after.get("layers_state"))
+
+    #  FU-707 - THE COCKPIT SHOWS THE REASONS THE BOARD PAGE SHOWS (source legs: gated on the field, printing it).
+    #  The response it reads carries all three on the floor, driven here so the page has something to show.
+    _ci = client.post("/api/v1/board/chief/instruct", json={"instruction": f"Open on Saturdays {_tag}", "scope": _vid})
+    assert _ci.status_code == 200, _ci.text[:300]
+    _cj = _ci.json()
+    assert _cj.get("directive_reason") and _cj.get("ceo_plan_reason") and _cj.get("objectives_fallback") is True, (
+        {k: _cj.get(k) for k in ("directive_reason", "ceo_plan_reason", "objectives_fallback")})
+    import pathlib as _pl661
+    _ck = _code_only((_pl661.Path(__file__).resolve().parents[1]
+                      / "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8"))
+    for _tid, _field in (("cockpit-directive-reason", "directive_reason"), ("cockpit-ceo-plan-reason", "ceo_plan_reason"),
+                         ("cockpit-objectives-fallback", "objectives_fallback")):
+        _i = _ck.find('data-testid="' + _tid + '"')
+        assert _i > 0, (_tid, "the Cockpit does not render it")
+        assert _field in _ck[_i - 220:_i + 260], (_tid, "the line is not tied to the field the response carries")
+    assert "lands as objectives on THIS" not in _ck, "the Cockpit still promises a plan before one exists"

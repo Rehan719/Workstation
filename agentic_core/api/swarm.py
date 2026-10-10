@@ -528,7 +528,7 @@ async def cascade_orchestration(req: CascadeRequest,
     # §5 (W281) — the cascade's Chief reasons AS the founder's lived record, not a generic twin.
     try:
         from agentic_core.api.board import founder_profile as _founder_profile
-        _founder_ctx = _founder_profile()
+        _founder_ctx = _founder_profile(req.scope)      # W661 (ledger v15 FU-708) - this entity's Chief, this entity's record
     except Exception:
         _founder_ctx = ""
     chief_prompt = (

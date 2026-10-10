@@ -13598,11 +13598,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.37",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W661",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v15 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The Board Pack's strategic layer carries what the Owner wrote on the plan, each field with the time of the edit; its basis says when the derived sentence was composed before an edit; it states how many objectives the plan holds now. The layer is inside what the pack hashes, so a pack assembled after an Owner's edit is a different pack."
     },
     {
       "id": "FU-706",
@@ -13617,11 +13620,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.37",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W661",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v15 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "An instruction already standing on the plan as an open fallback objective is not filed a second time; the answer names the objective that records it, and the unprompted directive's record carries that reason beside objectives_added 0. A finished objective does not block the same words again, and a different instruction is filed. Only the fallback objective is de-duplicated: a plan's own steps are never dropped."
     },
     {
       "id": "FU-707",
@@ -13633,11 +13639,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.37",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W661",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v15 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The Cockpit renders the directive's reason and the AI CEO plan's reason, and says 'your instruction was recorded as ONE objective in place of a plan' when that is what happened; its placeholder no longer promises a plan. Checked from source and on a scratch backend's response."
     },
     {
       "id": "FU-708",
@@ -13651,11 +13660,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.37",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W661",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v15 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The Chief's prompt is built for the scope it acts for, at BOTH places it is assembled: the founder profile (which called the founder model with no scope) and the live-intelligence block, which listed the last two directives of every scope and was found by the guard's own spy on the prompt. A syntax walk fails a call that builds the profile with no scope. NOT DONE: the owner half under authentication (the principal is stamped after the prompt is built); the apex board status still lists the last five directives of every scope, which is the apex's own view."
     },
     {
       "id": "FU-709",
@@ -13688,11 +13700,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.37",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W661",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v15 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The action-plan sentence is dated like the strategic one, and the pack's action-plan layer states the open objectives now beside it. NOT DONE: the plan page itself does not render this field."
     },
     {
       "id": "FU-711",
@@ -13706,11 +13721,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.37",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W661",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v15 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A gate decision records who decided: the authenticated principal, or - with authentication off - that nobody could be identified, never the word 'human'. The controlled document is written under the same name. An undeclared field on the request is refused (422) and the gate is unchanged. NOT DRIVEN with authentication on."
     },
     {
       "id": "FU-712",
