@@ -1147,7 +1147,9 @@ async def qep_status():
         "platform": "Quran Education Platform (QEP)",
         "components": {
             "hifz_sm2": f"active — MemorizationEngine (real SM-2); {hifz_users} learner record(s)",
-            "tajweed": ("text tools only — written-recall comparison + AI-assisted lesson outlines; "
+            #  W656 (ledger v15 R1.3) - outlines are composed and WITHHELD (A.12.3); this said they were a live tool
+            "tajweed": ("text tools only — written-recall comparison is live; lesson outlines are composed "
+                        "and withheld until a named scholar approves them; "
                         "NO recitation assessment (no phonetic model is provisioned)"),
             "gamification": f"active — persisted award store; {learners} learner record(s)",
             "quran_text": ("external source (alquran.cloud, constitutional) — fetched on demand, "

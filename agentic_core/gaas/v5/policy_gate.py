@@ -38,6 +38,11 @@ _PROHIBITED_INTENTS = {
 #  account", "turn off the constitution") expresses a prohibited act in words this screen does not
 #  model, and widening it to prose would mean writing a language model as a regex. Those belong to a
 #  screen that reads prose; this one says it did not read it.
+_OUTPUT_COVERAGE_LIMIT = (
+    "screened for a small set of unsafe payload patterns only (a destructive shell command, DROP / "
+    "TRUNCATE, an unbounded DELETE, a private-key header). `compliant` means none of those matched. It is "
+    "NOT an assessment of the output against the constitution, the law or any framework."
+)
 _COVERAGE_LIMIT = (
     "matches tokens inside an intent LABEL after normalising separators and case. A free-prose "
     "sentence of intent is NOT reliably screened here: `allowed: True` from this gate means no "
@@ -122,7 +127,11 @@ class ConstitutionalPolicyGate:
         """Post-execution gate. Returns ``{compliant, violations}``."""
         text = output if isinstance(output, str) else str(output)
         match = _UNSAFE_OUTPUT.search(text)
+        #  W656 (ledger v15 R6.4) - A PASS SAYS WHAT IT SCREENED, as the pre-gate's has since W580. `compliant`
+        #  keeps its meaning for its readers; these two say how narrow the check behind it is.
         if match:
             return {"compliant": False,
-                    "violations": [f"Unsafe pattern detected in output: '{match.group(0).strip()}'"]}
-        return {"compliant": True, "violations": []}
+                    "violations": [f"Unsafe pattern detected in output: '{match.group(0).strip()}'"],
+                    "screened": "unsafe_payload_patterns", "coverage_limit": _OUTPUT_COVERAGE_LIMIT}
+        return {"compliant": True, "violations": [],
+                "screened": "unsafe_payload_patterns", "coverage_limit": _OUTPUT_COVERAGE_LIMIT}

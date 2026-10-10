@@ -186,9 +186,9 @@ const TajwidCoach = () => {
                 violations that were written into the page as literals.
              </p>
              <p className="text-xs text-aura font-semibold leading-relaxed mt-4">
-                What IS live (W439): written-text tools in the Memorization tab — a written-recall
-                check against the authentic text, and AI-assisted lesson outlines with their
-                serving provenance labelled. Neither claims anything about your recitation.
+                What IS live: a written-recall check against the authentic text, in the Memorization
+                tab. Lesson outlines are composed and then WITHHELD: nothing is shown until a named scholar
+                has approved it. Neither claims anything about your recitation.
              </p>
           </Card>
        </div>

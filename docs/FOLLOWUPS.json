@@ -13324,11 +13324,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.36",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W656",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v15 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The translation card says a translation of the meanings comes from a named, sourced edition shown beside the verse, and its box asks for non-Arabic text. The coach panel and the status route say lesson outlines are composed and withheld until a named scholar approves; the guard drives the lesson route and reads that it withholds."
     },
     {
       "id": "FU-693",
@@ -13443,11 +13446,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.36",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W656",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v15 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Establishment's seeded summary and vision say what the entity was established to do; they no longer say living or self-running (both writers). The roster row keeps its word 'living', which means registered there, and gains the entity's own derived status and a sentence saying which is which. A plan seeded before this keeps its stored sentences."
     },
     {
       "id": "FU-700",
@@ -13459,11 +13465,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.36",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W656",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v15 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A cycle run by establishment is recorded as establishment's: the roster row counts it separately and its basis says so, and the Cockpit no longer credits every counted cycle to the autonomous roster."
     },
     {
       "id": "FU-701",
@@ -13475,11 +13484,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.36",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W656",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v15 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The four surface writers write exactly the bytes they count. On Windows they wrote in text mode, which turned each newline into CR LF, so a file was larger than the size recorded for it. Generated files are LF on every platform now. A body already shipped keeps its files and figures until it is regenerated."
     },
     {
       "id": "FU-702",
@@ -13493,11 +13505,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.36",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W656",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v15 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The header names what Change Control governs and says the heartbeat's levers are set directly (W655). As the Owner ruled, each lever change now writes one audit-log entry: the lever, its old and new value, and who. An unchanged value writes nothing. No gate was added."
     },
     {
       "id": "FU-703",
@@ -13509,11 +13524,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.36",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W656",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v15 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The pack itself is placed under document control: its content hash and version, under its entity. Packs of different entities and different versions carry different hashes; an unchanged pack keeps the hash its version was registered with. The narrative's quality-record hash has its own field. An older pack is shown as 'narrative record only'."
     },
     {
       "id": "FU-704",
@@ -13665,11 +13683,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.36",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W656",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v15 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The catalogue description says a composed twin writes a scenario narrative and that no simulator or engine runs. The design preview lists it as running no engine before the run. The run card has its own chip for a narrated resource instead of falling to the emerald 'ran', and the heading counts it."
     },
     {
       "id": "FU-713",
@@ -14028,11 +14049,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.36",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W656",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v15 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The post-check's answer, every completion's checkpoint and the chained event carry what was screened (a small set of unsafe payload patterns) and a sentence saying that is not an assessment against the constitution or any framework. `compliant` keeps its meaning. NOT DONE: 37 of 64 API modules gated is unchanged and is stated by the platform's own count."
     },
     {
       "id": "FU-732",

@@ -134,6 +134,7 @@ const railState = (key: string | null, r: JourneyResult | null): RailState => {
 
 interface BoardPack {
   vsb_id: string; name: string; kind: string; narrative: string; dcs_registered: boolean; dcs_hash?: string;
+  dcs_scope?: string; dcs_covers?: string;   // W656 (ledger v15 R3.1)
   layers: Record<string, any>;
   // W496 (FU-104) — the measured list of layers that hold anything
   layers_present?: string[];
@@ -1301,7 +1302,8 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                                   {Object.keys(pack.layers).length - (pack.layers_present ?? []).length} empty
                                 </span>
                               )}
-                              {pack.dcs_registered && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400" title={pack.dcs_hash}>DCS-registered</span>}
+                              {pack.dcs_registered && pack.dcs_scope === 'pack' && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400" title={`${pack.dcs_covers ?? ''} · ${pack.dcs_hash ?? ''}`} data-testid="pack-dcs">DCS-registered</span>}
+                              {pack.dcs_registered && pack.dcs_scope !== 'pack' && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-400" title="an older pack: only its narrative's quality record was sealed, not the pack">narrative record only</span>}
                               {pack.ai_provenance?.served_by && (() => { const b = provenanceMapBadge(pack.ai_provenance.served_by, pack.ai_provenance.any_external); return (
                                 <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title} data-testid="pack-provenance">{b.label}</span>
                               ); })()}

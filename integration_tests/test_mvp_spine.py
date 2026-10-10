@@ -16579,7 +16579,8 @@ def test_w471_board_pack_and_chiefs_opening_are_honest_both_ways(client, monkeyp
     # Genesis' name_source and pending list survive, and W450's pending marker counts as unset (fillable, pending)
     gen_scope = born2["vsb_id"]
     seeded = client.get(f"/api/v1/business-plan?scope={gen_scope}").json()
-    assert seeded["executive_summary"].startswith("W471NoConceptCo is a living VSB")   # Genesis' seed, the founder's words
+    #  W656 (ledger v15 R2.4) - the seed no longer calls the entity "living" whatever its derived status
+    assert seeded["executive_summary"].startswith("W471NoConceptCo is a VSB IDBO established to solve")   # Genesis' seed, the founder's words
     assert seeded["provenance"]["name_source"] == "founder"
     g3 = client.post("/api/v1/business-plan/generate", json={"scope": gen_scope, "context": "x"}).json()
     assert g3["written"] == []
@@ -20388,7 +20389,9 @@ def test_w491_a_count_says_what_population_it_covers(client):
     assert st2["entry_count"] > st2["cycles_posted"]
     assert "one intake entry per metabolic cycle" in st2["cycles_posted_basis"]
     lv = (root / "agentic_core/economy/living_vsbs.py").read_text(encoding="utf-8")
-    assert "cycles this autonomous roster ran and booked" in lv
+    #  W656 (ledger v15 R2.5) - the population is still named, in words that no longer credit the AUTONOMOUS beat
+    #  with a cycle establishment ran
+    assert "cycles this roster's operate step ran and booked" in lv and "but not counted here" in lv
     assert 'r["ledger_cycles"] = _st.get("cycles_posted")' in lv     # the books' count reaches the row
     assert lv.count('r["ledger_cycles_unavailable"]') == 2   # BOTH legs: a load error and a raise
     assert lv.count('r["ledger_cycles"] = None') == 2       # neither leg reports unreadable as zero
@@ -50422,3 +50425,187 @@ def test_w655_eight_sentences_that_said_more_than_happened_now_say_what_did(clie
     _musc = _q655.LAYER_STATE["Musculoskeletal"]["basis"]
     assert "EXCEPT the composed Digital Twin stage" in _musc and "runs no simulator" in _musc, (
         "the quality record still says every composable facility runs a real engine", _musc)
+
+
+def test_w656_a_record_says_what_was_checked_and_a_lever_change_is_written_down(client):
+    """Ledger v15 R6.4 and R3.0 (as the Owner ruled 2026-10-10).
+
+    THE PROPERTIES: the post-check's verdict travels with what it screened - on the validator's answer, on the
+    completion's checkpoint and on the chained event; and a change to a heartbeat lever is written to the audit
+    log with the lever, the old and new value and who, while an unchanged value writes nothing.
+    """
+    from agentic_core.gaas.v5.policy_gate import ConstitutionalPolicyGate
+    from agentic_core.organism import heartbeat as _hbm
+
+    _gate = ConstitutionalPolicyGate(domain="ai_gateway")
+    for _text, _ok in (("A rota for night-shift nurses.", True), ("then run rm -rf / on the server", False)):
+        _v = _gate.validate_output(_text)
+        assert _v["compliant"] is _ok, (_text, _v)
+        assert _v.get("screened") == "unsafe_payload_patterns", ("a verdict does not say what it screened", _v)
+        assert "NOT an assessment" in str(_v.get("coverage_limit")), _v
+
+    _c = client.post("/api/v1/native-ai/complete", json={"prompt": "Name three risks of a night rota", "agent": "w656"})
+    assert _c.status_code == 200, _c.text[:300]
+    _chk = _c.json().get("governance_checkpoint") or {}
+    assert _chk.get("post_compliant") is True and _chk.get("post_screened") == "unsafe_payload_patterns", (
+        "a completion's checkpoint says compliant without saying what was screened", _chk)
+    assert "NOT an assessment" in str(_chk.get("post_coverage_limit")), _chk
+
+    # ── the levers: set directly, and every change recorded ───────────────────────────────────────────
+    hb = _hbm.heartbeat
+    _was = hb.auto_ship
+    try:
+        _r = client.post("/api/v1/heartbeat/configure", json={"auto_ship": (not _was)})
+        assert _r.status_code == 200, _r.text[:300]
+        _j = _r.json()
+        assert _j["lever_changes"] == [{"lever": "auto_ship", "from": _was, "to": (not _was)}], _j.get("lever_changes")
+        assert _j["lever_changes_recorded"] is True, _j
+        from agentic_core.gaas.v5 import UEGLogger
+        _log = UEGLogger()
+        _entries = [e for e in _log.recent(100000) if (e.get("data") or {}).get("type") == "heartbeat.lever_changed"]
+        assert _entries, "a lever was changed and the audit log holds no entry for it"
+        _last = _entries[-1]["data"]          # a node is {id, timestamp, data, previous_hash, hash}
+        assert _last["changes"] == _j["lever_changes"] and _last.get("by"), _last
+        _n = len(_entries)
+        #  the same value again changes nothing and records nothing
+        _r2 = client.post("/api/v1/heartbeat/configure", json={"auto_ship": (not _was)}).json()
+        assert _r2["lever_changes"] == [] and _r2["lever_changes_recorded"] is None, _r2
+        assert len([e for e in _log.recent(100000)
+                    if (e.get("data") or {}).get("type") == "heartbeat.lever_changed"]) == _n, (
+            "setting a lever to the value it already had wrote an audit entry")
+    finally:
+        hb.configure(auto_ship=_was)
+    assert hb.auto_ship == _was, "the test left a lever changed"
+
+
+def test_w656_what_an_entitys_records_and_pages_say_is_what_happened(client):
+    """Ledger v15, tier 1: R2.6, R2.5, R2.4, R4.0, R1.3.
+
+    THE PROPERTIES: a manifest's byte count is the size of the file on disk, and every manifest agrees about
+    the same file; a cycle establishment ran is counted as establishment's; a plan seeded at establishment
+    does not call the entity living or self-running; a composed twin is listed as running no engine before
+    the run and labelled as a narrative after it; and two QEP sentences say what the platform does now.
+    """
+    import pathlib as _pl
+    import re
+    from agentic_core.api import vsb as _vsb
+    _src = _pl.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+
+    _e = client.post("/api/v1/genesis/establish", json={"problem": "A village bakery cooperative for the school",
+                                                        "domain": "enterprise", "name": "W656 Records Probe"})
+    assert _e.status_code == 200, _e.text[:300]
+    _vid = _e.json()["vsb_id"]
+
+    # ── R2.6 - the bytes counted are the bytes written ────────────────────────────────────────────────
+    _root = _vsb._REPO_STORE / _vid
+    _checked = 0
+    for _route in ("webapp", "mobile", "website"):
+        _g = client.post(f"/api/v1/vsb/{_vid}/{_route}")
+        assert _g.status_code == 200, (_route, _g.status_code, _g.text[:200])
+        for _f in _g.json().get("files") or []:
+            _fp = _root / _f["path"]
+            assert _fp.is_file(), (_route, _f["path"])
+            _disk = _fp.read_bytes()
+            assert len(_disk) == _f["bytes"], (
+                "a manifest states a size that is not the size of the file", _route, _f["path"], _f["bytes"], len(_disk))
+            assert b"\r" not in _disk, ("a generated file carries CR line endings", _route, _f["path"])
+            _checked += 1
+    assert _checked >= 10, ("too few generated files were compared for this leg to mean anything", _checked)
+
+    # ── R2.5 - the birth cycle is establishment's, and is counted as that ─────────────────────────────
+    _rows = (client.get("/api/v1/economy/living-vsbs").json() or {}).get("living_vsbs") or []
+    _row = next((r for r in _rows if r.get("vsb_id") == _vid), None)
+    assert _row, "the established entity is not on the roster, so this leg proves nothing"
+    assert _row.get("operating_cycles") == 1 and _row.get("establishment_cycles") == 1, (
+        "the cycle establishment ran is not recorded as establishment's",
+        {k: _row.get(k) for k in ("operating_cycles", "establishment_cycles")})
+    assert "run by establishment" in str(_row.get("operating_cycles_basis")), _row.get("operating_cycles_basis")
+    _cp = _code_only((_src / "pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8"))
+    assert "run by the autonomous roster" not in _cp and "operating.establishment_cycles" in _cp, (
+        "the Cockpit still credits every counted cycle to the autonomous roster")
+
+    # ── R2.4 - the seeded plan says what establishment did ────────────────────────────────────────────
+    _plan = client.get("/api/v1/business-plan", params={"scope": _vid}).json()
+    _plan = _plan.get("plan") or _plan
+    assert "living" not in str(_plan.get("executive_summary")).lower(), _plan.get("executive_summary")
+    assert "self-running" not in str(_plan.get("vision")).lower(), _plan.get("vision")
+    assert "VSB IDBO established to solve" in str(_plan.get("executive_summary")), _plan.get("executive_summary")
+
+    #  ...and THE SECOND WRITER of those sentences (the Studio's seed, in vsb.py) was changed with the first
+    _vsb_src656 = (_pl.Path(__file__).resolve().parents[1] / "agentic_core/api/vsb.py").read_text(encoding="utf-8")
+    assert "is a living VSB IDBO" not in _vsb_src656 and 'f"A self-running' not in _vsb_src656, (
+        "one of the two writers of the seeded sentences still calls the entity living or self-running")
+    #  ...and the Care tool's field says which instruments compute a score - the four the module actually scores
+    from agentic_core.care import scoring as _sc656
+    _care = _code_only((_src / "pages/domains/CareHub.tsx").read_text(encoding="utf-8"))
+    _lbl = re.search(r"label: 'Tool \(([a-z0-9_, ]+?) and ([a-z0-9_]+) compute a score", _care)
+    assert _lbl, "the Care tool's field does not say which instruments compute a score"
+    assert sorted([x.strip() for x in _lbl.group(1).split(",")] + [_lbl.group(2)]) == sorted(_sc656._SCORERS), (
+        "the instruments the page says compute a score are not the ones the module scores", _lbl.groups())
+
+    #  ...and THE ROSTER ROW carries the entity's own status beside its word 'living' (read, not typed)
+    _own = client.get(f"/api/v1/vsb/{_vid}").json()
+    _own = _own.get("vsb") or _own
+    assert _row.get("status") == "living" and _row.get("entity_status") == _own.get("status"), (
+        "the roster row does not carry the entity's own derived status", _row.get("entity_status"), _own.get("status"))
+    assert "registered here" in str(_row.get("status_basis")), _row.get("status_basis")
+
+    # ── R3.1 - the Board Pack's registration covers THE PACK ─────────────────────────────────────────
+    _e2 = client.post("/api/v1/genesis/establish", json={"problem": "A village dairy cooperative for the nursery",
+                                                         "domain": "enterprise", "name": "W656 Records Probe Two",
+                                                         "ship_output": False})
+    _vid2 = _e2.json()["vsb_id"]
+    _p1 = client.post(f"/api/v1/vsb/{_vid}/board-pack").json()
+    _p2 = client.post(f"/api/v1/vsb/{_vid2}/board-pack").json()
+    assert _p1["dcs_registered"] is True and _p1["dcs_scope"] == "pack" and len(_p1["dcs_hash"]) == 128, _p1.get("dcs_covers")
+    assert _p1["dcs_hash"] != _p2["dcs_hash"], "two entities' packs carry one registration hash"
+    assert _p1["content_hash"][:16] in _p1["dcs_covers"], _p1["dcs_covers"]
+    #  unchanged content keeps the hash its version was registered with
+    _p1b = client.post(f"/api/v1/vsb/{_vid}/board-pack").json()
+    if _p1b.get("unchanged") is True:
+        assert _p1b["dcs_hash"] == _p1["dcs_hash"], "an unchanged pack was registered a second time"
+    else:
+        assert _p1b["dcs_hash"] != _p1["dcs_hash"], "a pack whose content changed kept the old registration"
+    #  changed content is a new registration
+    #  (the pack's constitutional layer carries the vision the OWNER wrote, so writing one changes what it holds)
+    assert client.post("/api/v1/business-plan/set", json={"scope": _vid, "vision": "Fresh bread at every school gate by eight."}).status_code == 200
+    _p1c = client.post(f"/api/v1/vsb/{_vid}/board-pack").json()
+    assert _p1c["content_hash"] != _p1["content_hash"] and _p1c["dcs_hash"] != _p1["dcs_hash"], (
+        "a pack whose content changed carries the registration of the old content")
+    _gj = _code_only((_src / "pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8"))
+    assert "pack.dcs_scope === 'pack'" in _gj and "narrative record only" in _gj, (
+        "the chip shows 'DCS-registered' without checking that the registration covers the pack")
+
+    # ── R4.0 - the composed twin: no engine, said before the run and on the run row ───────────────────
+    _d = client.get("/api/v1/resources/digital_twin").json()
+    assert "Forward-simulates" not in str(_d.get("description")) and "NO simulator" in str(_d.get("description")), _d.get("description")
+    _sim = client.post("/api/v1/resources/compose/simulate",
+                       json={"name": "W656 twin probe", "usage_area": "synthesis", "resource_ids": ["digital_twin"],
+                             "objective": "Stress a two-oven bakery line"})
+    assert _sim.status_code == 200, _sim.text[:300]
+    _model = _sim.json().get("model") or {}
+    assert "engines_not_run_by_fabric" in _model, ("the preview carries no not-run list", sorted(_model))
+    _nr = [x for x in (_model.get("engines_not_run_by_fabric") or []) if x.get("id") == "digital_twin"]
+    assert _nr and _nr[0].get("state") == "narrated", (
+        "the design preview does not say the composed twin runs no engine", _model.get("engines_not_run_by_fabric"))
+    _rf = _code_only((_src / "pages/synthesis/ResourceFabric.tsx").read_text(encoding="utf-8"))
+    assert "narrative · no engine ran" in _rf and "n('narrated')" in _rf, (
+        "the run card has no chip or count for a narrated resource")
+    #  THE CHIP'S OWN BRANCH: the comparison must sit directly before the chip it selects. A bare "the comparison
+    #  is somewhere in the file" was satisfied by the run-history label and stayed green with this branch dead.
+    _chip = _rf.index("narrative · no engine ran")
+    assert "rr.outcome === 'narrated'" in _rf[_chip - 420:_chip], (
+        "nothing selects the narrative chip for a narrated resource, so it falls to the emerald 'ran' chip",
+        _rf[_chip - 420:_chip][-200:])
+
+    # ── R1.3 - two QEP sentences, checked against the behaviour they describe ─────────────────────────
+    _studio = _code_only((_src / "components/QEPStudio.tsx").read_text(encoding="utf-8"))
+    assert "none is served here yet" not in _studio and 'placeholder="Arabic educational text' not in _studio
+    _hub = _code_only((_src / "pages/domains/QEPReligionHub.tsx").read_text(encoding="utf-8"))
+    assert "AI-assisted lesson outlines" not in _hub and "WITHHELD" in _hub
+    _st = client.get("/api/v1/qep/status").json()
+    assert "withheld until a named scholar approves" in str((_st.get("components") or {}).get("tajweed")), _st.get("components")
+    _lesson = client.post("/api/v1/qep/tajweed/lesson", json={"rule_name": "idgham"})
+    assert _lesson.status_code == 200 and _lesson.json().get("review_state") == "withheld" \
+        and _lesson.json().get("lesson_plan") is None, (
+        "the sentence says outlines are withheld, and the route does not withhold one", _lesson.status_code, _lesson.text[:300])

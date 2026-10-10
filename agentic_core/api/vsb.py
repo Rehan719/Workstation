@@ -481,8 +481,11 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
     for path, content in files.items():
         fp = root / path
         fp.parent.mkdir(parents=True, exist_ok=True)
-        fp.write_text(content, encoding="utf-8")
-        written.append({"path": path, "bytes": len(content.encode("utf-8"))})
+        #  W656 (ledger v15 R2.6) - THE BYTES COUNTED ARE THE BYTES WRITTEN. write_text turned each newline into
+        #  CR LF on Windows, so the file was larger than the figure recorded for it one line below.
+        _data = content.encode("utf-8")
+        fp.write_bytes(_data)
+        written.append({"path": path, "bytes": len(_data)})
     #  §13 (W574, M1 R2.2) — THE REPOSITORY IS WHAT IS ON DISK, not what this call wrote. The count,
     #  the byte total and the tree were all built from `written` — the files THIS generator produced
     #  — while the website, web-app and phone-app generators write their own and never update the
@@ -974,8 +977,11 @@ async def generate_vsb_website(vsb_id: str, user: dict | None = Depends(get_curr
     for path, content in files.items():
         fp = root / path
         fp.parent.mkdir(parents=True, exist_ok=True)
-        fp.write_text(content, encoding="utf-8")
-        written.append({"path": path, "bytes": len(content.encode("utf-8"))})
+        #  W656 (ledger v15 R2.6) - THE BYTES COUNTED ARE THE BYTES WRITTEN. write_text turned each newline into
+        #  CR LF on Windows, so the file was larger than the figure recorded for it one line below.
+        _data = content.encode("utf-8")
+        fp.write_bytes(_data)
+        written.append({"path": path, "bytes": len(_data)})
     manifest = {
         "vsb_id": vsb_id, "name": name, "kind": "static_website",
         "pages": [w for w in written if w["path"].endswith(".html")],
@@ -1194,8 +1200,11 @@ async def generate_vsb_webapp(vsb_id: str, user: dict | None = Depends(get_curre
     for path, content in files.items():
         fp = root / path
         fp.parent.mkdir(parents=True, exist_ok=True)
-        fp.write_text(content, encoding="utf-8")
-        written.append({"path": path, "bytes": len(content.encode("utf-8"))})
+        #  W656 (ledger v15 R2.6) - THE BYTES COUNTED ARE THE BYTES WRITTEN. write_text turned each newline into
+        #  CR LF on Windows, so the file was larger than the figure recorded for it one line below.
+        _data = content.encode("utf-8")
+        fp.write_bytes(_data)
+        written.append({"path": path, "bytes": len(_data)})
     manifest = {
         "vsb_id": vsb_id, "name": vsb.get("name"), "kind": "client_web_app", "interactive": True,
         "files": written, "file_count": len(written), "total_bytes": sum(w["bytes"] for w in written),
@@ -1337,8 +1346,11 @@ async def generate_vsb_mobile(vsb_id: str, user: dict | None = Depends(get_curre
     for path, content in files.items():
         fp = root / path
         fp.parent.mkdir(parents=True, exist_ok=True)
-        fp.write_text(content, encoding="utf-8")
-        written.append({"path": path, "bytes": len(content.encode("utf-8"))})
+        #  W656 (ledger v15 R2.6) - THE BYTES COUNTED ARE THE BYTES WRITTEN. write_text turned each newline into
+        #  CR LF on Windows, so the file was larger than the figure recorded for it one line below.
+        _data = content.encode("utf-8")
+        fp.write_bytes(_data)
+        written.append({"path": path, "bytes": len(_data)})
     manifest = {
         "vsb_id": vsb_id, "name": vsb.get("name"), "kind": "installable_pwa", "installable": True,
         "offline_capable": True, "files": written, "file_count": len(written),
@@ -1715,6 +1727,22 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
                      + "/" + str(_entity_compliance.get("known")) + _evo_stamp)
     content_hash = _pack_content_hash(layers, economy, narrative + _entity_stamp, str(name or ""))
     version, unchanged_since, unchanged = _pack_version(vsb_id, content_hash, ts)
+    #  W656 (ledger v15 R3.1) - REGISTER THE PACK, NOT ITS NARRATIVE. `dcs_hash` was the narrative's quality-record
+    #  hash, and a floor narrative is one constant text: different packs, of different entities, shared it.
+    _pack_dcs, _pack_dcs_why = None, None
+    try:
+        if unchanged:
+            #  the same content is the same controlled document: reuse the hash its version was registered with
+            _prev656 = json.loads((_BOARDPACK_STORE / vsb_id / "latest.json").read_text(encoding="utf-8"))
+            if _prev656.get("content_hash") == content_hash and _prev656.get("dcs_scope") == "pack":
+                _pack_dcs = _prev656.get("dcs_hash")
+        if not _pack_dcs:
+            from agentic_core.vbs.registry import qms as _qms656
+            _pack_dcs = await _qms656.control_document(
+                f"vsb_board_pack:{vsb_id}:v{version}",
+                {"vsb_id": vsb_id, "version": version, "content_hash": content_hash}, "AI CEO")
+    except Exception as _exc656:
+        _pack_dcs, _pack_dcs_why = None, f"{type(_exc656).__name__}: {str(_exc656)[:120]}"
     pack = {
         "vsb_id": vsb_id, "name": name, "kind": "board_pack", "generated_at": ts,
         "layers": layers,
@@ -1740,9 +1768,17 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
         "unchanged_since": unchanged_since,
         "unchanged": unchanged,
         # DCS registration: the document-control hash from the QMS-owned DCMS (ISO 9001 §7.5)
-        "dcs_registered": bool(qa.get("quality", {}).get("document_controlled")),
-        "dcs_hash": qa.get("quality", {}).get("quality_record_hash"),
-        "note": "Living Business System — on-demand Board Pack, assembled fresh from live data, DCS-registered.",
+        "dcs_registered": bool(_pack_dcs),
+        "dcs_hash": _pack_dcs,
+        "dcs_scope": "pack",
+        "dcs_covers": (f"this pack: version {version} of entity {vsb_id}, content hash {content_hash[:16]}… "
+                       f"(layers, economy, narrative and the entity's verdict)" if _pack_dcs else
+                       f"NOT REGISTERED - the pack could not be placed under document control ({_pack_dcs_why})"),
+        #  the narrative's own quality record, under its own name: it never covered the pack
+        "narrative_record_hash": qa.get("quality", {}).get("quality_record_hash"),
+        "note": ("Living Business System — on-demand Board Pack, assembled fresh from live data"
+                 + (", registered under document control as this version." if _pack_dcs else
+                    "; NOT registered under document control.")),
     }
     root = _BOARDPACK_STORE / vsb_id
     root.mkdir(parents=True, exist_ok=True)
@@ -2355,8 +2391,8 @@ def enrich_vsb_entity(entity: dict, *, owner_id: str = "default", problem: str =
         plan = bp_mod._load(vsb_id)
         if not plan.get("executive_summary"):
             plan["owner"] = owner_id
-            plan["executive_summary"] = f"{name} is a living VSB IDBO established to solve: {problem[:200]}."[:1200]
-            plan["vision"] = f"A self-running {entity_type} VSB IDBO that commercialises this solution beneficently."
+            plan["executive_summary"] = f"{name} is a VSB IDBO established to solve: {problem[:200]}."[:1200]   # W656 (R2.4)
+            plan["vision"] = f"A {entity_type} VSB IDBO to commercialise this solution beneficently."
             plan["mission"] = f"Deliver: {problem[:160]}"
             plan["strategy"] = ("Concept → Design → Commercialisation, governed by the Board "
                                 "(Chief — the Owner's standing charter; no twin model is trained) → AI CEO → C-Suite → CoE → BTO.")
