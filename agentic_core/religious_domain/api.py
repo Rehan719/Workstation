@@ -148,6 +148,14 @@ _HIFZ_STORE.mkdir(parents=True, exist_ok=True)
 _SURAH_NAMES_CACHE: dict[int, str] = {}  # loaded lazily
 
 
+def _auth_on() -> bool:
+    try:
+        from agentic_core.auth.core import auth_enabled
+        return bool(auth_enabled())
+    except Exception:
+        return False
+
+
 def _hifz_path(uid: str) -> Path:
     return _HIFZ_STORE / f"{_safe_uid(uid)}.json"
 
@@ -790,6 +798,13 @@ async def hifz_progress(uid: str):
         "total_sessions": len(hifz.get("sessions", [])),
         "last_session": hifz["sessions"][-1] if hifz.get("sessions") else None,
         "progress_matrix": hifz.get("cards", {}),
+        #  W648 (FU-627; Owner ruling 2026-10-09 late: no workaround is built, the page says so) - WHOSE
+        #  RECORD THIS IS. It is keyed by the id the caller sent, and no identity is checked on these routes.
+        "identity_verified": False,
+        "identity_basis": (f"this record is keyed by the id the caller sent ({uid!r}). It is not tied to a "
+                           f"verified person: no identity is checked on these routes"
+                           + ("" if _auth_on() else ", and authentication is off on this deployment")
+                           + ". Anyone who sends the same id reads and writes the same record."),
     }
 
 

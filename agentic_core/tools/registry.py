@@ -26,7 +26,8 @@ class ToolRegistry:
             "config": config,
             "registered_at": datetime.datetime.now().isoformat(),
             "status": "ACTIVE",
-            "trust_score": 0.95 # Initial scholarship trust
+            #  W648 (FU-678) - no trust figure: 0.95 was stamped on every tool at registration and nothing
+            #  had measured it. The key is gone rather than nulled; nothing in the tree reads it from here.
         }
         if deps:
             self.dependencies[name] = deps

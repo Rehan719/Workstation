@@ -12030,11 +12030,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.35",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W648",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v14 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "AS RULED by the Owner (2026-10-09 late): no workaround is built. The hifz progress record says it is keyed by a caller-supplied id, tied to no verified person, that anyone sending the same id reads and writes it, and whether authentication is off; the studio prints that sentence. It is resolved when the Owner turns authentication on (P4.1). NOT DONE: the gamification routes carry no such sentence yet, and the studio still sends the literal id 'local'."
     },
     {
       "id": "FU-628",
@@ -12495,11 +12498,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.35",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W648",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v14 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "grounded_in keeps its meaning (an entity's record reached the prompt). Two fields say what happened with it: grounding_used is false on a floor reply, with a basis saying the floor does not read the record, and true when a model answered from it. The page prints the server's sentence instead of 'grounded in your enterprise' when it was not used."
     },
     {
       "id": "FU-651",
@@ -13032,11 +13038,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.35",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W648",
       "note": "",
       "slot_source": "an invisible shortfall of the same kind as the row it was found beside",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The 0.95 stamp is removed from tool registration; nothing in the tree read it from there (other modules keep their own, separate trust figures - not examined here)."
     },
     {
       "id": "FU-679",

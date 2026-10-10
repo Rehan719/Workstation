@@ -49703,3 +49703,69 @@ def test_w647_every_door_that_creates_an_entity_runs_its_first_screen(client, mo
     assert _callers647 == ["api/marketplace.py"], (
         "the KPI gate is now called from somewhere other than the marketplace - its refusal says it applies "
         "to a marketplace listing only; reword it", _callers647)
+
+
+def test_w648_a_record_that_reached_a_prompt_is_not_a_reply_grounded_in_it(client, monkeypatch):
+    """FU-650, FU-627 (as ruled), FU-678.
+
+    THE PROPERTIES: the avatar says its reply used an enterprise's record only when a model answered from it -
+    on the floor it says the record reached the prompt and was not read; a learner's hifz record says it is
+    keyed by a caller-supplied id and tied to no verified person; and a registered tool carries no trust
+    figure nothing measured.
+    """
+    import pathlib as _pl
+    _root = _pl.Path(__file__).resolve().parents[1]
+
+    # ── FU-650 ─────────────────────────────────────────────────────────────────────────────────
+    import agentic_core.avatars.api as _av
+    _est = client.post("/api/v1/genesis/establish", json={
+        "problem": "A village bakery cooperative", "name": "W648 Bakery", "ship_output": False}).json()
+    _vid = _est["vsb_id"]
+    _r = client.post("/api/v1/avatar/chat", json={"message": "How are we doing this month?", "context": "general", "vsb_id": _vid})
+    assert _r.status_code == 200, _r.text[:300]
+    _j = _r.json()
+    assert _j.get("grounded_in") == _vid, ("no grounding block was built, so the leg below reads nothing", _j.get("grounded_in"))
+    if _j.get("served_by") == "native":
+        assert _j["grounding_used"] is False and "does not read it" in _j["grounding_basis"], (
+            "a floor reply is reported as having used the enterprise's record", _j.get("grounding_used"), _j.get("grounding_basis"))
+    #  a MODEL answers: the record was used, and the basis says so
+    _real = _av.gateway.query_meta
+
+    async def _model(prompt, **k):
+        return {"output": "You are doing well.", "served_by": "ollama:probe", "is_external": False}
+    monkeypatch.setattr(_av.gateway, "query_meta", _model)
+    _m = client.post("/api/v1/avatar/chat", json={"message": "How are we doing?", "context": "general", "vsb_id": _vid}).json()
+    monkeypatch.undo()
+    assert _m.get("grounded_in") == _vid and _m["grounding_used"] is True and "model answered from" in _m["grounding_basis"], _m
+    #  NO entity: neither field claims anything
+    _n = client.post("/api/v1/avatar/chat", json={"message": "Hello", "context": "general"}).json()
+    if not _n.get("grounded_in"):
+        assert _n.get("grounding_used") is None and _n.get("grounding_basis") is None, _n
+    _cp = _code_only((_root / "apps/workstation-superapp/src/components/avatar/ConversationPanel.tsx").read_text(encoding="utf-8"))
+    for _need in ("m.groundingUsed === false", 'data-testid="avatar-grounding-unused"', "{m.groundingBasis}"):
+        assert _need in _cp, ("the page still says 'grounded in' whatever was used", _need)
+    _hk = (_root / "apps/workstation-superapp/src/hooks/useAvatarSession.ts").read_text(encoding="utf-8")
+    assert "groundingUsed: resp.data.grounding_used" in _hk and "groundingBasis: resp.data.grounding_basis" in _hk
+
+    # ── FU-627 (Owner ruling: no workaround; the page says so) ──────────────────────────────────
+    _p = client.get("/api/v1/qep/hifz/progress/w648-any-id").json()
+    assert _p["identity_verified"] is False and "not tied to a verified person" in _p["identity_basis"], _p.get("identity_basis")
+    assert "w648-any-id" in _p["identity_basis"] and "same id" in _p["identity_basis"], _p["identity_basis"]
+    import agentic_core.religious_domain.api as _rd
+    monkeypatch.setattr(_rd, "_auth_on", lambda: True)
+    assert "authentication is off" not in client.get("/api/v1/qep/hifz/progress/w648-any-id").json()["identity_basis"]
+    monkeypatch.setattr(_rd, "_auth_on", lambda: False)
+    assert "authentication is off" in client.get("/api/v1/qep/hifz/progress/w648-any-id").json()["identity_basis"]
+    monkeypatch.undo()
+    _qs = _code_only((_root / "apps/workstation-superapp/src/components/QEPStudio.tsx").read_text(encoding="utf-8"))
+    for _need in ('data-testid="hifz-identity-basis"', "progress.identity_verified === false", "{progress.identity_basis}"):
+        assert _need in _qs, ("the studio does not say whose record this is", _need)
+
+    # ── FU-678 ─────────────────────────────────────────────────────────────────────────────────
+    from agentic_core.tools.registry import ToolRegistry
+    _reg = ToolRegistry()
+    _reg.register_tool("w648-probe", "1.0", "probe", ["x"], {}) if hasattr(_reg, "register_tool") else None
+    _tools = _reg.list_tools()
+    assert _tools, "the registry listed no tool, so the leg read nothing"
+    assert all("trust_score" not in t for t in _tools), (
+        "a registered tool still carries a trust figure nothing measured", [t.get("name") for t in _tools if "trust_score" in t])
