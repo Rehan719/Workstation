@@ -160,7 +160,7 @@ class JourneyRequest(BaseModel):
     ship_output: bool = True
 
 
-async def _q_meta(prompt: str, agent: str) -> tuple:
+async def _q_meta(prompt: str, agent: str, user_text: str | None = None) -> tuple:
     """W506 (P2.2) - the PROVENANCE form. `query` returns bare text, so every caller of this helper
     dropped which resource served it. P2.2 requires that no bare text-only gateway call remains in
     agentic_core/api. `augment=False` is STATED rather than inherited: a repo-wide guard requires it at
@@ -169,16 +169,16 @@ async def _q_meta(prompt: str, agent: str) -> tuple:
     """
     try:
         # W332 — journey copy persists and ships, so it carries no cross-request recall
-        r = await gateway.query_meta(prompt, agent=agent, augment=False)
+        r = await gateway.query_meta(prompt, agent=agent, augment=False, user_text=user_text)   # W651 (FU-675)
         return r.get("output", ""), r.get("served_by"), bool(r.get("is_external"))
     except Exception as e:
         return f"[AI unavailable: {e}]", None, False
 
 
-async def _q(prompt: str, agent: str) -> str:
+async def _q(prompt: str, agent: str, user_text: str | None = None) -> str:
     """Text only, never raises. Delegates to `_q_meta`."""
     try:
-        return (await _q_meta(prompt, agent))[0]
+        return (await _q_meta(prompt, agent, user_text=user_text))[0]
     except Exception as e:
         return f"[{agent} unavailable: {e}]"
 
@@ -1045,7 +1045,7 @@ async def _derive_name(problem: str, domain: str, requested: str = "") -> tuple:
     derived = await _q(
         "Propose ONE concise, brandable business name (2-4 words, no quotes, no preamble, no "
         f"markdown) for a venture that solves: {problem}\nDomain: {domain}\nReturn ONLY the name.",
-        "genesis_vsb_name",
+        "genesis_vsb_name", user_text=(problem or None),
     )
     cand = ""
     for line in (derived or "").splitlines():

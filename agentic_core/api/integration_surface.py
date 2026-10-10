@@ -110,7 +110,7 @@ async def ai_query(req: AIQuery, user: dict | None = Depends(get_current_user)):
         # §17.5 invariant 1 (W343) — identity reaches the memory layer
         _owner = user.get("username") if isinstance(user, dict) else None
         _meta = await gateway.query_meta(prompt, agent="solutions", timeout=30, owner_id=_owner,
-                                         augment=False)
+                                         augment=False, user_text=(prompt or None))   # W651 (FU-675)
         out = _meta.get("output") or None
         _served, _external = _meta.get("served_by"), bool(_meta.get("is_external"))
         if out is None:

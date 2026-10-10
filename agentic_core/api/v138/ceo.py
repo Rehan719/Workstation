@@ -235,7 +235,8 @@ class ToolRegistry:
                       "APPROVE, OBJECT or ABSTAIN." + chr(10) + chr(10)
                       + f"Agenda: {agenda}")
             try:
-                res = await orchestrator.complete(prompt, agent=f"csuite:{agent}", timeout=90)
+                res = await orchestrator.complete(prompt, agent=f"csuite:{agent}", timeout=90,
+                                                  user_text=(agenda or None))   # W651 (FU-675)
                 text = (res or {}).get("output", "").strip()
             except Exception:
                 text = ""

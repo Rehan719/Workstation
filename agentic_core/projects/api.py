@@ -463,7 +463,9 @@ async def run_project(project_id: str,
             # own record, so no cross-request recall is wanted here.
             # §17.5 invariant 1 (W343, FU-276) — the caller's identity reaches the memory layer, or what they asked for is stored where even they cannot recall it.
             _owner_id = user.get("username") if isinstance(user, dict) else None
-            async for ev in gateway.stream_meta(full_prompt, agent="projects", augment=False, owner_id=_owner_id):
+            async for ev in gateway.stream_meta(full_prompt, agent="projects", augment=False, owner_id=_owner_id,
+                                                user_text=(chr(10).join(x for x in (   # W651 (FU-675)
+                                                    project.title, project.description) if x) or None)):
                 if "token" in ev:
                     accumulated += ev["token"]
                     safe = ev["token"].replace("\n", "\\n")

@@ -121,7 +121,8 @@ def _save(rows: List[Dict[str, Any]]) -> None:
     atomic_write_json(_STORE, rows)
 
 
-async def _q(prompt: str, agent: str, provenance: Dict[str, Any] | None = None) -> str:
+async def _q(prompt: str, agent: str, provenance: Dict[str, Any] | None = None,
+             user_text: str | None = None) -> str:
     """§6 (W270) — the APEX tier runs on the same in-house-first fabric as every lower tier:
     query_meta with owned-resource provenance recorded per call (the Board was previously the only
     AI-driven governance tier without served_by/any_external)."""
@@ -137,7 +138,8 @@ async def _q(prompt: str, agent: str, provenance: Dict[str, Any] | None = None) 
         # PERSIST their output. W488 closed all of them; the deliberate exceptions are the avatar
         # conversation (avatars/api.py) and the AI-CEO chat (api/v138/ceo.py) — both conversations,
         # both keeping tenant-scoped recall, both saying why in place.
-        res = await gateway.query_meta(prompt, agent=agent, augment=False)
+        res = await gateway.query_meta(prompt, agent=agent, augment=False,
+                                       user_text=user_text)   # W651 (FU-675) - the Owner's own words
         if provenance is not None:
             sb = res.get("served_by", "native")
             provenance["served_by"][sb] = provenance["served_by"].get(sb, 0) + 1
@@ -564,13 +566,20 @@ async def twin_directive_unprompted(scope: str = "workstation") -> Dict[str, Any
         "executed": bool(res.get("objectives_added")),
         "cascaded_to_ceo": bool(res.get("objectives_added")) or res.get("ceo_action_plan") not in (None, ""),
         "objectives_added": res.get("objectives_added"),
+        "filed_as_fallback": bool(res.get("objectives_fallback")),      # W651 (FU-686)
         "governance": (res.get("governance") or {}).get("status"),
         "owner_inputs": m["owner_inputs"],
         "founder_model_basis": m["basis"],
         "basis": (f"ISSUED UNPROMPTED by the twin, driven by a beat and not by a manual call. It restates "
                   f"the Owner's own latest input verbatim and nothing is invented. It ran through the "
-                  f"gaas.v5 apex gate and was cascaded to the AI CEO, so it EXECUTES rather than being "
-                  f"filed. Built from {m['instructions']['count']} instruction(s) and "
+                  f"gaas.v5 apex gate and was cascaded to the AI CEO. "
+                  + ("The AI CEO's plan yielded NO readable objective, so the instruction itself was filed "
+                     "as ONE fallback objective: a record of the instruction on the living plan, not a "
+                     "plan the AI CEO produced. " if res.get("objectives_fallback")
+                     else "The AI CEO's plan yielded objectives and they were added to the living plan. "
+                     if res.get("objectives_added")
+                     else "NO objective was added to the living plan. ")
+                  + f"Built from {m['instructions']['count']} instruction(s) and "
                   f"{m['decisions']['count']} decision(s) of the Owner's"),
         "kind": "twin_directive_unprompted",
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -742,7 +751,7 @@ async def chief_instruct(req: ChiefInstruction, user: dict | None = Depends(get_
     # §11 (W270) — the APEX direction runs under the same gaas.v5 constitutional gate as every lower
     # tier (a gate failure logs a LOUD UEG bypass event, never silent — the W249/W261 pattern).
     async def _directive_action() -> str:
-        return await _q(chief_prompt, "board_chief", provenance)
+        return await _q(chief_prompt, "board_chief", provenance, user_text=req.instruction)
     try:
         from agentic_core.gaas.v5 import UnifiedConstitutionalInterceptorV16Omega, UEGLogger
         _gov = UnifiedConstitutionalInterceptorV16Omega("board-node", UEGLogger())
@@ -784,13 +793,14 @@ async def chief_instruct(req: ChiefInstruction, user: dict | None = Depends(get_
             "## Delegation (C-Suite → CoE → BTO assignments)\n"
             "## KPIs & Review Cadence"
         )
-        action_plan = await _q(ceo_prompt, "board_ceo_delegate", provenance)
+        action_plan = await _q(ceo_prompt, "board_ceo_delegate", provenance, user_text=req.instruction)
 
     # §5 apex closure (W265) — the delegation LANDS: parsed objectives (TITLE|KPI|TIMELINE|OWNER_ROLE)
     # are appended to the scoped LIVING business plan, tagged with this directive. When the serving
     # model yields no machine-readable lines (e.g. the deterministic native floor), the Owner's
     # instruction itself becomes ONE objective — the apex direction never again evaporates into prose.
     objectives_added = 0
+    objectives_parsed = 0        # W651 (FU-686) - how many the AI CEO's plan itself yielded
     # W488 (refutation) — WHEN THE DIRECTIVE DOES NOT LAND, THE ANSWER SAYS SO.
     # `except Exception: objectives_added = 0` reported a bare 0 for every failure and sealed that 0
     # into the UEG ledger — and the same round made `bp_mod._load` RAISE on an unreadable plan, so the
@@ -804,6 +814,7 @@ async def chief_instruct(req: ChiefInstruction, user: dict | None = Depends(get_
         try:
             from agentic_core.api import business_plan as bp_mod
             new_objs = bp_mod.parse_objective_lines(action_plan, extra={"directive_id": directive_id})
+            objectives_parsed = len(new_objs)
             if not new_objs:
                 new_objs = bp_mod.parse_objective_lines(
                     #  W593 (FU-427) — THE TIMELINE IS LEFT EMPTY, not filled with "next review". This
@@ -858,6 +869,10 @@ async def chief_instruct(req: ChiefInstruction, user: dict | None = Depends(get_
         "ceo_action_plan": action_plan,
         "business_plan_scope": req.scope,
         "objectives_added": objectives_added,
+        #  W651 (FU-686) - WHICH KIND LANDED. An objective parsed from the AI CEO's plan is a delegated plan;
+        #  the instruction filed as one line because nothing was readable is a record of the instruction.
+        "objectives_parsed": objectives_parsed,
+        "objectives_fallback": bool(objectives_added and not objectives_parsed),
         "objectives_not_added_reason": objectives_not_added_reason,   # W488 — a 0 that says why, or None
         "ai_provenance": provenance,     # §6 — which OWNED resource served the apex (W270)
         "governance": governance,        # §11 — the gaas.v5 gate verdict over the apex direction
@@ -1010,7 +1025,7 @@ async def board_directive(req: BoardDirective, user: dict | None = Depends(get_c
             f"LIVE readings of the systems you own: {grounding}\n\n"
             f"Topic before the board: {req.topic}\nDomain: {req.domain}\n\n"
             "Give your specialist direction (under 80 words), grounded in the readings above — "
-            "cite them where relevant.", f"board_{d['id']}", provenance)
+            "cite them where relevant.", f"board_{d['id']}", provenance, user_text=req.topic)
         director_inputs[d["id"]] = {"title": d["title"], "live_grounding": grounding, "input": text}
     inputs_block = "\n\n".join(f"[{v['title']}] (live: {v['live_grounding']})\n{v['input'][:400]}"
                                for v in director_inputs.values())
@@ -1022,7 +1037,8 @@ async def board_directive(req: BoardDirective, user: dict | None = Depends(get_c
         "Synthesise and resolve (do not invent inputs beyond those above):\n"
         "## Board Position (the resolved direction)\n"
         "## Directive to the AI CEO (what to execute)\n"
-        "## Guardrails (governance / arms-length constraints)", "board_directive", provenance)
+        "## Guardrails (governance / arms-length constraints)", "board_directive", provenance,
+        user_text=req.topic)
     from agentic_core.vbs.quality import floor_served as _floor623
     record = {
         "kind": "board_directive",

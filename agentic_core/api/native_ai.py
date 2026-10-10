@@ -564,7 +564,8 @@ async def native_complete(req: CompleteRequest):
                 "served_by": "constitutional_policy_gate", "is_external": False, "resources_tried": [],
                 "governance_checkpoint": _halt}
     res = await orchestrator.complete(req.prompt, agent=req.agent, timeout=req.timeout,
-                                      prefer_external=req.prefer_external, prefer=req.model)
+                                      prefer_external=req.prefer_external, prefer=req.model,
+                                      user_text=(req.prompt or None))   # W651 (FU-675) - the console's own text
     res["governance_checkpoint"] = console_post_gate(req.agent, res.get("output", ""))
     return res
 

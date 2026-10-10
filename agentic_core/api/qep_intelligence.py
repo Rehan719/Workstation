@@ -307,7 +307,8 @@ async def translation_translate(req: TranslateRequest,
             "refused whatever model is available - this path is for non-Arabic educational text only.)"))
     # §17.5 invariant 1 (W343, FU-276) — the caller's identity reaches the memory layer, or what they asked for is stored where even they cannot recall it.
     _owner_id = user.get("username") if isinstance(user, dict) else None
-    meta = await gateway.query_meta(prompt, agent="qep_translator", augment=False, owner_id=_owner_id)
+    meta = await gateway.query_meta(prompt, agent="qep_translator", augment=False, owner_id=_owner_id,
+                                    user_text=(req.text or None))   # W651 (FU-675)
     served_by = meta.get("served_by", "native")
     if served_by == "native":
         from fastapi import HTTPException

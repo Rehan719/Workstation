@@ -17495,7 +17495,7 @@ def test_w475_second_truth_pass_ledger_v4_tier1_entries(client, tmp_path, monkey
     # a model's reply: the stance is its last line in any common form; the echoed triple is no stance
     replies = iter(["We should.\nI APPROVE.", "Hmm.\n**OBJECT**", "Fine.\nABSTAIN!", "Undecided.\nAPPROVE, OBJECT or ABSTAIN",
                     "Yes.\nApprove.", "No view."])
-    async def _model(prompt, agent="x", timeout=90):
+    async def _model(prompt, agent="x", timeout=90, **_kw):   # W651 - the caller also says what the person wrote
         return {"output": next(replies), "served_by": "llama3", "is_external": False}
     monkeypatch.setattr(_ceo.orchestrator, "complete", _model)
     out2 = asyncio.run(reg.call_meeting("W475 meeting with a model"))
@@ -49939,3 +49939,189 @@ def test_w650_nothing_the_screen_fails_is_shipped_and_the_entity_stays_registere
     assert _ej.get("vsb_id") and _ship.get("shipped") is False, _ship
     assert _ship.get("refused") == "compliance hold" and _ship.get("failed_frameworks") and _ship.get("reason"), (
         "establishment does not say plainly that its birth ship was refused by the compliance hold", _ship)
+
+
+def test_w651_every_gateway_call_says_what_the_person_wrote_or_is_named_as_having_none():
+    """FU-675, the last tier-1 row of ledger v14.
+
+    THE INVARIANT: every call into the gateway either passes user_text - the caller's statement of which words
+    the PERSON wrote - or its (file, function) is NAMED below with the reason no person's text exists there.
+    A silent call that is not named fails. A name whose site now says (or is gone) fails too, so the table
+    cannot decay into a list of exemptions nobody checks.
+
+    Found by the CALL in the syntax tree, keyed by file and function - never by a line number, which moves.
+    """
+    import ast
+    import pathlib as _pl
+
+    _NOTHING_TYPED = {
+        ("career.py", "auto_classify_upload"): "classifies an uploaded file; the person typed nothing",
+        ("religion.py", "quran_tafsir"): "takes verse numbers; the floor withholds this tool whole (W637)",
+        ("products.py", "intelligence_forecasts"): "composed from the portfolio's stored state",
+        ("products.py", "run_reactor_sim"): "a domain, a label and parameter values; no sentence a person wrote",
+        ("transformation.py", "assess"): "composed from computed realisation figures",
+        ("native_ai.py", "evaluate_model"): "the fixed probe set",
+        ("ceo_generate.py", "debug_creation"): "a posted blueprint object, not prose the person wrote",
+    }
+    _root = _pl.Path(__file__).resolve().parents[1] / "agentic_core"
+    _says, _silent = 0, {}
+    for _p in sorted(_root.rglob("*.py")):
+        if "_archive" in _p.parts:
+            continue
+        try:
+            _tree = ast.parse(_p.read_text(encoding="utf-8"))
+        except SyntaxError:
+            continue
+        _owner = {}
+        for _fn in ast.walk(_tree):
+            if isinstance(_fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                for _c in ast.walk(_fn):
+                    if isinstance(_c, ast.Call):
+                        _owner[id(_c)] = _fn.name          # the innermost function wins
+        for _c in ast.walk(_tree):
+            if not isinstance(_c, ast.Call):
+                continue
+            _name = getattr(_c.func, "attr", None) or getattr(_c.func, "id", None)
+            if _name not in ("ai_text", "query_meta", "stream_meta", "query", "complete", "_q_meta"):
+                continue
+            if _name in ("query", "complete") and "gateway" not in ast.unparse(_c.func) \
+                    and "orchestrator" not in ast.unparse(_c.func):
+                continue
+            if any(_k.arg == "user_text" for _k in _c.keywords):
+                _says += 1
+                continue
+            _silent.setdefault((_p.name, _owner.get(id(_c), "<module>")), []).append(_c.lineno)
+
+    #  the instrument sees something: a walk that found nothing would pass every assertion below
+    assert _says >= 90, ("the count of calls that say what the person wrote fell, or the walk found none", _says)
+    _unnamed = {k: v for k, v in _silent.items() if k not in _NOTHING_TYPED}
+    assert not _unnamed, (
+        "a call into the gateway neither says which text the person wrote nor is named as having none - "
+        "on the floor its reader is told nothing was said, or worse, is shown the prompt as their own words",
+        _unnamed)
+    _stale = sorted(k for k in _NOTHING_TYPED if k not in _silent)
+    assert not _stale, ("a site is named as having no person's text but no silent call is there any more - "
+                        "remove the name rather than leave an exemption nobody checks", _stale)
+    for _k, _why in _NOTHING_TYPED.items():
+        assert len(_why) > 15, ("a named site gives no reason", _k)
+
+
+def test_w651_a_threaded_helper_carries_the_persons_words_to_the_gateway(client, monkeypatch):
+    """FU-675 - the half the syntax walk cannot see. A helper that accepts user_text counts as "says" in the
+    census whether or not any CALLER hands it the person's words. So three tools are driven and what reached
+    the gateway is read: every call each makes carries exactly what the person typed.
+    """
+    from agentic_core.ai.gateway import gateway as _gw
+    _seen = []
+    _real = _gw.query_meta
+
+    async def _spy(prompt, **k):
+        _seen.append((k.get("agent"), k.get("user_text")))
+        return await _real(prompt, **k)
+    monkeypatch.setattr(_gw, "query_meta", _spy)
+
+    _DRIVES = (
+        ("/api/v1/forge/run", {"objective": "A rota tool for night-shift nurses on two wards"}, "objective"),
+        ("/api/v1/board/directive", {"topic": "Whether to open a second bakery counter at the school"}, "topic"),
+        ("/api/v1/sovereign-evolution/cycle", {"focus": "slow first paint on the learner dashboard"}, "focus"),
+    )
+    for _path, _body, _field in _DRIVES:
+        _seen.clear()
+        _r = client.post(_path, json=_body)
+        assert _r.status_code == 200, (_path, _r.status_code, _r.text[:300])
+        assert _seen, ("the tool made no gateway call, so this leg proves nothing", _path)
+        _wrong = [(a, u) for a, u in _seen if u != _body[_field]]
+        assert not _wrong, ("a call did not carry the person's own words to the gateway", _path, _wrong[:3])
+
+    #  NOTHING TYPED IS NOT INVENTED: a cycle with no focus passes no person's text at all
+    _seen.clear()
+    assert client.post("/api/v1/sovereign-evolution/cycle", json={}).status_code == 200
+    assert _seen and all(u is None for _a, u in _seen), (
+        "a cycle the person gave no focus for told the gateway the person had written something", _seen[:3])
+
+
+def test_w651_a_fabric_stage_runs_the_gate_and_a_fallback_objective_is_called_one(client, monkeypatch):
+    """FU-683 and FU-686.
+
+    THE PROPERTIES: (1) the three fabric stages that reach the orchestrator directly run the gate a gateway
+    call runs - refused, the orchestrator is NOT called and the stage says so; allowed, the result carries its
+    checkpoint. (2) When the AI CEO's plan yields nothing readable and the Owner's instruction is filed as
+    one objective in its place, the answer says THAT, and the unprompted directive no longer says it
+    "EXECUTES"; when the plan does yield objectives, it says those were added.
+    """
+    import asyncio
+    from agentic_core.ai import gateway as _gwmod
+    from agentic_core.ai.native import orchestrator as _orch
+    from agentic_core.api import board as _b
+    from agentic_core.api import resource_fabric as _rf
+
+    # ── (1) THE GATE ───────────────────────────────────────────────────────────────────────────────────
+    _called = []
+    _real_complete, _real_swarm = _orch.complete, _orch.swarm
+
+    async def _spy_complete(*a, **k):
+        _called.append("complete")
+        return await _real_complete(*a, **k)
+
+    async def _spy_swarm(*a, **k):
+        _called.append("swarm")
+        return await _real_swarm(*a, **k)
+    monkeypatch.setattr(_orch, "complete", _spy_complete)
+    monkeypatch.setattr(_orch, "swarm", _spy_swarm)
+    _STAGES = ("native_orchestrator", "digital_twin", "native_swarm")
+
+    #  allowed: the orchestrator runs and the stage carries its checkpoint
+    for _rid in _STAGES:
+        _called.clear()
+        _r = asyncio.run(_rf._run_real_resource(_rid, {}, "A rota tool for night-shift nurses", "care"))
+        assert _called, ("the stage did not reach the orchestrator, so the refused leg below proves nothing", _rid)
+        assert not _r.get("error") and isinstance(_r.get("governance_checkpoint"), dict) and _r["governance_checkpoint"], (
+            "a stage that reached the orchestrator carries no governance checkpoint", _rid, _r)
+
+    #  refused: nothing is asked, and the stage says it was refused rather than returning an empty output
+    _halt = {"refused_reason": "driven refusal for the guard", "status": "halted"}
+    _asked = []
+    monkeypatch.setattr(_gwmod, "console_pre_gate", lambda agent: (_asked.append(agent), _halt)[1])
+    for _rid in _STAGES:
+        _called.clear()
+        _r = asyncio.run(_rf._run_real_resource(_rid, {}, "A rota tool for night-shift nurses", "care"))
+        assert _called == [], ("a stage the gate refused still called the orchestrator", _rid, _called)
+        assert str(_r.get("error") or "").startswith("constitutional refusal") and "driven refusal" in _r["error"], (_rid, _r)
+        assert _r.get("governance_checkpoint") == _halt and _r.get("outcome") == "raised", (_rid, _r)
+    assert len(_asked) == len(_STAGES), ("the gate was not asked once per stage", _asked)
+    monkeypatch.undo()
+
+    # ── (2) ONE FALLBACK OBJECTIVE IS CALLED ONE ───────────────────────────────────────────────────────
+    #  on the floor the AI CEO's plan is a frame with no objective line: the instruction is filed in its place
+    _said = "Open a second bakery counter at the primary school"
+    _f = client.post("/api/v1/board/chief/instruct", json={"instruction": _said, "scope": "w651-fallback"})
+    assert _f.status_code == 200, _f.text[:300]
+    _fj = _f.json()
+    assert _fj["objectives_added"] == 1 and _fj["objectives_parsed"] == 0 and _fj["objectives_fallback"] is True, (
+        "an instruction filed in place of a plan is not reported as a fallback",
+        {k: _fj.get(k) for k in ("objectives_added", "objectives_parsed", "objectives_fallback")})
+    _u = asyncio.run(_b.twin_directive_unprompted("w651-fallback"))
+    assert _u["issued"] is True, _u
+    assert _u["filed_as_fallback"] is True and "ONE fallback objective" in _u["basis"], (
+        "the unprompted directive does not say it filed the instruction as one fallback objective", _u)
+    assert "EXECUTES" not in _u["basis"], (
+        "the unprompted directive still says it executes when only the instruction itself was filed", _u["basis"])
+
+    #  ...and when the plan DOES yield objectives, it says so and is not called a fallback
+    _real_q = _b._q
+
+    async def _plan_q(prompt, agent, provenance=None, **k):
+        if agent == "board_ceo_delegate":
+            return ("## Strategic Objectives" + chr(10)
+                    + "Fit the counter | Counter open | 2027-Q1 | COO" + chr(10)
+                    + "Hire two bakers | Two contracts signed | 2027-Q1 | CPEO")
+        return await _real_q(prompt, agent, provenance, **k)
+    monkeypatch.setattr(_b, "_q", _plan_q)
+    _p = client.post("/api/v1/board/chief/instruct", json={"instruction": _said, "scope": "w651-parsed"})
+    assert _p.status_code == 200, _p.text[:300]
+    _pj = _p.json()
+    assert _pj["objectives_parsed"] == 2 and _pj["objectives_added"] == 2 and _pj["objectives_fallback"] is False, (
+        {k: _pj.get(k) for k in ("objectives_added", "objectives_parsed", "objectives_fallback")})
+    _u2 = asyncio.run(_b.twin_directive_unprompted("w651-parsed"))
+    assert _u2["issued"] is True and _u2["filed_as_fallback"] is False, _u2
+    assert "yielded objectives" in _u2["basis"] and "fallback" not in _u2["basis"], _u2["basis"]
