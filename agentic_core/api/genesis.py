@@ -273,6 +273,20 @@ def _bar_attestations(candidates: List[Dict[str, Any]], stage_5: Dict[str, Any],
     return ev, wh
 
 
+def _ship_refused(exc: "HTTPException") -> dict:
+    """W650 (FU-687, Owner ruling 2026-10-10) - what establishment reports when its birth ship is REFUSED.
+
+    The entity is registered and screened before it ships. When that first screen fails, the ship refuses
+    (409, compliance_fail_hold). It was caught by a generic handler that kept the first 160 characters of the
+    exception's repr; the founder is told plainly instead: not shipped, why, and which frameworks failed."""
+    d = exc.detail if isinstance(getattr(exc, "detail", None), dict) else {}
+    if d.get("error") == "compliance_fail_hold":
+        return {"shipped": False, "refused": "compliance hold",
+                "failed_frameworks": list(d.get("failed_frameworks") or []),
+                "reason": str(d.get("note") or "the entity's latest §11 screen is 'fail', so its body is not shipped")}
+    return {"shipped": False, "error": str(getattr(exc, "detail", exc))[:160]}
+
+
 def _deliverable_line(entity: dict) -> str:
     """W631 (FU-552) - what establishment produced, from the entity's DERIVED status, not a fixed claim that a
     'Living Enterprise ... generated, governed' exists while the status reads 'registered - not operating'."""
@@ -1524,6 +1538,8 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
                             "refused": {k: (v.get("error") or v.get("deferred")) for k, v in _surf.items()
                                         if isinstance(v, dict) and ("error" in v or "deferred" in v)},
                             "commit": (_s.get("version_control") or {}).get("commit")}
+        except HTTPException as _he:
+            initial_ship = _ship_refused(_he)       # W650 (FU-687) - a refusal is stated, not truncated
         except Exception as exc:
             initial_ship = {"shipped": False, "error": str(exc)[:160]}
 
@@ -1741,6 +1757,9 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
                                  {"surface": _sname, **{k: v for k, v in _sinfo.items() if k != 'error'}})
                 initial_ship = {"shipped": True, "coherent_whole": _s.get("coherent_whole"),
                                 "commit": (_s.get("version_control") or {}).get("commit")}
+            except HTTPException as _he:
+                initial_ship = _ship_refused(_he)   # W650 (FU-687)
+                yield _event("ship", "Ship Refused", str(initial_ship.get("reason") or "")[:200], initial_ship)
             except Exception as exc:
                 initial_ship = {"shipped": False, "error": str(exc)[:160]}
                 yield _event("ship", "Ship Deferred", f"body not shipped: {str(exc)[:80]}")

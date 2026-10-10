@@ -7138,7 +7138,7 @@ def test_client_apps_never_ship_engine_scaffolding():
            "terms: - energy harvesting\n")
 
     cleaned = _public_prose(raw)
-    for marker in ("Workstation native structured engine", "Acting as:", "Native structured",
+    for marker in ("Workstation native structured engine", "Acting as:", "Role the prompt asked for", "Native structured",
                    "grounded in:"):
         assert marker.lower() not in cleaned.lower(), (
             f"{marker!r} would be shown to an end user of the VSB's public app")
@@ -7154,7 +7154,7 @@ def test_client_apps_never_ship_engine_scaffolding():
     })
     blob = f"{appdata.get('concept','')} {appdata.get('challenge','')} " \
            f"{appdata.get('business_plan',{}).get('executive_summary','')}"
-    for marker in ("Workstation native structured engine", "Acting as:", "Native structured"):
+    for marker in ("Workstation native structured engine", "Acting as:", "Role the prompt asked for", "Native structured"):
         assert marker.lower() not in blob.lower(), (
             f"{marker!r} reaches the client apps through _entity_appdata")
 
@@ -8125,7 +8125,7 @@ def test_w434_the_users_problem_survives_every_journey_stage(client):
     import json as _json
     whole = _json.dumps(d)
     assert "no external dependency" not in whole, "the provenance banner reached the response"
-    assert "_Acting as:" not in whole, "the engine's role line reached the response"
+    assert "_Acting as:" not in whole and "Role the prompt asked for" not in whole, "the engine's role line reached the response"
 
 
 def test_w434_a_published_vsb_website_carries_no_engine_scaffold(client):
@@ -8147,7 +8147,7 @@ def test_w434_a_published_vsb_website_carries_no_engine_scaffold(client):
         r = client.get("/api/v1/vsb/%s/website/page/%s" % (vid, page))
         assert r.status_code == 200, "%s did not render" % page
         html = r.text
-        assert "Acting as" not in html, "%s publishes the engine's role line" % page
+        assert "Acting as" not in html and "Role the prompt asked for" not in html, "%s publishes the engine's role line" % page
         assert "native structured" not in html.lower(), "%s publishes floor narration" % page
         md = [l for l in html.splitlines() if l.strip().startswith("#")]
         assert not md, "%s publishes raw markdown headings: %r" % (page, md[:3])
@@ -9460,7 +9460,7 @@ def test_w450_shipped_body_never_wears_scaffold_or_fallback_name(client):
 
     # the shipped body: the founder's words, the honest pending state, and NO engine vocabulary
     root = _REPO_STORE / vid
-    forbidden = _re.compile(r"_\[|Acting as|native structured|Subject: .*\(domain:|Structured [a-z -]+frame for|"
+    forbidden = _re.compile(r"_\[|Acting as|Role the prompt asked for|native structured|Subject: .*\(domain:|Structured [a-z -]+frame for|"
                             r"Component for |Positioning wedge|Stream from |deterministic scaffold|"
                             r"\bINKASHAF\b|\bSAMAJH\b|\bSOCH\b|\bAQAL\b|VSB — |quality-gated", _re.I)
     body_files = [p for p in root.rglob("*") if p.is_file() and ".git" not in p.parts
@@ -49817,3 +49817,125 @@ def test_w649_a_refusal_is_the_result_and_a_cut_subject_says_it_was_cut(client):
         "a refused cascade is not shown as the result")
     assert "axios.post" not in _refusal.split("NOT RUN")[0].split("} else {", 1)[-1], (
         "the refusal branch makes a second request")
+
+
+def test_w650_the_floor_names_the_role_the_prompt_asked_for_and_takes_none(client):
+    """FU-626 (ledger v14 R1).
+
+    THE PROPERTIES: the floor's role line says which role the PROMPT asked for and that the floor takes none -
+    it never says it is acting as that role; and every reader of the line (the carried-context strip, the public
+    prose scrub, the CEO's directive filter) removes BOTH the new opening and the old one, because content
+    stored before this round still carries the old.
+    """
+    import agentic_core.ai.native.engine as _E
+    from agentic_core.api import vsb as _vsb
+
+    _prompt = "You are the Islamic scholar and Quranic exegete.\n## Context\n## Key Themes"
+    _out = _E.native_engine.generate(_prompt, "probe")
+    _line = next(l for l in _out.splitlines() if l.startswith(_E.ROLE_LEAD_OPEN))
+    assert "Islamic scholar and Quranic exegete" in _line and "takes no role" in _line, _line
+    assert "Acting as" not in _out, ("the floor still says it is acting as the role it was asked for", _out[:300])
+    assert _E.ROLE_LEAD_OPEN in _E.ROLE_LEAD_OPENINGS and "_Acting as:" in _E.ROLE_LEAD_OPENINGS, (
+        "the old opening is no longer strippable, so stored content that carries it will be published")
+    #  no role asked for: no line at all
+    assert _E.ROLE_LEAD_OPEN not in _E.native_engine.generate("## Context", "probe")
+
+    # ── every reader strips BOTH openings ───────────────────────────────────────────────────────
+    _old = "_Acting as: Chief Legal Officer._"
+    for _opening_line in (_line, _old):
+        #  (1) carried into the next stage
+        _carried = "Prior context:\n" + _opening_line + "\nThe plan so far.\n\nTask: continue"
+        _stripped = _E._strip_carried(_carried)
+        assert "Chief Legal Officer" not in _stripped and "Quranic exegete" not in _stripped, (
+            "a previous stage's role line is read as content by the next stage", _opening_line, _stripped)
+        #  (2) on a public page
+        _pub = _vsb._public_prose("We bake bread. " + _opening_line + " We deliver daily.")
+        for _leak in ("Acting as", "Role the prompt asked for", "takes no role", "Chief Legal Officer", "Quranic exegete"):
+            assert _leak not in _pub, ("the engine's role line reaches public prose", _leak, _pub)
+        assert "We bake bread" in _pub and "We deliver daily" in _pub, _pub
+
+    # ── over HTTP: a Religion tool on the floor ────────────────────────────────────────────────
+    _fr = client.post("/api/v1/religion/fatwa-research", json={"question": "What is the ruling on combining prayers while travelling?"}).json()
+    _txt = __import__("json").dumps(_fr)
+    if "Workstation native structured engine" in _txt:
+        assert "Acting as:" not in _txt, ("a floor-served Religion tool still opens with a scholar 'acting'", _txt[:400])
+
+
+def test_w650_nothing_the_screen_fails_is_shipped_and_the_entity_stays_registered_and_held(client, monkeypatch):
+    """FU-687, as the Owner ruled on 2026-10-10: register-and-hold stays at the doors; ship and the three public
+    surfaces REFUSE while an entity's latest §11 screen is 'fail'.
+
+    THE PROPERTIES: a failed entity is refused at all four routes with the frameworks that failed, and nothing
+    is written; it stays registered and its economy stays held; a clean, a 'review' and a never-screened
+    entity are not refused; an UNREADABLE history stops the ship as standing-unknown rather than lifting the
+    refusal; and establishment says plainly when its own birth ship was refused.
+    """
+    import re
+    from agentic_core.api import vsb as _vsb
+    from agentic_core.api.compliance import screen_compliance
+    from agentic_core.config import StoreUnavailable
+    from agentic_core.economy import living_vsbs as _lv
+
+    _bad = next((t for t in ("An online casino with interest-bearing loans for members",
+                             "A lending desk built on riba with casino gambling revenue")
+                 if screen_compliance(t)["overall"] == "fail"), None)
+    assert _bad, "no candidate subject is refused by the screen, so every leg below would be vacuous"
+    _clean = "A village bakery cooperative selling bread to the local primary school"
+    _ROUTES = ("website", "webapp", "mobile", "repo/ship")
+
+    def _spawn(challenge, name):
+        _r = client.post("/api/v1/vsb/spawn", json={"challenge": challenge, "name": name, "domain": "commerce"})
+        assert _r.status_code == 200, _r.text[:300]
+        return re.findall(r"vsb-[0-9a-f]{10}", _r.text)[0]
+
+    # (a) THE FAILED ENTITY: refused at all four, with the failed frameworks, and nothing written
+    _vid = _spawn(_bad, "W650 Held Probe")
+    assert (_lv._history().get(_vid) or {}).get("overall") == "fail", "the probe entity's screen did not fail"
+    for _route in _ROUTES:
+        _r = client.post(f"/api/v1/vsb/{_vid}/{_route}")
+        assert _r.status_code == 409, (_route, _r.status_code, _r.text[:200])
+        _d = _r.json()["detail"]
+        assert _d["error"] == "compliance_fail_hold" and _d["failed_frameworks"], (_route, _d)
+        assert "word list" in _d["note"] and "stays registered" in _d["note"], _d["note"]
+    assert not (_vsb._REPO_STORE / f"{_vid}.ship.json").exists(), "a refused ship left a ship record"
+    #  ...and the entity is still there, and still held
+    assert client.get(f"/api/v1/vsb/{_vid}").status_code == 200
+    assert _lv.operate_vsb(_vid).get("held") == "compliance_fail_hold"
+
+    # (b) A CLEAN ENTITY ships
+    _cid = _spawn(_clean, "W650 Clean Probe")
+    _ok = client.post(f"/api/v1/vsb/{_cid}/repo/ship")
+    assert _ok.status_code == 200 and _ok.json().get("shipped") is True, (_ok.status_code, _ok.text[:200])
+
+    # (c) 'review' and never-screened are NOT refused; only 'fail' is
+    _real_history = _lv._history
+    for _standing in ({"overall": "review"}, {}):
+        monkeypatch.setattr(_lv, "_history", lambda _s=_standing: {_vid: _s} if _s else {})
+        assert client.post(f"/api/v1/vsb/{_vid}/website").status_code == 200, (
+            "an entity whose latest screen is not 'fail' was refused", _standing)
+    monkeypatch.undo()
+
+    # (c2) A BODY SHIPPED EARLIER is not handed out once the entity's latest screen fails
+    assert client.get(f"/api/v1/vsb/{_cid}/repo/zip").status_code == 200, "a clean entity's shipped body is not served"
+    monkeypatch.setattr(_lv, "_history", lambda: {_cid: {"overall": "fail", "verdicts": [
+        {"framework": "driven", "status": "fail"}]}})
+    _z = client.get(f"/api/v1/vsb/{_cid}/repo/zip")
+    assert _z.status_code == 409 and _z.json()["detail"]["failed_frameworks"] == ["driven"], (_z.status_code, _z.text[:200])
+    monkeypatch.undo()
+
+    # (d) AN UNREADABLE HISTORY does not lift the refusal: standing unknown, nothing produced
+    def _unreadable():
+        raise StoreUnavailable("vsb_compliance_history.json", "driven: the history could not be read")
+    monkeypatch.setattr(_lv, "_history", _unreadable)
+    _u = client.post(f"/api/v1/vsb/{_cid}/repo/ship")
+    assert _u.status_code == 503 and _u.json()["detail"]["error"] == "compliance_standing_unknown", (_u.status_code, _u.text[:200])
+    monkeypatch.undo()
+
+    # (e) ESTABLISHMENT SAYS its birth ship was refused - registered, held, not shipped
+    _est = client.post("/api/v1/genesis/establish", json={"problem": _bad, "name": "W650 Birth Probe"})
+    assert _est.status_code == 200, _est.text[:300]
+    _ej = _est.json()
+    _ship = _ej.get("initial_ship") or {}
+    assert _ej.get("vsb_id") and _ship.get("shipped") is False, _ship
+    assert _ship.get("refused") == "compliance hold" and _ship.get("failed_frameworks") and _ship.get("reason"), (
+        "establishment does not say plainly that its birth ship was refused by the compliance hold", _ship)
