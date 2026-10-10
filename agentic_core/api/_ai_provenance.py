@@ -176,13 +176,19 @@ async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
         # "not assessable" — never "pass" beside a clinical or Quranic scaffold.
         from agentic_core.ai.native.engine import _sections as _prompt_sections
         _qa = (await assure_delivery(output, _prompt_sections(prompt) or None, label=f"tool:{agent}",
-                                     served_by=served_by))["quality"]
+                                     served_by=served_by,
+                                     #  W643 (FU-620) - what the person wrote, so the screen can tell their
+                                     #  own mention of a term from generated content that contains it
+                                     echoed_text=user_text))["quality"]
         provenance["quality_assurance"] = {
             "qms_gate_passed": _qa.get("qms_gate_passed"),
             "qms_basis": _qa.get("qms_basis"),
             "delivery_coverage": _qa.get("delivery_coverage"),
             "stub_found": _qa.get("stub_found"),
             "compliance_overall": (_qa.get("compliance") or {}).get("overall"),
+            #  W643 - the reason travels with the verdict: a page that prints the overall prints why
+            "compliance_basis": (_qa.get("compliance") or {}).get("basis"),
+            "compliance_echo_only": bool((_qa.get("compliance") or {}).get("echo_only")),
             "quality_record_hash": _qa.get("quality_record_hash"),
         }
     except Exception as exc:   # the gate itself must never cost the user their output

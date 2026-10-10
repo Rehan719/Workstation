@@ -11877,11 +11877,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W643",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The tool seam tells the screen what the person wrote (W640's user_text). On the floor, when the content fails and the same content with the person's words taken out does not, the verdict is REVIEW with the reason - never pass - and it is no longer filed as an immune failure. A prohibited term the platform itself wrote still fails, and model-served content is screened as before. The reason rides the tool's provenance and is printed in the chip and in every export. The halal tool counts the declared ingredients and process as the person's own declaration."
     },
     {
       "id": "FU-621",
@@ -11939,11 +11942,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W643",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The last clause of the basis reads the overall it describes: a subject a word list refused says it was REFUSED without being assessed, and an unassessed one names the overall actually returned. A guard extracts whatever overall the basis names and compares it with the response."
     },
     {
       "id": "FU-624",
@@ -12091,11 +12097,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W643",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The journey passes the product to the establish call only when the caller chose one, so the inner request's own record of what was set is true to what the person did. Driven both ways over HTTP: the journey's statement and the entity record read back from the store agree."
     },
     {
       "id": "FU-632",
@@ -12128,11 +12137,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W643",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The roster sentence no longer infers 'only the birth cycle ran' from the lever. It states the lever's position, and the recorded cycle count when it is given a record; with no record it states no count."
     },
     {
       "id": "FU-634",

@@ -237,9 +237,15 @@ def _coverage_report(verdicts: List[Dict[str, Any]]) -> Dict[str, Any]:
                   "pass, and `coverage_gaps` names every area nothing here assessed"
                   + (f". Matched only by a word list, which establishes nothing either way: "
                      f"{', '.join(sorted(set(vocabulary_only)))}" if vocabulary_only else "")
+                  #  W643 (FU-623, ledger v14 R2) - THE LAST CLAUSE READS THE OVERALL IT DESCRIBES. It was
+                  #  built from `can` being empty alone, so a subject a word list REFUSED came back overall
+                  #  'fail' under a basis ending "so the overall is 'review'".
                   + (f" (assessed here: {', '.join(sorted(set(can)))})" if can else
-                     " — NOTHING here assessed this subject, so the overall is 'review' and no part of "
-                     "it may be reported as compliant")),
+                     (" — NOTHING here assessed this subject: the overall is 'fail' because a word list "
+                      "REFUSED it, which a screen may do without having assessed anything; no part of it "
+                      "may be reported as compliant" if overall == "fail" else
+                      f" — NOTHING here assessed this subject, so the overall is {overall!r} and no part of "
+                      "it may be reported as compliant"))),
     }
 
 

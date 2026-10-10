@@ -555,7 +555,9 @@ async def halal_pre_assessment(req: HalalReviewRequest):
     )
 
     assessment, provenance = await ai_text(prompt, "religion_halal", realm=req.realm,
-        user_text=person_said(req.product_name, req.product_description))
+        #  W643 - the ingredients and the process are the person's own declaration too
+        user_text=person_said(req.product_name, req.product_description, req.ingredients,
+                              req.manufacturing_process))
 
     _judging = ("Halal Status Assessment", "Critical Issues", "Flagged Ingredients")
     sections_withheld: list[str] = []

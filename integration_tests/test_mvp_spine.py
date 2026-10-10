@@ -49178,3 +49178,156 @@ def test_w642_a_floor_served_tool_does_not_disclaim_as_if_a_model_wrote_it(clien
         assert "no domain was declared" not in _bp and "named no domain" not in _bp, (
             "the adaptation route names two domains and its floor frame says none was declared", _bp[:400])
         assert "spaced repetition" in _bp, _bp[:400]
+
+
+def test_w643_a_persons_own_mention_is_a_review_and_a_basis_names_the_verdict_it_describes(client):
+    """FU-620 + FU-623 (ledger v14 R1, R2).
+
+    THE PROPERTIES: when the native floor repeats the person's own words and the word list matches ONLY those
+    words, the verdict is REVIEW with the reason, never FAIL and never pass, and it is not filed as an immune
+    failure; a prohibited term the person did NOT write still fails; model-served content is screened exactly
+    as before; and the compliance screen's basis states the overall it actually returned.
+    """
+    import asyncio, re
+    from agentic_core.api.compliance import screen_compliance
+    from agentic_core.vbs.quality import assure_delivery
+    from agentic_core.organism.immune import immune
+
+    #  a term today's word list refuses, found by asking the screen rather than typed
+    _term = next((t for t in ("riba", "pork gelatin", "gambling", "interest-bearing loan")
+                  if screen_compliance(f"This product is built on {t}.")["overall"] == "fail"), None)
+    assert _term, "no candidate term is refused by the screen, so every leg below would be vacuous"
+    _frame = "_[Workstation native structured engine — owned, no external dependency]_\n\n## Understanding\nThe request concerns: {}.\n\n## Next steps\n- Review."
+
+    def _gate(content, served_by, echoed):
+        return asyncio.run(assure_delivery(content, None, label="tool:w643_probe", served_by=served_by,
+                                           echoed_text=echoed))["quality"]["compliance"]
+
+    def _fails():
+        return int(((immune.status().get("by_type") or {}).get("compliance_fail")) or 0)
+
+    # (a) the floor repeats the person's own mention: REVIEW, with the reason, and no immune failure
+    _q = f"What is the ruling on {_term} for a first-time buyer"
+    _before = _fails()
+    _echo = _gate(_frame.format(_q), "native", _q)
+    assert _echo["overall"] == "review" and _echo.get("echo_only") is True and _echo["compliant"] is False, _echo
+    assert _echo.get("screened_overall") == "fail" and "text you wrote" in _echo["basis"], _echo
+    assert "never clear" in _echo["basis"], "the downgrade does not say that nothing was cleared"
+    assert _fails() == _before, "a person's own mention was filed as an immune failure"
+
+    # (b) a prohibited term the person did NOT write still fails - the remainder is screened, not waved through
+    _other = _gate(_frame.format("a savings club for nurses") + f"\n- Structure the scheme around {_term}.", "native",
+                   "a savings club for nurses")
+    assert _other["overall"] == "fail" and not _other.get("echo_only"), (
+        "a prohibited term the platform itself wrote was excused as the person's echo", _other)
+    # (c) nothing said about whose words they are: the old behaviour, a fail
+    assert _gate(_frame.format(_q), "native", None)["overall"] == "fail"
+    assert _gate(_frame.format(_q), "native", "   ")["overall"] == "fail"
+    # (d) a MODEL wrote it: screened as before, whatever the person asked
+    _model = _gate(f"You should use {_term} here.", "ollama:probe", _q)
+    assert _model["overall"] == "fail" and not _model.get("echo_only"), (
+        "model-generated content containing a prohibited term was excused because the person had asked about it", _model)
+
+    # (e) OVER HTTP, on the two routes the audit drove
+    _fq = client.post("/api/v1/religion/fatwa-research", json={
+        "question": f"Is it permissible to take a mortgage, and what is the ruling on {_term}?"}).json()
+    _qa = (_fq.get("ai_provenance") or {}).get("quality_assurance") or {}
+    if (_fq.get("ai_provenance") or {}).get("floor_note") or _fq.get("floor_note"):
+        assert _qa.get("compliance_overall") == "review" and _qa.get("compliance_echo_only") is True, (
+            "a fiqh question that names a prohibited thing is still stamped FAIL", _qa)
+        assert "text you wrote" in (_qa.get("compliance_basis") or ""), _qa
+    _hr = client.post("/api/v1/religion/halal-review", json={
+        "product_name": "Fruit chews", "product_description": "a chewy sweet",
+        "ingredients": ["pork gelatin", "sugar"]}).json()
+    _hqa = (_hr.get("ai_provenance") or {}).get("quality_assurance") or {}
+    if (_hr.get("ai_provenance") or {}).get("floor_note") or _hr.get("floor_note"):
+        assert _hqa.get("compliance_overall") == "review" and _hqa.get("compliance_echo_only") is True, (
+            "a halal review of a product that DECLARES a prohibited ingredient is stamped FAIL on the person's "
+            "own declaration", _hqa)
+        assert _hqa.get("compliance_overall") != "pass", "a declared prohibited ingredient was cleared"
+
+    # (f) the page prints the reason with the verdict, in the chip and in every export
+    import pathlib as _pl
+    _dt = _code_only((_pl.Path(__file__).resolve().parents[1]
+                      / "apps/workstation-superapp/src/components/DomainTool.tsx").read_text(encoding="utf-8"))
+    for _need in ("qa?.compliance_echo_only && qa?.compliance_basis", 'data-testid="domain-compliance-echo"',
+                  "{echoBasisOf(result)}", "echoBasisOf(data) ??"):
+        assert _need in _dt, ("the echo reason does not reach the tool page or its exports", _need)
+
+    # (g) FU-623: THE BASIS NAMES THE OVERALL IT DESCRIBES, on a refused subject and on an unassessed one
+    for _subject in (f"A lending product built on {_term} marketed to students",
+                     "A museum exhibition on the history of weaving in Britain"):
+        _c = client.post("/api/v1/compliance/check", json={"subject": _subject, "domain": "general"})
+        assert _c.status_code == 200, _c.text[:200]
+        _cj = _c.json()
+        _named = re.findall(r"the overall is '?(\w+)'?", _cj.get("basis") or "")
+        for _n in _named:
+            assert _n == _cj["overall"], ("the basis names an overall the response did not return", _cj["overall"], _cj["basis"][-260:])
+        if _cj["overall"] == "fail" and not _cj.get("assessed_by"):
+            assert "REFUSED" in _cj["basis"] and "'review'" not in _cj["basis"], _cj["basis"][-260:]
+
+
+def test_w643_one_call_records_one_fact_about_the_product_and_a_lever_is_not_a_history(client):
+    """FU-631 + FU-633 (ledger v14 R2).
+
+    THE PROPERTIES: one establish call says ONE thing about whether the founder chose the product, wherever it
+    is recorded; and what an entity is told about its cycles comes from its record, never from where the
+    Self-run lever stands now.
+    """
+    import json as _json
+    from agentic_core.economy import living_vsbs as _lv
+
+    # ── FU-633: the lever's position is not the history ─────────────────────────────────────────
+    from agentic_core.organism.heartbeat import heartbeat as _hb
+    _was = _hb.auto_economy
+    try:
+        _hb.auto_economy = False
+        _plain = _lv.living_statement()["autonomous_operation"]
+        assert "only the birth cycle ran" not in _plain, _plain
+        assert "cycle(s) are recorded" not in _plain, ("a count was stated with no record to read it from", _plain)
+        for _n in (0, 2, 7):
+            _s = _lv.living_statement({"operating_cycles": _n})["autonomous_operation"]
+            assert f"{_n} cycle(s) are recorded for it" in _s and "only the birth cycle ran" not in _s, (_n, _s)
+        assert "0 cycle(s)" in _lv.living_statement({"operating_cycles": None})["autonomous_operation"]
+    finally:
+        _hb.auto_economy = _was
+
+    # ── FU-631: one call, one fact about the product choice ─────────────────────────────────────
+    def _sources(obj, out):
+        if isinstance(obj, dict):
+            for _k, _v in obj.items():
+                if _k == "product_source" and isinstance(_v, str):
+                    out.append(_v)
+                _sources(_v, out)
+        elif isinstance(obj, list):
+            for _v in obj:
+                _sources(_v, out)
+        return out
+
+    for _body, _want in (({"product": "factory"}, "chosen by the caller"), ({}, "the default")):
+        _r = client.post("/api/v1/genesis/journey", json={
+            "problem": "Affordable school lunches for a village primary", "domain": "education",
+            "establish": True, "name": "W643 Probe", **_body})
+        assert _r.status_code == 200, _r.text[:300]
+        _jr = _r.json()
+        _found = _sources(_jr, [])
+        #  the journey's own statement, and the ENTITY RECORD it created (read back from the store's route)
+        _ids = []
+
+        def _vsb_ids(obj):
+            if isinstance(obj, dict):
+                for _k, _v in obj.items():
+                    if _k == "vsb_id" and isinstance(_v, str):
+                        _ids.append(_v)
+                    _vsb_ids(_v)
+            elif isinstance(obj, list):
+                for _v in obj:
+                    _vsb_ids(_v)
+        _vsb_ids(_jr)
+        assert _ids, ("the journey established nothing to read back", list(_jr)[:12])
+        _ent = client.get(f"/api/v1/vsb/{_ids[0]}")
+        assert _ent.status_code == 200, _ent.text[:200]
+        _sources(_ent.json(), _found)
+        assert len(_found) >= 2, ("the journey and the entity it established do not both record the choice", _found)
+        assert len(set(_found)) == 1, ("one call recorded two different facts about the product choice", _found)
+        assert _found[0].startswith(_want), (_body, _found[0])

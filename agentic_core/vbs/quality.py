@@ -315,7 +315,8 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
                           owner_id: Optional[str] = None,
                           served_by: Any = None,
                           withheld: Optional[Dict[str, str]] = None,
-                          sections_by_construction: Optional[str] = None) -> Dict[str, Any]:
+                          sections_by_construction: Optional[str] = None,
+                          echoed_text: Optional[str] = None) -> Dict[str, Any]:
     """Subject an operational delivery to the living QMS + §10 bar + §8 organism.
 
     ``served_by`` (W449) is who produced the content — the orchestrator's served_by string, a
@@ -383,6 +384,31 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
         _metrics = ({"coverage_not_assessable": _na_basis} if _floor else
                     {"delivery_coverage": coverage, "stub_found": stub})
         screen = screen_compliance(content or "", delivery_metrics=_metrics)
+        #  W643 (FU-620, ledger v14 R1) - AN ECHO OF THE PERSON'S OWN WORDS IS NOT GENERATED CONTENT THAT FAILED.
+        #  On the floor the output repeats what the person typed, so a fiqh question that asks about riba, or a
+        #  halal review of a product declaring pork gelatin, was failed by the word list, stamped FAIL on the
+        #  person's own question, and filed as an immune failure that lowered organism health elsewhere.
+        #  `echoed_text` is the caller's statement of what the person wrote (W640). The content is screened
+        #  AGAIN with every word of theirs taken out: if what remains - the platform's own wording - does not
+        #  fail, the fail came from the echo alone and the verdict is REVIEW. Never pass: a screen may refuse,
+        #  never clear. A prohibited term the person did NOT write is still in the remainder and still fails;
+        #  model-served content is not touched by this at all.
+        _echo_only = False
+        if _floor and screen.get("overall") == "fail" and isinstance(echoed_text, str) and echoed_text.strip():
+            import re as _re_echo
+            _words = sorted({w for w in _re_echo.findall(r"[^\W\d_]{3,}", echoed_text.lower())}, key=len, reverse=True)
+            _residual = content or ""
+            for _w in _words:
+                _residual = _re_echo.sub(r"(?i)(?<![^\W\d_])" + _re_echo.escape(_w) + r"(?![^\W\d_])", " ", _residual)
+            _rescreen = screen_compliance(_residual, delivery_metrics=_metrics)
+            _echo_only = _rescreen.get("overall") != "fail"
+        if _echo_only:
+            screen = {**screen, "overall": "review", "compliant": False, "screened_overall": "fail",
+                      "echo_only": True,
+                      "basis": ("REVIEW, not a finding about generated content: the terms the screen matched are in "
+                                "the text you wrote, which the native floor repeated; with your words taken out, "
+                                "what the platform itself composed does not match. Nothing here was cleared - a "
+                                "word list can flag, never clear.")}
         # W483 (R1.1) — coverage_gaps and basis were dropped here, so every downstream reader (the
         # Deliverables chip, the board pack, the sealed record) saw an overall with no way to know
         # which frameworks had actually read the subject. They travel with the verdict now.
@@ -390,7 +416,9 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
                                  "verdicts": screen["verdicts"],
                                  "coverage_gaps": screen.get("coverage_gaps") or [],
                                  "assessed_by": screen.get("assessed_by") or [],
-                                 "basis": screen.get("basis")}
+                                 "basis": screen.get("basis"),
+                                 **({"echo_only": True, "screened_overall": screen.get("screened_overall")}
+                                    if screen.get("echo_only") else {})}
     except Exception as exc:
         quality["compliance_error"] = str(exc)
     _comp = quality.get("compliance") or {}

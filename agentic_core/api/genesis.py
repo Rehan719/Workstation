@@ -806,6 +806,13 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         try:
             established_vsb = await genesis_establish(EstablishRequest(
                 problem=req.problem, domain=req.domain, realm=req.realm, name=req.name,
+                #  W643 (FU-631, ledger v14 R2) - THE PRODUCT IS PASSED ONLY WHEN THE CALLER CHOSE ONE. The
+                #  journey recorded "chosen by the caller" and then built this request without the product,
+                #  so the entity, its genome and its repository recorded "the default - no product was
+                #  chosen" about the same call. Passing it only when it was set keeps `model_fields_set`
+                #  on the inner request true to what the person did - one fact, read once.
+                **({"product": req.product}
+                   if "product" in (getattr(req, "model_fields_set", None) or set()) else {}),
                 concept=concept, design=design, commercialisation=commercial,
                 entity_type=req.entity_type, ship_output=req.ship_output,
                 research=research, operations=operations,
