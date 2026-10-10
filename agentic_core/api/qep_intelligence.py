@@ -375,7 +375,11 @@ async def adaptation_execute(req: AdaptationRequest,
     prompt = (
         f"You are the QEP Cross-Domain Adaptation engine. Adapt the pedagogical pattern "
         f"'{req.pattern}' from the '{req.source_domain}' domain into the '{req.target_domain}' "
-        "domain.\n\n## Adapted Mechanism\n## Key Adjustments\n## Expected Fidelity (0-1)"
+        "domain.\n\n"
+        #  W642 (FU-621) - the route KNOWS the domain it is adapting into and never told the floor, which then
+        #  printed that none was declared over a request that named two
+        f"Domain: {req.target_domain}\n\n"
+        "## Adapted Mechanism\n## Key Adjustments\n## Expected Fidelity (0-1)"
     )
     # W439 audit catch: gateway.query dropped served_by (a floor scaffold was indistinguishable
     # from a model blueprint), the entry claimed status "active" and the response "executed" when
@@ -387,7 +391,10 @@ async def adaptation_execute(req: AdaptationRequest,
                                          user_text=(req.pattern or None))   # W640 - the pattern typed
         blueprint = _meta.get("output") or ""
         _served_by = _meta.get("served_by", "native")
-        _bp_status = "blueprint_generated"
+        #  W645 (FU-621, ledger v14 R1) - A FLOOR FRAME IS NOT A BLUEPRINT. The status read
+        #  "blueprint_generated" whatever had served, and the registry filed a three-heading frame as a
+        #  generated blueprint. The frame is still returned and recorded - under the word for what it is.
+        _bp_status = "frame_only" if (_served_by or "native") == "native" else "blueprint_generated"
     except Exception as e:
         blueprint = f"[adaptation blueprint unavailable: {e}]"
         _served_by, _bp_status = None, "error"
@@ -412,8 +419,11 @@ async def adaptation_execute(req: AdaptationRequest,
         registry.append(entry)
         _save(_REGISTRY, registry)
     return {"adaptation": entry, "blueprint": blueprint, "status": _bp_status,
-            "status_note": ("a blueprint was generated and recorded — nothing was installed or "
-                            "activated anywhere; 'executed'/'active' were the old overclaims")}
+            "status_note": (("the native floor served this: a structured frame was recorded, NOT a blueprint — "
+                             "no adaptation was designed; nothing was installed or activated anywhere")
+                            if _bp_status == "frame_only" else
+                            ("a blueprint was generated and recorded — nothing was installed or "
+                             "activated anywhere; 'executed'/'active' were the old overclaims"))}
 
 
 # ── Compliance ────────────────────────────────────────────────────────────────

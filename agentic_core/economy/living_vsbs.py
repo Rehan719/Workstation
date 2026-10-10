@@ -71,7 +71,15 @@ def living_statement(rec: Optional[Dict[str, Any]] = None) -> dict:
                                      "registered on the living roster — autonomous economy cycles are OFF ("
                                      + ("the heartbeat's Self-run lever is off" if not lever else
                                         "the heartbeat is stopped, so nothing beats although Self-run is on")
-                                     + "), so only the birth cycle ran; enable Self-run and start the heartbeat on the "
+                                     #  W643 (FU-633, ledger v14 R2) - THE LEVER'S POSITION IS NOT THE HISTORY.
+                                     #  This said "so only the birth cycle ran", inferring how many cycles an
+                                     #  entity had run from where the lever stands NOW; an entity with two
+                                     #  cycles booked was told one. The count is stated from the record when
+                                     #  there is one, and not stated at all when there is not.
+                                     + ")"
+                                     + ((f"; {int(rec.get('operating_cycles') or 0)} cycle(s) are recorded for it "
+                                         f"on this roster") if isinstance(rec, dict) else "")
+                                     + "; enable Self-run and start the heartbeat on the "
                                      "Heartbeat page for the organism to tend this VSB"),
             "autonomous_cycles": auto, "virtual": True,
             #  P3.2 clause (2) — TRUE OF THIS ENTITY, when one is given. `rec=None` keeps the global

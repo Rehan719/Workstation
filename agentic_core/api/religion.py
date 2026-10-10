@@ -19,7 +19,7 @@ from pydantic import BaseModel
 
 import functools
 
-from agentic_core.api._ai_provenance import ai_text as _ai_text, person_said
+from agentic_core.api._ai_provenance import ai_text as _ai_text, person_said, disclaimer_for
 
 #  W637 (FU-597) — this router's domain, bound once. Every ai_text call below carries it, so the native floor
 #  prints the real domain instead of "the request named no domain".
@@ -555,7 +555,9 @@ async def halal_pre_assessment(req: HalalReviewRequest):
     )
 
     assessment, provenance = await ai_text(prompt, "religion_halal", realm=req.realm,
-        user_text=person_said(req.product_name, req.product_description))
+        #  W643 - the ingredients and the process are the person's own declaration too
+        user_text=person_said(req.product_name, req.product_description, req.ingredients,
+                              req.manufacturing_process))
 
     _judging = ("Halal Status Assessment", "Critical Issues", "Flagged Ingredients")
     sections_withheld: list[str] = []
@@ -597,10 +599,10 @@ async def halal_pre_assessment(req: HalalReviewRequest):
         **({"floor_note": floor_note} if floor_note else {}),
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "disclaimer": (
-            "This is an AI pre-assessment tool only. Official halal certification must be obtained "
-            "from an accredited halal certifying body. This assessment does not constitute certification."
-        ),
+        "disclaimer": disclaimer_for(
+            provenance, "This is an AI pre-assessment tool only.",
+            "Official halal certification must be obtained from an accredited halal certifying body. This "
+            "assessment does not constitute certification."),
     }
 
 
@@ -686,9 +688,9 @@ async def interfaith_dialogue(req: InterfaithRequest):
         **({"floor_note": floor_note} if floor_note else {}),
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "disclaimer": (
-            "AI-assisted comparative material, not scholarship and not a statement of any tradition's "
-            "position. It represents no faith community and speaks for none of them; where it was served "
-            "by the deterministic floor the research sections are WITHHELD and named in "
-            "`sections_withheld`. Consult qualified representatives of each tradition."),
+        "disclaimer": disclaimer_for(
+            provenance, "AI-assisted comparative material.",
+            "Not scholarship and not a statement of any tradition's position. It represents no faith community "
+            "and speaks for none of them; where it was served by the deterministic floor the research sections "
+            "are WITHHELD and named in `sections_withheld`. Consult qualified representatives of each tradition."),
     }

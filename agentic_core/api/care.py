@@ -17,7 +17,7 @@ from pydantic import BaseModel
 
 import functools
 
-from agentic_core.api._ai_provenance import ai_text as _ai_text, person_said
+from agentic_core.api._ai_provenance import ai_text as _ai_text, person_said, disclaimer_for
 
 #  W637 (FU-597) — this router's domain, bound once. Every ai_text call below carries it, so the native floor
 #  prints the real domain instead of "the request named no domain".
@@ -96,10 +96,9 @@ async def generate_care_plan(req: CarePlanRequest):
         "care_plan": plan,
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "disclaimer": (
-            "This care plan is AI-generated as a planning aid only. "
-            "It must be reviewed and validated by a qualified healthcare professional before use."
-        ),
+        "disclaimer": disclaimer_for(
+            provenance, "This care plan is AI-generated as a planning aid only.",
+            "It must be reviewed and validated by a qualified healthcare professional before use."),
     }
 
 
@@ -163,9 +162,17 @@ async def risk_assessment(req: RiskAssessRequest):
         "assessment": assessment,
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "disclaimer": ("The score is computed in-house from the published table (NEWS2 RCP 2017 · MUST BAPEN · "
-                       "Waterlow · NICE CG161 factor count) and is a decision aid, not a diagnosis; the narrative is "
-                       "an AI interpretation aid only. Clinical judgement by a qualified professional is required."),
+        #  W642 (FU-651) - TWO claims, each following its own fact: whether a score was computed at all (three
+        #  tools have no published arithmetic and said "computed from the published table" anyway), and what
+        #  served the narrative.
+        "disclaimer": (
+            ("The score is computed in-house from the published table (NEWS2 RCP 2017 · MUST BAPEN · "
+             "Waterlow · NICE CG161 factor count) and is a decision aid, not a diagnosis; "
+             if isinstance(score, dict) and score.get("available") else
+             "NO SCORE WAS COMPUTED: this tool has no published arithmetic here, so nothing below is a score; ")
+            + ("the narrative is a structured frame from the native floor, not an interpretation by AI or by "
+               "a clinician. " if provenance.get("floor_note") else "the narrative is an AI interpretation aid only. ")
+            + "Clinical judgement by a qualified professional is required."),
     }
 
 

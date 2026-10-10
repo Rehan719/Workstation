@@ -174,7 +174,7 @@ _STANDING_CANON = ("Standing values from the Owner's documented canon: faith-roo
                    "real user enablement · virtual/simulated finance only (real rails stay Owner-gated).")
 
 
-def _owner_decisions(limit: int = 5) -> List[Dict[str, Any]]:
+def _owner_decisions(limit: int = 5, scope: "str | None" = None) -> List[Dict[str, Any]]:
     """The Owner's own recorded DECISIONS — the Board ratifications, read from Change Control.
 
     P3.4 clause (1) names decisions as one of the three inputs a founder model is built from, and nothing
@@ -193,6 +193,13 @@ def _owner_decisions(limit: int = 5) -> List[Dict[str, Any]]:
                 continue
             d = _cca._ratification_decision(c)
             if not d:
+                continue
+            #  W646 (FU-682) - A DECISION BELONGS TO THE ENTITY ITS CHANGE CONCERNS. The instructions were
+            #  scoped (W624, W645) and the decisions were not, so one ratified change anywhere made the Chief
+            #  of EVERY entity a modelled twin that may act unprompted. A change names its entity in `vsb_id`;
+            #  one that names none concerns the platform and is the apex plan's. `scope=None` reads all, as
+            #  the unscoped callers always have.
+            if scope is not None and str(c.get("vsb_id") or "workstation") != scope:
                 continue
             r = c.get("board_ratification") or {}
             out.append({"cca_id": c.get("cca_id"), "decision": d,
@@ -233,7 +240,10 @@ def founder_model(scope: "str | None" = None, owner: "str | None" = None) -> Dic
         #  entity's Chief counted every entity's instructions; and the read swallowed a corrupt store as [].
         _own = [x for x in _load_strict()
                 if x.get("instruction") and not x.get("unprompted")
-                and (scope is None or x.get("business_plan_scope") == scope)
+                #  W645 (FU-636) - a row with NO scope predates scoping and is the apex plan's: it used to
+                #  match no scope at all, so once the twin read its model per scope those rows would have
+                #  belonged to nobody
+                and (scope is None or (x.get("business_plan_scope") or "workstation") == scope)
                 and (owner is None or x.get("owner") == owner)]
         n_i_all = len(_own)
         for r in _own[-5:]:
@@ -241,7 +251,7 @@ def founder_model(scope: "str | None" = None, owner: "str | None" = None) -> Dic
                                  "instruction": str(r.get("instruction"))[:200]})
     except Exception:
         instructions_readable = False
-    decisions = _owner_decisions()
+    decisions = _owner_decisions(scope=scope)
     n_i, n_d = (n_i_all or 0), len(decisions)
     is_twin = (n_i + n_d) > 0
 
@@ -494,9 +504,12 @@ async def twin_directive_unprompted(scope: str = "workstation") -> Dict[str, Any
     invented: an unprompted directive restates what the Owner last asked for, in the light of what the
     plan now records, which is what a twin staying consistent with its principal means.
     """
-    m = founder_model()
+    #  W645 (FU-636, ledger v14 R3) - THE MODEL IS READ FOR THIS SCOPE. It was read with no scope, so an
+    #  instruction the Owner wrote for one entity was restated as a directive on whichever plan the beat
+    #  was visiting - the Workstation apex plan by default - and recorded as executed there.
+    m = founder_model(scope)
     if not m["is_modelled_twin"]:
-        return {"issued": False, "reason": "role", "founder_model_basis": m["basis"],
+        return {"issued": False, "reason": "role", "founder_model_basis": m["basis"], "scope": scope,
                 "owner_inputs": m["owner_inputs"],
                 "basis": ("REFUSED: this Chief is a ROLE, not a modelled twin - the Owner has written no "
                           "instruction and made no recorded decision, so there is nothing of theirs to act "
@@ -506,7 +519,10 @@ async def twin_directive_unprompted(scope: str = "workstation") -> Dict[str, Any
     #  IDEMPOTENT ON THE OWNER'S RECORD, not on a clock: the beat may visit a thousand times between two
     #  instructions, and the plan must not grow an objective for each visit.
     try:
-        prior = [r for r in _load() if r.get("kind") == "twin_directive_unprompted"]
+        #  ...and so is the record of what was already issued: one scope's last directive must not silence
+        #  (or satisfy) another's
+        prior = [r for r in _load() if r.get("kind") == "twin_directive_unprompted"
+                 and (r.get("scope") or r.get("business_plan_scope") or "workstation") == scope]
     except Exception:
         prior = []
     last = prior[-1] if prior else None

@@ -447,7 +447,12 @@ export const NativeAI: React.FC = () => {
     // "Deterministic floor active". What serves and what is configured are two fields now.
     configured_default?: string | null; serves?: string; serving_basis?: string;
     discovered?: string[]; active_estate?: string[];
-    evaluations?: { model: string; can_serve: boolean; score: number | null; at: string }[];
+    //  W641 (P3.32) — what an evaluation ran against and what its number is; absent on records made before
+    //  the probe set was versioned, and the row says so rather than printing a bare score
+    evaluations?: { model: string; can_serve: boolean; score: number | null; at: string;
+                    marker_hits?: number | null; probes_total?: number; basis?: string;
+                    control?: { marker_absent: boolean | null } | null;
+                    probe_set?: { version: string; digest: string } }[];
   } | null>(null);
   const [lcBusy, setLcBusy] = useState('');
   const loadLifecycle = () =>
@@ -937,7 +942,7 @@ export const NativeAI: React.FC = () => {
                   <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">Recent evaluations (honest — no score when the target could not serve)</p>
                   {lifecycle.evaluations!.slice(-3).reverse().map((ev, i) => (
                     <p key={i} className="text-[9px] text-slate-400">
-                      {ev.model} · {ev.can_serve ? `score ${ev.score}` : 'could not serve — no score'} · {ev.at}
+                      {ev.model} · {ev.can_serve ? (ev.probe_set ? `marker hits ${ev.marker_hits} of ${ev.probes_total} · control ${ev.control?.marker_absent === true ? 'passed' : ev.control?.marker_absent === false ? 'FAILED' : 'not read'} · probe set v${ev.probe_set.version}` : `score ${ev.score} (recorded before the probe set was versioned)`) : 'could not serve — no score'}{ev.basis ? <span className="block text-[9px] text-slate-500">{ev.basis}</span> : null} · {ev.at}
                     </p>
                   ))}
                 </div>

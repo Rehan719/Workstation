@@ -6353,7 +6353,23 @@ def test_genesis_journey_establish_seam(client):
     assert ev.get("status") in ("operating", "body pending", "held", "registered - not operating",
                                "registered - operation unknown"), ev.get("status")
     assert ev.get("status_basis"), ev
-    assert "established living enterprise" in r.json().get("deliverable", "")
+    #  W644 (FU-629) - this pinned the phrase "established living enterprise", which the top line printed whatever
+    #  the entity's status was. The property: the top line QUOTES the entity's own derived line, so the two
+    #  cannot disagree, and "operating" is its own field read from the same status.
+    _top644 = r.json()
+    assert ev.get("deliverable") and ev["deliverable"] in _top644.get("deliverable", ""), (
+        "the journey's top line does not carry the established entity's own status line",
+        _top644.get("deliverable"), ev.get("deliverable"))
+    assert _top644.get("enterprise_established") is True
+    assert _top644.get("enterprise_operating") is (ev.get("status") == "operating"), (
+        _top644.get("enterprise_operating"), ev.get("status"))
+    if ev.get("status") != "operating":
+        assert "established living enterprise" not in _top644["deliverable"], _top644["deliverable"]
+    assert r0.json().get("enterprise_operating") is None, "a journey that established nothing reports an operating state"
+    _gj644 = _code_only((__import__("pathlib").Path(__file__).resolve().parents[1]
+                         / "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8"))
+    assert "candidates_are_alternatives === false\n            ? `${ranked} candidate text(s) were produced and they are not alternatives" in _gj644, (
+        "the rank tile says candidates were modelled and ranked without reading the server's own flag (FU-624)")
 
 
 def test_economy_board_pack(client):
@@ -8772,7 +8788,11 @@ def test_w439_qep_cluster_audited_fixes_hold(client):
 
     # ── adaptation: nothing claims 'active'/'executed' when only a blueprint was generated ──────
     ad = client.post("/api/v1/qep/adaptation/execute", json={"pattern": "SM-2 guard"}).json()
-    assert ad["status"] == "blueprint_generated" and ad["adaptation"]["status"] == "blueprint_generated"
+    #  W645 (FU-621) - the status follows what SERVED: a floor frame is "frame_only", a model's reply is
+    #  "blueprint_generated". This pinned the second word on every run, including floor runs.
+    _floor_ad = (ad["adaptation"].get("served_by") or "native") == "native"
+    assert ad["status"] == ad["adaptation"]["status"] == ("frame_only" if _floor_ad else "blueprint_generated"), ad["status"]
+    assert ("NOT a blueprint" in ad["status_note"]) == _floor_ad, ad["status_note"]
     assert "served_by" in ad["adaptation"]
 
     # ── status: computed truth, never the dead-engine constants ─────────────────────────────────
@@ -40803,7 +40823,8 @@ def test_w587_p34_the_chief_is_a_modelled_twin_or_says_it_is_a_role(client, monk
         _cid587 = "cca-w587probe"
         _cpath587 = _cca587._CCA_STORE / f"{_cid587}.json"
         _cpath587.write_text(_json587.dumps({
-            "cca_id": _cid587, "title": "a change the Owner ratified", "status": "approved",
+            #  W646 (FU-682) - the change names the entity it concerns, and the twin is visited at that scope
+            "cca_id": _cid587, "title": "a change the Owner ratified", "status": "approved", "vsb_id": "w587decscope",
             "board_ratification": {"decision": "ratify", "at": "2026-10-05T00:00:00Z",
                                    "notes": "the Owner's own decision"},
         }), encoding="utf-8")
@@ -40817,6 +40838,13 @@ def test_w587_p34_the_chief_is_a_modelled_twin_or_says_it_is_a_role(client, monk
                 _dec587)
             assert "decision(s) the Owner made" in _dec587["basis"], _dec587["basis"]
             #  and a decision alone is enough for the twin to act unprompted, restating the decision
+            #  ...and ONLY there: another entity's Chief, and the apex plan's, are not made twins by it
+            for _other646 in ("w646-another-entity", "workstation"):
+                _om646 = _b587.founder_model(_other646)
+                assert _om646["decisions"]["count"] == 0 and _om646["is_modelled_twin"] is False, (
+                    "a decision the Owner made about one entity made another scope's Chief a twin", _other646, _om646)
+                assert _aio587.run(_b587.twin_directive_unprompted(_other646))["issued"] is False
+            assert _b587.founder_model("w587decscope")["decisions"]["count"] >= 1
             _dd587 = _aio587.run(_b587.twin_directive_unprompted("w587decscope"))
             assert _dd587["issued"] is True, ("a Chief built from a decision refuses to act", _dd587)
             assert "ratify" in str(_dd587.get("acted_on") or "").lower(), (
@@ -40878,8 +40906,17 @@ def test_w587_p34_the_chief_is_a_modelled_twin_or_says_it_is_a_role(client, monk
             "a Chief with nothing of the Owner's does not say why it refuses to direct", _ref587["basis"])
 
         #  (b) with an instruction of the Owner's it ISSUES, through the gate, WITH execute
+        #  W645 (FU-636) - the instruction is recorded FOR the scope the twin then visits. It was recorded with
+        #  no scope at all and issued on "w587scope", which is the defect: an instruction acted on wherever
+        #  the beat happened to be. A row with no scope is the apex plan's, and is tested as that below.
         _b587._save([{"kind": "chief_instruction", "instruction": "Close Phase 3 of the plan",
-                      "created_at": "2026-10-05T00:00:00Z"}])
+                      "business_plan_scope": "w587scope", "created_at": "2026-10-05T00:00:00Z"}])
+        _else645 = _aio587.run(_b587.twin_directive_unprompted("w645-another-entity"))
+        assert _else645["issued"] is False and _else645["reason"] == "role", (
+            "an instruction the Owner wrote for one scope was restated as a directive on another", _else645)
+        _apex645 = _aio587.run(_b587.twin_directive_unprompted("workstation"))
+        assert _apex645["issued"] is False, (
+            "an instruction written for an entity landed on the Workstation apex plan", _apex645)
         _iss587 = _aio587.run(_b587.twin_directive_unprompted("w587scope"))
         assert _iss587["issued"] is True, _iss587
         #  THE OUTCOME, not the intention. A blind proved the first cut vacuous: it asserted
@@ -40915,6 +40952,7 @@ def test_w587_p34_the_chief_is_a_modelled_twin_or_says_it_is_a_role(client, monk
 
         #  (d) a NEW input of the Owner's moves it again
         _b587._save(_b587._load() + [{"kind": "chief_instruction", "instruction": "Now close Phase 4",
+                                      "business_plan_scope": "w587scope",
                                       "created_at": "2026-10-05T01:00:00Z"}])
         _mov587 = _aio587.run(_b587.twin_directive_unprompted("w587scope"))
         assert _mov587["issued"] is True and "Phase 4" in str(_mov587.get("acted_on") or ""), _mov587
@@ -48808,3 +48846,974 @@ def test_w640_the_instrument_cell_proposes_checks_and_verifies_and_runs_nothing(
         for _s in _pa["selection"]["selected"]:
             assert [a["id"] for a in _pa["alternatives"][_s["id"]]] == _s["contract"]["equivalents"], _pa["alternatives"]
         assert "Owner" in _pa["alternatives_basis"]
+
+
+def test_w641_a_model_evaluation_says_what_it_ran_against_and_an_echo_fails_its_control(client, monkeypatch):
+    """Plan item P3.32: a model's behaviour is mapped before anything is said about its insides.
+
+    THE PROPERTIES: every evaluation records the probe set it ran against, by a version and a digest that is
+    RECOMPUTED here (never typed); a model that echoes its prompt hits the markers and FAILS the control; the
+    record says a marker hit is not correctness and claims no evidence above behaviour; a model that cannot
+    serve gets no score, no hits and no control verdict; and the older `score` keeps its meaning.
+    """
+    import hashlib, json as _json
+    import agentic_core.api.native_ai as _na
+
+    # (a) the probe set: versioned, with exactly one control, and a digest that follows its content
+    _probes = _na._EVAL_PROBES
+    assert sum(1 for p in _probes if p["control"]) == 1 and len({p["id"] for p in _probes}) == len(_probes)
+    _digest = hashlib.sha256(_json.dumps(_probes, sort_keys=True).encode("utf-8")).hexdigest()[:16]
+    assert _na._eval_probe_digest() == _digest
+    monkeypatch.setattr(_na, "_EVAL_PROBES", _probes + [{"id": "x", "control": False, "marker": "y", "prompt": "z"}])
+    assert _na._eval_probe_digest() != _digest, "the digest does not change when a probe is added"
+    monkeypatch.setattr(_na, "_EVAL_PROBES", _probes)
+
+    _model = "w641-probe"
+
+    def _served(reply_for):
+        async def _complete(prompt, agent="assistant", timeout=30.0, prefer_external=False, prefer="auto", **_kw):
+            return {"output": reply_for(prompt), "served_by": f"ollama:{_model}", "is_external": False}
+        return _complete
+
+    # (b) AN ECHO: every marker is hit, and the control FAILS
+    monkeypatch.setattr(_na.orchestrator, "complete", _served(lambda p: p + "\n- 60 ## Risks"))
+    _echo = client.post("/api/v1/native-ai/lifecycle/evaluate", json={"model": _model}).json()
+    assert _echo["can_serve"] is True and _echo["marker_hits"] == _echo["probes_total"] == 3, _echo
+    assert _echo["control"]["marker_absent"] is False, (
+        "a model that says the marker regardless passed the control, so a marker hit means nothing", _echo["control"])
+    assert _echo["score"] == 1.0, "the older score changed meaning; its readers were not moved"
+
+    # (c) A MODEL THAT ANSWERS: hits where it should, and the control passes
+    def _good(p):
+        if "single word" in p:
+            return "ready"
+        return "## Summary\nok\n## Risks\n- one\n- two\n- three\nsurplus 60"
+    monkeypatch.setattr(_na.orchestrator, "complete", _served(_good))
+    _ok = client.post("/api/v1/native-ai/lifecycle/evaluate", json={"model": _model}).json()
+    assert _ok["control"]["marker_absent"] is True and _ok["marker_hits"] == 3, _ok
+
+    # (d) what every record says about itself
+    for _ev in (_echo, _ok):
+        assert _ev["probe_set"] == {"version": _na._EVAL_PROBE_SET_VERSION, "digest": _digest}, _ev["probe_set"]
+        assert _ev["evidence_level"] == "behaviour" and "not a judgement" in _ev["basis"], _ev
+        for _claim in ("activation", "embedding", "latent", "hidden state", "weights"):
+            assert _claim not in _json.dumps(_ev).lower().replace("internal state", ""), (
+                "an evaluation record names a level of evidence nothing here can reach", _claim)
+
+    # (e) A MODEL THAT CANNOT SERVE: no score, no hits, and the control is not run or read
+    async def _floor(prompt, agent="assistant", timeout=30.0, prefer_external=False, prefer="auto", **_kw):
+        return {"output": "## Risks - 60", "served_by": "native", "is_external": False}
+    monkeypatch.setattr(_na.orchestrator, "complete", _floor)
+    _no = client.post("/api/v1/native-ai/lifecycle/evaluate", json={"model": _model}).json()
+    assert _no["can_serve"] is False and _no["score"] is None and _no["marker_hits"] is None and _no["control"] is None, _no
+
+    # (f) the record is what the lifecycle list returns, so the page can print it
+    _listed = [e for e in client.get("/api/v1/native-ai/lifecycle").json().get("evaluations", []) if e.get("model") == _model]
+    assert _listed and all("probe_set" in e and "basis" in e for e in _listed), _listed[-1:]
+
+
+def test_w641_the_preview_names_engines_the_fabric_will_not_run_and_no_shared_note_says_your_request(client, monkeypatch):
+    """FU-670 + FU-674, and the shared floor notes.
+
+    THE PROPERTIES: a compose preview lists every selected resource whose engine the fabric will not run, with
+    the reason, and lists none that it will; when the check cannot run the preview still answers and SAYS it
+    did not check; `commit_ready` keeps its meaning; and no shared note tells every reader the floor built its
+    output from "your request", because for a caller that never said what the person wrote that is false.
+    """
+    import pathlib as _pl
+    import agentic_core.api.instrument_cell as _cell
+    import agentic_core.api.resource_fabric as _fab
+
+    _states = {r["id"]: _cell.availability(r["id"])["state"] for r in _fab._REGISTRY}
+    _runs = next(i for i, s in _states.items() if s == "available")
+    _not = [i for i, s in _states.items() if s != "available"]
+
+    def _sim(ids):
+        _area = _fab._BY_ID[ids[0]]["usable_in"][0]
+        _r = client.post("/api/v1/resources/compose/simulate", json={
+            "name": "w641 preview probe", "resource_ids": ids, "usage_area": _area})
+        assert _r.status_code == 200, _r.text[:300]
+        return _r.json()
+
+    # (a) a configuration the fabric runs whole lists nothing
+    _clean = _sim([_runs])["model"]
+    assert _clean["engines_not_run_by_fabric"] == [] and "NOT CHECKED" not in _clean["engines_not_run_basis"], _clean
+
+    # (b) every selected resource without a handler is named with its reason - DRIVEN, on whatever is
+    #     unavailable today, or by taking a branch away when everything has one
+    if _not:
+        _victim = _not[0]
+    else:
+        _victim = _runs
+        _real = _cell._handler_ids()
+        monkeypatch.setattr(_cell, "_handler_ids", lambda: _real - {_victim})
+    _m = _sim([_victim])["model"]
+    assert [e["id"] for e in _m["engines_not_run_by_fabric"]] == [_victim], _m["engines_not_run_by_fabric"]
+    assert _m["engines_not_run_by_fabric"][0]["reason"] and _m["engines_not_run_by_fabric"][0]["state"] != "available"
+    monkeypatch.undo()
+
+    # (c) the check cannot run: the preview still answers, and says it did not check
+    def _boom(*a, **k):
+        raise RuntimeError("driven")
+    monkeypatch.setattr(_cell, "availability", _boom)
+    _un = _sim([_runs])
+    assert _un["model"]["engines_not_run_basis"].startswith("NOT CHECKED"), _un["model"]["engines_not_run_basis"]
+    assert _un["model"]["engines_not_run_by_fabric"] == [], "an unchecked preview listed engines anyway"
+    assert "commit_ready" in _un, "the preview lost its older verdict when the new check failed"
+    monkeypatch.undo()
+
+    # (d) the page prints both, from the server's fields
+    _root = _pl.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    _page = _code_only((_root / "pages/synthesis/ResourceFabric.tsx").read_text(encoding="utf-8"))
+    for _need in ('data-testid="engines-not-run"', "sim.model.engines_not_run_by_fabric", "{e.reason}",
+                  'data-testid="engines-not-run-unchecked"', "{sim.model.engines_not_run_basis}"):
+        assert _need in _page, ("the preview's engines-not-run statement does not reach the page", _need)
+
+    # (d2) THE FABRIC'S OWN LIST says, for every resource, whether composing it runs its engine (FU-674)
+    _list = client.get("/api/v1/resources").json()["resources"]
+    assert len(_list) == len(_fab._REGISTRY)
+    for _row in _list:
+        _want = True if _states[_row["id"]] == "available" else False if _states[_row["id"]] == "prompt_stage_only" else None
+        assert _row["fabric_runs_engine"] is _want and _row["fabric_runs_basis"], (_row["id"], _row.get("fabric_runs_engine"))
+    #  the registry rows themselves are NOT written to: the statement is per request
+    assert all("fabric_runs_engine" not in r for r in _fab._REGISTRY), "the list mutated the registry"
+    #  DRIVEN: a branch taken away turns that row false; a check that cannot run turns every row to None
+    _real2 = _cell._handler_ids()
+    monkeypatch.setattr(_cell, "_handler_ids", lambda: _real2 - {_runs})
+    assert next(r for r in client.get("/api/v1/resources").json()["resources"] if r["id"] == _runs)["fabric_runs_engine"] is False
+    monkeypatch.undo()
+    monkeypatch.setattr(_cell, "availability", _boom)
+    _unl = client.get("/api/v1/resources").json()["resources"]
+    assert all(r["fabric_runs_engine"] is None and r["fabric_runs_basis"].startswith("NOT CHECKED") for r in _unl), _unl[0]
+    monkeypatch.undo()
+    for _need in ('data-testid="resource-not-run"', "r.fabric_runs_engine === false", 'data-testid="resource-run-unchecked"',
+                  "r.fabric_runs_engine === null", "title={r.fabric_runs_basis}"):
+        assert _need in _page, ("the list's engine-run statement does not reach the card", _need)
+
+    # (e) NO SHARED NOTE ATTRIBUTES FLOOR OUTPUT TO THE READER'S OWN REQUEST. Asserted on the three shared
+    #     strings every floor-served surface prints, by what they say rather than by an old sentence.
+    import re as _re
+    _so = (_root / "components/StageOutcome.tsx").read_text(encoding="utf-8")
+    _note = _re.search(r"export const FLOOR_STAGE_NOTE =\s*([\"'])(.+?)\1;", _so, _re.S)
+    assert _note, "the shared stage note is no longer a single exported constant"
+    assert not _re.search(r"\byour (request|inputs?)\b", _note.group(2)), (
+        "the shared stage note tells every reader the scaffold came from THEIR request", _note.group(2))
+    assert "identified as yours" in _note.group(2), _note.group(2)
+    _api = (_root / "lib/api.ts").read_text(encoding="utf-8")
+    _title = _re.search(r"structured floor — not model analysis'[^}]*title: '([^']+)'", _api)
+    assert _title and not _re.search(r"from (the|your) request", _title.group(1)), (
+        "the shared provenance badge says the floor composed from the request", _title and _title.group(1))
+
+
+def test_w642_five_stated_figures_and_verdicts_are_what_the_platform_measured_or_did(client, monkeypatch):
+    """Ledger v14 tier-1 singles: FU-660, FU-643, FU-642, FU-655, FU-646.
+
+    ONE SHAPE: a response or a page stated a figure nothing measured or an outcome nothing produced. Each now
+    states what is read from the mechanism, and each leg DRIVES the mechanism rather than reading the sentence.
+    """
+    import pathlib as _pl
+    _root = _pl.Path(__file__).resolve().parents[1]
+
+    # ── FU-660. THE BEAT INTERVAL A PAGE PRINTS IS THE ONE THE LOOP SLEEPS ON ───────────────────
+    import inspect as _inspect
+    from agentic_core.organism import heartbeat as _hb
+    _h = _hb.heartbeat if hasattr(_hb, "heartbeat") else next(
+        v for v in vars(_hb).values() if hasattr(v, "effective_interval_seconds") and not isinstance(v, type))
+    _phases = sorted(_hb._INTENSITY, key=lambda k: _hb._INTENSITY[k])
+    _slow, _fast = _phases[0], _phases[-1]
+    assert _hb._INTENSITY[_slow] != _hb._INTENSITY[_fast], "every phase has one intensity; the leg is vacuous"
+    _was = _h.last_phase
+    try:
+        _seen = {}
+        for _ph in (_slow, _fast):
+            _h.last_phase = _ph
+            _st = _h.status()
+            _seen[_ph] = _st["effective_interval_seconds"]
+            assert abs(_st["effective_interval_seconds"] - _st["interval_seconds"] / _hb._INTENSITY[_ph]) < 0.06, (_ph, _st)
+            assert _st["interval_basis"], _st
+        assert _seen[_slow] > _seen[_fast], ("the effective interval does not follow the phase", _seen)
+    finally:
+        _h.last_phase = _was
+    _loop = _inspect.getsource(type(_h).run) if hasattr(type(_h), "run") else _inspect.getsource(type(_h))
+    assert "asyncio.sleep(self.effective_interval_seconds())" in _inspect.getsource(type(_h)), (
+        "the loop sleeps on an expression other than the one status() publishes")
+    _hm = _code_only((_root / "apps/workstation-superapp/src/pages/organism/HeartbeatMonitor.tsx").read_text(encoding="utf-8"))
+    assert "s.effective_interval_seconds ?? s.interval_seconds" in _hm, "the page still prints the base interval as the beat"
+
+    # ── FU-643. A PREVIEW THAT RAN NOTHING DOES NOT SAY IT SIMULATED ────────────────────────────
+    import agentic_core.api.resource_fabric as _fab
+    _rid = _fab._REGISTRY[0]["id"]
+    _sim = client.post("/api/v1/resources/compose/simulate", json={
+        "name": "w642 probe", "resource_ids": [_rid], "usage_area": _fab._BY_ID[_rid]["usable_in"][0]}).json()
+    assert "NOTHING WAS RUN" in _sim["note"] and "simulated" not in _sim["note"].lower(), _sim["note"]
+    _calls = []
+    _real = _fab._run_real_resource
+
+    async def _spy(*a, **k):
+        _calls.append(a[0])
+        return await _real(*a, **k)
+    monkeypatch.setattr(_fab, "_run_real_resource", _spy)
+    client.post("/api/v1/resources/compose/simulate", json={
+        "name": "w642 probe", "resource_ids": [_rid], "usage_area": _fab._BY_ID[_rid]["usable_in"][0]})
+    assert _calls == [], ("the preview ran a resource, so 'nothing was run' is now false - reword it", _calls)
+    monkeypatch.undo()
+    _rf = _code_only((_root / "apps/workstation-superapp/src/pages/synthesis/ResourceFabric.tsx").read_text(encoding="utf-8"))
+    import re as _re
+    assert not _re.search(r">[^<{]*[Ss]imulat(e|ed) before commit", _rf) and "Model &amp; Simulate" not in _rf, (
+        "the fabric page still tells the reader a configuration is simulated before commit")
+    assert "nothing was run" in _rf
+
+    # ── FU-642. THE QUOTAS ROUTE SAYS WHAT THE NATIVE REGISTRY SAYS ─────────────────────────────
+    _q = client.get("/api/v1/ai/quotas").json()
+    _ns = client.get("/api/v1/native-ai/status").json()
+    assert _q["known"] is True and _q["active"] == _ns["active_model"], (_q, _ns.get("active_model"))
+    assert [p["provider"] for p in _q["providers"]] == _ns["selection_order"], (_q["providers"], _ns["selection_order"])
+    assert _q["external_allowed"] == _ns["external_allowed"]
+    import agentic_core.api.native_ai as _na
+
+    async def _down():
+        raise RuntimeError("driven")
+    monkeypatch.setattr(_na, "native_status", _down)
+    _qd = client.get("/api/v1/ai/quotas").json()
+    assert _qd["known"] is False and _qd["active"] is None and _qd["providers"] == [] and "NOT KNOWN" in _qd["basis"], _qd
+    monkeypatch.undo()
+
+    # ── FU-655. NO HEALTH FIGURE FROM A COUNT, NO TYPED TRUST, NO TYPED TIMESTAMP ───────────────
+    from agentic_core.api import tools as _tools
+    _eng = _tools.engine
+    for _api in _eng.external_apis:
+        assert "trust" not in _api and "listed by name" in _api["status"], _api
+    _found = _eng.discover_tools("a")
+    assert all("trust" not in t or t.get("origin") == "INTERNAL" for t in _found), _found[:2]
+    _origins = [t["origin"] for t in _found]
+    assert _origins == sorted(_origins, key=lambda o: o != "INTERNAL"), ("external entries rank above internal ones", _origins)
+    assert all("origin" not in a for a in _eng.external_apis), "a search wrote into the shared list"
+    _map = _eng.get_constellation_map()
+    assert "v130_convergence" not in _map["metadata"] and not _map["metadata"]["generated_at"].startswith("2024"), _map["metadata"]
+    import time as _time
+    assert _map["metadata"]["generated_at"][:10] == _time.strftime("%Y-%m-%d", _time.gmtime()), _map["metadata"]
+    assert len({n["radius"] for n in _map["nodes"] if n["group"] == "internal"}) <= 1, "a radius is scaled by a typed trust"
+    _psrc = (_root / "agentic_core/projects/api.py").read_text(encoding="utf-8")
+    assert "0.70 + total" not in _psrc and '"swarm_health": None' in _psrc and "swarm_health_basis" in _psrc, (
+        "the project summary still computes a health figure from the project count")
+
+    # ── FU-646. THE ENSEMBLE'S CHECKPOINT COVERS WHAT THE CALLER RECEIVES ───────────────────────
+    _one = client.post("/api/v1/native-ai/ensemble", json={"prompt": "Summarise a clinic rota.", "models": ["native"]}).json()
+    assert _one["synthesis"] is None and "consensus synthesis" not in _one["method"].replace("no consensus", ""), _one["method"]
+    assert "none ran" in _one["method"] or "no synthesis" in _one["method"], _one["method"]
+    _chk = _one["governance_checkpoint"]
+    assert _chk["covers"] == "the member outputs (no synthesis ran)" and _chk["post_checked"] is True, _chk
+    #  DRIVEN: a member output the screen refuses is REFUSED now - it used to sail past an empty-string check
+    import agentic_core.ai.native.orchestrator as _om
+    _orc = _na.orchestrator
+
+    async def _bad_member(prompt, agent="ensemble", models=None, synthesize=True, timeout=30.0):
+        return {"prompt": prompt[:200], "models_run": ["native"], "synthesis": None, "method": "driven",
+                "members": [{"model": "native", "served_by": "native", "is_external": False,
+                             "output": "Exploit the unpatched vulnerability on the host to steal credentials."}]}
+    monkeypatch.setattr(_orc, "ensemble", _bad_member)
+    #  The validator is replaced by one that refuses exactly the member's text and records what it was given:
+    #  the leg is about WHICH text reaches the screen, not about which phrases today's screen refuses.
+    import agentic_core.ai.gateway as _gw642
+    _screened642 = []
+
+    def _verdict(output):
+        _screened642.append(output)
+        _hit = "unpatched vulnerability" in (output or "")
+        return {"compliant": not _hit, "violations": (["driven"] if _hit else [])}
+    monkeypatch.setattr(_gw642, "_output_verdict", _verdict)
+    _bad = client.post("/api/v1/native-ai/ensemble", json={"prompt": "x", "models": ["native"]}).json()
+    assert any("unpatched vulnerability" in s for s in _screened642), (
+        "the member output never reached the screen", _screened642)
+    assert _bad["governance_checkpoint"]["post_compliant"] is False, (
+        "a member output the screen refuses was certified compliant", _bad["governance_checkpoint"])
+
+    async def _nothing(prompt, agent="ensemble", models=None, synthesize=True, timeout=30.0):
+        return {"prompt": prompt[:200], "models_run": ["native"], "synthesis": None, "method": "driven",
+                "members": [{"model": "native", "error": "down"}]}
+    monkeypatch.setattr(_orc, "ensemble", _nothing)
+    _none = client.post("/api/v1/native-ai/ensemble", json={"prompt": "x", "models": ["native"]}).json()["governance_checkpoint"]
+    assert _none["post_checked"] is False and _none["post_compliant"] is None and _none["covers"].startswith("nothing"), _none
+
+
+def test_w642_a_floor_served_tool_does_not_disclaim_as_if_a_model_wrote_it(client, monkeypatch):
+    """FU-651 (ledger v14 R5), and the adaptation engine's domain line (FU-621).
+
+    THE PROPERTY: a domain tool's disclaimer makes an AI claim ("AI-generated", "AI-assisted", "Reasoned",
+    "AI interpretation", "AI pre-assessment") only when a model served it; on the floor it says the floor
+    composed a frame. The safety sentence is present either way. Driven BOTH ways per route: the floor serves
+    in this runtime, and a model is stood in by replacing the tool's own AI call.
+    """
+    import importlib
+    from agentic_core.api._ai_provenance import FLOOR_DISCLAIMER, disclaimer_for
+
+    assert disclaimer_for({"floor_note": "x"}, "MODEL.", "Safety.") == f"{FLOOR_DISCLAIMER} Safety."
+    assert disclaimer_for({"served_by": "ollama:m"}, "MODEL.", "Safety.") == "MODEL. Safety."
+    assert disclaimer_for(None, "MODEL.", "Safety.") == "MODEL. Safety."
+
+    _AI_CLAIM = ("AI-generated", "AI-assisted", "Reasoned negotiation", "AI interpretation", "AI pre-assessment")
+    _ROUTES = [
+        ("care", "/api/v1/care/care-plan", {"patient_profile": {"age": 82}, "care_needs": ["mobility support"], "setting": "home"},
+         "qualified healthcare professional"),
+        ("care", "/api/v1/care/risk-assess", {"tool": "news2", "patient_data": {}, "clinical_context": "post-op day one"},
+         "Clinical judgement by a qualified professional"),
+        ("employment", "/api/v1/employment/salary-negotiation", {"target_role": "Community Nurse", "location": "Leeds"},
+         "verify figures against current market sources"),
+        ("education", "/api/v1/education/feedback", {"student_work": "An essay on the causes of the war.", "subject": "History"},
+         "The teacher remains responsible"),
+        ("religion", "/api/v1/religion/halal-review", {"product_name": "Oat bar", "product_description": "a baked oat snack"},
+         "accredited halal certifying body"),
+        ("religion", "/api/v1/religion/interfaith", {"topic": "charity"}, "Consult qualified representatives"),
+        ("law", "/api/v1/law/generate", {"template_id": "nda", "parties": {"a": "A Ltd", "b": "B Ltd"}},
+         "Nothing here is legal advice"),
+    ]
+    #  (a) ON THE FLOOR, as this runtime serves it
+    _floor_seen = 0
+    for _mod, _path, _body, _safety in _ROUTES:
+        _r = client.post(_path, json=_body)
+        assert _r.status_code == 200, (_path, _r.status_code, _r.text[:200])
+        _j = _r.json()
+        if not (_j.get("ai_provenance") or {}).get("floor_note"):
+            continue                       # a model served here (a developer machine): leg (b) covers that case
+        _floor_seen += 1
+        _d = _j["disclaimer"]
+        assert _safety in _d, ("the safety sentence was lost with the model claim", _path, _d)
+        for _claim in _AI_CLAIM:
+            assert _claim not in _d, ("a floor-served tool disclaims as if a model wrote the output", _path, _claim, _d)
+    assert _floor_seen, "no route was floor-served, so the floor leg ran on nothing"
+
+    #  (b) A MODEL SERVES: the model wording is back, and the floor's sentence is gone
+    async def _model(prompt, agent, *a, **k):
+        return "## Draft\nmodel text", {"served_by": "ollama:probe", "is_external": False, "posture": "in-house-first"}
+    for _mod, _path, _body, _safety in _ROUTES:
+        _m = importlib.import_module(f"agentic_core.api.{_mod}")
+        monkeypatch.setattr(_m, "ai_text", _model)
+        _j = client.post(_path, json=_body).json()
+        monkeypatch.undo()
+        _d = _j.get("disclaimer") or ""
+        assert _safety in _d and FLOOR_DISCLAIMER not in _d, ("a model-served tool carries the floor's disclaimer", _path, _d)
+        assert any(_c in _d for _c in _AI_CLAIM), ("the model's own claim was dropped when a model served", _path, _d)
+
+    #  (c) THE SCORE CLAIM FOLLOWS WHETHER A SCORE WAS COMPUTED: a tool with no published arithmetic does not
+    #      say its score came from the published table
+    import agentic_core.api.care as _care
+    for _tool in [t["id"] for t in _care._TOOLS]:
+        _j = client.post("/api/v1/care/risk-assess", json={"tool": _tool, "patient_data": {}, "clinical_context": "x"})
+        if _j.status_code != 200:
+            continue
+        _j = _j.json()
+        _computed = isinstance(_j.get("score"), dict) and bool(_j["score"].get("available"))
+        assert ("computed in-house from the published table" in _j["disclaimer"]) == _computed, (
+            "the disclaimer's score claim does not follow whether a score was computed", _tool, _j.get("score"), _j["disclaimer"])
+        if not _computed:
+            assert "NO SCORE WAS COMPUTED" in _j["disclaimer"], (_tool, _j["disclaimer"])
+
+    #  (d) FU-621: the adaptation engine tells the floor the domain it is adapting into
+    _ad = client.post("/api/v1/qep/adaptation/execute", json={
+        "pattern": "spaced repetition with mastery gates", "source_domain": "religion", "target_domain": "care"}).json()
+    _bp = __import__("json").dumps(_ad)
+    if "Workstation native structured engine" in _bp:
+        assert "no domain was declared" not in _bp and "named no domain" not in _bp, (
+            "the adaptation route names two domains and its floor frame says none was declared", _bp[:400])
+        assert "spaced repetition" in _bp, _bp[:400]
+
+
+def test_w643_a_persons_own_mention_is_a_review_and_a_basis_names_the_verdict_it_describes(client):
+    """FU-620 + FU-623 (ledger v14 R1, R2).
+
+    THE PROPERTIES: when the native floor repeats the person's own words and the word list matches ONLY those
+    words, the verdict is REVIEW with the reason, never FAIL and never pass, and it is not filed as an immune
+    failure; a prohibited term the person did NOT write still fails; model-served content is screened exactly
+    as before; and the compliance screen's basis states the overall it actually returned.
+    """
+    import asyncio, re
+    from agentic_core.api.compliance import screen_compliance
+    from agentic_core.vbs.quality import assure_delivery
+    from agentic_core.organism.immune import immune
+
+    #  a term today's word list refuses, found by asking the screen rather than typed
+    _term = next((t for t in ("riba", "pork gelatin", "gambling", "interest-bearing loan")
+                  if screen_compliance(f"This product is built on {t}.")["overall"] == "fail"), None)
+    assert _term, "no candidate term is refused by the screen, so every leg below would be vacuous"
+    _frame = "_[Workstation native structured engine — owned, no external dependency]_\n\n## Understanding\nThe request concerns: {}.\n\n## Next steps\n- Review."
+
+    def _gate(content, served_by, echoed):
+        return asyncio.run(assure_delivery(content, None, label="tool:w643_probe", served_by=served_by,
+                                           echoed_text=echoed))["quality"]["compliance"]
+
+    def _fails():
+        return int(((immune.status().get("by_type") or {}).get("compliance_fail")) or 0)
+
+    # (a) the floor repeats the person's own mention: REVIEW, with the reason, and no immune failure
+    _q = f"What is the ruling on {_term} for a first-time buyer"
+    _before = _fails()
+    _echo = _gate(_frame.format(_q), "native", _q)
+    assert _echo["overall"] == "review" and _echo.get("echo_only") is True and _echo["compliant"] is False, _echo
+    assert _echo.get("screened_overall") == "fail" and "text you wrote" in _echo["basis"], _echo
+    assert "never clear" in _echo["basis"], "the downgrade does not say that nothing was cleared"
+    assert _fails() == _before, "a person's own mention was filed as an immune failure"
+
+    # (b) a prohibited term the person did NOT write still fails - the remainder is screened, not waved through
+    _other = _gate(_frame.format("a savings club for nurses") + f"\n- Structure the scheme around {_term}.", "native",
+                   "a savings club for nurses")
+    assert _other["overall"] == "fail" and not _other.get("echo_only"), (
+        "a prohibited term the platform itself wrote was excused as the person's echo", _other)
+    # (c) nothing said about whose words they are: the old behaviour, a fail
+    assert _gate(_frame.format(_q), "native", None)["overall"] == "fail"
+    assert _gate(_frame.format(_q), "native", "   ")["overall"] == "fail"
+    # (d) a MODEL wrote it: screened as before, whatever the person asked
+    _model = _gate(f"You should use {_term} here.", "ollama:probe", _q)
+    assert _model["overall"] == "fail" and not _model.get("echo_only"), (
+        "model-generated content containing a prohibited term was excused because the person had asked about it", _model)
+
+    # (e) OVER HTTP, on the two routes the audit drove
+    _fq = client.post("/api/v1/religion/fatwa-research", json={
+        "question": f"Is it permissible to take a mortgage, and what is the ruling on {_term}?"}).json()
+    _qa = (_fq.get("ai_provenance") or {}).get("quality_assurance") or {}
+    if (_fq.get("ai_provenance") or {}).get("floor_note") or _fq.get("floor_note"):
+        assert _qa.get("compliance_overall") == "review" and _qa.get("compliance_echo_only") is True, (
+            "a fiqh question that names a prohibited thing is still stamped FAIL", _qa)
+        assert "text you wrote" in (_qa.get("compliance_basis") or ""), _qa
+    _hr = client.post("/api/v1/religion/halal-review", json={
+        "product_name": "Fruit chews", "product_description": "a chewy sweet",
+        "ingredients": ["pork gelatin", "sugar"]}).json()
+    _hqa = (_hr.get("ai_provenance") or {}).get("quality_assurance") or {}
+    if (_hr.get("ai_provenance") or {}).get("floor_note") or _hr.get("floor_note"):
+        assert _hqa.get("compliance_overall") == "review" and _hqa.get("compliance_echo_only") is True, (
+            "a halal review of a product that DECLARES a prohibited ingredient is stamped FAIL on the person's "
+            "own declaration", _hqa)
+        assert _hqa.get("compliance_overall") != "pass", "a declared prohibited ingredient was cleared"
+
+    # (f) the page prints the reason with the verdict, in the chip and in every export
+    import pathlib as _pl
+    _dt = _code_only((_pl.Path(__file__).resolve().parents[1]
+                      / "apps/workstation-superapp/src/components/DomainTool.tsx").read_text(encoding="utf-8"))
+    for _need in ("qa?.compliance_echo_only && qa?.compliance_basis", 'data-testid="domain-compliance-echo"',
+                  "{echoBasisOf(result)}", "echoBasisOf(data) ??"):
+        assert _need in _dt, ("the echo reason does not reach the tool page or its exports", _need)
+
+    # (g) FU-623: THE BASIS NAMES THE OVERALL IT DESCRIBES, on a refused subject and on an unassessed one
+    for _subject in (f"A lending product built on {_term} marketed to students",
+                     "A museum exhibition on the history of weaving in Britain"):
+        _c = client.post("/api/v1/compliance/check", json={"subject": _subject, "domain": "general"})
+        assert _c.status_code == 200, _c.text[:200]
+        _cj = _c.json()
+        _named = re.findall(r"the overall is '?(\w+)'?", _cj.get("basis") or "")
+        for _n in _named:
+            assert _n == _cj["overall"], ("the basis names an overall the response did not return", _cj["overall"], _cj["basis"][-260:])
+        if _cj["overall"] == "fail" and not _cj.get("assessed_by"):
+            assert "REFUSED" in _cj["basis"] and "'review'" not in _cj["basis"], _cj["basis"][-260:]
+
+
+def test_w643_one_call_records_one_fact_about_the_product_and_a_lever_is_not_a_history(client):
+    """FU-631 + FU-633 (ledger v14 R2).
+
+    THE PROPERTIES: one establish call says ONE thing about whether the founder chose the product, wherever it
+    is recorded; and what an entity is told about its cycles comes from its record, never from where the
+    Self-run lever stands now.
+    """
+    import json as _json
+    from agentic_core.economy import living_vsbs as _lv
+
+    # ── FU-633: the lever's position is not the history ─────────────────────────────────────────
+    from agentic_core.organism.heartbeat import heartbeat as _hb
+    _was = _hb.auto_economy
+    try:
+        _hb.auto_economy = False
+        _plain = _lv.living_statement()["autonomous_operation"]
+        assert "only the birth cycle ran" not in _plain, _plain
+        assert "cycle(s) are recorded" not in _plain, ("a count was stated with no record to read it from", _plain)
+        for _n in (0, 2, 7):
+            _s = _lv.living_statement({"operating_cycles": _n})["autonomous_operation"]
+            assert f"{_n} cycle(s) are recorded for it" in _s and "only the birth cycle ran" not in _s, (_n, _s)
+        assert "0 cycle(s)" in _lv.living_statement({"operating_cycles": None})["autonomous_operation"]
+    finally:
+        _hb.auto_economy = _was
+
+    # ── FU-631: one call, one fact about the product choice ─────────────────────────────────────
+    def _sources(obj, out):
+        if isinstance(obj, dict):
+            for _k, _v in obj.items():
+                if _k == "product_source" and isinstance(_v, str):
+                    out.append(_v)
+                _sources(_v, out)
+        elif isinstance(obj, list):
+            for _v in obj:
+                _sources(_v, out)
+        return out
+
+    for _body, _want in (({"product": "factory"}, "chosen by the caller"), ({}, "the default")):
+        _r = client.post("/api/v1/genesis/journey", json={
+            "problem": "Affordable school lunches for a village primary", "domain": "education",
+            "establish": True, "name": "W643 Probe", **_body})
+        assert _r.status_code == 200, _r.text[:300]
+        _jr = _r.json()
+        _found = _sources(_jr, [])
+        #  the journey's own statement, and the ENTITY RECORD it created (read back from the store's route)
+        _ids = []
+
+        def _vsb_ids(obj):
+            if isinstance(obj, dict):
+                for _k, _v in obj.items():
+                    if _k == "vsb_id" and isinstance(_v, str):
+                        _ids.append(_v)
+                    _vsb_ids(_v)
+            elif isinstance(obj, list):
+                for _v in obj:
+                    _vsb_ids(_v)
+        _vsb_ids(_jr)
+        assert _ids, ("the journey established nothing to read back", list(_jr)[:12])
+        _ent = client.get(f"/api/v1/vsb/{_ids[0]}")
+        assert _ent.status_code == 200, _ent.text[:200]
+        _sources(_ent.json(), _found)
+        assert len(_found) >= 2, ("the journey and the entity it established do not both record the choice", _found)
+        assert len(set(_found)) == 1, ("one call recorded two different facts about the product choice", _found)
+        assert _found[0].startswith(_want), (_body, _found[0])
+
+
+def test_w644_a_founder_who_writes_a_section_is_no_longer_told_nobody_wrote_it(client):
+    """FU-628 + FU-632 (ledger v14 R2): a later writer of a body field updates what was stamped at birth.
+
+    THE PROPERTIES: after a founder records the concept - by the concept route OR by the plan editor - the
+    entity no longer lists the concept as awaiting the owned model, its genome's copy is the founder's text,
+    and its status is derived again; and the plan's own statement of who wrote its opening follows the edits,
+    including when an edit is later cleared.
+    """
+    def _born(name):
+        #  THE JOURNEY, not the bare establish route: a body the floor served is what leaves a section pending
+        #  (a bare establish with no concept is born with nothing pending - measured when this leg was written)
+        _r = client.post("/api/v1/genesis/journey", json={
+            "problem": "Affordable school lunches for a village primary", "domain": "education",
+            "establish": True, "name": name})
+        assert _r.status_code == 200, _r.text[:300]
+        _ids = []
+
+        def _walk(obj):
+            if isinstance(obj, dict):
+                for _k, _v in obj.items():
+                    if _k == "vsb_id" and isinstance(_v, str):
+                        _ids.append(_v)
+                    _walk(_v)
+            elif isinstance(obj, list):
+                for _v in obj:
+                    _walk(_v)
+        _walk(_r.json())
+        assert _ids, list(_r.json())[:12]
+        return _ids[0]
+
+    def _entity(_id):
+        _e = client.get(f"/api/v1/vsb/{_id}")
+        assert _e.status_code == 200, _e.text[:200]
+        return _e.json()
+
+    _text = "A not-for-profit kitchen that cooks one hot lunch a day for every child in the village school."
+
+    # ── FU-628, by the concept route ────────────────────────────────────────────────────────────
+    _a = _born("W644 Concept Route")
+    _before = _entity(_a)
+    _pending_before = (_before.get("body_pending") or {}).get("concept")
+    assert _pending_before is True, (
+        "the entity was not born with a pending concept, so the leg below would prove nothing", _before.get("body_pending"))
+    assert "concept" in (_before.get("status_basis") or "") + (_before.get("stage_basis") or "")
+    _rc = client.post(f"/api/v1/vsb/{_a}/concept", json={"concept": _text})
+    assert _rc.status_code == 200, _rc.text[:200]
+    assert _rc.json().get("status_basis"), "the concept route does not return the status it re-derived"
+    _after = _entity(_a)
+    assert (_after.get("body_pending") or {}).get("concept") is False, (
+        "a founder recorded the concept and the entity still lists it as awaiting the owned model", _after.get("body_pending"))
+    for _basis in ("status_basis", "stage_basis"):
+        _b = _after.get(_basis) or ""
+        assert "first section (concept) still awaits" not in _b, (_basis, _b)
+        assert not __import__("re").search(r"await the owned model:[^.]*\bconcept\b", _b), (
+            "the re-derived basis still names the concept among the sections awaiting the model", _basis, _b)
+    _spec = _after.get("genome_spec") or {}
+    if "concept" in _spec:
+        assert _spec["concept"] == _text[:1000] and "content pending" not in str(_spec["concept"]).lower(), _spec["concept"]
+    assert (_after.get("body_sources") or {}).get("concept") == "founder"
+    assert _after.get("status_derived_at"), "the status was not derived again after the concept changed"
+
+    # ── FU-628, by the plan editor: the same entity fact, through the other writer ──────────────
+    _b = _born("W644 Plan Route")
+    assert (_entity(_b).get("body_pending") or {}).get("concept") is True
+    _sp = client.post("/api/v1/business-plan/set", json={"scope": _b, "concept": _text})
+    assert _sp.status_code == 200, _sp.text[:200]
+    assert "entity_sync_error" not in _sp.json(), _sp.json().get("entity_sync_error")
+    _eb = _entity(_b)
+    assert (_eb.get("body_pending") or {}).get("concept") is False and _eb.get("concept_source") == "founder", (
+        "the plan editor set the concept and the ENTITY still says it awaits the owned model", _eb.get("body_pending"))
+
+    # ── FU-632: the plan says who wrote its opening, and the sentence follows the edits ─────────
+    _prov = (_sp.json().get("provenance") or {})
+    if _prov:
+        assert "concept" not in (_prov.get("templated_fields") or []), _prov.get("templated_fields")
+        assert (_prov.get("field_sources") or {}).get("concept") == "owner_supplied", _prov.get("field_sources")
+        _sent = _prov.get("opening_written_by") or ""
+        assert _sent.startswith("The Owner wrote: ") and "concept" in _sent.split(".")[0], _sent
+        assert "pending-body text" not in _sent and "composed by nobody" not in _sent, (
+            "the plan still says the concept field holds the platform's own pending text after the Owner wrote it", _sent)
+        #  a field the Owner did NOT edit and establishment templated is still called a template
+        for _f in _prov.get("templated_fields") or []:
+            assert _f in _sent, ("a still-templated field is missing from the sentence", _f, _sent)
+            assert (_prov.get("field_sources") or {}).get(_f) == "establish_template", (_f, _prov.get("field_sources"))
+        #  CLEARED: the Owner empties what they wrote - the sentence must not go on saying they wrote it
+        _cl = client.post("/api/v1/business-plan/set", json={"scope": _b, "clear": ["concept"]}).json()
+        _p2 = _cl.get("provenance") or {}
+        _s2 = _p2.get("opening_written_by") or ""
+        assert "The Owner wrote: concept" not in _s2 and "Cleared by the Owner" in _s2 and "concept" in _s2, _s2
+        assert (_p2.get("field_sources") or {}).get("concept") == "cleared_by_owner", _p2.get("field_sources")
+        assert _p2.get("templated_at_establishment") == _prov.get("templated_at_establishment"), (
+            "the record of what establishment templated was rewritten by an edit")
+    else:
+        raise AssertionError("the plan for a generated entity carries no provenance, so FU-632 cannot be read at all")
+
+
+def test_w645_a_choice_survives_being_saved_and_a_row_says_what_actually_ran(client, monkeypatch):
+    """Ledger v14 R4 + R1: FU-645, FU-647, FU-644, FU-621.
+
+    THE PROPERTIES: a stage's requested model survives the cascade being saved and updated, so a run of the
+    saved cascade reports the requests it could not honour; an output type nothing generates is refused and
+    leaves nothing behind; a streamed output's history row carries what served it; a persona prompt is not
+    recorded as an engine having run; and an adaptation's status follows what served it.
+    """
+    import agentic_core.api.resource_fabric as _fab
+
+    # ── FU-645: the stage's model survives save and update ──────────────────────────────────────
+    _made = client.post("/api/v1/resources/swarm/define", json={
+        "name": "w645 model probe",
+        "stages": [{"role": "analyst", "instruction": "Summarise the rota.", "model": "local"},
+                   {"role": "checker", "instruction": "Check the summary."}]})
+    assert _made.status_code == 200, _made.text[:200]
+    _sid = _made.json()["id"]
+    try:
+        _stored = client.get(f"/api/v1/resources/swarm/{_sid}").json()
+        _st = _stored.get("stages") or (_stored.get("swarm") or {}).get("stages")
+        assert _st[0].get("model") == "local", ("the stage's requested model was dropped at save", _st)
+        assert "model" not in _st[1], ("an unset model was stored as a value", _st[1])
+        _run = client.post("/api/v1/resources/swarm/run", json={"swarm_id": _sid}).json()
+        _nh = _run.get("requests_not_honoured")
+        _served0 = ((_run.get("trace") or [{}])[0]).get("served_by")
+        if _served0 == "native":
+            assert _nh and _nh[0].get("requested") == "local", (
+                "a saved cascade asked for the local model, the floor served, and the run says every request "
+                "was honoured", _nh)
+        _up = client.put(f"/api/v1/resources/swarm/{_sid}", json={
+            "stages": [{"role": "analyst", "instruction": "Summarise the rota again.", "model": "native"}]})
+        if _up.status_code == 200:
+            _st2 = client.get(f"/api/v1/resources/swarm/{_sid}").json()
+            _st2 = _st2.get("stages") or (_st2.get("swarm") or {}).get("stages")
+            assert _st2[0].get("model") == "native", ("the update path dropped the stage's model", _st2)
+    finally:
+        client.delete(f"/api/v1/resources/swarm/{_sid}")
+
+    # ── FU-647: an output type nothing generates is refused, and leaves nothing ─────────────────
+    import agentic_core.synthesis.api as _syn
+    _hist_before = len(_syn.synthesis_manager.history)
+    _files_before = len(list(_syn.synthesis_manager.output_dir.iterdir())) if _syn.synthesis_manager.output_dir.exists() else 0
+    for _bad in ("podcast", "raport", ""):
+        _r = client.post("/api/v1/synthesis/generate", json={"output_type": _bad, "instructions": "x", "content_ids": []})
+        assert _r.status_code == 422 and "Nothing was generated" in _r.text, (_bad, _r.status_code, _r.text[:200])
+    assert len(_syn.synthesis_manager.history) == _hist_before, "a refused output type was filed in the history"
+    _files_after = len(list(_syn.synthesis_manager.output_dir.iterdir())) if _syn.synthesis_manager.output_dir.exists() else 0
+    assert _files_after == _files_before, "a refused output type wrote a file"
+    #  the declared set and the generator's branches AGREE: every declared type has a branch, read from source
+    import inspect, re
+    _src = inspect.getsource(_syn.SynthesisManager.generate_output)
+    _branched = set(re.findall(r'"([a-z_]+)"', " ".join(re.findall(r"otype (?:in \(([^)]*)\)|== (\"[a-z_]+\"))", _src) and
+                                                       [a or b for a, b in re.findall(r"otype (?:in \(([^)]*)\)|== (\"[a-z_]+\"))", _src)])))
+    assert _branched == set(_syn._GENERATED_OUTPUT_TYPES), (
+        "the declared output types and the generator's branches disagree",
+        sorted(_branched ^ set(_syn._GENERATED_OUTPUT_TYPES)))
+    #  and the stream's history row says what served it
+    _s = client.post("/api/v1/synthesis/stream", json={"output_type": "report", "instructions": "A note on rotas.", "content_ids": []})
+    assert _s.status_code == 200, _s.text[:200]
+    _row = _syn.synthesis_manager.history[-1]
+    assert "served_by" in _row and "is_external" in _row, ("the stream's history row lost its provenance", sorted(_row))
+    assert '"served_by": ' + (__import__("json").dumps(_row["served_by"])) in _s.text.replace("\\", ""), (
+        "the history row and the done frame disagree about what served", _row["served_by"])
+
+    # ── FU-644: a persona prompt is not an engine that ran ──────────────────────────────────────
+    assert _fab._resource_kind("digital_twin") == "narrative"
+    _tw = __import__("asyncio").run(_fab._run_real_resource("digital_twin", {}, "a clinic rota", "care"))
+    assert _tw["outcome"] == "narrated" and "no simulator or engine ran" in _tw["outcome_phrase"], _tw
+    assert "endpoint" not in _tw and "ran" not in _tw, ("the twin's route is named as run; this handler never calls it", _tw)
+    assert "NOT called" in _tw["invoked"], _tw
+    for _phrase in (_tw["outcome_phrase"], _tw["kind_phrase"]):
+        assert "ran its engine" not in _phrase, _phrase
+    #  ...and it does not count as a facility that ran, by the counters' own test
+    assert _tw["outcome"] != "produced"
+    import agentic_core.api.instrument_cell as _cell
+    assert _cell.contract("digital_twin")["when_run"].startswith("when run") and "persona" in _cell.contract("digital_twin")["when_run"]
+
+    # ── FU-621: the adaptation's status follows what served ─────────────────────────────────────
+    _ad = client.post("/api/v1/qep/adaptation/execute", json={"pattern": "spaced repetition", "target_domain": "care"}).json()
+    _floor = (_ad["adaptation"].get("served_by") or "native") == "native"
+    assert _ad["status"] == ("frame_only" if _floor else "blueprint_generated"), _ad["status"]
+    import agentic_core.api.qep_intelligence as _qi
+
+    async def _model(prompt, **k):
+        return {"output": "## Adapted Mechanism\nx\n## Expected Fidelity (0-1)\n0.7", "served_by": "ollama:probe", "is_external": False}
+    monkeypatch.setattr(_qi.gateway, "query_meta", _model)
+    _adm = client.post("/api/v1/qep/adaptation/execute", json={"pattern": "spaced repetition", "target_domain": "care"}).json()
+    assert _adm["status"] == "blueprint_generated" and "NOT a blueprint" not in _adm["status_note"], _adm["status"]
+
+
+def test_w646_a_label_states_the_entitys_status_and_synthesis_says_only_what_the_person_instructed(client, monkeypatch):
+    """FU-681, and the Synthesis outputs as callers of the floor (FU-675's remainder).
+
+    THE PROPERTIES: the Genesis page states an established entity's status from the entity, never with the word
+    "living" as a status; and a Synthesis output tells the floor the person's own INSTRUCTIONS and nothing
+    else - a topic inferred from the knowledge base is not passed off as theirs.
+    """
+    import pathlib as _pl
+    _gj = _code_only((_pl.Path(__file__).resolve().parents[1]
+                      / "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8"))
+    assert "hint: 'Your living VSB IDBO entity'" not in _gj and "Living Enterprise IDBO registered" not in _gj, (
+        "the page still states 'living' as the status of any registered entity")
+    assert "Your VSB IDBO entity — ${vsb.status ?? 'status not returned'}" in _gj
+    assert "Enterprise IDBO registered — {vsb.status ?? 'status not returned'}" in _gj
+
+    import agentic_core.synthesis.api as _syn
+    _seen = []
+    _real = _syn.gateway.query_meta
+
+    async def _spy(prompt, **k):
+        _seen.append(k.get("user_text"))
+        return await _real(prompt, **k)
+    monkeypatch.setattr(_syn.gateway, "query_meta", _spy)
+    _said = "A two-page note on rota fairness for night-shift nurses"
+    _r = client.post("/api/v1/synthesis/generate", json={"output_type": "report", "instructions": _said, "content_ids": []})
+    assert _r.status_code == 200, _r.text[:200]
+    assert _seen and all(u == _said for u in _seen), ("a Synthesis output did not tell the floor what was instructed", _seen)
+    #  NO instructions: the topic is inferred, and it is NOT passed as the person's words
+    _seen.clear()
+    _r2 = client.post("/api/v1/synthesis/generate", json={"output_type": "report", "instructions": "", "content_ids": []})
+    assert _r2.status_code == 200, _r2.text[:200]
+    assert _seen and all(u is None for u in _seen), (
+        "with no instructions a topic was passed to the floor as the person's own words", _seen)
+    monkeypatch.undo()
+    #  and the stream path says it too
+    _sseen = []
+    _sreal = _syn.gateway.stream_meta
+
+    def _sspy(prompt, **k):
+        _sseen.append(k.get("user_text"))
+        return _sreal(prompt, **k)
+    monkeypatch.setattr(_syn.gateway, "stream_meta", _sspy)
+    assert client.post("/api/v1/synthesis/stream", json={"output_type": "report", "instructions": _said, "content_ids": []}).status_code == 200
+    assert _sseen == [_said], _sseen
+
+
+def test_w647_every_door_that_creates_an_entity_runs_its_first_screen(client, monkeypatch):
+    """FU-630 (ledger v14 R2), the half that needs no Owner decision.
+
+    THE PROPERTY: an entity created through the spawn route or the Studio is screened at birth, exactly as one
+    created through /genesis/establish is - so a subject the §11 screen fails is recorded as failed and its
+    economy is held, instead of the entity sitting on the roster 'never screened' and operating. A screen that
+    cannot run is recorded as that. And Genesis, which runs its own first screen, does not run it twice.
+    """
+    import json, re
+    from agentic_core.api.compliance import screen_compliance
+    from agentic_core.economy import living_vsbs as _lv
+    import agentic_core.organism.heartbeat as _hbm
+
+    _bad = next((t for t in ("An online casino with interest-bearing loans for members",
+                             "A lending desk built on riba with casino gambling revenue")
+                 if screen_compliance(t)["overall"] == "fail"), None)
+    assert _bad, "no candidate subject is refused by the screen, so the legs below would be vacuous"
+    _clean = "A village bakery cooperative selling bread to the local primary school"
+    assert screen_compliance(_clean)["overall"] != "fail"
+
+    def _spawn(challenge):
+        _r = client.post("/api/v1/vsb/spawn", json={"challenge": challenge, "name": "W647 Probe", "domain": "commerce"})
+        assert _r.status_code == 200, _r.text[:300]
+        _ids = re.findall(r"vsb-[0-9a-f]{10}", _r.text)
+        assert _ids, _r.text[:300]
+        return _ids[0]
+
+    def _entity(_id):
+        _e = client.get(f"/api/v1/vsb/{_id}")
+        assert _e.status_code == 200, _e.text[:200]
+        return _e.json()
+
+    # (a) THE SPAWN DOOR, refused subject: screened at birth, recorded as failed, and its economy HELD
+    _vid = _spawn(_bad)
+    _fs = _entity(_vid).get("first_screen") or {}
+    assert _fs.get("overall") == "fail", (
+        "an entity spawned from a subject the screen fails carries no failed first screen", _fs)
+    _op = _lv.operate_vsb(_vid)
+    assert _op.get("held") == "compliance_fail_hold", (
+        "a spawned entity whose first screen failed is operated as an ordinary enterprise", _op)
+    _row = next(v for v in (_lv.list_living().get("living_vsbs") or []) if v.get("vsb_id") == _vid)
+    assert (_row.get("compliance") or {}).get("never_screened") in (False, None) or _row.get("last_hold"), _row
+
+    # (b) THE SPAWN DOOR, clean subject: screened too, and not failed
+    _cid = _spawn(_clean)
+    _cfs = _entity(_cid).get("first_screen") or {}
+    assert _cfs and _cfs.get("overall") in ("pass", "review"), ("a clean spawn carries no first screen", _cfs)
+    assert _lv.operate_vsb(_cid).get("held") != "compliance_fail_hold"
+
+    # (c) THE STUDIO DOOR
+    _sr = client.post("/api/v1/studio/vsb/spawn", json={"project_id": "w647-project", "challenge": _bad,
+                                                         "solution_name": "W647 Studio Probe", "domain": "commerce"})
+    #  asserted, not skipped: a door this leg cannot reach is a leg that proves nothing
+    assert _sr.status_code == 200, (_sr.status_code, _sr.text[:300])
+    _sid = (re.findall(r"vsb-[0-9a-f]{8,10}", json.dumps(_sr.json())) or [None])[0]      # the Studio mints 8 hex
+    assert _sid, _sr.json()
+    _sfs = _entity(_sid).get("first_screen")
+    assert (_sfs or {}).get("overall") == "fail", (
+        "the Studio door registers an entity from a refused subject without screening it", _sfs)
+
+    # (d) A SCREEN THAT CANNOT RUN is recorded as that, and the entity is still created
+    def _boom(vsb_id):
+        raise RuntimeError("driven")
+    monkeypatch.setattr(_hbm, "screen_living_vsb", _boom)
+    _eid = _spawn(_clean)
+    _efs = _entity(_eid).get("first_screen") or {}
+    assert "error" in _efs and "overall" not in _efs, ("a screen that raised was recorded as a reading", _efs)
+    monkeypatch.undo()
+
+    # (e) GENESIS RUNS ITS OWN FIRST SCREEN, ONCE: the shared writer is told not to
+    _calls = []
+    _real = _hbm.screen_living_vsb
+
+    def _count(vsb_id):
+        _calls.append(vsb_id)
+        return _real(vsb_id)
+    monkeypatch.setattr(_hbm, "screen_living_vsb", _count)
+    _g = client.post("/api/v1/genesis/establish/stream", json={"problem": _clean, "name": "W647 Genesis Probe", "ship_output": False})
+    assert _g.status_code == 200, (_g.status_code, _g.text[:300])
+    _gid = (re.findall(r"vsb-[0-9a-f]{10}", _g.text) or [None])[0]
+    assert _gid and _calls.count(_gid) == 1, ("Genesis screened its newborn twice, or not at all", _calls)
+
+    # ── FU-662: THE KPI GATE SAYS WHERE IT APPLIES, and the sentence is tied to where it is called ──────
+    import pathlib as _pl647
+    import agentic_core.api.business_plan as _bp647
+    _g647 = _bp647.kpi_release_gate("vsb-w647-no-such-entity")
+    _refusals647 = [_bp647.kpi_release_gate(_vid), _bp647.kpi_release_gate(_cid)]
+    for _gr in _refusals647:
+        if _gr.get("ok") is False and _gr.get("reason") in ("no_objectives", "kpi_not_set"):
+            assert "MARKETPLACE LISTING only" in _gr["detail"] and "or exporting" not in _gr["detail"], _gr["detail"]
+    assert any(g.get("reason") in ("no_objectives", "kpi_not_set") for g in _refusals647), (
+        "neither probe entity was refused for its KPIs, so the wording leg read nothing", _refusals647)
+    #  the scope sentence is true only while the gate is called from the marketplace alone: found by the CALL
+    _root647 = _pl647.Path(__file__).resolve().parents[1] / "agentic_core"
+    _callers647 = sorted(p.relative_to(_root647).as_posix() for p in _root647.rglob("*.py")
+                         if "_archive" not in p.parts and p.name != "business_plan.py"
+                         and "kpi_release_gate" in p.read_text(encoding="utf-8", errors="replace"))
+    assert _callers647 == ["api/marketplace.py"], (
+        "the KPI gate is now called from somewhere other than the marketplace - its refusal says it applies "
+        "to a marketplace listing only; reword it", _callers647)
+
+
+def test_w648_a_record_that_reached_a_prompt_is_not_a_reply_grounded_in_it(client, monkeypatch):
+    """FU-650, FU-627 (as ruled), FU-678.
+
+    THE PROPERTIES: the avatar says its reply used an enterprise's record only when a model answered from it -
+    on the floor it says the record reached the prompt and was not read; a learner's hifz record says it is
+    keyed by a caller-supplied id and tied to no verified person; and a registered tool carries no trust
+    figure nothing measured.
+    """
+    import pathlib as _pl
+    _root = _pl.Path(__file__).resolve().parents[1]
+
+    # ── FU-650 ─────────────────────────────────────────────────────────────────────────────────
+    import agentic_core.avatars.api as _av
+    _est = client.post("/api/v1/genesis/establish", json={
+        "problem": "A village bakery cooperative", "name": "W648 Bakery", "ship_output": False}).json()
+    _vid = _est["vsb_id"]
+    _r = client.post("/api/v1/avatar/chat", json={"message": "How are we doing this month?", "context": "general", "vsb_id": _vid})
+    assert _r.status_code == 200, _r.text[:300]
+    _j = _r.json()
+    assert _j.get("grounded_in") == _vid, ("no grounding block was built, so the leg below reads nothing", _j.get("grounded_in"))
+    if _j.get("served_by") == "native":
+        assert _j["grounding_used"] is False and "does not read it" in _j["grounding_basis"], (
+            "a floor reply is reported as having used the enterprise's record", _j.get("grounding_used"), _j.get("grounding_basis"))
+    #  a MODEL answers: the record was used, and the basis says so
+    _real = _av.gateway.query_meta
+
+    async def _model(prompt, **k):
+        return {"output": "You are doing well.", "served_by": "ollama:probe", "is_external": False}
+    monkeypatch.setattr(_av.gateway, "query_meta", _model)
+    _m = client.post("/api/v1/avatar/chat", json={"message": "How are we doing?", "context": "general", "vsb_id": _vid}).json()
+    monkeypatch.undo()
+    assert _m.get("grounded_in") == _vid and _m["grounding_used"] is True and "model answered from" in _m["grounding_basis"], _m
+    #  NO entity: neither field claims anything
+    _n = client.post("/api/v1/avatar/chat", json={"message": "Hello", "context": "general"}).json()
+    if not _n.get("grounded_in"):
+        assert _n.get("grounding_used") is None and _n.get("grounding_basis") is None, _n
+    _cp = _code_only((_root / "apps/workstation-superapp/src/components/avatar/ConversationPanel.tsx").read_text(encoding="utf-8"))
+    for _need in ("m.groundingUsed === false", 'data-testid="avatar-grounding-unused"', "{m.groundingBasis}"):
+        assert _need in _cp, ("the page still says 'grounded in' whatever was used", _need)
+    _hk = (_root / "apps/workstation-superapp/src/hooks/useAvatarSession.ts").read_text(encoding="utf-8")
+    assert "groundingUsed: resp.data.grounding_used" in _hk and "groundingBasis: resp.data.grounding_basis" in _hk
+
+    # ── FU-627 (Owner ruling: no workaround; the page says so) ──────────────────────────────────
+    _p = client.get("/api/v1/qep/hifz/progress/w648-any-id").json()
+    assert _p["identity_verified"] is False and "not tied to a verified person" in _p["identity_basis"], _p.get("identity_basis")
+    assert "w648-any-id" in _p["identity_basis"] and "same id" in _p["identity_basis"], _p["identity_basis"]
+    import agentic_core.religious_domain.api as _rd
+    monkeypatch.setattr(_rd, "_auth_on", lambda: True)
+    assert "authentication is off" not in client.get("/api/v1/qep/hifz/progress/w648-any-id").json()["identity_basis"]
+    monkeypatch.setattr(_rd, "_auth_on", lambda: False)
+    assert "authentication is off" in client.get("/api/v1/qep/hifz/progress/w648-any-id").json()["identity_basis"]
+    monkeypatch.undo()
+    _qs = _code_only((_root / "apps/workstation-superapp/src/components/QEPStudio.tsx").read_text(encoding="utf-8"))
+    for _need in ('data-testid="hifz-identity-basis"', "progress.identity_verified === false", "{progress.identity_basis}"):
+        assert _need in _qs, ("the studio does not say whose record this is", _need)
+
+    # ── FU-678 ─────────────────────────────────────────────────────────────────────────────────
+    from agentic_core.tools.registry import ToolRegistry
+    _reg = ToolRegistry()
+    _reg.register_tool("w648-probe", "1.0", "probe", ["x"], {}) if hasattr(_reg, "register_tool") else None
+    _tools = _reg.list_tools()
+    assert _tools, "the registry listed no tool, so the leg read nothing"
+    assert all("trust_score" not in t for t in _tools), (
+        "a registered tool still carries a trust figure nothing measured", [t.get("name") for t in _tools if "trust_score" in t])
+
+
+def test_w649_a_refusal_is_the_result_and_a_cut_subject_says_it_was_cut(client):
+    """FU-640 + FU-634 (ledger v14 R3, R2).
+
+    THE PROPERTIES: when the organisation cascade is refused the Swarm tab shows the refusal and runs nothing by
+    another route (the ungated delegation is kept only for a cascade route that is not served at all); and the
+    floor's subject line, when it cuts what the person wrote, says so and says how much there was.
+    """
+    import pathlib as _pl, re
+    from agentic_core.ai.native.engine import native_engine
+
+    # ── FU-634 ─────────────────────────────────────────────────────────────────────────────────
+    _long = ("Design a shared kitchen for three care homes so that hot meals reach every resident within forty "
+             "minutes of cooking, staff rotas stay fair across the three sites, and the food waste from each "
+             "kitchen is weighed and reported weekly to the trustees. THE ACTUAL ASK: which single change "
+             "should we make first, and what would it cost in the first quarter?")
+    #  typed with a line break and doubled spaces, so the text as SENT and the text as PRINTED differ in length:
+    #  the length reported must be the printed one, the one the reader can count against
+    _sent = _long.replace(". THE ACTUAL ASK", "." + chr(10) + chr(10) + "THE  ACTUAL  ASK")
+    _printed = " ".join(_sent.split())
+    assert len(_printed) > 220 and len(_sent) != len(_printed)
+    #  a prompt with NO headings, so the engine prints the "The request concerns:" line this leg reads
+    _out = native_engine.generate("Answer plainly.", "probe", user_text=_sent)
+    assert f"[cut at 220 of {len(_printed)} characters]" in _out, (
+        "a subject cut short does not say it was cut, or reports a length the reader cannot check", _out[:500])
+    assert "The request concerns: " in _out, "the leg's own line is not printed, so the word-boundary check reads nothing"
+    _kept = _out.split("The request concerns: ", 1)[1].split(" … [cut at 220", 1)[0]
+    assert _kept and _printed.startswith(_kept) and _printed[len(_kept)] == " ", (
+        "the cut fell inside a word", _kept[-30:], _printed[len(_kept) - 5:len(_kept) + 12])
+    _short = "Which single change should we make first?"
+    _o2 = native_engine.generate("Answer plainly.", "probe", user_text=_short)
+    assert "cut at 220" not in _o2 and _short in _o2, _o2[:300]
+
+    # ── FU-640: source legs on the page (the suite has no browser; said in the commit message) ──────────
+    _sw = _code_only((_pl.Path(__file__).resolve().parents[1]
+                      / "apps/workstation-superapp/src/components/organism/SwarmIntelligence.tsx").read_text(encoding="utf-8"))
+    _fn = _sw[_sw.index("const delegate = async"):]
+    _fn = _fn[:_fn.index("finally")]
+    assert _fn.count("/api/v1/swarm/delegate") == 1, "the ungated delegation is called from more than one branch"
+    _before_delegate = _fn[:_fn.index("/api/v1/swarm/delegate")]
+    assert "response.status === 404 || response.status === 405" in _before_delegate.rsplit("if (response.ok)", 1)[1], (
+        "the delegation fallback is reached for a refusal, not only for a route that is not served")
+    _refusal = _fn[_fn.index("/api/v1/swarm/delegate"):]
+    assert "NOT RUN" in _refusal and "Nothing was delegated by another route" in _refusal, (
+        "a refused cascade is not shown as the result")
+    assert "axios.post" not in _refusal.split("NOT RUN")[0].split("} else {", 1)[-1], (
+        "the refusal branch makes a second request")

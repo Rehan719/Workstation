@@ -17,7 +17,7 @@ from pydantic import BaseModel
 
 import functools
 
-from agentic_core.api._ai_provenance import ai_text as _ai_text, person_said
+from agentic_core.api._ai_provenance import ai_text as _ai_text, person_said, disclaimer_for
 
 #  W637 (FU-597) — this router's domain, bound once. Every ai_text call below carries it, so the native floor
 #  prints the real domain instead of "the request named no domain".
@@ -245,10 +245,10 @@ async def marking_feedback(req: FeedbackRequest):
         "feedback": feedback,
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "disclaimer": (
-            "AI-assisted marking and feedback is an aid for the teacher's professional judgement — indicative "
-            "only, NOT a final or official grade. The teacher remains responsible for the mark awarded."
-        ),
+        "disclaimer": disclaimer_for(
+            provenance, "AI-assisted marking and feedback.",
+            "An aid for the teacher's professional judgement — indicative only, NOT a final or official grade. "
+            "The teacher remains responsible for the mark awarded."),
     }
 
 

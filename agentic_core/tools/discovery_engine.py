@@ -11,12 +11,18 @@ class ToolDiscoveryEngine:
     """
     def __init__(self, registry: ToolRegistry):
         self.registry = registry
-        # External API Index (Simulated for v128.0)
+        #  W642 (FU-655, ledger v14 R5) - A LIST OF NAMES, NOT AN INDEX OF CONNECTED TOOLS. Each entry carried
+        #  a typed "trust" between 0.95 and 0.99 that nothing measured, and results were ranked by it. This
+        #  list connects to none of them and measures none of them. (Connector classes for two of the names
+        #  exist elsewhere in the tree; whether anything uses them is not this list's to say, and it does
+        #  not say.) They stay as what they are - names someone listed - and each says so.
+        _LISTED = ("listed by name: this index does not connect to it or measure it; the trust figure it "
+                   "used to carry was typed, not measured")
         self.external_apis = [
-            {"name": "Quran.com API", "capabilities": ["text", "audio", "reciters"], "trust": 0.99},
-            {"name": "JSTOR Scholarly API", "capabilities": ["academic_papers", "history"], "trust": 0.95},
-            {"name": "Islamic Heritage Project", "capabilities": ["manuscripts", "archives"], "trust": 0.97},
-            {"name": "Camel-Tools", "capabilities": ["arabic_morphology", "nlp"], "trust": 0.98}
+            {"name": "Quran.com API", "capabilities": ["text", "audio", "reciters"], "status": _LISTED},
+            {"name": "JSTOR Scholarly API", "capabilities": ["academic_papers", "history"], "status": _LISTED},
+            {"name": "Islamic Heritage Project", "capabilities": ["manuscripts", "archives"], "status": _LISTED},
+            {"name": "Camel-Tools", "capabilities": ["arabic_morphology", "nlp"], "status": _LISTED},
         ]
 
     def discover_tools(self, query: str) -> List[Dict[str, Any]]:
@@ -31,17 +37,16 @@ class ToolDiscoveryEngine:
         internal_tools = self.registry.list_tools()
         for tool in internal_tools:
             if query.lower() in str(tool).lower():
-                tool["origin"] = "INTERNAL"
-                results.append(tool)
+                results.append({**tool, "origin": "INTERNAL"})
 
         # Search external index
         for api in self.external_apis:
             if query.lower() in str(api).lower():
-                api["origin"] = "EXTERNAL"
-                results.append(api)
+                results.append({**api, "origin": "EXTERNAL"})
 
-        # Sort by trust / molecular ranking
-        return sorted(results, key=lambda x: x.get("trust", 0.9), reverse=True)
+        #  internal (registered here) before external (listed only), then by name: an order that states
+        #  nothing this platform has not measured. It used to sort by the typed trust, defaulting to 0.9.
+        return sorted(results, key=lambda x: (x.get("origin") != "INTERNAL", str(x.get("name", ""))))
 
     def get_integration_guide(self, tool_name: str) -> str:
         """Returns documented integration examples for a tool."""
@@ -62,7 +67,7 @@ class ToolDiscoveryEngine:
             nodes.append({
                 "id": tool["name"],
                 "group": "internal",
-                "radius": 10 * tool.get("trust_score", 0.9),
+                "radius": 10,      # one size: a radius scaled by an unmeasured trust default drew a claim
                 "capabilities": tool["capabilities"]
             })
             # Add dependency links
@@ -83,7 +88,7 @@ class ToolDiscoveryEngine:
             "nodes": nodes,
             "links": links,
             "metadata": {
-                "generated_at": "2024-05-23T18:00:00Z",
-                "v130_convergence": "ACTIVE"
+                "generated_at": __import__("time").strftime("%Y-%m-%dT%H:%M:%SZ", __import__("time").gmtime()),
+                "external_basis": "external entries are names this index lists; it connects to and measures none",
             }
         }

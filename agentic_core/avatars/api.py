@@ -110,6 +110,12 @@ class ChatResponse(BaseModel):
     served_by: str = "native"          # which OWNED resource answered the TEXT (in-house-first provenance)
     is_external: bool = False
     grounded_in: Optional[str] = None  # the vsb_id the answer was grounded in, if any
+    #  W648 (FU-650, ledger v14 R5) - WHETHER THE GROUNDING WAS USED, and why. `grounded_in` says an entity's
+    #  record reached the PROMPT. The native floor does not read it, so on a floor reply the page printed
+    #  "grounded in your enterprise" over text that used none of the enterprise's state. `grounded_in` keeps
+    #  its meaning; these say what happened with it. None when there was no grounding at all.
+    grounding_used: Optional[bool] = None
+    grounding_basis: Optional[str] = None
     language: Optional[str] = None     # the language the answer was requested in (echoed back)
     # W505 (P2.3) — a null that SAYS WHY. W326 correctly stopped echoing a requested language the floor
     # cannot deliver; the user was then left with a null and no reason. This is that reason, and it is
@@ -593,7 +599,8 @@ async def chat(request: ChatRequest, user: dict | None = Depends(get_current_use
     # (W332, extended to all of them in W488); an unauthenticated caller here has no namespace, so it
     # reaches platform memory only.
     meta = await gateway.query_meta(prompt, agent=f"avatar:{request.context}", timeout=20.0,
-                                    owner_id=_owner, augment=True)
+                                    owner_id=_owner, augment=True,
+                                    user_text=(request.message or None))   # W641 - the message typed
     response_text = meta.get("output", "")
     #  P3.28 clause (5) — THE HOLD IS RELEASED BY THE CHAIN, NOT AROUND IT. An approved learner's reply is
     #  delivered only if the clearance chain clears it; otherwise the gate's reason is what they see.
@@ -637,6 +644,11 @@ async def chat(request: ChatRequest, user: dict | None = Depends(get_current_use
         # §9 (W325) — HONEST: grounded_in is asserted only when a grounding block actually built
         # (previously the request's vsb_id was echoed back even for a missing entity).
         grounded_in=(request.vsb_id if grounding else None),
+        grounding_used=((meta.get("served_by", "native") != "native") if grounding else None),
+        grounding_basis=((("your enterprise's record reached the prompt, but the native floor does not read "
+                           "it: this reply used none of it") if meta.get("served_by", "native") == "native" else
+                          "your enterprise's record was in the prompt the model answered from")
+                         if grounding else None),
         # W326 — language reports what was HONOURED: the deterministic floor cannot translate,
         # so a requested language served by the floor is not echoed back as an achievement.
         language=((lang or None) if ((not lang_instr) or meta.get("served_by", "native") != "native")

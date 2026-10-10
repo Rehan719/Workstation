@@ -63,6 +63,20 @@ def request_language() -> str:
         return ""
 
 
+#  W642 (FU-651, ledger v14 R5) - ONE HOME FOR WHAT A FLOOR-SERVED TOOL SAYS ABOUT ITSELF. Six domain tools
+#  printed a disclaimer written for model output ("AI-generated", "AI-assisted marking", "Reasoned ...") when
+#  the native floor had served them, and the page appends that sentence to every copy, download and saved
+#  record. The safety half of each disclaimer is true either way and is kept; the claim half follows what served.
+FLOOR_DISCLAIMER = ("Composed by the native floor, not by a model: a structured frame, with nothing generated, "
+                    "reasoned or interpreted by AI.")
+
+
+def disclaimer_for(provenance: dict | None, model_claim: str, safety: str) -> str:
+    """`model_claim` when a model served, the floor's own statement when the floor did; then `safety`."""
+    on_floor = bool((provenance or {}).get("floor_note"))
+    return f"{FLOOR_DISCLAIMER if on_floor else model_claim} {safety}".strip()
+
+
 def person_said(*parts) -> str | None:
     """The person's OWN words for one call, from the request fields the handler names - the statement the
     native floor needs before it attributes a subject or a term to anybody (W640).
@@ -162,13 +176,19 @@ async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
         # "not assessable" — never "pass" beside a clinical or Quranic scaffold.
         from agentic_core.ai.native.engine import _sections as _prompt_sections
         _qa = (await assure_delivery(output, _prompt_sections(prompt) or None, label=f"tool:{agent}",
-                                     served_by=served_by))["quality"]
+                                     served_by=served_by,
+                                     #  W643 (FU-620) - what the person wrote, so the screen can tell their
+                                     #  own mention of a term from generated content that contains it
+                                     echoed_text=user_text))["quality"]
         provenance["quality_assurance"] = {
             "qms_gate_passed": _qa.get("qms_gate_passed"),
             "qms_basis": _qa.get("qms_basis"),
             "delivery_coverage": _qa.get("delivery_coverage"),
             "stub_found": _qa.get("stub_found"),
             "compliance_overall": (_qa.get("compliance") or {}).get("overall"),
+            #  W643 - the reason travels with the verdict: a page that prints the overall prints why
+            "compliance_basis": (_qa.get("compliance") or {}).get("basis"),
+            "compliance_echo_only": bool((_qa.get("compliance") or {}).get("echo_only")),
             "quality_record_hash": _qa.get("quality_record_hash"),
         }
     except Exception as exc:   # the gate itself must never cost the user their output

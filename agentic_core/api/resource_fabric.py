@@ -384,6 +384,21 @@ async def list_resources(resource_class: Optional[str] = None, usable_in: Option
     _live_note = await _omnimedia_live_sentence()
     items = [({**r, "description": r["description"] + _live_note} if r.get("id") == "omnimedia" else r)
              for r in items]
+    #  W641 (FU-674) - EVERY LISTED RESOURCE SAYS WHETHER THE FABRIC RUNS ITS ENGINE. Two registered spawners
+    #  were listed, selectable and described like any other while composing either ran nothing. The state and
+    #  its reason are read per request from the Instrument Cell; when that cannot answer, the field says NOT
+    #  CHECKED rather than being left off (an absent field would read as "nothing to report").
+    def _runs(rid: str) -> Dict[str, Any]:
+        try:
+            from agentic_core.api.instrument_cell import availability as _availability
+            _a = _availability(rid)
+            return {"fabric_runs_engine": (True if _a["state"] == "available" else
+                                           False if _a["state"] == "prompt_stage_only" else None),
+                    "fabric_runs_basis": _a["reason"]}
+        except Exception as _exc:
+            return {"fabric_runs_engine": None,
+                    "fabric_runs_basis": f"NOT CHECKED - the availability check could not run ({_exc.__class__.__name__})"}
+    items = [{**r, **_runs(r["id"])} for r in items]
     if resource_class:
         items = [r for r in items if r["resource_class"] == resource_class]
     if usable_in:
@@ -909,7 +924,10 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
             res = await orchestrator.complete(str(cfg.get("prompt") or objective),
                                               agent=str(cfg.get("agent") or "fabric-composition"),
                                               prefer_external=bool(cfg.get("prefer_external", False)),
-                                              prefer=str(cfg.get("model") or "auto"))
+                                              prefer=str(cfg.get("model") or "auto"),
+                                              #  W641 - the run's objective is the person's; a saved
+                                              #  design prompt is not passed off as theirs
+                                              user_text=(objective or None))
             return {"resource": "native_orchestrator", "ran": "/api/v1/native-ai/complete",
                     "served_by": res.get("served_by"), "is_external": res.get("is_external"),
                     "output": (res.get("output") or "")[:600]}
@@ -1007,7 +1025,9 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
                       "## Emergent Behaviour\n## Stress / Failure Points\n## Recommended Setpoints")
             res = await orchestrator.complete(prompt, agent="digital-twin",
                                               prefer=str(cfg.get("model") or "auto"))
-            return {"resource": "digital_twin", "ran": "/api/v1/twin/simulate", "served_by": res.get("served_by"),
+            #  W645 (FU-644) - no "ran": the twin's own route is not called here, so it is not named as run
+            return {"resource": "digital_twin", "served_by": res.get("served_by"),
+                    "invoked": "orchestrator.complete with a simulator persona - /api/v1/twin/simulate was NOT called",
                     "is_external": bool(res.get("is_external")), "scenario": scenario,
                     "output": (res.get("output") or "")[:600]}
         if rid == "generator":
@@ -1088,6 +1108,11 @@ _QUERY_RESOURCES = frozenset({"products_catalogue", "change_control"})
 # default is not a reading. Its handler calls configure_bto, whose own note says it "provisions, activates
 # and integrates" nothing: it composes a DESIGN BLUEPRINT from the catalogue. That is a fourth thing.
 _BLUEPRINT_RESOURCES = frozenset({"build_to_order"})
+#  W645 (FU-644, ledger v14 R4) - A FIFTH THING: A PERSONA PROMPT. The composed Digital Twin handler sends one
+#  prompt ("You are a digital-twin simulator ... forward-simulate the scenario") to the orchestrator. It was
+#  classed facility_run by default and its row said it "ran its engine" and named /api/v1/twin/simulate, a
+#  route this handler never calls. What it produces is a narrative a model (or the floor) wrote for a persona.
+_NARRATIVE_RESOURCES = frozenset({"digital_twin"})
 # Reads that are not free: biobus.organism_context() calls _update_atp(), so reading the organism context
 # ADVANCES the ATP simulator. The reading is still a reading, and the cost is said rather than hidden.
 _READ_SIDE_EFFECTS = {
@@ -1099,6 +1124,7 @@ _KIND_PHRASE = {
     "status_read": "read platform state that was already there — no facility ran for this mission",
     "query": "assessed against records and live state already there — nothing was produced or persisted",
     "blueprint": "composed a design blueprint from the catalogue — nothing was provisioned or activated",
+    "narrative": "wrote a scenario narrative from a persona prompt — no simulator or engine ran, nothing was computed",
     "facility_run": "ran its engine and produced this output",
 }
 
@@ -1113,6 +1139,8 @@ def _resource_kind(rid: str) -> str:
         return "query"
     if rid in _BLUEPRINT_RESOURCES:
         return "blueprint"
+    if rid in _NARRATIVE_RESOURCES:
+        return "narrative"
     return "facility_run"
 
 
@@ -1123,8 +1151,9 @@ _OUTCOME_PHRASE = {
     "raised": "attempted, then raised before producing anything — it neither ran nor read",
     "no_calls_ran": "attempted, and every call it makes failed — it produced nothing",
     "specified": "composed a design blueprint from the catalogue — nothing was provisioned or activated",
+    "narrated": "wrote a scenario narrative from a persona prompt — no simulator or engine ran, nothing was computed",
 }
-_OUTCOME_FOR_KIND = {"status_read": "read", "query": "assessed", "blueprint": "specified",
+_OUTCOME_FOR_KIND = {"status_read": "read", "query": "assessed", "blueprint": "specified", "narrative": "narrated",
                      "facility_run": "produced"}
 
 
@@ -1596,7 +1625,12 @@ def register_swarm(name: str, stages: List[Dict[str, str]], context: str = "",
         "owner_id": owner_id,   # §14 (W324) — the owning tenant (None = platform/legacy, admin-only under auth)
         "name": name,
         "kind": "ai_native_swarm",
-        "stages": [{"role": s.get("role", ""), "instruction": s.get("instruction", "")} for s in stages],
+        #  W645 (FU-645, ledger v14 R4) - THE STAGE'S REQUESTED MODEL IS SAVED WITH IT. The wire contract has
+        #  carried `model` since W509 and the engine has honoured it since W282; this rebuild kept two keys, so
+        #  the choice died at save, and a run of the saved cascade reported requests_not_honoured: [] - true
+        #  only because nothing had been asked by the time it ran. Unset stays absent ("auto").
+        "stages": [{"role": s.get("role", ""), "instruction": s.get("instruction", ""),
+                    **({"model": str(s["model"])} if s.get("model") else {})} for s in stages],
         "context": context,
         "usage_area": usage_area,
         "posture": "in-house-first",
@@ -1707,7 +1741,8 @@ async def update_swarm(sid: str, req: UpdateSwarmRequest,
         if req.name is not None:
             c["name"] = req.name
         if req.stages is not None:
-            c["stages"] = [{"role": s.role, "instruction": s.instruction} for s in req.stages]
+            c["stages"] = [{"role": s.role, "instruction": s.instruction,
+                            **({"model": str(s.model)} if s.model else {})} for s in req.stages]   # W645 (FU-645)
         if req.context is not None:
             c["context"] = req.context
         if req.org is not None:
@@ -1957,7 +1992,23 @@ def _model_configuration(resource_ids: List[str], usage_area: str,
         if usage_area not in base["usable_in"]:
             incompatibilities.append({"id": rid, "name": base["name"],
                                       "reason": f"does not support usage area '{usage_area}'"})
+    #  W641 (FU-670, FU-674) - WHAT THE FABRIC WILL ACTUALLY RUN. A resource can be registered and selectable
+    #  with no branch in the real-resource handler; composing it adds a prompt stage and runs no engine, and
+    #  nothing on the preview said so. Read from the Instrument Cell's availability, at this call.
+    _not_run: List[Dict[str, str]] = []
+    try:
+        from agentic_core.api.instrument_cell import availability as _availability
+        for _r in resolved:
+            _av = _availability(_r["id"])
+            if _av["state"] != "available":
+                _not_run.append({"id": _r["id"], "name": _r["name"], "state": _av["state"], "reason": _av["reason"]})
+        _not_run_basis = ("read from the fabric's real-resource handler at this call; a resource listed here "
+                          "contributes a prompt stage and its engine is not run")
+    except Exception as _exc:        # the preview still answers; it says it could not check
+        _not_run_basis = f"NOT CHECKED - the availability check could not run ({_exc.__class__.__name__})"
     model = {
+        "engines_not_run_by_fabric": _not_run,
+        "engines_not_run_basis": _not_run_basis,
         "pipeline": [r["name"] for r in resolved],
         "combined_capabilities": sorted(set(caps)),
         "resource_classes": classes,
@@ -2019,7 +2070,9 @@ async def simulate_composition(req: ComposeRequest):
         req.name or "(unnamed)", req.resource_ids, req.usage_area, req.config)
     return {"name": req.name, "usage_area": req.usage_area, "resources": resolved,
             "model": model, "simulation": qa, "commit_ready": commit_ready, "saved": False,
-            "note": "Modelled + simulated before commit (§7) — not saved. Adjust the design, then compose."}
+            "note": ("Modelled before commit (§7) — not saved. NOTHING WAS RUN: no resource was executed or "
+                     "dry-run; this is a static reading of the selection plus a quality gate over a one-"
+                     "sentence description of it. Adjust the design, then compose.")}
 
 
 @router.post("/compose")

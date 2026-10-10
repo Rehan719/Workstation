@@ -31,7 +31,7 @@ export const ranCount = (evs: Array<{ data?: unknown }>): number =>
   evs.filter(ev => stageOutcome(ev.data as StageData) !== 'failed').length;
 
 export const FLOOR_STAGE_NOTE =
-  'Scaffold from the structured floor: headings built from your request. No model analysed it, and no review, audit or check was performed.';
+  "Scaffold from the structured floor: the headings are this tool's own, and the floor fills them only from text the tool identified as yours. No model analysed it, and no review, audit or check was performed.";
 
 export const StageMark: React.FC<{ data?: StageData | null; size?: number; className?: string }> = ({ data, size = 14, className = '' }) => {
   const k = stageOutcome(data);

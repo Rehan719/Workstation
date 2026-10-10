@@ -128,7 +128,11 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({ avatar }) 
               )}
               {m.role === 'assistant' && m.groundedIn && (
                 <p data-testid="avatar-grounded-in" className="text-[9px] font-bold text-slate-500 px-1">
-                  grounded in your enterprise {m.groundedIn} (your most recently updated one)
+                  {/* W648 (FU-650) — "grounded in" is said only when the reply USED the record; on the floor
+                      the server's own sentence says it reached the prompt and was not read */}
+                  {m.groundingUsed === false
+                    ? <span data-testid="avatar-grounding-unused">{m.groundedIn}: {m.groundingBasis}</span>
+                    : <>grounded in your enterprise {m.groundedIn} (your most recently updated one)</>}
                 </p>
               )}
               {m.role === 'assistant' && (m.profileState === 'unreadable' || m.profileState === 'error') && (

@@ -48,19 +48,28 @@ def _immune() -> Dict[str, Any]:
 # ── AI surface ────────────────────────────────────────────────────────────────
 @router.get("/api/v1/ai/quotas")
 async def ai_quotas():
-    """AI provider status + quotas (real gateway provider chain)."""
-    providers = []
+    """Which resource serves AI on this deployment - READ FROM THE NATIVE REGISTRY, the same source as
+    /api/v1/native-ai/status.
+
+    W642 (FU-642, ledger v14 R4) - this returned a typed external-first chain ("claude → openai → ollama"),
+    marked the local model available unconditionally, and named the first key-holding external provider
+    "active", on a platform whose selection order is in-house first and whose external tier is off by
+    default. It contradicted the status route on the same backend. It now reports what that route reports,
+    and when the registry cannot be read it says so instead of answering from a list."""
     try:
-        import os
-        providers = [
-            {"provider": "anthropic", "model": "claude-opus-4-8", "available": bool(os.getenv("ANTHROPIC_API_KEY")), "priority": 1},
-            {"provider": "openai", "model": "gpt-4o-mini", "available": bool(os.getenv("OPENAI_API_KEY")), "priority": 2},
-            {"provider": "ollama", "model": "llama3.2", "available": True, "priority": 3},
-        ]
-    except Exception:
-        pass
-    return {"providers": providers, "chain": "claude → openai → ollama",
-            "active": next((p["provider"] for p in providers if p["available"]), "ollama")}
+        from agentic_core.api.native_ai import native_status
+        st = await native_status()
+        return {"providers": [{"provider": n, "priority": i + 1} for i, n in enumerate(st.get("selection_order") or [])],
+                "chain": " → ".join(st.get("selection_order") or []) or None,
+                "active": st.get("active_model"),
+                "external_allowed": st.get("external_allowed"),
+                "owned_resources_available": st.get("owned_resources_available"),
+                "known": True,
+                "basis": ("the native model registry's selection order at this call; `active` is the resource "
+                          "that would serve the next completion. Quotas are not tracked and none is reported")}
+    except Exception as exc:
+        return {"providers": [], "chain": None, "active": None, "known": False,
+                "basis": f"NOT KNOWN - the native model registry could not be read ({exc.__class__.__name__})"}
 
 
 class AIQuery(BaseModel):

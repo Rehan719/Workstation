@@ -203,6 +203,14 @@ def _phase_sort_key(timeline: str):
     return None
 
 
+#  W647 (FU-662, ledger v14 R6) - THE GATE SAYS WHERE IT APPLIES. Its refusals told a founder to set a KPI
+#  "before listing or exporting"; it is called from the two marketplace listing routes and from nowhere else,
+#  so a ship and a repository download went through with no KPI set. The sentence now states its real scope.
+#  Whether a ship SHOULD be gated on KPIs is a product decision nobody has taken; this is the wording only.
+_KPI_GATE_SCOPE = ("This gate applies to a MARKETPLACE LISTING only: shipping the entity's repository and "
+                   "public surfaces, and downloading its archive, are not gated by it.")
+
+
 def kpi_release_gate(vsb_id: str) -> dict:
     """§17.5 (R5) — may this entity RELEASE? Shape-complete, and it names what is missing.
 
@@ -229,7 +237,7 @@ def kpi_release_gate(vsb_id: str) -> dict:
         return {"ok": False, "reason": "no_objectives", "objectives": 0, "missing": [],
                 "detail": ("this entity has no business-plan objectives recorded, so there is nothing to "
                            "measure a release against yet. Add an objective with a KPI on the Business "
-                           "Plan before listing or exporting.")}
+                           "Plan before listing. " + _KPI_GATE_SCOPE)}
     #  W638 (FU-600) — THE PLATFORM'S OWN "NOT SET YET" TEXT IS NOT A KPI. The Chief-instruction fallback
     #  writes this placeholder into the KPI position, and a non-empty test read it as a KPI: the gate released
     #  on a sentence saying no KPI existed. Still a presence test for anything a person wrote.
@@ -241,7 +249,7 @@ def kpi_release_gate(vsb_id: str) -> dict:
                 "detail": ("§17.5 gates release on measurable objectives. "
                            + f"{len(missing)} of {len(objectives)} objective(s) carry no KPI: "
                            + "; ".join(m["title"] or m["id"] for m in missing)
-                           + ". Set a KPI on each before listing or exporting."
+                           + ". Set a KPI on each before listing. " + _KPI_GATE_SCOPE
                            + (" These three are the objectives this platform SEEDS at establishment "
                               "(\"Validate the concept\", \"Deliver the design\", \"Launch to "
                               "market\") and it does not invent KPIs for them - inventing a measure "
@@ -430,9 +438,53 @@ async def set_plan(req: SetPlanRequest, user: dict | None = Depends(_get_current
             by[f] = _owner
     if req.aims:
         plan["aims"] = req.aims
+    #  W644 (FU-628) - THE PLAN'S CONCEPT IS THE ENTITY'S CONCEPT. Editing the concept here lifted it out of
+    #  the PLAN's pending list while the ENTITY kept saying it awaited the owned model. When this scope is a
+    #  generated entity and the concept was set in THIS call, the entity is told by the same function the
+    #  concept route uses. Best-effort: a plan edit is never lost to an entity that cannot be read.
+    if edits.get("concept") == ts and not _is_unset(plan.get("concept")):
+        try:
+            from agentic_core.api import vsb as _vsb_mod
+            _ent = _vsb_mod._load_vsb(req.scope)
+            if _ent:
+                _bp = _ent.get("genesis_blueprint") if isinstance(_ent.get("genesis_blueprint"), dict) else {}
+                _ent["genesis_blueprint"] = dict(_bp, concept=plan["concept"])
+                _ent["concept_source"] = "founder"
+                _vsb_mod.founder_wrote_section(_ent, "concept", plan["concept"])
+                _vsb_mod._save_vsb(_ent)
+                _vsb_mod.mark_repo_stale(_ent["vsb_id"], "the Owner edited the plan's concept after this body was shipped")
+        except Exception as _exc:
+            plan["entity_sync_error"] = f"the entity record was not updated with this concept: {_exc.__class__.__name__}"
     prov = plan.get("provenance")
     if isinstance(prov, dict):
         prov["body_pending"] = _pending_fields(plan)
+        #  W644 (FU-632, ledger v14 R2) - AN EDIT CHANGES WHO WROTE THE FIELD, AND THE PLAN SAYS SO. The
+        #  provenance was stamped once, at establishment: a founder who then wrote their own concept still
+        #  read "The concept field holds the platform's own pending-body text ... composed by nobody" on
+        #  the page, the Board Pack and the shipped plan. Every opening field the Owner has edited is theirs;
+        #  the rest stay what establishment recorded; the sentence is recomputed from the two lists.
+        #  What establishment templated is kept as its own list, set once: the sentence is recomputed from it
+        #  on EVERY edit, so clearing a field the Owner had written does not leave "the Owner wrote" behind.
+        _birth = prov.setdefault("templated_at_establishment", list(prov.get("templated_fields") or []))
+        _touched = [f for f in _OPENING_FIELDS if f in edits]
+        _edited = [f for f in _touched if not _is_unset(plan.get(f))]
+        _cleared = [f for f in _touched if f not in _edited]
+        if _touched:
+            _still = [f for f in _birth if f not in _touched]
+            prov["templated_fields"] = _still
+            _fs = dict(prov.get("field_sources") or {})
+            for f in _edited:
+                _fs[f] = "owner_supplied"
+            for f in _cleared:
+                _fs[f] = "cleared_by_owner"
+            prov["field_sources"] = _fs
+            prov["opening_written_by"] = (
+                (f"The Owner wrote: {', '.join(_edited)} (edited after establishment; each edit is dated in "
+                 f"owner_edits). " if _edited else "")
+                + (f"Cleared by the Owner and now empty: {', '.join(_cleared)}. " if _cleared else "")
+                + (f"Still code templates filled from the establish request, not the Chief and not a model: "
+                   f"{', '.join(_still)}." if _still else
+                   "No opening field is a code template any longer."))
     _save(plan)
     return plan
 

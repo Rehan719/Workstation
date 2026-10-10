@@ -806,6 +806,13 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         try:
             established_vsb = await genesis_establish(EstablishRequest(
                 problem=req.problem, domain=req.domain, realm=req.realm, name=req.name,
+                #  W643 (FU-631, ledger v14 R2) - THE PRODUCT IS PASSED ONLY WHEN THE CALLER CHOSE ONE. The
+                #  journey recorded "chosen by the caller" and then built this request without the product,
+                #  so the entity, its genome and its repository recorded "the default - no product was
+                #  chosen" about the same call. Passing it only when it was set keeps `model_fields_set`
+                #  on the inner request true to what the person did - one fact, read once.
+                **({"product": req.product}
+                   if "product" in (getattr(req, "model_fields_set", None) or set()) else {}),
                 concept=concept, design=design, commercialisation=commercial,
                 entity_type=req.entity_type, ship_output=req.ship_output,
                 research=research, operations=operations,
@@ -891,12 +898,26 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
                         #  IDBO" whether or not anything was established, and the page headed it "Sovereign Journey
                         #  Complete". Without establishment the journey leaves a RECORD, not an enterprise; and when
                         #  every agent was floor-served its stages are frames, which the sentence now says too.
-                        (("The user's own VSB IDBO — Concept → Commercialisation → established living enterprise"
+                        #  W644 (FU-629, ledger v14 R2) - THE TOP LINE SAYS WHAT THE NESTED RECORD SAYS. This
+                        #  read "established living enterprise" in the same response whose established entity
+                        #  said "it is not yet a living, operating enterprise". The entity's own derived line
+                        #  (_deliverable_line, built from its status) is quoted instead of a second sentence.
+                        (("The user's own VSB IDBO — Concept → Commercialisation → "
+                          + str((established_vsb or {}).get("deliverable")
+                                or "an entity was registered; its status line was not returned")
                           if (established_vsb and not (isinstance(established_vsb, dict) and established_vsb.get("error")))
                           else "A journey record, Concept → Commercialisation — NO enterprise was established")
                          + (" — frames only: every stage was served by the deterministic floor, so no stage was "
                             "composed by a model" if (_sba and all(str(v) == "native" for v in _sba.values())) else ""))),
         "enterprise_established": bool(established_vsb and not (isinstance(established_vsb, dict) and established_vsb.get("error"))),
+        #  W644 (FU-629) - `enterprise_established` means an entity was REGISTERED and keeps that meaning for
+        #  its readers. Whether it is OPERATING is a different fact and gets its own field, read from the
+        #  entity's derived status; None when nothing was established.
+        "enterprise_operating": ((str((established_vsb or {}).get("status")) == "operating")
+                                 if (established_vsb and not (isinstance(established_vsb, dict)
+                                                              and established_vsb.get("error"))) else None),
+        "enterprise_established_basis": ("an entity record was created and persisted; `enterprise_operating` "
+                                         "says whether it is operating, from its derived status"),
         # W485 — a journey whose every candidate was vetoed did not complete.
         "status": ("blocked_by_screen" if _blocked else "complete"),
         **({"blocked_by_screen": {
@@ -1609,7 +1630,8 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
         }
         vsb_mod.enrich_vsb_entity(entity, owner_id=req.owner_id, problem=req.problem,
                                   domain=req.domain, entity_type=req.entity_type,
-                                  parent_vsb=getattr(req, 'parent_vsb', '') or '')
+                                  parent_vsb=getattr(req, 'parent_vsb', '') or '',
+                                  first_screen=False)     # W647 - this path runs its own, with the birth vitals
         # §4×§5 (W315) — SSE path plan PARITY: the same seeding core as the blocking path, so the
         # Chief's living Business Plan opens with the journey's concept + the §4.7 ops objective.
         _seed_plan_from_journey(vsb_id, name, req, entity)

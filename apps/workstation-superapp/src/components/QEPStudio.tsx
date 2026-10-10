@@ -13,7 +13,7 @@ import { apiJson, errorMessage } from '../lib/api';
 
 interface Surah { number: number; name_arabic: string; name_transliteration: string; name_english: string; ayah_count: number; revelation_type: string }
 interface Ayah { number_in_surah: number; text_arabic: string }
-interface HifzProgress { total_ayaat_in_schedule: number; total_ayaat_memorised: number; due_today: number; due_refs: string[]; total_sessions: number }
+interface HifzProgress { total_ayaat_in_schedule: number; total_ayaat_memorised: number; due_today: number; due_refs: string[]; total_sessions: number; identity_verified?: boolean; identity_basis?: string }
 interface GamiState { xp: number; level: number; level_basis: string; achievements: string[]; streak_days: number; streak_basis: string; awards_recorded: number; scope: string }
 interface Recall { comparable: boolean; reason?: string; text_similarity?: number; similarity_basis?: string; exact_similarity?: number; exact_similarity_basis?: string; missing_rule_markers?: string[]; markers_basis?: string; scope?: string }
 
@@ -311,6 +311,10 @@ export const QEPStudio: React.FC = () => {
             <div className="flex items-center gap-2 flex-wrap mb-3">
               <Chip tone="dim">{progress.total_ayaat_in_schedule} scheduled</Chip>
               <Chip tone="ok">{progress.total_ayaat_memorised} memorised (≥1 successful review)</Chip>
+              {/* W648 (FU-627, ruled) — whose record this is, in the server's words */}
+              {progress.identity_verified === false && progress.identity_basis && (
+                <p data-testid="hifz-identity-basis" className="basis-full text-[9px] text-amber-300/90">{progress.identity_basis}</p>
+              )}
               <Chip tone={progress.due_today > 0 ? 'warn' : 'dim'}>{progress.due_today} due today</Chip>
               <Chip tone="dim">{progress.total_sessions} sessions</Chip>
             </div>

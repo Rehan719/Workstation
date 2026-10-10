@@ -1369,6 +1369,27 @@ def _refuse_empty_blueprint(vsb: dict, bp: dict) -> None:
         raise HTTPException(status_code=409, detail=_no_concept_reason(vsb))
 
 
+def founder_wrote_section(vsb: dict, section: str, text: str) -> dict:
+    """W644 (FU-628, ledger v14 R2) - EVERY WRITER OF A BODY SECTION UPDATES WHAT THE ENTITY SAYS ABOUT IT.
+
+    The entity's `body_pending` map and its genome's copy of the concept were written once, at birth. A founder
+    who then recorded the concept in their own words was still told, on the entity record and in the shipped
+    repository, that the concept "still awaits the owned model", and the genome still carried the pending
+    marker. One function now does what each writer owed: the section is no longer pending, the genome's copy is
+    the founder's text where the genome holds that section, and the status and stage are derived again from
+    the facts as they now stand. Mutates and returns `vsb`; the caller saves it."""
+    pending = vsb.get("body_pending")
+    if isinstance(pending, dict) and section in pending:
+        pending[section] = False
+    spec = vsb.get("genome_spec")
+    if isinstance(spec, dict) and section in spec:
+        spec[section] = text[:1000]
+    sources = vsb.setdefault("body_sources", {})
+    if isinstance(sources, dict):
+        sources[section] = "founder"
+    return _rederive(vsb)
+
+
 class ConceptRequest(BaseModel):
     concept: str
 
@@ -1386,8 +1407,13 @@ async def record_vsb_concept(vsb_id: str, req: ConceptRequest, user: dict | None
     bp = dict(bp, concept=concept)
     vsb["genesis_blueprint"] = bp
     vsb["concept_source"] = "founder"
+    founder_wrote_section(vsb, "concept", concept)        # W644 (FU-628)
     _save_vsb(vsb)
-    return {"vsb_id": vsb_id, "concept": concept, "concept_source": "founder", "blueprint": _blueprint(vsb)}
+    #  a shipped body now disagrees with the record; it is marked stale with the reason, never left to pass
+    mark_repo_stale(vsb_id, "the founder recorded the concept after this body was shipped")
+    return {"vsb_id": vsb_id, "concept": concept, "concept_source": "founder", "blueprint": _blueprint(vsb),
+            "status": vsb.get("status"), "status_basis": vsb.get("status_basis"),
+            "stage": vsb.get("stage"), "stage_basis": vsb.get("stage_basis")}
 
 
 def _pack_content_hash(layers: dict, economy: dict, narrative: str, name: str = "") -> str:
@@ -2227,7 +2253,7 @@ async def get_vsb_genome(vsb_id: str, user: dict | None = Depends(get_current_us
 
 def enrich_vsb_entity(entity: dict, *, owner_id: str = "default", problem: str = "",
                       domain: str = "enterprise", entity_type: str = "waqf_ltd_hybrid",
-                      parent_vsb: str = "") -> dict:
+                      parent_vsb: str = "", first_screen: bool = True) -> dict:
     """§3.3 invariant (Living Plan) — EVERY generated VSB carries its own Board + a Chief that is the
     digital twin of its owner, a living economic metabolism in its selected legal/economic form,
     registration as a living entity the organism autonomously tends (heartbeat-paced virtual economy),
@@ -2312,6 +2338,26 @@ def enrich_vsb_entity(entity: dict, *, owner_id: str = "default", problem: str =
         entity["business_plan_scope"] = vsb_id
     except Exception:
         pass
+    #  W647 (FU-630, ledger v14 R2) - EVERY DOOR RUNS THE FIRST §11 SCREEN. /genesis/establish screens its
+    #  newborn at birth, and a failed screen then holds the entity's economy. The spawn route and the Studio's
+    #  doors - the three callers of this function that are not Genesis - registered an entity and never
+    #  screened it: the roster read `never_screened` and nothing was held, so a subject the journey vetoes
+    #  operated as an ordinary enterprise. The screen is the same function the heartbeat rotates. It runs
+    #  after registration (it reads the roster) and its result rides the entity record; a screen that cannot
+    #  run is recorded as that, never as a clean reading. Genesis passes first_screen=False because it runs
+    #  its own a few lines later, with the birth vitals.
+    if first_screen:
+        try:
+            from agentic_core.organism.heartbeat import screen_living_vsb
+            #  `vsb_id` is this function's own resolution of the id (the Studio's entities carry it as
+            #  entity_id): the first cut read entity["vsb_id"], found nothing for a Studio entity, and
+            #  recorded "not on the roster" for an entity that was - caught when the guard's Studio leg was
+            #  made to assert instead of skip
+            _fs = screen_living_vsb(str(vsb_id))
+            entity["first_screen"] = _fs if _fs is not None else {
+                "not_screened": "the entity is not on the living roster, so there was nothing to screen"}
+        except Exception as _exc:
+            entity["first_screen"] = {"error": f"{_exc.__class__.__name__}: {str(_exc)[:140]}"}
     return entity
 
 

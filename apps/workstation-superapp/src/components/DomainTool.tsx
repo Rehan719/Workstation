@@ -88,9 +88,14 @@ const complianceOf = (data: any): string | undefined => {
   const qa = data?.ai_provenance?.quality_assurance ?? data?.quality_assurance;
   return qa?.compliance_overall ?? qa?.quality?.compliance_overall ?? qa?.quality?.compliance?.overall;
 };
+// W643 (FU-620) — the server's reason when a REVIEW is only the person's own words repeated by the floor
+const echoBasisOf = (data: any): string | undefined => {
+  const qa = data?.ai_provenance?.quality_assurance ?? data?.quality_assurance;
+  return qa?.compliance_echo_only && qa?.compliance_basis ? String(qa.compliance_basis) : undefined;
+};
 const withDisclosures = (body: string, data: any): string =>
   ((complianceOf(data) === 'fail' || complianceOf(data) === 'review')
-    ? `[§11 COMPLIANCE: ${String(complianceOf(data)).toUpperCase()} — this output did not pass the constitutional screen]\n\n` : '')
+    ? `[§11 COMPLIANCE: ${String(complianceOf(data)).toUpperCase()} — ${echoBasisOf(data) ?? (complianceOf(data) === 'fail' ? 'this output did not pass the constitutional screen' : 'the screen could not clear this output')}]\n\n` : '')
   + (data?.score_summary ? `${data.score_summary}\n\n` : '')
   + body
   + (data?.screen_note ? `\n\n[${data.screen_note}]` : '')
@@ -354,6 +359,11 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
           {(complianceOf(result) === 'fail' || complianceOf(result) === 'review') && (
             <p data-testid="domain-compliance-chip" className={`text-[10px] font-black uppercase tracking-widest rounded-lg p-2 border ${complianceOf(result) === 'fail' ? 'text-vital border-vital/40 bg-vital/10' : 'text-amber-400 border-amber-500/30'}`}>
               §11 compliance {String(complianceOf(result)).toUpperCase()} — {complianceOf(result) === 'fail' ? 'this output did not pass the constitutional screen' : 'the screen could not clear this output'}
+              {/* W643 (FU-620) — when the only match was the person's own words repeated by the floor, the
+                  server says so and the reason is printed with the verdict, not left behind it */}
+              {echoBasisOf(result) && (
+                <span data-testid="domain-compliance-echo" className="block normal-case tracking-normal font-normal mt-1">{echoBasisOf(result)}</span>
+              )}
             </p>
           )}
           {/* W627 (FU-536) — floor output says what was NOT done, where the output is, not only in a badge */}

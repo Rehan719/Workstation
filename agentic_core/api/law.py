@@ -20,7 +20,7 @@ from pydantic import BaseModel
 
 import functools
 
-from agentic_core.api._ai_provenance import ai_text as _ai_text, person_said
+from agentic_core.api._ai_provenance import ai_text as _ai_text, person_said, disclaimer_for
 
 #  W637 (FU-597) — this router's domain, bound once. Every ai_text call below carries it, so the native floor
 #  prints the real domain instead of "the request named no domain".
@@ -309,10 +309,9 @@ async def generate_document(req: GenerateRequest):
         "document": document,
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "disclaimer": (
-            "This document is AI-generated and provided as a starting point only. "
+        "disclaimer": disclaimer_for(
+            provenance, "This document is AI-generated and provided as a starting point only.",
             "It must be reviewed by a qualified solicitor before use. "
             #  P3.23 — the not-legal-advice statement is on EVERY response a person reads, not only the matter's
-            "Nothing here is legal advice."
-        ),
+            "Nothing here is legal advice."),
     }

@@ -30,6 +30,8 @@ export interface AvatarMessage {
   profileApplied?: boolean;   // W505 (P2.3)
   profileState?: string | null;   // W616 (FU-397) — 'unreadable' is said, never shown as "no profile"
   groundedIn?: string | null;     // W625 (FU-535) — which entity the answer was grounded in, shown
+  groundingUsed?: boolean | null; // W648 (FU-650) — false when the record reached the prompt and the floor did not read it
+  groundingBasis?: string | null;
   profileBasis?: string | null;
 }
 
@@ -265,6 +267,8 @@ export function useAvatarSession() {
         profileApplied: Boolean(resp.data.profile_applied),
         profileState: resp.data.profile_state ?? null,
         groundedIn: resp.data.grounded_in ?? null,
+        groundingUsed: resp.data.grounding_used ?? null,       // W648 (FU-650)
+        groundingBasis: resp.data.grounding_basis ?? null,
         profileBasis: resp.data.profile_basis ?? null,
       }]);
       if (speakReplies) speakText(replyText);

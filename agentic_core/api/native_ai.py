@@ -296,6 +296,38 @@ async def model_lifecycle():
                               else "every retirement in the lifecycle record")}
 
 
+#  W641 (P3.32) - THE PROBE SET IS A NAMED, VERSIONED THING. It was three tuples typed inside the handler, so
+#  an evaluation carried no statement of WHAT it had been run against and a changed probe was invisible: two
+#  results months apart looked comparable and need not have been. A change here is a NEW VERSION, never an
+#  edit - the digest below is stored on every evaluation and a guard pins version to digest.
+_EVAL_PROBE_SET_VERSION = "2"
+_EVAL_PROBES = [
+    {"id": "structure", "control": False, "marker": "## Risks",
+     "prompt": "Reply with exactly two sections:\n## Summary\n## Risks\nTopic: a halal meal-kit venture."},
+    {"id": "instruction", "control": False, "marker": "-",
+     "prompt": "List exactly three bullet points, each under 10 words, on safe data handling."},
+    {"id": "reasoning", "control": False, "marker": "60",
+     "prompt": "A VSB earns 100 WST and its costs are 40 WST. State the surplus and ONE prudent use for it.\n## Answer"},
+    #  THE CONTROL: a reply to this must NOT contain the structure probe's marker. A model that echoes its
+    #  prompt, or sprays headings on everything, hits every marker above and fails here - which is the only
+    #  thing in this set that can tell a marker hit from a model that says the marker regardless.
+    {"id": "control", "control": True, "marker": "## Risks",
+     "prompt": "Reply with the single word: ready"},
+]
+
+
+def _eval_probe_digest() -> str:
+    import hashlib as _h
+    import json as _j
+    return _h.sha256(_j.dumps(_EVAL_PROBES, sort_keys=True).encode("utf-8")).hexdigest()[:16]
+
+
+_EVAL_BASIS = ("a marker hit means the reply CONTAINS a marker string - it is not a judgement that the reply is "
+               "correct. One run per probe, no held-out probe, and the probes are public in the source, so this "
+               "is a smoke check of behaviour (evidence level 1: inputs and outputs). Nothing here inspects or "
+               "compares a model's internal state.")
+
+
 @router.post("/lifecycle/evaluate")
 async def evaluate_model(req: LifecycleModelRequest):
     """§6 (W276) — run a bounded, HONEST evaluation of a named local model: three small probes
@@ -303,14 +335,7 @@ async def evaluate_model(req: LifecycleModelRequest):
     serve · non-empty output · requested structure present · latency); when the model cannot
     serve, that is the result — never a fabricated score. Attempts feed the W275 health window."""
     import time as _t
-    probes = [
-        ("structure", "Reply with exactly two sections:\n## Summary\n## Risks\nTopic: a halal "
-                      "meal-kit venture.", "## Risks"),
-        ("instruction", "List exactly three bullet points, each under 10 words, on safe data "
-                        "handling.", "-"),
-        ("reasoning", "A VSB earns 100 WST and its costs are 40 WST. State the surplus and ONE "
-                      "prudent use for it.\n## Answer", "60"),
-    ]
+    probes = [(p["id"], p["prompt"], p["marker"]) for p in _EVAL_PROBES if not p["control"]]
     results = []
     served_target = 0
     for pid, prompt, marker in probes:
@@ -326,9 +351,27 @@ async def evaluate_model(req: LifecycleModelRequest):
     can_serve = served_target == len(probes)
     score = (round(sum(1.0 for x in results if x["structure_hit"]) / len(results), 2)
              if can_serve else None)   # honest: no score when the target never served
+    #  W641 - the control runs only when the target can serve (otherwise the floor would answer it), and its
+    #  result is its own field: `score` keeps the meaning its two readers know.
+    control = None
+    if can_serve:
+        _c = next(p for p in _EVAL_PROBES if p["control"])
+        _cr = await orchestrator.complete(_c["prompt"], agent=f"eval:{req.model}",
+                                          prefer=f"ollama:{req.model}", timeout=20.0)
+        _on = _cr.get("served_by") == f"ollama:{req.model}"
+        control = {"probe": _c["id"], "on_target": _on,
+                   "marker_absent": (_c["marker"].lower() not in (_cr.get("output") or "").lower()) if _on else None,
+                   "basis": ("the reply must NOT contain the structure probe's marker; a model that says it "
+                             "regardless fails here" if _on else
+                             "the target did not serve the control, so it says nothing either way")}
     from agentic_core.ai.native.model_resource import save_lifecycle
     st = _lifecycle_for_write()                              # W577 (FU-395)
     evaluation = {"model": req.model, "can_serve": can_serve, "score": score,
+                  #  W641 - what the number is, what it was run against, and what it does not establish
+                  "marker_hits": sum(1 for x in results if x["structure_hit"]) if can_serve else None,
+                  "probes_total": len(results), "control": control,
+                  "probe_set": {"version": _EVAL_PROBE_SET_VERSION, "digest": _eval_probe_digest()},
+                  "evidence_level": "behaviour", "basis": _EVAL_BASIS,
                   "probes": results, "at": __import__("time").strftime("%Y-%m-%dT%H:%M:%SZ",
                                                                        __import__("time").gmtime())}
     st["evaluations"].append(evaluation)
@@ -492,8 +535,22 @@ async def native_ensemble(req: EnsembleRequest):
                 "final": f"[CONSTITUTIONAL REFUSAL] {_halt.get('refused_reason')}", "governance_checkpoint": _halt}
     res = await orchestrator.ensemble(req.prompt, agent=req.agent,
                                       models=req.models or None, synthesize=req.synthesize)
-    res["governance_checkpoint"] = console_post_gate(
-        req.agent, str((res.get("synthesis") or {}).get("output") or ""))
+    #  W642 (FU-646, ledger v14 R4) - THE CHECKPOINT SCREENS WHAT THE CALLER RECEIVES. With no synthesis this
+    #  screened an empty string and returned post_checked and post_compliant true over member outputs it had
+    #  never read. It screens the synthesis when there is one, the member outputs when there is not, and when
+    #  there is nothing to screen it says nothing was checked.
+    _syn = str((res.get("synthesis") or {}).get("output") or "")
+    _member_text = "\n\n".join(str(m.get("output") or "") for m in (res.get("members") or []) if m.get("output"))
+    _screened = _syn or _member_text
+    chk = console_post_gate(req.agent, _screened)
+    chk["covers"] = ("the consensus synthesis" if _syn else
+                     "the member outputs (no synthesis ran)" if _member_text else
+                     "nothing: no member produced output")
+    if not _screened:
+        chk["post_checked"] = False
+        chk["post_compliant"] = None
+        chk["basis"] = "no output was produced, so nothing was screened; an empty string is not a checked answer"
+    res["governance_checkpoint"] = chk
     return res
 
 

@@ -344,8 +344,17 @@ class NativeOrchestrator:
                 "## Consensus Answer\n## Notable Agreement / Disagreement", agent=f"{agent}-synth",
                 prefer="auto", timeout=timeout)
             synthesis = {"output": syn.get("output", ""), "served_by": syn.get("served_by")}
+        #  W642 (FU-646, ledger v14 R4) - THE METHOD IS COMPUTED FROM WHAT RAN. It named a consensus synthesis
+        #  on every response, including one member with nothing to synthesise.
+        if synthesis is not None:
+            method = f"parallel ensemble across {len(members)} owned model(s) → consensus synthesis"
+        elif not synthesize:
+            method = f"parallel ensemble across {len(members)} owned model(s); no synthesis was requested"
+        else:
+            method = (f"{len(produced)} of {len(members)} member(s) produced output; a synthesis needs two, "
+                      f"so none ran and there is no consensus")
         return {"prompt": prompt[:200], "models_run": models, "members": members, "synthesis": synthesis,
-                "method": "parallel ensemble across owned models → consensus synthesis"}
+                "method": method}
 
     async def _run_model(self, name: str, prompt: str) -> str:
         if name == "ollama" or name.startswith("ollama:"):

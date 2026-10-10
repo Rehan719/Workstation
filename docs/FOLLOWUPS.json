@@ -11877,11 +11877,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W643",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The tool seam tells the screen what the person wrote (W640's user_text). On the floor, when the content fails and the same content with the person's words taken out does not, the verdict is REVIEW with the reason - never pass - and it is no longer filed as an immune failure. A prohibited term the platform itself wrote still fails, and model-served content is screened as before. The reason rides the tool's provenance and is printed in the chip and in every export. The halal tool counts the declared ingredients and process as the person's own declaration."
     },
     {
       "id": "FU-621",
@@ -11896,11 +11899,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W645",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "W642 told the floor the target domain; W645 makes the status follow what served: frame_only on the floor with a note that no adaptation was designed, blueprint_generated only for a model. The frame is still recorded in the registry, under that word."
     },
     {
       "id": "FU-622",
@@ -11939,11 +11945,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W643",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The last clause of the basis reads the overall it describes: a subject a word list refused says it was REFUSED without being assessed, and an unassessed one names the overall actually returned. A guard extracts whatever overall the basis names and compares it with the response."
     },
     {
       "id": "FU-624",
@@ -11958,11 +11967,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W644",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The rank tile reads the server's candidates_are_alternatives flag and says the candidate texts were not alternatives, so nothing was modelled apart or ranked."
     },
     {
       "id": "FU-625",
@@ -12018,11 +12030,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.35",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W648",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v14 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "AS RULED by the Owner (2026-10-09 late): no workaround is built. The hifz progress record says it is keyed by a caller-supplied id, tied to no verified person, that anyone sending the same id reads and writes it, and whether authentication is off; the studio prints that sentence. It is resolved when the Owner turns authentication on (P4.1). NOT DONE: the gamification routes carry no such sentence yet, and the studio still sends the literal id 'local'."
     },
     {
       "id": "FU-628",
@@ -12036,11 +12051,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W644",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "One function (founder_wrote_section) now does what each writer of the concept owed the entity: the section is no longer pending, the genome's copy is the founder's text, the status and stage are derived again, and a shipped body is marked stale. Both writers call it - the concept route and the plan editor for a generated entity. NOT DONE: there is still no route by which a founder supplies design, operations or commercialisation after birth; registered separately."
     },
     {
       "id": "FU-629",
@@ -12055,11 +12073,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W644",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The journey's top line quotes the established entity's own derived status line instead of a second sentence, and enterprise_operating is its own field read from that status (None when nothing was established); enterprise_established keeps its meaning. NOT DONE: the 'living' labels on the page's progress map, roster status and generated footers; registered separately."
     },
     {
       "id": "FU-630",
@@ -12073,11 +12094,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.35",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W647",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v14 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "THE HALF THAT NEEDS NO OWNER DECISION. Two designed behaviours already existed: the journey VETOES (registers nothing) and /genesis/establish REGISTERS AND HOLDS (a first screen at birth, then the economy refuses to operate the entity). The spawn route and the Studio's doors did neither. The shared enrichment writer now runs the first screen for every door that is not Genesis, so a refused subject is recorded as failed and its economy is held. NOT DONE, and put to the Owner in a separate row: whether these doors should REFUSE outright as the journey does, and whether ship and the public surfaces should refuse while an entity's latest screen is 'fail'."
     },
     {
       "id": "FU-631",
@@ -12091,11 +12115,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W643",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The journey passes the product to the establish call only when the caller chose one, so the inner request's own record of what was set is true to what the person did. Driven both ways over HTTP: the journey's statement and the entity record read back from the store agree."
     },
     {
       "id": "FU-632",
@@ -12110,11 +12137,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W644",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "set_plan recomputes the opening's provenance on every edit from a list of what establishment templated (kept once, never rewritten): an edited field is the Owner's, a cleared one is said to be cleared, the rest stay templates, and the sentence is built from the three lists. NOT DONE: the model-compose path (generate_plan) - a model-composed field is neither a template nor the Owner's; registered separately."
     },
     {
       "id": "FU-633",
@@ -12128,11 +12158,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W643",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The roster sentence no longer infers 'only the birth cycle ran' from the lever. It states the lever's position, and the recorded cycle count when it is given a record; with no record it states no count."
     },
     {
       "id": "FU-634",
@@ -12144,11 +12177,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.35",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W649",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v14 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The subject is cut at a word boundary and says so, with the length of the text as printed so the reader can check it (W640 had already moved the limit from 150 to 220 and made the subject the person's own text). NOT DONE: the row also named a list labelled as the request's first terms; W640 renamed that heading to 'Terms most frequent in the text you wrote' and it is a frequency count."
     },
     {
       "id": "FU-635",
@@ -12178,11 +12214,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W645",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "twin_directive_unprompted reads the founder model for the scope it is visiting, and its own prior directives for that scope; an instruction row with no scope is the apex plan's. Driven: an instruction for one scope is refused on another and on the apex plan. NOT DONE: the Owner's DECISIONS are not scoped at all, and 'executed' on a fallback objective is unchanged; registered."
     },
     {
       "id": "FU-637",
@@ -12219,11 +12258,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W642",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "DRIVEN on the W642 tree (not closed on reading): the CEO chat's floor answer no longer contains its own system prompt as Subject or as terms; the handler passes the question typed (W640) and the floor reads nothing else."
     },
     {
       "id": "FU-639",
@@ -12259,11 +12301,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.35",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W649",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v14 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A refused cascade is shown as the result with the server's reason, and nothing is run by another route. The ungated delegation is kept only for a cascade route that is not served (404 or 405). Guarded by source legs on the page - the suite has no browser - and driven red both ways."
     },
     {
       "id": "FU-641",
@@ -12296,11 +12341,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W642",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Served from the native model registry (the same source as /native-ai/status): selection order, the active resource, external_allowed; NOT KNOWN with a reason when the registry cannot be read. Quotas are not tracked and the response says none is reported."
     },
     {
       "id": "FU-643",
@@ -12314,11 +12362,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W642",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The heading, the button, the lead sentence and the API note say 'modelled before commit' and that nothing was run; a guard spies the real-resource runner during a preview and fails if one is ever executed, so the sentence cannot go stale silently. The route path is unchanged."
     },
     {
       "id": "FU-644",
@@ -12330,11 +12381,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W645",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A fifth kind, narrative, with outcome narrated: the composed Digital Twin sends one persona prompt, so its row says it wrote a scenario narrative and no simulator or engine ran, names what was invoked, and no longer names the twin's own route as run. It stops counting as a facility that ran. NOT DONE: the vision's own wording about a simulator, and the bypass of the gateway's per-call gate the row also noted; registered."
     },
     {
       "id": "FU-645",
@@ -12346,11 +12400,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W645",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "register_swarm and the update path keep each stage's requested model (absent when unset), so a saved cascade's run reports the requests it could not honour. NOT DONE: the designer page has no per-stage model selector - the API keeps the choice and the page cannot yet make it; registered."
     },
     {
       "id": "FU-646",
@@ -12364,11 +12421,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W642",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The checkpoint screens the synthesis when there is one, the member outputs when there is not, and says nothing was checked when nothing was produced; the method string is computed from what ran. Driven with a validator that records what it is given."
     },
     {
       "id": "FU-647",
@@ -12382,11 +12442,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W645",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "generate refuses an output type it has no branch for (422, nothing written, nothing filed); the declared set and the branches are held in step by a guard that reads the generator's source; the stream's history row carries served_by and is_external from its done frame. The stream route's own generic branch (any type as a markdown document) is unchanged - it does produce a document."
     },
     {
       "id": "FU-648",
@@ -12441,11 +12504,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.35",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W648",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v14 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "grounded_in keeps its meaning (an entity's record reached the prompt). Two fields say what happened with it: grounding_used is false on a floor reply, with a basis saying the floor does not read the record, and true when a model answered from it. The page prints the server's sentence instead of 'grounded in your enterprise' when it was not used."
     },
     {
       "id": "FU-651",
@@ -12462,11 +12528,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W642",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "DRIVEN first on the W642 tree: three floor-served routes still returned their model disclaimer. One helper now decides the claim half from what served and keeps each tool's safety sentence; seven routes use it. The risk tool's score claim follows whether a score was computed. Driven both ways per route (the floor as served; a model stood in by replacing the tool's own AI call). The safeguarding disclaimer made no AI claim and is unchanged."
     },
     {
       "id": "FU-652",
@@ -12478,11 +12547,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W642",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "DRIVEN on the W642 tree: interview-prep names the role, and care-plan, cv and curriculum no longer return an empty subject. The mechanism is W640's (the floor reads only text the caller identifies). The avatar's third-turn case was not re-driven; its handler passes the message typed since W641 and the floor guard covers the mechanism."
     },
     {
       "id": "FU-653",
@@ -12539,11 +12611,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W642",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "swarm_health is None with a basis (it was a formula over the project count). The discovery list's typed trust figures, its sort by them, the 0.9 default, the 2024 timestamp and the convergence literal are gone; external entries say they are listed by name and neither connected nor measured by that index. NOT DONE and noted here: tools/registry.py still stamps trust_score 0.95 on a registered tool at registration."
     },
     {
       "id": "FU-656",
@@ -12634,11 +12709,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W642",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The status publishes effective_interval_seconds from the one expression the loop sleeps on (base / phase intensity), with its basis; the page prints that and the base beside it. Driven across two phases of different intensity."
     },
     {
       "id": "FU-661",
@@ -12672,11 +12750,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.35",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W647",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v14 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The gate's refusals state that it applies to a marketplace listing only and no longer say 'or exporting'. A guard finds the gate's callers by the call and goes red if it is ever called from anywhere else, so the sentence cannot go stale. Whether a ship should be gated on KPIs is a product decision nobody has taken."
     },
     {
       "id": "FU-663",
@@ -12804,11 +12885,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.31",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W641",
       "note": "",
       "tier": 1,
-      "slot_source": "a finding of the Instrument Cell brief assessment; it is that item's own work (docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md)"
+      "slot_source": "a finding of the Instrument Cell brief assessment; it is that item's own work (docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md)",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "MEASURED: commit_ready reads the quality gate and the usage-area check and never whether a selected resource can be run. It keeps that meaning; the preview now carries engines_not_run_by_fabric with each reason beside it, says NOT CHECKED when it could not check, and the page prints both."
     },
     {
       "id": "FU-671",
@@ -12861,11 +12945,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W641",
       "note": "",
       "slot_source": "the first clause of the item chartered for it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "MEASURED: three probes typed inline, a score that is the share of replies containing a marker string, one marker present in its own prompt, no control, no version on the record. Now: a named, versioned probe set with a digest on every record, a control an echoing model fails, marker hits named as such, and the basis and the evidence level printed on the page. Held-out probes are NOT built and the record says there are none."
     },
     {
       "id": "FU-674",
@@ -12879,11 +12966,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.31",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W641",
       "note": "",
       "slot_source": "a finding of the Instrument Cell brief assessment; it is that item's own work (docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md)",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "By its second branch: the fabric's list and the compose preview now say, per resource and per request, that composing a spawner adds a prompt stage and runs no engine. Neither was given a handler - whether the fabric SHOULD spawn an entity from a composition is a product question nobody has asked for."
     },
     {
       "id": "FU-675",
@@ -12933,10 +13023,202 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
+      "status": "done",
+      "closed_by": "W646",
+      "note": "",
+      "slot_source": "the same mechanism P2.34's wrapper-as-request findings are closed by",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "W641 reworded the three shared notes that every floor surface prints (the stage note, the provenance badge title, the Digital Reactor note). The two others the row named - the intelligence engines' summary line and the Genesis provenance paragraph - belong to callers that have said which text the person wrote since W640, so for them 'from your request' is true; left as they are."
+    },
+    {
+      "id": "FU-678",
+      "title": "A tool registered in the tool registry is stamped trust_score 0.95 that nothing measured",
+      "why": "agentic_core/tools/registry.py:29 writes \"trust_score\": 0.95 (\"Initial scholarship trust\") on registration. W642 removed the readers that drew or ranked by a trust figure in the discovery engine; the stamp itself remains and a reader of the registry still receives it. Remove it or replace it with a basis, after grepping its readers.",
+      "source": "W642, found while fixing the discovery list",
+      "found": "2026-10-10",
+      "files": [
+        "agentic_core/tools/registry.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.35",
+      "status": "done",
+      "closed_by": "W648",
+      "note": "",
+      "slot_source": "an invisible shortfall of the same kind as the row it was found beside",
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The 0.95 stamp is removed from tool registration; nothing in the tree read it from there (other modules keep their own, separate trust figures - not examined here)."
+    },
+    {
+      "id": "FU-679",
+      "title": "A founder has no route to supply design, operations or commercialisation after birth",
+      "why": "An entity born on the floor lists four body sections as awaiting the owned model. W644 lets the concept be recorded and re-derives the status; the other three have no founder route at all, so the status of such an entity cannot pass 'body pending' whatever the founder does. Either add founder routes for them (the same function already handles any section name) or make the status basis say that no path composes them yet.",
+      "source": "W644, the remainder of a row closed this round",
+      "found": "2026-10-10",
+      "files": [
+        "agentic_core/api/vsb.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.35",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "the same mechanism P2.34's wrapper-as-request findings are closed by",
+      "slot_source": "an invisible shortfall left by a tier-1 row's fix",
+      "tier": 2
+    },
+    {
+      "id": "FU-680",
+      "title": "A model-composed plan opening field is recorded as neither a template nor the Owner's",
+      "why": "business_plan.generate_plan can write the opening fields from a model. W644 made an Owner edit update the opening's provenance; the model-compose path was not read. Decide the third source value (model_composed, with what served it) and stamp it there.",
+      "source": "W644, the remainder of a row closed this round",
+      "found": "2026-10-10",
+      "files": [
+        "agentic_core/api/business_plan.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.35",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "an invisible shortfall left by a tier-1 row's fix",
+      "tier": 2
+    },
+    {
+      "id": "FU-681",
+      "title": "The Genesis page still labels a registered entity 'living' on its progress map, roster and footers",
+      "why": "W644 made the journey's top line quote the entity's derived status. The row it closed (ledger v14 R2) also named the page's 'living' labels on the progress map, the stream, the roster status and the generated footers, which were not reworded. Read each against the entity's status and make the label follow it.",
+      "source": "W644, the remainder of a row closed this round",
+      "found": "2026-10-10",
+      "files": [
+        "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.34",
+      "status": "done",
+      "closed_by": "W646",
+      "note": "",
+      "slot_source": "the unfinished half of a tier-1 finding",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The two places that stated a STATUS with the word 'living' print the entity's derived status instead (the Establish step's hint and the registered line). 'Living VSB' as the NAME of the entity kind - the vision's own term - is left where it is a name or a progress verb."
+    },
+    {
+      "id": "FU-682",
+      "title": "The Owner's recorded decisions make every scope's Chief a modelled twin",
+      "why": "founder_model filters the Owner's instructions by scope (W624, W645) and does not filter their decisions: _owner_decisions takes no scope, so one ratified change anywhere makes the Chief of every entity a twin that may act unprompted. Scope decisions by the entity they concern, and say 'filed as one fallback objective' rather than 'executed' when the cascade's source is the fallback.",
+      "source": "W645, the remainder of a row closed this round",
+      "found": "2026-10-10",
+      "files": [
+        "agentic_core/api/board.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.34",
+      "status": "done",
+      "closed_by": "W646",
+      "note": "",
+      "slot_source": "the unfinished half of a tier-1 finding",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A decision belongs to the entity its change concerns (the change's vsb_id; none means the platform, the apex plan's). founder_model passes its scope; an unscoped read still returns all. Driven: a decision about one entity leaves another scope's Chief, and the apex plan's, a role. NOT DONE: 'executed' is still said when the cascade filed one fallback objective."
+    },
+    {
+      "id": "FU-683",
+      "title": "The composed Digital Twin stage calls the orchestrator directly, past the gateway's per-call gate",
+      "why": "The fabric's digital_twin and native_orchestrator handlers call orchestrator.complete, so the constitutional pre-gate and checkpoint a gateway call carries do not run for those stages (the composition as a whole is gated once). Either route them through the gateway or state on the row that the stage itself was not gated. Also: the vision still describes a simulator.",
+      "source": "W645, the remainder of a row closed this round",
+      "found": "2026-10-10",
+      "files": [
+        "agentic_core/api/resource_fabric.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.35",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "an invisible shortfall left by a tier-1 row's fix",
+      "tier": 2
+    },
+    {
+      "id": "FU-684",
+      "title": "The cascade designer cannot choose a model per stage although the API now keeps the choice",
+      "why": "W645 made a saved cascade keep each stage's requested model. The designer on the fabric page offers no per-stage selector, so only an API caller can use it.",
+      "source": "W645, the remainder of a row closed this round",
+      "found": "2026-10-10",
+      "files": [
+        "apps/workstation-superapp/src/pages/synthesis/ResourceFabric.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.31",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "a fabric page gap; the Instrument Cell item owns that page's additions",
+      "tier": 3
+    },
+    {
+      "id": "FU-685",
+      "title": "The board-pack hash test fails intermittently when the Chief and beat tests run beside it",
+      "why": "test_w471_board_pack_and_chiefs_opening_are_honest_both_ways compares a pack's content hash at birth with one assembled later. Run alone it passes; run beside the board, Chief and Genesis tests on three workers it failed in two of three runs (W646). A pack hashes its layers and its economy, and the workers share one store, so something another test changes between the two assemblies moves the hash. CAUSE NOT ESTABLISHED: the candidates are a concurrent beat running an economy cycle over every entity, and a concurrent test rewriting a shared plan. W646's own change does not touch what a pack hashes (checked by reading the hash function and its inputs). Five full suites W641-W645 were green, so the co-scheduling is rare there.",
+      "source": "W646, found while running a board-heavy selection",
+      "found": "2026-10-10",
+      "files": [
+        "integration_tests/test_mvp_spine.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "a suite-reliability rider, beside the parallel-stall and shared-profile rows",
+      "tier": 3
+    },
+    {
+      "id": "FU-686",
+      "title": "The Chief's unprompted directive is reported 'executed' when the cascade filed one fallback objective",
+      "why": "twin_directive_unprompted reports executed = bool(objectives_added). When the AI CEO's cascade produced nothing parseable, chief_instruct files ONE fallback objective (source chief_instruct_fallback) and that counts as executed. Derive it from parsed objectives and say 'filed as one fallback objective' otherwise.",
+      "source": "W646, the remainder of a row closed this round",
+      "found": "2026-10-10",
+      "files": [
+        "agentic_core/api/board.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.35",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "an invisible shortfall left by a tier-1 row's fix",
+      "tier": 2
+    },
+    {
+      "id": "FU-687",
+      "title": "OWNER: should a subject the §11 screen fails be REFUSED at every door, and should a failed entity be unable to ship",
+      "why": "Today the journey vetoes a failed subject and registers nothing, while /genesis/establish, /vsb/spawn and the Studio register the entity and hold its economy (since W647 all three screen at birth). A held entity can still be named, given a website and shipped: the audit shipped an online casino's repository with compliance 'fail' on four surfaces. Two decisions: (1) refuse at every door, or keep register-and-hold; (2) refuse ship and the public surfaces while the latest screen is 'fail'. RECOMMENDATION put to the Owner 2026-10-10: keep register-and-hold at the doors (the screen is a word list and cannot assess an enterprise; a hold is reversible and visible, a refusal on a mention is not), and REFUSE ship and the public surfaces while the screen is 'fail', so nothing the screen fails leaves the platform until a person has read it.",
+      "source": "W647, the Owner-decision half of FU-630",
+      "found": "2026-10-10",
+      "files": [
+        "agentic_core/api/vsb.py"
+      ],
+      "severity": "high",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "an Owner decision on what the platform refuses; no build work until it is taken",
       "tier": 1
     }
   ],

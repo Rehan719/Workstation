@@ -115,7 +115,11 @@ const railState = (key: string | null, r: JourneyResult | null): RailState => {
     const ranked = (r.stage_5_model_simulate_rank?.candidates ?? []).length;
     return ranked
       ? { done: true, label: 'ran',
-          why: `${ranked} candidate(s) were modelled and ranked. This stage carries no §10 verification entry, so nothing has been verified about it.` }
+          //  W644 (FU-624) — the server already says when the candidates are NOT alternatives (identical
+          //  texts, a tie); the tile said "modelled and ranked" over them regardless
+          why: (r.stage_5_model_simulate_rank?.candidates_are_alternatives === false
+            ? `${ranked} candidate text(s) were produced and they are not alternatives (the server found them identical or tied), so nothing was modelled apart or ranked. This stage carries no §10 verification entry.`
+            : `${ranked} candidate(s) were modelled and ranked. This stage carries no §10 verification entry, so nothing has been verified about it.`) }
       : { done: false, label: 'not run', why: 'no candidates were modelled or ranked on this journey' };
   }
   const v = r.stage_verifications?.[key];
@@ -564,7 +568,8 @@ export const GenesisJourney: React.FC = () => {
         const steps = [
           { id: 'describe',  label: 'Describe',     done: !!problem.trim(), hint: 'Your challenge / concept' },
           { id: 'explore',   label: 'Explore',      done: !!result,         hint: 'Conceptualise · Design · Commercialise' },
-          { id: 'establish', label: 'Establish',    done: !!vsb,            hint: 'Your living VSB IDBO entity' },
+          // W646 (FU-681) — "living" stated a status on every registered entity; the hint prints the entity's own
+          { id: 'establish', label: 'Establish',    done: !!vsb,            hint: vsb ? `Your VSB IDBO entity — ${vsb.status ?? 'status not returned'}` : 'Your VSB IDBO entity' },
           { id: 'deliver',   label: 'Deliver',      done: surfaces,         hint: 'Repo · Website · Web app · Phone app' },
           // W573 (M1 R2.0) — THIS TICKED THE MOMENT A REPO EXISTED. `!!vsb && surfaces` says a VSB
           // was established and files were generated; it says nothing about anything RUNNING, and
@@ -1102,7 +1107,8 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                   )}
                   {/* W496 (FU-100) - emerald asserted a healthy outcome; the colour follows the state */}
                   <p className={`text-[10px] font-bold mt-1 ${vsb.status === 'operating' ? 'text-emerald-400' : 'text-slate-400'}`}>
-                    Living Enterprise IDBO registered — dashboard {vsb.dashboard}
+                    {/* W646 (FU-681) — the status is the entity's derived one, not the word "Living" */}
+                    Enterprise IDBO registered — {vsb.status ?? 'status not returned'} — dashboard {vsb.dashboard}
                   </p>
                   <div className="flex flex-wrap gap-2 mt-3">
                     <button type="button" onClick={() => navigate(`/business-plan?scope=${encodeURIComponent(vsb.vsb_id)}`)}
