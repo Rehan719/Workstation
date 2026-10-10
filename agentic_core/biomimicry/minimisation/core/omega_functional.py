@@ -49,9 +49,10 @@ _WEIGHTS_BASIS = ("DECLARED, NOT DERIVED: these five weights are the ones the ar
 _TERM_PRODUCERS = {
     "free_energy": ("no producer exists on this platform. A variational free energy needs a generative "
                     "model and an observation to be surprised by, and neither is implemented"),
+    #  W660 - the sentence about the SOLVER is no longer typed here: _producer_basis() asks the router, because
+    #  whether it is installed is a fact of the deployment and this said one thing on every machine
     "optimal_transport": ("agentic_core/biomimicry/minimisation/core/optimal_transport.py is a real "
-                          "Sinkhorn router whose solver (POT) is not installed, so it reports itself "
-                          "unavailable rather than returning a plan"),
+                          "Sinkhorn router"),
     "schrodinger_bridge": ("the IPF/Sinkhorn bridge is archived at _archive/jules-unwired/agentic_core/"
                            "biomimicry/minimisation/core/schrodinger_bridge.py and is imported by "
                            "nothing live"),
@@ -60,6 +61,26 @@ _TERM_PRODUCERS = {
     "murray_law": ("no producer exists. Murray's law relates branch radii in a transport network and "
                    "nothing here models one"),
 }
+
+
+def _producer_basis(name: str) -> str:
+    """Why a term is not assessed, from facts read NOW. For the transport term that means asking the router
+    whether its solver is importable in this deployment, and saying what is missing either way: with no solver,
+    nothing can be computed; with one, there is still no transport cost until a caller supplies the two
+    marginals and the cost matrix."""
+    _named = _TERM_PRODUCERS.get(name, "no producer named")
+    if name != "optimal_transport":
+        return _named
+    try:
+        from .optimal_transport import OptimalTransportRouter
+        _av = OptimalTransportRouter().availability()
+    except Exception as _e:                      # noqa: BLE001 - said, not guessed
+        return f"{_named}; its solver's availability could not be read ({type(_e).__name__})"
+    if _av.get("available"):
+        return (f"{_named} and its solver (POT) IS importable in this deployment, but nothing supplied the "
+                f"two marginals and the cost matrix a transport problem needs, so there is no transport cost "
+                f"to report")
+    return f"{_named}. {_av.get('basis')}"
 
 
 class MinimisationObjective:
@@ -90,7 +111,7 @@ class MinimisationObjective:
                 #  NO `value` KEY AT ALL, and emphatically not 0.0: in a minimisation a zero is the best
                 #  possible term, so defaulting an unmeasured quantity to it makes ignorance win.
                 terms[name] = {"assessable": False, "weight": weight,
-                               "basis": f"NOT ASSESSED: {_TERM_PRODUCERS.get(name, 'no producer named')}"}
+                               "basis": f"NOT ASSESSED: {_producer_basis(name)}"}
 
         _unassessable = [n for n, t in terms.items() if not t["assessable"]]
         _is_legal = (context.get("layer") == "L12_Policy" or context.get("domain") == "legal")

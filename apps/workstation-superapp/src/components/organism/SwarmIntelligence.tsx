@@ -389,6 +389,13 @@ const SwarmIntelligence: React.FC = () => {
                   C-Suite → Centres of Excellence ({cascade.csuite_roster.engaged.length} officers, each drives a CoE)
                 </summary>
                 <div className="px-3 pb-3 space-y-2">
+                  {/* W660 (FU-715) - a role that was asked for and did not run is named, with the reason */}
+                  {Array.isArray(cascade.csuite_roster.not_run) && cascade.csuite_roster.not_run.length > 0 && (
+                    <p data-testid="cascade-roles-not-run" className="text-[9px] text-amber-400 leading-relaxed">
+                      {typeof cascade.csuite_roster.basis === 'string' ? cascade.csuite_roster.basis : 'Some roles asked for did not run.'}{' '}
+                      {cascade.csuite_roster.not_run.map((n: any) => `${String(n?.role)}: ${String(n?.why)}`).join(' · ')}
+                    </p>
+                  )}
                   {cascade.csuite_roster.engaged.map((role: string) => (
                     <div key={role} className="border-t border-white/5 pt-2">
                       <p className="text-[9px] font-black uppercase tracking-widest text-fuchsia-300">{role}</p>

@@ -51537,3 +51537,136 @@ def test_w659_composed_arabic_is_withheld_from_synthesis_whole_and_streamed(clie
     assert not any(_ct.ARABIC_SCRIPT_RE.search(_fr.get("token", "")) for _fr in _frames), (
         "a token frame carried composed Arabic")
     assert (_frames[-1].get("faith_content") or {}).get("arabic_passages_withheld") == 2, _frames[-1]
+
+
+def test_w660_what_was_asked_for_and_did_not_run_is_named(client):
+    """Ledger v15, one class in four places: something the person asked for is dropped and the answer does not
+    say so. THE INVARIANT: what was requested, what ran, and what did not run WITH ITS REASON travel together
+    in the answer and in the stored record; and a request that was honoured whole reports nothing dropped.
+    """
+    import pathlib as _pl
+    #  ── Build-to-Order: configure ────────────────────────────────────────────────────────────────
+    _cat = client.get("/api/v1/bto/components").json()["components"]
+    _real = _cat[0]["id"]
+    _b = client.post("/api/v1/bto/configure", json={"entity_name": "W660", "components": [_real, "w660-no-such-part"],
+                                                    "product_resources": ["w660-ghost-a", "w660-ghost-b"]})
+    assert _b.status_code == 200, _b.text[:300]
+    _bp = _b.json().get("blueprint") or _b.json()
+    assert _bp["unknown_components"] == ["w660-no-such-part"], _bp.get("unknown_components")
+    assert sorted(_bp["unknown_slugs"]) == ["w660-ghost-a", "w660-ghost-b"], _bp.get("unknown_slugs")
+    assert _bp["component_count"] == 1 and _bp["components_requested"] == 2, (
+        "an unrecognised component is counted beside the real one", _bp["component_count"])
+    assert "match nothing" in _bp["unknown_basis"], _bp["unknown_basis"]
+    _ok = client.post("/api/v1/bto/configure", json={"entity_name": "W660 ok", "components": [_real]})
+    _okb = _ok.json().get("blueprint") or _ok.json()
+    assert _okb["unknown_components"] == [] and _okb["unknown_slugs"] == [], _okb
+    assert _okb["unknown_basis"] == "everything asked for was recognised", _okb["unknown_basis"]
+    #  ── Build-to-Order: build ────────────────────────────────────────────────────────────────────
+    _bd = client.post("/api/v1/bto/build", json={"entity_name": "W660", "product_resources": ["w660-ghost-a"]})
+    assert _bd.status_code == 200, _bd.text[:300]
+    assert _bd.json()["unknown_slugs"] == ["w660-ghost-a"], _bd.json().get("unknown_slugs")
+    assert "w660-ghost-a" in _bd.json()["delivered_basis"] and "match nothing" in _bd.json()["delivered_basis"], (
+        _bd.json()["delivered_basis"])
+
+    #  ── the cascade's officers ───────────────────────────────────────────────────────────────────
+    _c = client.post("/api/v1/swarm/cascade", json={"mission": "Plan a bakery cooperative's first term",
+                                                    "csuite_roles": ["CFO", "Head of Halal Assurance"]})
+    assert _c.status_code == 200, _c.text[:300]
+    _ro = _c.json()["csuite_roster"]
+    assert _ro["requested"] == ["CFO", "Head of Halal Assurance"], _ro.get("requested")
+    assert [n["role"] for n in _ro["not_run"]] == ["Head of Halal Assurance"] and _ro["not_run"][0]["why"], _ro["not_run"]
+    assert _ro["defaulted"] is False and "did not run" in _ro["basis"], _ro
+    _c2 = client.post("/api/v1/swarm/cascade", json={"mission": "Plan a bakery cooperative's first term",
+                                                     "csuite_roles": ["Head of Halal Assurance"]})
+    _ro2 = _c2.json()["csuite_roster"]
+    assert _ro2["defaulted"] is True and "default set ran in their place" in _ro2["basis"], _ro2
+    _c3 = client.post("/api/v1/swarm/cascade", json={"mission": "Plan a bakery cooperative's first term",
+                                                     "csuite_roles": ["CFO"]})
+    _ro3 = _c3.json()["csuite_roster"]
+    assert _ro3["not_run"] == [] and _ro3["basis"].startswith("every role asked for ran"), _ro3
+
+    #  ── the charity cut is named ─────────────────────────────────────────────────────────────────
+    from agentic_core.economy.charity import CharityIntelligence as _CA
+    _al = _CA().allocate(100.0, top=2)
+    assert _al["considered_top"] == 2, _al.get("considered_top")
+    _below = _al["not_funded_below_cut"]
+    assert _below and all(b["rank"] > 2 and "top 2" in b["why"] for b in _below), _below
+    _funded = {g.get("id") for g in (_al.get("grants") or _al.get("allocations") or [])}
+    assert not (_funded & {b["id"] for b in _below}), "a cause named as below the cut was also funded"
+
+    #  ── a run record's served_by count says WHAT it counts (FU-718) ───────────────────────────────
+    _comp = client.post("/api/v1/resources/compose", json={"name": "w660 run record", "usage_area": "synthesis",
+                                                           "resource_ids": ["petri_dish"], "config": {}})
+    assert _comp.status_code == 200, _comp.text[:300]
+    _run = client.post(f"/api/v1/resources/compositions/{_comp.json()['id']}/run",
+                       json={"objective": "culture a specimen", "params": {"petri_dish": {"iterations": 2}}})
+    assert _run.status_code == 200, _run.text[:300]
+    from agentic_core.config import data_path as _dp660
+    import json as _json660
+    _rows = _json660.loads(_dp660("composition_runs.json").read_text(encoding="utf-8"))
+    _mine = [r for r in _rows if r.get("name") == "w660 run record" or r.get("composition") == "w660 run record"
+             or r.get("composition_id") == _comp.json()["id"]]
+    assert _mine, ("the run was not found in the durable record", [sorted(r)[:8] for r in _rows[-1:]])
+    _rb = _mine[-1].get("served_by_basis") or ""
+    assert "prompt trace" in _rb and "real_resources" in _rb, (
+        "the durable record's served_by count does not say it leaves out the calls each real resource made", _rb)
+
+    #  ── the pages show it (source legs: gated on the field, and printing it) ─────────────────────
+    _src = _pl.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    for _rel, _tid, _field in (("components/organism/SwarmIntelligence.tsx", "cascade-roles-not-run", "not_run"),
+                               ("pages/BTOCatalog.tsx", "bto-unknown", "unknown_"),
+                               ("pages/enterprise/VSBCockpit.tsx", "cockpit-bto-unknown", "unknown_")):
+        _pg = _code_only((_src / _rel).read_text(encoding="utf-8"))
+        _i = _pg.find('data-testid="' + _tid + '"')
+        assert _i > 0, (_rel, "the line is not rendered")
+        assert _field in _pg[_i - 200:_i], (_rel, "the line is not gated on the field")
+        assert _field in _pg[_i:_i + 420], (_rel, "the line does not print the field")
+
+
+def test_w660_the_minimisation_status_says_one_thing_about_its_solver_and_the_ledger_about_its_bits(client, monkeypatch):
+    """Measured for an external BME brief (2026-10-10): GET /api/v1/minimisation/status answered that the
+    transport router's solver was importable and, in the same response, that the transport TERM could not be
+    assessed because the solver "is not installed". One sentence was computed and the other typed. And the
+    thermodynamic ledger's own sentence read "the minimum to erase N bits" where N is a payload size.
+
+    THE INVARIANTS: what the term says about the solver is what the router says, in both states; with the
+    solver present the term is still not assessed and says what is missing; and the ledger never says its
+    bit count was erased.
+    """
+    import math as _m
+    from agentic_core.biomimicry.minimisation.core import optimal_transport as _otm
+
+    def _status():
+        _r = client.get("/api/v1/minimisation/status")
+        assert _r.status_code == 200, _r.text[:300]
+        _j = _r.json()
+        return _j["transport_router"], _j["omega_functional"]["terms"]["optimal_transport"], _j
+
+    #  DRIVEN IN BOTH STATES - the ambient one depends on the machine (the solver is installed here, not in CI)
+    monkeypatch.setattr(_otm, "ot", object())
+    _router, _term, _j = _status()
+    assert _router["available"] is True
+    assert _term["assessable"] is False and "value" not in _term, _term
+    assert "not installed" not in _term["basis"] and "IS importable" in _term["basis"], (
+        "the term says the solver is missing while the router beside it says it is importable", _term["basis"])
+    assert "marginals" in _term["basis"], ("the term does not say what IS missing", _term["basis"])
+    assert _j["omega_functional"]["J"] is None, "J is reported with a term unassessed"
+
+    monkeypatch.setattr(_otm, "ot", None)
+    monkeypatch.setattr(_otm, "_OT_IMPORT_ERROR", None, raising=False)
+    _router, _term, _j = _status()
+    assert _router["available"] is False
+    assert "not installed" in _term["basis"] and "IS importable" not in _term["basis"], _term["basis"]
+    assert _j["omega_functional"]["J"] is None
+
+    #  THE LEDGER: the floor is what erasing that many bits WOULD cost; the count is the caller's
+    from core.transcendent_subsystems.tfel import ThermodynamicFreeEnergyLedger as _L
+    _led = _L()
+    _op = _led.meter_operation("w660-probe", bits=800.0, bits_basis="the serialised size of a 100-byte payload")
+    assert _m.isclose(_op["landauer_floor_joules"], 800.0 * _led.E_min * _led.hw), "the figure changed"
+    _eb = _op["energy_basis"]
+    assert "WOULD cost" in _eb and "the serialised size of a 100-byte payload" in _eb, _eb
+    assert "nothing here establishes that this many bits were erased" in _eb, _eb
+    assert "MINIMUM to erase 800" not in _eb, "the ledger still says the bits were erased"
+    _op2 = _led.meter_operation("w660-probe-2", bits=8.0)
+    assert "no account of it was given" in _op2["energy_basis"], _op2["energy_basis"]

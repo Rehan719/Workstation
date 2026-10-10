@@ -207,6 +207,8 @@ async def build_to_order(request: BTOBuildRequest):
         pass
     return {"entity_name": request.entity_name, "objective": objective, "domain": request.domain,
             "requested": request.product_resources, "built": built,
+            #  W660 (FU-717) - a slug that matches nothing is in neither `built` nor a NOT_BUILT row
+            "unknown_slugs": [s for s in request.product_resources if s not in slug_index],
             # W494 (FU-147) — this counted every non-raising produce() call and was printed as
             # "Delivered N". It counts gate-passed products only, and the composed-but-unassessed
             # ones are counted separately rather than folded into a delivery figure.
@@ -217,7 +219,11 @@ async def build_to_order(request: BTOBuildRequest):
                 f"{_built_n} product(s) passed the living-QMS gate; {_composed_n} had a document "
                 "composed that the gate could not assess (floor-served); "
                 f"{_gate_failed_n} had a document composed that the gate FAILED. Neither of the last "
-                "two is a delivery, and they are not the same outcome"),
+                "two is a delivery, and they are not the same outcome"
+                #  W660 (FU-717) - a slug that matched nothing is in none of the three counts above
+                + ((lambda _u: f". {len(_u)} slug(s) asked for match nothing in the catalogue and were not "
+                               f"attempted: {', '.join(_u[:8])}" if _u else "")(
+                    [s for s in request.product_resources if s not in slug_index]))),
             "posture": "in-house-first",
             # P2.2 (W511) — the run's provenance, read from each deliverable's own ai_provenance
             "ai_provenance": _bto_provenance,
@@ -249,15 +255,27 @@ async def configure_bto(request: BTOConfigureRequest):
                       "reason": not_served_reason(slug_index[slug])}
                      for slug in request.product_resources if slug in slug_index and not slug_index[slug].get("live")]
 
+    #  W660 (ledger v15 FU-717) - WHAT MATCHED NOTHING IS NAMED. An unknown slug vanished (it is in neither
+    #  list above) and an unknown component was counted in component_count beside the real ones.
+    _components = {kind: _build_component(kind) for kind in request.components}
+    _unknown_components = [k for k, v in _components.items() if (v or {}).get("status") == "Unknown component"]
+    _unknown_slugs = [s for s in request.product_resources if s not in slug_index]
     blueprint = {
         "blueprint_id": str(uuid.uuid4()),
         "entity_name": request.entity_name,
         "timestamp": datetime.datetime.utcnow().isoformat(),
-        "components": {kind: _build_component(kind) for kind in request.components},
+        "components": _components,
         "product_resources": integrated,
         "not_buildable": not_buildable,
+        "unknown_slugs": _unknown_slugs,
+        "unknown_components": _unknown_components,
+        "unknown_basis": ((f"{len(_unknown_slugs)} product slug(s) and {len(_unknown_components)} component(s) "
+                           f"asked for match nothing in the catalogue and are in no list above; the counts "
+                           f"cover what was recognised") if (_unknown_slugs or _unknown_components) else
+                          "everything asked for was recognised"),
         "resource_count": len(integrated),
-        "component_count": len(request.components),
+        "component_count": len(request.components) - len(_unknown_components),
+        "components_requested": len(request.components),
         "provisioned": False,
         # P2.2 (W511) — DECLARED deterministic rather than left silent. This handler resolves catalog slugs
         # and builds a dict; no model is called, so `served_by` is None and the reason is given. The

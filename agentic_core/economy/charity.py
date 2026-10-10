@@ -244,6 +244,13 @@ class CharityIntelligence:
         Regulatory · EHS · Ethical) BEFORE allocation — a failing cause receives nothing and is
         listed honestly in `excluded_by_compliance`."""
         winners = self.ranked(top)
+        #  W660 (ledger v15 FU-730) - THE CUT IS NAMED. Only the top `top` by score are considered, so a cause
+        #  ranked below it received nothing and appeared nowhere, while the rule said the remainder is split
+        #  across "every cleared cause". Excluding one cause promoted the next: the cut is positional.
+        _all_ranked660 = self.ranked(10 ** 6)
+        _below_cut660 = [{"id": c.get("id"), "cause": c.get("cause"), "rank": i + 1, "score": c.get("score"),
+                          "why": f"ranked {i + 1} by score; only the top {top} are considered for the pro-rata split"}
+                         for i, c in enumerate(_all_ranked660) if i >= top]
         # §5 Owner directive: halal/ethical only — the REAL federated screen, not just the static flag
         cleared: List[Dict[str, Any]] = []
         excluded: List[Dict[str, Any]] = []
@@ -318,12 +325,17 @@ class CharityIntelligence:
             #  Owner's call (a weight, a floor, or a guaranteed share); this reports that it is not.
             "priorities_unfunded": self._unfunded_priorities(grants, top),
             "priority_min_share": round(_floor, 4),
+            "considered_top": top,
+            #  W660 (FU-730). A PRIORITY ranked below the cut can still be funded by its floor, so a cause that
+            #  received a grant is not listed here: the list is of causes that got NOTHING because of the cut
+            "not_funded_below_cut": [b for b in _below_cut660 if b["id"] not in {g["id"] for g in grants}],
             "allocation_rule": (f"OWNER RULING 2026-10-07: each "
                                 f"{'Owner-named' if self.priorities_owner_named else 'editorial-default (the Owner named none)'} "
                                 f"priority that is NOT REFUSED by the compliance screen (a 'review' verdict means "
                                 f"unassessed, not cleared - each grant carries its verdict) and is not excluded "
                                 f"receives {round(_floor * 100, 1)}% of the budget first; the remaining "
                                 f"{round((1 - _floor * len(_prio)) * 100, 1)}% is split pro-rata by score across every "
-                                f"cleared cause"),
+                                f"cleared cause AMONG THE TOP {top} BY SCORE (the causes ranked below that cut that "
+                                f"received nothing are named in not_funded_below_cut)"),
             "disclaimer": "Virtual/simulated allocation — no real funds moved.",
         }
