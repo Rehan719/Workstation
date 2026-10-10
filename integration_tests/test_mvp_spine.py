@@ -49769,3 +49769,51 @@ def test_w648_a_record_that_reached_a_prompt_is_not_a_reply_grounded_in_it(clien
     assert _tools, "the registry listed no tool, so the leg read nothing"
     assert all("trust_score" not in t for t in _tools), (
         "a registered tool still carries a trust figure nothing measured", [t.get("name") for t in _tools if "trust_score" in t])
+
+
+def test_w649_a_refusal_is_the_result_and_a_cut_subject_says_it_was_cut(client):
+    """FU-640 + FU-634 (ledger v14 R3, R2).
+
+    THE PROPERTIES: when the organisation cascade is refused the Swarm tab shows the refusal and runs nothing by
+    another route (the ungated delegation is kept only for a cascade route that is not served at all); and the
+    floor's subject line, when it cuts what the person wrote, says so and says how much there was.
+    """
+    import pathlib as _pl, re
+    from agentic_core.ai.native.engine import native_engine
+
+    # ── FU-634 ─────────────────────────────────────────────────────────────────────────────────
+    _long = ("Design a shared kitchen for three care homes so that hot meals reach every resident within forty "
+             "minutes of cooking, staff rotas stay fair across the three sites, and the food waste from each "
+             "kitchen is weighed and reported weekly to the trustees. THE ACTUAL ASK: which single change "
+             "should we make first, and what would it cost in the first quarter?")
+    #  typed with a line break and doubled spaces, so the text as SENT and the text as PRINTED differ in length:
+    #  the length reported must be the printed one, the one the reader can count against
+    _sent = _long.replace(". THE ACTUAL ASK", "." + chr(10) + chr(10) + "THE  ACTUAL  ASK")
+    _printed = " ".join(_sent.split())
+    assert len(_printed) > 220 and len(_sent) != len(_printed)
+    #  a prompt with NO headings, so the engine prints the "The request concerns:" line this leg reads
+    _out = native_engine.generate("Answer plainly.", "probe", user_text=_sent)
+    assert f"[cut at 220 of {len(_printed)} characters]" in _out, (
+        "a subject cut short does not say it was cut, or reports a length the reader cannot check", _out[:500])
+    assert "The request concerns: " in _out, "the leg's own line is not printed, so the word-boundary check reads nothing"
+    _kept = _out.split("The request concerns: ", 1)[1].split(" … [cut at 220", 1)[0]
+    assert _kept and _printed.startswith(_kept) and _printed[len(_kept)] == " ", (
+        "the cut fell inside a word", _kept[-30:], _printed[len(_kept) - 5:len(_kept) + 12])
+    _short = "Which single change should we make first?"
+    _o2 = native_engine.generate("Answer plainly.", "probe", user_text=_short)
+    assert "cut at 220" not in _o2 and _short in _o2, _o2[:300]
+
+    # ── FU-640: source legs on the page (the suite has no browser; said in the commit message) ──────────
+    _sw = _code_only((_pl.Path(__file__).resolve().parents[1]
+                      / "apps/workstation-superapp/src/components/organism/SwarmIntelligence.tsx").read_text(encoding="utf-8"))
+    _fn = _sw[_sw.index("const delegate = async"):]
+    _fn = _fn[:_fn.index("finally")]
+    assert _fn.count("/api/v1/swarm/delegate") == 1, "the ungated delegation is called from more than one branch"
+    _before_delegate = _fn[:_fn.index("/api/v1/swarm/delegate")]
+    assert "response.status === 404 || response.status === 405" in _before_delegate.rsplit("if (response.ok)", 1)[1], (
+        "the delegation fallback is reached for a refusal, not only for a route that is not served")
+    _refusal = _fn[_fn.index("/api/v1/swarm/delegate"):]
+    assert "NOT RUN" in _refusal and "Nothing was delegated by another route" in _refusal, (
+        "a refused cascade is not shown as the result")
+    assert "axios.post" not in _refusal.split("NOT RUN")[0].split("} else {", 1)[-1], (
+        "the refusal branch makes a second request")

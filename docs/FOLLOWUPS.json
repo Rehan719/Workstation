@@ -12177,11 +12177,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.35",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W649",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v14 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The subject is cut at a word boundary and says so, with the length of the text as printed so the reader can check it (W640 had already moved the limit from 150 to 220 and made the subject the person's own text). NOT DONE: the row also named a list labelled as the request's first terms; W640 renamed that heading to 'Terms most frequent in the text you wrote' and it is a frequency count."
     },
     {
       "id": "FU-635",
@@ -12298,11 +12301,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.35",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W649",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v14 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A refused cascade is shown as the result with the server's reason, and nothing is run by another route. The ungated delegation is kept only for a cascade route that is not served (404 or 405). Guarded by source legs on the page - the suite has no browser - and driven red both ways."
     },
     {
       "id": "FU-641",

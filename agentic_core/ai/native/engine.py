@@ -328,7 +328,11 @@ class NativeReasoningEngine:
         # lead and a carried "## <role> output" header became the subject, the keywords and the section
         # list of the stage that followed.
         prompt = _strip_carried(prompt)
-        subject = " ".join(user_text.split())[:220] if _told else ""
+        #  W649 (FU-634, ledger v14 R2) - A CUT SUBJECT SAYS IT WAS CUT. The line printed the first characters
+        #  of what the person wrote and stopped, with nothing to show the actual ask had been dropped.
+        _whole = " ".join(user_text.split()) if _told else ""
+        subject = (_whole if len(_whole) <= 220 else
+                   _whole[:220].rsplit(" ", 1)[0] + f" … [cut at 220 of {len(_whole)} characters]")
         #  W631 (FU-556) - an unnamed domain is WITHHELD, not filled with a placeholder that reads as a reading.
         #  W640 - and its absence is the CALL's, not the person's: the Domain line is written by a router.
         domain = _field(prompt, "Domain") or "WITHHELD — no domain was declared for this call"

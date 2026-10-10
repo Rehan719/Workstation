@@ -167,12 +167,25 @@ const SwarmIntelligence: React.FC = () => {
       });
       if (response.ok) {
         setCascade(await response.json());
-      } else {
+      } else if (response.status === 404 || response.status === 405) {
+        // the cascade route is not served here: the plain delegation is the only path there is
         // W491 (sweep S11.11, C10) — `n_agents` is not a field of DelegateRequest, so pydantic dropped
         // it silently and the 3 this asked for never had any effect. Asking for something the API
         // cannot honour is the same defect as a count that covers nothing.
         const res = await axios.post('/api/v1/swarm/delegate', { task });
         setStreamOutput(JSON.stringify(res.data, null, 2));
+      } else {
+        // W649 (FU-640, ledger v14 R3) — A REFUSAL IS THE RESULT. Any non-OK answer used to fall through to
+        // the UNGATED delegate route, so a Mode 3 review gate that refused the cascade (409) was hidden and
+        // the mission ran anyway by another door. The server's own reason is shown and nothing else is run.
+        let reason = `the cascade was refused (HTTP ${response.status})`;
+        try {
+          const body = await response.json();
+          const d = body?.detail ?? body;
+          reason = typeof d === 'string' ? d
+            : [d?.error, d?.message, d?.note, d?.clear_by && `clear by: ${d.clear_by}`].filter(Boolean).join(' — ') || reason;
+        } catch { /* the body was not JSON; the status line above stands */ }
+        setStreamOutput(`NOT RUN — ${reason}\n\nNothing was delegated by another route.`);
       }
       setStreaming(false);
       await loadRuns();
