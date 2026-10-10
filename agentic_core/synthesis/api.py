@@ -121,11 +121,13 @@ class SynthesisManager:
             return f"<!-- Provenance: {note} -->\n{content}"
         return content
 
-    async def _query(self, prompt: str, tag: str) -> str:
+    async def _query(self, prompt: str, tag: str, said: Optional[str] = None) -> str:
         """W490 (refutation) — `gateway.query` discards served_by, so every output this manager
         produced was unlabelled at the source. The last call's provenance is recorded for the
         response; a composition of several calls reports the last one that served it."""
-        meta = await gateway.query_meta(prompt, agent=f"synthesis:{tag}", augment=False)
+        #  W646 - `said` is the person's own instructions for this output. The TOPIC is not passed as theirs:
+        #  with no instructions it is inferred from the knowledge base, which they did not write.
+        meta = await gateway.query_meta(prompt, agent=f"synthesis:{tag}", augment=False, user_text=(said or None))
         self._last_served_by = meta.get("served_by", "native")
         self._last_is_external = bool(meta.get("is_external"))
         return meta.get("output", "")
@@ -192,7 +194,7 @@ class SynthesisManager:
                 f"## Analysis\n## Discussion\n## Conclusion\n\n"
                 f"Be specific and cite knowledge base content where relevant."
             )
-            content = await self._query(prompt, otype)
+            content = await self._query(prompt, otype, said=instructions)
             if not content.strip().startswith("#"):
                 content = f"# {doc_label}: {topic}\n\n{content}"
             metadata.update(format="md", title=f"{doc_label}: {topic}")
@@ -205,7 +207,7 @@ class SynthesisManager:
                 'id (int), title (str), content (str), narration (str). '
                 "No markdown, no explanation — only the JSON array."
             )
-            raw = await self._query(prompt, "presentation")
+            raw = await self._query(prompt, "presentation", said=instructions)
             slides = self._extract_json_array(raw)
             if not slides:
                 # W414 — this substituted presentation_gen.generate_presentation(), which returns a
@@ -235,7 +237,7 @@ class SynthesisManager:
                 "id (int), title (str), narration (str, 4-6 sentences), duration_sec (int). "
                 "No markdown, no explanation — only the JSON array."
             )
-            raw = await self._query(prompt, "audiobook")
+            raw = await self._query(prompt, "audiobook", said=instructions)
             chapters = self._extract_json_array(raw)
             if not chapters:
                 chapters = presentation_gen.generate_audiobook(topic)
@@ -250,7 +252,7 @@ class SynthesisManager:
                 "Include: hero section with headline, key findings, features grid, call-to-action button. "
                 "Return full HTML only — no markdown fencing, no explanation."
             )
-            raw = await self._query(prompt, "website")
+            raw = await self._query(prompt, "website", said=instructions)
             raw = raw.strip()
             if not raw.startswith("<!"):
                 content = (
@@ -280,7 +282,7 @@ class SynthesisManager:
                 f"implementation_phases (array of {{phase, milestone, timeline}}), status. "
                 f"Be specific and detailed. No markdown — only the JSON object."
             )
-            raw = await self._query(prompt, otype)
+            raw = await self._query(prompt, otype, said=instructions)
             artifact = self._extract_json_object(raw)
             if not artifact:
                 artifact = {
@@ -303,7 +305,7 @@ class SynthesisManager:
                 "key_partners (array), cost_structure (array), market_opportunity, "
                 "competitive_advantage. No markdown — only the JSON object."
             )
-            raw = await self._query(prompt, "business_model")
+            raw = await self._query(prompt, "business_model", said=instructions)
             canvas = self._extract_json_object(raw)
             if not canvas:
                 canvas = business_simulator.generate_business_model_canvas(topic)
@@ -326,7 +328,7 @@ class SynthesisManager:
                 "drad_resilience has adaptation_latency_ms). "
                 "No markdown — only the JSON object."
             )
-            raw = await self._query(prompt, "simulation")
+            raw = await self._query(prompt, "simulation", said=instructions)
             model = self._extract_json_object(raw)
             if not model:
                 # W407 — this substituted business_simulator.generate_model(), a FIXED template whose
@@ -456,7 +458,8 @@ async def stream_synthesis(request: SynthesisRequest):
         # W451 — stream_meta: the done frame discloses who served it and whether the profile shaped it
         # P2.2 (W511) — stated, not inherited. This was one of the 29 call sites W489 found carrying
         # another request's content when the default was True.
-        async for ev in gateway.stream_meta(prompt, agent=f"synthesis:stream:{otype}", augment=False):
+        async for ev in gateway.stream_meta(prompt, agent=f"synthesis:stream:{otype}", augment=False,
+                                            user_text=(instructions or None)):   # W646
             if "token" in ev:
                 collected.append(ev["token"])
                 safe = ev["token"].replace("\n", "\\n").replace("\r", "")

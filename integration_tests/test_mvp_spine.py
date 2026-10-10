@@ -40823,7 +40823,8 @@ def test_w587_p34_the_chief_is_a_modelled_twin_or_says_it_is_a_role(client, monk
         _cid587 = "cca-w587probe"
         _cpath587 = _cca587._CCA_STORE / f"{_cid587}.json"
         _cpath587.write_text(_json587.dumps({
-            "cca_id": _cid587, "title": "a change the Owner ratified", "status": "approved",
+            #  W646 (FU-682) - the change names the entity it concerns, and the twin is visited at that scope
+            "cca_id": _cid587, "title": "a change the Owner ratified", "status": "approved", "vsb_id": "w587decscope",
             "board_ratification": {"decision": "ratify", "at": "2026-10-05T00:00:00Z",
                                    "notes": "the Owner's own decision"},
         }), encoding="utf-8")
@@ -40837,6 +40838,13 @@ def test_w587_p34_the_chief_is_a_modelled_twin_or_says_it_is_a_role(client, monk
                 _dec587)
             assert "decision(s) the Owner made" in _dec587["basis"], _dec587["basis"]
             #  and a decision alone is enough for the twin to act unprompted, restating the decision
+            #  ...and ONLY there: another entity's Chief, and the apex plan's, are not made twins by it
+            for _other646 in ("w646-another-entity", "workstation"):
+                _om646 = _b587.founder_model(_other646)
+                assert _om646["decisions"]["count"] == 0 and _om646["is_modelled_twin"] is False, (
+                    "a decision the Owner made about one entity made another scope's Chief a twin", _other646, _om646)
+                assert _aio587.run(_b587.twin_directive_unprompted(_other646))["issued"] is False
+            assert _b587.founder_model("w587decscope")["decisions"]["count"] >= 1
             _dd587 = _aio587.run(_b587.twin_directive_unprompted("w587decscope"))
             assert _dd587["issued"] is True, ("a Chief built from a decision refuses to act", _dd587)
             assert "ratify" in str(_dd587.get("acted_on") or "").lower(), (
@@ -49547,3 +49555,49 @@ def test_w645_a_choice_survives_being_saved_and_a_row_says_what_actually_ran(cli
     monkeypatch.setattr(_qi.gateway, "query_meta", _model)
     _adm = client.post("/api/v1/qep/adaptation/execute", json={"pattern": "spaced repetition", "target_domain": "care"}).json()
     assert _adm["status"] == "blueprint_generated" and "NOT a blueprint" not in _adm["status_note"], _adm["status"]
+
+
+def test_w646_a_label_states_the_entitys_status_and_synthesis_says_only_what_the_person_instructed(client, monkeypatch):
+    """FU-681, and the Synthesis outputs as callers of the floor (FU-675's remainder).
+
+    THE PROPERTIES: the Genesis page states an established entity's status from the entity, never with the word
+    "living" as a status; and a Synthesis output tells the floor the person's own INSTRUCTIONS and nothing
+    else - a topic inferred from the knowledge base is not passed off as theirs.
+    """
+    import pathlib as _pl
+    _gj = _code_only((_pl.Path(__file__).resolve().parents[1]
+                      / "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8"))
+    assert "hint: 'Your living VSB IDBO entity'" not in _gj and "Living Enterprise IDBO registered" not in _gj, (
+        "the page still states 'living' as the status of any registered entity")
+    assert "Your VSB IDBO entity — ${vsb.status ?? 'status not returned'}" in _gj
+    assert "Enterprise IDBO registered — {vsb.status ?? 'status not returned'}" in _gj
+
+    import agentic_core.synthesis.api as _syn
+    _seen = []
+    _real = _syn.gateway.query_meta
+
+    async def _spy(prompt, **k):
+        _seen.append(k.get("user_text"))
+        return await _real(prompt, **k)
+    monkeypatch.setattr(_syn.gateway, "query_meta", _spy)
+    _said = "A two-page note on rota fairness for night-shift nurses"
+    _r = client.post("/api/v1/synthesis/generate", json={"output_type": "report", "instructions": _said, "content_ids": []})
+    assert _r.status_code == 200, _r.text[:200]
+    assert _seen and all(u == _said for u in _seen), ("a Synthesis output did not tell the floor what was instructed", _seen)
+    #  NO instructions: the topic is inferred, and it is NOT passed as the person's words
+    _seen.clear()
+    _r2 = client.post("/api/v1/synthesis/generate", json={"output_type": "report", "instructions": "", "content_ids": []})
+    assert _r2.status_code == 200, _r2.text[:200]
+    assert _seen and all(u is None for u in _seen), (
+        "with no instructions a topic was passed to the floor as the person's own words", _seen)
+    monkeypatch.undo()
+    #  and the stream path says it too
+    _sseen = []
+    _sreal = _syn.gateway.stream_meta
+
+    def _sspy(prompt, **k):
+        _sseen.append(k.get("user_text"))
+        return _sreal(prompt, **k)
+    monkeypatch.setattr(_syn.gateway, "stream_meta", _sspy)
+    assert client.post("/api/v1/synthesis/stream", json={"output_type": "report", "instructions": _said, "content_ids": []}).status_code == 200
+    assert _sseen == [_said], _sseen

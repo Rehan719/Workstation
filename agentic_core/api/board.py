@@ -174,7 +174,7 @@ _STANDING_CANON = ("Standing values from the Owner's documented canon: faith-roo
                    "real user enablement · virtual/simulated finance only (real rails stay Owner-gated).")
 
 
-def _owner_decisions(limit: int = 5) -> List[Dict[str, Any]]:
+def _owner_decisions(limit: int = 5, scope: "str | None" = None) -> List[Dict[str, Any]]:
     """The Owner's own recorded DECISIONS — the Board ratifications, read from Change Control.
 
     P3.4 clause (1) names decisions as one of the three inputs a founder model is built from, and nothing
@@ -193,6 +193,13 @@ def _owner_decisions(limit: int = 5) -> List[Dict[str, Any]]:
                 continue
             d = _cca._ratification_decision(c)
             if not d:
+                continue
+            #  W646 (FU-682) - A DECISION BELONGS TO THE ENTITY ITS CHANGE CONCERNS. The instructions were
+            #  scoped (W624, W645) and the decisions were not, so one ratified change anywhere made the Chief
+            #  of EVERY entity a modelled twin that may act unprompted. A change names its entity in `vsb_id`;
+            #  one that names none concerns the platform and is the apex plan's. `scope=None` reads all, as
+            #  the unscoped callers always have.
+            if scope is not None and str(c.get("vsb_id") or "workstation") != scope:
                 continue
             r = c.get("board_ratification") or {}
             out.append({"cca_id": c.get("cca_id"), "decision": d,
@@ -244,7 +251,7 @@ def founder_model(scope: "str | None" = None, owner: "str | None" = None) -> Dic
                                  "instruction": str(r.get("instruction"))[:200]})
     except Exception:
         instructions_readable = False
-    decisions = _owner_decisions()
+    decisions = _owner_decisions(scope=scope)
     n_i, n_d = (n_i_all or 0), len(decisions)
     is_twin = (n_i + n_d) > 0
 

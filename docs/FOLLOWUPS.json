@@ -13005,11 +13005,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W646",
       "note": "",
       "slot_source": "the same mechanism P2.34's wrapper-as-request findings are closed by",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "W641 reworded the three shared notes that every floor surface prints (the stage note, the provenance badge title, the Digital Reactor note). The two others the row named - the intelligence engines' summary line and the Genesis provenance paragraph - belong to callers that have said which text the person wrote since W640, so for them 'from your request' is true; left as they are."
     },
     {
       "id": "FU-678",
@@ -13077,11 +13080,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W646",
       "note": "",
       "slot_source": "the unfinished half of a tier-1 finding",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The two places that stated a STATUS with the word 'living' print the entity's derived status instead (the Establish step's hint and the registered line). 'Living VSB' as the NAME of the entity kind - the vision's own term - is left where it is a name or a progress verb."
     },
     {
       "id": "FU-682",
@@ -13095,11 +13101,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W646",
       "note": "",
       "slot_source": "the unfinished half of a tier-1 finding",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A decision belongs to the entity its change concerns (the change's vsb_id; none means the platform, the apex plan's). founder_model passes its scope; an unscoped read still returns all. Driven: a decision about one entity leaves another scope's Chief, and the apex plan's, a role. NOT DONE: 'executed' is still said when the cascade filed one fallback objective."
     },
     {
       "id": "FU-683",
@@ -13136,6 +13145,42 @@
       "note": "",
       "slot_source": "a fabric page gap; the Instrument Cell item owns that page's additions",
       "tier": 3
+    },
+    {
+      "id": "FU-685",
+      "title": "The board-pack hash test fails intermittently when the Chief and beat tests run beside it",
+      "why": "test_w471_board_pack_and_chiefs_opening_are_honest_both_ways compares a pack's content hash at birth with one assembled later. Run alone it passes; run beside the board, Chief and Genesis tests on three workers it failed in two of three runs (W646). A pack hashes its layers and its economy, and the workers share one store, so something another test changes between the two assemblies moves the hash. CAUSE NOT ESTABLISHED: the candidates are a concurrent beat running an economy cycle over every entity, and a concurrent test rewriting a shared plan. W646's own change does not touch what a pack hashes (checked by reading the hash function and its inputs). Five full suites W641-W645 were green, so the co-scheduling is rare there.",
+      "source": "W646, found while running a board-heavy selection",
+      "found": "2026-10-10",
+      "files": [
+        "integration_tests/test_mvp_spine.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "a suite-reliability rider, beside the parallel-stall and shared-profile rows",
+      "tier": 3
+    },
+    {
+      "id": "FU-686",
+      "title": "The Chief's unprompted directive is reported 'executed' when the cascade filed one fallback objective",
+      "why": "twin_directive_unprompted reports executed = bool(objectives_added). When the AI CEO's cascade produced nothing parseable, chief_instruct files ONE fallback objective (source chief_instruct_fallback) and that counts as executed. Derive it from parsed objectives and say 'filed as one fallback objective' otherwise.",
+      "source": "W646, the remainder of a row closed this round",
+      "found": "2026-10-10",
+      "files": [
+        "agentic_core/api/board.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.35",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "an invisible shortfall left by a tier-1 row's fix",
+      "tier": 2
     }
   ],
   "routes": [
