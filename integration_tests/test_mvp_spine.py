@@ -48808,3 +48808,160 @@ def test_w640_the_instrument_cell_proposes_checks_and_verifies_and_runs_nothing(
         for _s in _pa["selection"]["selected"]:
             assert [a["id"] for a in _pa["alternatives"][_s["id"]]] == _s["contract"]["equivalents"], _pa["alternatives"]
         assert "Owner" in _pa["alternatives_basis"]
+
+
+def test_w641_a_model_evaluation_says_what_it_ran_against_and_an_echo_fails_its_control(client, monkeypatch):
+    """Plan item P3.32: a model's behaviour is mapped before anything is said about its insides.
+
+    THE PROPERTIES: every evaluation records the probe set it ran against, by a version and a digest that is
+    RECOMPUTED here (never typed); a model that echoes its prompt hits the markers and FAILS the control; the
+    record says a marker hit is not correctness and claims no evidence above behaviour; a model that cannot
+    serve gets no score, no hits and no control verdict; and the older `score` keeps its meaning.
+    """
+    import hashlib, json as _json
+    import agentic_core.api.native_ai as _na
+
+    # (a) the probe set: versioned, with exactly one control, and a digest that follows its content
+    _probes = _na._EVAL_PROBES
+    assert sum(1 for p in _probes if p["control"]) == 1 and len({p["id"] for p in _probes}) == len(_probes)
+    _digest = hashlib.sha256(_json.dumps(_probes, sort_keys=True).encode("utf-8")).hexdigest()[:16]
+    assert _na._eval_probe_digest() == _digest
+    monkeypatch.setattr(_na, "_EVAL_PROBES", _probes + [{"id": "x", "control": False, "marker": "y", "prompt": "z"}])
+    assert _na._eval_probe_digest() != _digest, "the digest does not change when a probe is added"
+    monkeypatch.setattr(_na, "_EVAL_PROBES", _probes)
+
+    _model = "w641-probe"
+
+    def _served(reply_for):
+        async def _complete(prompt, agent="assistant", timeout=30.0, prefer_external=False, prefer="auto", **_kw):
+            return {"output": reply_for(prompt), "served_by": f"ollama:{_model}", "is_external": False}
+        return _complete
+
+    # (b) AN ECHO: every marker is hit, and the control FAILS
+    monkeypatch.setattr(_na.orchestrator, "complete", _served(lambda p: p + "\n- 60 ## Risks"))
+    _echo = client.post("/api/v1/native-ai/lifecycle/evaluate", json={"model": _model}).json()
+    assert _echo["can_serve"] is True and _echo["marker_hits"] == _echo["probes_total"] == 3, _echo
+    assert _echo["control"]["marker_absent"] is False, (
+        "a model that says the marker regardless passed the control, so a marker hit means nothing", _echo["control"])
+    assert _echo["score"] == 1.0, "the older score changed meaning; its readers were not moved"
+
+    # (c) A MODEL THAT ANSWERS: hits where it should, and the control passes
+    def _good(p):
+        if "single word" in p:
+            return "ready"
+        return "## Summary\nok\n## Risks\n- one\n- two\n- three\nsurplus 60"
+    monkeypatch.setattr(_na.orchestrator, "complete", _served(_good))
+    _ok = client.post("/api/v1/native-ai/lifecycle/evaluate", json={"model": _model}).json()
+    assert _ok["control"]["marker_absent"] is True and _ok["marker_hits"] == 3, _ok
+
+    # (d) what every record says about itself
+    for _ev in (_echo, _ok):
+        assert _ev["probe_set"] == {"version": _na._EVAL_PROBE_SET_VERSION, "digest": _digest}, _ev["probe_set"]
+        assert _ev["evidence_level"] == "behaviour" and "not a judgement" in _ev["basis"], _ev
+        for _claim in ("activation", "embedding", "latent", "hidden state", "weights"):
+            assert _claim not in _json.dumps(_ev).lower().replace("internal state", ""), (
+                "an evaluation record names a level of evidence nothing here can reach", _claim)
+
+    # (e) A MODEL THAT CANNOT SERVE: no score, no hits, and the control is not run or read
+    async def _floor(prompt, agent="assistant", timeout=30.0, prefer_external=False, prefer="auto", **_kw):
+        return {"output": "## Risks - 60", "served_by": "native", "is_external": False}
+    monkeypatch.setattr(_na.orchestrator, "complete", _floor)
+    _no = client.post("/api/v1/native-ai/lifecycle/evaluate", json={"model": _model}).json()
+    assert _no["can_serve"] is False and _no["score"] is None and _no["marker_hits"] is None and _no["control"] is None, _no
+
+    # (f) the record is what the lifecycle list returns, so the page can print it
+    _listed = [e for e in client.get("/api/v1/native-ai/lifecycle").json().get("evaluations", []) if e.get("model") == _model]
+    assert _listed and all("probe_set" in e and "basis" in e for e in _listed), _listed[-1:]
+
+
+def test_w641_the_preview_names_engines_the_fabric_will_not_run_and_no_shared_note_says_your_request(client, monkeypatch):
+    """FU-670 + FU-674, and the shared floor notes.
+
+    THE PROPERTIES: a compose preview lists every selected resource whose engine the fabric will not run, with
+    the reason, and lists none that it will; when the check cannot run the preview still answers and SAYS it
+    did not check; `commit_ready` keeps its meaning; and no shared note tells every reader the floor built its
+    output from "your request", because for a caller that never said what the person wrote that is false.
+    """
+    import pathlib as _pl
+    import agentic_core.api.instrument_cell as _cell
+    import agentic_core.api.resource_fabric as _fab
+
+    _states = {r["id"]: _cell.availability(r["id"])["state"] for r in _fab._REGISTRY}
+    _runs = next(i for i, s in _states.items() if s == "available")
+    _not = [i for i, s in _states.items() if s != "available"]
+
+    def _sim(ids):
+        _area = _fab._BY_ID[ids[0]]["usable_in"][0]
+        _r = client.post("/api/v1/resources/compose/simulate", json={
+            "name": "w641 preview probe", "resource_ids": ids, "usage_area": _area})
+        assert _r.status_code == 200, _r.text[:300]
+        return _r.json()
+
+    # (a) a configuration the fabric runs whole lists nothing
+    _clean = _sim([_runs])["model"]
+    assert _clean["engines_not_run_by_fabric"] == [] and "NOT CHECKED" not in _clean["engines_not_run_basis"], _clean
+
+    # (b) every selected resource without a handler is named with its reason - DRIVEN, on whatever is
+    #     unavailable today, or by taking a branch away when everything has one
+    if _not:
+        _victim = _not[0]
+    else:
+        _victim = _runs
+        _real = _cell._handler_ids()
+        monkeypatch.setattr(_cell, "_handler_ids", lambda: _real - {_victim})
+    _m = _sim([_victim])["model"]
+    assert [e["id"] for e in _m["engines_not_run_by_fabric"]] == [_victim], _m["engines_not_run_by_fabric"]
+    assert _m["engines_not_run_by_fabric"][0]["reason"] and _m["engines_not_run_by_fabric"][0]["state"] != "available"
+    monkeypatch.undo()
+
+    # (c) the check cannot run: the preview still answers, and says it did not check
+    def _boom(*a, **k):
+        raise RuntimeError("driven")
+    monkeypatch.setattr(_cell, "availability", _boom)
+    _un = _sim([_runs])
+    assert _un["model"]["engines_not_run_basis"].startswith("NOT CHECKED"), _un["model"]["engines_not_run_basis"]
+    assert _un["model"]["engines_not_run_by_fabric"] == [], "an unchecked preview listed engines anyway"
+    assert "commit_ready" in _un, "the preview lost its older verdict when the new check failed"
+    monkeypatch.undo()
+
+    # (d) the page prints both, from the server's fields
+    _root = _pl.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    _page = _code_only((_root / "pages/synthesis/ResourceFabric.tsx").read_text(encoding="utf-8"))
+    for _need in ('data-testid="engines-not-run"', "sim.model.engines_not_run_by_fabric", "{e.reason}",
+                  'data-testid="engines-not-run-unchecked"', "{sim.model.engines_not_run_basis}"):
+        assert _need in _page, ("the preview's engines-not-run statement does not reach the page", _need)
+
+    # (d2) THE FABRIC'S OWN LIST says, for every resource, whether composing it runs its engine (FU-674)
+    _list = client.get("/api/v1/resources").json()["resources"]
+    assert len(_list) == len(_fab._REGISTRY)
+    for _row in _list:
+        _want = True if _states[_row["id"]] == "available" else False if _states[_row["id"]] == "prompt_stage_only" else None
+        assert _row["fabric_runs_engine"] is _want and _row["fabric_runs_basis"], (_row["id"], _row.get("fabric_runs_engine"))
+    #  the registry rows themselves are NOT written to: the statement is per request
+    assert all("fabric_runs_engine" not in r for r in _fab._REGISTRY), "the list mutated the registry"
+    #  DRIVEN: a branch taken away turns that row false; a check that cannot run turns every row to None
+    _real2 = _cell._handler_ids()
+    monkeypatch.setattr(_cell, "_handler_ids", lambda: _real2 - {_runs})
+    assert next(r for r in client.get("/api/v1/resources").json()["resources"] if r["id"] == _runs)["fabric_runs_engine"] is False
+    monkeypatch.undo()
+    monkeypatch.setattr(_cell, "availability", _boom)
+    _unl = client.get("/api/v1/resources").json()["resources"]
+    assert all(r["fabric_runs_engine"] is None and r["fabric_runs_basis"].startswith("NOT CHECKED") for r in _unl), _unl[0]
+    monkeypatch.undo()
+    for _need in ('data-testid="resource-not-run"', "r.fabric_runs_engine === false", 'data-testid="resource-run-unchecked"',
+                  "r.fabric_runs_engine === null", "title={r.fabric_runs_basis}"):
+        assert _need in _page, ("the list's engine-run statement does not reach the card", _need)
+
+    # (e) NO SHARED NOTE ATTRIBUTES FLOOR OUTPUT TO THE READER'S OWN REQUEST. Asserted on the three shared
+    #     strings every floor-served surface prints, by what they say rather than by an old sentence.
+    import re as _re
+    _so = (_root / "components/StageOutcome.tsx").read_text(encoding="utf-8")
+    _note = _re.search(r"export const FLOOR_STAGE_NOTE =\s*([\"'])(.+?)\1;", _so, _re.S)
+    assert _note, "the shared stage note is no longer a single exported constant"
+    assert not _re.search(r"\byour (request|inputs?)\b", _note.group(2)), (
+        "the shared stage note tells every reader the scaffold came from THEIR request", _note.group(2))
+    assert "identified as yours" in _note.group(2), _note.group(2)
+    _api = (_root / "lib/api.ts").read_text(encoding="utf-8")
+    _title = _re.search(r"structured floor — not model analysis'[^}]*title: '([^']+)'", _api)
+    assert _title and not _re.search(r"from (the|your) request", _title.group(1)), (
+        "the shared provenance badge says the floor composed from the request", _title and _title.group(1))

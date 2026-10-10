@@ -12804,11 +12804,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.31",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W641",
       "note": "",
       "tier": 1,
-      "slot_source": "a finding of the Instrument Cell brief assessment; it is that item's own work (docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md)"
+      "slot_source": "a finding of the Instrument Cell brief assessment; it is that item's own work (docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md)",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "MEASURED: commit_ready reads the quality gate and the usage-area check and never whether a selected resource can be run. It keeps that meaning; the preview now carries engines_not_run_by_fabric with each reason beside it, says NOT CHECKED when it could not check, and the page prints both."
     },
     {
       "id": "FU-671",
@@ -12861,11 +12864,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W641",
       "note": "",
       "slot_source": "the first clause of the item chartered for it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "MEASURED: three probes typed inline, a score that is the share of replies containing a marker string, one marker present in its own prompt, no control, no version on the record. Now: a named, versioned probe set with a digest on every record, a control an echoing model fails, marker hits named as such, and the basis and the evidence level printed on the page. Held-out probes are NOT built and the record says there are none."
     },
     {
       "id": "FU-674",
@@ -12879,11 +12885,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.31",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W641",
       "note": "",
       "slot_source": "a finding of the Instrument Cell brief assessment; it is that item's own work (docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md)",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "By its second branch: the fabric's list and the compose preview now say, per resource and per request, that composing a spawner adds a prompt stage and runs no engine. Neither was given a handler - whether the fabric SHOULD spawn an entity from a composition is a product question nobody has asked for."
     },
     {
       "id": "FU-675",

@@ -172,7 +172,8 @@ async def run_factory_produce(name: str, product_type: str = "business_model", d
     ACTUAL production engine — driven by the native swarm, not the legacy external-first cascade."""
     from agentic_core.ai.native import orchestrator
     prompt = _factory_prompt(name, product_type, domain, description)
-    res = await orchestrator.complete(prompt, agent="factory", prefer=prefer)
+    res = await orchestrator.complete(prompt, agent="factory", prefer=prefer,
+                                      user_text=(chr(10).join(x for x in (name, description) if isinstance(x, str) and x.strip()) or None))   # W641
     return {"output": res.get("output", "") or "", "served_by": res.get("served_by", "native"),
             "is_external": bool(res.get("is_external")), "run_id": uuid.uuid4().hex[:12]}
 
@@ -258,7 +259,8 @@ async def run_generator(artefact_type: str, spec: str, domain: str = "general",
     prompt = (f"You are an artefact generator. {tmpl.format(format=fmt)}\n\n"
               f"Artefact type: {artefact_type} | Target format: {fmt} | Domain: {domain}\n"
               f"Specification:\n{spec}")
-    res = await orchestrator.complete(prompt, agent="generator", prefer=prefer)
+    res = await orchestrator.complete(prompt, agent="generator", prefer=prefer,
+                                      user_text=(spec or None))   # W641 - the specification typed
     return {"artefact_type": artefact_type, "format": fmt, "output": res.get("output", "") or "",
             "served_by": res.get("served_by", "native"), "is_external": bool(res.get("is_external")),
             "run_id": uuid.uuid4().hex[:12]}
@@ -337,7 +339,8 @@ async def _tournament_generation(base_prompt: str, domain: str, n: int, fitness_
         f"Label each with VARIANT_1:, VARIANT_2:, etc. and provide a complete, substantive response for each.\n\n"
         f"Produce all {n} variants now."
     )
-    _var_meta = await gateway.query_meta(variations_prompt, agent="incubator", augment=False)
+    _var_meta = await gateway.query_meta(variations_prompt, agent="incubator", augment=False,
+                                         user_text=(base_prompt or None))   # W641
     raw_variations = _var_meta.get("output", "") or ""
     if record is not None:
         record(_var_meta)
@@ -354,7 +357,8 @@ async def _tournament_generation(base_prompt: str, domain: str, n: int, fitness_
         f"Then add a final line: WINNER|VARIANT_N|one sentence explaining why\n\n"
         f"Provide ONLY the formatted lines, no other text."
     )
-    _score_meta = await gateway.query_meta(score_prompt, agent="incubator", augment=False)
+    _score_meta = await gateway.query_meta(score_prompt, agent="incubator", augment=False,
+                                           user_text=(base_prompt or None))   # W641
     scores_raw = _score_meta.get("output", "") or ""
     if record is not None:
         record(_score_meta)
@@ -482,7 +486,8 @@ async def incubator_evolve(req: EvolveTournamentRequest) -> TournamentResult:
             f"temperature {temperature:.2f}, mutation {mutation:.2f}): what makes the winner strongest, and what "
             f"should the next generation improve? Domain: {req.domain}."
         )
-    _an_meta = await gateway.query_meta(analysis_prompt, agent="incubator", augment=False)
+    _an_meta = await gateway.query_meta(analysis_prompt, agent="incubator", augment=False,
+                                        user_text=(req.base_prompt or None))   # W641
     analysis = _an_meta.get("output", "") or ""
     _record(_an_meta)
 
@@ -557,7 +562,7 @@ async def reactor_experiment(req: ExperimentRequest) -> ExperimentResult:
             f"You are the §7 Reactor's Experimentation engine. Subject: {req.subject} (domain: {req.domain}).\n"
             f"WHAT-IF scenario: {sc}\n\nProject the outcome under this scenario:\n"
             "## Projected Outcome\n## Key Risks\n## Opportunities\n## Net Assessment (one line)",
-            agent="reactor-experiment", augment=False)
+            agent="reactor-experiment", augment=False, user_text=(req.subject or None))   # W641
         outcomes.append(ScenarioOutcome(scenario=sc, outcome=(meta.get("output", "") or "")[:1200],
                                         served_by=_record(meta)))
 
@@ -565,7 +570,7 @@ async def reactor_experiment(req: ExperimentRequest) -> ExperimentResult:
         f"Compare these what-if scenario outcomes for «{req.subject}». Rank them best→worst against: "
         f"{req.fitness_criteria}. Provide:\n## Ranking\n## Key Differences\n## Recommendation\n\n"
         + "\n\n".join(f"SCENARIO: {o.scenario}\n{o.outcome[:500]}" for o in outcomes),
-        agent="reactor-experiment", augment=False)
+        agent="reactor-experiment", augment=False, user_text=(req.subject or None))   # W641
     comparison = comp_meta.get("output", "") or ""
     _record(comp_meta)
     # §7 (W497, FU-219, class C1) — the fabric panel called this run "ranked". The prompt ASKS for a
@@ -644,7 +649,7 @@ async def petri_culture(req: PetriRequest) -> PetriResult:
             "Grow it — what it develops into under these conditions:\n"
             "## Growth (how it develops)\n## Nutrients Required (what it needs to thrive)\n"
             "## Contamination Risks (what could spoil it)\n## Viability (VIABLE or NOT-VIABLE — one line, justified)",
-            agent="petri-culture", augment=False)
+            agent="petri-culture", augment=False, user_text=(req.specimen or None))   # W641
         culture = (meta.get("output", "") or "").strip() or culture
         _record(meta)
 
@@ -753,7 +758,7 @@ async def reactor_studio(req: StudioRequest) -> StudioResult:
             + "; ".join(f"{p.label}={p.value}" + (f"/z{p.z}" if p.z is not None else "") for p in pts)
             + f"\nStats: total {total}, mean {mean}, {_max_stat}, {_min_stat}.\n\n"
             "## Insight (3-4 sentences)\n## Notable Pattern\n## Recommended Action",
-            agent="reactor-studio", augment=False)
+            agent="reactor-studio", augment=False, user_text=(req.title or None))   # W641
         insight = meta.get("output", "") or ""
         sb = meta.get("served_by", "native")
         prov["served_by"][sb] = prov["served_by"].get(sb, 0) + 1

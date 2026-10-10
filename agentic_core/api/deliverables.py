@@ -135,6 +135,7 @@ async def _generate(d_type: str, title: str, brief: str, domain: str,
             + "\n\n--- CURRENT DRAFT ---\n" + prior[:6000]
         )
     meta = await gateway.query_meta(prompt, agent=f"deliverable:{d_type}", timeout=30.0,
+                                    user_text=(chr(10).join(x for x in (title, brief) if isinstance(x, str) and x.strip()) or None),   # W641
                                     augment=False)   # W332 — deliverables are saved+exported: no cross-request recall
     return {
         "content": meta.get("output", ""),

@@ -593,7 +593,8 @@ async def chat(request: ChatRequest, user: dict | None = Depends(get_current_use
     # (W332, extended to all of them in W488); an unauthenticated caller here has no namespace, so it
     # reaches platform memory only.
     meta = await gateway.query_meta(prompt, agent=f"avatar:{request.context}", timeout=20.0,
-                                    owner_id=_owner, augment=True)
+                                    owner_id=_owner, augment=True,
+                                    user_text=(request.message or None))   # W641 - the message typed
     response_text = meta.get("output", "")
     #  P3.28 clause (5) — THE HOLD IS RELEASED BY THE CHAIN, NOT AROUND IT. An approved learner's reply is
     #  delivered only if the clearance chain clears it; otherwise the gate's reason is what they see.

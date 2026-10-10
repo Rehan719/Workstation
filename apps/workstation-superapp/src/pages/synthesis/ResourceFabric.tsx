@@ -38,6 +38,8 @@ interface Resource {
   id: string; name: string; resource_class: string; type: string; description: string;
   capabilities: string[]; reconfigurable_params: Record<string, string>; endpoint: string;
   methods: string[]; reusable: boolean; rerunnable: boolean; biomimetic: boolean; usable_in: string[];
+  // W641 (FU-674) — whether composing this resource runs its engine; null = the server could not check
+  fabric_runs_engine?: boolean | null; fabric_runs_basis?: string;
 }
 interface Composition {
   id: string; name: string; usage_area: string;
@@ -67,6 +69,9 @@ interface Simulation {
     biomimetic_resources: number; shared_usage_areas: string[]; usage_area_supported_by_all: boolean;
     incompatibilities: { id: string; name: string; reason: string }[];
     unset_params: Record<string, string[]>;
+    // W641 (FU-670, FU-674) — selected resources whose engine the fabric will NOT run, with the server's reason
+    engines_not_run_by_fabric?: { id: string; name: string; state: string; reason: string }[];
+    engines_not_run_basis?: string;
     // §7→§8 — projected living-organism capacity for this config's cognitive load (read-only, pre-commit).
     organism_capacity?: {
       projected_posture?: string; admitted_max_parallel?: number; demand_nodes?: number;
@@ -429,6 +434,18 @@ export const ResourceFabric: React.FC = () => {
                   {r.biomimetic && <Tag tone="aura">biomimetic</Tag>}
                   {r.reusable && <Tag>reusable</Tag>}
                   {r.rerunnable && <Tag>rerunnable</Tag>}
+                  {r.fabric_runs_engine === false && (
+                    <span data-testid="resource-not-run" title={r.fabric_runs_basis}
+                      className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300">
+                      prompt stage only — engine not run
+                    </span>
+                  )}
+                  {r.fabric_runs_engine === null && (
+                    <span data-testid="resource-run-unchecked" title={r.fabric_runs_basis}
+                      className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
+                      engine run not checked
+                    </span>
+                  )}
                 </div>
                 <p className="text-[8px] font-mono text-slate-600 mt-2 mb-6">{r.usable_in.join(' · ')}</p>
               </button>
@@ -549,6 +566,19 @@ export const ResourceFabric: React.FC = () => {
               )}
             </div>
             <p className="text-[10px] text-slate-400"><span className="text-slate-600 font-black uppercase">Pipeline:</span> {sim.model.pipeline.join(' → ')}</p>
+            {/* W641 — a selectable resource is not necessarily one the fabric runs: the server names each that
+                contributes only a prompt stage, and says so when it could not check */}
+            {(sim.model.engines_not_run_by_fabric ?? []).length > 0 && (
+              <div data-testid="engines-not-run" className="text-[10px] text-amber-300 space-y-0.5">
+                <p className="font-black uppercase">Engine not run by the fabric:</p>
+                {(sim.model.engines_not_run_by_fabric ?? []).map(e => (
+                  <p key={e.id}><span className="font-bold">{e.name}</span> — {e.reason}</p>
+                ))}
+              </div>
+            )}
+            {(sim.model.engines_not_run_basis ?? '').startsWith('NOT CHECKED') && (
+              <p data-testid="engines-not-run-unchecked" className="text-[10px] text-slate-400">{sim.model.engines_not_run_basis}</p>
+            )}
             <p className="text-[10px] text-slate-400"><span className="text-slate-600 font-black uppercase">Combined capabilities ({sim.model.combined_capabilities.length}):</span> {sim.model.combined_capabilities.slice(0, 12).join(' · ')}{sim.model.combined_capabilities.length > 12 ? ' …' : ''}</p>
             {sim.model.incompatibilities.length > 0 && (
               <p className="text-[10px] text-vital"><span className="font-black uppercase">Incompatible with “{sim.usage_area}”:</span> {sim.model.incompatibilities.map(i => i.name).join(', ')} — change the usage area or remove these.</p>

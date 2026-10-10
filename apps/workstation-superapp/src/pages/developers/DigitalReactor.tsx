@@ -22,7 +22,7 @@ const SERVING: ServingChoice[] = [
   { label: 'In-house first (auto)', value: 'auto',
     note: 'the local owned model if it is up, else the deterministic floor' },
   { label: 'Deterministic floor only', value: 'native',
-    note: 'the native floor composes the trace from your request — fast, free, reproducible, and not model analysis' },
+    note: 'the native floor composes the trace from the prompt it is given — fast, free, reproducible, and not model analysis' },
   { label: 'Local owned model', value: 'local',
     note: 'requires the local model (Ollama); falls back to the floor if it cannot serve, and the badge will say so' },
 ];

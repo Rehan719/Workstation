@@ -126,7 +126,7 @@ export const provenanceBadge = (servedBy: string | Record<string, number> | null
   if (isExternal) return { label: `via ${sb}`, cls: 'bg-amber-500/20 text-amber-400',
     title: 'served by an external accelerant (opt-in)' };
   if (sb === 'native' || sb === 'template') return { label: 'structured floor — not model analysis', cls: 'bg-amber-500/20 text-amber-400',
-    title: 'the deterministic native floor composes structured output from the request — it is not model inference' };
+    title: 'the deterministic native floor composes structured output from the prompt it is given — it is not model inference' };
   // W490 (refutation) — `verbatim-ingest` means the CALLER supplied this text and declared no origin.
   // The platform composed nothing, so the emerald "in-house · verbatim-ingest" was a composition claim
   // over someone else's words — and it contradicted the exported file, which now says so correctly.

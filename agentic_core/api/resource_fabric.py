@@ -384,6 +384,21 @@ async def list_resources(resource_class: Optional[str] = None, usable_in: Option
     _live_note = await _omnimedia_live_sentence()
     items = [({**r, "description": r["description"] + _live_note} if r.get("id") == "omnimedia" else r)
              for r in items]
+    #  W641 (FU-674) - EVERY LISTED RESOURCE SAYS WHETHER THE FABRIC RUNS ITS ENGINE. Two registered spawners
+    #  were listed, selectable and described like any other while composing either ran nothing. The state and
+    #  its reason are read per request from the Instrument Cell; when that cannot answer, the field says NOT
+    #  CHECKED rather than being left off (an absent field would read as "nothing to report").
+    def _runs(rid: str) -> Dict[str, Any]:
+        try:
+            from agentic_core.api.instrument_cell import availability as _availability
+            _a = _availability(rid)
+            return {"fabric_runs_engine": (True if _a["state"] == "available" else
+                                           False if _a["state"] == "prompt_stage_only" else None),
+                    "fabric_runs_basis": _a["reason"]}
+        except Exception as _exc:
+            return {"fabric_runs_engine": None,
+                    "fabric_runs_basis": f"NOT CHECKED - the availability check could not run ({_exc.__class__.__name__})"}
+    items = [{**r, **_runs(r["id"])} for r in items]
     if resource_class:
         items = [r for r in items if r["resource_class"] == resource_class]
     if usable_in:
@@ -909,7 +924,10 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
             res = await orchestrator.complete(str(cfg.get("prompt") or objective),
                                               agent=str(cfg.get("agent") or "fabric-composition"),
                                               prefer_external=bool(cfg.get("prefer_external", False)),
-                                              prefer=str(cfg.get("model") or "auto"))
+                                              prefer=str(cfg.get("model") or "auto"),
+                                              #  W641 - the run's objective is the person's; a saved
+                                              #  design prompt is not passed off as theirs
+                                              user_text=(objective or None))
             return {"resource": "native_orchestrator", "ran": "/api/v1/native-ai/complete",
                     "served_by": res.get("served_by"), "is_external": res.get("is_external"),
                     "output": (res.get("output") or "")[:600]}
@@ -1957,7 +1975,23 @@ def _model_configuration(resource_ids: List[str], usage_area: str,
         if usage_area not in base["usable_in"]:
             incompatibilities.append({"id": rid, "name": base["name"],
                                       "reason": f"does not support usage area '{usage_area}'"})
+    #  W641 (FU-670, FU-674) - WHAT THE FABRIC WILL ACTUALLY RUN. A resource can be registered and selectable
+    #  with no branch in the real-resource handler; composing it adds a prompt stage and runs no engine, and
+    #  nothing on the preview said so. Read from the Instrument Cell's availability, at this call.
+    _not_run: List[Dict[str, str]] = []
+    try:
+        from agentic_core.api.instrument_cell import availability as _availability
+        for _r in resolved:
+            _av = _availability(_r["id"])
+            if _av["state"] != "available":
+                _not_run.append({"id": _r["id"], "name": _r["name"], "state": _av["state"], "reason": _av["reason"]})
+        _not_run_basis = ("read from the fabric's real-resource handler at this call; a resource listed here "
+                          "contributes a prompt stage and its engine is not run")
+    except Exception as _exc:        # the preview still answers; it says it could not check
+        _not_run_basis = f"NOT CHECKED - the availability check could not run ({_exc.__class__.__name__})"
     model = {
+        "engines_not_run_by_fabric": _not_run,
+        "engines_not_run_basis": _not_run_basis,
         "pipeline": [r["name"] for r in resolved],
         "combined_capabilities": sorted(set(caps)),
         "resource_classes": classes,
