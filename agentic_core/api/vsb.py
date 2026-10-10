@@ -1369,6 +1369,27 @@ def _refuse_empty_blueprint(vsb: dict, bp: dict) -> None:
         raise HTTPException(status_code=409, detail=_no_concept_reason(vsb))
 
 
+def founder_wrote_section(vsb: dict, section: str, text: str) -> dict:
+    """W644 (FU-628, ledger v14 R2) - EVERY WRITER OF A BODY SECTION UPDATES WHAT THE ENTITY SAYS ABOUT IT.
+
+    The entity's `body_pending` map and its genome's copy of the concept were written once, at birth. A founder
+    who then recorded the concept in their own words was still told, on the entity record and in the shipped
+    repository, that the concept "still awaits the owned model", and the genome still carried the pending
+    marker. One function now does what each writer owed: the section is no longer pending, the genome's copy is
+    the founder's text where the genome holds that section, and the status and stage are derived again from
+    the facts as they now stand. Mutates and returns `vsb`; the caller saves it."""
+    pending = vsb.get("body_pending")
+    if isinstance(pending, dict) and section in pending:
+        pending[section] = False
+    spec = vsb.get("genome_spec")
+    if isinstance(spec, dict) and section in spec:
+        spec[section] = text[:1000]
+    sources = vsb.setdefault("body_sources", {})
+    if isinstance(sources, dict):
+        sources[section] = "founder"
+    return _rederive(vsb)
+
+
 class ConceptRequest(BaseModel):
     concept: str
 
@@ -1386,8 +1407,13 @@ async def record_vsb_concept(vsb_id: str, req: ConceptRequest, user: dict | None
     bp = dict(bp, concept=concept)
     vsb["genesis_blueprint"] = bp
     vsb["concept_source"] = "founder"
+    founder_wrote_section(vsb, "concept", concept)        # W644 (FU-628)
     _save_vsb(vsb)
-    return {"vsb_id": vsb_id, "concept": concept, "concept_source": "founder", "blueprint": _blueprint(vsb)}
+    #  a shipped body now disagrees with the record; it is marked stale with the reason, never left to pass
+    mark_repo_stale(vsb_id, "the founder recorded the concept after this body was shipped")
+    return {"vsb_id": vsb_id, "concept": concept, "concept_source": "founder", "blueprint": _blueprint(vsb),
+            "status": vsb.get("status"), "status_basis": vsb.get("status_basis"),
+            "stage": vsb.get("stage"), "stage_basis": vsb.get("stage_basis")}
 
 
 def _pack_content_hash(layers: dict, economy: dict, narrative: str, name: str = "") -> str:

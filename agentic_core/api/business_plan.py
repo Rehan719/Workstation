@@ -430,9 +430,53 @@ async def set_plan(req: SetPlanRequest, user: dict | None = Depends(_get_current
             by[f] = _owner
     if req.aims:
         plan["aims"] = req.aims
+    #  W644 (FU-628) - THE PLAN'S CONCEPT IS THE ENTITY'S CONCEPT. Editing the concept here lifted it out of
+    #  the PLAN's pending list while the ENTITY kept saying it awaited the owned model. When this scope is a
+    #  generated entity and the concept was set in THIS call, the entity is told by the same function the
+    #  concept route uses. Best-effort: a plan edit is never lost to an entity that cannot be read.
+    if edits.get("concept") == ts and not _is_unset(plan.get("concept")):
+        try:
+            from agentic_core.api import vsb as _vsb_mod
+            _ent = _vsb_mod._load_vsb(req.scope)
+            if _ent:
+                _bp = _ent.get("genesis_blueprint") if isinstance(_ent.get("genesis_blueprint"), dict) else {}
+                _ent["genesis_blueprint"] = dict(_bp, concept=plan["concept"])
+                _ent["concept_source"] = "founder"
+                _vsb_mod.founder_wrote_section(_ent, "concept", plan["concept"])
+                _vsb_mod._save_vsb(_ent)
+                _vsb_mod.mark_repo_stale(_ent["vsb_id"], "the Owner edited the plan's concept after this body was shipped")
+        except Exception as _exc:
+            plan["entity_sync_error"] = f"the entity record was not updated with this concept: {_exc.__class__.__name__}"
     prov = plan.get("provenance")
     if isinstance(prov, dict):
         prov["body_pending"] = _pending_fields(plan)
+        #  W644 (FU-632, ledger v14 R2) - AN EDIT CHANGES WHO WROTE THE FIELD, AND THE PLAN SAYS SO. The
+        #  provenance was stamped once, at establishment: a founder who then wrote their own concept still
+        #  read "The concept field holds the platform's own pending-body text ... composed by nobody" on
+        #  the page, the Board Pack and the shipped plan. Every opening field the Owner has edited is theirs;
+        #  the rest stay what establishment recorded; the sentence is recomputed from the two lists.
+        #  What establishment templated is kept as its own list, set once: the sentence is recomputed from it
+        #  on EVERY edit, so clearing a field the Owner had written does not leave "the Owner wrote" behind.
+        _birth = prov.setdefault("templated_at_establishment", list(prov.get("templated_fields") or []))
+        _touched = [f for f in _OPENING_FIELDS if f in edits]
+        _edited = [f for f in _touched if not _is_unset(plan.get(f))]
+        _cleared = [f for f in _touched if f not in _edited]
+        if _touched:
+            _still = [f for f in _birth if f not in _touched]
+            prov["templated_fields"] = _still
+            _fs = dict(prov.get("field_sources") or {})
+            for f in _edited:
+                _fs[f] = "owner_supplied"
+            for f in _cleared:
+                _fs[f] = "cleared_by_owner"
+            prov["field_sources"] = _fs
+            prov["opening_written_by"] = (
+                (f"The Owner wrote: {', '.join(_edited)} (edited after establishment; each edit is dated in "
+                 f"owner_edits). " if _edited else "")
+                + (f"Cleared by the Owner and now empty: {', '.join(_cleared)}. " if _cleared else "")
+                + (f"Still code templates filled from the establish request, not the Chief and not a model: "
+                   f"{', '.join(_still)}." if _still else
+                   "No opening field is a code template any longer."))
     _save(plan)
     return plan
 

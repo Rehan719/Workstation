@@ -6353,7 +6353,23 @@ def test_genesis_journey_establish_seam(client):
     assert ev.get("status") in ("operating", "body pending", "held", "registered - not operating",
                                "registered - operation unknown"), ev.get("status")
     assert ev.get("status_basis"), ev
-    assert "established living enterprise" in r.json().get("deliverable", "")
+    #  W644 (FU-629) - this pinned the phrase "established living enterprise", which the top line printed whatever
+    #  the entity's status was. The property: the top line QUOTES the entity's own derived line, so the two
+    #  cannot disagree, and "operating" is its own field read from the same status.
+    _top644 = r.json()
+    assert ev.get("deliverable") and ev["deliverable"] in _top644.get("deliverable", ""), (
+        "the journey's top line does not carry the established entity's own status line",
+        _top644.get("deliverable"), ev.get("deliverable"))
+    assert _top644.get("enterprise_established") is True
+    assert _top644.get("enterprise_operating") is (ev.get("status") == "operating"), (
+        _top644.get("enterprise_operating"), ev.get("status"))
+    if ev.get("status") != "operating":
+        assert "established living enterprise" not in _top644["deliverable"], _top644["deliverable"]
+    assert r0.json().get("enterprise_operating") is None, "a journey that established nothing reports an operating state"
+    _gj644 = _code_only((__import__("pathlib").Path(__file__).resolve().parents[1]
+                         / "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8"))
+    assert "candidates_are_alternatives === false\n            ? `${ranked} candidate text(s) were produced and they are not alternatives" in _gj644, (
+        "the rank tile says candidates were modelled and ranked without reading the server's own flag (FU-624)")
 
 
 def test_economy_board_pack(client):
@@ -49331,3 +49347,99 @@ def test_w643_one_call_records_one_fact_about_the_product_and_a_lever_is_not_a_h
         assert len(_found) >= 2, ("the journey and the entity it established do not both record the choice", _found)
         assert len(set(_found)) == 1, ("one call recorded two different facts about the product choice", _found)
         assert _found[0].startswith(_want), (_body, _found[0])
+
+
+def test_w644_a_founder_who_writes_a_section_is_no_longer_told_nobody_wrote_it(client):
+    """FU-628 + FU-632 (ledger v14 R2): a later writer of a body field updates what was stamped at birth.
+
+    THE PROPERTIES: after a founder records the concept - by the concept route OR by the plan editor - the
+    entity no longer lists the concept as awaiting the owned model, its genome's copy is the founder's text,
+    and its status is derived again; and the plan's own statement of who wrote its opening follows the edits,
+    including when an edit is later cleared.
+    """
+    def _born(name):
+        #  THE JOURNEY, not the bare establish route: a body the floor served is what leaves a section pending
+        #  (a bare establish with no concept is born with nothing pending - measured when this leg was written)
+        _r = client.post("/api/v1/genesis/journey", json={
+            "problem": "Affordable school lunches for a village primary", "domain": "education",
+            "establish": True, "name": name})
+        assert _r.status_code == 200, _r.text[:300]
+        _ids = []
+
+        def _walk(obj):
+            if isinstance(obj, dict):
+                for _k, _v in obj.items():
+                    if _k == "vsb_id" and isinstance(_v, str):
+                        _ids.append(_v)
+                    _walk(_v)
+            elif isinstance(obj, list):
+                for _v in obj:
+                    _walk(_v)
+        _walk(_r.json())
+        assert _ids, list(_r.json())[:12]
+        return _ids[0]
+
+    def _entity(_id):
+        _e = client.get(f"/api/v1/vsb/{_id}")
+        assert _e.status_code == 200, _e.text[:200]
+        return _e.json()
+
+    _text = "A not-for-profit kitchen that cooks one hot lunch a day for every child in the village school."
+
+    # ── FU-628, by the concept route ────────────────────────────────────────────────────────────
+    _a = _born("W644 Concept Route")
+    _before = _entity(_a)
+    _pending_before = (_before.get("body_pending") or {}).get("concept")
+    assert _pending_before is True, (
+        "the entity was not born with a pending concept, so the leg below would prove nothing", _before.get("body_pending"))
+    assert "concept" in (_before.get("status_basis") or "") + (_before.get("stage_basis") or "")
+    _rc = client.post(f"/api/v1/vsb/{_a}/concept", json={"concept": _text})
+    assert _rc.status_code == 200, _rc.text[:200]
+    assert _rc.json().get("status_basis"), "the concept route does not return the status it re-derived"
+    _after = _entity(_a)
+    assert (_after.get("body_pending") or {}).get("concept") is False, (
+        "a founder recorded the concept and the entity still lists it as awaiting the owned model", _after.get("body_pending"))
+    for _basis in ("status_basis", "stage_basis"):
+        _b = _after.get(_basis) or ""
+        assert "first section (concept) still awaits" not in _b, (_basis, _b)
+        assert not __import__("re").search(r"await the owned model:[^.]*\bconcept\b", _b), (
+            "the re-derived basis still names the concept among the sections awaiting the model", _basis, _b)
+    _spec = _after.get("genome_spec") or {}
+    if "concept" in _spec:
+        assert _spec["concept"] == _text[:1000] and "content pending" not in str(_spec["concept"]).lower(), _spec["concept"]
+    assert (_after.get("body_sources") or {}).get("concept") == "founder"
+    assert _after.get("status_derived_at"), "the status was not derived again after the concept changed"
+
+    # ── FU-628, by the plan editor: the same entity fact, through the other writer ──────────────
+    _b = _born("W644 Plan Route")
+    assert (_entity(_b).get("body_pending") or {}).get("concept") is True
+    _sp = client.post("/api/v1/business-plan/set", json={"scope": _b, "concept": _text})
+    assert _sp.status_code == 200, _sp.text[:200]
+    assert "entity_sync_error" not in _sp.json(), _sp.json().get("entity_sync_error")
+    _eb = _entity(_b)
+    assert (_eb.get("body_pending") or {}).get("concept") is False and _eb.get("concept_source") == "founder", (
+        "the plan editor set the concept and the ENTITY still says it awaits the owned model", _eb.get("body_pending"))
+
+    # ── FU-632: the plan says who wrote its opening, and the sentence follows the edits ─────────
+    _prov = (_sp.json().get("provenance") or {})
+    if _prov:
+        assert "concept" not in (_prov.get("templated_fields") or []), _prov.get("templated_fields")
+        assert (_prov.get("field_sources") or {}).get("concept") == "owner_supplied", _prov.get("field_sources")
+        _sent = _prov.get("opening_written_by") or ""
+        assert _sent.startswith("The Owner wrote: ") and "concept" in _sent.split(".")[0], _sent
+        assert "pending-body text" not in _sent and "composed by nobody" not in _sent, (
+            "the plan still says the concept field holds the platform's own pending text after the Owner wrote it", _sent)
+        #  a field the Owner did NOT edit and establishment templated is still called a template
+        for _f in _prov.get("templated_fields") or []:
+            assert _f in _sent, ("a still-templated field is missing from the sentence", _f, _sent)
+            assert (_prov.get("field_sources") or {}).get(_f) == "establish_template", (_f, _prov.get("field_sources"))
+        #  CLEARED: the Owner empties what they wrote - the sentence must not go on saying they wrote it
+        _cl = client.post("/api/v1/business-plan/set", json={"scope": _b, "clear": ["concept"]}).json()
+        _p2 = _cl.get("provenance") or {}
+        _s2 = _p2.get("opening_written_by") or ""
+        assert "The Owner wrote: concept" not in _s2 and "Cleared by the Owner" in _s2 and "concept" in _s2, _s2
+        assert (_p2.get("field_sources") or {}).get("concept") == "cleared_by_owner", _p2.get("field_sources")
+        assert _p2.get("templated_at_establishment") == _prov.get("templated_at_establishment"), (
+            "the record of what establishment templated was rewritten by an edit")
+    else:
+        raise AssertionError("the plan for a generated entity carries no provenance, so FU-632 cannot be read at all")

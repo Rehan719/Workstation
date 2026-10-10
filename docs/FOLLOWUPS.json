@@ -11964,11 +11964,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W644",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The rank tile reads the server's candidates_are_alternatives flag and says the candidate texts were not alternatives, so nothing was modelled apart or ranked."
     },
     {
       "id": "FU-625",
@@ -12042,11 +12045,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W644",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "One function (founder_wrote_section) now does what each writer of the concept owed the entity: the section is no longer pending, the genome's copy is the founder's text, the status and stage are derived again, and a shipped body is marked stale. Both writers call it - the concept route and the plan editor for a generated entity. NOT DONE: there is still no route by which a founder supplies design, operations or commercialisation after birth; registered separately."
     },
     {
       "id": "FU-629",
@@ -12061,11 +12067,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W644",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The journey's top line quotes the established entity's own derived status line instead of a second sentence, and enterprise_operating is its own field read from that status (None when nothing was established); enterprise_established keeps its meaning. NOT DONE: the 'living' labels on the page's progress map, roster status and generated footers; registered separately."
     },
     {
       "id": "FU-630",
@@ -12119,11 +12128,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W644",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "set_plan recomputes the opening's provenance on every edit from a list of what establishment templated (kept once, never rewritten): an edited field is the Owner's, a cleared one is said to be cleared, the rest stay templates, and the sentence is built from the three lists. NOT DONE: the model-compose path (generate_plan) - a model-composed field is neither a template nor the Owner's; registered separately."
     },
     {
       "id": "FU-633",
@@ -13001,6 +13013,60 @@
       "note": "",
       "slot_source": "an invisible shortfall of the same kind as the row it was found beside",
       "tier": 2
+    },
+    {
+      "id": "FU-679",
+      "title": "A founder has no route to supply design, operations or commercialisation after birth",
+      "why": "An entity born on the floor lists four body sections as awaiting the owned model. W644 lets the concept be recorded and re-derives the status; the other three have no founder route at all, so the status of such an entity cannot pass 'body pending' whatever the founder does. Either add founder routes for them (the same function already handles any section name) or make the status basis say that no path composes them yet.",
+      "source": "W644, the remainder of a row closed this round",
+      "found": "2026-10-10",
+      "files": [
+        "agentic_core/api/vsb.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.35",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "an invisible shortfall left by a tier-1 row's fix",
+      "tier": 2
+    },
+    {
+      "id": "FU-680",
+      "title": "A model-composed plan opening field is recorded as neither a template nor the Owner's",
+      "why": "business_plan.generate_plan can write the opening fields from a model. W644 made an Owner edit update the opening's provenance; the model-compose path was not read. Decide the third source value (model_composed, with what served it) and stamp it there.",
+      "source": "W644, the remainder of a row closed this round",
+      "found": "2026-10-10",
+      "files": [
+        "agentic_core/api/business_plan.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.35",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "an invisible shortfall left by a tier-1 row's fix",
+      "tier": 2
+    },
+    {
+      "id": "FU-681",
+      "title": "The Genesis page still labels a registered entity 'living' on its progress map, roster and footers",
+      "why": "W644 made the journey's top line quote the entity's derived status. The row it closed (ledger v14 R2) also named the page's 'living' labels on the progress map, the stream, the roster status and the generated footers, which were not reworded. Read each against the entity's status and make the label follow it.",
+      "source": "W644, the remainder of a row closed this round",
+      "found": "2026-10-10",
+      "files": [
+        "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.34",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the unfinished half of a tier-1 finding",
+      "tier": 1
     }
   ],
   "routes": [

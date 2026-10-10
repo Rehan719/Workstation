@@ -115,7 +115,11 @@ const railState = (key: string | null, r: JourneyResult | null): RailState => {
     const ranked = (r.stage_5_model_simulate_rank?.candidates ?? []).length;
     return ranked
       ? { done: true, label: 'ran',
-          why: `${ranked} candidate(s) were modelled and ranked. This stage carries no §10 verification entry, so nothing has been verified about it.` }
+          //  W644 (FU-624) — the server already says when the candidates are NOT alternatives (identical
+          //  texts, a tie); the tile said "modelled and ranked" over them regardless
+          why: (r.stage_5_model_simulate_rank?.candidates_are_alternatives === false
+            ? `${ranked} candidate text(s) were produced and they are not alternatives (the server found them identical or tied), so nothing was modelled apart or ranked. This stage carries no §10 verification entry.`
+            : `${ranked} candidate(s) were modelled and ranked. This stage carries no §10 verification entry, so nothing has been verified about it.`) }
       : { done: false, label: 'not run', why: 'no candidates were modelled or ranked on this journey' };
   }
   const v = r.stage_verifications?.[key];

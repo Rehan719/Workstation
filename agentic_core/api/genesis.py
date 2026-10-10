@@ -898,12 +898,26 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
                         #  IDBO" whether or not anything was established, and the page headed it "Sovereign Journey
                         #  Complete". Without establishment the journey leaves a RECORD, not an enterprise; and when
                         #  every agent was floor-served its stages are frames, which the sentence now says too.
-                        (("The user's own VSB IDBO — Concept → Commercialisation → established living enterprise"
+                        #  W644 (FU-629, ledger v14 R2) - THE TOP LINE SAYS WHAT THE NESTED RECORD SAYS. This
+                        #  read "established living enterprise" in the same response whose established entity
+                        #  said "it is not yet a living, operating enterprise". The entity's own derived line
+                        #  (_deliverable_line, built from its status) is quoted instead of a second sentence.
+                        (("The user's own VSB IDBO — Concept → Commercialisation → "
+                          + str((established_vsb or {}).get("deliverable")
+                                or "an entity was registered; its status line was not returned")
                           if (established_vsb and not (isinstance(established_vsb, dict) and established_vsb.get("error")))
                           else "A journey record, Concept → Commercialisation — NO enterprise was established")
                          + (" — frames only: every stage was served by the deterministic floor, so no stage was "
                             "composed by a model" if (_sba and all(str(v) == "native" for v in _sba.values())) else ""))),
         "enterprise_established": bool(established_vsb and not (isinstance(established_vsb, dict) and established_vsb.get("error"))),
+        #  W644 (FU-629) - `enterprise_established` means an entity was REGISTERED and keeps that meaning for
+        #  its readers. Whether it is OPERATING is a different fact and gets its own field, read from the
+        #  entity's derived status; None when nothing was established.
+        "enterprise_operating": ((str((established_vsb or {}).get("status")) == "operating")
+                                 if (established_vsb and not (isinstance(established_vsb, dict)
+                                                              and established_vsb.get("error"))) else None),
+        "enterprise_established_basis": ("an entity record was created and persisted; `enterprise_operating` "
+                                         "says whether it is operating, from its derived status"),
         # W485 — a journey whose every candidate was vetoed did not complete.
         "status": ("blocked_by_screen" if _blocked else "complete"),
         **({"blocked_by_screen": {
