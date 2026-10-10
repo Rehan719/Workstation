@@ -11899,11 +11899,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W645",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "W642 told the floor the target domain; W645 makes the status follow what served: frame_only on the floor with a note that no adaptation was designed, blueprint_generated only for a model. The frame is still recorded in the registry, under that word."
     },
     {
       "id": "FU-622",
@@ -12202,11 +12205,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W645",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "twin_directive_unprompted reads the founder model for the scope it is visiting, and its own prior directives for that scope; an instruction row with no scope is the apex plan's. Driven: an instruction for one scope is refused on another and on the apex plan. NOT DONE: the Owner's DECISIONS are not scoped at all, and 'executed' on a fallback objective is unchanged; registered."
     },
     {
       "id": "FU-637",
@@ -12363,11 +12369,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W645",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A fifth kind, narrative, with outcome narrated: the composed Digital Twin sends one persona prompt, so its row says it wrote a scenario narrative and no simulator or engine ran, names what was invoked, and no longer names the twin's own route as run. It stops counting as a facility that ran. NOT DONE: the vision's own wording about a simulator, and the bypass of the gateway's per-call gate the row also noted; registered."
     },
     {
       "id": "FU-645",
@@ -12379,11 +12388,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W645",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "register_swarm and the update path keep each stage's requested model (absent when unset), so a saved cascade's run reports the requests it could not honour. NOT DONE: the designer page has no per-stage model selector - the API keeps the choice and the page cannot yet make it; registered."
     },
     {
       "id": "FU-646",
@@ -12418,11 +12430,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W645",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "generate refuses an output type it has no branch for (422, nothing written, nothing filed); the declared set and the branches are held in step by a guard that reads the generator's source; the stream's history row carries served_by and is_external from its done frame. The stream route's own generic branch (any type as a markdown document) is unchanged - it does produce a document."
     },
     {
       "id": "FU-648",
@@ -13067,6 +13082,60 @@
       "note": "",
       "slot_source": "the unfinished half of a tier-1 finding",
       "tier": 1
+    },
+    {
+      "id": "FU-682",
+      "title": "The Owner's recorded decisions make every scope's Chief a modelled twin",
+      "why": "founder_model filters the Owner's instructions by scope (W624, W645) and does not filter their decisions: _owner_decisions takes no scope, so one ratified change anywhere makes the Chief of every entity a twin that may act unprompted. Scope decisions by the entity they concern, and say 'filed as one fallback objective' rather than 'executed' when the cascade's source is the fallback.",
+      "source": "W645, the remainder of a row closed this round",
+      "found": "2026-10-10",
+      "files": [
+        "agentic_core/api/board.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.34",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the unfinished half of a tier-1 finding",
+      "tier": 1
+    },
+    {
+      "id": "FU-683",
+      "title": "The composed Digital Twin stage calls the orchestrator directly, past the gateway's per-call gate",
+      "why": "The fabric's digital_twin and native_orchestrator handlers call orchestrator.complete, so the constitutional pre-gate and checkpoint a gateway call carries do not run for those stages (the composition as a whole is gated once). Either route them through the gateway or state on the row that the stage itself was not gated. Also: the vision still describes a simulator.",
+      "source": "W645, the remainder of a row closed this round",
+      "found": "2026-10-10",
+      "files": [
+        "agentic_core/api/resource_fabric.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.35",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "an invisible shortfall left by a tier-1 row's fix",
+      "tier": 2
+    },
+    {
+      "id": "FU-684",
+      "title": "The cascade designer cannot choose a model per stage although the API now keeps the choice",
+      "why": "W645 made a saved cascade keep each stage's requested model. The designer on the fabric page offers no per-stage selector, so only an API caller can use it.",
+      "source": "W645, the remainder of a row closed this round",
+      "found": "2026-10-10",
+      "files": [
+        "apps/workstation-superapp/src/pages/synthesis/ResourceFabric.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.31",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "a fabric page gap; the Instrument Cell item owns that page's additions",
+      "tier": 3
     }
   ],
   "routes": [

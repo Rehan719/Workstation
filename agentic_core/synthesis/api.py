@@ -39,6 +39,12 @@ class SynthesisOutput(BaseModel):
     is_external: bool = False
 
 
+#  the output types generate_output has a branch for; a guard keeps this set and the branches in step
+_GENERATED_OUTPUT_TYPES = frozenset({
+    "report", "review", "analysis", "dissertation", "dossier", "presentation", "video", "audiobook", "website",
+    "app", "agent", "product", "service", "business_model", "simulation"})
+
+
 class SynthesisManager:
     def __init__(self):
         self.output_dir = DATA_DIR / "synthesis_outputs"
@@ -151,6 +157,13 @@ class SynthesisManager:
         output_id = str(uuid.uuid4())
         timestamp = datetime.datetime.utcnow().isoformat()
         otype = request.output_type
+        #  W645 (FU-647, ledger v14 R4) - AN OUTPUT TYPE NOTHING HERE PRODUCES IS REFUSED. The fall-through
+        #  below wrote {"status": "Generated"} for any string at all - a podcast, a typo - saved it to disk and
+        #  filed it in the history as an output. Refused before anything is resolved, written or recorded.
+        if otype not in _GENERATED_OUTPUT_TYPES:
+            raise HTTPException(status_code=422, detail=(
+                f"output_type {otype!r} is not one this route generates. It generates: "
+                f"{', '.join(sorted(_GENERATED_OUTPUT_TYPES))}. Nothing was generated or saved."))
 
         context, inferred_topic = self._resolve_context(request.content_ids)
         instructions = request.instructions.strip()
@@ -349,9 +362,9 @@ class SynthesisManager:
             content = json.dumps(model, indent=2)
             metadata.update(format="json", title=model["title"])
 
-        else:
-            content = json.dumps({"title": f"{otype.title()}: {topic}", "status": "Generated", "timestamp": timestamp}, indent=2)
-            metadata.update(format="json", title=f"{otype.title()}: {topic}")
+        else:   # unreachable while the refusal above and the branches agree; if they ever disagree, SAY SO
+            raise HTTPException(status_code=500, detail=(
+                f"output_type {otype!r} is listed as generated and no branch produces it. Nothing was generated."))
 
         # ── Persist to disk ──────────────────────────────────────────────────────
         ext = metadata.get("format", "json")
@@ -466,6 +479,10 @@ async def stream_synthesis(request: SynthesisRequest):
             "content": content,
             "metadata": {"type": otype, "format": ext, "title": topic},
             "timestamp": timestamp,
+            #  W645 (FU-647) - the stream's history row carries what served it, as the done frame does. Without
+            #  these the response model filled is_external False by default, whatever had actually served.
+            "served_by": fin.get("served_by") or None,
+            "is_external": bool(fin.get("is_external")),
         })
 
         # W494 (FU-148 refutation) - the done frame sent no `format` and no `slides_count`, so the

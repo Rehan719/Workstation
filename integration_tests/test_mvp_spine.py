@@ -8788,7 +8788,11 @@ def test_w439_qep_cluster_audited_fixes_hold(client):
 
     # ── adaptation: nothing claims 'active'/'executed' when only a blueprint was generated ──────
     ad = client.post("/api/v1/qep/adaptation/execute", json={"pattern": "SM-2 guard"}).json()
-    assert ad["status"] == "blueprint_generated" and ad["adaptation"]["status"] == "blueprint_generated"
+    #  W645 (FU-621) - the status follows what SERVED: a floor frame is "frame_only", a model's reply is
+    #  "blueprint_generated". This pinned the second word on every run, including floor runs.
+    _floor_ad = (ad["adaptation"].get("served_by") or "native") == "native"
+    assert ad["status"] == ad["adaptation"]["status"] == ("frame_only" if _floor_ad else "blueprint_generated"), ad["status"]
+    assert ("NOT a blueprint" in ad["status_note"]) == _floor_ad, ad["status_note"]
     assert "served_by" in ad["adaptation"]
 
     # ── status: computed truth, never the dead-engine constants ─────────────────────────────────
@@ -40894,8 +40898,17 @@ def test_w587_p34_the_chief_is_a_modelled_twin_or_says_it_is_a_role(client, monk
             "a Chief with nothing of the Owner's does not say why it refuses to direct", _ref587["basis"])
 
         #  (b) with an instruction of the Owner's it ISSUES, through the gate, WITH execute
+        #  W645 (FU-636) - the instruction is recorded FOR the scope the twin then visits. It was recorded with
+        #  no scope at all and issued on "w587scope", which is the defect: an instruction acted on wherever
+        #  the beat happened to be. A row with no scope is the apex plan's, and is tested as that below.
         _b587._save([{"kind": "chief_instruction", "instruction": "Close Phase 3 of the plan",
-                      "created_at": "2026-10-05T00:00:00Z"}])
+                      "business_plan_scope": "w587scope", "created_at": "2026-10-05T00:00:00Z"}])
+        _else645 = _aio587.run(_b587.twin_directive_unprompted("w645-another-entity"))
+        assert _else645["issued"] is False and _else645["reason"] == "role", (
+            "an instruction the Owner wrote for one scope was restated as a directive on another", _else645)
+        _apex645 = _aio587.run(_b587.twin_directive_unprompted("workstation"))
+        assert _apex645["issued"] is False, (
+            "an instruction written for an entity landed on the Workstation apex plan", _apex645)
         _iss587 = _aio587.run(_b587.twin_directive_unprompted("w587scope"))
         assert _iss587["issued"] is True, _iss587
         #  THE OUTCOME, not the intention. A blind proved the first cut vacuous: it asserted
@@ -40931,6 +40944,7 @@ def test_w587_p34_the_chief_is_a_modelled_twin_or_says_it_is_a_role(client, monk
 
         #  (d) a NEW input of the Owner's moves it again
         _b587._save(_b587._load() + [{"kind": "chief_instruction", "instruction": "Now close Phase 4",
+                                      "business_plan_scope": "w587scope",
                                       "created_at": "2026-10-05T01:00:00Z"}])
         _mov587 = _aio587.run(_b587.twin_directive_unprompted("w587scope"))
         assert _mov587["issued"] is True and "Phase 4" in str(_mov587.get("acted_on") or ""), _mov587
@@ -49443,3 +49457,93 @@ def test_w644_a_founder_who_writes_a_section_is_no_longer_told_nobody_wrote_it(c
             "the record of what establishment templated was rewritten by an edit")
     else:
         raise AssertionError("the plan for a generated entity carries no provenance, so FU-632 cannot be read at all")
+
+
+def test_w645_a_choice_survives_being_saved_and_a_row_says_what_actually_ran(client, monkeypatch):
+    """Ledger v14 R4 + R1: FU-645, FU-647, FU-644, FU-621.
+
+    THE PROPERTIES: a stage's requested model survives the cascade being saved and updated, so a run of the
+    saved cascade reports the requests it could not honour; an output type nothing generates is refused and
+    leaves nothing behind; a streamed output's history row carries what served it; a persona prompt is not
+    recorded as an engine having run; and an adaptation's status follows what served it.
+    """
+    import agentic_core.api.resource_fabric as _fab
+
+    # ── FU-645: the stage's model survives save and update ──────────────────────────────────────
+    _made = client.post("/api/v1/resources/swarm/define", json={
+        "name": "w645 model probe",
+        "stages": [{"role": "analyst", "instruction": "Summarise the rota.", "model": "local"},
+                   {"role": "checker", "instruction": "Check the summary."}]})
+    assert _made.status_code == 200, _made.text[:200]
+    _sid = _made.json()["id"]
+    try:
+        _stored = client.get(f"/api/v1/resources/swarm/{_sid}").json()
+        _st = _stored.get("stages") or (_stored.get("swarm") or {}).get("stages")
+        assert _st[0].get("model") == "local", ("the stage's requested model was dropped at save", _st)
+        assert "model" not in _st[1], ("an unset model was stored as a value", _st[1])
+        _run = client.post("/api/v1/resources/swarm/run", json={"swarm_id": _sid}).json()
+        _nh = _run.get("requests_not_honoured")
+        _served0 = ((_run.get("trace") or [{}])[0]).get("served_by")
+        if _served0 == "native":
+            assert _nh and _nh[0].get("requested") == "local", (
+                "a saved cascade asked for the local model, the floor served, and the run says every request "
+                "was honoured", _nh)
+        _up = client.put(f"/api/v1/resources/swarm/{_sid}", json={
+            "stages": [{"role": "analyst", "instruction": "Summarise the rota again.", "model": "native"}]})
+        if _up.status_code == 200:
+            _st2 = client.get(f"/api/v1/resources/swarm/{_sid}").json()
+            _st2 = _st2.get("stages") or (_st2.get("swarm") or {}).get("stages")
+            assert _st2[0].get("model") == "native", ("the update path dropped the stage's model", _st2)
+    finally:
+        client.delete(f"/api/v1/resources/swarm/{_sid}")
+
+    # ── FU-647: an output type nothing generates is refused, and leaves nothing ─────────────────
+    import agentic_core.synthesis.api as _syn
+    _hist_before = len(_syn.synthesis_manager.history)
+    _files_before = len(list(_syn.synthesis_manager.output_dir.iterdir())) if _syn.synthesis_manager.output_dir.exists() else 0
+    for _bad in ("podcast", "raport", ""):
+        _r = client.post("/api/v1/synthesis/generate", json={"output_type": _bad, "instructions": "x", "content_ids": []})
+        assert _r.status_code == 422 and "Nothing was generated" in _r.text, (_bad, _r.status_code, _r.text[:200])
+    assert len(_syn.synthesis_manager.history) == _hist_before, "a refused output type was filed in the history"
+    _files_after = len(list(_syn.synthesis_manager.output_dir.iterdir())) if _syn.synthesis_manager.output_dir.exists() else 0
+    assert _files_after == _files_before, "a refused output type wrote a file"
+    #  the declared set and the generator's branches AGREE: every declared type has a branch, read from source
+    import inspect, re
+    _src = inspect.getsource(_syn.SynthesisManager.generate_output)
+    _branched = set(re.findall(r'"([a-z_]+)"', " ".join(re.findall(r"otype (?:in \(([^)]*)\)|== (\"[a-z_]+\"))", _src) and
+                                                       [a or b for a, b in re.findall(r"otype (?:in \(([^)]*)\)|== (\"[a-z_]+\"))", _src)])))
+    assert _branched == set(_syn._GENERATED_OUTPUT_TYPES), (
+        "the declared output types and the generator's branches disagree",
+        sorted(_branched ^ set(_syn._GENERATED_OUTPUT_TYPES)))
+    #  and the stream's history row says what served it
+    _s = client.post("/api/v1/synthesis/stream", json={"output_type": "report", "instructions": "A note on rotas.", "content_ids": []})
+    assert _s.status_code == 200, _s.text[:200]
+    _row = _syn.synthesis_manager.history[-1]
+    assert "served_by" in _row and "is_external" in _row, ("the stream's history row lost its provenance", sorted(_row))
+    assert '"served_by": ' + (__import__("json").dumps(_row["served_by"])) in _s.text.replace("\\", ""), (
+        "the history row and the done frame disagree about what served", _row["served_by"])
+
+    # ── FU-644: a persona prompt is not an engine that ran ──────────────────────────────────────
+    assert _fab._resource_kind("digital_twin") == "narrative"
+    _tw = __import__("asyncio").run(_fab._run_real_resource("digital_twin", {}, "a clinic rota", "care"))
+    assert _tw["outcome"] == "narrated" and "no simulator or engine ran" in _tw["outcome_phrase"], _tw
+    assert "endpoint" not in _tw and "ran" not in _tw, ("the twin's route is named as run; this handler never calls it", _tw)
+    assert "NOT called" in _tw["invoked"], _tw
+    for _phrase in (_tw["outcome_phrase"], _tw["kind_phrase"]):
+        assert "ran its engine" not in _phrase, _phrase
+    #  ...and it does not count as a facility that ran, by the counters' own test
+    assert _tw["outcome"] != "produced"
+    import agentic_core.api.instrument_cell as _cell
+    assert _cell.contract("digital_twin")["when_run"].startswith("when run") and "persona" in _cell.contract("digital_twin")["when_run"]
+
+    # ── FU-621: the adaptation's status follows what served ─────────────────────────────────────
+    _ad = client.post("/api/v1/qep/adaptation/execute", json={"pattern": "spaced repetition", "target_domain": "care"}).json()
+    _floor = (_ad["adaptation"].get("served_by") or "native") == "native"
+    assert _ad["status"] == ("frame_only" if _floor else "blueprint_generated"), _ad["status"]
+    import agentic_core.api.qep_intelligence as _qi
+
+    async def _model(prompt, **k):
+        return {"output": "## Adapted Mechanism\nx\n## Expected Fidelity (0-1)\n0.7", "served_by": "ollama:probe", "is_external": False}
+    monkeypatch.setattr(_qi.gateway, "query_meta", _model)
+    _adm = client.post("/api/v1/qep/adaptation/execute", json={"pattern": "spaced repetition", "target_domain": "care"}).json()
+    assert _adm["status"] == "blueprint_generated" and "NOT a blueprint" not in _adm["status_note"], _adm["status"]

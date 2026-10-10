@@ -1025,7 +1025,9 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
                       "## Emergent Behaviour\n## Stress / Failure Points\n## Recommended Setpoints")
             res = await orchestrator.complete(prompt, agent="digital-twin",
                                               prefer=str(cfg.get("model") or "auto"))
-            return {"resource": "digital_twin", "ran": "/api/v1/twin/simulate", "served_by": res.get("served_by"),
+            #  W645 (FU-644) - no "ran": the twin's own route is not called here, so it is not named as run
+            return {"resource": "digital_twin", "served_by": res.get("served_by"),
+                    "invoked": "orchestrator.complete with a simulator persona - /api/v1/twin/simulate was NOT called",
                     "is_external": bool(res.get("is_external")), "scenario": scenario,
                     "output": (res.get("output") or "")[:600]}
         if rid == "generator":
@@ -1106,6 +1108,11 @@ _QUERY_RESOURCES = frozenset({"products_catalogue", "change_control"})
 # default is not a reading. Its handler calls configure_bto, whose own note says it "provisions, activates
 # and integrates" nothing: it composes a DESIGN BLUEPRINT from the catalogue. That is a fourth thing.
 _BLUEPRINT_RESOURCES = frozenset({"build_to_order"})
+#  W645 (FU-644, ledger v14 R4) - A FIFTH THING: A PERSONA PROMPT. The composed Digital Twin handler sends one
+#  prompt ("You are a digital-twin simulator ... forward-simulate the scenario") to the orchestrator. It was
+#  classed facility_run by default and its row said it "ran its engine" and named /api/v1/twin/simulate, a
+#  route this handler never calls. What it produces is a narrative a model (or the floor) wrote for a persona.
+_NARRATIVE_RESOURCES = frozenset({"digital_twin"})
 # Reads that are not free: biobus.organism_context() calls _update_atp(), so reading the organism context
 # ADVANCES the ATP simulator. The reading is still a reading, and the cost is said rather than hidden.
 _READ_SIDE_EFFECTS = {
@@ -1117,6 +1124,7 @@ _KIND_PHRASE = {
     "status_read": "read platform state that was already there — no facility ran for this mission",
     "query": "assessed against records and live state already there — nothing was produced or persisted",
     "blueprint": "composed a design blueprint from the catalogue — nothing was provisioned or activated",
+    "narrative": "wrote a scenario narrative from a persona prompt — no simulator or engine ran, nothing was computed",
     "facility_run": "ran its engine and produced this output",
 }
 
@@ -1131,6 +1139,8 @@ def _resource_kind(rid: str) -> str:
         return "query"
     if rid in _BLUEPRINT_RESOURCES:
         return "blueprint"
+    if rid in _NARRATIVE_RESOURCES:
+        return "narrative"
     return "facility_run"
 
 
@@ -1141,8 +1151,9 @@ _OUTCOME_PHRASE = {
     "raised": "attempted, then raised before producing anything — it neither ran nor read",
     "no_calls_ran": "attempted, and every call it makes failed — it produced nothing",
     "specified": "composed a design blueprint from the catalogue — nothing was provisioned or activated",
+    "narrated": "wrote a scenario narrative from a persona prompt — no simulator or engine ran, nothing was computed",
 }
-_OUTCOME_FOR_KIND = {"status_read": "read", "query": "assessed", "blueprint": "specified",
+_OUTCOME_FOR_KIND = {"status_read": "read", "query": "assessed", "blueprint": "specified", "narrative": "narrated",
                      "facility_run": "produced"}
 
 
@@ -1614,7 +1625,12 @@ def register_swarm(name: str, stages: List[Dict[str, str]], context: str = "",
         "owner_id": owner_id,   # §14 (W324) — the owning tenant (None = platform/legacy, admin-only under auth)
         "name": name,
         "kind": "ai_native_swarm",
-        "stages": [{"role": s.get("role", ""), "instruction": s.get("instruction", "")} for s in stages],
+        #  W645 (FU-645, ledger v14 R4) - THE STAGE'S REQUESTED MODEL IS SAVED WITH IT. The wire contract has
+        #  carried `model` since W509 and the engine has honoured it since W282; this rebuild kept two keys, so
+        #  the choice died at save, and a run of the saved cascade reported requests_not_honoured: [] - true
+        #  only because nothing had been asked by the time it ran. Unset stays absent ("auto").
+        "stages": [{"role": s.get("role", ""), "instruction": s.get("instruction", ""),
+                    **({"model": str(s["model"])} if s.get("model") else {})} for s in stages],
         "context": context,
         "usage_area": usage_area,
         "posture": "in-house-first",
@@ -1725,7 +1741,8 @@ async def update_swarm(sid: str, req: UpdateSwarmRequest,
         if req.name is not None:
             c["name"] = req.name
         if req.stages is not None:
-            c["stages"] = [{"role": s.role, "instruction": s.instruction} for s in req.stages]
+            c["stages"] = [{"role": s.role, "instruction": s.instruction,
+                            **({"model": str(s.model)} if s.model else {})} for s in req.stages]   # W645 (FU-645)
         if req.context is not None:
             c["context"] = req.context
         if req.org is not None:

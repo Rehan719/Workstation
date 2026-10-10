@@ -164,6 +164,7 @@ _WHEN_RUN = {
     "status_read": "when run, it reads platform state that is already there; no facility runs",
     "query": "when run, it assesses against records and live state already there; it produces and persists nothing",
     "blueprint": "when run, it composes a design blueprint from the catalogue; it provisions and activates nothing",
+    "narrative": "when run, it writes a scenario narrative from a persona prompt; no simulator or engine runs",
     "facility_run": "when run, it runs its engine and produces an output",
 }
 
@@ -174,7 +175,7 @@ def contract(rid: str) -> Dict[str, Any]:
     side = _fab._READ_SIDE_EFFECTS.get(rid)
     if side:
         persists, persists_basis = "side_effect", side
-    elif kind in ("status_read", "query", "blueprint"):
+    elif kind in ("status_read", "query", "blueprint", "narrative"):
         persists, persists_basis = "nothing", _WHEN_RUN[kind]
     else:
         persists = "not_declared"
