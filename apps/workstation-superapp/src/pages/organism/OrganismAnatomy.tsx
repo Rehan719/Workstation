@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Dna, Loader2, Settings2, ShieldCheck, Waves, Play, GitMerge, Sparkles, Send } from 'lucide-react';
-import { apiJson, errorMessage, provenanceBadge } from '../../lib/api';
+import { apiJson, errorMessage, provenanceBadge, immuneReading } from '../../lib/api';
 
 // W438 — the organism's ANATOMY, finally reachable: 18 routes (config · genome · nervous ·
 // self-healing · health/lifecycle) existed server-side with no page. Every sub-area was AUDITED
@@ -24,7 +24,7 @@ interface Lifecycle {
   commercialisation_readiness: number; commercialisation_readiness_basis: string;
 }
 interface Systems {
-  immune: { health: number; threat_level: string; errors_in_window: number; review_flags_in_window?: number; response_playbook: string[]; hot_endpoint?: string | null; hot_endpoint_errors?: number | null; hot_endpoint_tied?: string[] };
+  immune: { health: number; observations_in_window?: number | null; observed_basis?: string | null; threat_level: string; errors_in_window: number; review_flags_in_window?: number; response_playbook: string[]; hot_endpoint?: string | null; hot_endpoint_errors?: number | null; hot_endpoint_tied?: string[] };
   nervous: { arousal_state: string; arousal_thresholds: Record<string, string>; signal_rate_per_second: number; total_signals: Record<string, number>; buffer_size: number; buffer_capacity: number; scope: string };
   self_healing: { overall_health: number | null; health_basis: string; open_circuits: number; tracked_endpoints: number; circuits: Record<string, { state: string; failures_in_window: number; total_calls: number; total_failures: number; failure_rate: number }>; thresholds: Record<string, number>; scope: string };
   scope: string;
@@ -305,7 +305,7 @@ export const OrganismAnatomy: React.FC = () => {
           <div className="grid grid-cols-1 @[960px]:grid-cols-3 gap-3">
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
               <p className="text-[9px] font-black uppercase text-slate-500 mb-1.5">Immune</p>
-              <p className="text-lg font-black text-white">{pct(systems.immune.health)} <Chip tone={systems.immune.threat_level === 'NOMINAL' ? 'ok' : 'warn'}>{systems.immune.threat_level}</Chip></p>
+              <p data-testid="anatomy-immune-reading" className="text-lg font-black text-white" title={systems.immune.observed_basis ?? undefined}>{immuneReading(systems.immune)} <Chip tone={systems.immune.threat_level === 'NOMINAL' ? 'ok' : 'warn'}>{systems.immune.threat_level}</Chip></p>
               <p className="text-[9px] text-slate-600 mb-1">{systems.immune.errors_in_window} errors in window</p>
               {(systems.immune.review_flags_in_window ?? 0) > 0 && (
                 <p data-testid="immune-review-flags" className="text-[9px] text-amber-400 mb-1">{systems.immune.review_flags_in_window} compliance review flag(s) in window — awaiting a human, not counted as errors</p>

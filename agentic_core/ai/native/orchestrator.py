@@ -72,6 +72,13 @@ def _organism_report(name: str, success: bool) -> None:
         (self_healer.record_success if success else self_healer.record_failure)(f"model:{name}")
     except Exception:
         pass
+    if success:
+        #  W658 - a call that SUCCEEDED was never seen by the immune system; a failure records itself below
+        try:
+            from agentic_core.organism.immune import immune
+            immune.observe(f"model:{name}")
+        except Exception:
+            pass
     if not success:
         try:
             from agentic_core.organism.immune import immune
@@ -100,6 +107,16 @@ def _record_floor_serve(t0: float) -> bool:
     _last_floor_record_at = now
     _record_model("native", True, t0)
     return True
+
+
+def _observe_floor_serve() -> None:
+    """W658 - EVERY floor-served call is an observation, not only the throttled ones that write a model row: the
+    count answers "was anything seen", and a throttle would make a busy floor-only platform read as silent."""
+    try:
+        from agentic_core.organism.immune import immune
+        immune.observe("model:native")
+    except Exception:
+        pass
 
 
 _DEMOTE_BELOW_FLOOR_RATE = 0.25   # W380 — only an effectively-dead model goes behind the floor
@@ -277,6 +294,7 @@ class NativeOrchestrator:
             if name == "native":
                 _t0 = time.monotonic()
                 out = native_engine.generate(prompt, agent, user_text=user_text)
+                _observe_floor_serve()     # W658 - seen, whether or not the throttled row below is written
                 _record_floor_serve(_t0)   # W458 — the floor serve is RECORDED (throttled), so status can follow it
                 _fire("motor", f"native.{agent}", "served by native engine", 0.4)
                 return {"output": out, "served_by": "native", "is_external": False, "resources_tried": tried}
@@ -309,6 +327,7 @@ class NativeOrchestrator:
                 continue
         # the native floor guarantees we never reach here, but be safe:
         out = native_engine.generate(prompt, agent, user_text=user_text)
+        _observe_floor_serve()     # W658 - the last-resort floor return is a call seen, like the first
         return {"output": out, "served_by": "native", "is_external": False, "resources_tried": tried}
 
     async def ensemble(self, prompt: str, agent: str = "ensemble", models: Optional[List[str]] = None,

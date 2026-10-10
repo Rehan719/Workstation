@@ -257,8 +257,15 @@ class EconomicMetabolism:
         if splits.get("owner", 0.0) > 0:
             try:
                 from .owner_payments import accrue as _accrue_owner
-                _accrue_owner(self.vsb_id, splits["owner"], self.owner, memo="cycle owner share (§4 waterfall)")
+                #  W658 - accrue() decides the mark itself (one floor for both of its callers); the cycle reads
+                #  it back from the ENTRY just written, so its own answer says what was recorded, not a second
+                #  opinion formed here
+                _acct658 = _accrue_owner(self.vsb_id, splits["owner"], self.owner,
+                                         memo="cycle owner share (§4 waterfall)")
                 owner_accrual["accrued"] = True
+                _last658 = ((_acct658 or {}).get("entries") or [{}])[-1] if isinstance(_acct658, dict) else {}
+                if _last658.get("simulated"):
+                    owner_accrual["simulated"] = True
             except Exception as _acc_err:
                 owner_accrual["error"] = f"{type(_acc_err).__name__}: {str(_acc_err)[:160]}"
                 # W505 (FU-036) — a DURABLE CLAIM on the amount, so the next cycle or heartbeat can apply it.

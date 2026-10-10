@@ -454,8 +454,8 @@ async def board_status(scope: str = "workstation"):
     snapshot: Dict[str, Any] = {}
     try:
         from agentic_core.organism.immune import immune
-        snapshot["organism_health"] = immune.status().get("health")
-        snapshot["organism_health_basis"] = _ORGANISM_HEALTH_SCOPE      # W635 (FU-587)
+        from agentic_core.organism.immune import health_fields as _health_fields658
+        snapshot.update(_health_fields658())     # W658 - the figure, its scope, and what it rests on
     except Exception:
         pass
     if scope != "workstation":

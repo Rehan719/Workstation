@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { FileText, Loader2, Sparkles, RefreshCw, Layers, Download } from 'lucide-react';
 import { downloadExport } from '../lib/download';
-import { apiJson, errorMessage, provenanceBadge, qmsChip, complianceChip } from '../lib/api';
+import { apiJson, errorMessage, provenanceBadge, qmsChip, complianceChip, immuneReading } from '../lib/api';
 
 interface DType { id: string; sections: string[] }
 interface DeliverableSummary {
@@ -273,7 +273,7 @@ Document-controlled under the QMS (DCMS) · record ${selected.quality_assurance.
                   {selected.quality_assurance.biomimetic?.immune && (
                     <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-300"
                       title={`biomimetic organism — only the Immune layer contributes a measured value here; the delivery record names all seven but six contribute nothing (§8/§17.2, open) · ${selected.quality_assurance.biomimetic.self || ''}`}>
-                      organism: immune {Math.round((selected.quality_assurance.biomimetic.immune.health ?? 0) * 100)}% · {selected.quality_assurance.biomimetic.circadian}
+                      organism: immune {immuneReading(selected.quality_assurance.biomimetic.immune)} · {selected.quality_assurance.biomimetic.circadian}
                     </span>
                   )}
                   {selected.quality_assurance.quality?.compliance && (

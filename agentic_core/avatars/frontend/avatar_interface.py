@@ -33,14 +33,17 @@ class AvatarFrontendInterface:
         """Immediately halts avatar and logs signed receipt."""
         self.active_session = False
 
-        # Mock signed receipt
+        #  W658 - THIS IS A LABEL, NOT A SIGNED RECEIPT. It is the digest of the override's type: the same for
+        #  every halt of that type, signed by no key, proving nothing about who halted what. It used to be
+        #  returned with a second digest under a name that said it was signed.
         receipt_id = hashlib.sha256(f"OVERRIDE_{override_type}".encode()).hexdigest()[:8]
-        signed_receipt = base64.b64encode(hashlib.sha256(f"SIG_{receipt_id}".encode()).digest()).decode()
+        receipt_basis = ("a fixed label for this override type - a digest of the type's name, not a signature "
+                         "and not unique to this halt")
 
         await self.ueg.log_event("CONSTITUTIONAL_OVERRIDE_TRIGGERED", {
             "type": override_type,
             "receipt_id": receipt_id,
-            "signature": signed_receipt
+            "receipt_basis": receipt_basis
         })
 
         logger.warning(f"CONSTITUTIONAL OVERRIDE: Avatar halted. Receipt: {receipt_id}")
@@ -49,5 +52,5 @@ class AvatarFrontendInterface:
             "status": "HALTED",
             "reason": "Constitutional Override Activated",
             "receipt": receipt_id,
-            "signature": signed_receipt
+            "receipt_basis": receipt_basis
         }

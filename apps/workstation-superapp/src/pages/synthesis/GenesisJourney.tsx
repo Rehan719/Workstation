@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { qmsChip, provenanceMapBadge, complianceChip, layerTitle } from '../../lib/api';
+import { qmsChip, provenanceMapBadge, complianceChip, layerTitle, immuneReading } from '../../lib/api';
 import { REALMS as CANON_REALMS, DOMAINS as CANON_DOMAINS, PRODUCTS, PRODUCT_LABELS } from '../../lib/taxonomy';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { saveOutput } from '../../lib/outputHistory';
@@ -992,7 +992,7 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                 {result.quality_assurance.biomimetic?.immune && (
                   <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-violet-500/15 text-violet-300"
                     title={layerTitle(result.quality_assurance.biomimetic)}>
-                    organism: immune {Math.round((result.quality_assurance.biomimetic.immune.health ?? 0) * 100)}% · {result.quality_assurance.biomimetic.circadian}
+                    organism: immune {immuneReading(result.quality_assurance.biomimetic.immune)} · {result.quality_assurance.biomimetic.circadian}
                   </span>
                 )}
                 {result.quality_assurance.quality?.compliance && (

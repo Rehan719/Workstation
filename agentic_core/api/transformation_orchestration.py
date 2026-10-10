@@ -272,6 +272,8 @@ async def orchestrate(req: OrchestrateRequest):
           {"living_systems": living_systems,
            "organism_health": organism.get("immune", {}).get("health"),
            "organism_health_basis": _HEALTH_SCOPE_W637,   # W637 — one sentence, one home (was W635's typed copy)
+           "organism_health_observations": (organism.get("immune", {}) or {}).get("observations_in_window"),   # W658
+           "organism_health_observed_basis": (organism.get("immune", {}) or {}).get("observed_basis"),
            "arousal": organism.get("nervous", {}).get("arousal_state")},
           verified=(None if (organism.get("immune", {}) or {}).get("health") is not None else False),
           checks="presence",

@@ -599,6 +599,17 @@ def _record_variance(change: dict, now: str, outcome: str) -> None:
 _ROOT_FOR_FORECAST = Path(__file__).resolve().parents[2]
 
 
+def _measured_phrase658(ctx: dict) -> str:
+    """W658 - the measured score, said as what it is. It printed `float(None or 0)` as "0%" - a failing figure -
+    for a context in which nothing had been measured at all."""
+    _m = ctx.get("composite_health_measured_only")
+    if _m is None:
+        return ("Measured composite health: NOT MEASURED - no call was observed in the immune sensor's window "
+                "and no circuit is tracked")
+    return (f"Measured composite health: {float(_m):.0%} over "
+            f"{float(ctx.get('composite_health_measured_weight') or 0):.0%} of the composite's weight")
+
+
 class SubmitChangeRequest(BaseModel):
     model_config = STRICT   # W628 (FU-398): an undeclared field here is a lost instruction - see _strict_models
     title: str
@@ -907,8 +918,11 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
                   f"({float(ctx.get('composite_health_measured_weight') or 0):.0%} of its weight); "
                   + _blend_clause(ctx)
                   if _health_decidable else
-                  "nothing was measured (the organism context errored), so the auto-approval is "
-                  "HELD for review rather than granted on absent evidence"),
+                  ("nothing was measured (the organism context errored), so the auto-approval is "
+                   "HELD for review rather than granted on absent evidence") if ctx.get("error") else
+                  ("nothing was measured: no call was observed in the immune sensor's window and no circuit "
+                   "is tracked, so the auto-approval is HELD for review rather than granted on absent "
+                   "evidence")),
     }
     if tier == "LOW" and _health_ok and threat in ("NOMINAL", "ELEVATED"):
         change["status"] = "approved"
@@ -1360,8 +1374,7 @@ async def _twin_prevalidate(change: dict) -> dict:
         f"You are the digital-twin simulator pre-validating a change BEFORE implementation.\n\n"
         f"Twin model — the live organism state:\n"
         # W494 (refutation) - the model was handed the blend after the rule stopped deciding on it
-        f"  Measured composite health: {float(ctx.get('composite_health_measured_only') or 0):.0%} over "
-        f"{float(ctx.get('composite_health_measured_weight') or 0):.0%} of the composite's weight "
+        f"  {_measured_phrase658(ctx)} "
         f"(the blended {ctx['composite_health']:.0%} is not what any gate decides on) | mode: {ctx['mode']}\n"
         f"  Immune threat: {ctx['immune']['threat_level']} | circadian: {ctx['circadian']['cycle']}\n\n"
         f"Proposed change ({effective_tier(change)}): {change['title']}\n"
@@ -1560,9 +1573,8 @@ async def review_change(cca_id: str, req: ReviewDecision,
             + 
             f"Current Organism Health:\n"
             # W494 (refutation) - same: the reviewer saw only the blend
-            f"  Measured composite health: {float(ctx.get('composite_health_measured_only') or 0):.0%} "
-            f"over {float(ctx.get('composite_health_measured_weight') or 0):.0%} of the composite's "
-            f"weight; the blended figure is {ctx['composite_health']:.0%} and is not what the rule "
+            f"  {_measured_phrase658(ctx)}"
+            f"; the blended figure is {ctx['composite_health']:.0%} and is not what the rule "
             f"decides on\n"
             f"  Immune threat: {ctx['immune']['threat_level']}\n"
             f"  Organism mode: {ctx['mode']}\n"

@@ -69,9 +69,8 @@ def _evidence_counts() -> Dict[str, Any]:
         d["last_evolution"] = None
     try:
         from agentic_core.organism.immune import immune
-        d["organism_health"] = immune.status().get("health")
-        d["organism_health_basis"] = ("the immune system's health: AI-call failures and compliance regressions "
-                                      "only - route 5xx failures are not tracked")   # W635 (FU-587)
+        from agentic_core.organism.immune import health_fields as _health_fields658
+        d.update(_health_fields658())            # W658 - this was the last typed copy of the scope sentence
     except Exception:
         d["organism_health"] = None
     return d

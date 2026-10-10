@@ -89,6 +89,15 @@ def _record_checkpoint(agent: str, pre: dict, post: dict, screened: bool) -> dic
             chk["gate_unavailable"] = src[key]
     return chk
 
+def _observe_floor() -> None:
+    """W658 - tell the immune system a floor-served call was seen. Best-effort; never raises into a completion."""
+    try:
+        from agentic_core.organism.immune import immune
+        immune.observe("model:native")
+    except Exception:
+        pass
+
+
 def console_pre_gate(agent: str) -> "dict | None":
     """W619 (FU-496, M2 v8 R4.3) — the pre-gate for a call that reaches the orchestrator WITHOUT the gateway (the
     Native AI console's completion and swarm). None when allowed; the chained halt record when refused."""
@@ -373,6 +382,7 @@ class ModelGateway:
             try:
                 from agentic_core.ai.native import native_engine
                 response = native_engine.generate(augmented, agent, user_text=user_text)
+                _observe_floor()           # W658 - a floor-served call is a call the organism saw
             except Exception:
                 response = "[native engine unavailable]"
 
@@ -710,6 +720,7 @@ class ModelGateway:
         try:
             from agentic_core.ai.native import native_engine
             out = native_engine.generate(augmented, agent, user_text=user_text)
+            _observe_floor()               # W658
         except Exception as e:
             out = f"[native engine unavailable: {e}]"
         for chunk in self._stream_chunks(out):

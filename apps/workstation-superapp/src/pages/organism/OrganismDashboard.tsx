@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
+import { immuneReading } from '../../lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Activity, Brain, Shield, Zap, Heart, Wind, Cpu, Dna,
@@ -31,7 +32,7 @@ interface OrganismStatus {
   composite_health_measured_weight?: number;
   health_summary: string;
   systems: {
-    immune:        { health: number; threat_level: string; errors_in_window: number; review_flags_in_window?: number; response_playbook?: string[]; hot_endpoint?: string };
+    immune:        { health: number; observations_in_window?: number | null; observed_basis?: string | null; threat_level: string; errors_in_window: number; review_flags_in_window?: number; response_playbook?: string[]; hot_endpoint?: string };
     nervous:       { arousal_state: string; signal_rate_per_second: number; signals_last_60s: number; by_type: Record<string,number>; total_signals: Record<string,number>; reflex_arcs: number };
     self_healing:  { overall_health: number | null; open_circuits: number; recent_events: unknown[] };
     metabolic:     { atp_ratio: number };
@@ -381,8 +382,9 @@ export const OrganismDashboard: React.FC = () => {
 
           {/* Immune */}
           <SystemCard icon={Shield} title="Immune" accent={systems.immune.health < 0.5 ? 'border-red-500/30' : 'border-white/10'}>
-            <div className="text-2xl font-black text-white">{Math.round(systems.immune.health * 100)}%</div>
-            <HealthBar value={systems.immune.health} />
+            {/* W658 - with no call observed the figure is the absence of failures, not a reading: say so, draw no bar */}
+            <div data-testid="dash-immune-reading" className="text-2xl font-black text-white" title={systems.immune.observed_basis ?? undefined}>{immuneReading(systems.immune)}</div>
+            {systems.immune.observations_in_window !== 0 && <HealthBar value={systems.immune.health} />}
             <div className="flex justify-between text-xs text-white/40 font-mono">
               <span className={THREAT_COLOR[systems.immune.threat_level] ?? 'text-white/40'}>
                 {systems.immune.threat_level}

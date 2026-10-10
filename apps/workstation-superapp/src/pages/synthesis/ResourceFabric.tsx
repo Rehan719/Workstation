@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { provenanceBadge, qmsChip, provenanceMapBadge, provenanceMapFromTrace, complianceChip } from '../../lib/api';
+import { provenanceBadge, qmsChip, provenanceMapBadge, provenanceMapFromTrace, complianceChip, immuneReading } from '../../lib/api';
 import { useNavigate } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
 import {
@@ -547,7 +547,7 @@ export const ResourceFabric: React.FC = () => {
               ); })()}
               {sim.simulation?.biomimetic?.immune && (
                 <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-300">
-                  organism: immune {Math.round((sim.simulation.biomimetic.immune.health ?? 0) * 100)}% · {sim.simulation.biomimetic.circadian}
+                  organism: immune {immuneReading(sim.simulation.biomimetic.immune)} · {sim.simulation.biomimetic.circadian}
                 </span>
               )}
               {sim.simulation?.quality?.compliance && (

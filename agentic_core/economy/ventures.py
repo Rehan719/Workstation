@@ -423,9 +423,21 @@ def record_positions(vsb_id: str, allocation: Dict[str, Any], round_id: str | No
     # which is what an unidentified allocation actually is.
     round_at = str(round_id) if round_id else uuid.uuid4().hex[:12]
     funded, unfunded = [], []
+    #  W658 (Owner ruling 2026-10-10) - an UNREGISTERED investor is a simulation and credits no one. Asked once.
+    try:
+        from agentic_core.economy.living_vsbs import is_registered as _is_registered
+        _investor_why = (None if _is_registered(vsb_id) else
+                         f"the investor '{vsb_id}' is not a registered living entity: this allocation is a "
+                         f"simulation's, and a simulation's funds are not credited to a registered entity")
+    except Exception as _exc658:                             # an unreadable roster: nothing is credited on a guess
+        _investor_why = (f"whether the investor '{vsb_id}' is registered could not be read "
+                         f"({type(_exc658).__name__}), so nothing was credited")
     for p in positions:
         amount = round(float(p.get("amount_wst") or 0.0) * share, 2)
         pid = str(p.get("id") or "")
+        if _investor_why:
+            unfunded.append({"id": pid, "why": _investor_why})
+            continue
         if share <= 0:
             unfunded.append({"id": pid, "why": f"the funding share is {share} ({share_source})"})
             continue

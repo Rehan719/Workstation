@@ -127,6 +127,8 @@ async def ai_query(req: AIQuery, user: dict | None = Depends(get_current_user)):
 async def v154_status():
     imm = _immune()
     return {"status": "operational", "health": imm.get("health"), "threat_level": imm.get("threat_level"),
+            "health_observations": imm.get("observations_in_window"),                # W658
+            "health_observed_basis": imm.get("observed_basis"),
             "version": "v3.0-sovereign", "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
 
 
@@ -139,6 +141,8 @@ async def v154_security_status():
     except Exception:
         ueg = {}
     return {"posture": "hardened", "immune_health": imm.get("health"),
+            "immune_health_observations": imm.get("observations_in_window"),         # W658
+            "immune_health_observed_basis": imm.get("observed_basis"),
             "threat_level": imm.get("threat_level"), "gaas": "active",
             "audit_events": ueg.get("total_events", 0),
             # W526 (P3.15, FU-226) — this reported a configured post-quantum posture as a flat
@@ -441,6 +445,8 @@ async def evo_metrics():
     return {"vision_realisation": real, "vision_realisation_measure": measure,
             "organism_health": imm.get("health"),
             "organism_health_basis": _HEALTH_SCOPE_W637,   # W637 — one sentence, one home (was W635's typed copy)
+            "organism_health_observations": imm.get("observations_in_window"),       # W658 - what it rests on
+            "organism_health_observed_basis": imm.get("observed_basis"),
             "threat_level": imm.get("threat_level"),
             "pillar_breakdown": pillars,
             "dimensions_realised": sum(1 for p in pillars if p["status"] == "realised"),

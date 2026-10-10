@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { qmsChip, provenanceMapBadge, complianceChip, errorMessage, layerTitle, axiosDetail} from '../../lib/api';
+import { qmsChip, provenanceMapBadge, complianceChip, errorMessage, layerTitle, axiosDetail, immuneReading } from '../../lib/api';
 import axios from 'axios';
 import { Loader2, Send, Cpu, RefreshCw, Zap, ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -323,7 +323,7 @@ const SwarmIntelligence: React.FC = () => {
               ); })()}
               {cascade.biomimetic?.immune && (
                 <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-300" title={layerTitle(cascade.biomimetic)}>
-                  organism: immune {Math.round((cascade.biomimetic.immune.health ?? 0) * 100)}% · {cascade.biomimetic.circadian}
+                  organism: immune {immuneReading(cascade.biomimetic.immune)} · {cascade.biomimetic.circadian}
                 </span>
               )}
               {cascade.quality?.compliance && (

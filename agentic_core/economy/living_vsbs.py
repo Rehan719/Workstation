@@ -263,6 +263,14 @@ def set_lifecycle(vsb_id: str, to: str, by: str = "", note: str = "") -> Dict[st
     return out
 
 
+def is_registered(vsb_id: str) -> bool:
+    """W658 (Owner ruling 2026-10-10) - IS THIS SCOPE A REGISTERED LIVING ENTITY? The one question every path that
+    moves WST out of a cycle must ask, in one place. A cycle for an id that is not on the roster is a simulation
+    run on request values; its funds enter nothing real. STRICT: raises StoreUnavailable when the roster cannot be
+    read whole - "could not tell" is never answered as either yes or no."""
+    return str(vsb_id) in _load()
+
+
 def resolve_parent(parent_vsb: str) -> Dict[str, Any]:
     """Three states for a claimed parent. A LOOKUP ONLY — it refuses nothing; the routes do that.
 

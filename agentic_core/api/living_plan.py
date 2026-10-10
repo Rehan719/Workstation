@@ -160,9 +160,8 @@ async def get_state():
     try:
         from agentic_core.organism.immune import immune
         imm = immune.status()
-        state["organism_health"] = imm.get("health")
-        from agentic_core.organism.immune import HEALTH_SCOPE
-        state["organism_health_basis"] = HEALTH_SCOPE   # W637 — one sentence, one home (was W635's typed copy)
+        from agentic_core.organism.immune import health_fields as _health_fields658
+        state.update(_health_fields658(imm))     # W658 - the figure, its scope (W637's one home), what it rests on
         state["threat_level"] = imm.get("threat_level")
     except Exception:
         pass
