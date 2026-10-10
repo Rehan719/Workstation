@@ -19,7 +19,7 @@ resource should enrich — and always carries a clear provenance marker.
 from __future__ import annotations
 
 import re
-from typing import List
+from typing import List, Optional
 
 _MARKER = "_[Workstation native structured engine — owned, no external dependency]_"
 
@@ -296,6 +296,15 @@ def _content(prompt: str) -> str:
     return " . ".join(vals) if vals else prompt
 
 
+#  W640 - said ONCE per reply when the caller did not identify the person's words. It states a fact about the
+#  call, never an omission by the person: the old sentence said a request carried no subject when it had one.
+_NOT_TOLD = ("This engine was not told which part of its input you wrote, so it states no subject for your "
+             "request and attributes nothing to you. That is a limit of the tool that called it, not of what "
+             "you asked")
+#  ...and what a section frame names in the subject's place, so no frame reads "frame for: ."
+_SUBJECT_NOT_TOLD = "the subject (not identified to this engine by the tool that called it)"
+
+
 class NativeReasoningEngine:
     """The platform's own, always-available structured reasoning resource."""
 
@@ -303,21 +312,34 @@ class NativeReasoningEngine:
     is_external = False
     is_model = False  # honest: this is structured reasoning, not an LLM
 
-    def generate(self, prompt: str, agent: str = "native") -> str:
+    def generate(self, prompt: str, agent: str = "native", user_text: Optional[str] = None) -> str:
+        #  W640 (Owner ruling 2026-10-09, late) - THE DEFAULT IS TO WITHHOLD, NOT TO GUESS. This engine cannot
+        #  know which part of a prompt a person wrote: a labelled field reaches it the same way whether the
+        #  person typed it, a router composed it, or an upstream stage produced it. It used to guess by
+        #  scanning for labels, and the guess was fixed one caller at a time (W593, W615, W637) and found
+        #  again on the callers nobody had touched (ledger v14). So the CALLER says: `user_text` is the
+        #  person's own words, and the subject and the terms are read from it and from nothing else. Without
+        #  it this engine attributes nothing to the person - no subject, no terms, no omission - and says once
+        #  that it was not told. A caller that passes text the person did not write is the caller's defect,
+        #  and a countable one: grep the call.
+        _told = isinstance(user_text, str) and bool(user_text.strip())
         # W505 (P2.1) — strip this engine's own framing ONCE, before anything is read out of the prompt.
         # A stage's output is the next stage's input, so without this the marker line, the "_Acting as:"
         # lead and a carried "## <role> output" header became the subject, the keywords and the section
         # list of the stage that followed.
         prompt = _strip_carried(prompt)
-        subject = _subject(prompt)
-        #  W631 (FU-556) - an unnamed domain is WITHHELD, not filled with a placeholder that reads as a reading
-        domain = _field(prompt, "Domain") or "WITHHELD — the request named no domain"
+        subject = " ".join(user_text.split())[:220] if _told else ""
+        #  W631 (FU-556) - an unnamed domain is WITHHELD, not filled with a placeholder that reads as a reading.
+        #  W640 - and its absence is the CALL's, not the person's: the Domain line is written by a router.
+        domain = _field(prompt, "Domain") or "WITHHELD — no domain was declared for this call"
         role = _role(prompt)
         content = _content(prompt)
         #  W593 (P2.20 a.ii) — THE TERMS COME FROM THE USER'S OWN FIELDS, PER FIELD. The carried labels are
         #  dropped (a previous stage's output is not "your request") and phrases are built within each field
         #  so no bigram spans two sources. Unigrams cannot span a boundary, so they stay on the joined text.
-        _term_parts = _content_parts(prompt, for_terms=True)
+        #  one part per LINE of what the person wrote: a caller naming two fields sends two lines, and a
+        #  phrase is never built across them (W593's per-field rule, kept)
+        _term_parts = [ln.strip() for ln in user_text.splitlines() if ln.strip()] if _told else []
         kws = _keywords(" . ".join(_term_parts)) if _term_parts else []
         phrases = [p for part in _term_parts for p in _phrases(part)]
         terms = phrases + [k for k in kws if k not in " ".join(phrases)]  # phrases first, then singles
@@ -348,12 +370,12 @@ class NativeReasoningEngine:
         _realm_named = _field(prompt, "Realm")
         if _realm_named:
             lead += (f"_Composed for the {_realm_named} realm. This engine RECORDS the realm and does not "
-                     f"act on it: it composes from the request's labelled fields, and a house style is a "
+                     f"act on it: it composes from the text the calling tool identified as yours, and a house style is a "
                      f"directive only a served model can follow._\n\n")
 
         if sections:
             _personal = any(w in prompt.lower() for w in _PERSONAL_MARKERS)      # W631 (FU-557)
-            blocks = [f"## {title}\n{self._section_body(title, subject, domain, terms, personal=_personal)}"
+            blocks = [f"## {title}\n{self._section_body(title, subject or _SUBJECT_NOT_TOLD, domain, terms, personal=_personal)}"
                       for title in sections]
             body = lead + "\n\n".join(blocks)
         else:
@@ -362,9 +384,7 @@ class NativeReasoningEngine:
             #  longest sentence IS the directive: a report on a Kenyan clinic opened "Subject: Lead with the
             #  decision and its cost...". It now returns "" and this says so, which is true and checkable.
             _understanding = (f"The request concerns: {subject} (domain: {domain}).\n\n" if subject else
-                              f"The request carries no labelled subject, so this engine does not state one "
-                              f"(domain: {domain}). It did NOT infer one from the longest sentence, which in "
-                              f"a prompt carrying a platform directive is the directive.\n\n")
+                              f"{_NOT_TOLD} (domain: {domain}).\n\n")
             #  W593 (P2.20 a.ii) — AND THE TERM LIST IS WITHHELD RATHER THAN COUNTED OVER THE PLATFORM'S OWN
             #  PROMPT. With no labelled field there is nothing of the user's to count, and a list here under
             #  a heading that says "in your request" would be false. Withholding is the house move: W489
@@ -380,19 +400,17 @@ class NativeReasoningEngine:
             #  is named for what it is counted over, and says that is not necessarily the user's words.
             #  AND THE WITHHELD REASON IS THE TRUE ONE. A request in Arabic carries a labelled field; it was
             #  withheld because the tokeniser counts Latin-script words only, and was told "no labelled field".
-            _has_fields = bool(_term_parts)
-            _termsec = (f"## Terms most frequent in this prompt's labelled fields\n"
+            _termsec = (f"## Terms most frequent in the text you wrote\n"
                         f"_Extracted by counting words and adjacent pairs — not an analysis of "
-                        f"the subject. The fields can hold text the platform composed (an instruction, a "
-                        f"previous step's output, the entity's own records), so these are not necessarily "
-                        f"your words._\n"
+                        f"the subject. Counted over the text the calling tool identified as yours, and "
+                        f"over nothing else._\n"
                         f"{self._bullets(terms, 6)}\n\n" if terms else
-                        f"## Terms most frequent in this prompt's labelled fields\n"
-                        + (f"_WITHHELD: the labelled fields hold no word this engine can count — it counts "
-                           f"Latin-script words only, so text in another script yields no list. Nothing "
-                           f"was counted in its place._\n\n" if _has_fields else
-                           f"_WITHHELD: the prompt carries no labelled field for this engine to count, so any "
-                           f"list here would be counted over the platform's own prompt._\n\n"))
+                        f"## Terms most frequent in the text you wrote\n"
+                        + (f"_WITHHELD: the text identified as yours holds no word this engine can count — it "
+                           f"counts Latin-script words only, so text in another script yields no list. Nothing "
+                           f"was counted in its place._\n\n" if _told else
+                           f"_WITHHELD: the calling tool did not identify which text is yours, so any list "
+                           f"here would be counted over the platform's own prompt._\n\n"))
             body = (
                 f"{lead}## Understanding\n{_understanding}"
                 # W489 (sweep S4.6, C3) — "Key factors" named an analysis nobody performed. The bullets
@@ -511,7 +529,9 @@ class NativeReasoningEngine:
         return "\n".join(f"- {prefix} {p}." for p in picks)
 
     def _bullets(self, terms: List[str], n: int) -> str:
-        return "\n".join(f"- {k}" for k in terms[:n]) or "- (no salient terms extracted)"
+        #  W640 - the empty case states a fact about the COUNT. It used to read as a finding about the request
+        #  ("no salient terms") when the list was empty because nobody had said which text was the person's.
+        return "\n".join(f"- {k}" for k in terms[:n]) or "- (no terms were counted for this reply)"
 
     def _plan(self, domain: str) -> str:
         return ("- Validate the structured outputs above against the stated objective.\n"

@@ -19,7 +19,8 @@ async def ai_query(req: QueryRequest, user: dict | None = Depends(get_current_us
     # W506 (P2.2) - query_meta, so the reply says which OWNED resource served it. `owner_id` was already
     # threaded here (FU-276 attribution); `augment=False` is stated because a repo-wide guard requires the
     # recall decision at every call site rather than inherited from the default.
-    _r = await gateway.query_meta(req.message, agent=req.agent, owner_id=owner, augment=False)
+    _r = await gateway.query_meta(req.message, agent=req.agent, owner_id=owner, augment=False,
+                                  user_text=req.message)
     return {"response": _r.get("output", ""),
             "served_by": _r.get("served_by"),
             "is_external": bool(_r.get("is_external")),

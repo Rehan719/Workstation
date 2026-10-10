@@ -20,7 +20,7 @@ from pydantic import BaseModel
 
 import functools
 
-from agentic_core.api._ai_provenance import ai_text as _ai_text
+from agentic_core.api._ai_provenance import ai_text as _ai_text, person_said
 
 #  W637 (FU-597) — this router's domain, bound once. Every ai_text call below carries it, so the native floor
 #  prints the real domain instead of "the request named no domain".
@@ -193,7 +193,8 @@ async def analyse_document(req: AnalyseRequest):
         "Be specific, cite clause numbers where present. Use plain English where possible."
     )
 
-    analysis, provenance = await ai_text(prompt, "law_analyst", realm=req.realm)
+    analysis, provenance = await ai_text(prompt, "law_analyst", realm=req.realm,
+        user_text=person_said(req.analysis_focus))
 
     return {
         "analysis_id": uuid.uuid4().hex[:10],
@@ -241,7 +242,8 @@ async def legal_research(req: ResearchRequest):
         "or fact-dependent, say so honestly rather than overstating certainty."
     )
 
-    analysis, provenance = await ai_text(prompt, "law_researcher", realm=req.realm)
+    analysis, provenance = await ai_text(prompt, "law_researcher", realm=req.realm,
+        user_text=person_said(req.question))
 
     return {
         "research_id": uuid.uuid4().hex[:10],
@@ -291,7 +293,8 @@ async def generate_document(req: GenerateRequest):
         + "\nGenerate the complete legal document now in Markdown format with proper headings and clause numbering."
     )
 
-    document, provenance = await ai_text(prompt, "law_generator", realm=req.realm)
+    document, provenance = await ai_text(prompt, "law_generator", realm=req.realm,
+        user_text=person_said(req.custom_instructions))
 
     template_name = next(
         (t["name"] for t in _TEMPLATES if t["id"] == req.template_id),

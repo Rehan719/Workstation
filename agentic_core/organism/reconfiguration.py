@@ -379,7 +379,7 @@ async def ai_suggest_config(req: AISuggestRequest):
         "Output ONLY the CHANGE lines. No other text."
     )
 
-    meta = await gateway.query_meta(prompt, agent="reconfiguration_engine", augment=False)
+    meta = await gateway.query_meta(prompt, agent="reconfiguration_engine", augment=False, user_text=(req.context or None))
     raw = meta.get("output") or ""
 
     suggestions = []

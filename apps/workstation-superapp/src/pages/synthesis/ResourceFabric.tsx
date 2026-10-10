@@ -8,6 +8,7 @@ import {
   Hammer, Zap, BarChart3, Brain, BookOpen, Code2, Rocket, Package, ArrowRight, Wand2,
 } from 'lucide-react';
 import { DomainTool } from '../../components/DomainTool';
+import { InstrumentCellPanel } from '../../components/InstrumentCellPanel';
 
 // ── Process-intelligence studios ────────────────────────────────────────────────
 // The Resource Fabric is the single hub for every engine. Each standalone studio below
@@ -361,6 +362,9 @@ export const ResourceFabric: React.FC = () => {
           Synthesis, Design, Development, Delivery, Build-to-Order, and the Forge.
         </p>
       </header>
+
+      {/* W640 (P3.31) — what the fabric can run now, and a proposal for an objective (saves and runs nothing) */}
+      <InstrumentCellPanel />
 
       {/* Process-intelligence studios — every engine, one click from the hub (keeps the nav lean) */}
       <div>

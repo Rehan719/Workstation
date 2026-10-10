@@ -26,7 +26,7 @@ async def assistant_query(query: str):
     # landed in no account's namespace. An agent label is given here; the owner stays unset because this
     # legacy route takes no principal, and W496 made an unattributed completion land in a namespace
     # recall never reads - so it is unattributed on purpose and says so, rather than silently.
-    _ar = await gateway.query_meta(query, agent="v260_assistant", augment=False)
+    _ar = await gateway.query_meta(query, agent="v260_assistant", augment=False, user_text=query)
     ai_response = _ar.get("output", "")
     return {
         "response": ai_response,

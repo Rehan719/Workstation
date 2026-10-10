@@ -283,7 +283,7 @@ class ModelGateway:
     async def query(self, prompt: str, agent: str = "assistant",
                     timeout: float | None = 90.0,
                     owner_id: str | None = None, augment: bool = _RECALL_OFF,
-                    governance: dict | None = None) -> str:
+                    governance: dict | None = None, user_text: str | None = None) -> str:
         """Run one completion through the provider cascade.
 
         `timeout` is an OVERALL bound (seconds) on the whole cascade so an AI call
@@ -293,14 +293,15 @@ class ModelGateway:
         On timeout we return a clearly-labelled fallback rather than blocking.
         """
         res = await self.query_meta(prompt, agent=agent, timeout=timeout,
-                                    owner_id=owner_id, augment=augment, governance=governance)
+                                    owner_id=owner_id, augment=augment, governance=governance,
+                                    user_text=user_text)
         return res.get("output", "")
 
     async def query_meta(self, prompt: str, agent: str = "assistant",
                          timeout: float | None = 90.0,
                          owner_id: str | None = None, augment: bool = _RECALL_OFF,
                          governance: dict | None = None,
-                         language: str | None = None) -> dict:
+                         language: str | None = None, user_text: str | None = None) -> dict:
         """Like `query()` but returns PROVENANCE — {output, served_by, is_external} — so callers
         can surface which OWNED resource served the completion (Genesis/Forge/Transformation use
         this to prove their cascades run in-house). Same in-house-first routing as `query()`.
@@ -362,13 +363,13 @@ class ModelGateway:
             # substantial completion and was demoted below the floor). The orchestrator bounds the
             # local model by its own budget; this bound governs only the external accelerants.
             res = await native_orchestrator.complete(augmented, agent=agent,
-                                                     timeout=(timeout or 30.0))
+                                                     timeout=(timeout or 30.0), user_text=user_text)
             response = res.get("output", "")
             served_by, is_external = res.get("served_by", "native"), res.get("is_external", False)
         except Exception:
             try:
                 from agentic_core.ai.native import native_engine
-                response = native_engine.generate(augmented, agent)
+                response = native_engine.generate(augmented, agent, user_text=user_text)
             except Exception:
                 response = "[native engine unavailable]"
 
@@ -549,7 +550,8 @@ class ModelGateway:
                             continue
 
     async def stream_meta(self, prompt: str, agent: str = "assistant",
-                          owner_id: str | None = None, augment: bool = _RECALL_OFF) -> AsyncIterator[dict]:
+                          owner_id: str | None = None, augment: bool = _RECALL_OFF,
+                          user_text: str | None = None) -> AsyncIterator[dict]:
         """Yield {"token": …} events then ONE terminal {"done": True, "served_by", "is_external",
         "output", "guardrail_passed", "profile_applied"} — IN-HOUSE FIRST (§6), mirroring
         query_meta's contract:
@@ -704,7 +706,7 @@ class ModelGateway:
         _floor_t0 = time.time()
         try:
             from agentic_core.ai.native import native_engine
-            out = native_engine.generate(augmented, agent)
+            out = native_engine.generate(augmented, agent, user_text=user_text)
         except Exception as e:
             out = f"[native engine unavailable: {e}]"
         for chunk in self._stream_chunks(out):
@@ -716,9 +718,11 @@ class ModelGateway:
         yield _fin
 
     async def stream(self, prompt: str, agent: str = "assistant",
-                     owner_id: str | None = None, augment: bool = _RECALL_OFF) -> AsyncIterator[str]:
+                     owner_id: str | None = None, augment: bool = _RECALL_OFF,
+                     user_text: str | None = None) -> AsyncIterator[str]:
         """Token-only view of `stream_meta` (the three older SSE consumers keep their shape)."""
-        async for ev in self.stream_meta(prompt, agent=agent, owner_id=owner_id, augment=augment):
+        async for ev in self.stream_meta(prompt, agent=agent, owner_id=owner_id, augment=augment,
+                                         user_text=user_text):
             if "token" in ev:
                 yield ev["token"]
 

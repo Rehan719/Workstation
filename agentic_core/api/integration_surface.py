@@ -76,7 +76,7 @@ async def ai_completion(req: AIQuery):
     # a different statement from the floor having served it, so the two cases stay distinguishable.
     _served, _ext = None, False
     try:
-        _ir = await gateway.query_meta(prompt, agent=req.agent, timeout=30, augment=False)
+        _ir = await gateway.query_meta(prompt, agent=req.agent, timeout=30, augment=False, user_text=(prompt or None))
         out = _ir.get("output", "")
         _served, _ext = _ir.get("served_by"), bool(_ir.get("is_external"))
     except Exception as e:

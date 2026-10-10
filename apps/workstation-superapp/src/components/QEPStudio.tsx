@@ -99,8 +99,16 @@ export const QEPStudio: React.FC = () => {
   //  learner saw an interval with no indication of what it was computed from, and the one line
   //  that matters - 'a review count, not a hifz certification' - never reached them.
   const [reviewResult, setReviewResult] = useState<{ new_interval_days: number; next_review_date: string; xp_awarded: number; new_efactor?: number; memorised_basis?: string; total_ayaat_memorised?: number } | null>(null);
+  const [meaning, setMeaning] = useState<{ translation_text: string; translator: string; work: string; first_published: number; source: string; edition: string; label: string; register_note: string; licence_basis: string } | null>(null);
+  const showMeaning = async () => {
+    if (!reviewRef) return;
+    setBusy('meaning'); setErr('');
+    const [ms, ma] = reviewRef.split(':');
+    try { setMeaning(await apiJson(`/api/v1/qep/translation/${ms}/${ma}`)); } catch (e) { setErr(errorMessage(e)); }
+    setBusy('');
+  };
   const openReview = async (ref: string) => {
-    setReviewRef(ref); setReviewAyah(null); setReviewResult(null); setRecall(null); setRecallText('');
+    setReviewRef(ref); setReviewAyah(null); setReviewResult(null); setRecall(null); setRecallText(''); setMeaning(null);
     const [s, a] = ref.split(':');
     try { setReviewAyah(await apiJson(`/api/v1/qep/ayah/${s}/${a}`)); } catch (e) { setErr(errorMessage(e)); }
   };
@@ -320,6 +328,25 @@ export const QEPStudio: React.FC = () => {
           {reviewRef && reviewAyah && (
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
               <p className="text-xl text-white leading-loose font-arabic mb-2" dir="rtl">{reviewAyah.text_arabic}</p>
+              {/* W640 — a SOURCED translation of the meanings, shown only when asked for, in its own block
+                  under its own label: the translator, the year, the licence basis and the server's statement
+                  that it is not the Qur'an all travel with the words. Never composed by a model. */}
+              {!meaning && (
+                <button type="button" onClick={showMeaning} disabled={busy === 'meaning'}
+                  className="text-[9px] font-bold text-sky-400 hover:text-sky-300 mb-2 underline underline-offset-2">
+                  {busy === 'meaning' ? 'Fetching…' : 'Show a translation of the meanings'}
+                </button>
+              )}
+              {meaning && (
+                <div data-testid="ayah-translation" className="mb-2 p-2 rounded-lg border border-sky-500/20 bg-sky-500/5">
+                  <p className="text-[11px] text-slate-200 leading-relaxed">{meaning.translation_text}</p>
+                  <p className="text-[9px] text-slate-500 mt-1">
+                    {meaning.translator}, {meaning.work} ({meaning.first_published}) · {meaning.source} · edition {meaning.edition}
+                  </p>
+                  <p className="text-[9px] text-amber-400/90 mt-1">{meaning.label}</p>
+                  <p className="text-[9px] text-slate-600 mt-1">{meaning.register_note}. Licence basis: {meaning.licence_basis}</p>
+                </div>
+              )}
               <p className="text-[9px] text-slate-600 mb-2">{reviewRef} · recall quality (0 = blackout, 5 = perfect):</p>
               <div className="flex gap-1.5 mb-2">
                 {[0, 1, 2, 3, 4, 5].map(q => (

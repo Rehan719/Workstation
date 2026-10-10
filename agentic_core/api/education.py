@@ -17,7 +17,7 @@ from pydantic import BaseModel
 
 import functools
 
-from agentic_core.api._ai_provenance import ai_text as _ai_text
+from agentic_core.api._ai_provenance import ai_text as _ai_text, person_said
 
 #  W637 (FU-597) — this router's domain, bound once. Every ai_text call below carries it, so the native floor
 #  prints the real domain instead of "the request named no domain".
@@ -111,7 +111,8 @@ async def design_curriculum(req: CurriculumRequest):
         "Be specific and practical. Each week entry should be actionable for a teacher."
     )
 
-    curriculum, provenance = await ai_text(prompt, "education_curriculum", realm=req.realm)
+    curriculum, provenance = await ai_text(prompt, "education_curriculum", realm=req.realm,
+        user_text=person_said(req.subject))
 
     return {
         "curriculum_id": uuid.uuid4().hex[:10],
@@ -183,7 +184,8 @@ async def generate_lesson_plan(req: LessonPlanRequest):
         "Format timings as [MM:SS] inline. Be specific and practical."
     )
 
-    plan, provenance = await ai_text(prompt, "education_lesson_plan", realm=req.realm)
+    plan, provenance = await ai_text(prompt, "education_lesson_plan", realm=req.realm,
+        user_text=person_said(req.topic, req.subject))
 
     return {
         "plan_id": uuid.uuid4().hex[:10],
@@ -232,7 +234,8 @@ async def marking_feedback(req: FeedbackRequest):
         "not write, and do not penalise for things outside the stated task."
     )
 
-    feedback, provenance = await ai_text(prompt, "education_feedback", realm=req.realm)
+    feedback, provenance = await ai_text(prompt, "education_feedback", realm=req.realm,
+        user_text=person_said(req.task, req.subject))
 
     return {
         "feedback_id": uuid.uuid4().hex[:10],
@@ -287,7 +290,8 @@ async def create_assessment(req: AssessmentRequest):
         "- Free of ambiguity"
     )
 
-    assessment, provenance = await ai_text(prompt, "education_assessment", realm=req.realm)
+    assessment, provenance = await ai_text(prompt, "education_assessment", realm=req.realm,
+        user_text=person_said(req.topic, req.subject))
 
     return {
         "assessment_id": uuid.uuid4().hex[:10],

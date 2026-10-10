@@ -117,7 +117,8 @@ async def delegate_task(req: DelegateRequest):
 
     async def _dq(prompt: str, agent: str) -> str:
         _t0 = time.time()
-        res = await gateway.query_meta(prompt, agent=agent, augment=False)
+        res = await gateway.query_meta(prompt, agent=agent, augment=False,
+                                       user_text=(req.task or None))   # W640 - the person's own words
         sb = res.get("served_by", "native")
         provenance["served_by"][sb] = provenance["served_by"].get(sb, 0) + 1
         provenance["any_external"] = provenance["any_external"] or bool(res.get("is_external"))
@@ -469,7 +470,8 @@ async def cascade_orchestration(req: CascadeRequest,
         # closure from cascade_orchestration; the identical call in _dq() is NOT threaded, because
         # its enclosing delegate_task() has no user and unattributed is the correct namespace there.
         _owner_id = user.get("username") if isinstance(user, dict) else None
-        res = await gateway.query_meta(prompt, agent=agent, augment=False, owner_id=_owner_id)
+        res = await gateway.query_meta(prompt, agent=agent, augment=False, owner_id=_owner_id,
+                                       user_text=(req.mission or None))   # W640 - the person's own words
         sb = res.get("served_by", "native")
         provenance["served_by"][sb] = provenance["served_by"].get(sb, 0) + 1
         provenance["any_external"] = provenance["any_external"] or bool(res.get("is_external"))

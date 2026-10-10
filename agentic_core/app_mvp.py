@@ -453,6 +453,11 @@ app.include_router(sov_evo_api.router, dependencies=[_Depends(_require_admin)]) 
 # 54. Resource Fabric — unified reconfigurable/combinable resource catalogue
 from agentic_core.api import resource_fabric as resource_fabric_api
 app.include_router(resource_fabric_api.router)
+#  W640 (P3.31) — the Instrument Cell: availability, contract, proposal and verification OVER the fabric's own
+#  registry. Its paths are two segments under the fabric's prefix, so the fabric's `/{resource_id}` never
+#  takes them.
+from agentic_core.api import instrument_cell as instrument_cell_api
+app.include_router(instrument_cell_api.router)
 
 # 55. Board of Directors — apex governance; Chief = Owner's digital twin, above the AI CEO
 from agentic_core.api import board as board_api

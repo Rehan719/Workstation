@@ -216,7 +216,7 @@ async def generate_blueprint(req: BlueprintRequest) -> BlueprintResponse:
 
     # W490 (sweep S12.4, C7) — the page showed a success tick over a "Concept Blueprint" that was the
     # floor's own outline, and `gateway.query` had discarded the one field that could say so.
-    _meta = await gateway.query_meta(prompt, agent="ceo_blueprint", augment=False)
+    _meta = await gateway.query_meta(prompt, agent="ceo_blueprint", augment=False, user_text=(req.intent or None))
     deliverable = _meta.get("output", "")
     _prov = {"served_by": _meta.get("served_by", "native"), "is_external": bool(_meta.get("is_external"))}
 

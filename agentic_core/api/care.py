@@ -17,7 +17,7 @@ from pydantic import BaseModel
 
 import functools
 
-from agentic_core.api._ai_provenance import ai_text as _ai_text
+from agentic_core.api._ai_provenance import ai_text as _ai_text, person_said
 
 #  W637 (FU-597) — this router's domain, bound once. Every ai_text call below carries it, so the native floor
 #  prints the real domain instead of "the request named no domain".
@@ -86,7 +86,8 @@ async def generate_care_plan(req: CarePlanRequest):
         "Mark fields needing personalisation with [PERSONALISE]."
     )
 
-    plan, provenance = await ai_text(prompt, "care_planner", realm=req.realm)
+    plan, provenance = await ai_text(prompt, "care_planner", realm=req.realm,
+        user_text=person_said(req.care_needs))
 
     return {
         "plan_id": uuid.uuid4().hex[:10],
@@ -150,7 +151,8 @@ async def risk_assessment(req: RiskAssessRequest):
         "Reference current clinical guidelines. Be specific about thresholds and actions."
     )
 
-    assessment, provenance = await ai_text(prompt, "care_risk_assess", realm=req.realm)
+    assessment, provenance = await ai_text(prompt, "care_risk_assess", realm=req.realm,
+        user_text=person_said(req.clinical_context))
 
     return {
         "assessment_id": uuid.uuid4().hex[:10],
@@ -203,7 +205,8 @@ async def safeguarding_triage(req: SafeguardingRequest):
         "and never identify or accuse a specific individual as a conclusion."
     )
 
-    guidance, provenance = await ai_text(prompt, "care_safeguarding", realm=req.realm)
+    guidance, provenance = await ai_text(prompt, "care_safeguarding", realm=req.realm,
+        user_text=person_said(req.concern))
 
     return {
         "triage_id": uuid.uuid4().hex[:10],
@@ -249,7 +252,8 @@ async def generate_handover(req: HandoverRequest):
         "Be concise — handovers should be completable in under 3 minutes verbally."
     )
 
-    handover, provenance = await ai_text(prompt, "care_handover", realm=req.realm)
+    handover, provenance = await ai_text(prompt, "care_handover", realm=req.realm,
+        user_text=person_said(req.current_situation, req.patient_summary))
 
     return {
         "handover_id": uuid.uuid4().hex[:10],

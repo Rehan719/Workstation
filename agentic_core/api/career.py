@@ -17,7 +17,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from pydantic import BaseModel
 
-from agentic_core.api._ai_provenance import ai_text
+from agentic_core.api._ai_provenance import ai_text, person_said
 
 router = APIRouter(prefix="/api/v1/career", tags=["career"])
 
@@ -248,7 +248,8 @@ async def generate_career_docs(req: GenerateRequest):
             + "\nGenerate the complete document now in Markdown format."
         )
 
-        content, provenance = await ai_text(prompt, "career_generator")
+        content, provenance = await ai_text(prompt, "career_generator",
+        user_text=person_said(req.instructions))
         results.append({
             "output_id": uuid.uuid4().hex[:10],
             "output_type": output_type,
@@ -345,7 +346,8 @@ async def job_search(req: JobSearchRequest):
         + f"Output exactly {limit} JSON objects, one per line. No other text."
     )
 
-    raw, provenance = await ai_text(prompt, "career_job_search")
+    raw, provenance = await ai_text(prompt, "career_job_search",
+        user_text=person_said(req.query, req.instructions))
 
     # W574 (M1 R5.1) — THE PROMPT'S OWN FIELD TEMPLATE CAME BACK AS A JOB LISTING. The deterministic
     # floor echoes the template line above ({"title": "...", "company": "...", …}) and this parser

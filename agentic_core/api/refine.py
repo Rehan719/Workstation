@@ -16,7 +16,7 @@ import uuid
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from agentic_core.api._ai_provenance import ai_text
+from agentic_core.api._ai_provenance import ai_text, person_said
 
 router = APIRouter(prefix="/api/v1", tags=["refine"])
 
@@ -41,7 +41,8 @@ async def refine(req: RefineRequest):
         f"Refinement instruction:\n{req.instruction}\n\n"
         f"Current draft:\n{req.previous}"
     )
-    refined, provenance = await ai_text(prompt, "refiner")
+    refined, provenance = await ai_text(prompt, "refiner",
+        user_text=person_said(req.instruction))
     # §3A (W336) — DRAFT-PRESERVING floor: the deterministic floor cannot genuinely rewrite a
     # draft, and the audit proved its output DISCARDED the user's work entirely. When the floor
     # serves, the user's draft is returned intact with the floor's structured additions appended

@@ -187,7 +187,8 @@ _REGISTRY: List[Dict[str, Any]] = [
        "Signal routing, reflex arcs, arousal state — the organism's live event field. When composed, "
        "fires a real cognitive signal for the objective + reads the live arousal.",
        ["signal routing", "reflex arcs", "arousal state"], {},
-       "/api/v1/organism/nervous/status", ["governance", "evolution"], biomimetic=True),
+       "/api/v1/organism/nervous/status", ["governance", "evolution"], biomimetic=True,
+       methods=("GET",)),   # W640 — it declared POST by default; the application serves this path on GET
     _R("immune", "Immune System", "organism_system", "biomimetic",
        "Error-rate ring buffer → live health score + threat level — the organism's defence. When "
        "composed, contributes the genuine current immune reading.",
@@ -211,7 +212,8 @@ _REGISTRY: List[Dict[str, Any]] = [
     _R("genome", "Genome Registry", "organism_system", "biomimetic",
        "3-layer epigenetic memory encoding VSB DNA and acquired traits.",
        ["DNA encoding", "epigenetic memory", "trait inheritance"], {"trait": "str"},
-       "/api/v1/organism/genome", ["design", "delivery", "evolution"], biomimetic=True),   # W324 — the genome's REAL route
+       "/api/v1/organism/genome", ["design", "delivery", "evolution"], biomimetic=True,
+       methods=("GET",)),   # W324 — the genome's REAL route · W640 — and its real method (it declared POST)
 
     # Enterprise / org layer
     _R("vsb_spawn", "VSB Spawn Pipeline", "enterprise_org", "spawner",
@@ -1177,6 +1179,13 @@ async def run_composition(cid: str, req: RunCompositionRequest,
     if not comp:
         raise HTTPException(status_code=404, detail=f"Composition {cid} not found.")
     _require_design_access(comp, user, "Composition", cid)   # §14 (W324)
+    #  W640 (P3.31) — THE CEILING IS ENFORCED BEFORE ANYTHING RUNS. A run had a per-call timeout and no bound
+    #  on how many resources it would attempt.
+    from agentic_core.api.instrument_cell import MAX_STAGES as _max_stages, MAX_STAGES_BASIS as _max_basis
+    if len(comp.get("resources", [])) > _max_stages:
+        raise HTTPException(status_code=422, detail=(
+            f"this composition holds {len(comp.get('resources', []))} resources and a run attempts at most "
+            f"{_max_stages} ({_max_basis}). Nothing was run."))
     # W273 — the simulation verdict is HONEST at run time, never silent and never a hard wall:
     # both signals (the declared-usage-area check and the §10 QMS simulation — each honest but
     # conservative against real composition practice: the catalogue's declared areas are narrower
@@ -1240,7 +1249,8 @@ async def run_composition(cid: str, req: RunCompositionRequest,
         return {"composition_id": cid, "refused": True,
                 "final": f"[CONSTITUTIONAL REFUSAL] {_halt.get('refused_reason')}", "governance_checkpoint": _halt}
     res = await orchestrator.swarm("composition-run", stages, context=objective,
-                                   prefer_external=req.prefer_external, timeout=req.timeout)
+                                   prefer_external=req.prefer_external, timeout=req.timeout,
+                                   user_text=(req.objective or None))   # W640 - the objective the person typed
     _gov_checkpoint = console_post_gate("composition-run", str(res.get("final") or ""))
     # §10/§8 — the combined run is gated by the living QMS + document-controlled under the QMS
     qa = await assure_delivery(res.get("final", ""), [r["name"] for r in comp["resources"]],
@@ -1338,6 +1348,33 @@ async def run_composition(cid: str, req: RunCompositionRequest,
         if rr is not None:
             rr["duration_ms"] = int((time.time() - _r0) * 1000)
             real_runs.append(rr)
+            #  W640 (P3.31 clause 6; OWNER ruled 2026-10-10: "yes, once, for resources that only read or
+            #  compose; never for one that writes") — ONE DECLARED ALTERNATIVE, ONCE. Only a STATUS READ
+            #  qualifies: it is the one kind the registry itself establishes as interchangeable (the same
+            #  declared endpoint) and the one that persists nothing. The attempt is recorded on the resource
+            #  that failed AND as its own row, so neither the history nor a counter can read the stand-in as
+            #  the original having run. A stand-in that fails is not itself replaced.
+            if rr.get("outcome") in ("raised", "no_calls_ran") and rr.get("kind") == "status_read" \
+                    and r["id"] not in _READ_SIDE_EFFECTS:
+                from agentic_core.api.instrument_cell import equivalents as _equivalents
+                _in_run = {x["id"] for x in comp.get("resources", [])}
+                _alts = [a for a in _equivalents(r["id"]) if a not in _in_run and a not in _READ_SIDE_EFFECTS]
+                if _alts:
+                    _a0 = time.time()
+                    _alt = await _run_real_resource(_alts[0], {}, objective, domain)
+                    if _alt is not None:
+                        _alt["duration_ms"] = int((time.time() - _a0) * 1000)
+                        _alt["alternative_for"] = r["id"]
+                        real_runs.append(_alt)
+                    rr["alternative"] = {
+                        "tried": _alts[0], "attempts": 1,
+                        "outcome": (_alt or {}).get("outcome") or "returned nothing",
+                        "because": f"{r['id']} {rr.get('outcome_phrase')}",
+                        "basis": ("a declared equivalent (the same endpoint, a status read) was tried once, "
+                                  "as the Owner ruled on 2026-10-10; nothing further is tried")}
+                else:
+                    rr["alternative"] = {"tried": None, "attempts": 0,
+                                         "basis": "no declared equivalent outside this composition; nothing was tried"}
 
     # §7×§6 (W274) — per-resource outcomes feed the learning/selection loop: every REAL facility
     # run this composition executed accrues its own operational-excellence row (fabric:<resource>),
@@ -1419,6 +1456,10 @@ async def run_composition(cid: str, req: RunCompositionRequest,
                                 "outcome": x.get("outcome") or _resource_outcome(x["resource"], x),
                                 "outcome_phrase": x.get("outcome_phrase"),
                                 "error": x.get("error"),
+                                #  W640 - a stand-in is filed AS a stand-in, and the failure it stood in for
+                                #  carries what was tried: the history can never read one as the other
+                                **({"alternative": x["alternative"]} if x.get("alternative") else {}),
+                                **({"alternative_for": x["alternative_for"]} if x.get("alternative_for") else {}),
                                 "duration_ms": x.get("duration_ms")} for x in real_runs],
             "org_cascade_run_id": (org_cascade or {}).get("run_id"),
             "served_by": _served, "any_external": bool(res.get("any_external")),

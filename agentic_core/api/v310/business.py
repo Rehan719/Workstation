@@ -37,7 +37,7 @@ async def generate_business_plan(req: PlanRequest) -> Dict[str, Any]:
     )
 
     # W506 (P2.2) - mounted at /api/v310; converted, not retired.
-    _br = await gateway.query_meta(prompt, agent="business_planner", augment=False)
+    _br = await gateway.query_meta(prompt, agent="business_planner", augment=False, user_text=(chr(10).join(x for x in (req.description, req.target_market) if isinstance(x, str) and x.strip()) or None))
     raw = _br.get("output", "")
 
     try:

@@ -541,6 +541,97 @@ async def get_ayah(surah_number: int, ayah_number: int, edition: str = "quran-ut
     }
 
 
+# ── A sourced translation of the meanings (Owner ruling 2026-10-09, late) ─────────────────────
+#  W640 — THE OWNER RULED THAT ONE TRANSLATION EDITION MAY BE SERVED AND DELEGATED THE CHOICE: "free, most
+#  authentic, trusted, reliable". The choice is recorded HERE with the basis it was made on, so it can be
+#  read, challenged and replaced; it is the Owner's to change, never a round's to widen.
+#
+#  A SEPARATE ALLOWLIST, NOT A WIDER ONE. `_ALLOWED_EDITIONS` holds editions of the Arabic text, and every
+#  route that takes it returns `text_arabic`. A translation is a different kind of thing - a person's
+#  rendering of the meanings - so it has its own table, its own route and its own field name, and can never
+#  arrive in a field a reader takes for the Qur'an.
+#
+#  FETCHED, NEVER COMPOSED. No model is on this path. With the source unreachable and nothing cached the
+#  route says so; it does not approximate.
+_TRANSLATION_EDITIONS: dict[str, dict] = {
+    "en.pickthall": {
+        "language": "English",
+        "translator": "Mohammed Marmaduke Pickthall",
+        "work": "The Meaning of the Glorious Koran",
+        "first_published": 1930,
+        "licence_basis": (
+            "public domain: the translator died in 1936, so the work left copyright in life-plus-70 "
+            "countries at the end of 2006, and a work first published in the United States in 1930 entered "
+            "the public domain there on 1 January 2026. This is the platform's reading of the published "
+            "terms, not legal advice, and it covers the verse text only - not any later edition's notes."),
+        "register_note": ("written in 1930 in a deliberately archaic English (thee, thou, hath); a reader "
+                          "may find a modern translation easier, and none is served here because the ones "
+                          "considered are in copyright"),
+    },
+}
+_TRANSLATION_LABEL = ("a translation of the meanings by a named translator - not the Qur'an, which is the "
+                      "Arabic. Translations differ, and none is authoritative; for a ruling or a close "
+                      "reading consult qualified scholarship and the Arabic.")
+
+
+@router.get("/translation/editions")
+async def translation_editions():
+    """The translation editions this deployment serves, each with the basis it was chosen on."""
+    return {"editions": [{"edition": k, **v} for k, v in sorted(_TRANSLATION_EDITIONS.items())],
+            "chosen_by": ("delegated by the Owner on 2026-10-09 (free, most authentic, trusted, reliable); "
+                          "the Owner may replace it"),
+            "source": "alquran.cloud", "label": _TRANSLATION_LABEL}
+
+
+@router.get("/translation/{surah_number}/{ayah_number}")
+async def get_ayah_translation(surah_number: int, ayah_number: int, edition: str = "en.pickthall"):
+    """One ayah's translation of the meanings, FETCHED from alquran.cloud. Never AI-generated."""
+    if not 1 <= surah_number <= 114:
+        raise HTTPException(status_code=400, detail="Surah number must be 1-114.")
+    _count = _AYAH_COUNTS[surah_number]
+    if ayah_number < 1 or ayah_number > _count:
+        raise HTTPException(status_code=422, detail=(
+            f"surah {surah_number} has {_count} ayaat, so there is no ayah {ayah_number} to translate"))
+    known = _TRANSLATION_EDITIONS.get(edition)
+    if known is None:
+        raise HTTPException(status_code=422, detail=(
+            f"translation edition must be one of {sorted(_TRANSLATION_EDITIONS)}. Others are not served: "
+            f"an edition is added only on a stated licence basis, by the Owner's decision."))
+    ref = f"{surah_number}:{ayah_number}"
+    _key = f"translation_{surah_number}_{ayah_number}_{edition}"
+    cached = _cache_read(_key)
+    if cached:
+        data, fetched_at = cached["data"], cached["fetched_at"]
+    else:
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(f"{_QURAN_API}/ayah/{ref}/{edition}")
+                resp.raise_for_status()
+                data = resp.json()
+        except Exception as e:
+            raise HTTPException(status_code=503, detail=(
+                f"the translation source (alquran.cloud) is unavailable and this ayah is not cached: {e}. "
+                f"Nothing was composed in its place."))
+        _served = ((data.get("data") or {}).get("edition") or {}).get("identifier")
+        if _served != edition or not str((data.get("data") or {}).get("text") or "").strip():
+            #  the source answered with something other than the edition asked for: not cached, not shown
+            raise HTTPException(status_code=502, detail=(
+                f"the source returned edition {_served!r} where {edition!r} was requested, or no text. "
+                f"It is not shown under a name it does not carry."))
+        _cache_write(_key, data)
+        fetched_at = None
+    return {
+        "ref": ref,
+        "translation_text": str((data.get("data") or {}).get("text") or ""),
+        "is_quran_text": False,
+        "label": _TRANSLATION_LABEL,
+        "edition": edition,
+        **known,
+        "source": "alquran.cloud" if fetched_at is None else f"alquran.cloud (cached {fetched_at})",
+        "generated_by_ai": False,
+    }
+
+
 # ── Hifz (Memorisation) — SM-2 ────────────────────────────────────────────────
 
 class HifzScheduleRequest(BaseModel):
@@ -785,7 +876,7 @@ async def tajweed_lesson(req: TajweedLessonRequest):
     )
     # W439 — provenance travels with faith content: gateway.query dropped served_by, so a
     # deterministic-floor scaffold could be presented as a lesson with nothing telling the learner
-    meta = await gateway.query_meta(prompt, agent="tajweed_lesson", augment=False)
+    meta = await gateway.query_meta(prompt, agent="tajweed_lesson", augment=False, user_text=(req.rule_name or None))
     lesson = meta.get("output") or ""
     served_by = meta.get("served_by", "native")
     floor_served = served_by == "native"
@@ -1002,7 +1093,7 @@ async def qep_curriculum(req: QepCurriculumRequest):
         f"State a scholarly position only where it is agreed; where schools differ, say that they differ "
         f"and name them rather than choosing."
     )
-    meta = await gateway.query_meta(prompt, agent="qep_curriculum", augment=False)
+    meta = await gateway.query_meta(prompt, agent="qep_curriculum", augment=False, user_text=(req.subject or None))
     body = meta.get("output") or ""
     served_by = meta.get("served_by", "native")
 

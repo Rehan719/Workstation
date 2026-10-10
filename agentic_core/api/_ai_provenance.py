@@ -63,9 +63,26 @@ def request_language() -> str:
         return ""
 
 
+def person_said(*parts) -> str | None:
+    """The person's OWN words for one call, from the request fields the handler names - the statement the
+    native floor needs before it attributes a subject or a term to anybody (W640).
+
+    Each handler names the fields; nothing is inferred here. Strings and lists of strings are joined; anything
+    else is ignored rather than stringified, because the repr of a dict is not something a person wrote.
+    Returns None when nothing was said, and None is what makes the floor withhold."""
+    out: list[str] = []
+    for part in parts:
+        for item in (part if isinstance(part, (list, tuple)) else [part]):
+            if isinstance(item, str) and item.strip():
+                out.append(" ".join(item.split()))
+    #  one field per LINE: the floor builds phrases within a line and never across two fields
+    return chr(10).join(out) if out else None
+
+
 async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
                   owner_id: str | None = None, augment: bool = False,
-                  realm: str = "", domain: str = "") -> Tuple[str, Dict[str, Any]]:
+                  realm: str = "", domain: str = "",
+                  user_text: str | None = None) -> Tuple[str, Dict[str, Any]]:
     """Return (text, provenance) where provenance = {posture, served_by, is_external}.
 
     Every call is recorded into the operational-excellence learning loop (best-effort, non-critical)
@@ -95,7 +112,7 @@ async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
     t0 = time.monotonic()
     owner_id = owner_id or request_user() or None     # W619 (FU-501) — the authenticated caller, when there is one
     res = await gateway.query_meta(prompt, agent=agent, timeout=timeout,
-                                   owner_id=owner_id, augment=augment,
+                                   owner_id=owner_id, augment=augment, user_text=user_text,
                                    #  P3.6 clause (2) — the request's own language, so the output can be
                                    #  labelled when it is not delivered in it ("the defect is silent
                                    #  English"). One seam, so all six domain tools are covered at once.
