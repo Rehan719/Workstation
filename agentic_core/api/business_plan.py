@@ -203,6 +203,14 @@ def _phase_sort_key(timeline: str):
     return None
 
 
+#  W647 (FU-662, ledger v14 R6) - THE GATE SAYS WHERE IT APPLIES. Its refusals told a founder to set a KPI
+#  "before listing or exporting"; it is called from the two marketplace listing routes and from nowhere else,
+#  so a ship and a repository download went through with no KPI set. The sentence now states its real scope.
+#  Whether a ship SHOULD be gated on KPIs is a product decision nobody has taken; this is the wording only.
+_KPI_GATE_SCOPE = ("This gate applies to a MARKETPLACE LISTING only: shipping the entity's repository and "
+                   "public surfaces, and downloading its archive, are not gated by it.")
+
+
 def kpi_release_gate(vsb_id: str) -> dict:
     """§17.5 (R5) — may this entity RELEASE? Shape-complete, and it names what is missing.
 
@@ -229,7 +237,7 @@ def kpi_release_gate(vsb_id: str) -> dict:
         return {"ok": False, "reason": "no_objectives", "objectives": 0, "missing": [],
                 "detail": ("this entity has no business-plan objectives recorded, so there is nothing to "
                            "measure a release against yet. Add an objective with a KPI on the Business "
-                           "Plan before listing or exporting.")}
+                           "Plan before listing. " + _KPI_GATE_SCOPE)}
     #  W638 (FU-600) — THE PLATFORM'S OWN "NOT SET YET" TEXT IS NOT A KPI. The Chief-instruction fallback
     #  writes this placeholder into the KPI position, and a non-empty test read it as a KPI: the gate released
     #  on a sentence saying no KPI existed. Still a presence test for anything a person wrote.
@@ -241,7 +249,7 @@ def kpi_release_gate(vsb_id: str) -> dict:
                 "detail": ("§17.5 gates release on measurable objectives. "
                            + f"{len(missing)} of {len(objectives)} objective(s) carry no KPI: "
                            + "; ".join(m["title"] or m["id"] for m in missing)
-                           + ". Set a KPI on each before listing or exporting."
+                           + ". Set a KPI on each before listing. " + _KPI_GATE_SCOPE
                            + (" These three are the objectives this platform SEEDS at establishment "
                               "(\"Validate the concept\", \"Deliver the design\", \"Launch to "
                               "market\") and it does not invent KPIs for them - inventing a measure "

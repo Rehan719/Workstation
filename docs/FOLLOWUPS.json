@@ -12091,11 +12091,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.35",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W647",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v14 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "THE HALF THAT NEEDS NO OWNER DECISION. Two designed behaviours already existed: the journey VETOES (registers nothing) and /genesis/establish REGISTERS AND HOLDS (a first screen at birth, then the economy refuses to operate the entity). The spawn route and the Studio's doors did neither. The shared enrichment writer now runs the first screen for every door that is not Genesis, so a refused subject is recorded as failed and its economy is held. NOT DONE, and put to the Owner in a separate row: whether these doors should REFUSE outright as the journey does, and whether ship and the public surfaces should refuse while an entity's latest screen is 'fail'."
     },
     {
       "id": "FU-631",
@@ -12735,11 +12738,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.35",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W647",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v14 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The gate's refusals state that it applies to a marketplace listing only and no longer say 'or exporting'. A guard finds the gate's callers by the call and goes red if it is ever called from anywhere else, so the sentence cannot go stale. Whether a ship should be gated on KPIs is a product decision nobody has taken."
     },
     {
       "id": "FU-663",
@@ -13181,6 +13187,24 @@
       "note": "",
       "slot_source": "an invisible shortfall left by a tier-1 row's fix",
       "tier": 2
+    },
+    {
+      "id": "FU-687",
+      "title": "OWNER: should a subject the §11 screen fails be REFUSED at every door, and should a failed entity be unable to ship",
+      "why": "Today the journey vetoes a failed subject and registers nothing, while /genesis/establish, /vsb/spawn and the Studio register the entity and hold its economy (since W647 all three screen at birth). A held entity can still be named, given a website and shipped: the audit shipped an online casino's repository with compliance 'fail' on four surfaces. Two decisions: (1) refuse at every door, or keep register-and-hold; (2) refuse ship and the public surfaces while the latest screen is 'fail'. RECOMMENDATION put to the Owner 2026-10-10: keep register-and-hold at the doors (the screen is a word list and cannot assess an enterprise; a hold is reversible and visible, a refusal on a mention is not), and REFUSE ship and the public surfaces while the screen is 'fail', so nothing the screen fails leaves the platform until a person has read it.",
+      "source": "W647, the Owner-decision half of FU-630",
+      "found": "2026-10-10",
+      "files": [
+        "agentic_core/api/vsb.py"
+      ],
+      "severity": "high",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "an Owner decision on what the platform refuses; no build work until it is taken",
+      "tier": 1
     }
   ],
   "routes": [

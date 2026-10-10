@@ -49601,3 +49601,105 @@ def test_w646_a_label_states_the_entitys_status_and_synthesis_says_only_what_the
     monkeypatch.setattr(_syn.gateway, "stream_meta", _sspy)
     assert client.post("/api/v1/synthesis/stream", json={"output_type": "report", "instructions": _said, "content_ids": []}).status_code == 200
     assert _sseen == [_said], _sseen
+
+
+def test_w647_every_door_that_creates_an_entity_runs_its_first_screen(client, monkeypatch):
+    """FU-630 (ledger v14 R2), the half that needs no Owner decision.
+
+    THE PROPERTY: an entity created through the spawn route or the Studio is screened at birth, exactly as one
+    created through /genesis/establish is - so a subject the §11 screen fails is recorded as failed and its
+    economy is held, instead of the entity sitting on the roster 'never screened' and operating. A screen that
+    cannot run is recorded as that. And Genesis, which runs its own first screen, does not run it twice.
+    """
+    import json, re
+    from agentic_core.api.compliance import screen_compliance
+    from agentic_core.economy import living_vsbs as _lv
+    import agentic_core.organism.heartbeat as _hbm
+
+    _bad = next((t for t in ("An online casino with interest-bearing loans for members",
+                             "A lending desk built on riba with casino gambling revenue")
+                 if screen_compliance(t)["overall"] == "fail"), None)
+    assert _bad, "no candidate subject is refused by the screen, so the legs below would be vacuous"
+    _clean = "A village bakery cooperative selling bread to the local primary school"
+    assert screen_compliance(_clean)["overall"] != "fail"
+
+    def _spawn(challenge):
+        _r = client.post("/api/v1/vsb/spawn", json={"challenge": challenge, "name": "W647 Probe", "domain": "commerce"})
+        assert _r.status_code == 200, _r.text[:300]
+        _ids = re.findall(r"vsb-[0-9a-f]{10}", _r.text)
+        assert _ids, _r.text[:300]
+        return _ids[0]
+
+    def _entity(_id):
+        _e = client.get(f"/api/v1/vsb/{_id}")
+        assert _e.status_code == 200, _e.text[:200]
+        return _e.json()
+
+    # (a) THE SPAWN DOOR, refused subject: screened at birth, recorded as failed, and its economy HELD
+    _vid = _spawn(_bad)
+    _fs = _entity(_vid).get("first_screen") or {}
+    assert _fs.get("overall") == "fail", (
+        "an entity spawned from a subject the screen fails carries no failed first screen", _fs)
+    _op = _lv.operate_vsb(_vid)
+    assert _op.get("held") == "compliance_fail_hold", (
+        "a spawned entity whose first screen failed is operated as an ordinary enterprise", _op)
+    _row = next(v for v in (_lv.list_living().get("living_vsbs") or []) if v.get("vsb_id") == _vid)
+    assert (_row.get("compliance") or {}).get("never_screened") in (False, None) or _row.get("last_hold"), _row
+
+    # (b) THE SPAWN DOOR, clean subject: screened too, and not failed
+    _cid = _spawn(_clean)
+    _cfs = _entity(_cid).get("first_screen") or {}
+    assert _cfs and _cfs.get("overall") in ("pass", "review"), ("a clean spawn carries no first screen", _cfs)
+    assert _lv.operate_vsb(_cid).get("held") != "compliance_fail_hold"
+
+    # (c) THE STUDIO DOOR
+    _sr = client.post("/api/v1/studio/vsb/spawn", json={"project_id": "w647-project", "challenge": _bad,
+                                                         "solution_name": "W647 Studio Probe", "domain": "commerce"})
+    #  asserted, not skipped: a door this leg cannot reach is a leg that proves nothing
+    assert _sr.status_code == 200, (_sr.status_code, _sr.text[:300])
+    _sid = (re.findall(r"vsb-[0-9a-f]{8,10}", json.dumps(_sr.json())) or [None])[0]      # the Studio mints 8 hex
+    assert _sid, _sr.json()
+    _sfs = _entity(_sid).get("first_screen")
+    assert (_sfs or {}).get("overall") == "fail", (
+        "the Studio door registers an entity from a refused subject without screening it", _sfs)
+
+    # (d) A SCREEN THAT CANNOT RUN is recorded as that, and the entity is still created
+    def _boom(vsb_id):
+        raise RuntimeError("driven")
+    monkeypatch.setattr(_hbm, "screen_living_vsb", _boom)
+    _eid = _spawn(_clean)
+    _efs = _entity(_eid).get("first_screen") or {}
+    assert "error" in _efs and "overall" not in _efs, ("a screen that raised was recorded as a reading", _efs)
+    monkeypatch.undo()
+
+    # (e) GENESIS RUNS ITS OWN FIRST SCREEN, ONCE: the shared writer is told not to
+    _calls = []
+    _real = _hbm.screen_living_vsb
+
+    def _count(vsb_id):
+        _calls.append(vsb_id)
+        return _real(vsb_id)
+    monkeypatch.setattr(_hbm, "screen_living_vsb", _count)
+    _g = client.post("/api/v1/genesis/establish/stream", json={"problem": _clean, "name": "W647 Genesis Probe", "ship_output": False})
+    assert _g.status_code == 200, (_g.status_code, _g.text[:300])
+    _gid = (re.findall(r"vsb-[0-9a-f]{10}", _g.text) or [None])[0]
+    assert _gid and _calls.count(_gid) == 1, ("Genesis screened its newborn twice, or not at all", _calls)
+
+    # ── FU-662: THE KPI GATE SAYS WHERE IT APPLIES, and the sentence is tied to where it is called ──────
+    import pathlib as _pl647
+    import agentic_core.api.business_plan as _bp647
+    _g647 = _bp647.kpi_release_gate("vsb-w647-no-such-entity")
+    _refusals647 = [_bp647.kpi_release_gate(_vid), _bp647.kpi_release_gate(_cid)]
+    for _gr in _refusals647:
+        if _gr.get("ok") is False and _gr.get("reason") in ("no_objectives", "kpi_not_set"):
+            assert "MARKETPLACE LISTING only" in _gr["detail"] and "or exporting" not in _gr["detail"], _gr["detail"]
+    assert any(g.get("reason") in ("no_objectives", "kpi_not_set") for g in _refusals647), (
+        "neither probe entity was refused for its KPIs, so the wording leg read nothing", _refusals647)
+    #  the scope sentence is true only while the gate is called from the marketplace alone: found by the CALL
+    _root647 = _pl647.Path(__file__).resolve().parents[1] / "agentic_core"
+    _callers647 = sorted(p.relative_to(_root647).as_posix() for p in _root647.rglob("*.py")
+                         if "_archive" not in p.parts and p.name != "business_plan.py"
+                         and "kpi_release_gate" in p.read_text(encoding="utf-8", errors="replace"))
+    assert _callers647 == ["api/marketplace.py"], (
+        "the KPI gate is now called from somewhere other than the marketplace - its refusal says it applies "
+        "to a marketplace listing only; reword it", _callers647)

@@ -2253,7 +2253,7 @@ async def get_vsb_genome(vsb_id: str, user: dict | None = Depends(get_current_us
 
 def enrich_vsb_entity(entity: dict, *, owner_id: str = "default", problem: str = "",
                       domain: str = "enterprise", entity_type: str = "waqf_ltd_hybrid",
-                      parent_vsb: str = "") -> dict:
+                      parent_vsb: str = "", first_screen: bool = True) -> dict:
     """§3.3 invariant (Living Plan) — EVERY generated VSB carries its own Board + a Chief that is the
     digital twin of its owner, a living economic metabolism in its selected legal/economic form,
     registration as a living entity the organism autonomously tends (heartbeat-paced virtual economy),
@@ -2338,6 +2338,26 @@ def enrich_vsb_entity(entity: dict, *, owner_id: str = "default", problem: str =
         entity["business_plan_scope"] = vsb_id
     except Exception:
         pass
+    #  W647 (FU-630, ledger v14 R2) - EVERY DOOR RUNS THE FIRST §11 SCREEN. /genesis/establish screens its
+    #  newborn at birth, and a failed screen then holds the entity's economy. The spawn route and the Studio's
+    #  doors - the three callers of this function that are not Genesis - registered an entity and never
+    #  screened it: the roster read `never_screened` and nothing was held, so a subject the journey vetoes
+    #  operated as an ordinary enterprise. The screen is the same function the heartbeat rotates. It runs
+    #  after registration (it reads the roster) and its result rides the entity record; a screen that cannot
+    #  run is recorded as that, never as a clean reading. Genesis passes first_screen=False because it runs
+    #  its own a few lines later, with the birth vitals.
+    if first_screen:
+        try:
+            from agentic_core.organism.heartbeat import screen_living_vsb
+            #  `vsb_id` is this function's own resolution of the id (the Studio's entities carry it as
+            #  entity_id): the first cut read entity["vsb_id"], found nothing for a Studio entity, and
+            #  recorded "not on the roster" for an entity that was - caught when the guard's Studio leg was
+            #  made to assert instead of skip
+            _fs = screen_living_vsb(str(vsb_id))
+            entity["first_screen"] = _fs if _fs is not None else {
+                "not_screened": "the entity is not on the living roster, so there was nothing to screen"}
+        except Exception as _exc:
+            entity["first_screen"] = {"error": f"{_exc.__class__.__name__}: {str(_exc)[:140]}"}
     return entity
 
 

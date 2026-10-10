@@ -1630,7 +1630,8 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
         }
         vsb_mod.enrich_vsb_entity(entity, owner_id=req.owner_id, problem=req.problem,
                                   domain=req.domain, entity_type=req.entity_type,
-                                  parent_vsb=getattr(req, 'parent_vsb', '') or '')
+                                  parent_vsb=getattr(req, 'parent_vsb', '') or '',
+                                  first_screen=False)     # W647 - this path runs its own, with the birth vitals
         # §4×§5 (W315) — SSE path plan PARITY: the same seeding core as the blocking path, so the
         # Chief's living Business Plan opens with the journey's concept + the §4.7 ops objective.
         _seed_plan_from_journey(vsb_id, name, req, entity)
