@@ -214,7 +214,10 @@ def _compose(plan: Dict[str, Any], layer: str) -> Dict[str, Any]:
 
         _stalled = [o for o in _open if _pct(o) == 0]
         _unknown = [o for o in _open if _pct(o) is None]
-        body = (f"Action position derived from the plan itself: {len(_open)} open objective(s), of which "
+        #  W661 (FU-710) - dated like the strategic sentence above: it can stand for seven days, and without
+        #  the time it was derived "0 open objective(s)" reads as a statement about now
+        body = (f"[as of {time.strftime('%Y-%m-%d %H:%M UTC', time.gmtime())}] "
+                f"Action position derived from the plan itself: {len(_open)} open objective(s), of which "
                 f"{len(_stalled)} record no progress at all"
                 #  an unreadable progress is named rather than folded into the stalled count
                 + (f", and {len(_unknown)} record a progress this module cannot read as a number"

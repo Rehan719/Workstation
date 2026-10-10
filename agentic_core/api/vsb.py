@@ -1758,6 +1758,40 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
         "action_plan": _action_plan_layer(_board, _act_refresh),
         "operational": operational,                                         # live snapshot
     }
+    #  W661 (ledger v15 FU-705, FU-710) - WHAT THE OWNER WROTE IS IN THE PACK, AND THE COUNTS ARE OF NOW. The two
+    #  layers above are assembled from the last APPLIED refresh; once the Owner edits a field the cadence only
+    #  proposes, so the derived sentence stays as it was before the edit. The plan is read here, once.
+    try:
+        from agentic_core.api import business_plan as _bp661
+        _plan661 = _bp661._load(vsb_id)
+        _oe661 = _plan661.get("owner_edits") if isinstance(_plan661.get("owner_edits"), dict) else {}
+        _objs661 = [o for o in (_plan661.get("objectives") or []) if isinstance(o, dict)]
+        _open661 = [o for o in _objs661 if str(o.get("status") or "") != "done"]
+        _written661 = {f: {"text": _plan661.get(f), "edited_at": _oe661.get(f)}
+                       for f in ("strategy", "concept", "vision", "mission", "executive_summary")
+                       if _oe661.get(f) and str(_plan661.get(f) or "").strip()}
+        _s661, _a661 = layers["strategic"], layers["action_plan"]
+        _s661["objectives_on_plan_now"] = len(_objs661)
+        _a661["open_objectives_now"] = len(_open661)
+        _a661["objectives_now_basis"] = (f"the plan holds {len(_open661)} open objective(s) as this pack was "
+                                         f"assembled; the sentence above is of the time it is dated")
+        if _written661:
+            _s661["owner_written"] = _written661
+            _ra661 = str(_s661.get("refresh_at") or "")
+            #  >= : the stamps are to the second, and an edit made in the same second as a refresh is not in it
+            _newer661 = sorted(f for f, v in _written661.items() if str(v["edited_at"]) >= _ra661)
+            _s661["holds"], _s661["present"] = "content", True
+            _s661["basis"] = (
+                f"THE OWNER WROTE {', '.join(sorted(_written661))} on this entity's plan; those words are in "
+                f"owner_written and are this layer's content. "
+                + ((f"The derived sentence beside them was composed at {_ra661 or 'an unrecorded time'}, BEFORE "
+                    f"the Owner's edit of {', '.join(_newer661)}; it is kept and is not the current position. ")
+                   if _newer661 else "")
+                + f"The plan holds {len(_objs661)} objective(s) now. " + str(_s661.get("basis") or ""))
+    except Exception as _e661:                    # noqa: BLE001 - the pack is still assembled, and says so
+        layers["strategic"]["owner_written_error"] = (
+            f"the entity's plan could not be read ({type(_e661).__name__}), so this layer does not show what "
+            f"the Owner wrote or the plan's current counts")
     # constitutional and operational are derived fresh from the entity on every pack, so they always
     # hold something - but they say so here rather than being present by KEY NAME, which is what the
     # old membership test did and what made the count unfalsifiable for two of the four.
@@ -2287,6 +2321,9 @@ class ReviewGatesRequest(BaseModel):
 
 
 class GateDecisionRequest(BaseModel):
+    #  W661 (ledger v15 FU-711) - STRICT: a `reviewer` sent with a decision used to be dropped without a word.
+    #  Who decided is stamped by the server from the principal, never taken from the request.
+    model_config = {"extra": "forbid"}
     decision: str          # approve | reject
     note: str = ""
 
@@ -2355,12 +2392,23 @@ async def decide_review_gate(vsb_id: str, stage: str, req: GateDecisionRequest, 
     rg = vsb.get("review_gates") or {"stages": [], "decisions": {}}
     if stage not in (rg.get("stages") or []):
         raise HTTPException(status_code=400, detail=f"Stage '{stage}' is not gated for this VSB.")
+    #  W661 (ledger v15 FU-711) - WHO DECIDED. The record carried no reviewer and the controlled document named
+    #  its author 'human-reviewer' whoever - or whatever - had called. The principal is stamped when there is
+    #  one; when there is none the record says so, and does not claim a human it cannot identify.
+    from agentic_core.auth.core import auth_enabled as _auth_on661
+    _principal661 = (user or {}).get("username") if isinstance(user, dict) else None
+    _decided_by = (_principal661 if (_auth_on661() and _principal661) else
+                   "not identified (single-user mode: authentication is off, so there is no principal to stamp)")
     rec = {"decision": req.decision, "note": req.note,
-           "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+           "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+           "decided_by": _decided_by,
+           "decided_by_source": ("the authenticated principal" if (_auth_on661() and _principal661) else
+                                 "none - the caller was not identified, and is not assumed to be a person")}
     rg.setdefault("decisions", {})[stage] = rec
     vsb["review_gates"] = rg
     from agentic_core.vbs.registry import qms
-    dcs_hash = await qms.control_document(f"vsb_review_decision:{vsb_id}:{stage}", rec, "human-reviewer")
+    dcs_hash = await qms.control_document(f"vsb_review_decision:{vsb_id}:{stage}", rec,
+                                          _principal661 if (_auth_on661() and _principal661) else "unidentified-caller")
     _rederive(vsb)   # W614 — a decision moves the gate, so the status read from it is derived again
     _save_vsb(vsb)
     return {"vsb_id": vsb_id, **_gate_status(rg, stage), "dcs_hash": dcs_hash,

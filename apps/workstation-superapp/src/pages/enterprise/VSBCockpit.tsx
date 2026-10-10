@@ -756,7 +756,7 @@ export const VSBCockpit: React.FC = () => {
               <Card className="p-6 space-y-3 border-highlight/30 bg-highlight/5">
                 <h4 className="text-[10px] font-black uppercase tracking-widest text-highlight flex items-center gap-2"><Crown size={14} /> Instruct this entity's Chief</h4>
                 <textarea value={chiefText} onChange={e => setChiefText(e.target.value)} rows={2}
-                  placeholder="Give the Chief an instruction — it lands as objectives on THIS entity's living plan and cascades to its AI CEO."
+                  placeholder="Give the Chief an instruction — it is recorded on THIS entity's living plan and passed to its AI CEO. The result says what came back."
                   className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-highlight/50 resize-none" />
                 <Button type="button" onClick={instructChief} disabled={chiefBusy || !chiefText.trim()}
                   className="bg-highlight text-sovereign text-xs flex items-center gap-2">
@@ -771,10 +771,19 @@ export const VSBCockpit: React.FC = () => {
                     ai_provenance {'{'}served_by: {'{'}native: 2{'}'}{'}'} and the panel rendered none of it. */}
                 {(() => { const b = provenanceMapBadge(chiefResult.ai_provenance?.served_by, chiefResult.ai_provenance?.any_external);
                   return <span data-testid="chief-directive-provenance" className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
-                <p className="text-slate-300 font-bold">{chiefResult.objectives_added ?? 0} objective(s) landed on this entity's plan · {/* W505 (FU-158/FU-195) — what the gate screened, and no emerald: it compares the declared intent against a list and never reads the directive. */}
+                <p className="text-slate-300 font-bold">{chiefResult.objectives_fallback === true
+                  ? <span data-testid="cockpit-objectives-fallback">your instruction was recorded as ONE objective in place of a plan</span>
+                  : <>{chiefResult.objectives_added ?? 0} objective(s) landed on this entity's plan</>} · {/* W505 (FU-158/FU-195) — what the gate screened, and no emerald: it compares the declared intent against a list and never reads the directive. */}
                   intent gate: <span className={chiefResult.governance?.status === 'allowed' ? 'text-slate-400' : chiefResult.governance?.status ? 'text-amber-400' : 'text-slate-500'} title={chiefResult.governance?.basis ?? chiefResult.governance?.scope ?? 'the gaas.v5 pre-gate screens the declared intent, not the content'}>{chiefResult.governance?.status ?? '—'}{chiefResult.governance?.content_screened === false || chiefResult.governance?.covers_directive_content === false ? ' (intent only)' : ''}</span></p>
                 {/* W490 — W488 gave the API a reason when the directive's objectives could NOT be
                     added (an unreadable plan); the reached page showed only the bare 0. */}
+                {/* W661 (FU-707) - the reasons the Board page shows, here too: what the directive and the plan ARE */}
+                {typeof chiefResult.directive_reason === 'string' && chiefResult.directive_reason && (
+                  <p data-testid="cockpit-directive-reason" className="text-[10px] font-bold text-amber-400">{chiefResult.directive_reason}</p>
+                )}
+                {typeof chiefResult.ceo_plan_reason === 'string' && chiefResult.ceo_plan_reason && (
+                  <p data-testid="cockpit-ceo-plan-reason" className="text-[10px] font-bold text-amber-400">{chiefResult.ceo_plan_reason}</p>
+                )}
                 {chiefResult.objectives_not_added_reason && (
                   <p data-testid="objectives-not-added" className="text-[10px] font-bold text-amber-400">
                     {chiefResult.objectives_not_added_reason}

@@ -303,7 +303,7 @@ def founder_model(scope: "str | None" = None, owner: "str | None" = None) -> Dic
     }
 
 
-def founder_profile() -> str:
+def founder_profile(scope: "str | None" = None, owner: "str | None" = None) -> str:
     """§5 (W281) — the Chief's grounding text, DERIVED from `founder_model()` (P3.4, W587).
 
     This used to open "FOUNDER MODEL (the Owner's lived record — reason AS this person)" unconditionally,
@@ -313,7 +313,10 @@ def founder_profile() -> str:
     The signature and return type are UNCHANGED on purpose: board.py, business_plan.py and swarm.py all
     call this, and changing what it returns would break them. Only its content moved.
     """
-    m = founder_model()
+    #  W661 (ledger v15 FU-708) - THE SCOPE THE CHIEF IS ACTING FOR. This called founder_model() bare, so the
+    #  text a VSB's Chief was prompted with carried every scope's instructions while the page showing that
+    #  Chief's model counted only its own.
+    m = founder_model(scope, owner)
     head = ("FOUNDER MODEL (the Owner's lived record — reason AS this person)"
             if m["is_modelled_twin"] else
             "CHIEF AS A ROLE (no lived record of this Owner exists — represent the platform's standing "
@@ -356,7 +359,11 @@ def _live_intelligence(scope: str) -> str:
     except Exception:
         pass
     try:
-        prior = _load()[-2:]
+        #  W661 (FU-708) - THIS SCOPE'S prior directives. The last two of EVERY scope were listed here, so the
+        #  second place the Chief's prompt is built handed an entity's Chief the apex's and other entities'
+        #  instructions after the founder profile above had stopped doing so. Found by the guard's own spy.
+        prior = [r for r in _load()
+                 if (r.get("scope") or r.get("business_plan_scope") or "workstation") == scope][-2:]
         for p in prior:
             lines.append(f"- Prior directive {p.get('directive_id', p.get('topic', '?'))}: "
                          f"{str(p.get('instruction') or p.get('topic') or '')[:100]}")
@@ -578,6 +585,7 @@ async def twin_directive_unprompted(scope: str = "workstation") -> Dict[str, Any
         "cascaded_to_ceo": bool(res.get("objectives_added")) or res.get("ceo_action_plan") not in (None, ""),
         "objectives_added": res.get("objectives_added"),
         "filed_as_fallback": bool(res.get("objectives_fallback")),      # W651 (FU-686)
+        "objectives_not_added_reason": res.get("objectives_not_added_reason"),   # W661 (FU-706) - e.g. already standing
         "governance": (res.get("governance") or {}).get("status"),
         "owner_inputs": m["owner_inputs"],
         "founder_model_basis": m["basis"],
@@ -589,7 +597,10 @@ async def twin_directive_unprompted(scope: str = "workstation") -> Dict[str, Any
                      "plan the AI CEO produced. " if res.get("objectives_fallback")
                      else "The AI CEO's plan yielded objectives and they were added to the living plan. "
                      if res.get("objectives_added")
-                     else "NO objective was added to the living plan. ")
+                     #  W661 (FU-706) - a zero with its reason: e.g. the instruction already stands on the plan
+                     else ("NO objective was added to the living plan"
+                           + (f": {res.get('objectives_not_added_reason')} "
+                              if res.get("objectives_not_added_reason") else ". ")))
                   + f"Built from {m['instructions']['count']} instruction(s) and "
                   f"{m['decisions']['count']} decision(s) of the Owner's"),
         "kind": "twin_directive_unprompted",
@@ -749,7 +760,7 @@ async def chief_instruct(req: ChiefInstruction, user: dict | None = Depends(get_
         f"actually stated, and say so when a question goes beyond it. "
         f"{_OWNER['fidelity_charter']}\n\n"
         f"The Owner's vision: {_OWNER['vision_summary']}"
-        f"{founder_profile()}"
+        f"{founder_profile(req.scope)}"
         f"{_live_intelligence(req.scope)}\n\n"
         f"The Owner's instruction:\n\"{req.instruction}\"\n\n"
         "Acting AS the Owner, produce a board-level directive that precisely realises their intent:\n"
@@ -835,8 +846,25 @@ async def chief_instruct(req: ChiefInstruction, user: dict | None = Depends(get_
                     f"{req.instruction[:110]} | (KPI to be set by the Board) |  | AI CEO",
                     extra={"directive_id": directive_id, "source": "chief_instruct_fallback"})
             plan = bp_mod._load(req.scope)
-            plan.setdefault("objectives", []).extend(new_objs)
-            bp_mod._save(plan)
+            #  W661 (ledger v15 FU-706) - THE SAME INSTRUCTION IS NOT FILED TWICE. The fallback objective is the
+            #  instruction itself; the unprompted path restates the Owner's last instruction on a later beat, so
+            #  the same sentence was filed again as a second, indistinguishable objective. Only the fallback is
+            #  de-duplicated, and only against an OPEN one: a plan's own steps are never dropped, and a finished
+            #  objective does not block a fresh instruction.
+            _standing = next((o for o in plan.setdefault("objectives", [])
+                              if o.get("source") == "chief_instruct_fallback"
+                              and str(o.get("status") or "planned") != "done"
+                              and any(o.get("title") == n.get("title") for n in new_objs
+                                      if n.get("source") == "chief_instruct_fallback")), None)
+            if _standing is not None:
+                new_objs = [n for n in new_objs if n.get("source") != "chief_instruct_fallback"]
+                objectives_not_added_reason = (
+                    f"this instruction already stands on the '{req.scope}' plan as open objective "
+                    f"{_standing.get('id')} (filed from directive {_standing.get('directive_id')}), so a second, "
+                    f"identical objective was NOT filed. The directive itself is recorded.")
+            if new_objs:
+                plan["objectives"].extend(new_objs)
+                bp_mod._save(plan)
             objectives_added = len(new_objs)
         except StoreUnavailable as e:
             objectives_added = 0
