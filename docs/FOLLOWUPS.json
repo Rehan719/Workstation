@@ -12010,11 +12010,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.35",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W650",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v14 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The floor no longer says it is acting as a role. The line now names the role the prompt asked for and says the floor takes none and that what follows is a frame, not that role's work. Every reader that strips the old line strips both openings, so no public page or carried context shows either. The Chief's grounding strips the engine's framing before its 240-character cut, which the longer line had pushed a directive out of."
     },
     {
       "id": "FU-627",
@@ -13215,11 +13218,14 @@
       "severity": "high",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W650",
       "note": "",
       "slot_source": "an Owner decision on what the platform refuses; no build work until it is taken",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "RULED by the Owner 2026-10-10 and built as ruled. Register-and-hold stays at the doors that create an entity. The website, web app, phone app and repository ship refuse (409) while the entity's latest screen is 'fail', naming the frameworks that failed and saying the screen is a word list that has not assessed the enterprise; the download of a body shipped earlier refuses the same way. A 'review' or never-screened entity is not refused. A history that cannot be read stops the ship as standing-unknown (503) and lifts nothing. Establishment says when its own birth ship was refused."
     }
   ],
   "routes": [

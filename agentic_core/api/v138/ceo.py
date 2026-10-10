@@ -366,7 +366,7 @@ def _cited(answer: str, facts: dict) -> dict:
     #  W635 (FU-580) - the engine's own banner and framing lines are not the directive: stripped before the test,
     #  or every floor answer 'names' every floor directive by repeating the same banner
     def _own(t: str) -> str:
-        return " ".join(l for l in t.splitlines() if l.strip() and not l.strip().startswith(("_[", "_Acting as", "_Composed for", "#"))).strip()
+        return " ".join(l for l in t.splitlines() if l.strip() and not l.strip().startswith(("_[", "_Acting as", "_Role the prompt asked for", "_Composed for", "#"))).strip()
     dirs = [_own(t) for t in dirs if _own(t)]
     cd = sum(1 for t in dirs if t[:40].lower() in low)
     co = sum(1 for t in objs if t.strip().lower() in low)
@@ -422,12 +422,22 @@ def _ceo_grounding(prompt: str, scope: str, owner_id: Optional[str]) -> tuple:
         facts["directives"] = len(rows)
         #  W627 (FU-526) - the texts handed in, kept so the answer can be MEASURED against them (popped
         #  before the facts leave the server; see _cited)
-        facts["_directive_texts"] = [str(r.get('chief_directive') or r.get('resolution') or r.get('instruction')
-                                         or r.get('topic') or '')[:240] for r in rows[-3:][::-1]]
+        #  W650 - THE 240 CHARACTERS ARE THE DIRECTIVE'S, NOT THE ENGINE'S FRAMING. A floor-served directive
+        #  opens with the engine's banner and its role line, and the cut was taken from the raw text: most of
+        #  the budget went on framing. When W650 made the role line say more, the content fell outside the
+        #  cut entirely (a guard caught it). The engine's own strip removes its banner and role line first.
+        def _directive_text(r) -> str:
+            raw = str(r.get('chief_directive') or r.get('resolution') or r.get('instruction') or r.get('topic') or '')
+            try:
+                from agentic_core.ai.native.engine import _strip_carried
+                raw = _strip_carried(raw).strip() or raw
+            except Exception:
+                pass
+            return raw[:240]
+        facts["_directive_texts"] = [_directive_text(r) for r in rows[-3:][::-1]]
         if rows:
             parts.append("## Board directives (most recent first)\n" + "\n".join(
-                f"- {str(r.get('chief_directive') or r.get('resolution') or r.get('instruction') or r.get('topic') or '')[:240]}"
-                for r in rows[-3:][::-1]))
+                f"- {_directive_text(r)}" for r in rows[-3:][::-1]))
         else:
             parts.append("## Board directives\n- none recorded for this scope")
     except Exception:
@@ -488,10 +498,17 @@ def _ceo_grounding(prompt: str, scope: str, owner_id: Optional[str]) -> tuple:
         _out = []
         for _ln in _text.split("\n"):
             _s = _ln.lstrip()
-            if _s.startswith("#"):
-                _hashes = len(_s) - len(_s.lstrip("#"))
-                _title = _s[_hashes:].strip()
-                _out.append(f"**{_title}**" if _title else _ln)
+            #  W650 - A HEADING THAT FOLLOWS A LIST MARKER IS A HEADING TOO. Each directive is rendered as
+            #  "- <text>", so a directive whose content STARTS with a heading arrives as "- ## Understanding".
+            #  That line does not start with "#", so it was left as it was - and `_sections` matches "## "
+            #  anywhere a line begins with it after optional space, not after a dash, so it was harmless there
+            #  but it was neither demoted nor stripped. It is demoted like any other, the marker kept.
+            _bullet = "- " if _s.startswith("- ") else ""
+            _core = _s[len(_bullet):].lstrip()
+            if _core.startswith("#"):
+                _hashes = len(_core) - len(_core.lstrip("#"))
+                _title = _core[_hashes:].strip()
+                _out.append(f"{_bullet}**{_title}**" if _title else _ln)
             else:
                 _out.append(_ln)
         return "\n".join(_out)

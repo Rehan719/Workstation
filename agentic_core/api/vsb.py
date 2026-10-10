@@ -643,6 +643,9 @@ async def get_vsb_repo_zip(vsb_id: str, user: dict | None = Depends(get_current_
     would be the quieter defect.
     """
     _require_vsb_access(vsb_id, user)
+    #  W650 (FU-687) - a body shipped BEFORE the entity's text changed and its screen failed is still on disk.
+    #  Producing a new one is refused; handing out the old one is the same thing leaving by another door.
+    _refuse_if_screen_failed(vsb_id, "repository download")
     import io as _io
     import zipfile as _zf
     manifest, root = _repo_declared_files(vsb_id)
@@ -841,6 +844,47 @@ def _entity_fallback_copy(name: str, challenge: str, concept: str, kind: str) ->
                else "content pending the owned model — this enterprise has not yet composed its own solution."))
 
 
+def _refuse_if_screen_failed(vsb_id: str, what: str) -> None:
+    """Owner ruling 2026-10-10 (FU-687) - NOTHING THE §11 SCREEN FAILS LEAVES THE PLATFORM UNREAD.
+
+    The doors that create an entity register it and HOLD its economy when its screen fails (that stays, by the
+    same ruling). A held entity could still be given a website, a web app and a phone app, and be shipped: the
+    audit shipped an online casino's repository with compliance 'fail' on four surfaces. Ship and the three
+    public surfaces now refuse while the entity's LATEST screen is 'fail'.
+
+    WHAT THIS IS AND IS NOT: the screen is a word list. It can refuse; it has not assessed the enterprise, and
+    the refusal says so. A screen that is 'review' or absent refuses nothing here. A history that cannot be
+    READ is a different case and does stop the ship (503, standing unknown). It clears when the entity's own text changes
+    and the next screen (the heartbeat's rotation, or any writer that re-screens) no longer fails.
+    """
+    from agentic_core.config import StoreUnavailable
+    try:
+        from agentic_core.economy import living_vsbs as _lv
+        _h = (_lv._history().get(vsb_id) or {})
+    except StoreUnavailable as _su:
+        #  AN UNREADABLE HISTORY IS NOT A CLEAN ONE (W472: a history read as {} once lifted every FAIL hold).
+        #  The entity's standing is unknown, so nothing leaves until the record can be read.
+        raise HTTPException(status_code=503, detail={
+            "error": "compliance_standing_unknown", "refused": what,
+            "note": (f"NOT DONE: the compliance history could not be read ({str(_su)[:120]}), so whether this "
+                     f"entity's latest §11 screen failed is unknown and its {what} is not produced. Nothing "
+                     f"was cleared and nothing was refused on a verdict.")})
+    if _h.get("overall") != "fail":
+        return
+    _failed = [str(v.get("framework")) for v in (_h.get("verdicts") or [])
+               if isinstance(v, dict) and v.get("status") == "fail"]
+    raise HTTPException(status_code=409, detail={
+        "error": "compliance_fail_hold",
+        "refused": what,
+        "failed_frameworks": _failed,
+        "screened_at": _h.get("last_at") or _h.get("screened_at"),
+        "note": (f"NOT DONE: this entity's latest §11 screen is 'fail', so its {what} is refused (Owner ruling "
+                 f"2026-10-10). The screen is a word list: it matched a term it refuses and has not assessed "
+                 f"the enterprise. Change the entity's own text so the screen no longer fails, or take it to "
+                 f"the Owner. The entity stays registered and its economy stays held."),
+    })
+
+
 @router.post("/{vsb_id}/website")
 async def generate_vsb_website(vsb_id: str, user: dict | None = Depends(get_current_user)):
     """§13 (D1 increment 2) — generate the VSB's integrated WEBSITE: a real, multi-page static HTML/CSS
@@ -848,6 +892,7 @@ async def generate_vsb_website(vsb_id: str, user: dict | None = Depends(get_curr
     compliance-screened + document-controlled. HONEST: a static info/marketing site (real HTML/CSS) — NOT
     a running web app (increment 3) and not deployed/hosted."""
     vsb = _require_vsb_access(vsb_id, user)
+    _refuse_if_screen_failed(vsb_id, "website")      # W650 (FU-687, Owner ruling 2026-10-10)
     _refuse_pending_name(vsb)   # W450 — no public surface under a pending working name
     _refuse_gated(vsb, "website")   # W452 (refuter F3) — the ship's parts honour the gate as the ship does
     name, challenge, domain = vsb.get("name"), vsb.get("challenge", ""), vsb.get("domain", "enterprise")
@@ -1034,7 +1079,9 @@ def _public_prose(text: str) -> str:
     if not text:
         return ""
     out = _re.sub(r"_\[[^\]\n]*\]?_?", " ", text)            # _[provenance marker]_
-    out = _re.sub(r"_Acting as:[^_\n]*_", " ", out)           # _Acting as: <role>._
+    #  W650 (FU-626) - both openings of the engine's role line, old and new, read from the engine's own tuple
+    from agentic_core.ai.native.engine import ROLE_LEAD_OPENINGS as _role_openings
+    out = _re.sub(r"(?:" + "|".join(_re.escape(o) for o in _role_openings) + r")[^_\n]*_", " ", out)
     # consume the WHOLE floor sentence, not just its opening clause — removing only the first half
     # left a dangling "grounded in: …", which still reads as machine scaffolding on a public page
     # Generalised rather than enumerated: the floor emits several sibling phrasings — "Native
@@ -1125,6 +1172,7 @@ async def generate_vsb_webapp(vsb_id: str, user: dict | None = Depends(get_curre
     compliance-screened + document-controlled. HONEST: a client-side interactive app that runs directly in
     a browser (no build) — NOT a server/backend app, not deployed/hosted."""
     vsb = _require_vsb_access(vsb_id, user)
+    _refuse_if_screen_failed(vsb_id, "web app")      # W650 (FU-687, Owner ruling 2026-10-10)
     _refuse_pending_name(vsb)   # W450 — no public surface under a pending working name
     _refuse_gated(vsb, "web app")   # W452 (refuter F3) — the ship's parts honour the gate as the ship does
     files = _build_webapp_files(vsb)
@@ -1267,6 +1315,7 @@ async def generate_vsb_mobile(vsb_id: str, user: dict | None = Depends(get_curre
     into the repo's `mobile/` dir, QMS-gated + compliance-screened + document-controlled. HONEST: a PWA
     (installable + offline-capable when hosted) — NOT a compiled native iOS/Android app, not deployed."""
     vsb = _require_vsb_access(vsb_id, user)
+    _refuse_if_screen_failed(vsb_id, "phone app")      # W650 (FU-687, Owner ruling 2026-10-10)
     _refuse_pending_name(vsb)   # W450 — no public surface under a pending working name
     _refuse_gated(vsb, "phone app")   # W452 (refuter F3) — the ship's parts honour the gate as the ship does
     files = _build_mobile_files(vsb)
@@ -2689,6 +2738,7 @@ async def ship_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current_use
     repo-level compliance verdict and one version-control commit. This is the §13 canonical output
     produced in one deliberate act, not four disconnected calls."""
     vsb = _require_vsb_access(vsb_id, user)
+    _refuse_if_screen_failed(vsb_id, "repository ship")      # W650 (FU-687, Owner ruling 2026-10-10)
     _refuse_pending_name(vsb)   # W450 — no public surface under a pending working name
     _refuse_gated(vsb, "ship")  # W452 — Mode 3: a pending/rejected human review gate blocks the ship
     #  W614 (FU-482) — the README and manifest print the status, so it is derived from the facts AS SHIPPED

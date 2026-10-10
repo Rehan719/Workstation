@@ -56,7 +56,15 @@ def _sections(prompt: str) -> List[str]:
 #  left the banner in place and its words were counted as the user's. The marker is this engine's own
 #  literal and appears in no user's request, so removing it anywhere costs nothing and closes the class.
 _CARRIED_MARKER_RE = re.compile(re.escape(_MARKER))
-_CARRIED_ACTING_RE = re.compile(r"^[ \t]*_Acting as:.*?_[ \t]*$", re.M)
+#  W650 (FU-626, ledger v14 R1) - THE ROLE LINE SAYS WHAT IT IS. The floor opened its output "_Acting as: <role>._".
+#  On the Religion tools that printed "Acting as: Islamic scholar and Quranic exegete" above a frame no scholar
+#  wrote. The floor takes no role: it echoes the role the PROMPT asked for. The opening words live here, once,
+#  and every stripper imports them - the old wording stays in ROLE_LEAD_OPENINGS because stored journeys,
+#  plans and pages written before this round still carry it, and a stripper that forgot it would publish them.
+ROLE_LEAD_OPEN = "_Role the prompt asked for:"
+ROLE_LEAD_OPENINGS = (ROLE_LEAD_OPEN, "_Acting as:")
+_CARRIED_ACTING_RE = re.compile(
+    r"^[ \t]*(?:" + "|".join(re.escape(o) for o in ROLE_LEAD_OPENINGS) + r").*?_[ \t]*$", re.M)
 # a "<role> output" header, not any header ending in the word output: a role name then the bare word
 _CARRIED_ROLE_OUTPUT_RE = re.compile(r"^[ \t]*##[ \t]+[A-Za-z][A-Za-z0-9 &/\-]{1,60}[ \t]+output[ \t]*$",
                                      re.M | re.I)
@@ -351,7 +359,8 @@ class NativeReasoningEngine:
 
         lead = ""
         if role:
-            lead = f"_Acting as: {role}._\n\n"
+            lead = (f"{ROLE_LEAD_OPEN} {role}. The native floor takes no role - what follows is a frame, "
+                    f"not that role's work._\n\n")
         #  W593 — THE REALM IS RECORDED, AND THE LIMIT IS STATED. W434 put the realm into the prompt to
         #  stop it reaching nothing, and the only thing that carried it into the composition was
         #  `_subject`'s fall-through to the longest sentence - the realm DIRECTIVE line - so fixing R1.0
