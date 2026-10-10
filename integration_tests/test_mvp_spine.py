@@ -4864,7 +4864,11 @@ def test_native_ai_ensemble(client):
     members = r.get("members") or []
     assert len(members) == 2
     assert all(m.get("output") and m.get("served_by") for m in members)   # each member ran + reports provenance
-    assert (r.get("synthesis") or {}).get("output")                       # consensus synthesis produced
+    #  W655 (ledger v15 R4.1) - THIS LINE ASSERTED THE DEFECT. In this suite no model serves, so the floor answers
+    #  for both members: one resource answering twice is one answer, and requiring a "consensus" of it is what
+    #  the audit found on the page. A consensus between two DIFFERENT servers is driven in the W655 guard.
+    assert r.get("distinct_servers") == ["native"], r.get("distinct_servers")
+    assert r.get("synthesis") is None and "ONE resource served all of them" in str(r.get("method")), r.get("method")
     # composable in the §7 fabric
     comp = client.post("/api/v1/resources/compose", json={
         "name": "Ens", "usage_area": "synthesis", "resource_ids": ["native_ensemble"],
@@ -25723,6 +25727,8 @@ def test_w506_p27_layers_state_per_layer_and_the_reachability_is_checked():
         pkg = Path(mod_path).parent.as_posix()
         rel_pat = re.compile(r"from\s+\.+\s*" + re.escape(stem) + r"\s+import\b"
                              r"|from\s+\.+\s+import\s+(?:[^\n]*,\s*)?" + re.escape(stem) + r"\b")
+        abs_pat = re.compile(r"from\s+" + re.escape(pkg.replace("/", ".")) + r"\s+import\s+(?:\(?[^\n]*,\s*)?"
+                             + re.escape(stem) + r"\b")
         hits = []
         for p in root.joinpath("agentic_core").rglob("*.py"):
             rel = p.relative_to(root).as_posix()
@@ -25730,6 +25736,12 @@ def test_w506_p27_layers_state_per_layer_and_the_reachability_is_checked():
                 continue
             text = p.read_text(encoding="utf-8", errors="replace")
             if dotted in text:
+                hits.append(rel)
+                continue
+            #  W655 - `from agentic_core.api import agent_hub` names the module without its dotted path, and
+            #  this finder did not see it: it UNDER-reported, and called a mounted router unimported. The
+            #  package is matched whole, so a same-named module in another package still does not count.
+            if abs_pat.search(text):
                 hits.append(rel)
                 continue
             # a relative import counts ONLY from a file in the module's own package
@@ -25821,7 +25833,36 @@ def test_w506_p27_layers_state_per_layer_and_the_reachability_is_checked():
     for layer, v in Q.LAYER_STATE.items():
         if v["state"] in ("code_exists_unreached", "code_unloadable"):
             assert layer in note, f"{layer} is unreached and the note does not say so: {note[:200]}"
-    assert "NOTHING CALLS IT" in note, note[:200]
+    #  W655 (ledger v15 R4.2) - NO LAYER IS MAPPED TO AN UNUSED FILE ANY MORE: Endocrine is the signal bus and
+    #  Respiratory the Agent Hub, as the vision's 17.2 map says. The note therefore must not say either "does not
+    #  run anywhere" or "could not run" - and legs (2)/(2b) above now loop over nothing, so what the bases still
+    #  SAY about the two unused files is checked here by name instead of being left unchecked.
+    assert "does not run anywhere" not in note and "CANNOT BE IMPORTED" not in note, note[:300]
+    _endo655, _resp655 = Q.LAYER_STATE["Endocrine"]["basis"], Q.LAYER_STATE["Respiratory"]["basis"]
+    _reg655 = "agentic_core/biomimicry/geospheric/regulator.py"
+    _tri655 = "agentic_core/molecular/triad_integration.py"
+    assert "NOT THE LAYER" in _endo655 and _reg655 in _endo655 and "NOTHING IMPORTS IT" in _endo655, _endo655[:200]
+    assert _importers(_reg655) == [], ("the basis says nothing imports the regulator, and something does", _importers(_reg655))
+    assert "NOT THE LAYER" in _resp655 and _tri655 in _resp655 and "CANNOT BE IMPORTED" in _resp655, _resp655[:200]
+    import importlib as _il655
+    try:
+        _il655.import_module(_tri655.replace("/", ".")[: -len(".py")])
+    except ModuleNotFoundError:
+        pass
+    else:
+        raise AssertionError("the basis says the triad module cannot be imported, and it imports cleanly")
+    #  ...and the modules the two layers ARE mapped to exist and are imported by live code
+    for _layer655, _mod655 in (("Endocrine", "agentic_core/organism/biobus.py"),
+                               ("Respiratory", "agentic_core/api/agent_hub.py")):
+        assert _module_paths(Q.LAYER_STATE[_layer655]["basis"])[0] == _mod655, Q.LAYER_STATE[_layer655]["basis"][:120]
+        assert _importers(_mod655), (_layer655, "is mapped to a module nothing imports", _mod655)
+    assert Q.LAYER_STATE["Endocrine"]["state"] == "engaged_no_value"
+    assert Q.LAYER_STATE["Respiratory"]["state"] == "implemented_not_on_this_path"
+    #  THE MAP IS THE VISION'S, read from the vision and not typed here
+    _v655 = " ".join((root / "docs/WORKSTATION_IDBO_WHOLE_VISION.md").read_text(encoding="utf-8").split())
+    assert re.search(r"Respiratory → the Agent Hub", _v655), "the vision no longer maps Respiratory to the Agent Hub"
+    assert re.search(r"Endocrine → the biomimetic signal bus[^.]*organism/biobus\.py", _v655), (
+        "the vision no longer maps Endocrine to the signal bus")
     #  W574 — and the stronger state reaches the reader too. A layer that cannot be imported reported
     #  under the same words as one merely unimported is the overclaim this row was filed for.
     if any(v["state"] == "code_unloadable" for v in Q.LAYER_STATE.values()):
@@ -37775,7 +37816,10 @@ def test_w574_a_name_a_number_and_a_placeholder_each_say_what_is_behind_them(cli
 
     # ── (c) A LAYER THAT CANNOT BE IMPORTED SAYS SO (the state and its drive live in W506's guard)
     from agentic_core.vbs import quality as _Q574
-    assert _Q574.LAYER_STATE["Respiratory"]["state"] == "code_unloadable", (
+    #  W655 - the LAYER is the Agent Hub now (the vision's map); the file that cannot be imported is still named
+    #  in the basis as not the layer, and still said to be unimportable (asserted on the next line and driven in
+    #  W506's guard). What must never return is `code_exists_unreached` - real code one wiring away - for it.
+    assert _Q574.LAYER_STATE["Respiratory"]["state"] != "code_exists_unreached", (
         "the Respiratory layer is back to a state that promises real code one wiring away",
         _Q574.LAYER_STATE["Respiratory"]["state"])
     assert "CANNOT BE IMPORTED" in _Q574.LAYER_STATE["Respiratory"]["basis"], (
@@ -46457,8 +46501,12 @@ def test_w617_p223_a_partial_surface_says_what_it_does_not_do(client):
         _nums = [int(x) for x in _re617.findall(r"(\d+) (?:measured|attested|screen-only|not measured)", bar["summary"])]
         assert sum(_nums) == bar["total"] == len(bar["criteria"]), (bar["summary"], bar["total"])
     from agentic_core.api.genesis import _bar_attestations
-    _ev, _wh = _bar_attestations([], {}, {}, "religion", "care", {}, 0, chosen={"realm", "domain"})
+    #  W655 (ledger v15 R5.0) - this passed realm="religion", which is a DOMAIN. A value outside the four realms
+    #  categorises nothing and is now withheld, so the fixture uses a real realm - and the refused case is asserted.
+    _ev, _wh = _bar_attestations([], {}, {}, "learning", "care", {}, 0, chosen={"realm", "domain"})
     assert "categorised" in _ev and "categorised" not in _wh
+    _ev0, _wh0 = _bar_attestations([], {}, {}, "religion", "care", {}, 0, chosen={"realm", "domain"})
+    assert "categorised" not in _ev0 and "not one of the four realms" in _wh0["categorised"], _wh0
     _ev2, _wh2 = _bar_attestations([], {}, {}, "enterprise", "enterprise", {}, 0, chosen={"domain"})
     assert "categorised" not in _ev2 and "realm was not chosen" in _wh2["categorised"], _wh2
 
@@ -50270,3 +50318,107 @@ def test_w653_the_board_says_who_composed_each_part_from_who_did(client, monkeyp
     assert "typeof result.ceo_plan_reason === 'string' && result.ceo_plan_reason && <p" in _page, (
         "the plan's reason is not rendered, or is rendered without checking it is text")
     assert "result.objectives_fallback === true ? " in _page, "the chip does not say the instruction was filed as written"
+
+
+def test_w655_eight_sentences_that_said_more_than_happened_now_say_what_did(client, monkeypatch):
+    """Ledger v15, tier 1: R5.1, R5.0, R1.2, R5.4, R6.0, R4.1, R2.3, R3.0. One mechanism - an affirmative
+    sentence, label or count that was a literal, so it was printed whatever had happened. Each is now decided
+    from the fact it describes, and each leg drives BOTH cases so the sentence can be seen to change.
+    """
+    import asyncio
+    import pathlib as _pl
+    _src = _pl.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+
+    # ── R5.1 / R5.0 / R1.2 - the Genesis journey ───────────────────────────────────────────────────────
+    _j = client.post("/api/v1/genesis/journey", json={"problem": "A rota tool for night-shift nurses on two wards",
+                                                      "domain": "care", "realm": "cosmic", "product": "bogus",
+                                                      "establish": False})
+    assert _j.status_code == 200, _j.text[:300]
+    _jj = _j.json()
+    assert _jj["enterprise_established"] is False
+    assert _jj["enterprise_established_basis"].startswith("NO entity record was created"), (
+        "a journey that established nothing says a record was created", _jj["enterprise_established_basis"])
+    assert _jj["realm"] == "cosmic" and _jj["realm_used"] == "enterprise" and _jj["realm_recognised"] is False, (
+        {k: _jj.get(k) for k in ("realm", "realm_used", "realm_recognised")})
+    assert "bogus" in _jj["product_source"] and "chosen by the caller" not in _jj["product_source"], _jj["product_source"]
+    _cat = ((_jj.get("quality_assurance") or {}).get("quality") or {}).get("bar_measured") or {}
+    _cat = (_cat.get("criteria") or _cat).get("categorised") if isinstance(_cat, dict) else None
+    assert isinstance(_cat, dict) and _cat.get("met") is not True and "not one of the four realms" in str(_cat.get("basis")), (
+        "a realm outside the four is attested as categorised", _cat)
+    _method = (_jj.get("stage_5_model_simulate_rank") or {}).get("method") or ""
+    assert (_jj.get("stage_5_model_simulate_rank") or {}).get("candidates_distinct") == 1, (
+        "the floor did not return identical candidates here, so the method leg below proves nothing")
+    assert "candidates modelled" not in _method and "nothing was modelled" in _method, _method[:200]
+    #  the other case: a recognised realm and product keep the plain statements
+    _ok = client.post("/api/v1/genesis/journey", json={"problem": "A rota tool for night-shift nurses on two wards",
+                                                       "domain": "care", "realm": "scholarship",
+                                                       "product": "laboratory", "establish": False}).json()
+    assert _ok["realm_recognised"] is True and _ok["realm_used"] == "scholarship"
+    assert _ok["product_source"] == "chosen by the caller" and _ok["product"] == "laboratory"
+    _page = _code_only((_src / "pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8"))
+    assert "tested &amp; validated" not in _page and "Stage checks" in _page, "the card is still titled tested and validated"
+
+    # ── R5.4 - a Care tool with no published arithmetic computed nothing, and says so ────────────────
+    from agentic_core.care import scoring as _sc
+    _un = _sc.compute_score("dementia_care", {})
+    assert _un["available"] is False and "computed in-house" not in _un["basis"] and "AI aid" not in _un["note"], _un
+    assert "nothing was computed" in _un["basis"]
+    _sco = _sc.compute_score("news2", {"respiratory_rate": 18})
+    assert _sco["available"] is True and "published table" in _sco["basis"], "a scored tool lost its true basis"
+
+    # ── R6.0 - a pillar is a count of presence checks, never "realised" ───────────────────────────────
+    _t = client.get("/api/v1/transformation/realisation")
+    assert _t.status_code == 200, _t.text[:200]
+    _pillars = _t.json()["pillars"]
+    assert _pillars, "no pillar was returned, so this leg proves nothing"
+    for _p in _pillars:
+        assert isinstance(_p.get("checks_met"), int) and isinstance(_p.get("checks_assessed"), int), _p.get("id")
+        assert "not delivery" in _p["coverage_basis"] and "realised" not in _p["checks_status"], _p
+    _tp = _code_only((_src / "pages/TransformationDashboard.tsx").read_text(encoding="utf-8"))
+    assert 'data-testid="pillar-checks"' in _tp and "{p.status}" not in _tp and "tone(p.status)" not in _tp, (
+        "the page still prints the pillar's status word or colours it")
+
+    # ── R4.1 - one resource answering twice is not a consensus ────────────────────────────────────────
+    from agentic_core.ai.native import orchestrator as _orch
+    _e = asyncio.run(_orch.ensemble("Name three risks of a night rota", models=["native", "ollama:not-here"]))
+    assert _e["distinct_servers"] == ["native"] and _e["synthesis"] is None, (
+        "the floor answering twice was synthesised into a consensus", _e.get("distinct_servers"), bool(_e.get("synthesis")))
+    assert "ONE resource served all of them" in _e["method"] and "consensus synthesis" not in _e["method"], _e["method"]
+    #  ...and two DIFFERENT servers still synthesise
+    _real_complete = _orch.complete
+    _n = {"i": 0}
+
+    async def _two(prompt, **k):
+        _n["i"] += 1
+        return {"output": f"answer {_n['i']}", "served_by": f"model-{min(_n['i'], 2)}", "is_external": False}
+    monkeypatch.setattr(_orch, "complete", _two)
+    _e2 = asyncio.run(_orch.ensemble("Name three risks of a night rota", models=["a", "b"]))
+    monkeypatch.setattr(_orch, "complete", _real_complete)
+    assert _e2["distinct_servers"] == ["model-1", "model-2"] and (_e2["synthesis"] or {}).get("output"), _e2
+    _np = _code_only((_src / "pages/developers/NativeAI.tsx").read_text(encoding="utf-8"))
+    assert "owned model{" not in _np and "served by {servers.length} resource" in _np, (
+        "the page still counts requested models as models that produced output")
+
+    # ── R2.3 / R3.0 - "Bespoke" over a standard template, and a universal the heartbeat levers break ──
+    _vsb_src = (_pl.Path(__file__).resolve().parents[1] / "agentic_core/api/vsb.py").read_text(encoding="utf-8")
+    assert '"note": ("Bespoke' not in _vsb_src, "a surface note still opens 'Bespoke'"
+    _v = client.post("/api/v1/genesis/establish", json={"problem": "A village bakery cooperative for the school",
+                                                        "domain": "enterprise", "name": "W655 Template Probe",
+                                                        "concept": "A member-owned bakery supplying the school.",
+                                                        "design": "Two ovens and a delivery round.",
+                                                        "commercialisation": "A termly bread subscription.",
+                                                        "ship_output": False}).json()["vsb_id"]
+    for _route in ("webapp", "mobile"):
+        _g = client.post(f"/api/v1/vsb/{_v}/{_route}")
+        assert _g.status_code == 200, (_route, _g.status_code, _g.text[:200])
+        _note = str(_g.json().get("note") or "")
+        assert "STANDARD TEMPLATE" in _note and "Bespoke" not in _note, (_route, _note[:200])
+    _cc = _code_only((_src / "pages/enterprise/ChangeControlAgency.tsx").read_text(encoding="utf-8"))
+    assert "every organism change is tier-gated" not in _cc and "autonomy levers are NOT governed here" in _cc, (
+        "the Change Control header still claims every organism change is governed")
+
+    # ── R4.2 - the record every run carries no longer says the facilities all run real engines ────────
+    from agentic_core.vbs import quality as _q655
+    _musc = _q655.LAYER_STATE["Musculoskeletal"]["basis"]
+    assert "EXCEPT the composed Digital Twin stage" in _musc and "runs no simulator" in _musc, (
+        "the quality record still says every composable facility runs a real engine", _musc)

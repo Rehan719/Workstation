@@ -332,10 +332,15 @@ class NativeOrchestrator:
                 members.append({"model": m, "error": str(r)[:160]})
             else:
                 members.append({"model": m, "served_by": r.get("served_by"),
-                                "is_external": r.get("is_external", False), "output": r.get("output", "")})
+                                "is_external": r.get("is_external", False), "output": r.get("output", ""),
+                                #  W655 (ledger v15 R4.1) - what was tried for THIS member, as /complete reports it
+                                "resources_tried": r.get("resources_tried")})
         synthesis = None
         produced = [x for x in members if x.get("output")]
-        if synthesize and len(produced) > 1:
+        #  W655 (R4.1) - A CONSENSUS NEEDS TWO DIFFERENT SERVERS. With no model serving, every member is the
+        #  same deterministic engine: one answer given N times, and a third copy was labelled "Consensus".
+        _servers = sorted({str(x.get("served_by")) for x in produced})
+        if synthesize and len(produced) > 1 and len(_servers) > 1:
             combined = "\n\n".join(f"[{x['model']} · served by {x.get('served_by')}]:\n{x['output'][:800]}" for x in produced)
             syn = await self.complete(
                 "You are an ensemble synthesiser. Given these model outputs for the SAME prompt, produce the "
@@ -348,12 +353,18 @@ class NativeOrchestrator:
         #  on every response, including one member with nothing to synthesise.
         if synthesis is not None:
             method = f"parallel ensemble across {len(members)} owned model(s) → consensus synthesis"
+        elif synthesize and len(produced) > 1 and len(_servers) <= 1:
+            method = (f"{len(produced)} member(s) were requested and ONE resource served all of them "
+                      f"({_servers[0] if _servers else 'none'}): one answer given {len(produced)} times, so no "
+                      f"consensus was synthesised")
         elif not synthesize:
             method = f"parallel ensemble across {len(members)} owned model(s); no synthesis was requested"
         else:
             method = (f"{len(produced)} of {len(members)} member(s) produced output; a synthesis needs two, "
                       f"so none ran and there is no consensus")
         return {"prompt": prompt[:200], "models_run": models, "members": members, "synthesis": synthesis,
+                "models_run_basis": "the models REQUESTED; `distinct_servers` says what actually served",
+                "distinct_servers": _servers,
                 "method": method}
 
     async def _run_model(self, name: str, prompt: str) -> str:

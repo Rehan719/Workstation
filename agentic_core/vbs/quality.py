@@ -51,26 +51,38 @@ LAYER_STATE: Dict[str, Dict[str, str]] = {
                         "/api/v1/organism/genome; a quality record does not exercise it"},
     "Musculoskeletal": {"state": "implemented_not_on_this_path",
                         "basis": "agentic_core/api/resource_fabric.py — composable facilities that run real "
-                                 "engines; a quality record does not exercise them"},
+                                 "engines, EXCEPT the composed Digital Twin stage, which is a model-written "
+                                 "scenario narrative and runs no simulator; a quality record does not "
+                                 "exercise them"},
     "Cardiovascular": {"state": "measurement_under_this_name",
                        "basis": "agentic_core/app_mvp.py serves resource_flow = 100 - cpu_percent as "
                                 "'cardiovascular'. That is host CPU headroom, honestly measured, under an "
                                 "anatomical name — there is no circulatory subsystem"},
-    "Endocrine": {"state": "code_exists_unreached",
+    #  W655 (ledger v15 R4.2; Owner 2026-10-10: adopt the vision's map) - THE LAYER IS THE SIGNAL BUS. This entry
+    #  pointed at geospheric/regulator.py and so told every run's reader the Endocrine layer "does not run
+    #  anywhere", while the vision's 17.2 map names organism/biobus.py - which this record itself fires on.
+    "Endocrine": {"state": "engaged_no_value",
                   #  W593 (FU-436, M1 R6.0) — this said "a real HomeostaticRegulator with an integral term".
                   #  FU-307's correction reached the regulator's docstring (W515) and a comment in this
                   #  file, and NOT the string that ships with every delivery's quality record: the
                   #  second-writer class, where the explanation was fixed and the claim was not.
                   #  `integral_error` is assigned once as zeros and never accumulated, `dt` is computed
                   #  and never read, and the corrective action is returned as a STRING.
-                  "basis": "agentic_core/biomimicry/geospheric/regulator.py holds a HomeostaticRegulator that "
+                  "basis": "agentic_core/organism/biobus.py — the signal bus and shared context (the vision's "
+                           "17.2 map); this record's own fire_signal travels on it and it contributes no "
+                           "value to the record. NOT THE LAYER, though it carries a similar name: "
+                           "agentic_core/biomimicry/geospheric/regulator.py holds a HomeostaticRegulator that "
                            "does a PROPORTIONAL THRESHOLD COMPARISON and names a corrective action as a "
                            "string - no integral accumulates, no derivative is read, nothing actuates - "
                            "and NOTHING IMPORTS IT; a second copy of the same class sits "
                            "in geospheric/homeostatic_regulator.py. W434's note vouched for this layer and "
                            "W446 measured that vouching as the overclaim"},
-    "Respiratory": {"state": "code_unloadable",
-                    "basis": "agentic_core/molecular/triad_integration.py CANNOT BE IMPORTED: it imports six "
+    #  W655 (R4.2) - THE LAYER IS THE AGENT HUB, as the vision's 17.2 map and the Agent Hub page both say.
+    "Respiratory": {"state": "implemented_not_on_this_path",
+                    "basis": "agentic_core/api/agent_hub.py — the Agent Hub (the vision's 17.2 map): a bus that "
+                             "RECORDS messages between agents; nothing is subscribed to execute what it "
+                             "records, and a quality record does not exercise it. NOT THE LAYER: "
+                             "agentic_core/molecular/triad_integration.py CANNOT BE IMPORTED: it imports six "
                              "siblings from agentic_core/molecular/ and only atp_simulator still exists "
                              "(p53_oscillator, ubiquitin_system, hsp_network, redox_sensor and "
                              "chaperone_cascade were archived), so it raises ModuleNotFoundError and the "

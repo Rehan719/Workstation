@@ -387,9 +387,12 @@ def compute_score(tool: str, obs: Dict[str, Any]) -> Dict[str, Any]:
     """Dispatch by tool id. A tool without a published table returns an honest 'not available'."""
     fn = _SCORERS.get((tool or "").strip().lower())
     if fn is None:
+        #  W655 (ledger v15 R5.4) - NOTHING WAS COMPUTED, so the basis may not say something was; and whether
+        #  AI wrote the narrative is said by the narrative's own provenance, not assumed here.
         return {"tool": tool, "available": False,
-                "note": "no published arithmetic exists for this tool — the narrative below is an AI aid only, not a score",
-                "basis": DISCLAIMER}
+                "note": ("no published arithmetic exists for this tool, so NO SCORE was computed. The text below "
+                         "is a narrative, not a score; its own provenance line says what composed it"),
+                "basis": "no score exists for this tool — nothing was computed from any table"}
     out = fn(obs or {})
     out["available"] = True
     return out

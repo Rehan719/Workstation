@@ -28,6 +28,7 @@ from agentic_core.api.vsb import _public_prose, _gate_block_reason, _gates_block
 from agentic_core.api import develop_artefact as _develop
 from agentic_core.taxonomy import (PRODUCT_LABELS, REALM_LABELS, normalise_product,
                                    normalise_realm, realm_directive)
+from agentic_core.taxonomy import is_realm as _is_realm
 from agentic_core.vbs.quality import assure_delivery
 
 router = APIRouter(prefix="/api/v1/genesis", tags=["genesis-journey"])
@@ -226,7 +227,11 @@ def _bar_attestations(candidates: List[Dict[str, Any]], stage_5: Dict[str, Any],
     #  set of fields the caller actually sent; a default is withheld with that reason.
     _chosen = {"realm", "domain"} if chosen is None else set(chosen)
     _defaulted = [ax for ax in ("realm", "domain") if ax not in _chosen]
-    if _defaulted:
+    if "realm" in _chosen and not _is_realm(realm):
+        #  W655 (R5.0) - a value outside the four realms categorises nothing, whoever sent it
+        wh["categorised"] = (f"the realm sent ('{str(realm)[:40]}') is not one of the four realms, so nothing "
+                             f"was categorised and the run used the default")
+    elif _defaulted:
         wh["categorised"] = (f"the {' and '.join(_defaulted)} {'were' if len(_defaulted) > 1 else 'was'} not "
                              f"chosen - the request's default ('enterprise') was used, and a default is not a "
                              f"categorisation anyone made")
@@ -569,8 +574,11 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         # W483 (refutation) — the method now declares the weights that were APPLIED, not the ones
         # the design hoped for. Declaring "0.35 compliance · 0.25 safety" while every candidate
         # scored on form alone is the defect this round exists to remove.
-        "method": (("candidates modelled; forward-simulation NOT run: the twin stage was floor-served, so its "
-                    "text is a structured frame and not a simulation. They were " if _twin_floor else
+        #  W655 (ledger v15 R1.2) - "candidates modelled" opened this line when one text came back for all
+        "method": ((((f"one text was returned for all {len(candidates)} candidates, so nothing was modelled; "
+                     if _distinct <= 1 else "candidates modelled; ")
+                    + "forward-simulation NOT run: the twin stage was floor-served, so its "
+                    "text is a structured frame and not a simulation. They were ") if _twin_floor else
                     "candidates modelled + FORWARD-SIMULATED through the owned digital-twin pattern, then ")
                    + "screened by the deterministic §11 screen. Weights APPLIED to this run: "
                    + ("0.40 form · 0.35 compliance · 0.25 safety"
@@ -848,6 +856,10 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         "problem": req.problem,
         "domain": req.domain,
         "realm": req.realm,
+        #  W655 (ledger v15 R5.0) - the realm the RUN used, beside the one sent. A value outside the four was
+        #  recorded as given while every prompt was built with the default.
+        "realm_used": normalise_realm(req.realm),
+        "realm_recognised": _is_realm(req.realm),
         #  R4 — the product axis is recorded, not inferred; an unknown value falls to the default
         #  rather than being stored as given, so a reader never sees a product this platform has not
         #  declared (taxonomy.PRODUCTS is the canon).
@@ -855,7 +867,11 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         "product_label": PRODUCT_LABELS.get(normalise_product(getattr(req, "product", "reactor"))),
         #  W619 (FU-502, M2 v8 R5.3) — whether anyone CHOSE the product. Every journey recorded 'reactor', the
         #  model default, and no surface could send another value, so the record read as a choice nobody made.
-        "product_source": ("chosen by the caller" if "product" in (getattr(req, "model_fields_set", None) or set())
+        #  W655 (R5.0) - a value that is not a product was replaced by the default and still stamped as chosen
+        "product_source": (("chosen by the caller"
+                            if normalise_product(getattr(req, "product", "reactor")) == str(getattr(req, "product", "")).strip().lower()
+                            else f"the default - the value sent ('{str(getattr(req, 'product', ''))[:40]}') is not one of the products")
+                           if "product" in (getattr(req, "model_fields_set", None) or set())
                            else "the default - no product was chosen"),
         "phase_1_conceptualisation": {"cognitive_cascade": cognitive, "mjm_assessment": mjm, "concept": concept},
         "stage_3_innovate_research": research,     # §4.3 — best/latest approaches across science·tech·business·ops·law
@@ -930,8 +946,15 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         "enterprise_operating": ((str((established_vsb or {}).get("status")) == "operating")
                                  if (established_vsb and not (isinstance(established_vsb, dict)
                                                               and established_vsb.get("error"))) else None),
-        "enterprise_established_basis": ("an entity record was created and persisted; `enterprise_operating` "
-                                         "says whether it is operating, from its derived status"),
+        #  W655 (ledger v15 R5.1) - THE BASIS FOLLOWS THE VALUE. It was one literal, so a journey that
+        #  established nothing still said a record "was created and persisted".
+        "enterprise_established_basis": (
+            ("an entity record was created and persisted; `enterprise_operating` "
+             "says whether it is operating, from its derived status")
+            if (established_vsb and not (isinstance(established_vsb, dict) and established_vsb.get("error"))) else
+            ("NO entity record was created: establishing one was attempted and failed - see `established_vsb`"
+             if established_vsb else
+             "NO entity record was created: this journey did not establish an enterprise")),
         # W485 — a journey whose every candidate was vetoed did not complete.
         "status": ("blocked_by_screen" if _blocked else "complete"),
         **({"blocked_by_screen": {
@@ -1350,6 +1373,10 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
         "problem": req.problem,
         "domain": req.domain,
         "realm": req.realm,
+        #  W655 (ledger v15 R5.0) - the realm the RUN used, beside the one sent. A value outside the four was
+        #  recorded as given while every prompt was built with the default.
+        "realm_used": normalise_realm(req.realm),
+        "realm_recognised": _is_realm(req.realm),
         #  R4 — the product axis is recorded, not inferred; an unknown value falls to the default
         #  rather than being stored as given, so a reader never sees a product this platform has not
         #  declared (taxonomy.PRODUCTS is the canon).
@@ -1357,7 +1384,11 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
         "product_label": PRODUCT_LABELS.get(normalise_product(getattr(req, "product", "reactor"))),
         #  W619 (FU-502, M2 v8 R5.3) — whether anyone CHOSE the product. Every journey recorded 'reactor', the
         #  model default, and no surface could send another value, so the record read as a choice nobody made.
-        "product_source": ("chosen by the caller" if "product" in (getattr(req, "model_fields_set", None) or set())
+        #  W655 (R5.0) - a value that is not a product was replaced by the default and still stamped as chosen
+        "product_source": (("chosen by the caller"
+                            if normalise_product(getattr(req, "product", "reactor")) == str(getattr(req, "product", "")).strip().lower()
+                            else f"the default - the value sent ('{str(getattr(req, 'product', ''))[:40]}') is not one of the products")
+                           if "product" in (getattr(req, "model_fields_set", None) or set())
                            else "the default - no product was chosen"),
         "concept": req.concept[:1000],
         "design": req.design[:1000],
@@ -1375,6 +1406,10 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
         "challenge": req.problem,
         "domain": req.domain,
         "realm": req.realm,
+        #  W655 (ledger v15 R5.0) - the realm the RUN used, beside the one sent. A value outside the four was
+        #  recorded as given while every prompt was built with the default.
+        "realm_used": normalise_realm(req.realm),
+        "realm_recognised": _is_realm(req.realm),
         #  R4 — the product axis is recorded, not inferred; an unknown value falls to the default
         #  rather than being stored as given, so a reader never sees a product this platform has not
         #  declared (taxonomy.PRODUCTS is the canon).
@@ -1382,7 +1417,11 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
         "product_label": PRODUCT_LABELS.get(normalise_product(getattr(req, "product", "reactor"))),
         #  W619 (FU-502, M2 v8 R5.3) — whether anyone CHOSE the product. Every journey recorded 'reactor', the
         #  model default, and no surface could send another value, so the record read as a choice nobody made.
-        "product_source": ("chosen by the caller" if "product" in (getattr(req, "model_fields_set", None) or set())
+        #  W655 (R5.0) - a value that is not a product was replaced by the default and still stamped as chosen
+        "product_source": (("chosen by the caller"
+                            if normalise_product(getattr(req, "product", "reactor")) == str(getattr(req, "product", "")).strip().lower()
+                            else f"the default - the value sent ('{str(getattr(req, 'product', ''))[:40]}') is not one of the products")
+                           if "product" in (getattr(req, "model_fields_set", None) or set())
                            else "the default - no product was chosen"),
         "scope": "commercialise",
         "owner_id": req.owner_id,
