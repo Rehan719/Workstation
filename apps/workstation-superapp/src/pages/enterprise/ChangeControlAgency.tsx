@@ -726,7 +726,7 @@ export const ChangeControlAgency: React.FC = () => {
           <GitBranch size={22} className="text-purple-400" />
           Change Control Agency
         </h1>
-        <p className="text-sm text-white/40 mt-1">Governance gateway — every organism change is tier-gated, recorded and audit-trailed, and each record says what decided it. A review decides MEDIUM and HIGH changes (a HIGH change a review approves waits for Board ratification); CRITICAL changes — every material economy action among them — are decided only by the Owner&rsquo;s explicit decision. Decisions made since W464 are also written to the constitutional ledger (each decision&rsquo;s response says whether its entry landed); earlier decisions are in this store only.</p>
+        <p className="text-sm text-white/40 mt-1">Governance gateway — changes submitted here (organism configuration, code changes, economy holds, evolution proposals) are tier-gated, recorded and audit-trailed, and each record says what decided it. The heartbeat's autonomy levers are NOT governed here: they are set directly on the Heartbeat page and leave no Change Control record. A review decides MEDIUM and HIGH changes (a HIGH change a review approves waits for Board ratification); CRITICAL changes — every material economy action among them — are decided only by the Owner&rsquo;s explicit decision. Decisions made since W464 are also written to the constitutional ledger (each decision&rsquo;s response says whether its entry landed); earlier decisions are in this store only.</p>
       </div>
 
       {/* Stats row */}

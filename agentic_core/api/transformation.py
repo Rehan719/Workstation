@@ -191,7 +191,17 @@ def _realise() -> Dict[str, Any]:
         status = "realised" if frac >= 0.999 else ("partial" if frac > 0 else "seed")
         total += frac
         pillars.append({"id": p["id"], "pillar": p["pillar"], "realisation": frac,
-                        "status": status, "evidence": checks})
+                        "status": status, "evidence": checks,
+                        #  W655 (ledger v15 R6.0) - WHAT WAS COUNTED, IN ITS OWN WORDS. `status` says "realised"
+                        #  when every presence check passes; a mounted router is not a realised pillar. The
+                        #  old field keeps its meaning for its readers; these say what the number is.
+                        "checks_met": met, "checks_assessed": len(_assessed),
+                        "checks_status": ("no check could be assessed" if not _assessed else
+                                          "all checks present" if met == len(_assessed) else
+                                          "some checks present" if met else "no check present"),
+                        "coverage_basis": (f"{met} of {len(_assessed)} presence check(s) passed: whether a route "
+                                           f"is mounted or a store has a record. This is coverage, not delivery; "
+                                           f"it does not say the pillar is realised.")})
     overall = round(total / len(_PILLARS), 3) if _PILLARS else 0.0
     return {"overall_realisation": overall, "pillars": pillars, "evidence_counts": data,
             "route_census": census,

@@ -849,14 +849,16 @@ export const NativeAI: React.FC = () => {
                 {(() => {
                   const ran = ensRes.members.filter(m => !m.error).length;
                   const failed = ensRes.members.length - ran;
+                  const servers = Array.from(new Set(ensRes.members.filter(m => !m.error).map(m => String(m.served_by ?? 'not reported'))));
                   return (
                     <p className="text-[9px] font-black uppercase tracking-widest text-aura mb-2" data-testid="ensemble-label">
-                      Ensemble · {ran} of {ensRes.members.length} owned model{ensRes.members.length === 1 ? '' : 's'} produced output
+                      {/* W655 (ledger v15 R4.1) - count what SERVED, not what was asked for */}
+                      Ensemble · {ran} of {ensRes.members.length} member{ensRes.members.length === 1 ? '' : 's'} produced output,
+                      served by {servers.length} resource{servers.length === 1 ? '' : 's'}{servers.length ? ` (${servers.join(', ')})` : ''}
                       {failed > 0 ? ` · ${failed} failed` : ''}
-                      {ran > 1 ? ' · run in parallel' : ''}
                       {ensRes.synthesis?.output
                         ? ' → consensus synthesised'
-                        : ' · no consensus synthesised (it needs two or more members that produced output)'}
+                        : ' · no consensus synthesised (it needs two different resources to have served)'}
                     </p>
                   );
                 })()}

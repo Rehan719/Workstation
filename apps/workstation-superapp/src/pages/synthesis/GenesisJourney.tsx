@@ -793,7 +793,7 @@ export const GenesisJourney: React.FC = () => {
           {result.stage_verifications && (
             <Card className="p-4 border-emerald-500/20">
               <div className="flex items-center justify-between gap-3 flex-wrap mb-2">
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2"><ShieldCheck size={13} className="text-slate-500" /> Stage verification — each stage tested &amp; validated (§5)</h3>
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2"><ShieldCheck size={13} className="text-slate-500" /> Stage checks — coverage and structure proxies, not tests (§5)</h3>
                 {result.stages_verified && (
                   // W460 — "0/0 verified" was green: emerald only when every ASSESSABLE stage verified
                   <span className={`text-[9px] font-black uppercase ${(() => { const [n, m] = String(result.stages_verified).split('/').map(Number); return m > 0 && n === m ? 'text-emerald-400' : m === 0 ? 'text-slate-500' : 'text-amber-400'; })()}`}>

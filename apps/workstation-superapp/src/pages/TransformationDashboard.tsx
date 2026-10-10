@@ -9,7 +9,8 @@ import { apiJson, errorMessage, provenanceBadge } from '../lib/api';
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface Evidence { label: string; met: boolean | null; basis?: string }
-interface Pillar { id: string; pillar: string; realisation: number; status: string; evidence: Evidence[] }
+interface Pillar { id: string; pillar: string; realisation: number; status: string; evidence: Evidence[];
+  checks_met?: number; checks_assessed?: number; checks_status?: string; coverage_basis?: string }   // W655
 interface Picture {
   vision_summary: string;
   realisation: { overall_realisation: number; pillars: Pillar[]; evidence_counts: Record<string, any>; route_census?: { basis?: string; paths?: number } };
@@ -101,12 +102,6 @@ interface Followups {
 }
 const PLAN_REFRESH_MS = 60_000;
 
-function tone(status: string) {
-  return status === 'realised' ? 'text-emerald-400' : status === 'partial' ? 'text-amber-400' : 'text-slate-500';
-}
-function barColor(status: string) {
-  return status === 'realised' ? 'bg-emerald-400' : status === 'partial' ? 'bg-amber-400' : 'bg-slate-600';
-}
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -319,10 +314,13 @@ export const TransformationDashboard: React.FC = () => {
                 <Card key={p.id} className="p-5">
                   <div className="flex items-center justify-between mb-2">
                     <p className="font-black text-white text-sm">{p.pillar}</p>
-                    <span className={`text-[10px] font-black uppercase ${tone(p.status)}`}>{Math.round(p.realisation * 100)}% · {p.status}</span>
+                    {/* W655 (ledger v15 R6.0) - a count of presence checks, said as that; never emerald, never "realised" */}
+                    <span data-testid="pillar-checks" title={p.coverage_basis ?? ''} className="text-[10px] font-black uppercase text-slate-400">
+                      {typeof p.checks_met === 'number' ? `${p.checks_met} of ${p.checks_assessed} checks present` : 'checks not reported'} · coverage, not delivery
+                    </span>
                   </div>
                   <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden mb-3">
-                    <div className={`h-full ${barColor(p.status)} transition-all duration-500`} style={{ width: `${p.realisation * 100}%` }} />
+                    <div className="h-full bg-slate-500 transition-all duration-500" style={{ width: `${p.realisation * 100}%` }} />
                   </div>
                   <div className="flex flex-wrap gap-x-4 gap-y-1">
                     {p.evidence.map((e, i) => (

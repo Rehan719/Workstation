@@ -536,8 +536,8 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
         # running app, and a founder reading "generated" could reasonably assume otherwise. Dropping
         # that sentence to resolve the contradiction would have removed the true statement and left
         # the overclaim.
-        "note": ("Bespoke VSB IDBO entity repository — real files generated in-house from the "
-                 "entity's own data. "
+        "note": ("VSB IDBO entity repository — real files generated in-house from the "
+                 "entity's own data, on the platform's standard layout. "
                  + (("Generated from this entity's data: "
                      + ", ".join(k for k in ("website", "webapp", "mobile") if _generated[k]) + ". ")
                     if any(_generated.values()) else "")
@@ -988,7 +988,7 @@ async def generate_vsb_website(vsb_id: str, user: dict | None = Depends(get_curr
         "entry": "web/index.html", "preview": f"/api/v1/vsb/{vsb_id}/website/page/index",
         "repo_root": str(root), "quality_assurance": qa, "ai_provenance": prov, "posture": "in-house-first",
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "note": ("Bespoke static website (real HTML/CSS) generated in-house from the VSB entity, written "
+        "note": ("Static website (real HTML/CSS) on the platform's standard layout, filled in-house from the VSB entity, written "
                  "into the repo's web/ dir. Static info site — NOT a running web app (increment 3), not "
                  "deployed/hosted."),
     }
@@ -1204,9 +1204,10 @@ async def generate_vsb_webapp(vsb_id: str, user: dict | None = Depends(get_curre
         "entry": "webapp/index.html", "preview": f"/api/v1/vsb/{vsb_id}/webapp/page/index",
         "repo_root": str(root), "quality_assurance": qa, "posture": "in-house-first",
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "note": ("Bespoke client-side interactive web app (vanilla HTML/CSS/JS, data-driven from the "
-                 "entity, runs directly in a browser — no build). NOT a server/backend app, not "
-                 "deployed/hosted."),
+        "note": ("Client-side interactive web app (vanilla HTML/CSS/JS): the platform's STANDARD TEMPLATE, the "
+                 "same viewer for every entity, showing this entity's data. It is the same app as the phone "
+                 "app's. No build step; it loads data.json, so it needs to be served rather than opened as a "
+                 "file. NOT a server/backend app, not deployed/hosted."),
     }
     (root / "webapp" / "app.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     _REPO_STORE.mkdir(parents=True, exist_ok=True)
@@ -1347,9 +1348,9 @@ async def generate_vsb_mobile(vsb_id: str, user: dict | None = Depends(get_curre
         "entry": "mobile/index.html", "preview": f"/api/v1/vsb/{vsb_id}/mobile/page/index",
         "repo_root": str(root), "quality_assurance": qa, "posture": "in-house-first",
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "note": ("Bespoke installable PWA (real web manifest + service worker + icon + mobile-first "
-                 "client-side app). Installable + offline-capable when hosted. NOT a compiled native "
-                 "iOS/Android app, not deployed/hosted."),
+        "note": ("Installable PWA (real web manifest + service worker + icon) around the platform's STANDARD "
+                 "TEMPLATE app, the same viewer as the web app's, showing this entity's data. Installable + "
+                 "offline-capable when hosted. NOT a compiled native iOS/Android app, not deployed/hosted."),
     }
     (root / "mobile" / "app.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     _REPO_STORE.mkdir(parents=True, exist_ok=True)

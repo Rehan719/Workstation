@@ -12491,11 +12491,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.35",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W655",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v14 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Closed with the ledger v15 row for the same finding (the two layer names): one map, the vision's, used by the quality record; the Agent Hub panel already followed it."
     },
     {
       "id": "FU-650",
@@ -13299,11 +13302,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.36",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W655",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v15 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The method line says one text was returned for all candidates and nothing was modelled when that is what happened, and the card is titled as coverage and structure proxies, not tests. NOT DONE: the model-served branch still opens 'candidates modelled + FORWARD-SIMULATED' without checking the candidates differ; no model serves here, so it was not driven."
     },
     {
       "id": "FU-692",
@@ -13418,11 +13424,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.36",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W655",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v15 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The four surface notes no longer open 'Bespoke'. The web app and phone app notes say they are the platform's standard template, the same viewer, showing this entity's data, and that the app needs to be served rather than opened as a file. A body already shipped keeps its old note until it is regenerated."
     },
     {
       "id": "FU-699",
@@ -13675,11 +13684,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.36",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W655",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v15 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A consensus needs two different resources to have served. When one resource served every member the method says so and no synthesis runs; the response names the distinct servers and what was tried for each member; the page counts servers, not requests."
     },
     {
       "id": "FU-714",
@@ -13695,11 +13707,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.36",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W655",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v15 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The quality record adopts the vision's map (Owner 2026-10-10): Endocrine is the signal bus this record itself fires on, Respiratory is the Agent Hub, which records and executes nothing. The two unused files stay named in the bases as not the layer, and are still checked to be unimported and unimportable. The facilities' basis states the twin exception. The guard's importer-finder missed a from-package import and called a mounted router unimported; it is corrected."
     },
     {
       "id": "FU-715",
@@ -13784,11 +13799,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.36",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W655",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v15 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A realm outside the four is no longer attested as categorised; the record carries the realm the run used beside the one sent, and whether it was recognised. A value that is not a product is recorded as defaulted, naming what was sent, instead of 'chosen by the caller'. All three record writers."
     },
     {
       "id": "FU-720",
@@ -13802,11 +13820,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.36",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W655",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v15 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The basis follows the value: a journey that established nothing says no entity record was created; one whose establishment failed says that; only an established one says a record was created."
     },
     {
       "id": "FU-721",
@@ -13857,11 +13878,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.36",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W655",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v15 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A Care tool with no published arithmetic says no score was computed and that the text is a narrative whose own provenance says what composed it; its basis no longer says it was computed from the published table. Scored tools keep their basis. NOT DONE: the four unscored options are not yet labelled as such in the hub's select."
     },
     {
       "id": "FU-724",
@@ -13932,11 +13956,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.36",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W655",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v15 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Each pillar carries how many presence checks passed and a basis saying this is coverage, not delivery. The page prints that count in grey and no longer prints the status word or colours it emerald. The old `status` field keeps its meaning for the heartbeat and the orchestrate route, which still carry the word 'realised' in their own bodies."
     },
     {
       "id": "FU-728",
