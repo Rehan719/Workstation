@@ -600,6 +600,26 @@ def list_living() -> Dict[str, Any]:
     for r in rows:
         h = hist.get(r.get("vsb_id")) or {}
         verdict = h.get("overall")
+        #  W656 (ledger v15 R2.4) - THE ENTITY'S OWN STATUS, BESIDE THE ROSTER'S WORD. `status` here is the constant
+        #  'living' and means only "registered on this roster"; it sat on rows of entities whose own record says
+        #  'body pending' or 'held'. Added, never folded into `status`: it has readers.
+        try:
+            from agentic_core.api.vsb import _load_vsb as _load_vsb656
+            _ent656 = _load_vsb656(r.get("vsb_id"))
+            if _ent656 is None:
+                r["entity_status"] = None
+                r["entity_status_basis"] = ("NO ENTITY RECORD exists for this roster row, so there is no "
+                                            "derived status to state")
+            else:
+                r["entity_status"] = _ent656.get("status")
+                r["entity_status_basis"] = (_ent656.get("status_basis")
+                                            or "the entity's record carries no derived status")
+        except Exception as _exc656:
+            r["entity_status"] = None
+            r["entity_status_basis"] = (f"NOT KNOWN - the entity's record could not be read "
+                                        f"({type(_exc656).__name__}), so its status is not stated")
+        r["status_basis"] = ("'living' is this roster's word for 'registered here'. It does not say the entity "
+                             "is operating: `entity_status` is the entity's own derived status")
         r["compliance"] = {
             # None means NOT YET SCREENED — never rendered as a pass. An entity established before
             # auto_compliance was switched on has no verdict, and that is different from a clean one.
@@ -644,7 +664,12 @@ def list_living() -> Dict[str, Any]:
         # metabolic cycles the entity has: one run through any other path posts to the books and never
         # touches this counter, so a row read "1 cycles" beside a ledger holding three. The row now names
         # the population its own counter covers and carries the books' own count beside it.
-        r["operating_cycles_basis"] = ("cycles this autonomous roster ran and booked; a cycle run through any "
+        _est656 = _int0(r.get("establishment_cycles"))
+        r["establishment_cycles"] = _est656
+        r["operating_cycles_basis"] = ("cycles this roster's operate step ran and booked"
+                                       + (f", of which {_est656} was run by establishment as the entity's first "
+                                          f"cycle and not by the autonomous beat" if _est656 else "")
+                                       + "; a cycle run through any "
                                        "other path is posted to the books but not counted here")
         try:
             from agentic_core.economy.metabolism import EconomicMetabolism
@@ -842,7 +867,7 @@ def _latest_screen(vsb_id: str) -> Optional[str]:
     return entry.get("overall") if isinstance(entry, dict) else None
 
 
-def operate_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
+def operate_vsb(vsb_id: str, source: str = "roster") -> Optional[Dict[str, Any]]:
     """Operate ONE living VSB (one governed virtual economy cycle). §11×§12 (W309): an entity whose
     LATEST compliance screen is FAIL has its distributions HELD — the survival instinct has teeth;
     the hold lifts as soon as a re-screen clears it. Best-effort; honest records either way."""
@@ -874,13 +899,13 @@ def operate_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
                 "note": ("another visit of this entity is in progress, so this one did nothing rather than "
                          "interleave with it — nothing was posted and no counter moved. Visit it again.")}
     try:
-        return _operate_vsb_claimed(vsb_id, target, _visit, _claim)
+        return _operate_vsb_claimed(vsb_id, target, _visit, _claim, source=source)
     finally:
         _release_visit(vsb_id, _visit)
 
 
 def _operate_vsb_claimed(vsb_id: str, target: Dict[str, Any], _visit: str,
-                         _claim: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+                         _claim: Dict[str, Any], source: str = "roster") -> Optional[Dict[str, Any]]:
     """The visit itself, with this entity claimed for its duration (see `operate_vsb`)."""
     if _claim.get("broke_stale"):
         # a previous visit's claim was abandoned and this one overrode it. Said, not silent: a reader of the
@@ -1034,7 +1059,12 @@ def _operate_vsb_claimed(vsb_id: str, target: Dict[str, Any], _visit: str,
         def _ran(e: Dict[str, Any]) -> None:
             e["last_governance"] = _gov_record
             e["operating_cycles"] = int(e.get("operating_cycles", 0)) + 1
+            #  W656 (ledger v15 R2.5) - WHO ASKED FOR THIS CYCLE. Establishment runs the first one; counted with
+            #  the rest, the Cockpit called it the autonomous roster's work on an entity nothing operates.
+            if source == "establishment":
+                e["establishment_cycles"] = int(e.get("establishment_cycles", 0)) + 1
             e["last_operated"] = stamp
+            e["last_operated_by"] = source
             e.pop("last_hold", None)   # a real cycle ran — no standing hold implied
             e.pop("last_error", None)
             e.pop("decision_hold", None)
@@ -1052,7 +1082,10 @@ def _operate_vsb_claimed(vsb_id: str, target: Dict[str, Any], _visit: str,
         if pend["events"] or (report.get("distributable_profit") or 0) > 0:
             try:
                 from agentic_core.api.vsb import mark_repo_stale
-                mark_repo_stale(vsb_id, f"autonomous operating cycle {target['operating_cycles']}")
+                #  W656 (R2.5) - the reason names who ran the cycle: establishment's first cycle is not autonomous
+                mark_repo_stale(vsb_id, (f"establishment's first cycle (cycle {target['operating_cycles']})"
+                                         if source == "establishment" else
+                                         f"autonomous operating cycle {target['operating_cycles']}"))
             except Exception:
                 pass
         return {"vsb_id": vsb_id, "name": target.get("name"), "cycle": target["operating_cycles"],
@@ -1080,7 +1113,10 @@ def _operate_vsb_claimed(vsb_id: str, target: Dict[str, Any], _visit: str,
 
                 def _late(en: Dict[str, Any]) -> None:
                     en["operating_cycles"] = int(en.get("operating_cycles", 0)) + 1
+                    if source == "establishment":
+                        en["establishment_cycles"] = int(en.get("establishment_cycles", 0)) + 1
                     en["last_operated"] = stamp
+                    en["last_operated_by"] = source
                     for key in ("last_hold", "last_error", "decision_hold"):
                         en.pop(key, None)
                     en["last_distributable"] = done.get("distributable_profit")

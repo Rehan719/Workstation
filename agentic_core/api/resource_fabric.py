@@ -167,8 +167,10 @@ _REGISTRY: List[Dict[str, Any]] = [
         "format": "str (python|json|yaml|markdown|…)"},
        "/api/v1/generator/produce", ["development", "forge", "delivery", "build_to_order"]),
     _R("digital_twin", "Digital Twin & Simulator", "digital_resource", "simulator",
-       "Forward-simulates a system under a scenario on the native swarm (state trajectory · emergent "
-       "behaviour · stress points · setpoints) — the §7 Simulator facility.",
+       #  W656 (ledger v15 R4.0) - what a composed stage of this resource DOES: it said "Forward-simulates"
+       "Writes a scenario narrative for a system from a simulator-persona prompt on the native swarm (state "
+       "trajectory · emergent behaviour · stress points · setpoints). In a composition NO simulator or "
+       "engine runs and nothing is computed; the twin's own route is not called.",
        ["scenario simulation", "forward modelling", "stress/failure analysis", "setpoint optimisation"],
        {"system": "str", "scenario": "str"}, "/api/v1/twin/simulate", ["design", "development", "delivery", "forge"]),   # W324 — a REAL route, not the bare prefix
 
@@ -2036,6 +2038,12 @@ def _model_configuration(resource_ids: List[str], usage_area: str,
             _av = _availability(_r["id"])
             if _av["state"] != "available":
                 _not_run.append({"id": _r["id"], "name": _r["name"], "state": _av["state"], "reason": _av["reason"]})
+            elif _r["id"] in _NARRATIVE_RESOURCES:
+                #  W656 (R4.0) - a narrative resource HAS a handler, so it reads 'available'; its engine still
+                #  does not run, and the preview said nothing before the run
+                _not_run.append({"id": _r["id"], "name": _r["name"], "state": "narrated",
+                                 "reason": "a persona prompt writes a scenario narrative; no simulator or "
+                                           "engine runs and nothing is computed"})
         _not_run_basis = ("read from the fabric's real-resource handler at this call; a resource listed here "
                           "contributes a prompt stage and its engine is not run")
     except Exception as _exc:        # the preview still answers; it says it could not check

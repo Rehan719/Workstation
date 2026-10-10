@@ -1172,7 +1172,9 @@ export const VSBCockpit: React.FC = () => {
                     {/* BOTH counts: operating_cycles counts only what THIS roster ran, so showing it alone
                         produces the clause's own failure case for an entity cycled another way. */}
                     <p data-testid="cockpit-cycle-counts" className="text-[11px] text-slate-300 mt-1 font-medium">
-                      {Number(operating.operating_cycles ?? 0)} cycle(s) run by the autonomous roster
+                      {Number(operating.operating_cycles ?? 0)} cycle(s) run by the roster's operate step
+                      {Number(operating.establishment_cycles ?? 0) > 0
+                        ? ` (${Number(operating.establishment_cycles)} of them at establishment, not by the autonomous beat)` : ''}
                       {' · '}
                       {operating.ledger_cycles === null || operating.ledger_cycles === undefined
                         ? 'the ledger count could not be read'

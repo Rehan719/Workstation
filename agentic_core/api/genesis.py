@@ -1229,11 +1229,13 @@ def _seed_plan_from_journey(vsb_id: str, name: str, req: "EstablishRequest", ent
         plan = bp_mod._load(vsb_id)
         plan["owner"] = req.owner_id
         plan["executive_summary"] = (
-            f"{name} is a living VSB IDBO established to solve: {req.problem[:200]}."
+            #  W656 (ledger v15 R2.4) - what establishment DID. "living" and "self-running" were written into
+            #  every plan whatever the entity's derived status turned out to be.
+            f"{name} is a VSB IDBO established to solve: {req.problem[:200]}."
             + (f" Go-to-market & operating model: {req.commercialisation[:280]}" if req.commercialisation else "")
         ).strip()[:1200]
         plan["concept"] = (req.concept or f"Optimal solution concept for: {req.problem[:160]}").strip()[:1200]
-        plan["vision"] = f"A self-running {req.entity_type} VSB IDBO that commercialises this solution beneficently."
+        plan["vision"] = f"A {req.entity_type} VSB IDBO to commercialise this solution beneficently."
         plan["mission"] = f"Deliver: {req.problem[:160]}"
         plan["strategy"] = ("Concept → Design → Commercialisation, governed by the Board "
                             "(Chief — the Owner's standing charter; no twin model is trained) → AI CEO → C-Suite → CoE → BTO.")
@@ -1543,7 +1545,7 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
         birth_vitals["first_screen"] = {"error": str(exc)[:160]}
     try:
         from agentic_core.economy.living_vsbs import operate_vsb
-        birth_vitals["first_cycle"] = operate_vsb(vsb_id)
+        birth_vitals["first_cycle"] = operate_vsb(vsb_id, source="establishment")   # W656 (R2.5)
     except Exception as exc:
         birth_vitals["first_cycle"] = {"error": str(exc)[:160]}
 
@@ -1742,7 +1744,7 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
             birth_vitals["first_screen"] = {"error": str(exc)[:160]}
         try:
             from agentic_core.economy.living_vsbs import operate_vsb
-            birth_vitals["first_cycle"] = operate_vsb(vsb_id)
+            birth_vitals["first_cycle"] = operate_vsb(vsb_id, source="establishment")   # W656 (R2.5)
             _fc = birth_vitals["first_cycle"] or {}
             # W503 (FU-063) — THIS ANNOUNCED "cycle ran" FOR A VISIT THAT ONLY RAISED. The raised
             # return is `{vsb_id, error, ...}` and carried no `cycle_ran` key, so `None is not False` was

@@ -74,9 +74,12 @@ def _record_checkpoint(agent: str, pre: dict, post: dict, screened: bool) -> dic
     event = {"type": "ai.generation_gated" if compliant else "post_validation_failure",
              "node": f"ai_gateway:{agent}", "action": "ai_generation",
              "compliant": compliant, "violations": violations,
-             "response_screen_withheld": screened}
+             "response_screen_withheld": screened,
+             #  W656 (R6.4) - what the post-check screened, recorded WITH the verdict it produced
+             "post_screened": post.get("screened"), "post_coverage_limit": post.get("coverage_limit")}
     chk = {"gate": _GATE_NAME, "pre_allowed": True, "post_checked": True,
            "post_compliant": compliant, "violations": violations,
+           "post_screened": post.get("screened"), "post_coverage_limit": post.get("coverage_limit"),
            # the response screen is a separate, narrower thing from the constitutional gate; saying which
            # one acted is the difference between an auditable record and a shrug.
            "response_screen_withheld": screened,

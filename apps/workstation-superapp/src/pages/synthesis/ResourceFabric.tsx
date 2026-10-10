@@ -114,7 +114,7 @@ interface CompositionRun {
     kind?: 'status_read' | 'query' | 'blueprint' | 'facility_run'; kind_phrase?: string;
     endpoint?: string; invocation?: string; side_effect?: string;
     // W491 (refutation) — `kind` is what the resource IS; `outcome` is what happened on THIS run
-    outcome?: 'produced' | 'read' | 'assessed' | 'specified' | 'raised' | 'no_calls_ran';
+    outcome?: 'produced' | 'read' | 'assessed' | 'specified' | 'narrated' | 'raised' | 'no_calls_ran';   // W656: + narrated
     outcome_phrase?: string;
     // W494 (FU-109) — three-state: the floor does not judge viability, so `null` means NOT ASSESSED.
     // `typeof === 'boolean'` used to hide that case entirely, which reads as "no verdict was wanted"
@@ -639,6 +639,7 @@ export const ResourceFabric: React.FC = () => {
                       {rr.resource}{rr.outcome === 'raised' || rr.outcome === 'no_calls_ran' ? ' (failed)'
                         : rr.outcome === 'read' || rr.outcome === 'assessed' ? ' (read)'
                         : rr.outcome === 'specified' ? ' (blueprint)'
+                        : rr.outcome === 'narrated' ? ' (narrative, no engine)'
                         : rr.outcome ? '' : ' (?)'}
                     </span>
                   ))}
@@ -794,7 +795,8 @@ export const ResourceFabric: React.FC = () => {
                               <p className="text-[9px] font-black uppercase tracking-widest text-aura" data-testid="real-runs-heading">
                                 §7 {rs.length} composed resource(s) invoked in-process ·{' '}
                                 {n('produced')} ran an engine · {n('read', 'assessed')} read existing state ·{' '}
-                                {n('specified')} drafted a blueprint · {n('raised', 'no_calls_ran')} failed
+                                {n('specified')} drafted a blueprint · {n('narrated')} wrote a narrative (no engine) ·{' '}
+                                {n('raised', 'no_calls_ran')} failed
                                 {unknown > 0 ? ` · ${unknown} not recorded` : ''}
                               </p>
                             );
@@ -818,6 +820,10 @@ export const ResourceFabric: React.FC = () => {
                                   : rr.outcome === 'specified'
                                   ? <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-300"
                                           title={rr.outcome_phrase} data-testid={`run-kind-${rr.resource}`}>blueprint</span>
+                                  : rr.outcome === 'narrated'
+                                  /* W656 (ledger v15 R4.0) - 'narrated' matched no branch and fell to the emerald "ran" */
+                                  ? <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400"
+                                          title={rr.outcome_phrase} data-testid={`run-kind-${rr.resource}`}>narrative · no engine ran</span>
                                   : rr.outcome === 'raised' || rr.outcome === 'no_calls_ran'
                                   ? <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-vital/15 text-vital"
                                           title={rr.outcome_phrase} data-testid={`run-kind-${rr.resource}`}>did not run</span>

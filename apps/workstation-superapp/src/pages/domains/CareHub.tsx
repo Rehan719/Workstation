@@ -112,7 +112,7 @@ export const CareHub: React.FC = () => {
                   </div>
                 )}
                 fields={[
-                  { name: 'tool', label: 'Tool', type: 'select', options: ['news2', 'must', 'waterlow', 'falls_risk', 'dementia_care', 'mental_health', 'discharge', 'safeguarding'], default: 'news2' },
+                  { name: 'tool', label: 'Tool (news2, must, waterlow and falls_risk compute a score; the other four are narrative only)', type: 'select', options: ['news2', 'must', 'waterlow', 'falls_risk', 'dementia_care', 'mental_health', 'discharge', 'safeguarding'], default: 'news2' },
                   { name: 'patient_data', label: 'Observations / data (key: value per line)', type: 'keyvalue', default: 'resp_rate: \nspo2: \noxygen: air\nsystolic_bp: \npulse: \ntemp: \nconsciousness: alert' },
                   { name: 'clinical_context', label: 'Clinical context (optional)', type: 'textarea', placeholder: 'e.g. 72yo post-op day 2, query chest infection' },
                 ]}
