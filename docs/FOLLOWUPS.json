@@ -12326,11 +12326,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.35",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W653",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v14 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Each part of the Chief's answer says the floor composed it when the floor did, decided from who served that agent: the directive, and now the AI CEO's plan, which also says when the instruction was recorded as one objective in its place. The page shows the plan's reason, says on the chip when the objective is the instruction filed as written, and no longer promises a faithful interpretation. A part a model composed carries no such statement."
     },
     {
       "id": "FU-642",
