@@ -37,6 +37,8 @@ class SynthesisOutput(BaseModel):
     # exist here for the truth to reach the reader at all.
     served_by: Optional[str] = None
     is_external: bool = False
+    #  W659 - what was withheld from the composed text, and why (declared, or the model strips it)
+    faith_content: Optional[Dict[str, Any]] = None
 
 
 #  the output types generate_output has a branch for; a guard keeps this set and the branches in step
@@ -369,6 +371,9 @@ class SynthesisManager:
                 f"output_type {otype!r} is listed as generated and no branch produces it. Nothing was generated."))
 
         # ── Persist to disk ──────────────────────────────────────────────────────
+        #  W659 - Arabic script in what was COMPOSED is withheld before the text is written, stored or returned
+        from agentic_core.religious_domain.composed_text import withhold_arabic as _withhold659
+        content, _faith659 = _withhold659(content)
         ext = metadata.get("format", "json")
         output_path = self.output_dir / f"{output_id}.{ext}"
         # W490 (refutation) — the DOWNLOADED file is served straight off disk, so a provenance line
@@ -383,6 +388,7 @@ class SynthesisManager:
             "content": content,
             "metadata": metadata,
             "timestamp": timestamp,
+            "faith_content": _faith659,
             # W490 — None when no call served this output; the page renders that as "not recorded"
             "served_by": getattr(self, "_last_served_by", None),
             "is_external": bool(getattr(self, "_last_is_external", False)),
@@ -398,6 +404,9 @@ synthesis_manager = SynthesisManager()
 @router.post("/generate", response_model=SynthesisOutput)
 async def generate_synthesis(request: SynthesisRequest):
     """AI-powered multi-modal synthesis from knowledge base content."""
+    #  W659 - the person's instructions, before anything is composed
+    from agentic_core.religious_domain.composed_text import refuse_faith_ruling as _refuse_ruling659
+    _refuse_ruling659(request.instructions, "synthesis request")
     return await synthesis_manager.generate_output(request)
 
 
@@ -407,6 +416,9 @@ async def stream_synthesis(request: SynthesisRequest):
     Server-Sent Events endpoint that streams the synthesis token-by-token.
     On completion emits a final JSON event with the full output_id and download URL.
     """
+    #  W659 - refused HERE, before the generator exists: a refusal raised inside a stream arrives after a 200
+    from agentic_core.religious_domain.composed_text import refuse_faith_ruling as _refuse_ruling659
+    _refuse_ruling659(request.instructions, "synthesis request")
     context, inferred_topic = synthesis_manager._resolve_context(request.content_ids)
     instructions = request.instructions.strip()
     topic = instructions or inferred_topic
@@ -455,20 +467,28 @@ async def stream_synthesis(request: SynthesisRequest):
 
     async def event_stream() -> AsyncIterator[str]:
         fin: dict = {}
+        #  W659 - a run of Arabic script can be split across tokens; the filter keeps the state between them
+        from agentic_core.religious_domain.composed_text import ArabicStreamFilter as _Filter659
+        from agentic_core.religious_domain.composed_text import withhold_arabic as _withhold659
+        _flt659 = _Filter659()
         # W451 — stream_meta: the done frame discloses who served it and whether the profile shaped it
         # P2.2 (W511) — stated, not inherited. This was one of the 29 call sites W489 found carrying
         # another request's content when the default was True.
         async for ev in gateway.stream_meta(prompt, agent=f"synthesis:stream:{otype}", augment=False,
                                             user_text=(instructions or None)):   # W646
             if "token" in ev:
-                collected.append(ev["token"])
-                safe = ev["token"].replace("\n", "\\n").replace("\r", "")
+                _tok659 = _flt659.feed(ev["token"])
+                collected.append(_tok659)
+                safe = _tok659.replace("\n", "\\n").replace("\r", "")
                 yield f"data: {json.dumps({'token': safe})}\n\n"
             elif ev.get("done"):
                 fin = ev
 
         # Persist full content (the guardrail's replacement, never a violation — as query_meta persists)
-        content = "".join(collected) if fin.get("guardrail_passed") is not False else (fin.get("output") or "")
+        if fin.get("guardrail_passed") is not False:
+            content, _faith659 = "".join(collected), _flt659.record()
+        else:
+            content, _faith659 = _withhold659(fin.get("output") or "")
         ext = "html" if otype == "website" else ("json" if otype in ("presentation", "video", "audiobook", "business_model", "simulation") else "md")
         output_path = synthesis_manager.output_dir / f"{output_id}.{ext}"
         # W490 (refutation) — the STREAM path persists its own file too; it carries the provenance the
@@ -486,6 +506,7 @@ async def stream_synthesis(request: SynthesisRequest):
             #  these the response model filled is_external False by default, whatever had actually served.
             "served_by": fin.get("served_by") or None,
             "is_external": bool(fin.get("is_external")),
+            "faith_content": _faith659,
         })
 
         # W494 (FU-148 refutation) - the done frame sent no `format` and no `slides_count`, so the
@@ -507,7 +528,8 @@ async def stream_synthesis(request: SynthesisRequest):
                  'download_url': f'/api/v1/synthesis/download/{output_id}', 'timestamp': timestamp,
                  'format': ext,
                  'served_by': fin.get('served_by'), 'is_external': bool(fin.get('is_external')),
-                 'profile_applied': bool(fin.get('profile_applied'))}
+                 'profile_applied': bool(fin.get('profile_applied')),
+                 'faith_content': _faith659}
         if _slides_n is not None:
             _done['slides_count'] = _slides_n
         yield f"data: {json.dumps(_done)}\n\n"

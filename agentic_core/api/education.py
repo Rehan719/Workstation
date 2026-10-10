@@ -22,7 +22,7 @@ from agentic_core.api._ai_provenance import ai_text as _ai_text, person_said, di
 #  W637 (FU-597) — this router's domain, bound once. Every ai_text call below carries it, so the native floor
 #  prints the real domain instead of "the request named no domain".
 ai_text = functools.partial(_ai_text, domain="education")
-from agentic_core.religious_domain.subject_screen import screen_subject
+from agentic_core.religious_domain.subject_screen import refuse_if_religious_teaching, screen_subject
 
 router = APIRouter(prefix="/api/v1/education", tags=["education"])
 
@@ -71,25 +71,7 @@ async def design_curriculum(req: CurriculumRequest):
     mathematics and history too - so it is not gated; what it does is decline the requests that belong
     behind the gate and say where they go. The screen can only FLAG, never clear, and the response says so.
     """
-    _screen = screen_subject(req.subject, req.level, req.framework)
-    if _screen["flagged"]:
-        #  THE DETAIL IS SHAPED FOR THE READER IT REACHES. apps/.../lib/api.ts turns a non-string
-        #  `detail` into JSON.stringify(detail).slice(0, 300) and EducationHub renders that through
-        #  errorMessage(), so a long explanatory basis here would arrive on a teacher's screen as JSON
-        #  cut off mid-sentence. `message` therefore carries ONE readable sentence and comes first, and
-        #  the whole dict stringifies well inside the 300 characters that survive.
-        raise HTTPException(
-            status_code=409,
-            detail={
-                "message": (
-                    f"Not composed here: \"{req.subject}\" is religious teaching content, which needs a "
-                    f"named scholar's approval before a learner sees it. Use /api/v1/qep/curriculum, "
-                    f"which submits it for review. Matched: {', '.join(_screen['matched'][:3])}."),
-                "where_instead": "/api/v1/qep/curriculum",
-                "matched": _screen["matched"],
-                "ruling": "2026-10-05b R7 (§A.12.3)",
-            },
-        )
+    _screen = refuse_if_religious_teaching("curriculum", req.subject, req.level, req.framework)   # W659 - one function, four routes
     n_weeks = min(max(req.duration_weeks, 4), 52)
     n_objectives = min(max(req.learning_objectives_count, 3), 10)
 
@@ -158,6 +140,7 @@ async def generate_lesson_plan(req: LessonPlanRequest):
     """
     Generate a detailed, structured lesson plan ready for classroom delivery.
     """
+    refuse_if_religious_teaching("lesson plan", req.subject, req.topic, req.level)      # W659 (ledger v15 FU-689)
     duration = min(max(req.duration_minutes, 20), 180)
 
     prompt = (
@@ -215,6 +198,9 @@ async def marking_feedback(req: FeedbackRequest):
     feedback — strengths, areas to develop, criterion-by-criterion notes, next steps, and an INDICATIVE
     level/grade. An AID for the teacher's professional judgement — indicative only, never a final or
     official mark; the teacher remains responsible."""
+    #  W659 - marking is teaching content too. The SUBJECT and the TASK are screened; the student's own work is not
+    #  (a history essay that mentions a faith is not a religious-teaching request).
+    refuse_if_religious_teaching("marking feedback", req.subject, req.task)
     prompt = (
         "You are an experienced, fair teacher and examiner. Mark the student's work against the task and any "
         "rubric, and give warm but honest, actionable feedback. Be specific and point to evidence in the work.\n\n"
@@ -266,6 +252,7 @@ async def create_assessment(req: AssessmentRequest):
     """
     Create a complete assessment instrument (quiz, rubric, exam, etc.)
     """
+    refuse_if_religious_teaching("assessment", req.subject, req.topic, req.level)       # W659 (ledger v15 FU-689)
     type_prompt = _ASSESSMENT_TYPES.get(
         req.assessment_type,
         f"Create a comprehensive {req.assessment_type.replace('_', ' ')} assessment."

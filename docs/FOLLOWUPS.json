@@ -13297,11 +13297,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.37",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W659",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v15 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "RULED by the Owner 2026-10-10. The four TEACHING routes (curriculum, lesson plan, assessment, marking feedback) refuse a religious subject outright through one function, with the referral the curriculum route already gave; a syntax walk fails a fifth teaching route that forgets it. A GENERAL route (deliverables, synthesis, the swarm) is not refused for its subject: it refuses a request for a religious ruling or a theological proof, and Arabic script is withheld from text it composed. NOT COVERED: a ruling request phrased with no faith term at all is not refused on a general route."
     },
     {
       "id": "FU-690",
@@ -13666,11 +13669,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.37",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W659",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v15 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A delegate task or a cascade mission that asks for a religious ruling is refused before anything runs, with the gate named; the roster role no longer advertises jurisprudence. An ordinary question with the same grammar ('is remote work allowed under the policy') is served: the gate must fire AND the text must carry a faith term."
     },
     {
       "id": "FU-710",
@@ -13899,11 +13905,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.37",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W659",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v15 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A religion tool that withheld sections reports no coverage figure and no stub verdict for the text it returned; the basis says the figure was measured before the sections were withheld, and that figure is kept under its own name. A syntax walk fails a return that carries withheld sections and a provenance that did not pass through the one helper."
     },
     {
       "id": "FU-722",
@@ -14341,6 +14350,24 @@
       "closed_by": null,
       "note": "",
       "slot_source": "the undone part of an Owner ruling closed in W658",
+      "tier": 3
+    },
+    {
+      "id": "FU-746",
+      "title": "No stored output has been checked against one evidence contract: requested, ran, served by, measured, not assessed, gate, hashed, owner",
+      "why": "An external assessment (docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md section 14) names eight things a deliverable or status should carry. Most exist as separate fields added round by round; nobody has taken the eight as a checklist against the three kinds of stored output (a deliverable, a composition run, a Board Pack) and recorded which each lacks.",
+      "source": "W659 (external assessment verified, 2026-10-10)",
+      "found": "2026-10-10",
+      "files": [
+        "agentic_core/api/deliverables.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "adopted from an external assessment the Owner asked to be considered",
       "tier": 3
     }
   ],

@@ -1069,6 +1069,15 @@ not choose):** the single lifecycle (§17.1, item 3.10 — A / B / C) · whether
 built or amended · whether §17.5's KPI gate is built or amended · the scope of §17.4 Mode 2 · the Stripe
 key roll · the 162 test-owned entities · and, at P4, each Owner-held switch in §14.
 
+**What became of that list (status at W659; the Stripe key roll was DONE by the Owner on 2026-10-09).** The
+list above is kept as the W446 record it is. Since then: the single lifecycle — RULED 2026-10-05b (R2),
+option C, narrow: make the stage advance or rename it · the Products axis — RULED 2026-10-05b (R4): build the
+axis, defer the 96-cell surface · the KPI gate — RULED 2026-10-05b (R5): built narrowly, as a release
+precondition that reports what is missing · Mode 2 — RULED 2026-10-05b (R6): scoped to the Owner's own twin ·
+the Stripe keys — rotated and the old ones expired by the Owner · the 162 test-owned entities — nothing
+deleted: a scan and a reversible move only, and the quarantine folder is the Owner's to empty (rulings of
+2026-10-09). STILL with the Owner: each switch in §14.
+
 *(The progress addenda formerly numbered §16.3 and §16.4 — the Rounds 11–12 reconciliation and the
 §6 architecture-vs-practice correction, W363–W380 — are preserved verbatim in git history and in
 `docs/AUTONOMOUS_PROGRESS.md`. §16.4's lesson is now §16's operating rule: record what was

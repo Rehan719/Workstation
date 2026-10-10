@@ -93,6 +93,28 @@ def person_said(*parts) -> str | None:
     return chr(10).join(out) if out else None
 
 
+def note_withheld(provenance: "dict | None", sections_withheld: "list | None") -> "dict | None":
+    """W659 (ledger v15) - THE COVERAGE FIGURE IS OF THE TEXT THAT WAS MEASURED, AND THAT IS NOT THE TEXT RETURNED.
+    The gate in ai_text measures the composed text; a religion tool then removes the sections it may not show. The
+    response kept `delivery_coverage: 1.0` and `stub_found: false` beside a body with those sections gone. For
+    the returned text nothing was measured, so both are None here and the basis says so; the figure that WAS
+    measured is kept under a name that says what it is of. Returns the same dict (mutated), for use inline."""
+    if not sections_withheld or not isinstance(provenance, dict):
+        return provenance
+    qa = provenance.get("quality_assurance")
+    if isinstance(qa, dict):
+        n = len(sections_withheld)
+        qa["delivery_coverage_before_withholding"] = qa.get("delivery_coverage")
+        qa["delivery_coverage"] = None
+        qa["stub_found"] = None
+        qa["sections_withheld_count"] = n
+        _was = str(qa.get("qms_basis") or "").rstrip()
+        qa["qms_basis"] = ((_was + " ") if _was else "") + (
+            f"Coverage and the stub check were measured on the text BEFORE {n} section(s) were withheld; no "
+            f"figure is reported for the text returned.")
+    return provenance
+
+
 async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
                   owner_id: str | None = None, augment: bool = False,
                   realm: str = "", domain: str = "",

@@ -69,7 +69,9 @@ _AGENTS: dict[str, dict] = {
     "care":     {"role": "Chief Care Officer",        "expertise": "Healthcare pathways, patient safety, clinical governance, NICE compliance"},
     "education":{"role": "Chief Learning Officer",    "expertise": "Curriculum design, pedagogy, learning outcomes, EdTech, accreditation"},
     "law":      {"role": "Legal Domain Expert",       "expertise": "Contract law, dispute resolution, legal document generation, jurisdiction advice"},
-    "religion": {"role": "Religious Affairs Advisor", "expertise": "Islamic jurisprudence, interfaith relations, halal compliance, ethics"},
+    #  W659 (ledger v15 FU-709) - the role advertised "Islamic jurisprudence". No AI on this platform gives a
+    #  religious ruling; what the role may do is say so and point to people who can.
+    "religion": {"role": "Faith-Community Affairs Advisor", "expertise": "Faith-community needs, interfaith relations, pointing to qualified scholars and certified bodies; gives NO religious ruling"},
 }
 
 
@@ -105,6 +107,9 @@ async def delegate_task(req: DelegateRequest):
     CEO receives task, decides which agents to engage, collects their responses,
     and synthesises a unified executive response.
     """
+    #  W659 - a request for a religious ruling is refused at this door as it is at the engines', before anything runs
+    from agentic_core.religious_domain.composed_text import refuse_faith_ruling
+    refuse_faith_ruling(f"{req.task} {req.context}", "delegation")
     run_id = uuid.uuid4().hex[:10]
     start = time.time()
 
@@ -370,6 +375,10 @@ async def cascade_orchestration(req: CascadeRequest,
       Centres of Excellence → Business Transformation Office → Build-to-Order (operational delivery
       resources) → Products/Services catalogue.
     """
+    #  W659 (ledger v15) - a mission that asks for a religious ruling is refused before anything runs: the roster
+    #  carried a jurisprudence role and nothing between the request and the tiers asked what was being asked.
+    from agentic_core.religious_domain.composed_text import refuse_faith_ruling as _refuse_ruling659
+    _refuse_ruling659(req.mission, "mission")
     run_id = uuid.uuid4().hex[:10]
     start = time.time()
     # W452 (P1.4) — a cascade scoped to a VSB consults its Mode 3 review gates before a single
