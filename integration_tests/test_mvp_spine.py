@@ -50125,3 +50125,69 @@ def test_w651_a_fabric_stage_runs_the_gate_and_a_fallback_objective_is_called_on
     _u2 = asyncio.run(_b.twin_directive_unprompted("w651-parsed"))
     assert _u2["issued"] is True and _u2["filed_as_fallback"] is False, _u2
     assert "yielded objectives" in _u2["basis"] and "fallback" not in _u2["basis"], _u2["basis"]
+
+
+def test_w652_the_ledger_prints_the_cap_the_run_was_given():
+    """The audit's cap is a field of the RUN. The workflow said "Up to 10" and the renderer wrote "capped at
+    ten" from its own source, so a run at the ruled cap of 20 would have been described as a run at ten.
+
+    THE PROPERTIES: a record whose regions carry a cap prints THAT number; a record that carries none is an
+    earlier run and prints ten; regions that disagree are a broken record and nothing is written; and the
+    workflow tells the assessor the number it was given and returns it on every region.
+    """
+    import json
+    import os
+    import pathlib as _pl
+    import subprocess
+    import sys
+    import tempfile
+
+    _root = _pl.Path(__file__).resolve().parents[1]
+    _script = _root / "scripts" / "render_fidelity_ledger.py"
+    _d = _pl.Path(tempfile.mkdtemp())
+    _census = _d / "census.json"
+    _census.write_text(json.dumps({"routes": ["GET /api/v1/a"], "pages": [{"path": "/alpha", "component": "Alpha"}],
+                                   "excluded": []}), encoding="utf-8")
+
+    def _region(key, cap=None, capped=False):
+        r = {"region": key, "summary": "", "hit_the_cap": capped, "unlisted_findings": 0,
+             "surfaces_exercised": {"routes": ["GET /api/v1/a"], "files": []},
+             "findings": [{"id": f"{key}.0", "section": "finding", "verdict": "PARTIAL", "tier": 1,
+                           "vision_claim": "c", "observed": "o", "evidence": "e"}],
+             "verdicts": [{"index": 0, "corrected_verdict": "PARTIAL", "corrected_tier": 1, "refuted": False,
+                           "reproduced": True, "reason": "r", "evidence": "x"}]}
+        if cap is not None:
+            r["cap"] = cap
+        return r
+
+    def _render(regions, name):
+        _src = _d / (name + ".json")
+        _src.write_text(json.dumps(regions), encoding="utf-8")
+        _dst = _d / name
+        _p = subprocess.run([sys.executable, str(_script), str(_src), str(_dst), "deadbeef", "2026-01-01", "8031",
+                             "14", "W652", str(_census)], capture_output=True, text=True, encoding="utf-8",
+                            env=dict(os.environ, PYTHONIOENCODING="utf-8"))
+        return _p.returncode, (_p.stdout or "") + (_p.stderr or ""), (
+            " ".join(_dst.read_text(encoding="utf-8").split()) if _dst.exists() else None)
+
+    #  a run given 20 says 20, in the method paragraph AND in the incomplete-coverage sentence
+    _rc, _out, _t20 = _render([_region("R1", 20, capped=True), _region("R2", 20)], "a.md")
+    assert _rc == 0, _out[-400:]
+    assert "capped at 20 findings per region" in _t20, "the ledger does not print the cap the run was given"
+    assert "capped at ten" not in _t20 and "capped at 10 " not in _t20, "a run at 20 is described as a run at ten"
+    assert "a count of the 20 most consequential" in _t20, "the incomplete-coverage sentence states another cap"
+
+    #  a record that carries no cap is an earlier run: ten, as every earlier run was
+    _rc, _out, _t10 = _render([_region("R1"), _region("R2")], "b.md")
+    assert _rc == 0 and "capped at 10 findings per region" in _t10, (_rc, _out[-300:])
+
+    #  regions that disagree: refused, nothing written
+    _rc, _out, _bad = _render([_region("R1", 10), _region("R2", 20)], "c.md")
+    assert _rc != 0 and "different caps" in _out and _bad is None, (
+        "a record whose regions carry different caps was rendered", _rc, _out[-300:])
+
+    #  the workflow: the number is an argument, said to the assessor and returned on every region
+    _wf = (_root / "scripts" / "workflows" / "fidelity_audit_v7.js").read_text(encoding="utf-8")
+    assert "Up to ${CAP} findings" in _wf and "Up to 10 findings" not in _wf, "the assessor is told a typed cap"
+    assert _wf.count("cap: CAP") >= 2, "a region - the empty one included - is returned without the cap it ran under"
+    assert "const CAP = " in _wf and "A.cap" in _wf, "the cap is not taken from the run's arguments"

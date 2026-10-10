@@ -322,14 +322,20 @@ def main(src, dst, head, date, port="8024", version="3", round_name="W446", cens
     w("sources: the vision's own §16, the previous edition of this ledger, and `AUTONOMOUS_PROGRESS.md`")
     w("(a record of intent, not proof). They executed routes, read handlers and components, and counted")
     per_region = Counter(x[0] for x in rows)
-    if v4 and any(n < 10 for n in per_region.values()):
-        w(f"stores. The ASSESSMENT was capped at ten findings per region, most consequential first; the regions returned")
+    #  W652 - the cap is what the RUN was given, read from the record. A record that carries none is an earlier
+    #  run, and every earlier run was capped at ten. Regions disagreeing is a broken record, not something to average.
+    _caps = {int(r["cap"]) for r in (by_key or {}).values() if isinstance(r.get("cap"), (int, float))}
+    if len(_caps) > 1:
+        raise SystemExit(f"REFUSED: the regions of this record carry different caps ({sorted(_caps)})")
+    _cap_n = _caps.pop() if _caps else 10
+    if v4 and any(n < _cap_n for n in per_region.values()):
+        w(f"stores. The ASSESSMENT was capped at {_cap_n} findings per region, most consequential first; the regions returned")
         w(f"{', '.join(f'{k} {per_region.get(k, 0)}' for k in ORDER)} — a region under the cap ran out of consequential gaps, one")
         w("at the cap may have more. **Every finding was then attacked by an independent")
     else:
-        w("stores. The ASSESSMENT was capped at ten findings per region, most consequential first — and every")
-        w(f"region returned exactly ten, so **{total} is the size of the cap, not the size of the gap**; a region's")
-        w("eleventh-worst thing is not in this ledger. **Every finding was then attacked by an independent")
+        w(f"stores. The ASSESSMENT was capped at {_cap_n} findings per region, most consequential first — and every")
+        w(f"region returned exactly {_cap_n}, so **{total} is the size of the cap, not the size of the gap**; what a region")
+        w("found beyond its cap is not in this ledger. **Every finding was then attacked by an independent")
     w("refuter instructed to default to refuted** (v2 refuted six per region), who had to reproduce the gap (execute the")
     w("route, read the code, count the store) before letting it stand, and who was told to correct the")
     w("verdict UP or DOWN when the assessor had it wrong.")
@@ -407,7 +413,7 @@ def main(src, dst, head, date, port="8024", version="3", round_name="W446", cens
     if _capped:
         w(f"**Coverage: INCOMPLETE in {len(_capped)} of {len([k for k in ORDER if k in by_key])} regions** "
           f"({', '.join(_capped)}). Each of these assessors reported stopping at the cap with findings left "
-          "unlisted, so a tier count for those regions is a count of the ten most consequential, not of all. "
+          f"unlisted, so a tier count for those regions is a count of the {_cap_n} most consequential, not of all. "
           "A run with any region at the cap does not count toward a milestone's two consecutive zero runs.")
     elif _unrecorded:
         w(f"**Coverage: NOT STATED** — {', '.join(_unrecorded)} carried no cap flag, so whether those regions "

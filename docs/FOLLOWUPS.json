@@ -13235,6 +13235,24 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "RULED by the Owner 2026-10-10 and built as ruled. Register-and-hold stays at the doors that create an entity. The website, web app, phone app and repository ship refuse (409) while the entity's latest screen is 'fail', naming the frameworks that failed and saying the screen is a word list that has not assessed the enterprise; the download of a body shipped earlier refuses the same way. A 'review' or never-screened entity is not refused. A history that cannot be read stops the ship as standing-unknown (503) and lifts nothing. Establishment says when its own birth ship was refused."
+    },
+    {
+      "id": "FU-688",
+      "title": "Nothing drives ONE person's journey from challenge to a downloadable, operating entity and reads every surface on the way",
+      "why": "The audit samples six regions; no instrument follows a single journey start to finish. Proposed by an external review (assessed in docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md section 12): on a fresh store, drive one challenge through the journey, accept an output, establish the entity, ship it, download the body, run one operating cycle, and check every claim each surface makes against what happened - as one guard-shaped journey, on the floor and stated as floor-served. For the Owner's sequencing; not started.",
+      "source": "W652 external review",
+      "found": "2026-10-10",
+      "files": [
+        "integration_tests/test_mvp_spine.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "an instrument for disclosed and unreached capability, which is the item that holds the tier-3 rows",
+      "tier": 3
     }
   ],
   "routes": [
