@@ -189,6 +189,13 @@ export const BTOCatalog: React.FC = () => {
                 <p className="text-[8px] text-slate-500 uppercase tracking-widest">Components</p>
               </div>
             </div>
+            {/* W660 (FU-717) - what was asked for and matched nothing is named, not folded into the count */}
+            {((blueprint.unknown_slugs?.length ?? 0) + (blueprint.unknown_components?.length ?? 0)) > 0 && (
+              <p data-testid="bto-unknown" className="text-[10px] text-amber-400 leading-relaxed">
+                {typeof blueprint.unknown_basis === 'string' ? blueprint.unknown_basis : 'Some items asked for were not recognised.'}{' '}
+                {[...(blueprint.unknown_components ?? []), ...(blueprint.unknown_slugs ?? [])].map(String).join(' · ')}
+              </p>
+            )}
 
             {/* Components grid */}
             <div className="grid grid-cols-1 @[440px]:grid-cols-2 gap-3">

@@ -89,8 +89,13 @@ class ThermodynamicFreeEnergyLedger:
             "bits_basis": bits_basis or "NOT STATED: the caller supplied no account of this bit count",
             #  RENAMED. `energy_joules` read as the energy this operation used.
             "landauer_floor_joules": bits * self.E_min * self.hw,
-            "energy_basis": (f"the thermodynamic MINIMUM to erase {bits:g} bits at {self.temperature}K "
-                             f"(k_B*T*ln2 per bit), multiplied by a hardware factor of {self.hw}. This is "
+            #  W660 - "the minimum to erase N bits" read alone says N bits WERE erased. N is whatever the
+            #  caller metered (its basis is beside this one); the floor is what erasing that many WOULD cost.
+            "energy_basis": (f"what erasing {bits:g} bits WOULD cost at the thermodynamic minimum at "
+                             f"{self.temperature}K (k_B*T*ln2 per bit), multiplied by a hardware factor of "
+                             f"{self.hw}. The bit count is what the caller metered ("
+                             f"{bits_basis or 'no account of it was given'}); nothing here establishes that "
+                             f"this many bits were erased. This is "
                              f"a FLOOR, not a measurement of energy drawn: nothing here measures power. "
                              f"{_HW_BASIS}"),
             "budget_remaining": self.budget.remaining,

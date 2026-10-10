@@ -1534,6 +1534,11 @@ export const VSBCockpit: React.FC = () => {
                 {btoBlueprint && (
                   <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
                     <p className="text-[11px] text-slate-300"><span className="text-white font-black">{btoBlueprint.entity_name}</span> — {btoBlueprint.component_count} components · {btoBlueprint.resource_count} product resources</p>
+                    {((btoBlueprint.unknown_slugs?.length ?? 0) + (btoBlueprint.unknown_components?.length ?? 0)) > 0 && (
+                      <p data-testid="cockpit-bto-unknown" className="text-[10px] text-amber-400">
+                        Not recognised, and in neither count: {[...(btoBlueprint.unknown_components ?? []), ...(btoBlueprint.unknown_slugs ?? [])].map(String).join(' · ')}
+                      </p>
+                    )}
                     <div className="flex flex-wrap gap-1.5">
                       {Object.keys(btoBlueprint.components || {}).map(k => <span key={k} className="px-2 py-0.5 rounded-md bg-slate-800 text-[9px] font-black uppercase text-slate-300">{k}</span>)}
                     </div>

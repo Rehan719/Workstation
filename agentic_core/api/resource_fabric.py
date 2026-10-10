@@ -1528,6 +1528,9 @@ async def run_composition(cid: str, req: RunCompositionRequest,
                                 "duration_ms": x.get("duration_ms")} for x in real_runs],
             "org_cascade_run_id": (org_cascade or {}).get("run_id"),
             "served_by": _served, "any_external": bool(res.get("any_external")),
+            "served_by_basis": ("counts the stages of this composition's own prompt trace, by what served each. "
+                                "The calls each REAL resource made are NOT in this figure: they are on that "
+                                "resource's row in real_resources"),
             "qms_gate_passed": qa["quality"].get("qms_gate_passed"),
             "plan_binding": plan_binding,
             "duration_ms": int((time.time() - _t0) * 1000),

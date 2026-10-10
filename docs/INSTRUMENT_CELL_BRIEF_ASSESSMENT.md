@@ -416,3 +416,61 @@ standing instruction.
 Nothing new to rule. One thing to know: rows 5 and 6 mean the plan now has NO open tier-1 row and the older
 tier-2 item has none either; what stands between the plan and the next audit is the 21 open tier-2 rows of ledger
 v15, of which the prepared rounds cover the first batches.
+
+## 15. Addendum (W660): a regenerated "Biomimetic Minimisation Engine" specification and integration prompt, assessed
+
+Received from the Owner 2026-10-10 (late). It replaces an earlier greenfield proposal (eight new modules, six
+frameworks, fixed thresholds) with a brief that starts from what this repository already records. Its author
+read the public documents and ran nothing. Checked against the tree at W659, and this time one thing was RUN:
+the status route itself.
+
+| # | Claim | Checked against | Verdict |
+|---|---|---|---|
+| 1 | P3.17 is recorded DONE at W553 and must not be reopened | the plan | TRUE |
+| 2 | The status route, the objective with five weighted terms, the transport router, one thermodynamic ledger and the archived bridge and diffusion sources are where it says | the tree | TRUE, every path |
+| 3 | The follow-ups to re-read (FU-233, FU-235, FU-236, FU-329) may no longer be open | the register | ALL FOUR ARE CLOSED (W547, W548), as is FU-234 (invented bit counts, W546) |
+| 4 | The objective withholds J when any weighted term is unassessable, and no missing term defaults to zero | the route, driven | TRUE. Driven on the floor: 0 of 5 terms assessable, J not reported, each term naming its missing producer |
+| 5 | In the earlier measurement only the entropy-export term had a producer | the route, driven | AS MEASURED NOW: none is assessable with no metrics supplied; entropy export is the one a caller could supply, and its basis says so |
+| 6 | The transport solver (POT) was recorded unavailable, and honest unavailability is the right answer | the route, driven | THE BRIEF COULD NOT SEE THIS, AND MEASURING IT FOUND A DEFECT. On this machine the solver IS installed (it is in pyproject and not in requirements.txt - an open row). The response then said two things: the router answered "importable", and the transport TERM beside it said the solver "is not installed". One sentence was computed and one was typed in W548. FIXED in W660: the term asks the router; with the solver present it is still not assessed, and says what is missing (two marginals and a cost matrix). Guarded in both states |
+| 7 | The ledger reports a theoretical floor, not energy drawn; the hardware factor is declared, not measured; a payload size is not a count of bits erased | the ledger and its callers | TRUE in the tree since W546: the output is named a floor, the factor says it is declared, and each caller's basis says its count is a payload size. ONE SENTENCE TIGHTENED in W660: the ledger's own basis read "the minimum to erase N bits", which read alone says N bits were erased; it now says what erasing that many would cost and that the count is the caller's |
+| 8 | A top-level `core/` package sits beside the "no parallel source tree" rule and nothing should move until that is resolved | the register | TRUE; it is an open lead (a row on the commercial-rehearsal item), and nothing was moved |
+| 9 | `torchsde` was recorded as not installed | this machine and requirements.txt | TRUE HERE, and requirements.txt DOES list it: the mirror image of the transport solver. What the status route reports depends on the deployment, which is the reason its sentences must be computed |
+
+**Refused, as the brief itself refuses:** a new minimisation tree, a second meter, a second registry or page;
+six frameworks built to fill a table; thresholds, fidelity percentages and confidence figures with no
+instrument; wiring the engine into capital allocation, consultation, the avatar or the heartbeat with no
+measured use case; installing a solver to make a term turn green.
+
+**Its scientific corrections to the earlier proposal** (the Gaussian divergence written the wrong way round,
+a bridge "likelihood" that is not one, a consensus simulation that never passes its own callbacks, Murray's
+law applied to software) are about code that was never in this tree. They are right, and they are the
+reason none of that code should arrive.
+
+**Outcome.** The brief's own second exit condition holds: no open row asks for minimisation work, P3.17 stays
+closed, and nothing is built. What changed is two sentences, both found because the route was driven rather
+than read.
+
+## 16. Addendum (W660): revision 3 of the external strategic assessment and its prompt, assessed
+
+Received from the Owner 2026-10-10 (late). It was regenerated from sections 13 and 14 of this document, and
+says so. It now restates this repository's own position rather than proposing a second one.
+
+| # | Claim | Verdict |
+|---|---|---|
+| 1 | One audit instrument; no second audit, ledger, planner or register | AGREED; it is the position of sections 12 to 14 |
+| 2 | The Instrument Cell is P3.31, inside the existing fabric; 39 of 41 resources run, and the two spawners (`vsb_spawn`, `genesis_establish`) add a prompt stage and run no engine | TRUE, both ids as named. Still open on P3.31, as its record says |
+| 3 | One automatic alternative for a resource that reads or composes, never for one that writes | TRUE, as ruled 2026-10-10 |
+| 4 | P3.32: behaviour first; the evaluate route gained a named, versioned probe set and a control; held-out probes are unbuilt; levels 2 to 5 are not scheduled | TRUE, as the plan records it |
+| 5 | The single end-to-end journey is recorded for sequencing and not started | TRUE. It is also what the commercial phase's first item already asks (one tenant, concept to commercial output, measured) |
+| 6 | P5.6 is five documents; the six labels are for business documents only; the first segment is a hypothesis; the Quran Education Platform stays free; the draft is not entered as the Owner's words | TRUE, each as ruled |
+| 7 | The public README and `main` may be behind the working tree | OUT OF DATE WHEN READ HERE: `main` holds W658 and the README is dated to the W658 run |
+| 8 | The key rotation is done; history still holds the old key; do not rewrite public history | TRUE, and nothing is rewritten |
+
+**What it adds.** A list of what a release depends on that is not yet a row anywhere: backup and restore of
+the file stores, error and usage telemetry, the handling of data about children in the Quran Education
+Platform, accessibility, and who answers when something is wrong. The last is the commercial phase's support
+item. The others belong in the founder's guide's launch gates (P5.6, clause 3), each stated as built,
+measured or absent; carried there, not registered separately, because that clause already owns "the launch
+gates in order".
+
+**Nothing here changes the order of work.**

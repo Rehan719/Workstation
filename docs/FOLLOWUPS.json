@@ -13791,11 +13791,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.37",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W660",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v15 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The cascade's roster carries what was requested, what ran and what did not run with the reason, in the answer and on the stored run; when none of the roles asked for could be engaged it says the default set ran in their place. The cascade page shows the not-run line. NOT DONE: a custom officer is still not engaged - the answer now says so instead of dropping it."
     },
     {
       "id": "FU-716",
@@ -13828,11 +13831,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.37",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W660",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v15 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A Build-to-Order blueprint names the slugs and components that matched nothing and counts only the components it recognised; the build's delivery sentence says which slugs matched nothing and were not attempted. Both pages that show a blueprint show them."
     },
     {
       "id": "FU-718",
@@ -13844,11 +13850,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.37",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W660",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v15 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The durable run record says what its served_by count is of: the stages of the composition's own prompt trace. The calls each real resource made are on that resource's row. The count is unchanged; it was right and unlabelled."
     },
     {
       "id": "FU-719",
@@ -14084,11 +14093,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.37",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W660",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v15 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The allocation names the causes ranked below the cut that received nothing, with their rank, and its rule says the pro-rata split is among the top causes by score. A priority below the cut that is funded by its floor is not listed as unfunded."
     },
     {
       "id": "FU-731",

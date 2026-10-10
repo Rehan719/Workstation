@@ -588,6 +588,16 @@ async def cascade_orchestration(req: CascadeRequest,
     # → a balanced default set; only known C-Suite roles are engaged (CEO is the apex, not in the set).
     _CSUITE_POOL = ["CSO", "CFO", "CTO", "CPO", "COO", "CIO", "CLO", "Forecasting", "Policy"]
     selected = _sel_probe[:9]
+    #  W660 (ledger v15 FU-715) - WHAT WAS ASKED FOR AND DID NOT RUN, WITH THE REASON. A role outside the fixed
+    #  officers was filtered away above and the answer named only the ones that ran; and when NONE was
+    #  recognised the default set ran with nothing saying the request had been replaced.
+    _roles_requested = [str(r) for r in (req.csuite_roles or [])]
+    _roles_not_run = [{"role": r, "why": ("the CEO is the apex of the cascade and is not engaged as a C-Suite officer"
+                                          if r == "CEO" else
+                                          "not one of the officers this cascade can engage" if r not in _AGENTS else
+                                          "beyond the nine officers one cascade engages")}
+                      for r in _roles_requested if r not in selected]
+    _roles_defaulted = bool(_roles_requested) and not any(r in selected for r in _roles_requested)
     csuite_responses: dict[str, str] = {}
     coe_responses: dict[str, str] = {}
 
@@ -1161,6 +1171,7 @@ async def cascade_orchestration(req: CascadeRequest,
         _runs.append({
             "run_id": run_id, "mission": req.mission[:200], "domain": req.domain,
             "csuite_engaged": selected, "appraisals": appraisals,
+            "csuite_requested": _roles_requested, "csuite_not_run": _roles_not_run,       # W660 (FU-715)
             "quality": {**{k: quality.get(k) for k in ("qms_gate_passed", "qms_basis", "delivery_coverage",
                                                        "qms_non_conformance_rate", "stub_found",
                                                        "proxies_basis")},   # W633 (FU-566): the record says why
@@ -1205,7 +1216,18 @@ async def cascade_orchestration(req: CascadeRequest,
         "level_3_coe": coe_responses,
         # §5 — the engaged specialist C-Suite (each drives its own CoE) + the full pool for user
         # design-control reconfiguration (pass csuite_roles to choose which officers run).
-        "csuite_roster": {"engaged": selected, "available": _CSUITE_POOL, "each_drives_coe": True},
+        "csuite_roster": {"engaged": selected, "available": _CSUITE_POOL, "each_drives_coe": True,
+                          #  W660 (FU-715) - the request, and what of it did not run
+                          "requested": _roles_requested, "not_run": _roles_not_run,
+                          "defaulted": _roles_defaulted,
+                          "basis": (("NONE of the roles asked for could be engaged, so the default set ran in "
+                                     "their place" if _roles_defaulted else
+                                     f"{len(_roles_not_run)} role(s) asked for did not run - see not_run"
+                                     if _roles_not_run else
+                                     "every role asked for ran" if _roles_requested else
+                                     "no role was asked for; the default set ran")
+                                    + ". A cascade engages officers from `available`; a custom CoE specialism "
+                                      "is honoured, a custom officer is not.")},
         # §5 — each tier manages, APPRAISES and DEVELOPS the tier below (arms-length upward appraisal).
         "appraisals": appraisals,
         # §5 DEVELOP (W269) — which tiers received + applied the PREVIOUS cycle's Development Action
