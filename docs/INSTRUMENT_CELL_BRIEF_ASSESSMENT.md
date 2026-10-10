@@ -224,3 +224,40 @@ each result stored with the model and case-set version, and a failed case kept a
 that describes a model says which evidence level its statement rests on, and none claims a level above 1.
 BOUNDARY, not scheduled: levels 2 to 5, until the Owner rules on an embedding backend or a model with
 readable internals.
+
+## 12. Addendum (W652): an external "strategic audit prompt" and its five preliminary findings, assessed
+
+Received from the Owner 2026-10-10. Its author says plainly that it read the PUBLIC repository and its
+documents and neither cloned the tree nor ran anything. Each claim was checked against the tree at W651/W652.
+
+| # | Claim | Checked against | Verdict |
+|---|---|---|---|
+| 1 | Ledger v14: 27 tier-1, 16 tier-2, 9 tier-3, 8 delivered of 60, measured at 375c5ffb, not the current tree | the ledger's header and tier table | TRUE, and correctly caveated |
+| 2 | Rounds after that commit need a fresh audit; the stopping rule is two consecutive zero runs with stated coverage | the plan's rulings | TRUE and ALREADY RULED: the audit runs when the last tier-1 row closes. It closed in W651; W652 is that audit |
+| 3 | PLAN NOW names P2.34 and FU-675 (callers that do not say which text the person wrote) | the register | TRUE WHEN READ, STALE NOW: FU-675 closed in W651 (98 calls say, 8 are named with reasons); P2.34 has no open row |
+| 4a | The README's test baseline is of the W498 tree | README line 134 | TRUE. The line said so itself and gave its reason (a count is only true of a tree), but 405 at W498 beside a plan at W650 reads as neglect. RE-DATED in W652 to the W650 run |
+| 4b | The plan contradicts itself on the Stripe key rotation | the plan and the vision | TRUE, AND WORSE THAN STATED: the vision carried the same "still owed" sentence. BOTH CORRECTED in W652. That the dead key remains in git history is still true and still stated |
+| 5 | "80 of 96 entries done" is not a measure of the vision delivered | the plan's own PLAN NOW block | TRUE. The plan counts entries and rows and projects in rounds; it claims no percentage of the vision. Nothing to change, but the distinction is worth keeping in front of any reader |
+| - | "39 of 41 registered resources executable" | the plan's P3.31 text | NOT FOUND in that form. The plan says two spawner resources add a prompt stage and run no engine; the 39/41 figure is the reviewer's arithmetic, not a statement in the tree |
+
+**What the review gets right that is worth holding onto.** A registered resource, a passing test and a 200 are
+not a capability a person can use. That is the audit's own premise (reach, then truth), and the review
+arrived at it from the documents alone.
+
+**What it could not see.** It read documents, so it inherits their lag: it recommends as a next step work
+that was already done or already ruled (the FU-675 census, the fresh audit, the screen-failed ship refusal).
+It recommends an "audit before touching any code" pass with a ten-part report. The repository already has
+that instrument: a twelve-agent, refuted, coverage-stating audit whose output is a ledger and register rows.
+Running a second, differently-shaped audit beside it would produce a second source of truth, which the
+review itself warns against.
+
+**Its five strategic options (trust-first, finish the ledger, one end-to-end proof, depth and parity, launch
+readiness).** The Owner's standing sequence is A then B: close reached-surface truth defects until the
+stopping rule is met, then the invisible shortfalls. That stands. OPTION C IS THE USEFUL ADDITION: prove ONE
+person's path end to end - challenge, accepted output, established entity, shipped and downloadable body,
+honest operation - on a fresh store, as a single driven journey with every claim on the way checked. The
+audit samples regions; nothing today drives one journey start to finish and reads every surface it passes.
+RECORDED as a register row for the Owner's sequencing, not started.
+
+**Acted on in W652:** the two "rotation still owed" sentences; the README's dated count; one register row
+(the single end-to-end journey proof). **Not acted on:** a second audit format; any reordering of the plan.

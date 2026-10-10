@@ -324,7 +324,11 @@ the enterprise they need, with the platform modelling and simulating the configu
 `agentic_core` modules are **integrated into the native swarm / fabric — federated, never duplicated,
 never a prompt approximation of a real engine** — and a module that cannot be made real is archived; the
 fabric federates (does not duplicate) catalog / BTO / products / studio / twin, and **every composed
-resource runs its REAL engine**. **The facility family, related once:** the grid's four Products (§17.1:
+resource runs its REAL engine**. *Status, corrected W652 on the Owner's ruling of 2026-10-10: the rule is not
+yet met for the composed Digital Twin stage. In a composition that stage is a model-written narrative of a
+scenario - one call to the native orchestrator with a simulator persona; the twin's own route is not called
+and nothing is simulated. The product's run row says so. The rule stands as the bar.* **The facility family,
+related once:** the grid's four Products (§17.1:
 Reactor · Incubator · Factory · Laboratory — "how work runs") are the user-facing quartet of the fabric's
 eight digital resources above (+ Engine · Petri dish · Generator · Simulator); the Reactor is the
 vision-exact composite defined above; the Laboratory is realised as the Forge's analysis / synthesis bench
@@ -760,7 +764,8 @@ establishment, §9 depth, §13 repo access — and four OWNER RULINGS: the singl
 at `stage: "commercialise"` — 218 from the `genesis.py:687/:852` literals, one via the spawn path's
 `stage: req.scope` — none ever advanced), the
 §17.1 Products axis, the §17.5 KPI gate, the Mode 2 scope); and the Owner-held switches (P4). The
-exposed Stripe key **remains in git history — rotation at Stripe is an Owner action still owed**;
+exposed Stripe key **remains in git history; the Owner rotated the keys and expired the old ones at Stripe on
+2026-10-09** (status corrected W652 - this note said the rotation was still owed);
 `configs/realms.yaml` is scheduled for retirement (P2.5); §18-A's heavier self-hosted/trained-model
 programme remains a recorded future ambition, not a gap. Everything else materially claimed by
 §1–§15 is delivered by execution or disclosed at the surface where a user meets it — and that
@@ -837,7 +842,9 @@ immune-reconfigure` — real sensing; **the defence route has no caller** (P2.7)
 dynamic allocation), while the "cardiovascular" biometric is CPU-idle relabelled and the optimizer
 self-declares simulated (P2.7). Respiratory → the Agent Hub (W443) + the org cascade — real bus,
 **records only, no executor subscribed**, honest on-surface. Musculoskeletal → the §7 facilities +
-digital twin — REAL (every composed resource runs its engine). Endocrine → the biomimetic signal bus +
+digital twin — this note said REAL (every composed resource runs its engine). **Corrected W652: the composed
+twin stage does not** - it is a model-written scenario narrative, labelled as that on its run row. The other
+facilities are not re-verified by this correction. Endocrine → the biomimetic signal bus +
 shared context (`organism/biobus.py`) — REAL as the bus; the PID regulator file the W434 quality note
 vouched for is imported by nothing (the note is corrected in P2.7). The survival instinct keys off an
 ATP simulator whose threshold is unreachable — labelled simulated on the Anatomy tab only (P2.7).

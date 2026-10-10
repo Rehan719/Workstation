@@ -15,7 +15,7 @@
 // it meant editing it first, and an un-edited re-run would have told six assessors they were auditing a commit
 // from weeks earlier. Everything that changes per run comes in through `args`:
 //   Workflow({ scriptPath: 'scripts/workflows/fidelity_audit_v7.js',
-//              args: { base: 'http://127.0.0.1:8031', head: '<short sha>', date: '2026-10-05' } })
+//              args: { base: 'http://127.0.0.1:8031', head: '<short sha>', date: '2026-10-05', cap: 20 } })
 //
 // HOW TO RUN. Boot a FRESH backend from HEAD on a scratch DATA_DIR with AI_DISABLE_LOCAL=1 (that mirrors CI
 // and is NOT the shipped default: with the flag unset and Ollama discoverable the gateway serves from the
@@ -42,6 +42,9 @@ const A = (typeof args === 'object' && args) || {}
 const BASE = A.base || 'http://127.0.0.1:8024'
 const HEAD = A.head || 'UNSTATED'
 const DATE = A.date || 'UNSTATED'
+// W652 - THE CAP IS AN ARGUMENT OF THE RUN (Owner ruling 2026-10-09: 20 after the fix rounds). It is said to the
+// assessor and returned on every region, so the ledger prints the number this run was given, not one typed here.
+const CAP = Number(A.cap) || 20
 if (HEAD === 'UNSTATED' || DATE === 'UNSTATED') {
   // A fidelity verdict is dated the day it ran and names the commit it ran against. An audit that cannot say
   // which commit it assessed is not a measurement, so this refuses rather than producing an unattributable one.
@@ -94,9 +97,9 @@ with a shortfall — say whether the shortfall is DISCLOSED to the user at the s
 DOC_OVERCLAIM (the vision or a canon doc claims more than the system does).
 ${TIERS}
 Your job is the GAP that remains, but report DELIVERED where you verified it — the honest picture needs both.
-Up to 10 findings, most consequential first (rank by how much a real person is misled or blocked). The CAP IS
-TEN AND THAT IS NOT THE SIZE OF THE GAP: if you hit it, say so in region_summary, because a reader must not
-read ten as "all there was". Set unlisted_findings to the NUMBER of further gaps you found and could not
+Up to ${CAP} findings, most consequential first (rank by how much a real person is misled or blocked). The CAP IS
+${CAP} AND THAT IS NOT THE SIZE OF THE GAP: if you hit it, say so in region_summary, because a reader must not
+read ${CAP} as "all there was". Set unlisted_findings to the NUMBER of further gaps you found and could not
 list (0 if you listed everything you found).
 STATE YOUR COVERAGE. In surfaces_exercised list every API route you actually CALLED (as "METHOD /path", the
 route template, not the filled-in id) and every page or component file you actually READ (repo-relative
@@ -144,11 +147,11 @@ const results = await pipeline(REGIONS,
   r => agent(COMMON + `\nYOUR REGION (${r.key}): ${r.title}\n${r.brief}`,
     { label: `assess:${r.key}`, phase: 'Assess', schema: FINDINGS }),
   (assessed, r) => {
-    if (!assessed || !assessed.findings?.length) return { region: r.key, findings: [], verdicts: [], summary: assessed?.region_summary || '' }
+    if (!assessed || !assessed.findings?.length) return { region: r.key, findings: [], verdicts: [], summary: assessed?.region_summary || '', cap: CAP }
     const listing = assessed.findings.map((f, i) => `[${i}] ${f.section} — ${f.verdict} · tier ${f.tier}: claim="${f.vision_claim}" observed="${f.observed}" evidence="${f.evidence}" disclosed=${f.disclosed_to_user || '?'} why_this_tier="${f.why_this_tier}"`).join('\n')
     return agent(COMMON + `\nYOU ARE THE REFUTER for region ${r.key} (${r.title}). An assessor produced these findings:\n${listing}\n\nAttack EVERY finding. Default to refuted=true unless you personally reproduce the gap (execute the route, read the code, count the store). SAY WHICH IT WAS ON EVERY INDEX: set reproduced=true ONLY if you personally reproduced the gap the finding describes - whatever you then decide about its verdict or its tier - and reproduced=false if you could not, or found the capability delivered. A finding you reproduced and merely re-labelled or re-tiered STANDS at your tier; one you could not reproduce does not. The ledger counts by this field, so do not leave it to be guessed from the tier. A finding is refuted when the capability IS delivered/disclosed as the vision says, when the evidence does not support the verdict, or when the verdict is the wrong one (say the corrected verdict — findings often need correcting UPWARD to DELIVERED or DOWNWARD when the assessor was too kind).\n\nAND GIVE corrected_tier ON EVERY INDEX, even when you leave it unchanged — it is the axis MILESTONE M1 is scored on, and a refuter who reports only a verdict hides a tier they moved. In v6 FOUR findings were escalated into tier 1 and the record said none had been made harsher, because direction was computed from the verdict alone; two of those had their verdict index RISE while the tier tightened. Tier the finding as YOU stand behind it after checking, against the tier definitions above, and say in \`reason\` why that tier rather than the one above or below.`,
       { label: `refute:${r.key}`, phase: 'Refute', schema: VERDICTS })
-      .then(v => ({ region: r.key, findings: assessed.findings, verdicts: v?.verdicts || [], summary: assessed.region_summary, hit_the_cap: assessed.hit_the_cap, unlisted_findings: assessed.unlisted_findings, surfaces_exercised: assessed.surfaces_exercised }))
+      .then(v => ({ region: r.key, findings: assessed.findings, verdicts: v?.verdicts || [], summary: assessed.region_summary, hit_the_cap: assessed.hit_the_cap, unlisted_findings: assessed.unlisted_findings, surfaces_exercised: assessed.surfaces_exercised, cap: CAP }))
   })
 
 return results
