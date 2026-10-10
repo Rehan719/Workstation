@@ -256,6 +256,11 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
       <div>
         <h4 className="text-lg font-black text-white uppercase tracking-tight flex items-center gap-2"><Sparkles size={18} className="text-aura" /> {title}</h4>
         <p className="text-[11px] text-slate-500 font-bold mt-1 max-w-2xl leading-relaxed">{description}</p>
+        {/* W655 (FU-657) - said ONCE, for every tool: what "own AI" delivers depends on what is serving */}
+        <p data-testid="tool-serving-note" className="text-[10px] text-slate-600 mt-1 max-w-2xl leading-relaxed">
+          "Own AI" means an owned model when one is serving. When none is, the result is a structured frame built
+          from what you typed, not model-written work, and the result says which it was.
+        </p>
       </div>
 
       {fields.map(f => (

@@ -447,23 +447,45 @@ async def set_plan(req: SetPlanRequest, user: dict | None = Depends(_get_current
         _edited = [f for f in _touched if not _is_unset(plan.get(f))]
         _cleared = [f for f in _touched if f not in _edited]
         if _touched:
-            _still = [f for f in _birth if f not in _touched]
-            prov["templated_fields"] = _still
             _fs = dict(prov.get("field_sources") or {})
             for f in _edited:
                 _fs[f] = "owner_supplied"
             for f in _cleared:
                 _fs[f] = "cleared_by_owner"
             prov["field_sources"] = _fs
-            prov["opening_written_by"] = (
-                (f"The Owner wrote: {', '.join(_edited)} (edited after establishment; each edit is dated in "
-                 f"owner_edits). " if _edited else "")
-                + (f"Cleared by the Owner and now empty: {', '.join(_cleared)}. " if _cleared else "")
-                + (f"Still code templates filled from the establish request, not the Chief and not a model: "
-                   f"{', '.join(_still)}." if _still else
-                   "No opening field is a code template any longer."))
+            _note_opening(prov)          # W655 - the list and the sentence are DERIVED, from every edit so far
     _save(plan)
     return plan
+
+
+def _note_opening(prov: dict) -> None:
+    """W655 - who wrote each opening field, said ONCE and derived from `field_sources`, for both writers.
+
+    The sentence used to be composed inside the Owner-edit path from the fields touched in THAT edit, so a
+    second edit forgot the first: the earlier field went back onto the template list while `field_sources`
+    still called it the Owner's. And a model's write updated nothing. Mutates `prov`."""
+    fs = prov.get("field_sources") or {}
+    birth = prov.setdefault("templated_at_establishment", list(prov.get("templated_fields") or []))
+
+    def _of(source: str) -> list:
+        return [f for f in _OPENING_FIELDS if fs.get(f) == source]
+    owner, cleared, model = _of("owner_supplied"), _of("cleared_by_owner"), _of("model_composed")
+    #  a field establishment templated is still a template only while nothing has written it since
+    still = [f for f in birth if fs.get(f, "establish_template") == "establish_template"]
+    prov["templated_fields"] = still
+    gen = prov.get("generation") or {}
+    prov["opening_written_by"] = (
+        #  `owner_supplied` is stamped at establishment too (a field the request carried), so the sentence
+        #  does not say every one of these was edited afterwards - only that a later edit is dated.
+        (f"The Owner wrote: {', '.join(owner)} (supplied at establishment or edited since; each later "
+         f"edit is dated in owner_edits). " if owner else "")
+        + (f"Cleared by the Owner and now empty: {', '.join(cleared)}. " if cleared else "")
+        + (f"Composed by a model ({gen.get('served_by') or 'not recorded'}"
+           f"{', ' + str(gen.get('generated_at')) if gen.get('generated_at') else ''}), not by the Owner and "
+           f"not a template: {', '.join(model)}. " if model else "")
+        + (f"Still code templates filled from the establish request, not the Chief and not a model: "
+           f"{', '.join(still)}." if still else
+           "No opening field is a code template any longer."))
 
 
 class ObjectiveRequest(BaseModel):
@@ -719,6 +741,13 @@ async def generate_plan(req: GenerateRequest):
     if written:
         prov["served_by"] = {sb: 1}
         prov["any_external"] = bool(meta.get("is_external"))
+        #  W655 (FU-680) - A MODEL WROTE THESE, and the opening says so: neither a template nor the Owner's
+        _fs = dict(prov.get("field_sources") or {})
+        for f in written:
+            if f in _OPENING_FIELDS:
+                _fs[f] = "model_composed"
+        prov["field_sources"] = _fs
+        _note_opening(prov)
     prov["preamble"] = preamble                                # the floor's marker / the model's lead-in, kept
     prov["written"] = written
     prov["body_pending"] = _pending_fields(dict(plan, provenance=prov))

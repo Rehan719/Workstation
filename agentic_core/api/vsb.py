@@ -29,7 +29,7 @@ import uuid
 from pathlib import Path
 from agentic_core.config import atomic_write_json, data_path
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse, HTMLResponse
 from pydantic import BaseModel
 
@@ -705,6 +705,36 @@ def _esc(s) -> str:
 
 
 #  W627 (FU-522) - the cross-surface links the web app and phone app carry (relative: siblings in the repo)
+#  W655 (FU-635) - THE SURFACES LINK TO EACH OTHER WITH RELATIVE PATHS, right inside a downloaded body and 404 in
+#  the platform's own preview. The served copy is rewritten for the preview; the file on disk is not touched.
+_PREVIEW_SURFACES = {"../web/index.html": "website", "../webapp/index.html": "webapp", "../mobile/index.html": "mobile"}
+
+
+def _preview_links(text: str, vsb_id: str, media: str) -> str:
+    if media != "text/html":
+        return text
+    for rel, surface in _PREVIEW_SURFACES.items():
+        text = text.replace(f'href="{rel}"', f'href="/api/v1/vsb/{vsb_id}/{surface}/page/index"')
+    return text
+
+
+def _preview_base(text: str, request: "Request", vsb_id: str, surface: str, media: str) -> str:
+    """W657 (ledger v15) - served HTML says where its own relative links live. The Genesis page opens a preview
+    as a BLOB document, which has no base address: without this, app.js / styles.css / data.json never load
+    and the app opens blank. Absolute, because a relative base would resolve against the blob itself."""
+    if media != "text/html" or "<base " in text:
+        return text
+    _base = f'<base href="{str(request.base_url).rstrip("/")}/api/v1/vsb/{vsb_id}/{surface}/page/">'
+    _i = text.lower().find("<head>")
+    return (text[:_i + 6] + _base + text[_i + 6:]) if _i >= 0 else text
+
+
+def _preview_name(name: str) -> str:
+    """'index.html' is what a relative link and a service worker ask for; the routes knew only 'index'.
+    Only the suffix of a known page is dropped - anything else is refused by the caller's allow-list."""
+    return name[:-5] if name in ("index.html", "about.html", "solution.html") else name
+
+
 _SURFACE_LINKS_WEBAPP = ('<nav class="surfaces" data-surfaces="webapp"><a href="../web/index.html">Website</a> · '
                          '<a href="../mobile/index.html">Phone app</a></nav>')
 _SURFACE_LINKS_MOBILE = ('<nav class="surfaces" data-surfaces="mobile"><a href="../web/index.html">Website</a> · '
@@ -1021,9 +1051,13 @@ async def get_vsb_website(vsb_id: str, user: dict | None = Depends(get_current_u
 
 
 @router.get("/{vsb_id}/website/page/{name}", response_class=HTMLResponse)
-async def get_vsb_website_page(vsb_id: str, name: str, user: dict | None = Depends(get_current_user)):
+async def get_vsb_website_page(vsb_id: str, name: str, request: Request,
+                               user: dict | None = Depends(get_current_user)):
     _require_vsb_access(vsb_id, user)   # W295 - owner-scoped read
     """Serve a generated website page (real HTML) for preview. Known pages only (no path traversal)."""
+    #  the page links its stylesheet as "styles.css"; this route knew it only as "styles" (W655 - READ AT APPLY:
+    #  drive the preview and confirm the stylesheet request was a 404 before this, and say so in the commit)
+    name = "styles" if name == "styles.css" else _preview_name(name)
     if name not in {"index", "about", "solution", "styles"}:
         raise HTTPException(status_code=404, detail="Unknown page.")
     fname = "styles.css" if name == "styles" else f"{name}.html"
@@ -1031,7 +1065,8 @@ async def get_vsb_website_page(vsb_id: str, name: str, user: dict | None = Depen
     if not fp.exists():
         raise HTTPException(status_code=404, detail=f"Website not generated for VSB {vsb_id} yet.")
     media = "text/css" if name == "styles" else "text/html"
-    return HTMLResponse(fp.read_text(encoding="utf-8"), media_type=media)
+    return HTMLResponse(_preview_base(_preview_links(fp.read_text(encoding="utf-8"), vsb_id, media),
+                                      request, vsb_id, "website", media), media_type=media)
 
 
 # ── §13 D1 increment 3 — interactive Web app generator (real client-side vanilla JS) ─────────────
@@ -1241,17 +1276,20 @@ async def get_vsb_webapp(vsb_id: str, user: dict | None = Depends(get_current_us
 
 
 @router.get("/{vsb_id}/webapp/page/{name}", response_class=HTMLResponse)
-async def get_vsb_webapp_file(vsb_id: str, name: str, user: dict | None = Depends(get_current_user)):
+async def get_vsb_webapp_file(vsb_id: str, name: str, request: Request,
+                              user: dict | None = Depends(get_current_user)):
     _require_vsb_access(vsb_id, user)   # W295 - owner-scoped read
     """Serve a generated web-app file (index/app.js/styles.css/data.json) so it runs in-browser. Known
     files only (no path traversal)."""
+    name = _preview_name(name)
     if name not in _WEBAPP_SERVE:
         raise HTTPException(status_code=404, detail="Unknown file.")
     fname, media = _WEBAPP_SERVE[name]
     fp = _REPO_STORE / vsb_id / "webapp" / fname
     if not fp.exists():
         raise HTTPException(status_code=404, detail=f"Web app not generated for VSB {vsb_id} yet.")
-    return HTMLResponse(fp.read_text(encoding="utf-8"), media_type=media)
+    return HTMLResponse(_preview_base(_preview_links(fp.read_text(encoding="utf-8"), vsb_id, media),
+                                      request, vsb_id, "webapp", media), media_type=media)
 
 
 # ── §13 D1 increment 4 — Phone app generator (real installable PWA) ──────────────────────────────
@@ -1387,17 +1425,20 @@ async def get_vsb_mobile(vsb_id: str, user: dict | None = Depends(get_current_us
 
 
 @router.get("/{vsb_id}/mobile/page/{name}", response_class=HTMLResponse)
-async def get_vsb_mobile_file(vsb_id: str, name: str, user: dict | None = Depends(get_current_user)):
+async def get_vsb_mobile_file(vsb_id: str, name: str, request: Request,
+                              user: dict | None = Depends(get_current_user)):
     _require_vsb_access(vsb_id, user)   # W295 - owner-scoped read
     """Serve a generated PWA file (index/app.js/styles.css/data.json/manifest.webmanifest/sw.js/icon.svg)
     with correct content-types so the PWA runs in-browser. Known files only (no path traversal)."""
+    name = _preview_name(name)
     if name not in _MOBILE_SERVE:
         raise HTTPException(status_code=404, detail="Unknown file.")
     fname, media = _MOBILE_SERVE[name]
     fp = _REPO_STORE / vsb_id / "mobile" / fname
     if not fp.exists():
         raise HTTPException(status_code=404, detail=f"Phone app not generated for VSB {vsb_id} yet.")
-    return HTMLResponse(fp.read_text(encoding="utf-8"), media_type=media)
+    return HTMLResponse(_preview_base(_preview_links(fp.read_text(encoding="utf-8"), vsb_id, media),
+                                      request, vsb_id, "mobile", media), media_type=media)
 
 
 # ── §17.3 — Living Business System: the on-demand BOARD PACK (assembled fresh from live data, DCS-
@@ -1444,6 +1485,11 @@ def founder_wrote_section(vsb: dict, section: str, text: str) -> dict:
     pending = vsb.get("body_pending")
     if isinstance(pending, dict) and section in pending:
         pending[section] = False
+    #  W655 - AND IT IS NO LONGER ABSENT. `body_absent` is the other map the stage is derived from: a section
+    #  the founder left empty at birth is absent, not pending, and stayed "was never provided" after they wrote it.
+    absent = vsb.get("body_absent")
+    if isinstance(absent, dict) and section in absent:
+        absent[section] = False
     spec = vsb.get("genome_spec")
     if isinstance(spec, dict) and section in spec:
         spec[section] = text[:1000]
@@ -1475,6 +1521,43 @@ async def record_vsb_concept(vsb_id: str, req: ConceptRequest, user: dict | None
     #  a shipped body now disagrees with the record; it is marked stale with the reason, never left to pass
     mark_repo_stale(vsb_id, "the founder recorded the concept after this body was shipped")
     return {"vsb_id": vsb_id, "concept": concept, "concept_source": "founder", "blueprint": _blueprint(vsb),
+            "status": vsb.get("status"), "status_basis": vsb.get("status_basis"),
+            "stage": vsb.get("stage"), "stage_basis": vsb.get("stage_basis")}
+
+
+class BodySectionRequest(BaseModel):
+    text: str
+
+
+#  where each founder-writable section lives on the entity (the concept has its own route, above)
+_FOUNDER_SECTIONS = {"design": "genesis_blueprint", "commercialisation": "genesis_blueprint",
+                     "operations": "genesis_journey"}
+
+
+@router.post("/{vsb_id}/body/{section}")
+async def record_vsb_body_section(vsb_id: str, section: str, req: BodySectionRequest,
+                                  user: dict | None = Depends(get_current_user)):
+    """W655 (FU-679) - the founder records a body section in their own words. An entity born on the floor lists
+    its sections as awaiting the owned model; only the concept could be supplied, so its status could never
+    pass 'body pending' whatever the founder did. Same rules as the concept route: the founder's own text,
+    never the floor's marker; the status and stage are derived again; a shipped body is marked stale."""
+    vsb = _require_vsb_access(vsb_id, user)
+    if section not in _FOUNDER_SECTIONS:
+        raise HTTPException(status_code=404, detail=(
+            f"no founder-writable body section '{section}': the sections are "
+            f"{', '.join(sorted(_FOUNDER_SECTIONS))} here, and the concept at POST /api/v1/vsb/{vsb_id}/concept"))
+    text = (req.text or "").strip()
+    low = text.lower()
+    if len(text) < 10 or len(text) > 4000 or "native structured engine" in low or low.startswith("content pending"):
+        raise HTTPException(status_code=422, detail=f"{section} must be 10–4000 characters of the founder's own words")
+    _holder_key = _FOUNDER_SECTIONS[section]
+    _holder = vsb.get(_holder_key) if isinstance(vsb.get(_holder_key), dict) else {}
+    vsb[_holder_key] = dict(_holder, **{section: text})
+    founder_wrote_section(vsb, section, text)
+    _save_vsb(vsb)
+    mark_repo_stale(vsb_id, f"the founder recorded the {section} after this body was shipped")
+    return {"vsb_id": vsb_id, "section": section, "text": text, "source": "founder",
+            "body_pending": vsb.get("body_pending"), "body_absent": vsb.get("body_absent"),
             "status": vsb.get("status"), "status_basis": vsb.get("status_basis"),
             "stage": vsb.get("stage"), "stage_basis": vsb.get("stage_basis")}
 

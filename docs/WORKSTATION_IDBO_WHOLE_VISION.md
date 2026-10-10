@@ -508,6 +508,18 @@ technology, operational and commercial capability; **cost-effective and efficien
 > category error rather than a gap; the ruling records the commercial trio (effective · efficient ·
 > commercially viable, from the BMS unit-economics estimate) as a SEPARATE later item, not as a promise
 > kept here.
+>
+> **STATUS AS BUILT, corrected W654 on the Owner's ruling of 2026-10-10 (both halves are stated: what is
+> measured and what is only attested).** The two lists above do not match the code, so the code's are given:
+> **Measured by the gate (4):** specifically designed · verified · compliant · safe. The first two are
+> computed from the delivery's coverage against its declared structure and are recorded NOT ASSESSABLE when
+> the floor served the output. The last two come from the §11 screens, which are word lists: a failed row is
+> reported, and "met" needs every row to pass and to have been able to assess — otherwise "not established".
+> **Attested by the journey, never measured (7):** modelled · simulated · ranked · optimised · categorised ·
+> tested · validated. An attestation is the journey's own statement about its run; each is WITHHELD with its
+> reason on a tie, on identical candidates, or on a default nobody chose.
+> **Established by nothing (5):** best-in-class · innovative · effective · efficient · commercially viable.
+> These are never reported as met.
 
 ## 11. Compliance, Safety & Ethics (continuously live)
 
@@ -781,7 +793,8 @@ architecture). This is the exact structural skeleton the fine-grained vision han
 
 **17.1 The product grid — 4 Realms × 6 Domains × 4 Products (96 combinations), one lifecycle pattern.**
 - **Realms (who the user is):** Enterprise (business/commercial) · Learning (education/knowledge) ·
-  Developing (innovation/technical) · Scholarship (research/academic).
+  Developing (innovation/technical, and resource-constrained settings — both, Owner ruling 2026-10-10) ·
+  Scholarship (research/academic).
 - **Domains (the problem space):** Religion · Science · Education · Law · Employment/Career · Care. The
   **Domains section** surfaces **domain-specific AI-mediated tools & resources** for AI-mediated working
   in each (offering 1, §3A) — usable directly, independent of establishing an enterprise. The Religion

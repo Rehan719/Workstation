@@ -11991,11 +11991,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.35",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W657",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v14 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "RULED by the Owner 2026-10-10: the vision's section 10 states both which criteria a gate measures and which are only attested. A status note follows the Owner's earlier ruling, which is kept word for word: four measured by the gate, seven attested by the journey, five established by nothing. A guard parses the three lists and compares them with what the gate and the journey produce."
     },
     {
       "id": "FU-626",
@@ -12199,11 +12202,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.35",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W657",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v14 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The preview routes answer the names the generated pages themselves link (index.html, about.html, styles.css) and rewrite the cross-surface links for the preview only; the file on disk and in the zip keeps its relative links. Served pages carry a base address, so a preview opened from a blob document loads its script, stylesheet and data. The phone app's chips read 'installable when hosted' and 'offline when hosted'."
     },
     {
       "id": "FU-636",
@@ -12578,11 +12584,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.35",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W657",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v14 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The platform's own realm note is removed from the concept before the stage rules are matched, so choosing a realm adds no stage. A person who writes the keyword themselves still gets the stage, in any realm."
     },
     {
       "id": "FU-654",
@@ -12643,11 +12652,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.35",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W657",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v14 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "RULED by the Owner 2026-10-10: the Developing realm means both innovation / technical work and a resource-constrained setting. The code's realm instruction, the vision's realm line and the frontend say both; Settings shows what the chosen realm means and that it applies to domain tools as well as Genesis."
     },
     {
       "id": "FU-657",
@@ -12662,11 +12674,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.35",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W657",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v14 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Every tool description is rendered by one component, which now says under each what 'own AI' delivers: an owned model when one is serving, otherwise a structured frame built from what was typed, and that the result says which. NOT DONE: the registry cards on the catalogue page are unchanged; that page states the serving ladder itself."
     },
     {
       "id": "FU-658",
@@ -13077,11 +13092,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.35",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W657",
       "note": "",
       "slot_source": "an invisible shortfall left by a tier-1 row's fix",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "One founder route records design, commercialisation or operations in the founder's own words, with the concept route's rules; the status and stage are derived again and a shipped body is marked stale. Found with it and fixed: a section a founder wrote stayed marked 'never provided' when the entity had been born with it empty."
     },
     {
       "id": "FU-680",
@@ -13095,11 +13113,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.35",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W657",
       "note": "",
       "slot_source": "an invisible shortfall left by a tier-1 row's fix",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A field of the plan's opening that a model writes is recorded as model-composed, with what served it; it leaves the template list and the opening's statement says so. One function composes that statement for both writers."
     },
     {
       "id": "FU-681",
@@ -13379,11 +13400,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.37",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W657",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v15 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The preview routes answer the names the generated pages themselves link (index.html, about.html, styles.css) and rewrite the cross-surface links for the preview only; the file on disk and in the zip keeps its relative links. Served pages carry a base address, so a preview opened from a blob document loads its script, stylesheet and data. VERIFIED IN A BROWSER on a scratch backend: each of the three surfaces, loaded as a blob document, rendered with its stylesheet (16 rules) and the web and phone apps rendered the entity's data. HOW IT WAS VERIFIED AND WHAT WAS NOT: the in-app browser blocks pop-ups, so the blob was loaded in a frame rather than through the page's own Open button; and it was not driven with authentication on, where the opened document's asset requests carry no bearer."
     },
     {
       "id": "FU-696",
@@ -13395,11 +13419,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.37",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W657",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v15 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The preview routes answer the names the generated pages themselves link (index.html, about.html, styles.css) and rewrite the cross-surface links for the preview only; the file on disk and in the zip keeps its relative links. Served pages carry a base address, so a preview opened from a blob document loads its script, stylesheet and data. Every link each served page contains is followed by the guard and answers."
     },
     {
       "id": "FU-697",
@@ -13411,11 +13438,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.37",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W657",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v15 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The phone app's chips state their condition: installable when hosted, offline when hosted, and are no longer emerald. NOT DONE: the manifest's start_url './' still resolves, in the preview, to an address the platform does not serve, and the service worker's pre-cache of './' fails there; both work once the app is hosted at its own address, which the platform does not do."
     },
     {
       "id": "FU-698",
@@ -13940,11 +13970,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.37",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W657",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v15 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "RULED by the Owner 2026-10-10: the Developing realm means both innovation / technical work and a resource-constrained setting. The code's realm instruction, the vision's realm line and the frontend say both; Settings shows what the chosen realm means and that it applies to domain tools as well as Genesis. (The ledger v15 row for the same finding.)"
     },
     {
       "id": "FU-726",
@@ -14152,6 +14185,42 @@
       "closed_by": null,
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region on the M3 item",
+      "tier": 3
+    },
+    {
+      "id": "FU-738",
+      "title": "In the preview, the phone app's start address and its service worker's pre-cache point at an address the platform does not serve",
+      "why": "The manifest's start_url './' and the service worker's pre-cache of './' resolve, under the preview route, to an address with no handler, so installing from the preview or loading it offline fails. The chips now say 'when hosted', which is true; the preview itself still cannot demonstrate either. Left from FU-697.",
+      "source": "W657",
+      "found": "2026-10-10",
+      "files": [
+        "agentic_core/api/vsb.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "a tier-3 remainder of a ledger row closed in W657",
+      "tier": 3
+    },
+    {
+      "id": "FU-739",
+      "title": "The catalogue page's registry cards do not carry the 'what own AI delivers' note the domain tools now carry",
+      "why": "W657 put the note in the one component every hub renders its tools through. The catalogue's registry cards are a different component and are unchanged; that page states the serving ladder once, at the top. Left from FU-657.",
+      "source": "W657",
+      "found": "2026-10-10",
+      "files": [
+        "apps/workstation-superapp/src/components/DomainTool.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "a tier-3 remainder of a ledger row closed in W657",
       "tier": 3
     }
   ],

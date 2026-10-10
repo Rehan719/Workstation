@@ -1239,8 +1239,10 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                           <div className="mt-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
                             <div className="flex flex-wrap items-center gap-1.5">
                               <span className="text-[9px] font-black uppercase tracking-widest text-aura">Phone app · {pwa.kind}</span>
-                              {pwa.installable && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-aura/15 text-aura">installable</span>}
-                              {pwa.offline_capable && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400">offline</span>}
+                              {/* W657 (ledger v14 FU-635, v15 FU-697) - both hold only once the app is HOSTED at its own address.
+                                  The platform previews it and does not host it, so the chips say the condition and are not emerald. */}
+                              {pwa.installable && <span data-testid="pwa-installable-chip" title="Installable once hosted at its own address. The platform previews this app; it does not host it." className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">installable when hosted</span>}
+                              {pwa.offline_capable && <span data-testid="pwa-offline-chip" title="Works offline once hosted at its own address: in this preview its service worker has nothing it can cache." className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">offline when hosted</span>}
                               {(() => { const c = qmsChip(pwa.quality_assurance?.quality, 'QMS:'); return c && (
                                 <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`} title={c.title}>{c.label}</span>
                               ); })()}
