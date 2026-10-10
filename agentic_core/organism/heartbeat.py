@@ -874,9 +874,7 @@ class OrganismHeartbeat:
             except Exception as exc:
                 logger.debug("heartbeat error: %s", exc)
             # Circadian-modulated cadence — rest phases beat slower (efficiency).
-            phase = self.last_phase or circadian_phase()
-            factor = 1.0 / _INTENSITY.get(phase, 0.5)
-            await asyncio.sleep(self.interval_seconds * factor)
+            await asyncio.sleep(self.effective_interval_seconds())
 
     # ── §3 reflex arcs — W506 (P2.7(2)) ───────────────────────────────────────────
     #
@@ -1292,6 +1290,13 @@ class OrganismHeartbeat:
         except Exception:
             return None
 
+    def effective_interval_seconds(self) -> float:
+        """How long the loop actually waits between beats: the base interval over the current phase's
+        intensity. ONE expression, used by the loop's sleep and by status(), so the figure a page prints is
+        the figure the loop sleeps on (ledger v14 R6: the page said ~60s while beats were 120s apart)."""
+        phase = self.last_phase or circadian_phase()
+        return self.interval_seconds * (1.0 / _INTENSITY.get(phase, 0.5))
+
     def status(self) -> Dict[str, Any]:
         return {
             "running": self.running,
@@ -1328,6 +1333,9 @@ class OrganismHeartbeat:
             "auto_metabolic_basis": ("runtime only: set through /heartbeat/configure and NOT persisted, so a "
                                      "restart returns it to off"),
             "interval_seconds": self.interval_seconds,
+            "effective_interval_seconds": round(self.effective_interval_seconds(), 1),
+            "interval_basis": ("interval_seconds is the BASE; the loop waits base / phase intensity, which is "
+                               "effective_interval_seconds for the current phase and changes when the phase does"),
             "auto_evolve": self.auto_evolve,
             "auto_economy": self.auto_economy,
             "auto_align": self.auto_align,

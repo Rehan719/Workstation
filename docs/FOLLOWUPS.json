@@ -12219,11 +12219,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W642",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "DRIVEN on the W642 tree (not closed on reading): the CEO chat's floor answer no longer contains its own system prompt as Subject or as terms; the handler passes the question typed (W640) and the floor reads nothing else."
     },
     {
       "id": "FU-639",
@@ -12296,11 +12299,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W642",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Served from the native model registry (the same source as /native-ai/status): selection order, the active resource, external_allowed; NOT KNOWN with a reason when the registry cannot be read. Quotas are not tracked and the response says none is reported."
     },
     {
       "id": "FU-643",
@@ -12314,11 +12320,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W642",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The heading, the button, the lead sentence and the API note say 'modelled before commit' and that nothing was run; a guard spies the real-resource runner during a preview and fails if one is ever executed, so the sentence cannot go stale silently. The route path is unchanged."
     },
     {
       "id": "FU-644",
@@ -12364,11 +12373,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W642",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The checkpoint screens the synthesis when there is one, the member outputs when there is not, and says nothing was checked when nothing was produced; the method string is computed from what ran. Driven with a validator that records what it is given."
     },
     {
       "id": "FU-647",
@@ -12462,11 +12474,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W642",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "DRIVEN first on the W642 tree: three floor-served routes still returned their model disclaimer. One helper now decides the claim half from what served and keeps each tool's safety sentence; seven routes use it. The risk tool's score claim follows whether a score was computed. Driven both ways per route (the floor as served; a model stood in by replacing the tool's own AI call). The safeguarding disclaimer made no AI claim and is unchanged."
     },
     {
       "id": "FU-652",
@@ -12478,11 +12493,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W642",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "DRIVEN on the W642 tree: interview-prep names the role, and care-plan, cv and curriculum no longer return an empty subject. The mechanism is W640's (the floor reads only text the caller identifies). The avatar's third-turn case was not re-driven; its handler passes the message typed since W641 and the floor guard covers the mechanism."
     },
     {
       "id": "FU-653",
@@ -12539,11 +12557,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W642",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "swarm_health is None with a basis (it was a formula over the project count). The discovery list's typed trust figures, its sort by them, the 0.9 default, the 2024 timestamp and the convergence literal are gone; external entries say they are listed by name and neither connected nor measured by that index. NOT DONE and noted here: tools/registry.py still stamps trust_score 0.95 on a registered tool at registration."
     },
     {
       "id": "FU-656",
@@ -12634,11 +12655,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.34",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W642",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v14 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The status publishes effective_interval_seconds from the one expression the loop sleeps on (base / phase intensity), with its basis; the page prints that and the base beside it. Driven across two phases of different intensity."
     },
     {
       "id": "FU-661",
@@ -12947,6 +12971,24 @@
       "note": "",
       "slot_source": "the same mechanism P2.34's wrapper-as-request findings are closed by",
       "tier": 1
+    },
+    {
+      "id": "FU-678",
+      "title": "A tool registered in the tool registry is stamped trust_score 0.95 that nothing measured",
+      "why": "agentic_core/tools/registry.py:29 writes \"trust_score\": 0.95 (\"Initial scholarship trust\") on registration. W642 removed the readers that drew or ranked by a trust figure in the discovery engine; the stamp itself remains and a reader of the registry still receives it. Remove it or replace it with a basis, after grepping its readers.",
+      "source": "W642, found while fixing the discovery list",
+      "found": "2026-10-10",
+      "files": [
+        "agentic_core/tools/registry.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.35",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "an invisible shortfall of the same kind as the row it was found beside",
+      "tier": 2
     }
   ],
   "routes": [

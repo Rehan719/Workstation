@@ -375,7 +375,11 @@ async def adaptation_execute(req: AdaptationRequest,
     prompt = (
         f"You are the QEP Cross-Domain Adaptation engine. Adapt the pedagogical pattern "
         f"'{req.pattern}' from the '{req.source_domain}' domain into the '{req.target_domain}' "
-        "domain.\n\n## Adapted Mechanism\n## Key Adjustments\n## Expected Fidelity (0-1)"
+        "domain.\n\n"
+        #  W642 (FU-621) - the route KNOWS the domain it is adapting into and never told the floor, which then
+        #  printed that none was declared over a request that named two
+        f"Domain: {req.target_domain}\n\n"
+        "## Adapted Mechanism\n## Key Adjustments\n## Expected Fidelity (0-1)"
     )
     # W439 audit catch: gateway.query dropped served_by (a floor scaffold was indistinguishable
     # from a model blueprint), the entry claimed status "active" and the response "executed" when

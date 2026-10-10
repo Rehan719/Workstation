@@ -20,7 +20,7 @@ from pydantic import BaseModel
 
 import functools
 
-from agentic_core.api._ai_provenance import ai_text as _ai_text, person_said
+from agentic_core.api._ai_provenance import ai_text as _ai_text, person_said, disclaimer_for
 
 #  W637 (FU-597) — this router's domain, bound once. Every ai_text call below carries it, so the native floor
 #  prints the real domain instead of "the request named no domain".
@@ -236,8 +236,10 @@ async def salary_negotiation(req: SalaryNegotiationRequest):
         "plan": plan,
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "disclaimer": ("Reasoned negotiation guidance, not live salary data or financial advice — verify "
-                       "figures against current market sources for your role and location."),
+        "disclaimer": disclaimer_for(
+            provenance, "Reasoned negotiation guidance.",
+            "Not live salary data or financial advice — verify figures against current market sources for your "
+            "role and location."),
     }
 
 

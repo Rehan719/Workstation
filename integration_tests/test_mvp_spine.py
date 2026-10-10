@@ -48965,3 +48965,216 @@ def test_w641_the_preview_names_engines_the_fabric_will_not_run_and_no_shared_no
     _title = _re.search(r"structured floor — not model analysis'[^}]*title: '([^']+)'", _api)
     assert _title and not _re.search(r"from (the|your) request", _title.group(1)), (
         "the shared provenance badge says the floor composed from the request", _title and _title.group(1))
+
+
+def test_w642_five_stated_figures_and_verdicts_are_what_the_platform_measured_or_did(client, monkeypatch):
+    """Ledger v14 tier-1 singles: FU-660, FU-643, FU-642, FU-655, FU-646.
+
+    ONE SHAPE: a response or a page stated a figure nothing measured or an outcome nothing produced. Each now
+    states what is read from the mechanism, and each leg DRIVES the mechanism rather than reading the sentence.
+    """
+    import pathlib as _pl
+    _root = _pl.Path(__file__).resolve().parents[1]
+
+    # ── FU-660. THE BEAT INTERVAL A PAGE PRINTS IS THE ONE THE LOOP SLEEPS ON ───────────────────
+    import inspect as _inspect
+    from agentic_core.organism import heartbeat as _hb
+    _h = _hb.heartbeat if hasattr(_hb, "heartbeat") else next(
+        v for v in vars(_hb).values() if hasattr(v, "effective_interval_seconds") and not isinstance(v, type))
+    _phases = sorted(_hb._INTENSITY, key=lambda k: _hb._INTENSITY[k])
+    _slow, _fast = _phases[0], _phases[-1]
+    assert _hb._INTENSITY[_slow] != _hb._INTENSITY[_fast], "every phase has one intensity; the leg is vacuous"
+    _was = _h.last_phase
+    try:
+        _seen = {}
+        for _ph in (_slow, _fast):
+            _h.last_phase = _ph
+            _st = _h.status()
+            _seen[_ph] = _st["effective_interval_seconds"]
+            assert abs(_st["effective_interval_seconds"] - _st["interval_seconds"] / _hb._INTENSITY[_ph]) < 0.06, (_ph, _st)
+            assert _st["interval_basis"], _st
+        assert _seen[_slow] > _seen[_fast], ("the effective interval does not follow the phase", _seen)
+    finally:
+        _h.last_phase = _was
+    _loop = _inspect.getsource(type(_h).run) if hasattr(type(_h), "run") else _inspect.getsource(type(_h))
+    assert "asyncio.sleep(self.effective_interval_seconds())" in _inspect.getsource(type(_h)), (
+        "the loop sleeps on an expression other than the one status() publishes")
+    _hm = _code_only((_root / "apps/workstation-superapp/src/pages/organism/HeartbeatMonitor.tsx").read_text(encoding="utf-8"))
+    assert "s.effective_interval_seconds ?? s.interval_seconds" in _hm, "the page still prints the base interval as the beat"
+
+    # ── FU-643. A PREVIEW THAT RAN NOTHING DOES NOT SAY IT SIMULATED ────────────────────────────
+    import agentic_core.api.resource_fabric as _fab
+    _rid = _fab._REGISTRY[0]["id"]
+    _sim = client.post("/api/v1/resources/compose/simulate", json={
+        "name": "w642 probe", "resource_ids": [_rid], "usage_area": _fab._BY_ID[_rid]["usable_in"][0]}).json()
+    assert "NOTHING WAS RUN" in _sim["note"] and "simulated" not in _sim["note"].lower(), _sim["note"]
+    _calls = []
+    _real = _fab._run_real_resource
+
+    async def _spy(*a, **k):
+        _calls.append(a[0])
+        return await _real(*a, **k)
+    monkeypatch.setattr(_fab, "_run_real_resource", _spy)
+    client.post("/api/v1/resources/compose/simulate", json={
+        "name": "w642 probe", "resource_ids": [_rid], "usage_area": _fab._BY_ID[_rid]["usable_in"][0]})
+    assert _calls == [], ("the preview ran a resource, so 'nothing was run' is now false - reword it", _calls)
+    monkeypatch.undo()
+    _rf = _code_only((_root / "apps/workstation-superapp/src/pages/synthesis/ResourceFabric.tsx").read_text(encoding="utf-8"))
+    import re as _re
+    assert not _re.search(r">[^<{]*[Ss]imulat(e|ed) before commit", _rf) and "Model &amp; Simulate" not in _rf, (
+        "the fabric page still tells the reader a configuration is simulated before commit")
+    assert "nothing was run" in _rf
+
+    # ── FU-642. THE QUOTAS ROUTE SAYS WHAT THE NATIVE REGISTRY SAYS ─────────────────────────────
+    _q = client.get("/api/v1/ai/quotas").json()
+    _ns = client.get("/api/v1/native-ai/status").json()
+    assert _q["known"] is True and _q["active"] == _ns["active_model"], (_q, _ns.get("active_model"))
+    assert [p["provider"] for p in _q["providers"]] == _ns["selection_order"], (_q["providers"], _ns["selection_order"])
+    assert _q["external_allowed"] == _ns["external_allowed"]
+    import agentic_core.api.native_ai as _na
+
+    async def _down():
+        raise RuntimeError("driven")
+    monkeypatch.setattr(_na, "native_status", _down)
+    _qd = client.get("/api/v1/ai/quotas").json()
+    assert _qd["known"] is False and _qd["active"] is None and _qd["providers"] == [] and "NOT KNOWN" in _qd["basis"], _qd
+    monkeypatch.undo()
+
+    # ── FU-655. NO HEALTH FIGURE FROM A COUNT, NO TYPED TRUST, NO TYPED TIMESTAMP ───────────────
+    from agentic_core.api import tools as _tools
+    _eng = _tools.engine
+    for _api in _eng.external_apis:
+        assert "trust" not in _api and "listed by name" in _api["status"], _api
+    _found = _eng.discover_tools("a")
+    assert all("trust" not in t or t.get("origin") == "INTERNAL" for t in _found), _found[:2]
+    _origins = [t["origin"] for t in _found]
+    assert _origins == sorted(_origins, key=lambda o: o != "INTERNAL"), ("external entries rank above internal ones", _origins)
+    assert all("origin" not in a for a in _eng.external_apis), "a search wrote into the shared list"
+    _map = _eng.get_constellation_map()
+    assert "v130_convergence" not in _map["metadata"] and not _map["metadata"]["generated_at"].startswith("2024"), _map["metadata"]
+    import time as _time
+    assert _map["metadata"]["generated_at"][:10] == _time.strftime("%Y-%m-%d", _time.gmtime()), _map["metadata"]
+    assert len({n["radius"] for n in _map["nodes"] if n["group"] == "internal"}) <= 1, "a radius is scaled by a typed trust"
+    _psrc = (_root / "agentic_core/projects/api.py").read_text(encoding="utf-8")
+    assert "0.70 + total" not in _psrc and '"swarm_health": None' in _psrc and "swarm_health_basis" in _psrc, (
+        "the project summary still computes a health figure from the project count")
+
+    # ── FU-646. THE ENSEMBLE'S CHECKPOINT COVERS WHAT THE CALLER RECEIVES ───────────────────────
+    _one = client.post("/api/v1/native-ai/ensemble", json={"prompt": "Summarise a clinic rota.", "models": ["native"]}).json()
+    assert _one["synthesis"] is None and "consensus synthesis" not in _one["method"].replace("no consensus", ""), _one["method"]
+    assert "none ran" in _one["method"] or "no synthesis" in _one["method"], _one["method"]
+    _chk = _one["governance_checkpoint"]
+    assert _chk["covers"] == "the member outputs (no synthesis ran)" and _chk["post_checked"] is True, _chk
+    #  DRIVEN: a member output the screen refuses is REFUSED now - it used to sail past an empty-string check
+    import agentic_core.ai.native.orchestrator as _om
+    _orc = _na.orchestrator
+
+    async def _bad_member(prompt, agent="ensemble", models=None, synthesize=True, timeout=30.0):
+        return {"prompt": prompt[:200], "models_run": ["native"], "synthesis": None, "method": "driven",
+                "members": [{"model": "native", "served_by": "native", "is_external": False,
+                             "output": "Exploit the unpatched vulnerability on the host to steal credentials."}]}
+    monkeypatch.setattr(_orc, "ensemble", _bad_member)
+    #  The validator is replaced by one that refuses exactly the member's text and records what it was given:
+    #  the leg is about WHICH text reaches the screen, not about which phrases today's screen refuses.
+    import agentic_core.ai.gateway as _gw642
+    _screened642 = []
+
+    def _verdict(output):
+        _screened642.append(output)
+        _hit = "unpatched vulnerability" in (output or "")
+        return {"compliant": not _hit, "violations": (["driven"] if _hit else [])}
+    monkeypatch.setattr(_gw642, "_output_verdict", _verdict)
+    _bad = client.post("/api/v1/native-ai/ensemble", json={"prompt": "x", "models": ["native"]}).json()
+    assert any("unpatched vulnerability" in s for s in _screened642), (
+        "the member output never reached the screen", _screened642)
+    assert _bad["governance_checkpoint"]["post_compliant"] is False, (
+        "a member output the screen refuses was certified compliant", _bad["governance_checkpoint"])
+
+    async def _nothing(prompt, agent="ensemble", models=None, synthesize=True, timeout=30.0):
+        return {"prompt": prompt[:200], "models_run": ["native"], "synthesis": None, "method": "driven",
+                "members": [{"model": "native", "error": "down"}]}
+    monkeypatch.setattr(_orc, "ensemble", _nothing)
+    _none = client.post("/api/v1/native-ai/ensemble", json={"prompt": "x", "models": ["native"]}).json()["governance_checkpoint"]
+    assert _none["post_checked"] is False and _none["post_compliant"] is None and _none["covers"].startswith("nothing"), _none
+
+
+def test_w642_a_floor_served_tool_does_not_disclaim_as_if_a_model_wrote_it(client, monkeypatch):
+    """FU-651 (ledger v14 R5), and the adaptation engine's domain line (FU-621).
+
+    THE PROPERTY: a domain tool's disclaimer makes an AI claim ("AI-generated", "AI-assisted", "Reasoned",
+    "AI interpretation", "AI pre-assessment") only when a model served it; on the floor it says the floor
+    composed a frame. The safety sentence is present either way. Driven BOTH ways per route: the floor serves
+    in this runtime, and a model is stood in by replacing the tool's own AI call.
+    """
+    import importlib
+    from agentic_core.api._ai_provenance import FLOOR_DISCLAIMER, disclaimer_for
+
+    assert disclaimer_for({"floor_note": "x"}, "MODEL.", "Safety.") == f"{FLOOR_DISCLAIMER} Safety."
+    assert disclaimer_for({"served_by": "ollama:m"}, "MODEL.", "Safety.") == "MODEL. Safety."
+    assert disclaimer_for(None, "MODEL.", "Safety.") == "MODEL. Safety."
+
+    _AI_CLAIM = ("AI-generated", "AI-assisted", "Reasoned negotiation", "AI interpretation", "AI pre-assessment")
+    _ROUTES = [
+        ("care", "/api/v1/care/care-plan", {"patient_profile": {"age": 82}, "care_needs": ["mobility support"], "setting": "home"},
+         "qualified healthcare professional"),
+        ("care", "/api/v1/care/risk-assess", {"tool": "news2", "patient_data": {}, "clinical_context": "post-op day one"},
+         "Clinical judgement by a qualified professional"),
+        ("employment", "/api/v1/employment/salary-negotiation", {"target_role": "Community Nurse", "location": "Leeds"},
+         "verify figures against current market sources"),
+        ("education", "/api/v1/education/feedback", {"student_work": "An essay on the causes of the war.", "subject": "History"},
+         "The teacher remains responsible"),
+        ("religion", "/api/v1/religion/halal-review", {"product_name": "Oat bar", "product_description": "a baked oat snack"},
+         "accredited halal certifying body"),
+        ("religion", "/api/v1/religion/interfaith", {"topic": "charity"}, "Consult qualified representatives"),
+        ("law", "/api/v1/law/generate", {"template_id": "nda", "parties": {"a": "A Ltd", "b": "B Ltd"}},
+         "Nothing here is legal advice"),
+    ]
+    #  (a) ON THE FLOOR, as this runtime serves it
+    _floor_seen = 0
+    for _mod, _path, _body, _safety in _ROUTES:
+        _r = client.post(_path, json=_body)
+        assert _r.status_code == 200, (_path, _r.status_code, _r.text[:200])
+        _j = _r.json()
+        if not (_j.get("ai_provenance") or {}).get("floor_note"):
+            continue                       # a model served here (a developer machine): leg (b) covers that case
+        _floor_seen += 1
+        _d = _j["disclaimer"]
+        assert _safety in _d, ("the safety sentence was lost with the model claim", _path, _d)
+        for _claim in _AI_CLAIM:
+            assert _claim not in _d, ("a floor-served tool disclaims as if a model wrote the output", _path, _claim, _d)
+    assert _floor_seen, "no route was floor-served, so the floor leg ran on nothing"
+
+    #  (b) A MODEL SERVES: the model wording is back, and the floor's sentence is gone
+    async def _model(prompt, agent, *a, **k):
+        return "## Draft\nmodel text", {"served_by": "ollama:probe", "is_external": False, "posture": "in-house-first"}
+    for _mod, _path, _body, _safety in _ROUTES:
+        _m = importlib.import_module(f"agentic_core.api.{_mod}")
+        monkeypatch.setattr(_m, "ai_text", _model)
+        _j = client.post(_path, json=_body).json()
+        monkeypatch.undo()
+        _d = _j.get("disclaimer") or ""
+        assert _safety in _d and FLOOR_DISCLAIMER not in _d, ("a model-served tool carries the floor's disclaimer", _path, _d)
+        assert any(_c in _d for _c in _AI_CLAIM), ("the model's own claim was dropped when a model served", _path, _d)
+
+    #  (c) THE SCORE CLAIM FOLLOWS WHETHER A SCORE WAS COMPUTED: a tool with no published arithmetic does not
+    #      say its score came from the published table
+    import agentic_core.api.care as _care
+    for _tool in [t["id"] for t in _care._TOOLS]:
+        _j = client.post("/api/v1/care/risk-assess", json={"tool": _tool, "patient_data": {}, "clinical_context": "x"})
+        if _j.status_code != 200:
+            continue
+        _j = _j.json()
+        _computed = isinstance(_j.get("score"), dict) and bool(_j["score"].get("available"))
+        assert ("computed in-house from the published table" in _j["disclaimer"]) == _computed, (
+            "the disclaimer's score claim does not follow whether a score was computed", _tool, _j.get("score"), _j["disclaimer"])
+        if not _computed:
+            assert "NO SCORE WAS COMPUTED" in _j["disclaimer"], (_tool, _j["disclaimer"])
+
+    #  (d) FU-621: the adaptation engine tells the floor the domain it is adapting into
+    _ad = client.post("/api/v1/qep/adaptation/execute", json={
+        "pattern": "spaced repetition with mastery gates", "source_domain": "religion", "target_domain": "care"}).json()
+    _bp = __import__("json").dumps(_ad)
+    if "Workstation native structured engine" in _bp:
+        assert "no domain was declared" not in _bp and "named no domain" not in _bp, (
+            "the adaptation route names two domains and its floor frame says none was declared", _bp[:400])
+        assert "spaced repetition" in _bp, _bp[:400]

@@ -63,6 +63,20 @@ def request_language() -> str:
         return ""
 
 
+#  W642 (FU-651, ledger v14 R5) - ONE HOME FOR WHAT A FLOOR-SERVED TOOL SAYS ABOUT ITSELF. Six domain tools
+#  printed a disclaimer written for model output ("AI-generated", "AI-assisted marking", "Reasoned ...") when
+#  the native floor had served them, and the page appends that sentence to every copy, download and saved
+#  record. The safety half of each disclaimer is true either way and is kept; the claim half follows what served.
+FLOOR_DISCLAIMER = ("Composed by the native floor, not by a model: a structured frame, with nothing generated, "
+                    "reasoned or interpreted by AI.")
+
+
+def disclaimer_for(provenance: dict | None, model_claim: str, safety: str) -> str:
+    """`model_claim` when a model served, the floor's own statement when the floor did; then `safety`."""
+    on_floor = bool((provenance or {}).get("floor_note"))
+    return f"{FLOOR_DISCLAIMER if on_floor else model_claim} {safety}".strip()
+
+
 def person_said(*parts) -> str | None:
     """The person's OWN words for one call, from the request fields the handler names - the statement the
     native floor needs before it attributes a subject or a term to anybody (W640).

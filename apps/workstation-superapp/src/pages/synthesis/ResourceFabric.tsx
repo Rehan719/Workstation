@@ -216,7 +216,7 @@ export const ResourceFabric: React.FC = () => {
   const [composing, setComposing] = useState(false);
   const [compositions, setCompositions] = useState<Composition[]>([]);
   const [runningId, setRunningId] = useState<string | null>(null);
-  const [sim, setSim] = useState<Simulation | null>(null);   // §7 — model & simulate before commit
+  const [sim, setSim] = useState<Simulation | null>(null);   // §7 — the pre-commit model (a static reading; nothing is run)
   const [simulating, setSimulating] = useState(false);
   // §7 — user design control over each resource's reconfigurable parameters: {resourceId: {param: value}}
   const [paramConfig, setParamConfig] = useState<Record<string, Record<string, string>>>({});
@@ -363,7 +363,7 @@ export const ResourceFabric: React.FC = () => {
         <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed">
           Every resource of the organism — process-intelligence engines, reactors, factories, incubators,
           labs, twins, organism systems, and the enterprise org — in one place to
-          <span className="text-highlight"> select, reconfigure, combine, and model &amp; simulate before commit</span> across
+          <span className="text-highlight"> select, reconfigure, combine, and model before commit</span> across
           Synthesis, Design, Development, Delivery, Build-to-Order, and the Forge.
         </p>
       </header>
@@ -489,7 +489,7 @@ export const ResourceFabric: React.FC = () => {
           </select>
           <Button onClick={simulate} disabled={simulating || selected.length === 0} className="flex items-center gap-2 bg-slate-800 text-highlight">
             {simulating ? <Loader2 size={16} className="animate-spin" /> : <FlaskConical size={16} />}
-            Model &amp; Simulate
+            Model before commit
           </Button>
           <Button onClick={compose} disabled={composing || !name.trim() || selected.length === 0} className="flex items-center gap-2 bg-highlight text-sovereign">
             {composing ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
@@ -526,7 +526,7 @@ export const ResourceFabric: React.FC = () => {
                   </div>
                 );
               })}
-              <p className="text-[8px] text-slate-600 italic">Set values, then Model &amp; Simulate — the model shows which parameters remain unset.</p>
+              <p className="text-[8px] text-slate-600 italic">Set values, then Model before commit — the model shows which parameters remain unset.</p>
             </div>
           </details>
         )}
@@ -535,7 +535,7 @@ export const ResourceFabric: React.FC = () => {
         {sim && sim.model && (
           <div className="mt-4 p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[9px] font-black uppercase tracking-widest text-highlight">Modelled &amp; simulated before commit</span>
+              <span className="text-[9px] font-black uppercase tracking-widest text-highlight" title="A static reading of the selection. No resource was run or dry-run.">Modelled before commit — nothing was run</span>
               <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${sim.commit_ready === null ? 'bg-slate-800 text-slate-400' : sim.commit_ready ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`} title={sim.commit_ready === null ? 'the gate could not assess this simulation — commit at your judgement' : undefined}>
                 {sim.commit_ready === null ? 'gate could not assess — commit at your judgement' : sim.commit_ready ? 'commit-ready' : 'not commit-ready'}
               </span>

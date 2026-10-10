@@ -535,8 +535,22 @@ async def native_ensemble(req: EnsembleRequest):
                 "final": f"[CONSTITUTIONAL REFUSAL] {_halt.get('refused_reason')}", "governance_checkpoint": _halt}
     res = await orchestrator.ensemble(req.prompt, agent=req.agent,
                                       models=req.models or None, synthesize=req.synthesize)
-    res["governance_checkpoint"] = console_post_gate(
-        req.agent, str((res.get("synthesis") or {}).get("output") or ""))
+    #  W642 (FU-646, ledger v14 R4) - THE CHECKPOINT SCREENS WHAT THE CALLER RECEIVES. With no synthesis this
+    #  screened an empty string and returned post_checked and post_compliant true over member outputs it had
+    #  never read. It screens the synthesis when there is one, the member outputs when there is not, and when
+    #  there is nothing to screen it says nothing was checked.
+    _syn = str((res.get("synthesis") or {}).get("output") or "")
+    _member_text = "\n\n".join(str(m.get("output") or "") for m in (res.get("members") or []) if m.get("output"))
+    _screened = _syn or _member_text
+    chk = console_post_gate(req.agent, _screened)
+    chk["covers"] = ("the consensus synthesis" if _syn else
+                     "the member outputs (no synthesis ran)" if _member_text else
+                     "nothing: no member produced output")
+    if not _screened:
+        chk["post_checked"] = False
+        chk["post_compliant"] = None
+        chk["basis"] = "no output was produced, so nothing was screened; an empty string is not a checked answer"
+    res["governance_checkpoint"] = chk
     return res
 
 

@@ -2053,7 +2053,9 @@ async def simulate_composition(req: ComposeRequest):
         req.name or "(unnamed)", req.resource_ids, req.usage_area, req.config)
     return {"name": req.name, "usage_area": req.usage_area, "resources": resolved,
             "model": model, "simulation": qa, "commit_ready": commit_ready, "saved": False,
-            "note": "Modelled + simulated before commit (§7) — not saved. Adjust the design, then compose."}
+            "note": ("Modelled before commit (§7) — not saved. NOTHING WAS RUN: no resource was executed or "
+                     "dry-run; this is a static reading of the selection plus a quality gate over a one-"
+                     "sentence description of it. Adjust the design, then compose.")}
 
 
 @router.post("/compose")

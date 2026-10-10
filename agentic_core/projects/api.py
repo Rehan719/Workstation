@@ -296,7 +296,6 @@ async def project_stats() -> dict:
         cpu, mem = 0.0, 0.0
 
     total = len(projects)
-    swarm_health = min(1.0, 0.70 + total * 0.02) if total > 0 else 0.70
 
     return {
         "total_projects": total,
@@ -307,7 +306,11 @@ async def project_stats() -> dict:
         "complete": sum(1 for p in projects if p.stage == "commercialise"),
         "cpu_percent": round(cpu, 1),
         "memory_percent": round(mem, 1),
-        "swarm_health": round(swarm_health, 3),
+        #  W642 (FU-655, ledger v14 R5) - this was min(1, 0.70 + 0.02 x the number of projects): a formula
+        #  over a COUNT, returned as a health figure. Nothing measures swarm health here. The key stays so a
+        #  reader of it gets a statement rather than a KeyError, and the statement is that it is not measured.
+        "swarm_health": None,
+        "swarm_health_basis": "not measured: no instrument here observes the swarm's health",
     }
 
 

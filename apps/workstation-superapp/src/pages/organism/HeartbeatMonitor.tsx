@@ -7,6 +7,8 @@ interface Beat { beat: number; phase: string; intensity: number; realisation: nu
 interface Status {
   running: boolean; beats: number; circadian_phase: string; phase_intensity: number;
   last_beat: string | null; last_realisation: number | null; interval_seconds: number;
+  // W642 (FU-660) — what the loop actually waits now: base interval / phase intensity
+  effective_interval_seconds?: number; interval_basis?: string;
   auto_evolve: boolean; auto_economy: boolean; auto_align: boolean; auto_compliance: boolean;
   auto_ship: boolean; autonomy_persisted?: boolean; autonomy_restored_at?: string | null;
   auto_metabolic?: boolean; metabolic_every?: number; auto_metabolic_basis?: string;
@@ -116,7 +118,7 @@ export const HeartbeatMonitor: React.FC = () => {
                 </div>
                 <div>
                   <p className="font-black text-white text-lg">{s.running ? 'Beating' : 'Stopped'}</p>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">{s.beats} beats · every ~{s.interval_seconds}s</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">{s.beats} beats · every ~{s.effective_interval_seconds ?? s.interval_seconds}s{s.effective_interval_seconds != null && s.effective_interval_seconds !== s.interval_seconds ? ` now (base ${s.interval_seconds}s)` : ''}</p>
                 </div>
               </div>
               <div className="flex gap-2">
