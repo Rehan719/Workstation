@@ -51,7 +51,7 @@ export const DomainsHub: React.FC = () => {
         <Card className="p-6 border-highlight/30 hover:border-highlight/60 transition-colors cursor-pointer" onClick={() => navigate('/genesis')}>
           <div className="flex items-center gap-2 mb-2"><Rocket size={16} className="text-highlight" /><h3 className="text-xs font-black uppercase tracking-widest text-highlight">{t('domains.off2.tag', 'Offering 2')}</h3></div>
           <p className="text-sm font-black text-white mb-1 flex items-center gap-2">{t('domains.off2.title', 'Establish a living enterprise')} <ArrowRight size={14} className="text-highlight" /></p>
-          <p className="text-[11px] text-slate-400 leading-relaxed">Go end-to-end — Concept → Commercialisation — and establish a self-running VSB IDBO enterprise that delivers and forever evolves a whole solution.</p>
+          <p className="text-[11px] text-slate-400 leading-relaxed">Go end-to-end — Concept → Commercialisation — and establish a VSB IDBO enterprise for a whole solution, run by the heartbeat levers you turn on.</p>
         </Card>
       </div>
 

@@ -76,10 +76,15 @@ def _adjudicate(dispute_id: str, description: str) -> Dict[str, Any]:
         "dispute_id": dispute_id,
         "status": "PENDING_RATIFICATION",
         "cited_precedent": precedent["precedent_id"] if precedent else "NONE",
+        #  W666 (ledger v16 R3.1) - nothing here applies a penalty or finds anything: the description's
+        #  words are compared with a short list of hard-coded precedents. The decision says that.
         "decision": (
-            f"Penalty applied based on {precedent['article']} breach."
-            if precedent else "No violation found."
+            f"Keyword match with precedent {precedent['precedent_id']} ({precedent['article']}). "
+            f"No penalty is applied by anything and no council has considered this."
+            if precedent else "No keyword matched a recorded precedent. Nothing was adjudicated."
         ),
+        "basis": ("keyword match of the dispute's description against a hard-coded precedent list, held in "
+                  "memory; no council exists on this deployment and nothing enforces a ruling"),
         "reasoning_trace": (
             f"Analogous to '{precedent['title']}' ({precedent['precedent_id']})."
             if precedent else "No matching precedent in registry; baseline ruling."
@@ -90,16 +95,8 @@ def _adjudicate(dispute_id: str, description: str) -> Dict[str, Any]:
     return ruling
 
 
-def _seed_initial_rulings():
-    """Seed a couple of real adjudicated rulings on startup so the page has genuine
-    (not fabricated client-side) data on first load."""
-    if _rulings:
-        return
-    _adjudicate("DSP-001", "Node exceeded its allocated compute quota for 3 consecutive epochs.")
-    _adjudicate("DSP-002", "Node shared training data with an unrelated federation member without an active treaty.")
-
-
-_seed_initial_rulings()
+#  W666 (ledger v16 R3.1) - two disputes nobody filed were adjudicated at import, so the list opened with
+#  rulings against parties that do not exist. The list now holds only what was filed.
 
 
 @router.get("/rulings")
@@ -109,7 +106,7 @@ async def list_rulings() -> List[Dict[str, Any]]:
 
 @router.post("/disputes")
 async def file_dispute(request: DisputeRequest) -> Dict[str, Any]:
-    """Files a new dispute and returns the AI Judge's real adjudicated ruling."""
+    """Files a dispute and returns the keyword match recorded for it (see the ruling's basis)."""
     dispute_id = request.dispute_id or f"DSP-{str(uuid.uuid4())[:8].upper()}"
     return _adjudicate(dispute_id, request.description)
 

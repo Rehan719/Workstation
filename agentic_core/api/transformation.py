@@ -131,17 +131,12 @@ _PILLARS: List[Dict[str, Any]] = [
     ]},
 ]
 
-_SHORT_TERM = [
-    "Make resource compositions + Genesis executable as live workflow pipelines",
-    "Scheduled autonomy — a heartbeat that ticks the metabolism + evolution continuously",
-    "Synthesis Lab explicit multi-output selection",
-    "Unify legacy evolution fragments under the Sovereign Evolution Office",
-]
-_LONG_TERM = [
-    "Per-VSB living business-plan lifecycle (Board → AI CEO appraisal loops)",
-    "Forge ⇄ Build-to-Order ⇄ Catalogue wired to the Resource Fabric",
-    "Cross-VSB federation & marketplace; real-money rails behind compliance",
-]
+#  W666 (ledger v16 R6.4) - two fixed lists stood here and were returned on every call under the
+#  heading "gap -> action", unchanged whatever the state, naming work that already existed as work to
+#  do. Nothing derives a short- or long-term list from the gaps, so none is returned; the plan that IS
+#  maintained, with each item's state, is the delivery plan.
+_PLAN_LISTS_BASIS = ("no short- or long-term list is derived from the gaps above; the maintained plan and "
+                     "each item's state are at /api/v1/plan/state")
 
 
 #  W620 (FU-508, M2 v8 R6.4) — §17.5 INVARIANT 2, "a mandatory GaaS gate on every output", MEASURED rather than
@@ -219,8 +214,9 @@ def _transformation_plan(realisation: Dict[str, Any]) -> Dict[str, Any]:
             gaps.append({"pillar": p["pillar"], "realisation": p["realisation"], "missing": missing})
     return {
         "immediate_gaps": gaps,
-        "short_term": _SHORT_TERM,
-        "long_term": _LONG_TERM,
+        "short_term": [],
+        "long_term": [],
+        "plan_lists_basis": _PLAN_LISTS_BASIS,
         "principle": "Transformation = close the gap between vision (the pillars) and live realisation.",
     }
 

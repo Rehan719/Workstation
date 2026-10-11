@@ -36,13 +36,48 @@ def _corpus_text() -> str:
     return "\n".join(parts)
 
 
+def _ontology_rules() -> List[str]:
+    """The provisions the ontology file lists by name - the only names an authority is resolved against."""
+    import json
+    try:
+        d = json.loads((_CORPUS / "ontology" / "uk_employment_law_v9.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    return [str(r) for r in (d.get("rules") or []) if isinstance(r, str) and r.strip()]
+
+
+def _norm_authority(s: str) -> str:
+    return " ".join(str(s or "").lower().split())
+
+
+def _statute_of(rule: str) -> str:
+    """'Equality Act 2010 Section 13 (...)' -> 'Equality Act 2010'; a rule with no section is returned whole."""
+    import re
+    return re.split(r"\s+(?:section|s\.)\s*\d", rule, maxsplit=1, flags=re.I)[0].strip()
+
+
 def resolve_authority(name: str) -> Dict[str, Any]:
     n = str(name or "").strip()
     if not n:
         return {"authority": n, "resolved": False, "basis": "no authority was named"}
-    if n.lower() in _corpus_text().lower():
-        return {"authority": n, "resolved": True,
-                "basis": "named in the employment-law corpus this platform holds (knowledge/Law/EmploymentTribunal)"}
+    #  W666 (ledger v16 R5.0) - this was a substring test over every file in the corpus folder, one of
+    #  which is a manifest of file paths: a single letter resolved, and so did any fragment of a file name.
+    #  A name now resolves only as a WHOLE provision the ontology lists, or as the whole title of a statute
+    #  one of those provisions belongs to - and the basis says which, and what the corpus holds of it.
+    key = _norm_authority(n)
+    rules = _ontology_rules()
+    for rule in rules:
+        if key in (_norm_authority(rule), _norm_authority(rule.split("(")[0])):
+            return {"authority": n, "resolved": True, "matched": "provision",
+                    "basis": ("named in the employment-law corpus this platform holds "
+                              "(knowledge/Law/EmploymentTribunal): the ontology lists this provision")}
+    held = [r for r in rules if _norm_authority(_statute_of(r)) == key and _statute_of(r) != r]
+    if held:
+        return {"authority": n, "resolved": True, "matched": "statute",
+                "basis": ("named in the employment-law corpus this platform holds "
+                          "(knowledge/Law/EmploymentTribunal): the ontology lists " + str(len(held)) +
+                          " provision(s) of this statute and no others - " +
+                          "; ".join(r.split("(")[0].strip() for r in held))}
     return {"authority": n, "resolved": False,
             "basis": ("REFUSED: the corpus this platform holds does not name it, so it is not cited - an authority "
                       "is resolved against a real source or not emitted at all")}

@@ -1,13 +1,22 @@
 from fastapi import APIRouter
 from typing import Dict, Any, List
-from agentic_core.evolution.economic_pipeline import economic_engine
 
 router = APIRouter(prefix="/fund", tags=["Creator Fund"])
 
 @router.get("/epoch-synthesis")
 async def get_epoch_summary():
-    """v151.0 Periodic AI CEO economic report."""
-    return economic_engine.generate_epoch_synthesis()
+    """No epoch report exists, and this says so.
+
+    W666 (ledger v16 R6.1) - this returned a fixed dict as an AI CEO report: an economic volume, a
+    creator-earnings growth percentage, two fund allocation proposals with reasons and a narrative.
+    Nothing was read from any ledger. The sibling route below was corrected the same way in W408.
+    """
+    return {
+        "report": None,
+        "detail": ("No epoch report is produced on this deployment: nothing reads the economy's ledgers "
+                   "into one. A fixed set of figures was previously returned here. The economy's own "
+                   "figures are at /api/v1/economy/status."),
+    }
 
 @router.get("/grants/active")
 async def list_active_grants():

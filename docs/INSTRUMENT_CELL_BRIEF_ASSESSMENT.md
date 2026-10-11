@@ -474,3 +474,65 @@ measured or absent; carried there, not registered separately, because that claus
 gates in order".
 
 **Nothing here changes the order of work.**
+
+## 17. Addendum (W666): four revisions of an external "whole commercialisation master prompt", assessed
+
+**What was received (Owner, 2026-10-11).** Four files, each a prompt addressed to this model: revision 4
+("repository tailored"), revision 5 ("deep research optimised"), revision 6 ("whole vision integrated"), all
+dated 2026-10-10, and a shorter regeneration dated 2026-10-11. The covering note describes the last as
+building on "the previous Claude prompt" and a "Founder Playbook". They ask for one thing in two directions:
+commercialise Workstation as a business, and use Workstation to deliver a customer's solution from challenge
+to handover.
+
+**How they were read.** The 2026-10-11 file was read whole. Revisions 4 to 6 were searched for every
+statement that can be checked against this tree or an official source (paths, plan and row ids, round ids,
+counts, money figures) and each was checked. These prompts make few such statements, and say so of
+themselves: they tell their reader to re-derive everything. That is to their credit, and it means most of
+their content is instruction, not claim.
+
+### 17.1 What was checked
+
+| # | Statement | Where | Finding |
+|---|---|---|---|
+| 1 | P5.6 charters five documents under `docs/business/`, with the first segment, the free Quran Education Platform, the labels and the "not the Owner's words" rule | all four | **TRUE** of the plan. The five documents are drafted and not yet landed: `docs/business/` does not exist at this commit |
+| 2 | P5.6's register rows "have historically included FU-740 to FU-744" | r4 | **TRUE**, and all five are still open |
+| 3 | "`PLAN NOW` pointing to P2.35 ... five P5.6 follow-ups still open" | r6, as a dated observation | **STALE, as it warns.** P2.35 closed in W665; the open truth items are P2.38 and P2.39 |
+| 4 | The paraphrases of P5.1 to P5.5 | r6 | **ACCURATE** against the plan's own text, item by item |
+| 5 | The quality bar: four criteria measured by a gate, seven attested by a journey, five established by nothing | r6, as a W654 lead | **TRUE** of the vision's section 10 as it stands |
+| 6 | A repository-level `CLAUDE.md` | r4, r5, r6, each "if present" | **ABSENT.** There is none; the working rules are in the delivery plan |
+| 7 | A companion `WORKSTATION_IDBO_FOUNDER_COMMERCIALISATION_PLAYBOOK_2026-10-10.md` | 2026-10-11, "if present" | **NOT RECEIVED.** No file of that name was supplied; nothing here relies on it |
+| 8 | Companies House online incorporation 100 pounds; online confirmation statement 50; online incorporation of a community interest company 115 | r4 | **CONFIRMED** on the Companies House fees page, read 2026-10-11 (page last updated 25 September 2026) |
+| 9 | A standard online trade mark application 205 pounds for one class, 60 for each further class | r4 | **PARTLY CONFIRMED.** The government's page read 2026-10-11 says registration "costs at least" 205 pounds; the per-class figure was not on the page read and is NOT CHECKED |
+| 10 | The VAT registration threshold is 90,000 pounds of taxable turnover | r4 | **CONFIRMED**, read 2026-10-11 |
+| 11 | Corporation Tax: 19% on profits of 50,000 pounds or less, 25% above 250,000, marginal relief between | r4 | **CONFIRMED**, read 2026-10-11 |
+| 12 | IN4 Group exists and runs founder and skills programmes | 2026-10-11 | **EXISTS, programmes NOT CHECKED.** Press coverage places it at MediaCity, Salford, with skills and start-up programmes; its own site and what it currently offers were not read. No relationship beyond the Owner's attendance is to be implied |
+| 13 | Five candidate names (IDBO Works, IDBO Foundry, VSB Foundry, PurposeWeave, IDBO Systems) | 2026-10-11, as unverified | **NOT CHECKED**, as the prompt labels them. No register, trade mark or domain search has been run |
+
+### 17.2 What is sound, and already the rule here
+
+Authority order (the Owner's vision and rulings, then the plan, then code and evidence, then documents, then
+external suggestions); one plan and one register, no second roadmap or ledger; four states kept apart
+(declared, available, executed, verified); no invented traction; the Quran Education Platform free; legal
+form, spend, filings, publication, sign-up, external models, real money and deployment all the Owner's.
+Each of these is already a ruling or a clause of the plan. Nothing in the four files contradicts a ruling.
+
+### 17.3 What is declined, and why
+
+| Asked | Decision |
+|---|---|
+| "Do not edit files until ... shown the Owner a concise baseline and proposed scope" | **Not adopted as a gate.** It is the prompt's own procedure, not the Owner's; the Owner's standing instruction is to decide and build, and the baseline is what every round already records |
+| An "evidence contract" of eight fields on every stored output | **Not added as a second vocabulary.** The product already carries what served an output, what was measured and what was not assessed; the audit checks that they travel with it |
+| A pipeline tracker for prospects | **Not built.** There are no prospects. A format is proposed in the workpack and nothing is stored about a person until the Owner decides how |
+| Sending outreach, checking names with paid tools, contacting IN4 Group | **Drafts only.** Each is an external act and the Owner's to take |
+
+### 17.4 What it adds that the plan did not have
+
+P5.6 covers the business's description. These prompts ask for the working papers of a first sale, which P5.6
+does not: a comparison of candidate first offers, the interview pack, a cost model that separates quotes from
+assumptions, a name screen, draft marketing, a route to partners and support, a formation workpack, and a
+scope for outside help. They are chartered as **P5.7**, every document a draft, nothing sent or filed.
+
+One finding from doing the check: P5.1 (one tenant from concept to commercial output, measured) is the item
+these prompts most depend on. A first offer cannot be chosen on evidence until one journey has been driven
+and read back, and ledger v16 found the establish route seals whatever evidence its caller posts. The order
+is therefore P2.38, then P5.1, then the offer comparison of P5.7.

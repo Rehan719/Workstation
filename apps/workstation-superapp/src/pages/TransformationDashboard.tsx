@@ -14,7 +14,7 @@ interface Pillar { id: string; pillar: string; realisation: number; status: stri
 interface Picture {
   vision_summary: string;
   realisation: { overall_realisation: number; pillars: Pillar[]; evidence_counts: Record<string, any>; route_census?: { basis?: string; paths?: number } };
-  transformation_plan: { immediate_gaps: { pillar: string; realisation: number; missing: string[] }[]; short_term: string[]; long_term: string[] };
+  transformation_plan: { immediate_gaps: { pillar: string; realisation: number; missing: string[] }[]; short_term: string[]; long_term: string[]; plan_lists_basis?: string };
 }
 
 // W461 — verified is three-state: true (checked, passed) · false (checked, failed) · null (not assessable)
@@ -352,10 +352,15 @@ export const TransformationDashboard: React.FC = () => {
                 </div>
               </div>
             )}
-            <div className="grid grid-cols-1 @[560px]:grid-cols-2 gap-4">
-              <PlanList title="Short term" items={pic.transformation_plan.short_term} icon={Map} />
-              <PlanList title="Long term" items={pic.transformation_plan.long_term} icon={Map} />
-            </div>
+            {/* W666 (ledger v16 R6.4) - a list is drawn only when the API derived one; otherwise its reason is shown */}
+            {(pic.transformation_plan.short_term.length > 0 || pic.transformation_plan.long_term.length > 0) ? (
+              <div className="grid grid-cols-1 @[560px]:grid-cols-2 gap-4">
+                <PlanList title="Short term" items={pic.transformation_plan.short_term} icon={Map} />
+                <PlanList title="Long term" items={pic.transformation_plan.long_term} icon={Map} />
+              </div>
+            ) : (
+              <p className="text-[10px] text-slate-500" data-testid="plan-lists-basis">{pic.transformation_plan.plan_lists_basis || 'No short- or long-term list is derived.'}</p>
+            )}
           </Card>
         </>
       )}

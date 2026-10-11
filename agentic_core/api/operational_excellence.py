@@ -533,6 +533,8 @@ async def summary():
         "produced_rate": round(produced / n, 3) if n else 0.0,
         "in_house_rate": round(in_house / n, 3) if n else 0.0,
         "distinct_resources": len(ranks),
-        "top_resource": ranks[0]["resource"] if ranks else None,
+        #  W666 (ledger v16 R4.1) - the first row of the ranking was named "top" even when every recorded
+        #  run of it had failed. Only a resource that produced output is named; otherwise none is.
+        "top_resource": next((r["resource"] for r in ranks if (r.get("produced_rate") or 0) > 0), None),
         "kinds": sorted({r.get("kind") for r in rows if r.get("kind")}),
     }
