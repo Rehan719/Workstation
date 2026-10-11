@@ -20,7 +20,7 @@ export const ScienceHub: React.FC = () => {
         <div>
           <h1 className="text-3xl @[480px]:text-4xl @[680px]:text-6xl font-black mb-1 text-white tracking-tighter italic break-words">Frontier of Discovery</h1>
           <div className="flex items-center gap-4">
-             <p className="text-highlight font-black uppercase text-[10px] tracking-[0.3em]">Scientific Inquiry • Empirical Mesh • Science Hub</p>
+             <p className="text-highlight font-black uppercase text-[10px] tracking-[0.3em]">Science Hub • the tools are in the tabs below</p>
              {/* W493 (FU-154, sweep S10.5, C4) - these read "GUIDED MODE" / "ENCOURAGING TONE" as
                  though the hub adapted to them. Nothing does: only this badge reads the values.
                  No affordance is gated on the mode and no request carries the tone. They are
@@ -32,9 +32,9 @@ export const ScienceHub: React.FC = () => {
           </div>
         </div>
         <div className="flex gap-4 flex-wrap shrink-0">
-           <Button type="button" onClick={() => navigate('/projects?realm=science&domain=research')} variant="outline"><History size={18} /> Lab Notes</Button>
+           <Button type="button" onClick={() => navigate('/projects?realm=science&domain=research')} variant="outline"><History size={18} /> Science projects</Button>
            <Button type="button" onClick={() => navigate('/reactor?domain=science')} className="bg-highlight text-sovereign shadow-xl shadow-highlight/20">
-              <Microscope size={18} /> New Experiment
+              <Microscope size={18} /> Open the Reactor (science)
            </Button>
         </div>
       </header>

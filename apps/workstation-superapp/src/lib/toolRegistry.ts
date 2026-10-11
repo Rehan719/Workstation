@@ -40,7 +40,8 @@ export const TOOL_REGISTRY: DomainTools[] = [
     form('feedback', 'Marking & Feedback', 'Mark a student’s work against the task and rubric with constructive feedback and an indicative level. An aid to your judgement, never a grade.'),
   ]},
   { name: 'Law', route: '/law', tools: [
-    { tab: 'compliance', kind: 'custom', title: 'Legal Document Analyser', desc: 'Analyse a contract or legal document for key clauses, risks, compliance points and missing provisions.' },
+    //  W662 (FU-726) - a FORM tool now: it runs on the shared DomainTool like the two below it
+    form('compliance', 'Legal Document Analyser', 'Analyse a contract or legal document for key clauses, risks, compliance points and missing provisions.'),
     form('draft', 'Legal Document Drafter', 'Draft a clause-numbered legal document from a template for your parties and jurisdiction.'),
     form('research', 'Legal Research (IRAC)', 'Research a legal question by the IRAC method with practical steps, risks and next actions. Informational only — not legal advice.'),
   ]},

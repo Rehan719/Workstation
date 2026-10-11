@@ -1,10 +1,8 @@
 import { StartProjectCTA } from '../../components/StartProjectCTA';
-import { provenanceBadge, axiosDetail} from '../../lib/api';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { Card, Badge, Button } from '@workstation/ui';
-import { Layers, Landmark, History, ScrollText, Loader2 } from 'lucide-react';
+import { Layers, Landmark, History } from 'lucide-react';
 import { useAdaptiveUI } from '../../components/AdaptiveUIProvider';
 import MatterAssemblyPanel from '../../components/MatterAssemblyPanel';
 import { DomainTool } from '../../components/DomainTool';
@@ -15,31 +13,13 @@ export const LawHub: React.FC = () => {
   const navigate = useNavigate();
   const { layout, emotionalAdjustment } = useAdaptiveUI();
   const [activeTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'compliance');
-  const [docText, setDocText] = useState('');
-  const [focus, setFocus] = useState('risk');
-  const [analyzing, setAnalyzing] = useState(false);
-  const [result, setResult] = useState<{ analysis: string; disclaimer?: string; ai_provenance?: { served_by?: string; is_external?: boolean } } | null>(null);
-  const [error, setError] = useState('');
-
-  const analyse = async () => {
-    if (!docText.trim()) return;
-    setAnalyzing(true); setError(''); setResult(null);
-    try {
-      const r = await axios.post('/api/v1/law/analyse', { document_text: docText, analysis_focus: focus });
-      setResult(r.data);
-    } catch (e: any) {
-      setError(axiosDetail(e, 'Analysis failed — the backend may be unavailable.'));
-    }
-    setAnalyzing(false);
-  };
-
   return (
     <div className="space-y-12 pb-24">
       <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6">
         <div>
           <h1 className="text-3xl @[480px]:text-4xl @[680px]:text-6xl font-black mb-1 text-white tracking-tighter uppercase break-words">Bastion of Order</h1>
           <div className="flex items-center gap-4">
-             <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Legal Framework • Constitutional Mesh • Law Hub</p>
+             <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">Law Hub • the tools are in the tabs below</p>
              {/* W493 (FU-154, sweep S10.5, C4) - these read "GUIDED MODE" / "ENCOURAGING TONE" as
                  though the hub adapted to them. Nothing does: only this badge reads the values.
                  No affordance is gated on the mode and no request carries the tone. They are
@@ -51,9 +31,9 @@ export const LawHub: React.FC = () => {
           </div>
         </div>
         <div className="flex gap-4 flex-wrap shrink-0">
-           <Button type="button" onClick={() => navigate('/projects?realm=law&domain=policy')} variant="outline"><History size={18} /> Precedent</Button>
+           <Button type="button" onClick={() => navigate('/projects?realm=law&domain=policy')} variant="outline"><History size={18} /> Law projects</Button>
            <Button type="button" onClick={() => navigate('/projects?realm=law&domain=policy&new=1')} className="bg-aura text-sovereign shadow-xl shadow-aura/20">
-              <Landmark size={18} /> New Treaty
+              <Landmark size={18} /> Start a law project
            </Button>
         </div>
       </header>
@@ -102,38 +82,20 @@ export const LawHub: React.FC = () => {
                 ]}
               />
             ) : (
-              <div className="space-y-5">
-                 <div>
-                    <h4 className="text-lg font-black text-white uppercase tracking-tight flex items-center gap-2"><ScrollText size={18} className="text-aura" /> {T['compliance'].title}</h4>
-                    <p className="text-[11px] text-slate-500 font-bold mt-1 max-w-2xl leading-relaxed">Paste a contract or legal document — Workstation's <span className="text-aura">own</span> AI runs a structured England &amp; Wales analysis (key clauses, risks, missing provisions, recommendations) in-house.</p>
-                 </div>
-                 <textarea value={docText} onChange={e => setDocText(e.target.value)} rows={6}
-                    className="w-full text-xs bg-slate-950 border border-slate-900 rounded-2xl p-4 text-slate-300"
-                    placeholder="Paste the legal document text here…" />
-                 <div className="flex items-center gap-3 flex-wrap">
-                    <select aria-label="Analysis focus" value={focus} onChange={e => setFocus(e.target.value)}
-                       className="text-[10px] font-black uppercase bg-slate-900 border border-slate-800 rounded-lg text-slate-300 px-3 py-2">
-                       <option value="general">General</option>
-                       <option value="risk">Risk</option>
-                       <option value="compliance">Compliance</option>
-                       <option value="negotiation">Negotiation</option>
-                    </select>
-                    <Button type="button" onClick={analyse} disabled={analyzing || !docText.trim()} className="bg-aura text-sovereign flex items-center gap-2 text-xs">
-                       {analyzing ? <Loader2 size={14} className="animate-spin" /> : <ScrollText size={14} />} Analyse document
-                    </Button>
-                 </div>
-                 {error && <p className="text-vital text-xs font-bold">{error}</p>}
-                 {result && (
-                    <Card className="p-6 space-y-3">
-                       <div className="flex items-center justify-between">
-                          <h4 className="text-sm font-black text-white uppercase tracking-wide">Analysis</h4>
-                          {(() => { const b = provenanceBadge(result.ai_provenance?.served_by, result.ai_provenance?.is_external); return <span className={`text-[8px] font-black uppercase px-2 py-1 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
-                       </div>
-                       <pre className="text-[11px] text-slate-300 whitespace-pre-wrap font-sans leading-relaxed bg-slate-950 border border-slate-900 rounded-xl p-4 max-h-[420px] overflow-y-auto">{result.analysis}</pre>
-                       {result.disclaimer && <p className="text-[10px] text-slate-600 italic leading-relaxed">{result.disclaimer}</p>}
-                    </Card>
-                 )}
-              </div>
+              /* W662 (FU-726) - the shared tool component, like every other form tool on this hub: the compliance
+                 verdict and the floor note the response carries are shown, and the output can be copied,
+                 downloaded, refined and saved to My Work. It was a hand-built form that showed none of those. */
+              <DomainTool
+                title={T['compliance'].title}
+                description={<>Paste a contract or legal document — Workstation's <span className="text-aura">own</span> AI runs a structured England &amp; Wales analysis (key clauses, risks, missing provisions, recommendations) in-house.</>}
+                endpoint="/api/v1/law/analyse"
+                resultKey="analysis"
+                submitLabel="Analyse document"
+                fields={[
+                  { name: 'document_text', label: 'Legal document text', type: 'textarea', placeholder: 'Paste the legal document text here…' },
+                  { name: 'analysis_focus', label: 'Analysis focus', type: 'select', options: ['general', 'risk', 'compliance', 'negotiation'], default: 'risk' },
+                ]}
+              />
             )}
          </div>
       </Card>

@@ -13831,11 +13831,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.37",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W662",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v15 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The Digital Twin's model, simulate and optimise answers, the stored model and the stored simulation row each carry a record saying the text is a narrative, that nothing was computed, and what served it. NOT DONE: no page calls model, simulate or optimise - that is a page to build, registered below."
     },
     {
       "id": "FU-717",
@@ -13953,11 +13956,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.37",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W662",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v15 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Every header button on the five hubs is named for what it opens: a project form or list says 'project', the Reactor says 'Reactor', the AI CEO says so (the Religion hub called it 'Seek Guidance'), and each madhab's button names the Quran Education Platform. The three 'Mesh' subtitles and the Religion hub's banner of networks that do not exist are gone; the banner says it is decoration. No route changed. A walk over the five hubs checks each label against its target."
     },
     {
       "id": "FU-723",
@@ -13993,11 +13999,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.37",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W662",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v15 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The project form's first dropdown shows the value it holds: the value the form was opened with (a domain from a hub, or a subject) is always an option and labelled for what it is, the realms are labelled as realms, and choosing a realm says the project will be filed under it instead. The field is labelled Subject and the second one Area. The stored field is not renamed."
     },
     {
       "id": "FU-725",
@@ -14033,11 +14042,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.37",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W662",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v15 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The Legal Document Analyser is the shared tool component, with the same two fields and the same default: the compliance verdict and the floor note its response carries are shown, and the output can be copied, downloaded, refined and saved to My Work."
     },
     {
       "id": "FU-727",
@@ -14398,6 +14410,24 @@
       "closed_by": null,
       "note": "",
       "slot_source": "adopted from an external assessment the Owner asked to be considered",
+      "tier": 3
+    },
+    {
+      "id": "FU-747",
+      "title": "The Digital Twin page cannot create a model, run a scenario or ask for an optimisation",
+      "why": "DigitalTwins.tsx calls only the two read routes. The three routes that compose text have no UI caller, so the capability is API-only. W662 made their answers say what they are; reaching them from the page is unbuilt. Left from FU-716.",
+      "source": "W662",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/api/digital_twin.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the undone part of a ledger row closed in W662",
       "tier": 3
     }
   ],
