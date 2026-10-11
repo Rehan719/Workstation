@@ -713,6 +713,14 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
                     # under the deterministic native floor the encoder fills every axis with 0.5, so
                     # all ten tie and there is genuinely no dominant trait to name.
                     "traits": _traits,
+                    #  W672 (ledger v16 R4.3) - the engine says whether it encoded anything, where the fitness
+                    #  figure came from and what served it; this handler dropped all of it, so a vector of ten
+                    #  defaults and a default fitness reached the page under the green chip. Carried from the
+                    #  engine's own record, never retyped here. `outcome` is unchanged: the engine did run.
+                    "encoded": g.get("encoded"),
+                    "fitness_provenance": g.get("fitness_provenance"),
+                    "encoding_note": g.get("encoding_note"),
+                    "served_by": g.get("served_by"), "is_external": bool(g.get("is_external")),
                     "output": (str(g.get("expression") or "") or f"genome {g.get('genome_id')}")[:400]}
         # §8 organism systems — when composed, each runs its REAL engine/reading (the living biomimetic
         #   substrate the composition runs ON), not a prompt approximation: constitutional gate · live
@@ -1652,6 +1660,29 @@ def _living_vsb_grounding(vsb_id: str) -> str:
         return ""
 
 
+#  W670 (ledger v16 R4.5) - THE FOUR STAGES EVERY ESTABLISHED ENTITY IS GIVEN, in one place. Genesis attaches
+#  exactly these, and a listing says so by COMPARING a cascade's stages with them when it is read - a stored
+#  flag would go stale the moment the owner edits a stage.
+PLATFORM_DELIVERY_STAGES = (
+    {"role": "ai-ceo", "instruction": "Frame the objective and set the directive for the C-Suite."},
+    {"role": "c-suite", "instruction": "Break the directive into specialist workstreams (finance, technical, market, legal/compliance)."},
+    {"role": "centre-of-excellence", "instruction": "Produce the specialist deliverable for the highest-priority workstream."},
+    {"role": "build-to-order", "instruction": "Integrate the workstreams into a Build-to-Order delivery plan."},
+)
+
+
+def _template_fields(c: dict) -> dict:
+    """Two NEW keys for a listed cascade, computed from its stages now. `template` is "platform-default" when
+    the stages are the platform's four word for word with no model chosen, and None otherwise."""
+    _mine = [(s.get("role"), s.get("instruction"), s.get("model")) for s in (c.get("stages") or [])
+             if isinstance(s, dict)]
+    same = _mine == [(s["role"], s["instruction"], None) for s in PLATFORM_DELIVERY_STAGES]
+    return {"template": "platform-default" if same else None,
+            "template_basis": ("the platform's standard four delivery stages, word for word - the same for every "
+                               "enterprise; only the context differs. Not composed for this solution" if same else
+                               "its stages differ from the platform's standard four, so somebody set them")}
+
+
 def register_swarm(name: str, stages: List[Dict[str, str]], context: str = "",
                    usage_area: str = "synthesis", vsb_id: str | None = None,
                    org: List[str] | None = None,
@@ -1842,6 +1873,7 @@ async def list_swarms(vsb_id: Optional[str] = None,
     # The unreadable-store branch above already says its own absence out loud; a truncated
     # store said nothing at all, and a count over it reads as complete.
     _at_cap = len(_all) >= _SWARM_CAP
+    rows = [dict(c, **_template_fields(c)) for c in rows]          # W670 (R4.5) - copies; the store is not rewritten
     return {"cascades": rows, "total": len(rows), "truncated": _at_cap,
             "unavailable": None, "note": None,
             "total_basis": (
@@ -1857,7 +1889,7 @@ async def get_swarm(sid: str, user: dict | None = Depends(get_current_user)):
     for c in _swarms_or_503():
         if c["id"] == sid:
             _require_design_access(c, user, "Swarm cascade", sid)
-            return c
+            return dict(c, **_template_fields(c))          # W670 (R4.5)
     raise HTTPException(status_code=404, detail=f"Swarm cascade {sid} not found.")
 
 

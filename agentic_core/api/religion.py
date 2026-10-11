@@ -310,13 +310,11 @@ async def quran_tafsir(req: QuranTafsirRequest):
         + f"Approach: {req.tafsir_approach}\n"
         f"{approach_instructions}\n\n"
         "Structure as:\n"
-        # W456 (§11 rule 4) — the two sections a MODEL must serve are not asked for on the floor at
-        # all: a prompt that asks the floor for a translation leaves its scaffold in the interaction
-        # log and AI memory even if the reply is cut afterwards (the W439 lesson at /qep/translation).
-        # Checked first, with no side effects; the post-hoc cut below stays as the guard.
-        + (("## Transliteration (of the provided text only)\n"
-            "## Translation (AI-assisted, working from the provided text; note that scholarly translations differ)\n")
-           if _model_available() else "")
+        #  W671 (ledger v16 R1.3) - NEITHER SACRED SECTION IS ASKED FOR, ON ANY PATH. With a model available
+        #  this prompt asked it to transliterate and translate the ayah, while the translation tool beside it
+        #  refuses exactly that whatever model is available. By the Owner's ruling a model never translates or
+        #  transliterates Qur'anic text. A named translator's sourced rendering is served by the translation
+        #  route; the cut below removes either section if a model volunteers one.
         + "## Context of Revelation (Asbab al-Nuzul) if applicable\n"
         "## Linguistic Analysis (key Arabic terms, root words)\n"
         "## Exegesis (detailed explanation)\n"
@@ -335,18 +333,25 @@ async def quran_tafsir(req: QuranTafsirRequest):
     # scaffold over sacred text. On the floor the Transliteration and Translation sections are
     # WITHHELD — not asked for (above) and, as a guard, cut if they somehow appear — named in
     # `sections_withheld`, with `floor_note` saying why; the sourced Arabic and the reference stand.
-    # A model-served tafsir keeps them. Refuter (W456): when a model WAS available and the floor
+    # (W671: a model-served tafsir no longer keeps them either - see the cut below.) Refuter (W456): when a model WAS available and the floor
     # still answered, the prompt had asked for a translation — its scaffold is already in the
     # interaction log and the QMS record sealed the uncut text — so that case is refused outright,
     # as /qep/translation refuses it, rather than cut and shipped under a seal of a different text.
     sections_withheld: list[str] = []
     floor_note = None
+    #  W671 (ledger v16 R1.3) - A MODEL'S REPLY LOSES EITHER SACRED SECTION IT VOLUNTEERED. Nothing asked for
+    #  them; what is listed is what was actually removed, so a reply that carried neither lists nothing and
+    #  its measured coverage stays the coverage of the text returned. The floor branch below runs its own,
+    #  wider cut.
+    if (provenance or {}).get("served_by") != "native":
+        tafsir, _sacred671 = _withhold_sections(tafsir, ("Transliteration", "Translation"))
+        sections_withheld = list(_sacred671)
     if (provenance or {}).get("served_by") == "native":
         if _model_expected:
             from fastapi import HTTPException
             raise HTTPException(status_code=503, detail=(
                 "a model resource was available but the deterministic native floor served this tafsir — "
-                "a tafsir requested with a translation is not served from the floor; retry"))
+                "a tafsir a model was expected to serve is not served from the floor; retry"))
         #  W637 (FU-589) — THE SIBLINGS' RULE, applied to the one tool over sacred text that lacked it.
         #  Fatwa, hadith and interfaith withhold every research section on the floor; tafsir withheld two
         #  and SERVED five study headings, each filled with words lifted from this handler's own "Subject:"
@@ -362,8 +367,7 @@ async def quran_tafsir(req: QuranTafsirRequest):
         sections_withheld = ["Transliteration", "Translation"] + [
             h for h in _cut if h not in ("Transliteration", "Translation")]
         floor_note = ("served by the deterministic native floor — no translation or transliteration is "
-                      "offered (a translation must come from a model; the floor composes headings, not "
-                      "meaning). "
+                      "offered (" + _TRANSLATION_BASIS + "; the floor composes headings, not meaning). "
                       + ("The sourced Arabic above is authentic; " if arabic_text else
                          "No Arabic is shown because the authoritative source was unreachable; ")
                       + "no exegesis, linguistic analysis, cross-references or lessons are offered here: the "
@@ -384,6 +388,11 @@ async def quran_tafsir(req: QuranTafsirRequest):
         "approach": req.tafsir_approach,
         "tafsir": tafsir,
         "sections_withheld": sections_withheld,
+        #  W671 (R1.3) - a NEW field, on every path: where a translation of the meanings comes from. A pointer,
+        #  not a fetch (a ten-ayah range would be ten more calls to the source inside this handler).
+        "translation_source": {"composed_here": False,
+                               "sourced_route": f"/api/v1/qep/translation/{surah}/{ayah_start}",
+                               "basis": _TRANSLATION_BASIS},
         **({"floor_note": floor_note} if floor_note else {}),
         "ai_provenance": _note_withheld659(provenance, sections_withheld),
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -401,6 +410,15 @@ async def quran_tafsir(req: QuranTafsirRequest):
               "translations and interpretations differ; where they do, learn from a scholar."
         ),
     }
+
+
+#  W671 (ledger v16 R1.3) - one sentence for the tafsir's floor note and its translation_source field. It says
+#  what qep_intelligence._SACRED_REFUSAL says of the translation tool; a guard holds the two to the same route
+#  and the same "whatever model is available".
+_TRANSLATION_BASIS = ("by the Owner's ruling a model never translates or transliterates Qur'anic text here, "
+                      "whatever model is available (ruling A.9.3 names translation); a named translator's sourced "
+                      "rendering of the meanings is served, fetched and never composed, at "
+                      "GET /api/v1/qep/translation/{surah}/{ayah}")
 
 
 def _model_available() -> bool:

@@ -58,7 +58,7 @@ const AUTONOMY: { key: keyof Status; label: string; does: string; runtimeOnly?: 
   { key: 'auto_compliance', label: 'Self-defend',
     does: 'Re-screens ONE living VSB per beat in round-robin against the §11 keyword screen, so a verdict is not frozen at establishment — but a given entity is re-screened only about once every N beats.' },
   { key: 'auto_align', label: 'Self-align',
-    does: 'Names the owning tier for each vision gap on the beat. Plan-only: nothing is sent to any tier and no code is written.' },
+    does: 'Names the owning tier for each pillar that has a missing route or an empty store, on the beat. That is API coverage, not a measure of delivery. Plan-only: nothing is sent to any tier and no code is written.' },
   { key: 'auto_ship', label: 'Self-ship',
     does: 'Re-ships ONE stale repo per beat, oldest first.' },
   // FU-367 (W609) — the recirculation loop's lever, settable from the running backend for the first time

@@ -66,6 +66,9 @@ function RunCard({ run }: { run: SwarmRun }) {
 }
 
 const CSUITE_POOL = ['CSO', 'CFO', 'CTO', 'CPO', 'COO', 'CIO', 'CLO', 'Forecasting', 'Policy'];
+// W671 (ledger v16 R3.6) — the ONE place this tab's axis is fixed. The request body and both notices read it,
+// so the sentence on the page cannot drift from what is posted.
+const CASCADE_AXIS = { domain: 'enterprise', realm: 'enterprise' } as const;
 
 const SwarmIntelligence: React.FC = () => {
   const [runs, setRuns] = useState<SwarmRun[]>([]);
@@ -160,7 +163,7 @@ const SwarmIntelligence: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          mission: task, domain: 'enterprise', realm: 'enterprise', csuite_roles: csuiteSel,
+          mission: task, ...CASCADE_AXIS, csuite_roles: csuiteSel,
           // W292 — the cascade grounds in the SELECTED living plan and can deliver ONE objective
           scope: scopeSel, objective_id: objectiveSel || undefined,
         }),
@@ -279,6 +282,7 @@ const SwarmIntelligence: React.FC = () => {
             </select>
           )}
           <span className="text-[8px] text-white/25">the Chief/CEO tiers ground in this plan; a bound QMS-passed run advances the objective</span>
+          <span data-testid="cascade-axis-fixed" className="text-[8px] text-white/40">runs as domain {CASCADE_AXIS.domain} · realm {CASCADE_AXIS.realm} — fixed on this tab whatever the mission says; no CoE specialism is sent</span>
         </div>
 
         {streaming && !cascade && (
@@ -295,6 +299,7 @@ const SwarmIntelligence: React.FC = () => {
             {/* §5↔§6 — the living organisation's delivery, in-house + governed + provenance-sealed */}
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-[8px] font-black uppercase tracking-widest text-fuchsia-400">Living-Organisation delivery</span>
+              <span data-testid="cascade-axis" className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">run as: {CASCADE_AXIS.domain} / {CASCADE_AXIS.realm}</span>
               {(() => { const b = provenanceMapBadge(cascade.ai_provenance?.served_by, cascade.ai_provenance?.any_external); return <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
               {/* W494 (FU-130) — an emerald chip read as governance over the whole cascade. The gate
                   receives the intent label, the domain and a constant attestation sentence; it never

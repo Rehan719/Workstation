@@ -185,7 +185,8 @@ def _phase_sort_key(timeline: str):
 #  so a ship and a repository download went through with no KPI set. The sentence now states its real scope.
 #  Whether a ship SHOULD be gated on KPIs is a product decision nobody has taken; this is the wording only.
 _KPI_GATE_SCOPE = ("This gate applies to a MARKETPLACE LISTING only: shipping the entity's repository and "
-                   "public surfaces, and downloading its archive, are not gated by it.")
+                   "public surfaces, downloading its archive, and delivering or settling a contract between "
+                   "entities are not gated by it.")
 
 
 def kpi_release_gate(vsb_id: str) -> dict:

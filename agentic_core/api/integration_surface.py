@@ -373,7 +373,8 @@ async def user_recs(user_id: str = "default"):
         real = _realise().get("overall_realisation", 1.0)
         if real < 1.0:
             recs.append({"id": "r-transform", "title": "Close the next vision gap",
-                         "route": "/transformation", "reason": f"realisation at {int(real*100)}%"})
+                         "route": "/transformation", "reason": (f"{int(real*100)}% of presence checks pass - routes mounted and "
+                                                              f"stores non-empty; coverage, not delivery")})
     except Exception:
         pass
     try:
@@ -450,6 +451,11 @@ async def evo_metrics():
             "threat_level": imm.get("threat_level"),
             "pillar_breakdown": pillars,
             "dimensions_realised": sum(1 for p in pillars if p["status"] == "realised"),
+            #  W672 (ledger v16 R6.6) - the same count under what it counts; the older key keeps its readers
+            "dimensions_all_checks_present": sum(1 for p in pillars if p["status"] == "realised"),
+            "dimensions_basis": ("counts the pillars whose presence checks all pass (a route mounted, a store "
+                                 "with a record); dimensions_realised is the same count under its older name "
+                                 "and neither is a measure of delivery"),
             "dimensions_total": len(pillars),
             "self_improvement": "Sovereign Evolution + Heartbeat active"}
 

@@ -52,7 +52,8 @@ def record_outcome(kind: str, resource: str, *, served_by: str = "native",
                    quality_gate: Optional[bool] = None,
                    ref: Optional[str] = None, vsb_id: Optional[str] = None,
                    run_id: Optional[str] = None,
-                   served_by_all: Optional[List[str]] = None) -> Dict[str, Any]:
+                   served_by_all: Optional[List[str]] = None,
+                   reported_by: str = "platform") -> Dict[str, Any]:
     """Append one real run outcome. Reusable in-process (the run paths call this best-effort)
     and via the /record endpoint. Never raises into a caller — recording is non-critical.
 
@@ -94,6 +95,10 @@ def record_outcome(kind: str, resource: str, *, served_by: str = "native",
         "kind": kind,
         "resource": resource,
         "served_by": served_by,
+        #  W672 (ledger v16 R4.7) - WHO SAID what served this run: the platform's own run path, or a caller
+        #  over the public route. `served_by` and `is_external` keep their meaning for their readers (model
+        #  health, the router, the in-house rate); this is added beside them. Two values only.
+        "reported_by": "caller" if reported_by == "caller" else "platform",
         "is_external": bool(is_external),
         "duration_ms": int(duration_ms),
         "produced": _produced,
@@ -346,7 +351,8 @@ class RecordRequest(BaseModel):
 @router.post("/record")
 async def record(req: RecordRequest):
     return record_outcome(req.kind, req.resource, served_by=req.served_by, is_external=req.is_external,
-                          duration_ms=req.duration_ms, success=req.success, ref=req.ref, vsb_id=req.vsb_id)
+                          duration_ms=req.duration_ms, success=req.success, ref=req.ref, vsb_id=req.vsb_id,
+                          reported_by="caller")
 
 
 @router.get("/outcomes")
@@ -400,6 +406,11 @@ async def degradation(resource: Optional[str] = None, cycles: int = 3, window: i
         acc_change = round(telemetry[0]["accuracy"] - telemetry[-1]["accuracy"], 4)
     return {"degraded": score >= 1.0, "score": score, "cycles_built": len(telemetry),
             "latency_change": lat_change, "accuracy_change": acc_change,
+            #  W670 (ledger v16 R4.6) - what "accuracy" is here. The key keeps its name because the detector's
+            #  thresholds are written against it; the basis says what the figure is computed from.
+            "accuracy_basis": ("the share of runs in each window that RETURNED OUTPUT - no quality gate's "
+                               "verdict is read here, so this is a produced-rate change and not a change in "
+                               "how often an answer was right"),
             "thresholds": {"latency_rise": 0.127, "accuracy_drop": 0.093},
             "samples": len(recent), "resource": resource or "all",
             "method": "PerformanceDegradationDetector (owned self_improvement)"}
@@ -519,6 +530,12 @@ async def summary():
     successes = sum(1 for r in assessed if r.get("quality_verdict"))
     produced = sum(1 for r in rows if r.get("produced", r.get("success")))
     in_house = sum(1 for r in rows if not r.get("is_external"))
+    #  W672 (ledger v16 R4.7) - the in-house rate counted rows a caller wrote over the route beside rows
+    #  the platform recorded about its own runs, and said nothing. The rate keeps its population (a page
+    #  and a ranking read it); these say how much of it is a caller's claim, and give the rate without it.
+    _claimed = [r for r in rows if r.get("reported_by") == "caller"]
+    _own = [r for r in rows if r.get("reported_by") != "caller"]
+    _unstamped = sum(1 for r in rows if "reported_by" not in r)
     ranks = _rankings(rows)
     return {
         "total_runs": n,
@@ -532,6 +549,17 @@ async def summary():
             f"output, which the deterministic floor always does, so it is not a success measure."),
         "produced_rate": round(produced / n, 3) if n else 0.0,
         "in_house_rate": round(in_house / n, 3) if n else 0.0,
+        "caller_reported_runs": len(_claimed),
+        "in_house_rate_excluding_caller_reported": (
+            round(sum(1 for r in _own if not r.get("is_external")) / len(_own), 3) if _own else None),
+        "in_house_rate_basis": (
+            f"{in_house} of {n} row(s) are not marked external. "
+            + (f"{len(_claimed)} of the {n} were written through POST /operations/record: what served them, "
+               f"and whether that was external, is the CALLER'S claim and not something this platform observed. "
+               if _claimed else "None of them was written through POST /operations/record. ")
+            + (f"{_unstamped} row(s) carry no reported_by: they were recorded before rows said who reported "
+               f"them, so that is not known, and they are counted with the platform's own."
+               if _unstamped else "Every row says who reported it.")),
         "distinct_resources": len(ranks),
         #  W666 (ledger v16 R4.1) - the first row of the ranking was named "top" even when every recorded
         #  run of it had failed. Only a resource that produced output is named; otherwise none is.

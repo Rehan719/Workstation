@@ -480,7 +480,7 @@ async def board_status(scope: str = "workstation"):
             "chief": board.get("chief"),
             "directors": board.get("directors", []),
             "live": snapshot,
-            "recent_directives": [r for r in _load() if r.get("business_plan_scope") == scope][-5:],
+            **_recent_with_owner([r for r in _load() if r.get("business_plan_scope") == scope]),
         }
     return {
         "board": "Workstation IDBO Board of Directors",
@@ -491,10 +491,34 @@ async def board_status(scope: str = "workstation"):
         "chief": _BOARD[0],
         "directors": [d for d in _BOARD if d["id"] != "chief"],
         "live": snapshot,
-        "recent_directives": _load()[-5:],
+        **_recent_with_owner(_load()),
         # W464 (FU-012) — how many changes wait for the Board (the queue itself: GET /ratifications)
         "pending_ratifications": _pending_ratification_count(),
     }
+
+
+def _latest_owner_instruction(rows: list) -> "dict | None":
+    """W671 (ledger v16 R3.5) - the Owner's own most recent instruction among these rows, by the predicate the
+    founder model uses: a row with an instruction that the twin did not issue unprompted."""
+    _r = next((r for r in reversed(rows) if isinstance(r, dict) and r.get("instruction")
+               and not r.get("unprompted")), None)
+    if _r is None:
+        return None
+    return {k: _r.get(k) for k in ("directive_id", "instruction", "created_at", "business_plan_scope")}
+
+
+def _recent_with_owner(rows: list) -> dict:
+    """W671 (R3.5) - `recent_directives` is unchanged: the last five rows of every kind. Each unprompted
+    directive writes TWO rows, so three beats fill the five and the Owner's instruction is no longer among
+    them. Two NEW keys say so: the Owner's own latest instruction, and how many of the five are the twin's."""
+    recent = rows[-5:]
+    _twin = sum(1 for r in recent if isinstance(r, dict)
+                and (r.get("unprompted") or r.get("kind") == "twin_directive_unprompted"))
+    return {"recent_directives": recent,
+            "latest_owner_instruction": _latest_owner_instruction(rows),
+            "recent_directives_basis": (
+                f"the last {len(recent)} row(s) of the board record, of every kind; {_twin} of them are the "
+                f"twin's unprompted restatements or their receipts, which are not instructions from the Owner")}
 
 
 def _pending_ratification_count() -> Optional[int]:

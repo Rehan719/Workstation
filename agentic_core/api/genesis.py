@@ -1030,12 +1030,7 @@ def _attach_delivery_swarm(entity: dict, vsb_id: str, name: str, problem: str,
                      f"Concept: {(concept or problem)[:600]}"),
             usage_area="delivery", vsb_id=vsb_id, org=org_tiers,
             owner_id=entity.get("owner_id"),   # §14 (W324) — the cascade belongs to the entity's owner
-            stages=[
-                {"role": "ai-ceo", "instruction": "Frame the objective and set the directive for the C-Suite."},
-                {"role": "c-suite", "instruction": "Break the directive into specialist workstreams (finance, technical, market, legal/compliance)."},
-                {"role": "centre-of-excellence", "instruction": "Produce the specialist deliverable for the highest-priority workstream."},
-                {"role": "build-to-order", "instruction": "Integrate the workstreams into a Build-to-Order delivery plan."},
-            ],
+            stages=[dict(s) for s in rf.PLATFORM_DELIVERY_STAGES],     # W670 (R4.5) - one definition, read by the listing
         )
         entity["native_swarm"] = {
             "cascade_id": cascade["id"], "name": cascade["name"], "org": org_tiers,
@@ -1526,7 +1521,7 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
         "genome_spec": genome_spec,
         "epigenetic_traits": {"domain": req.domain, "origin": "genesis"},
         "generation": 0,
-        "ceo_specification": (req.commercialisation or req.concept)[:2000],
+        "ceo_specification": (req.commercialisation or req.concept)[:2000], "ceo_specification_source": "founder_input",   # W670 (R3.0)
         "swarm_config": {
             "CEO": f"AI CEO — {name}",
             "CFO": "Financial modelling and capital allocation",
@@ -1767,7 +1762,7 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
             # the stage is derived there too, and was a literal on this path as well
             "status": "pending derivation", "stage": "pending derivation", "genome_spec": genome_spec,
             "epigenetic_traits": {"domain": req.domain, "origin": "genesis"}, "generation": 0,
-            "ceo_specification": (req.commercialisation or req.concept)[:2000],
+            "ceo_specification": (req.commercialisation or req.concept)[:2000], "ceo_specification_source": "founder_input",   # W670 (R3.0)
             "genesis_blueprint": {"concept": req.concept, "design": req.design,
                                   "commercialisation": req.commercialisation},
             # §4 (W304) — the full journey record survives on the SSE path too

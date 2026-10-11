@@ -698,7 +698,12 @@ async def biometrics_status():
         "cognition":      {"state": cognition_state, "primary_drive": primary_drive,
                            "basis": ("a LOAD reading, not cognition: derived from host CPU% and the running-project "
                                      "count, qualified by immune health. No cognitive engine is read")},
-        "communication":  {"active_channels": ["WS"] if ws > 0 else [], "neurotransmitter": neurotransmitter, "is_active": ws > 0},
+        "communication":  {"active_channels": ["WS"] if ws > 0 else [], "neurotransmitter": neurotransmitter, "is_active": ws > 0,
+                           #  W670 (ledger v16 R4.9) - what the name stands for; nothing signals anything
+                           "basis": ("a label, not a signal: it names which of three cases holds - "
+                                     + ("a live socket is open" if ws > 0 else
+                                        "no socket is open and a project is running" if active > 0 else
+                                        "no socket is open and no project is running"))},
         "immune":         imm,
         # W506 (P2.7(4), FU-265a) — the qualifier travels WITH the figure: atp_basis set above and not
         # returned would label nothing, and the Introspection surface reads this dict.

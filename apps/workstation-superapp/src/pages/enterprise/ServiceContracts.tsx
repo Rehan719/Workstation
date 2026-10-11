@@ -35,7 +35,8 @@ interface Contract {
   brief: string;
   price_wst: number;
   status: string;                       // offered | accepted | delivered | settled
-  delivery?: { run_id?: string; quality?: unknown; served_by?: unknown } | null;
+  delivery?: { run_id?: string; quality?: unknown; served_by?: unknown;
+               kpi_gate?: { applied?: boolean; basis?: string } } | null;   // W672 (ledger v16 R6.9)
   // W465 — outcome says what the last settle attempt was: paid | held | rejected | blocked | gate_error |
   // decided_concurrently | unknown (a contract settled before W465 carries only transfer_id)
   settlement?: { transfer_id?: string; held?: boolean; outcome?: string; rejected_by?: string; cca_id?: string;
@@ -332,6 +333,9 @@ export const ServiceContracts: React.FC<{ entities: Entity[] }> = ({ entities })
                     <span className="text-aura">{c.price_wst.toLocaleString()} WST</span>
                     {q && <><span>·</span><span>quality {q}</span></>}
                     {servedByText(c.delivery?.served_by) && <><span>·</span><span>served by {servedByText(c.delivery?.served_by)}</span></>}
+                    {c.delivery?.kpi_gate?.applied === false && (
+                      <><span>·</span><span data-testid="contract-kpi-gate" className="text-amber-400" title={c.delivery.kpi_gate.basis}>no KPI check on this delivery</span></>
+                    )}
                     {c.status !== 'settled' && c.settlement && (c.settlement.outcome ? UNPAID_OUTCOME[c.settlement.outcome] : c.settlement.held) && (
                       <Badge className="text-[8px]" data-testid="contract-settlement-outcome">
                         {c.settlement.outcome ? UNPAID_OUTCOME[c.settlement.outcome] : 'settlement held'}

@@ -443,6 +443,7 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
     the native fabric, QMS-gated + compliance-screened + document-controlled. The Website/Web-app/Phone-app
     directories are honest scaffolds (later increments), never claimed as built/running apps."""
     vsb = _require_vsb_access(vsb_id, user)
+    _refuse_if_screen_failed(vsb_id, "repository generation")      # W670 (ledger v16 R2.5)
     _refuse_gated(vsb, "repo")   # W452 (refuter F3) — the body's generators honour the gate as the ship does
     files = _build_repo_files(vsb)
     root = _REPO_STORE / vsb_id
@@ -765,7 +766,7 @@ _SURFACE_LINKS_MOBILE = ('<nav class="surfaces" data-surfaces="mobile"><a href="
                          '<a href="../webapp/index.html">Web app</a></nav>')
 
 
-def _website_page(title: str, active: str, body: str) -> str:
+def _website_page(title: str, active: str, body: str, note: str = "") -> str:
     nav = "".join(
         f'<a href="{href}" class="{ "active" if active == key else "" }">{label}</a>'
         for key, href, label in (("index", "index.html", "Home"), ("about", "about.html", "About"),
@@ -781,7 +782,9 @@ def _website_page(title: str, active: str, body: str) -> str:
             #  W633 (FU-561) - the footer no longer says 'Living': it ships on bodies that are pending and entities
             #  that do not operate, and the entity's own record carries its status
             f"<footer>VSB IDBO enterprise · generated in-house on Workstation's own AI fabric · "
-            f"quality record and compliance screen in the entity repository (compliance/QUALITY.md).</footer></body></html>")
+            f"quality record and compliance screen in the entity repository (compliance/QUALITY.md)."
+            #  W670 (ledger v16 R2.8) - what the words on this page are, computed where the copy was chosen
+            + (f" {_esc(note)}" if note else "") + "</footer></body></html>")
 
 
 def _build_website_files(vsb: dict, copy: dict) -> dict:
@@ -792,6 +795,8 @@ def _build_website_files(vsb: dict, copy: dict) -> dict:
     bp = _blueprint(vsb)                     # W301 - canonical accessor (both shapes)
     concept, design, commercial = bp["concept"], bp["design"], bp["commercialisation"]
     hero, about, solution = copy.get("hero", ""), copy.get("about", ""), copy.get("solution", "")
+    _note670 = str(copy.get("_template_note") or "")        # W670 (R2.8) - set by the route, empty for any other caller
+    challenge = str(challenge or "")
     f: dict = {}
     f["web/styles.css"] = (
         ":root{--ink:#0f172a;--bg:#fff;--mut:#475569;--accent:#4f46e5;--soft:#eef2ff}"
@@ -811,17 +816,24 @@ def _build_website_files(vsb: dict, copy: dict) -> dict:
         f"<h1>{_esc(name)}</h1><p>{_esc(challenge)}</p>"
         f"<p class=\"meta\">Domain: {_esc(domain)} · Realm: {_esc(realm)}</p>"
         f"<a class=\"cta\" href=\"solution.html\">See the solution →</a></div>"
-        f"<section><h2>What we do</h2><p>{_esc((about or concept or challenge)[:600])}</p></section>")
+        f"<section><h2>What we do</h2><p>{_esc((about or concept or challenge)[:600])}</p></section>",
+        note=_note670)
     f["web/about.html"] = _website_page(f"About — {name}", "about",
         f"<h1>About {_esc(name)}</h1>"
-        f"<section><h2>Concept</h2><p>{_esc((concept or challenge)[:900])}</p></section>"
-        f"<section><h2>Our approach</h2><p>{_esc(about[:900])}</p></section>"
-        f"<section><h2>Commercialisation</h2><p>{_esc(commercial[:600])}</p></section>")
+        #  W670 (ledger v16 R2.6) - A HEADING IS PRINTED OVER TEXT, NEVER OVER NOTHING. The problem statement was
+        #  printed under "Concept" when no concept existed, and two headings stood over empty paragraphs.
+        + (f"<section><h2>Concept</h2><p>{_esc(concept[:900])}</p></section>" if concept.strip() else
+           f"<section><h2>The problem</h2><p>{_esc(challenge[:900])}</p></section>" if challenge.strip() else "")
+        + (f"<section><h2>Our approach</h2><p>{_esc(about[:900])}</p></section>" if about.strip() else "")
+        + (f"<section><h2>Commercialisation</h2><p>{_esc(commercial[:600])}</p></section>"
+           if commercial.strip() else ""),
+        note=_note670)
     f["web/solution.html"] = _website_page(f"Solution — {name}", "solution",
         f"<h1>The Solution</h1>"
         f"<section><h2>Overview</h2><p>{_esc(solution[:900])}</p></section>"
-        f"<section><h2>Design &amp; delivery</h2><p>{_esc(design[:900])}</p></section>"
-        f"<a class=\"cta\" href=\"index.html\">← Back home</a>")
+        + (f"<section><h2>Design &amp; delivery</h2><p>{_esc(design[:900])}</p></section>" if design.strip() else "")
+        + f"<a class=\"cta\" href=\"index.html\">← Back home</a>",
+        note=_note670)
     return f
 
 
@@ -955,6 +967,9 @@ async def generate_vsb_website(vsb_id: str, user: dict | None = Depends(get_curr
     name, challenge, domain = vsb.get("name"), vsb.get("challenge", ""), vsb.get("domain", "enterprise")
     concept = _blueprint(vsb)["concept"]     # W301 - canonical accessor (both shapes)
     prov: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False}
+    #  W670 (ledger v16 R2.8) - WHICH PATH EACH BLOCK OF COPY TOOK: "composed" (a model's text, accepted) or
+    #  "frame" (the entity's own problem statement in a fixed sentence). It was decided below and recorded nowhere.
+    copy_basis: dict = {}
 
     # §13 (W355/W356) — public copy is GROUNDED and FLOOR-SAFE: every prompt carries the entity's
     # real challenge + concept, and generated text is accepted for a public page ONLY when it was
@@ -975,6 +990,7 @@ async def generate_vsb_website(vsb_id: str, user: dict | None = Depends(get_curr
         cleaned = _prose_clean((m.get("output", "") or "").strip(), one_line=one_line)
         trustworthy = (sb != "native" and cleaned and not _looks_like_floor(cleaned)
                        and _is_grounded(cleaned, _ground_src))
+        copy_basis[kind] = "composed" if trustworthy else "frame"
         if trustworthy:
             return cleaned
         return _entity_fallback_copy(name, challenge, concept, kind)
@@ -993,6 +1009,16 @@ async def generate_vsb_website(vsb_id: str, user: dict | None = Depends(get_curr
             f"addressing: {challenge}. Concept: {concept[:400]}. No headings, no markdown.",
             "solution"),
     }
+    _framed670 = sorted(k for k, v in copy_basis.items() if v == "frame")
+    _composed670 = sorted(k for k, v in copy_basis.items() if v == "composed")
+    copy["_template_note"] = (
+        "This site uses the platform's standard three-page layout, the same for every entity. "
+        + ("Its wording is the problem statement recorded on this entity, set in a fixed sentence frame; "
+           "no copy was written for it."
+           if not _composed670 else
+           "Copy was written in-house for: " + ", ".join(_composed670)
+           + ("; the recorded problem statement in a fixed sentence frame for: " + ", ".join(_framed670) + "."
+              if _framed670 else ".")))
     files = _build_website_files(vsb, copy)
     # §13 (W331) — the no-scaffold invariant is enforced AT THE SURFACE, whatever field a marker
     # leaks through (CI caught a truncated `_[…` fragment arriving via a memory excerpt inside
@@ -1051,6 +1077,7 @@ async def generate_vsb_website(vsb_id: str, user: dict | None = Depends(get_curr
         "note": ("Static website (real HTML/CSS) on the platform's standard layout, filled in-house from the VSB entity, written "
                  "into the repo's web/ dir. Static info site — NOT a running web app (increment 3), not "
                  "deployed/hosted."),
+        "copy_basis": dict(copy_basis), "template_note": copy["_template_note"],     # W670 (R2.8) - new fields
     }
     (root / "web" / "site.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     _REPO_STORE.mkdir(parents=True, exist_ok=True)
@@ -1778,7 +1805,9 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
     _act_refresh = _cadence_latest(vsb_id, "action_plan")
     layers = {
         "constitutional": constitutional,                                  # derived (see the sources above)
-        "strategic": _strategic_layer(_ceo_spec, _strat_refresh),
+        "strategic": _strategic_layer(_ceo_spec, _strat_refresh,
+                                      founder_texts=(_blueprint(vsb)["concept"], _blueprint(vsb)["commercialisation"]),
+                                      source=vsb.get("ceo_specification_source")),
         "action_plan": _action_plan_layer(_board, _act_refresh),
         "operational": operational,                                         # live snapshot
     }
@@ -2029,6 +2058,7 @@ def _rederive(vsb: dict) -> dict:
     _st, _st_basis = _derived_status(vsb)
     _sg, _sg_basis = _derived_stage(vsb)
     vsb.update(status=_st, status_basis=_st_basis, stage=_sg, stage_basis=_sg_basis,
+               body_provided=_body_provided(vsb),          # W670 (R2.6) - a NEW field; status keeps its meaning
                status_derived_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
     return vsb
 
@@ -2072,11 +2102,22 @@ def _screen_hold(vsb: dict):
             if isinstance(v, dict) and v.get("status") == "fail"]
 
 
+#  W670 (ledger v16 R2.5) - WHAT THE HOLD REFUSES, AND WHAT IT DOES NOT, IN ONE PLACE. The basis named two
+#  groups of doors in a phrase; the entity's repository could still be generated, read a file at a time and
+#  re-run, and the entity could still file evolution proposals. Each name in SCREEN_REFUSES is the `what` a
+#  route hands to _refuse_if_screen_failed; each name in SCREEN_LEAVES_OPEN is a door that does not call it.
+#  A guard drives every door and compares it with these two tuples, so the sentence cannot drift from the code.
+SCREEN_REFUSES = ("repository ship", "repository download", "website", "web app", "phone app", "repository generation", "repository cascade")
+SCREEN_LEAVES_OPEN = ("repository file read", "evolution proposals")
+
+
 def _screen_hold_basis(frameworks) -> str:
     return ("its latest section-11 screen FAILED"
             + (f" ({', '.join(frameworks)})" if frameworks else "")
-            + ": its economy is held and its ship and public surfaces are refused until the screen no longer "
-              "fails. The screen is a word list - it matched a term it refuses and has not assessed the enterprise")
+            + ": its economy is held and these are refused until the screen no longer fails: "
+            + ", ".join(SCREEN_REFUSES)
+            + ". Not refused by the screen: " + ", ".join(SCREEN_LEAVES_OPEN)
+            + ". The screen is a word list - it matched a term it refuses and has not assessed the enterprise")
 
 
 def _derived_status(vsb: dict) -> tuple:
@@ -2117,12 +2158,40 @@ def _derived_status(vsb: dict) -> tuple:
                 f"the living roster could not be read, so whether anything tends this entity is not "
                 f"known ({type(e).__name__})")
     return (OPERATING_STATUS, "review gates clear, no body section pending, and the heartbeat is tending "
-                         "this entity on the circadian beat")
+                         "this entity on the circadian beat" + _absent_clause(vsb))
 
 
 #  §4 (W573, M1 R2.1 / FU-377) — THE §4 LIFECYCLE ORDER. A section is only reached once the ones
 #  before it are composed, so the order is part of the measurement and not a display preference.
 _BODY_STAGE_ORDER = ("concept", "design", "operations", "commercialisation")
+
+
+def _absent_clause(vsb: dict) -> str:
+    """W670 (ledger v16 R2.6) - the sections NOBODY PROVIDED, said beside a status that does not read them.
+    `operating` is decided by the screen, the gates, the pending map and the heartbeat; an entity with no
+    concept, design or commercialisation reads `operating` like any other. The value keeps its meaning for
+    its readers (widening it would empty the operating count - see genesis._resolve_body_fields); the basis
+    carries the other fact. Empty when no section is recorded absent."""
+    absent = vsb.get("body_absent")
+    names = [k for k in _BODY_STAGE_ORDER if isinstance(absent, dict) and absent.get(k)]
+    if not names:
+        return ""
+    return ((". None of its body was ever provided" if len(names) == len(_BODY_STAGE_ORDER) else
+             f". {len(names)} of its {len(_BODY_STAGE_ORDER)} body sections were never provided")
+            + f" ({', '.join(names)}); this status is read from the review gates, the pending map and the "
+              "heartbeat, and does not read whether a section was provided")
+
+
+def _body_provided(vsb: dict):
+    """W670 (R2.6) - the body sections that hold something a person or a model provided: named by a map and
+    neither absent nor pending. None when neither map names a section - not known, which is not 'none'."""
+    pend, absent = vsb.get("body_pending"), vsb.get("body_absent")
+    pend = pend if isinstance(pend, dict) else {}
+    absent = absent if isinstance(absent, dict) else {}
+    known = [k for k in _BODY_STAGE_ORDER if k in pend or k in absent]
+    if not known:
+        return None
+    return [k for k in known if not absent.get(k) and not pend.get(k)]
 
 
 def _derived_stage(vsb: dict) -> tuple:
@@ -2215,7 +2284,7 @@ def _cadence_latest(scope: str, layer: str):
         return None
 
 
-def _strategic_layer(ceo_spec, refresh=None) -> dict:
+def _strategic_layer(ceo_spec, refresh=None, founder_texts=(), source=None) -> dict:
     """§17.3 strategic layer. `present` was `bool(ceo_specification)`, and at birth that field is the
     string "content pending the owned model - ...", which is truthy: a placeholder counted as a
     composed strategic layer and the basis then asserted "the AI CEO specification recorded on this
@@ -2232,6 +2301,14 @@ def _strategic_layer(ceo_spec, refresh=None) -> dict:
                                        "platform's pending-body text, not a specification anyone "
                                        "composed; it is stored, so the field is not empty, but there "
                                        "is nothing here to read as strategy")
+    elif source == "founder_input" or (text.strip() and any(
+            text.strip() == str(t or "").strip()[:2000] for t in founder_texts if str(t or "").strip())):
+        #  W670 (ledger v16 R3.0) - Genesis stores the founder's commercialisation or concept text in this
+        #  field. It is real and it is not a strategy an AI CEO composed, so it is counted as the board roster
+        #  is: OTHER. The equality test covers entities established before the source was recorded.
+        holds, basis = "other", ("OTHER - the founder's own concept or commercialisation text, stored in the "
+                                 "ceo_specification field at establishment; no AI CEO composed it, so this "
+                                 "layer holds something real that is not a strategy")
     else:
         holds, basis = "content", "the AI CEO specification recorded on this entity"
     out = {"ceo": ceo_spec, "holds": holds, "present": holds == "content", "basis": basis}
@@ -2853,8 +2930,13 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
         except Exception as e:
             ceo_spec = f"CEO specification pending: {e}"
         _spawn_body_pending = {"ceo_specification": ceo_spec.startswith("content pending the owned model")}
+        #  W670 (ledger v16 R2.7) - whether a model composed it travels WITH the event, so the page can tick
+        #  the row when that is true and only then. served_by_agent is set only when the call returned.
+        _ceo_composed670 = bool((_spawn_prov.get("served_by_agent") or {}).get("vsb_ceo")
+                                and not _spawn_body_pending["ceo_specification"] and ceo_spec.strip())
         yield _event("ceo_complete", ("CEO Strategy Pending" if _spawn_body_pending["ceo_specification"]
-                                      else "CEO Strategy Complete"), ceo_spec[:500])
+                                      else "CEO Strategy Complete"), ceo_spec[:500],
+                     {"composed": _ceo_composed670})
 
         # ── Stage 5: Genome Encoding ──────────────────────────────────────────
         yield _event("genome", "Genome Encoding", "Encoding VSB DNA into epigenetic registry...")
@@ -2884,7 +2966,8 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
             genome_encoded = True
         except Exception as e:
             genome_encoded = False
-        yield _event("genome_complete", "Genome Encoded", f"VSB genome {'encoded in epigenetic registry' if genome_encoded else 'stored locally'}.")
+        yield _event("genome_complete", "Genome Encoded", f"VSB genome {'encoded in epigenetic registry' if genome_encoded else 'stored locally'}.",
+                     {"encoded": genome_encoded})          # W670 (R2.7) - the page ticks this row from the flag
 
         # ── Stage 6: Agent Swarm Config ───────────────────────────────────────
         yield _event("swarm", "Agent Swarm Config", "Configuring CEO + C-Suite + CoE for this domain...")
@@ -2928,6 +3011,11 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
             "epigenetic_traits": {"domain": req.domain, "constitutional_alignment": gaas_passed},
             "generation": 0,
             "ceo_specification": ceo_spec[:2000],
+            #  W670 (ledger v16 R3.0) - where that text came from on THIS door, which does ask a model
+            "ceo_specification_source": (
+                "pending" if _spawn_body_pending["ceo_specification"] else
+                ("model:" + str(_spawn_prov["served_by_agent"]["vsb_ceo"]))
+                if (_spawn_prov.get("served_by_agent") or {}).get("vsb_ceo") else "not recorded"),
             "swarm_config": swarm_config,
             "cascade_analysis": cascade_result,
             "mjm_result": mjm_result,
@@ -3129,6 +3217,7 @@ async def run_repo_cascade(vsb_id: str, req: RepoCascadeRequest, user: dict | No
     (resources/runs/<run_id>.json + a version-control commit) — the repo stops being a snapshot
     and becomes an operating surface. Honest 404 when no repo exists."""
     vsb = _require_vsb_access(vsb_id, user)
+    _refuse_if_screen_failed(vsb_id, "repository cascade")      # W670 (ledger v16 R2.5)
     _refuse_gated(vsb, "repo cascade")   # W452 — Mode 3 gates gate
     root = _REPO_STORE / vsb_id
     casc_path = root / "resources" / "cascades.json"

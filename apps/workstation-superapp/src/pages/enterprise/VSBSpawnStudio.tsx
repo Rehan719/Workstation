@@ -107,14 +107,17 @@ const STAGE_META: Record<string, { icon: React.FC<any>; color: string }> = {
   gaas:               { icon: ShieldCheck, color: 'text-sky-400' },
   gaas_complete:      { icon: CheckCircle2,color: 'text-emerald-400' },
   ceo_strategy:       { icon: Bot,         color: 'text-aura' },
-  ceo_complete:       { icon: CheckCircle2,color: 'text-emerald-400' },
+  // W670 (ledger v16 R2.7) — these three ticked green whatever happened. The neutral icon is the default;
+  // the feed below ticks ceo_complete and genome_complete only when the event's own data says it was earned.
+  ceo_complete:       { icon: ListTree,    color: 'text-slate-400' },
   genome:             { icon: Dna,         color: 'text-pink-400' },
-  genome_complete:    { icon: CheckCircle2,color: 'text-emerald-400' },
+  genome_complete:    { icon: ListTree,    color: 'text-slate-400' },
   swarm:              { icon: Bot,         color: 'text-orange-400' },
-  swarm_complete:     { icon: CheckCircle2,color: 'text-emerald-400' },
+  swarm_complete:     { icon: ListTree,    color: 'text-slate-400' },
   complete:           { icon: Sparkles,    color: 'text-aura' },
   error:              { icon: AlertCircle, color: 'text-vital' },
 };
+const STAGE_EARNED = { icon: CheckCircle2 as React.FC<any>, color: 'text-emerald-400' };
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -307,6 +310,8 @@ export const VSBSpawnStudio: React.FC = () => {
                 ? (ev.data?.passed === true ? STAGE_META.gaas_complete
                    : ev.data?.passed === false ? { icon: Circle, color: 'text-vital' }
                    : { icon: ShieldCheck, color: 'text-slate-500' })
+                : ev.stage === 'ceo_complete' && ev.data?.composed === true ? STAGE_EARNED
+                : ev.stage === 'genome_complete' && ev.data?.encoded === true ? STAGE_EARNED
                 : (STAGE_META[ev.stage] ?? { icon: Circle, color: 'text-slate-500' });
               const Icon = meta.icon;
               return (
@@ -406,19 +411,21 @@ export const VSBSpawnStudio: React.FC = () => {
                     <button type="button"
                       onClick={(ev) => { ev.stopPropagation(); navigate(`/vsb-cockpit?vsb=${e.vsb_id}`); }}
                       className="text-[8px] font-black uppercase px-2 py-1 rounded-lg bg-highlight/15 text-highlight hover:bg-highlight/25 transition-all"
-                      title="Open this living VSB in the Cockpit">
+                      title="Open this entity in the Cockpit">
                       Open in Cockpit
                     </button>
                   )}
                   {e.has_board && (
                     <span className="text-[8px] font-black uppercase px-2 py-1 rounded-lg bg-aura/10 text-aura"
-                      title="Established living organisation — Board + Economy">
+                      title="Has a Board and an economy record">
                       ⬢ {e.entity_type || 'org'}
                     </span>
                   )}
                   <span className={`text-[9px] font-black uppercase px-2 py-1 rounded-lg ${
-                    e.status === 'active'
+                    e.status === 'operating'
                       ? 'bg-emerald-500/10 text-emerald-400'
+                      : String(e.status ?? '').startsWith('held')
+                      ? 'bg-vital/15 text-vital'
                       : 'bg-slate-800 text-slate-500'
                   }`}>
                     {e.status || 'spawned'}

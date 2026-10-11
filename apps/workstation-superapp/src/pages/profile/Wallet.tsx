@@ -21,6 +21,8 @@ interface Allocation {
   domain: string;
   realm: string;
   allocated_at?: string;
+  // W672 (ledger v16 R6.5) - what the allocation passed, as the fund recorded it
+  governance?: { gate?: string; change_control?: string; recipient_registered?: boolean | null; basis?: string };
 }
 
 export const Wallet: React.FC = () => {
@@ -121,6 +123,9 @@ export const Wallet: React.FC = () => {
                    <div>
                      <p className="font-bold uppercase tracking-widest text-xs text-white">{alloc.project_name}</p>
                      <p className="text-[10px] text-slate-500 mt-1">{alloc.purpose} · {alloc.domain} · {alloc.realm}</p>
+                     {alloc.governance?.basis && (
+                       <p data-testid="wallet-allocation-governance" className="text-[9px] text-amber-400/80 mt-1 normal-case">{alloc.governance.basis}</p>
+                     )}
                    </div>
                  </div>
                  <div className="text-lg font-black text-vital">

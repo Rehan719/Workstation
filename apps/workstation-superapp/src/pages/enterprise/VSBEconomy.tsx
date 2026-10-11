@@ -18,6 +18,9 @@ interface EntityType {
 }
 interface Cycle {
   intake_revenue: number; homeostasis_reserves: number; operating_costs?: number; distributable_profit: number;
+  // W672 (ledger v16 R6.8) - the signed result; distributable_profit is floored at zero
+  cycle_result_wst?: number; operating_loss_wst?: number; shortfall_after_reserve_wst?: number;
+  cycle_result_basis?: string; capital_preserved_basis?: string;
   circulation: Record<string, { amount_wst: number; role: string }>;
   giving_back: { grants: { cause: string; amount_wst: number; score: number; guaranteed_share?: number }[]; allocation_rule?: string;
     priorities_unfunded?: { id: string; cause: string; rank: number | null; why: string }[] } | null;
@@ -541,13 +544,19 @@ export const VSBEconomy: React.FC = () => {
                   (W377 labelled one figure 'Costs + reserves' when both were posted to the reserve fund). */}
               <Metric label="Operating costs" value={cycle.operating_costs ?? 0} />
               <Metric label="Reserve" value={cycle.homeostasis_reserves} />
-              <Metric label="Distributable" value={cycle.distributable_profit} tone="good" />
+              {/* W672 (ledger v16 R6.8) - a zero left by a loss was drawn in the green tone */}
+              <Metric label="Distributable" value={cycle.distributable_profit} tone={cycle.distributable_profit > 0 ? 'good' : undefined} />
               {/* W617 (FU-507, M2 v8 R6.3) — an UNMEASURED energy term is not shown in the green 'good' tone:
                   with no basis the figure is the simulator's default, and the cycle did not adjust on it. */}
               <Metric label={cycle.metabolic_energy_basis ? 'Metabolic Energy' : 'Metabolic Energy (simulated, not measured)'}
                 value={cycle.metabolic_energy != null ? `${Math.round(cycle.metabolic_energy * 100)}%` : '—'}
                 tone={cycle.metabolic_energy_basis ? 'good' : undefined} />
             </div>
+            {(cycle.cycle_result_wst ?? 0) < 0 && (
+              <p className="text-[10px] font-bold text-vital mt-2" data-testid="cycle-shortfall">
+                Cycle result {cycle.cycle_result_wst?.toLocaleString()} WST — {cycle.cycle_result_basis}
+              </p>
+            )}
             {cycle.energy_state && String(cycle.energy_state).startsWith('not_adjusted') && (
               <p className="text-[9px] font-bold text-slate-500 mt-2" data-testid="energy-unmeasured">
                 Energy term unmeasured — the reserve was NOT adjusted for it: {String(cycle.energy_state).replace(/^not_adjusted_term_unmeasured\s*—?\s*/, '')}

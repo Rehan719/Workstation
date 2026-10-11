@@ -590,12 +590,13 @@ export const VSBCockpit: React.FC = () => {
     <div className="space-y-8 pb-24">
       {actErr && <p className="text-vital text-xs font-bold">{actErr}</p>}
       <header>
-        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · Living VSB Enterprise</p>
+        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · VSB Enterprise</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">VSB Cockpit</h1>
         <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed">
-          Interact with a generated living VSB IDBO Enterprise — its organisational structure, the Chief
-          &amp; Board, the living business plan, the management systems (BMS · QMS · DCS · EMS),
+          Interact with a generated VSB IDBO Enterprise — its organisational structure, the Chief
+          &amp; Board, its business plan, the management systems (BMS · QMS · DCS · EMS),
           and an end-to-end transformation run. All live from Workstation's <span className="text-highlight">own</span> in-house systems.
+          Each entity's own status, and what it was derived from, is shown on its card.
         </p>
       </header>
 
@@ -646,7 +647,7 @@ export const VSBCockpit: React.FC = () => {
                 No established VSB enterprises yet
               </p>
               <p className="text-slate-500 text-xs font-semibold max-w-md mx-auto leading-relaxed mb-5">
-                The cockpit operates a living VSB IDBO enterprise — its Board, business plan and
+                The cockpit opens a VSB IDBO enterprise — its Board, business plan and
                 management systems. Establish one first and it will appear here.
               </p>
               <div className="flex gap-2 justify-center flex-wrap">
@@ -1426,7 +1427,7 @@ export const VSBCockpit: React.FC = () => {
 
               {/* W299 — §13 growth machinery, now reachable for THIS entity (previously API-only) */}
               <Card className="p-6 border-emerald-500/30">
-                <h4 className="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-2">Grow the living enterprise (§13)</h4>
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-2">Grow this enterprise (§13)</h4>
                 <div className="flex flex-wrap gap-2">
                   <Button type="button" onClick={() => runGrowth('ship')} disabled={!!growthBusy}
                     className="bg-emerald-500/15 text-emerald-300 text-[11px] flex items-center gap-1.5">
@@ -1614,7 +1615,7 @@ export const VSBCockpit: React.FC = () => {
           {tab === 'chat' && (
             <Card className="p-6 space-y-4">
               <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                <MessageCircle size={14} /> Converse with {detail.name} <span className="text-slate-600 normal-case font-bold">— grounded in this living VSB, in-house</span>
+                <MessageCircle size={14} /> Converse with {detail.name} <span className="text-slate-600 normal-case font-bold">— grounded in this entity's record, in-house</span>
               </h4>
               <div className="space-y-3 max-h-[440px] overflow-y-auto">
                 {messages.length === 0 && (
@@ -1659,7 +1660,7 @@ export const VSBCockpit: React.FC = () => {
               <div className="flex items-center gap-2">
                 <input aria-label="Message the VSB" value={chatInput} onChange={e => setChatInput(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') sendChat(); }}
-                  placeholder={listening ? 'Listening…' : 'Ask the living enterprise…'}
+                  placeholder={listening ? 'Listening…' : 'Ask about this enterprise…'}
                   className="flex-1 text-xs bg-slate-950 border border-slate-900 rounded-xl p-3 text-slate-300" />
                 <label aria-label="Attach an image" title="Attach an image (analysed by the in-house vision model)"
                   className="p-3 rounded-xl shrink-0 bg-slate-800 text-slate-400 hover:text-white cursor-pointer transition-all">

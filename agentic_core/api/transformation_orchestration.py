@@ -456,7 +456,9 @@ async def orchestrate(req: OrchestrateRequest):
             from agentic_core.ai.native import orchestrator as _native
             ctx = (f"Objective: {objective}\nMission: {plan.get('mission', '')}\n"
                    f"Vision: {plan.get('vision', '')}\n"
-                   f"Open gaps: {[p.get('name') or p.get('id') for p in open_pillars][:6]}")
+                   #  W672 (ledger v16 R6.6) - the swarm was told these were the open gaps of the vision
+                   f"Pillars with an unmet presence check (API coverage, not delivery): "
+                   f"{[p.get('name') or p.get('id') for p in open_pillars][:6]}")
             swarm_res = await _native.swarm(
                 agent="transformation",
                 context=ctx,

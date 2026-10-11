@@ -536,3 +536,64 @@ One finding from doing the check: P5.1 (one tenant from concept to commercial ou
 these prompts most depend on. A first offer cannot be chosen on evidence until one journey has been driven
 and read back, and ledger v16 found the establish route seals whatever evidence its caller posts. The order
 is therefore P2.38, then P5.1, then the offer comparison of P5.7.
+
+## 18. Addendum (W670): an external "final converged master prompt" (Appraisal, Instrument, LGC-03, engines, Horizon, VSB, strategy), assessed
+
+**What was received (Owner, 2026-10-11).** One file, a prompt addressed to this model, 801 lines, described by
+its covering note as the final regeneration of the earlier prompts. It asks for one architecture joining an
+appraisal nucleus, the Instrument Cell, a third cell ("LGC-03"), the cognitive, MJM and BME engines, Horizon,
+the entity layer and the business strategy, delivered in eight phases.
+
+**How it was read.** Its sections 2 and 3 (the repository account and the architecture) were read whole; the
+rest was searched for statements that can be checked against this tree. Like its predecessors it tells its
+reader to re-derive everything, and most of it is instruction rather than claim.
+
+### 18.1 What was checked
+
+| # | Statement | Finding |
+|---|---|---|
+| 1 | The README states 695 integration tests passing and 15 skipped on the W668 tree | **TRUE** of the README at the W669 commit |
+| 2 | The plan's generated block shows P2.37 next, 83 of 102 items done and 86 open follow-ups | **TRUE** of the plan on main at the W669 commit; all three move with every round |
+| 3 | The W640 assessment refuted that a "third Latent Cell" had two predecessors, did not adopt the name "LGC-03" or the organ vocabulary, and found the proposal duplicated plan item P3.31 | **TRUE.** Section 11 of this document says exactly that |
+| 4 | The fabric registry holds 41 resources of which 39 can be run; two spawners run no engine | **TRUE** as re-read on 2026-10-11: 41 registrations, 38 with a handler branch and one owned by the runner, two with none |
+| 5 | An Owner-ratified inventory of 23 engines in five tiers (six foundational, three meta, three auxiliary, three MJM, eight BME) | **TRUE** (Owner ruling 2026-09-30; `docs/COGNITIVE_ENGINE_ARCHITECTURE.md`) |
+| 6 | The BME's functional composes five terms | **TRUE as a declaration.** `agentic_core/biomimicry/minimisation/core/omega_functional.py` names the terms and, for each, what produces it; more than one has no producer, and the module says so |
+| 7 | `docs/WORKSTATION_IDBO_UNDERSTANDING.md` and an `inputs/` folder with a canvas template exist | **TRUE** |
+| 8 | "The Owner's present instruction deliberately reopens the concept of a distinct third Cell" | **NOT ESTABLISHED BY THIS DOCUMENT.** This is the prompt's statement about the Owner. The Owner's recorded ruling of 2026-10-10 is: Latent Cell level 1 only, the Instrument Cell is P3.31, the model-evaluation work is P3.32. A document cannot reopen a ruling; the question was put to the Owner, who ruled the same day (18.3) |
+| 9 | Ten "current public findings" to reproduce or refute | **ALL ARE ROWS ALREADY.** Each is a finding of ledger v15 or v16 and rides P2.39 or P3.30; W670 closes the tier-2 ones among them (the genome stage's stripped qualifiers, the engine-backed label, the edition and riwayah fields) |
+
+### 18.2 What is sound, and already the rule here
+
+One plan and one register; no second registry, runner, result vocabulary or audit; the Instrument Cell's seven
+clauses kept as they are; P3.32 kept separate and at the level of behaviour; a check that never ran cannot
+pass; an engine that returns a constant is not doing its named work; no parity claim across the 96 realm,
+domain and product combinations without measured tasks. Each is a ruling or a clause already in force.
+
+### 18.3 The one thing it adds, and the Owner's ruling on it
+
+Stripped of the cell vocabulary, the prompt's "unique responsibility" for LGC-03 is this: an approved objective
+and an Instrument Cell proposal are held together as a **versioned, inspectable assembly specification** that
+can be replayed, and whose run is linked back to the proposal it came from. Reading P3.31 against the tree
+found the same gap from the other side: a proposal is not saved, so "proposed versus executed" cannot be
+linked. That is a bounded addition to P3.31 and needs no third cell, no new name and no new runner.
+
+Whether to go further - a separately named cell with its own lifecycle - was put to the Owner, who RULED on
+2026-10-11: no third cell; the saved, versioned proposal is built inside P3.31. The prompt itself allows that
+outcome: if the Instrument Cell can meet the requirement "the ADR must say so and propose ... no additional
+runtime module".
+
+### 18.4 What is declined
+
+| Asked | Decision |
+|---|---|
+| An architecture decision record before any source change | **Not adopted as a gate.** This section is the record; the plan and the register carry the decision |
+| A reconnaissance report and a "required first response" before editing | **Not adopted.** It is the prompt's procedure; every round already records its baseline |
+| Levels 2 and 3 of the cell (candidate generation, governed promotion) | **Not scheduled.** Deferred in section 11 and by the Owner's ruling; nothing here changes that |
+| A second set of business deliverables | **Not duplicated.** They are plan items P5.6 and P5.7 |
+
+### 18.5 The path it is right to ask for
+
+The prompt's first milestone is one real path: an appraisal resting on evidence, an authorised execution, a
+verification, and the result returned to the next appraisal. Nothing in the suite drives that path end to end,
+and the ledger's finding that the organisational cascade's appraisals "develop nothing" is the same absence
+seen from a page. It is registered as a row: drive the path with a guard and name the step where it stops.

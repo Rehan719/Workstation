@@ -193,6 +193,12 @@ async def align(req: AlignRequest):
         biobus.fire_signal("cognitive", "cognition.align", f"{len(routed)} gaps routed", 0.7)
     except Exception:
         pass
+    #  W672 (ledger v16 R6.6) - what a gap was selected by, from the one sentence the plan uses
+    try:
+        from agentic_core.api.transformation import _gap_basis
+        _gaps_basis = _gap_basis(r["pillars"])
+    except Exception as _gb_err:                         # noqa: BLE001 - said, never a silent blank
+        _gaps_basis = f"what these gaps were selected by could not be stated ({type(_gb_err).__name__})"
 
     return {
         "overall_realisation": r["overall_realisation"],
@@ -200,6 +206,7 @@ async def align(req: AlignRequest):
         # this figure while the producer describes it as route-mount and non-empty-store coverage.
         "measure": r["measure"],
         "gaps_routed": routed,
+        "gaps_basis": _gaps_basis,
         "executed": executed,
         "aligned_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "note": "Evidence-based routing of vision gaps to the living tiers. Set execute=true to act.",

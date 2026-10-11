@@ -116,6 +116,8 @@ interface CompositionRun {
     // W491 (refutation) — `kind` is what the resource IS; `outcome` is what happened on THIS run
     outcome?: 'produced' | 'read' | 'assessed' | 'specified' | 'narrated' | 'raised' | 'no_calls_ran';   // W656: + narrated
     outcome_phrase?: string;
+    // W672 (ledger v16 R4.3) - the genome engine's own statement of whether it encoded anything
+    encoded?: boolean | null; fitness_provenance?: string; encoding_note?: string;
     // W494 (FU-109) — three-state: the floor does not judge viability, so `null` means NOT ASSESSED.
     // `typeof === 'boolean'` used to hide that case entirely, which reads as "no verdict was wanted"
     // rather than "nothing assessed this".
@@ -798,6 +800,8 @@ export const ResourceFabric: React.FC = () => {
                                 {n('specified')} drafted a blueprint · {n('narrated')} wrote a narrative (no engine) ·{' '}
                                 {n('raised', 'no_calls_ran')} failed
                                 {unknown > 0 ? ` · ${unknown} not recorded` : ''}
+                                {rs.filter(r => r.encoded === false).length > 0
+                                  ? ` · ${rs.filter(r => r.encoded === false).length} of those that ran returned defaults (not encoded)` : ''}
                               </p>
                             );
                           })()}
@@ -830,6 +834,10 @@ export const ResourceFabric: React.FC = () => {
                                   : !rr.outcome
                                   ? <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-400"
                                           title="what this resource did was not recorded on this run">not recorded</span>
+                                  : rr.encoded === false
+                                  /* W672 (ledger v16 R4.3) - an engine that ran and encoded nothing is not the green chip */
+                                  ? <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400"
+                                          title={rr.encoding_note || rr.fitness_provenance || rr.outcome_phrase} data-testid={`run-kind-${rr.resource}`}>ran · returned defaults (not encoded)</span>
                                   : <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400"
                                           title={rr.outcome_phrase} data-testid={`run-kind-${rr.resource}`}>ran</span>}
                                 {typeof rr.viable === 'boolean' ? (
