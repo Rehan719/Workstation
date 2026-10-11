@@ -123,13 +123,32 @@ async def generate_twin_model(req: ModelRequest):
         "model_type": req.model_type,
         "complexity": req.complexity,
         "model_spec": model_spec,
+        "composition": _composition(_mr, "model specification"),      # W662 - stored with the text it describes
         "simulations": [],
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     _save_twin(model)
     biobus.record_operation("twin_model", "twin.model", success=True, payload=req.system_name)
 
-    return {"model_id": model_id, "system_name": req.system_name, "model_spec": model_spec}
+    return {"model_id": model_id, "system_name": req.system_name, "model_spec": model_spec,
+            "composition": model["composition"]}
+
+
+def _composition(res: dict, what: str) -> dict:
+    """W662 (ledger v15 FU-716) - WHAT THIS TEXT IS. Every route here asks the gateway for prose under headings
+    such as "Key Metrics Over Time" and computes nothing: no state is integrated over time, no objective is
+    optimised, no figure in any table is calculated. The answer and the stored row say so, with what served
+    the text, so a table a model wrote can never be read as a simulation's output."""
+    _by = (res or {}).get("served_by") or "native"
+    return {
+        "kind": "narrative",
+        "computed": False,
+        "served_by": _by,
+        "is_external": bool((res or {}).get("is_external")),
+        "basis": (f"this {what} is TEXT composed by {_by}. Nothing was computed: no model was integrated over "
+                  f"time and no objective was optimised, so any figure or table in it was written, not "
+                  f"calculated"),
+    }
 
 
 class SimulateRequest(BaseModel):
@@ -184,6 +203,7 @@ async def run_simulation(req: SimulateRequest):
         "parameters": req.parameters,
         "time_horizon": req.time_horizon,
         "result": simulation_result,
+        "composition": _composition(_sr, "simulation"),     # W662 - kept on the stored row too (only `result` is dropped)
         "run_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
 
@@ -238,5 +258,6 @@ async def optimise_model(req: OptimiseRequest):
         "model_id": req.model_id,
         "objective": req.optimisation_objective,
         "result": result,
+        "composition": _composition(_or_, "optimisation"),            # W662
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }

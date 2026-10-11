@@ -19,7 +19,7 @@ export const CareHub: React.FC = () => {
         <div>
           <h1 className="text-3xl @[480px]:text-4xl @[680px]:text-6xl font-black mb-1 text-white tracking-tighter italic break-words">Sanctuary of Healing</h1>
           <div className="flex items-center gap-4">
-             <p className="text-vital font-black uppercase text-[10px] tracking-[0.3em]">Patient Sovereignty • Bio-Digital Mesh • Care Hub</p>
+             <p className="text-vital font-black uppercase text-[10px] tracking-[0.3em]">Care Hub • the tools are in the tabs below</p>
              {/* W493 (FU-154, sweep S10.5, C4) - these read "GUIDED MODE" / "ENCOURAGING TONE" as
                  though the hub adapted to them. Nothing does: only this badge reads the values.
                  No affordance is gated on the mode and no request carries the tone. They are
@@ -31,9 +31,9 @@ export const CareHub: React.FC = () => {
           </div>
         </div>
         <div className="flex gap-4 flex-wrap shrink-0">
-           <Button type="button" onClick={() => navigate('/reactor?domain=care')} variant="outline"><History size={18} /> Diagnostics</Button>
+           <Button type="button" onClick={() => navigate('/reactor?domain=care')} variant="outline"><History size={18} /> Open the Reactor (care)</Button>
            <Button type="button" onClick={() => navigate('/projects?realm=care&domain=service&new=1')} className="bg-vital text-white shadow-xl shadow-vital/20">
-              <HeartPulse size={18} /> New Patient Twin
+              <HeartPulse size={18} /> Start a care project
            </Button>
         </div>
       </header>

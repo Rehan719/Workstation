@@ -7483,7 +7483,9 @@ def test_w423_domainshub_tool_counts_match_what_is_wired():
             "DomainsHub advertises %s tools for %s but %s wires %d"
             % (declared[domain], domain, stem, wired))
 
-    assert sum(int(v) for v in declared.values()) == 23      # the forms; the registry also names 2 custom surfaces + the flagship
+    #  W662 (FU-726) - 24 since the Legal Document Analyser moved onto the shared component (it was the second
+    #  custom surface); the registry now names 1 custom surface + the flagship beside the forms
+    assert sum(int(v) for v in declared.values()) == 24
 
 
 def test_w425_regeneration_improves_the_prior_draft_and_says_whether_it_did(client):
@@ -51859,3 +51861,91 @@ def test_w661_a_pack_carries_what_the_owner_wrote_and_counts_of_now(client):
         assert _i > 0, (_tid, "the Cockpit does not render it")
         assert _field in _ck[_i - 220:_i + 260], (_tid, "the line is not tied to the field the response carries")
     assert "lands as objectives on THIS" not in _ck, "the Cockpit still promises a plan before one exists"
+
+
+def test_w662_a_control_is_named_for_what_it_opens_and_composed_text_is_not_called_a_simulation(client):
+    """Ledger v15, three rows.
+
+    FU-722  Hub buttons named things they did not open: "New Patient Twin", "New Treaty", "New Lesson" opened
+            the generic project form; "Seek Guidance" on the Religion hub opened the AI CEO. A CONTROL'S LABEL
+            NAMES WHAT THE CONTROL DOES - checked as a walk over the five hubs: label against target.
+    FU-724  The project form's first dropdown could not show the value it held (a domain, shown as
+            "Enterprise"). It renders an option for the value it was opened with.
+    FU-716  The Digital Twin's routes return prose under headings like "Key Metrics Over Time" and compute
+            nothing. Each answer and each stored row says the text is a narrative and what served it.
+    """
+    import pathlib as _pl
+    import re as _re
+    _src = _pl.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+
+    # ── FU-722: label <-> target, on every hub ────────────────────────────────────────────────────────
+    _must = {"/projects": "project", "/reactor": "Reactor", "/ceo": "AI CEO", "/qep": "Quran Education Platform"}
+    _btn = _re.compile(r"<Button[^>]*onClick=\{\(\) => navigate\('(/[a-z-]+)[^']*'\)\}[^>]*>(.*?)</Button>", _re.S)
+    _seen, _bad = 0, []
+    for _hub in ("CareHub", "LawHub", "EducationHub", "ScienceHub", "ReligionHub"):
+        _t = _code_only((_src / "pages/domains" / (_hub + ".tsx")).read_text(encoding="utf-8"))
+        for _m in _btn.finditer(_t):
+            _target, _label = _m.group(1), _re.sub(r"<[^>]+>|\{[^}]*\}", " ", _m.group(2)).strip()
+            if _target in _must:
+                _seen += 1
+                if _must[_target].lower() not in _label.lower():
+                    _bad.append((_hub, _target, _label[:60]))
+        for _old in ("New Patient Twin", "New Treaty", "New Lesson", "Seek Guidance", "Wisdom-Mesh",
+                     "Global Spiritual Networks", "Bio-Digital Mesh", "Constitutional Mesh", "Empirical Mesh"):
+            assert _old not in _t, (_hub, "still names something that does not exist here", _old)
+    assert _seen >= 10, ("the walk matched fewer buttons than the hubs have - it is checking little", _seen)
+    assert not _bad, ("a hub button's label does not name what it opens", _bad)
+
+    # ── FU-724: the form shows the value it holds ─────────────────────────────────────────────────────
+    _pf = _code_only((_src / "pages/projects/ProjectsHub.tsx").read_text(encoding="utf-8"))
+    _i = _pf.find('data-testid="project-subject"')
+    assert _i > 0, "the project form's subject field is not rendered"
+    _sel = _pf[_i:_i + 900]
+    #  THE GATE, read where it stands: the characters directly before the option. (A blind disabled the gate
+    #  with a constant and the first version of this leg stayed green, because the same expression appears
+    #  again a few lines down in the note - a presence check cannot see a disabled gate.)
+    _oi = _sel.find("<option key={initialRealm} value={initialRealm}>")
+    assert _oi > 0, ("the dropdown has no option for the value the form was opened with", _sel[:300])
+    assert _sel[:_oi].rstrip().endswith("{!REALMS.some(r => r.value === initialRealm) && ("), (
+        "the option for the value the form was opened with is not shown exactly when that value is not a realm",
+        _sel[max(0, _oi - 120):_oi])
+    assert ">Realm</label>" not in _pf and ">Domain</label>" not in _pf, (
+        "the form still labels a mixed field Realm, or a list of areas Domain")
+
+    # ── FU-716: composed text is not a simulation ─────────────────────────────────────────────────────
+    _m = client.post("/api/v1/twin/model", json={"system_name": "W662 bakery", "system_description": "Two ovens and a delivery round."})
+    assert _m.status_code == 200, _m.text[:300]
+    _mj = _m.json()
+
+    def _narr(c, where):
+        assert isinstance(c, dict) and c.get("kind") == "narrative" and c.get("computed") is False, (where, c)
+        assert c.get("served_by") and "Nothing was computed" in str(c.get("basis")), (where, c)
+    _narr(_mj.get("composition"), "model answer")
+    _s = client.post("/api/v1/twin/simulate", json={"model_id": _mj["model_id"], "scenario_name": "A second oven",
+                                                    "scenario_description": "Add one oven in week two."})
+    assert _s.status_code == 200, _s.text[:300]
+    _narr(_s.json().get("composition"), "simulation answer")
+    _o = client.post("/api/v1/twin/optimise", json={"model_id": _mj["model_id"], "optimisation_objective": "Fewer late deliveries"})
+    assert _o.status_code == 200, _o.text[:300]
+    _narr(_o.json().get("composition"), "optimisation answer")
+    _g = client.get(f"/api/v1/twin/models/{_mj['model_id']}")
+    assert _g.status_code == 200, _g.text[:300]
+    _gj = _g.json().get("model") or _g.json()
+    _narr(_gj.get("composition"), "stored model")
+    _narr((_gj.get("simulations") or [{}])[-1].get("composition"), "stored simulation row")
+
+    # ── FU-726: the Law analyser is the shared tool component, so it shows what its response carries ──
+    #  It was the one hand-built form on the hub: it dropped the compliance verdict and the floor note, and
+    #  its output could not be copied, refined or saved. The response has always carried both.
+    _la = client.post("/api/v1/law/analyse", json={"document_text": "The supplier shall deliver bread daily.",
+                                                   "analysis_focus": "risk"})
+    assert _la.status_code == 200, _la.text[:300]
+    _lp = _la.json().get("ai_provenance") or {}
+    assert (_lp.get("quality_assurance") or {}).get("compliance_overall") and _lp.get("floor_note"), (
+        "the response no longer carries what this leg says the page must show", sorted(_lp))
+    _lh = _code_only((_src / "pages/domains/LawHub.tsx").read_text(encoding="utf-8"))
+    _k = _lh.find('endpoint="/api/v1/law/analyse"')
+    assert _k > 0 and "<DomainTool" in _lh[_k - 700:_k], "the analyser is not on the shared tool component"
+    assert "axios.post('/api/v1/law/analyse'" not in _lh, "a hand-built form still posts to the analyser"
+    assert "name: 'document_text'" in _lh[_k:_k + 900] and "name: 'analysis_focus'" in _lh[_k:_k + 900], (
+        "the component does not send the two fields the route reads")

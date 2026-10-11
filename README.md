@@ -28,7 +28,7 @@ Every deliverable is produced **in-house first** on Workstation's own native AI 
 | Upload documents → multi-format AI synthesis | `/synthesis` | Real — Report, Presentation, Business Model |
 | View portfolio metrics (CFO/CTO) | `/cfo`, `/cto` | Real — computed from project store + psutil |
 | Real-time system vitals (CPU, memory, projects) | Dashboard | Real — psutil + WebSocket |
-| 18 domain tools + iterative refine (QMS + compliance gated) | `/religion` etc. | Real — in-house AI, honest provenance |
+| 24 domain form tools + iterative refine (QMS + compliance gated; the count is the tool registry's, W662) | `/religion` etc. | Real — in-house AI, honest provenance |
 | Genesis journey → establish a living VSB enterprise | `/genesis` | Real — simulated candidates, shipped repo at birth |
 | Entity economy (virtual WST), Board/Chief governance, marketplace | `/vsb`, `/economy` | Real computation — virtual currency only |
 
@@ -131,7 +131,7 @@ apps/workstation-superapp/  — Vite + React 18 + TypeScript frontend
                          + domain hubs + all product pages
 ```
 
-> Verified in CI on every push: backend boots clean; **687 integration tests passing / 15 skipped** (full run on the W660 tree, 2026-10-10; the figures above it are recomputed by `scripts/readme_figures.py` and asserted by the suite, so they cannot drift again — this one is dated because a test count is only true of a tree); production
+> Verified in CI on every push: backend boots clean; **689 integration tests passing / 15 skipped** (full run on the W661 tree, 2026-10-11; the figures above it are recomputed by `scripts/readme_figures.py` and asserted by the suite, so they cannot drift again — this one is dated because a test count is only true of a tree); production
 > build (`tsc && vite build`) succeeds.
 
 Data persists under `data/` as atomically-written JSON files.

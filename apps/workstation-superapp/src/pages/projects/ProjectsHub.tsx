@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { REALMS as CANON_REALMS, REALM_LABELS } from '../../lib/taxonomy';
+import { REALMS as CANON_REALMS, REALM_LABELS, DOMAIN_LABELS } from '../../lib/taxonomy';
 import { useSearchParams } from 'react-router-dom';
 import { getPrefs } from '../../lib/userPrefs';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -152,22 +152,35 @@ const CreateForm: React.FC<CreateFormProps> = ({ onCreated, onCancel, initialRea
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
-          <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">Realm</label>
+          {/* W662 (FU-724) - this field holds a DOMAIN when a hub opened the form and a REALM when the picker
+              did. It showed "Enterprise" while holding "care". It now shows what it holds. */}
+          <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">Subject</label>
           <select
             value={realm}
             onChange={e => setRealm(e.target.value)}
-            aria-label="Project realm"
+            aria-label="Project subject"
+            data-testid="project-subject"
             className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-aura transition-colors"
           >
-            {REALMS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+            {!REALMS.some(r => r.value === initialRealm) && (
+              <option key={initialRealm} value={initialRealm}>
+                {DOMAIN_LABELS[initialRealm] ? `${DOMAIN_LABELS[initialRealm]} (domain)` : `${initialRealm} (subject)`}
+              </option>
+            )}
+            {REALMS.map(r => <option key={r.value} value={r.value}>{r.label} (realm)</option>)}
           </select>
+          {!REALMS.some(r => r.value === initialRealm) && realm !== initialRealm && (
+            <p data-testid="project-subject-note" className="text-[9px] text-amber-400">
+              This project will be filed under the realm you chose, not under {DOMAIN_LABELS[initialRealm] ?? initialRealm}.
+            </p>
+          )}
         </div>
         <div className="space-y-1">
-          <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">Domain</label>
+          <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">Area</label>
           <select
             value={domain}
             onChange={e => setDomain(e.target.value)}
-            aria-label="Project domain"
+            aria-label="Project area"
             className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-aura transition-colors"
           >
             {DOMAINS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}

@@ -47,9 +47,9 @@ export const ReligionHub: React.FC = () => {
           </div>
         </div>
         <div className="flex gap-4 flex-wrap shrink-0">
-           <Button onClick={() => navigate('/projects?realm=religion&domain=content')} variant="outline"><History size={18} /> Tradition</Button>
+           <Button onClick={() => navigate('/projects?realm=religion&domain=content')} variant="outline"><History size={18} /> Religion projects</Button>
            <Button onClick={() => navigate('/ceo')} className="bg-aura text-sovereign shadow-xl shadow-aura/20">
-              <Sparkles size={18} /> Seek Guidance
+              <Sparkles size={18} /> Open the Living Organisation (AI CEO)
            </Button>
         </div>
       </header>
@@ -60,10 +60,9 @@ export const ReligionHub: React.FC = () => {
                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(100,255,218,0.03)_0%,transparent_70%)]"></div>
                <div className="absolute top-10 left-10 z-10 space-y-2">
                   <h3 className="text-3xl font-black text-white flex items-center gap-4 uppercase tracking-tight">
-                     Sacred Knowledge Garden
-                     <Badge color="aura">Wisdom-Mesh</Badge>
+                     Religion Hub
                   </h3>
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Global Spiritual Networks • compassion-first</p>
+                  <p data-testid="religion-banner-note" className="text-xs font-bold text-slate-500 uppercase tracking-widest">The tools are in the tabs below • this panel is decoration: nothing is connected behind it</p>
                </div>
 
                <div className="relative z-10 flex flex-col items-center gap-8">
@@ -306,7 +305,7 @@ export const ReligionHub: React.FC = () => {
                        <div className="flex items-center gap-6">
                           {/* W439 — an "Active" badge sat on every madhab row; madhabs are static
                               reference data, not live entities with a state */}
-                          <Button onClick={() => navigate('/qep')} variant="outline" className="px-6">Explore</Button>
+                          <Button onClick={() => navigate('/qep')} variant="outline" className="px-6">Open the Quran Education Platform</Button>
                        </div>
                     </motion.div>
                   )) : schoolsError ? (
