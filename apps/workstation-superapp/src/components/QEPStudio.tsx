@@ -13,6 +13,12 @@ import { apiJson, errorMessage } from '../lib/api';
 
 interface Surah { number: number; name_arabic: string; name_transliteration: string; name_english: string; ayah_count: number; revelation_type: string }
 interface Ayah { number_in_surah: number; text_arabic: string }
+// W671 (ledger v16 R1.5) — what the surah and ayah routes have always returned beside the text and this
+// component dropped. Every value is the server's; an absent riwayah is said, never filled in.
+interface CorpusProvenance {
+  source?: string; edition?: string; script?: string | null; riwayah?: string | null;
+  licence?: string; provenance_basis?: string; basmala?: string | null; basmala_note?: string | null;
+}
 interface HifzProgress { total_ayaat_in_schedule: number; total_ayaat_memorised: number; due_today: number; due_refs: string[]; total_sessions: number; identity_verified?: boolean; identity_basis?: string }
 interface GamiState { xp: number; level: number; level_basis: string; achievements: string[]; streak_days: number; streak_basis: string; awards_recorded: number; scope: string }
 interface Recall { comparable: boolean; reason?: string; text_similarity?: number; similarity_basis?: string; exact_similarity?: number; exact_similarity_basis?: string; missing_rule_markers?: string[]; markers_basis?: string; scope?: string }
@@ -28,6 +34,7 @@ export const QEPStudio: React.FC = () => {
   const [suwar, setSuwar] = useState<Surah[] | null>(null);
   const [surahNo, setSurahNo] = useState(1);
   const [ayaat, setAyaat] = useState<Ayah[] | null>(null);
+  const [surahMeta, setSurahMeta] = useState<CorpusProvenance | null>(null);
   const [progress, setProgress] = useState<HifzProgress | null>(null);
   const [gami, setGami] = useState<GamiState | null>(null);
   const [err, setErr] = useState('');
@@ -73,10 +80,11 @@ export const QEPStudio: React.FC = () => {
   }, []);
 
   const loadSurah = async (n: number) => {
-    setBusy('surah'); setErr(''); setAyaat(null);
+    setBusy('surah'); setErr(''); setAyaat(null); setSurahMeta(null);
     try {
       const d = await apiJson(`/api/v1/qep/surah/${n}`);
       setAyaat(d.ayaat || []);
+      setSurahMeta(d);
     } catch (e) { setErr(errorMessage(e)); }
     setBusy('');
   };
@@ -94,7 +102,7 @@ export const QEPStudio: React.FC = () => {
   };
 
   const [reviewRef, setReviewRef] = useState<string | null>(null);
-  const [reviewAyah, setReviewAyah] = useState<{ text_arabic: string; surah_name: string } | null>(null);
+  const [reviewAyah, setReviewAyah] = useState<({ text_arabic: string; surah_name: string } & CorpusProvenance) | null>(null);
   //  P3.9 — the route already returns the e-factor and the basis; the screen typed neither, so a
   //  learner saw an interval with no indication of what it was computed from, and the one line
   //  that matters - 'a review count, not a hifz certification' - never reached them.
@@ -283,13 +291,25 @@ export const QEPStudio: React.FC = () => {
             </Button>
           </div>
           {ayaat && (
-            <div className="max-h-64 overflow-y-auto p-3 rounded-xl bg-slate-950 border border-slate-900 mb-3">
-              {ayaat.map(a => (
-                <p key={a.number_in_surah} className="text-lg text-white leading-loose font-arabic mb-2" dir="rtl">
-                  {a.text_arabic} <span className="text-[10px] text-aura">({a.number_in_surah})</span>
-                </p>
-              ))}
-            </div>
+            <>
+              <div className="max-h-64 overflow-y-auto p-3 rounded-xl bg-slate-950 border border-slate-900 mb-1">
+                {surahMeta?.basmala && (
+                  <p data-testid="reader-basmala" title={surahMeta.basmala_note || undefined}
+                     className="text-base text-slate-400 leading-loose font-arabic mb-2" dir="rtl">{surahMeta.basmala}</p>
+                )}
+                {ayaat.map(a => (
+                  <p key={a.number_in_surah} className="text-lg text-white leading-loose font-arabic mb-2" dir="rtl">
+                    {a.text_arabic} <span className="text-[10px] text-aura">({a.number_in_surah})</span>
+                  </p>
+                ))}
+              </div>
+              <p data-testid="reader-provenance" className="text-[9px] text-slate-500 mb-1">
+                {surahMeta?.source ?? 'source not stated'} · edition {surahMeta?.edition ?? 'not stated'} · {surahMeta?.riwayah ? `riwayah ${surahMeta.riwayah}` : 'riwayah not declared'}
+                {surahMeta?.basmala && surahMeta?.basmala_note ? ` · Basmala ${surahMeta.basmala_note}` : ''}
+              </p>
+              {surahMeta?.provenance_basis && <p data-testid="reader-provenance-basis" className="text-[9px] text-slate-600 mb-1">{surahMeta.provenance_basis}</p>}
+              {surahMeta?.licence && <p data-testid="reader-licence" className="text-[9px] text-slate-600 mb-3">Licence: {surahMeta.licence}</p>}
+            </>
           )}
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[9px] font-black uppercase text-slate-500">memorise ayaat</span>
@@ -332,6 +352,9 @@ export const QEPStudio: React.FC = () => {
           {reviewRef && reviewAyah && (
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
               <p className="text-xl text-white leading-loose font-arabic mb-2" dir="rtl">{reviewAyah.text_arabic}</p>
+              <p data-testid="review-provenance" className="text-[9px] text-slate-500 mb-2" title={reviewAyah.provenance_basis || undefined}>
+                {reviewAyah.source ?? 'source not stated'} · edition {reviewAyah.edition ?? 'not stated'} · {reviewAyah.riwayah ? `riwayah ${reviewAyah.riwayah}` : 'riwayah not declared'}
+              </p>
               {/* W640 — a SOURCED translation of the meanings, shown only when asked for, in its own block
                   under its own label: the translator, the year, the licence basis and the server's statement
                   that it is not the Qur'an all travel with the words. Never composed by a model. */}

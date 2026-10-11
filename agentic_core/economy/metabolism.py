@@ -379,6 +379,23 @@ class EconomicMetabolism:
             "reserve_rate_applied": effective_reserve,   # §8→§12: energy-adjusted (conserves more when low)
             "energy_state": energy_state,
             "distributable_profit": distributable,
+            #  W672 (ledger v16 R6.8) - `distributable_profit` is floored at zero, so a cycle that spent more
+            #  than it took in read the same as one that broke even. The signed result and the two shortfalls
+            #  are added beside it; the reserve rule itself is unchanged (whether a reserve should be set
+            #  aside at all on a loss is the Owner's decision).
+            "cycle_result_wst": round(revenue - costs - reserves, 2),
+            "operating_loss_wst": round(max(0.0, costs - revenue), 2),
+            "shortfall_after_reserve_wst": round(max(0.0, costs + reserves - revenue), 2),
+            "cycle_result_basis": (
+                (f"LOSS: costs ({costs}) exceeded intake ({revenue}) by {round(costs - revenue, 2)}. A reserve of "
+                 f"{reserves} was still posted (intake x {effective_reserve}), so costs and reserve together "
+                 f"exceeded intake by {round(costs + reserves - revenue, 2)}. Nothing was distributable.")
+                if costs > revenue else
+                (f"intake {revenue} less costs {costs} left {round(revenue - costs, 2)}, and the reserve posted "
+                 f"({reserves}) exceeded that by {round(costs + reserves - revenue, 2)}. Nothing was distributable.")
+                if costs + reserves > revenue else
+                (f"intake {revenue} less costs {costs} less reserve {reserves} = "
+                 f"{round(revenue - costs - reserves, 2)} distributable")),
             "circulation": {k: {"amount_wst": v, "role": _CYCLE_ROLE.get(k, k)} for k, v in splits.items()},
             "capital_fund_contribution": capital_contribution,   # §12 (W294) — compounded into the pool
             "owner_accrual": owner_accrual,                      # §7 (W465) — whether the owner share was recorded
@@ -387,6 +404,12 @@ class EconomicMetabolism:
             "venture_store_note": venture_store_note,          # W472 — an unreadable portfolio is said, not silent
             "metabolic_energy": metabolic_energy,
             "capital_preserved": self.template["capital_preserved"],
+            #  W672 (ledger v16 R6.8) - the flag is a property of the entity FORM and was read as a result
+            "capital_preserved_basis": (
+                ("an entity-FORM flag: this form's waterfall must keep a capital_fund share above zero. It is a "
+                 "rule on the proportions" if self.template["capital_preserved"] else
+                 "an entity-FORM flag, and this form does not carry it: no rule on the capital_fund share applies")
+                + ". It is not a statement about what this cycle did to capital - see cycle_result_wst."),
             "biogeochemical_model": "nutrient cycle: intake → homeostasis → circulation → return → storage → growth",
             "disclaimer": "Virtual/simulated WST — no real funds moved.",
         }

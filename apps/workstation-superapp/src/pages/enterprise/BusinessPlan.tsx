@@ -157,7 +157,8 @@ export const BusinessPlan: React.FC = () => {
       {plan && (
         <>
           {genNote && <p className="text-[11px] text-amber-400/90 font-bold" data-testid="plan-generate-note">{genNote}</p>}
-          {(plan.executive_summary || plan.concept || plan.vision || plan.provenance) && (
+          {/* W671 (ledger v16 R3.4) — this card was shown only once an opening or its provenance existed, so a
+              plan with nothing recorded gave no way to write one. PlanOpening has its own empty state. */}
             <Card className="p-8 border-highlight/40 bg-gradient-to-br from-highlight/10 to-transparent" data-testid="chiefs-opening">
               <div className="flex items-center gap-3 mb-4 flex-wrap">
                 <Crown size={18} className="text-highlight" />
@@ -178,7 +179,6 @@ export const BusinessPlan: React.FC = () => {
                   the Cockpit's plan tab had none, and a second copy is how the two drifted apart. */}
               <PlanOpening plan={plan as any} scope={scope} onSaved={load} onError={setActErr} />
             </Card>
-          )}
 
           <Card className="p-8 border-highlight/30 bg-highlight/5">
             <div className="flex items-center justify-between mb-4">

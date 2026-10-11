@@ -1140,8 +1140,14 @@ async def regenerate(deliverable_id: str, req: RegenerateRequest,
             _new_q = (qa.get("quality") or {})
             _before = _prev_q.get("delivery_coverage")
             _after = _new_q.get("delivery_coverage")
+            #  W670 (ledger v16 R1.2) - a version whose gate was NOT ASSESSABLE has a coverage that cannot fail
+            #  (the floor echoes every heading it was asked for). Replacing such a frame with a person's own
+            #  text was reported "regressed", and a frame replaced by a frame "unchanged". Neither version's
+            #  figure is compared when either is not assessable, and the record says which.
+            _na670 = [w for w, q in (("the version replaced", _prev_q), ("this version", _new_q))
+                      if q.get("not_assessable")]
             _delta = (round(_after - _before, 3)
-                      if isinstance(_before, (int, float)) and isinstance(_after, (int, float))
+                      if not _na670 and isinstance(_before, (int, float)) and isinstance(_after, (int, float))
                       else None)
             improvement = {
                 # Taken from the generator's own report of the prompt it sent — never from whether
@@ -1157,7 +1163,10 @@ async def regenerate(deliverable_id: str, req: RegenerateRequest,
                             "improved" if _delta > 0 else
                             "regressed" if _delta < 0 else "unchanged"),
                 "note": ("This version scored LOWER than the one it replaced. The previous version is "
-                         "preserved in history." if (_delta or 0) < 0 else None),
+                         "preserved in history." if (_delta or 0) < 0 else
+                         ("Not compared: the quality gate could not assess " + " or ".join(_na670) +
+                          ", so its coverage figure cannot fail and is no baseline.") if _na670 else None),
+                "not_compared_because": (_na670 or None),
             }
 
             d["brief"] = brief

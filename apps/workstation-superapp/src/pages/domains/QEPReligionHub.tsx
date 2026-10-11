@@ -91,6 +91,9 @@ interface SourcedAyah {
   text_arabic: string;
   surah_name: string;
   source: string;
+  edition?: string;                 // W671 (ledger v16 R1.5) — returned with the text since R8, typed nowhere
+  riwayah?: string | null;
+  provenance_basis?: string;
   basmala?: string;
   basmala_separated?: boolean | null;
   basmala_basis?: string | null;
@@ -126,6 +129,10 @@ const TajwidCoach = () => {
                       {ayah.surah_name ? <> · <span dir="rtl" className="font-arabic">{ayah.surah_name}</span></> : null}
                     </Badge>
                     <Badge color="slate-800">{ayah.source}</Badge>
+                    <span data-testid="coach-provenance" title={ayah.provenance_basis || undefined}
+                          className="text-[9px] font-bold text-slate-500">
+                      edition {ayah.edition ?? 'not stated'} · {ayah.riwayah ? `riwayah ${ayah.riwayah}` : 'riwayah not declared'}
+                    </span>
                   </>
                 ) : (
                   <Badge color="slate-800">{ayahErr ? 'verse unavailable' : 'retrieving verse…'}</Badge>

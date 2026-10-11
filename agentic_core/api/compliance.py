@@ -194,6 +194,18 @@ def _engine_suffix(backed: bool, who: str = "engine") -> str:
     return f"({who}-backed)" if backed else f"({who} ran and produced no finding here, so it backs no verdict)"
 
 
+def _backing_scope(backed: bool, coverage: str) -> str:
+    """W671 (ledger v16 R1.6) - WHAT THE LABEL ABOVE IS ALLOWED TO MEAN ON THIS ROW. An engine that produced a
+    finding backs the MATCH it reported. It backs an assessment only where the row's coverage is one that assesses
+    (ASSESSING_COVERAGE) - and no row that carries the label today has such a coverage, because the engines'
+    rules are keyword matches. Computed from the row's own coverage, so the clause leaves by itself on a row
+    that ever earns an assessing one. Empty when the engine backed nothing."""
+    if not backed or coverage in ASSESSING_COVERAGE:
+        return ""
+    return (f" The engine's rule is a keyword match: it backs the match reported on this row, not an "
+            f"assessment of the subject (coverage {coverage!r}).")
+
+
 def _verdict(framework: str, status: str, reason: str, coverage: str = "vocabulary") -> Dict[str, str]:
     """See ASSESSING_COVERAGE above for what each coverage value is allowed to say."""
     return {"framework": framework, "status": status, "reason": reason, "coverage": coverage}
@@ -411,7 +423,8 @@ def screen_compliance(text: str, jurisdiction: str = "UK / London",
         elif _viols:
             halal_reason = (f"{halal_reason} Engine also flags: {', '.join(_viols)}"
                             + (" (its keyword rule matched the same negated phrase)." if _negated_only else "."))
-        halal_reason += " " + _engine_suffix(bool(_viols) or halal_cov == "engine")
+        halal_reason += (" " + _engine_suffix(bool(_viols) or halal_cov == "engine")
+                         + _backing_scope(bool(_viols) or halal_cov == "engine", halal_cov))
     except Exception:
         halal_reason += " (built-in rules)"
     # FU-239 (OWNER RULING 2026-09-29) — A CERTIFYING BODY MAY CLEAR THIS SUBJECT; the platform may not.
@@ -484,7 +497,8 @@ def screen_compliance(text: str, jurisdiction: str = "UK / London",
         elif _res.violations:
             legal_reason = f"{legal_reason} Engine also flags: {'; '.join(_res.violations)}."
         legal_reason += (" " + _engine_suffix(bool(_res.violations) or legal_cov == "engine", "UK engine")[:-1]
-                         + f" · audit {_audit[:16]}… over the subject)")
+                         + f" · audit {_audit[:16]}… over the subject)"
+                         + _backing_scope(bool(_res.violations) or legal_cov == "engine", legal_cov))
     except Exception:
         legal_reason += f" (built-in rules · audit {_audit[:16]}… over the subject)"
     verdicts.append(_verdict("uk_legal", legal_status, legal_reason, legal_cov))
@@ -528,7 +542,8 @@ def screen_compliance(text: str, jurisdiction: str = "UK / London",
         from agentic_core.compliance.ethical_engine import evaluate_ethics
         _eth = evaluate_ethics(text, delivery_metrics)
         _eth_cov = "vocabulary" if _eth["overall"] == "review" else "none"
-        _eth_reason = f"{_eth['reason']} " + _engine_suffix(_eth["overall"] != "not_assessed")
+        _eth_reason = (f"{_eth['reason']} " + _engine_suffix(_eth["overall"] != "not_assessed")
+                       + _backing_scope(_eth["overall"] != "not_assessed", _eth_cov))
         _row = _verdict("ethical", _eth["overall"], _eth_reason, _eth_cov)
         if _eth.get("escalate"):
             # A severe-harm or extractive term. The flag travels as DATA so a caller can act on it

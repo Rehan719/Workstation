@@ -11,7 +11,7 @@ interface Biometrics {
   immune:         { health: number; observations_in_window?: number | null; observed_basis?: string | null; threat_level: string; error_rate: number };
   metabolic:      { efficiency: number; atp_ratio: number; total_projects: number };
   nervous:        { arousal_state: string; signal_rate: number };
-  communication:  { neurotransmitter: string; is_active: boolean };
+  communication:  { neurotransmitter: string; is_active: boolean; basis?: string };
 }
 
 // W406 — a SEED object used to live here with immune.health 0.98, metabolic.efficiency 0.92,
@@ -81,8 +81,8 @@ export const Introspection: React.FC = () => {
             {activeSignal}{bio.communication.is_active ? "" : " · idle"}
           </p>
           <p className="text-[10px] text-slate-500 font-semibold mt-1">
-            The organism reports which signalling mode is active. Levels are not measured, so none
-            are shown.
+            <span data-testid="signalling-basis">{bio.communication.basis || 'What this name stands for could not be read.'}</span> Levels
+            are not measured, so none are shown.
           </p>
         </div>
       </div>

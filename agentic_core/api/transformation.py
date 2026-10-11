@@ -206,6 +206,22 @@ def _realise() -> Dict[str, Any]:
             "reconciled_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
 
 
+def _gap_basis(pillars: list) -> str:
+    """W672 (ledger v16 R6.6) - WHAT A "GAP" WAS SELECTED BY, counted with the selection's own rule. Three
+    consumers list the pillars whose status is not the all-checks-pass stamp and call the rest closed; the
+    stamp is a count of presence checks. One sentence, one home, computed from the pillars it is handed."""
+    n = len(pillars)
+    listed = [p for p in pillars if p.get("status") != "realised"]
+    unassessed = sum(1 for p in listed if p.get("checks_assessed") == 0)
+    return (f"{len(listed)} of {n} pillar(s) are listed as a gap"
+            + ((": each has a presence check that is not met (a route not mounted or a store with no record)"
+                + (f", or - for {unassessed} of them - no check that could be assessed" if unassessed else ""))
+               if listed else "")
+            + f". The other {n - len(listed)} pass every presence check, which is why they are not listed - "
+              f"that is coverage, not a statement that they are delivered (the delivery measure is "
+              f"/api/v1/plan/state).")
+
+
 def _transformation_plan(realisation: Dict[str, Any]) -> Dict[str, Any]:
     gaps = []
     for p in realisation["pillars"]:
@@ -214,6 +230,7 @@ def _transformation_plan(realisation: Dict[str, Any]) -> Dict[str, Any]:
             gaps.append({"pillar": p["pillar"], "realisation": p["realisation"], "missing": missing})
     return {
         "immediate_gaps": gaps,
+        "immediate_gaps_basis": _gap_basis(realisation["pillars"]),     # W672 (ledger v16 R6.6)
         "short_term": [],
         "long_term": [],
         "plan_lists_basis": _PLAN_LISTS_BASIS,

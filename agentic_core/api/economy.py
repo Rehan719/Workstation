@@ -1424,8 +1424,15 @@ async def deliver_contract(cid: str, user: dict | None = Depends(get_current_use
     except BaseException:
         _release_delivery()            # a cascade that raised must not hold the contract
         raise
+    #  W672 (ledger v16 R6.9) - a paid delivery between entities passes no check on either party's
+    #  objectives, and the record said nothing about it. The fact is stated on the delivery; the scope
+    #  sentence is the business plan's own, imported and not retyped. Whether a paid delivery SHOULD be
+    #  held on measurable objectives is the Owner's decision: nothing is checked or refused here.
+    from agentic_core.api.business_plan import _KPI_GATE_SCOPE as _gate_scope
     delivery = {"run_id": run.get("run_id"), "quality": run.get("quality"),
-                "served_by": (run.get("ai_provenance") or {}).get("served_by")}
+                "served_by": (run.get("ai_provenance") or {}).get("served_by"),
+                "kpi_gate": {"applied": False,
+                             "basis": "No KPI check was made on either party before this delivery. " + _gate_scope}}
 
     def _bind(rows: list) -> dict:
         cur = next((x for x in rows if x.get("id") == cid), None)

@@ -14497,11 +14497,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W670",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v16 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A version whose gate was not assessable is not a baseline: the improvement verdict is 'not_compared' with which version could not be assessed, and the raw figures are still reported. An older test that called a floor regeneration 'improved' now asserts the verdict is withheld."
     },
     {
       "id": "FU-751",
@@ -14515,11 +14518,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W670",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v16 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "OWNER RULING: a model never translates or transliterates Qur'anic text. The tafsir prompt asks for neither section, and anything a model volunteers under those headings is cut and named as withheld. The test that asserted a model-served tafsir keeps its translation is retargeted."
     },
     {
       "id": "FU-752",
@@ -14555,11 +14561,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W670",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v16 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The reader and the review card print the edition, the riwayah and the provenance basis the API already returned. NOT DONE: the tajweed lesson's riwayah is still shown nowhere."
     },
     {
       "id": "FU-754",
@@ -14574,11 +14583,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W670",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v16 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "OWNER RULING (conservative): the '(engine-backed)' label is kept and followed by a clause saying it backs the match reported on that row, not an assessment of the subject."
     },
     {
       "id": "FU-755",
@@ -14689,11 +14701,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W670",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v16 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "OWNER RULING (stronger): a screen-failed entity's repository generation and cascade are refused. The hold's sentence is built from two lists - what the screen refuses and what it leaves open (the owner's own file viewer; evolution proposals) - and a guard drives every door against them."
     },
     {
       "id": "FU-761",
@@ -14705,11 +14720,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W670",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v16 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "OWNER RULING (conservative): no new status. The 'operating' basis says how many body sections were never provided, the entity gains a body_provided field, and the generated site prints a heading only over text. NOT DONE: BUSINESS_PLAN.md still prints empty headings."
     },
     {
       "id": "FU-762",
@@ -14721,11 +14739,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W670",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v16 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The spawn events carry whether a model composed the CEO text and whether the genome was encoded; the page ticks those rows only when the flag is true, and the swarm row never ticks. NOT DONE: six Cockpit strings still use the word 'living' - an Owner wording question."
     },
     {
       "id": "FU-763",
@@ -14737,11 +14758,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W670",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v16 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "OWNER RULING: the public page itself says it uses the platform's standard layout and whether its wording was written for it or is the recorded problem statement in a fixed frame; the manifest records which path each block took."
     },
     {
       "id": "FU-764",
@@ -14757,11 +14781,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W670",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v16 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A strategic layer holding the founder's own concept or commercialisation text is counted as OTHER with a basis saying no AI CEO composed it, and is left out of the layers present; the source of that field is recorded on new entities. NOT DONE: ORGANISATION.md and the app's Org tab make the same claim."
     },
     {
       "id": "FU-765",
@@ -14840,11 +14867,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W670",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v16 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The plan's opening card, whose own empty state carries the edit control, is shown whether or not anything is recorded, so the Executive Summary, Concept and Vision of a fresh plan can be written."
     },
     {
       "id": "FU-769",
@@ -14859,11 +14889,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W670",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v16 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The Board page marks the twin's unprompted restatements as restated on a beat, not a new instruction, and the status keeps the Owner's own instructions from being displaced by them."
     },
     {
       "id": "FU-770",
@@ -14878,11 +14911,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W670",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v16 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "OWNER RULING (conservative): the Swarm tab says a cascade runs as domain and realm 'enterprise'. NOT DONE: selects for realm and domain - in the plan for the third phase."
     },
     {
       "id": "FU-771",
@@ -14982,11 +15018,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W670",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v16 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A composed genome stage carries the engine's own encoded flag, fitness provenance, encoding note and what served it, and the page shows an amber 'not encoded' chip before the green one."
     },
     {
       "id": "FU-776",
@@ -15000,11 +15039,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W670",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v16 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A defence that set a switch nothing acts on answers 'lever_set_nothing_acts_on_it' and its message says the value is stored and nothing acts on it."
     },
     {
       "id": "FU-777",
@@ -15018,11 +15060,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W670",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v16 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A registered cascade carries that it is the platform default and not composed for this solution, and the page prints it. NOT DONE: the Dashboard headline - an Owner wording question."
     },
     {
       "id": "FU-778",
@@ -15036,11 +15081,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W670",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v16 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The degradation monitor's figure carries a basis saying it is the share of runs that returned output, not how often an answer was right. The key keeps its name for the detector's thresholds."
     },
     {
       "id": "FU-779",
@@ -15054,11 +15102,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W670",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v16 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "OWNER RULING (conservative): rows written through the public route are stamped caller-reported, and the summary reports them separately and gives the in-house rate excluding them. The route stays."
     },
     {
       "id": "FU-780",
@@ -15072,11 +15123,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W670",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v16 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "One observation is never accepted as a consensus: the row says how many observations there were and, with one, that the figure is that observer's own."
     },
     {
       "id": "FU-781",
@@ -15091,11 +15145,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W670",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v16 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The signalling name carries a basis stating which of three plain cases it stands for, and the page prints it."
     },
     {
       "id": "FU-782",
@@ -15217,11 +15274,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W670",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v16 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The recommendation says what share of presence checks pass and that this is coverage, not delivery."
     },
     {
       "id": "FU-788",
@@ -15388,11 +15448,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W670",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v16 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "OWNER RULING (conservative): the value 'realised' is kept; beside it the API says what was checked, the gaps carry a basis, and the page no longer prints 'Fully aligned'."
     },
     {
       "id": "FU-796",
@@ -15427,11 +15490,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W670",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v16 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "OWNER RULING (conservative): the cycle report states the signed result, the operating loss and the shortfall after the reserve, with a basis. The reserve rule is unchanged."
     },
     {
       "id": "FU-798",
@@ -15447,11 +15513,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W670",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v16 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "OWNER RULING (conservative): the KPI gate's scope sentence names contract delivery and settlement as not gated, and each delivery record says the gate was not applied. No gate is added."
     },
     {
       "id": "FU-799",
@@ -15693,6 +15762,42 @@
       "closed_by": null,
       "note": "",
       "slot_source": "the Owner asked on 2026-10-11 that this work be added to the plan; it is the item chartered for it",
+      "tier": 3
+    },
+    {
+      "id": "FU-813",
+      "title": "A proposal is not saved, so what was proposed cannot be linked to what was executed or replayed",
+      "why": "The Instrument Cell returns a proposal and a run records what ran; nothing keeps the proposal. Save it as a versioned, inspectable assembly specification (the approved objective, the criteria, the resources by id), let a run name the specification it came from, and let a specification be replayed. This is the bounded core of the external 'third cell' request and needs no new cell, registry or runner.",
+      "source": "W670 (external final converged master prompt verified, 2026-10-11)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/api/instrument_cell.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.31",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner asked on 2026-10-11 that this work be added to the plan; it extends the item that owns the Instrument Cell",
+      "tier": 3
+    },
+    {
+      "id": "FU-814",
+      "title": "Nothing drives one path from an appraisal, through an authorised change, to its verification and back into the next appraisal",
+      "why": "Appraisal, Change Control, application and verification each exist and are tested apart. No guard takes one appraisal's recommendation through authorisation to an applied change, reads the verification, and shows the next appraisal reading that result. Drive it and name the step where it stops; the ledger's finding that the cascade's appraisals develop nothing is this absence seen from a page.",
+      "source": "W670 (external final converged master prompt verified, 2026-10-11)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/api/method.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "an instrument for a disclosed and unreached capability, which is the item that holds such rows",
       "tier": 3
     }
   ],

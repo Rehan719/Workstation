@@ -7530,7 +7530,13 @@ def test_w425_regeneration_improves_the_prior_draft_and_says_whether_it_did(clie
     assert imp["coverage_after"] > imp["coverage_before"], (
         "an improvement pass that does not improve coverage is a regeneration, not an improvement: %r"
         % (imp,))
-    assert imp["verdict"] == "improved" and imp["coverage_delta"] > 0
+    #  W670 (ledger v16 R1.2) - this asserted `verdict == "improved"` with a positive delta. The regeneration
+    #  here is served by the deterministic floor, which writes every heading it is asked for: its coverage
+    #  cannot fail, and the same record says its gate is not assessable. Calling that "improved" was the
+    #  comparison this test's own last comment warns about - one that can only ever say improved. The raw
+    #  figures are still reported (asserted above); the VERDICT is withheld, with the reason.
+    assert imp["verdict"] == "not_compared" and imp["coverage_delta"] is None, imp
+    assert imp["not_compared_because"] == ["this version"] and "Not compared" in imp["note"], imp
     assert imp["sections_uncovered_after"] == []
     assert len(r["versions"]) == 2, "history must be preserved, not overwritten"
 
@@ -10013,8 +10019,8 @@ def test_w456_tafsir_tab_completes_section_11_both_ways(client, monkeypatch):
 
     Both ways: on the floor the Transliteration and Translation sections are WITHHELD (named), a
     floor_note says why, the disclaimer is present, the Arabic source line is present, 2:1-20 is capped
-    with the range note; a model-served tafsir (substituted at ai_text) keeps its Translation section
-    and carries no floor_note. The tab renders the Arabic, source, reference, range note and floor note.
+    with the range note; a model-served tafsir (substituted at ai_text) is asked for neither section, has
+    the ones it volunteered cut and named (W671, ledger v16 R1.3), and carries no floor_note. The tab renders the Arabic, source, reference, range note and floor note.
     """
     from pathlib import Path
     from agentic_core.api import religion as R
@@ -10052,9 +10058,9 @@ def test_w456_tafsir_tab_completes_section_11_both_ways(client, monkeypatch):
     assert "NOT a scholarly tafsir" in tf["disclaimer"] and "never AI-generated" in tf["disclaimer"]
     assert "arabic_source" in tf and tf["ayah_end"] == 10 and "covers 2:1-10" in tf["range_note"]
 
-    # the other way: with a model available the prompt asks for the translation and a model-served
-    # tafsir keeps it, no floor note; if the floor answers ANYWAY the request is refused (503) rather
-    # than cut and shipped under a seal of the uncut text
+    # the other way (RETARGETED W671): with a model available the prompt STILL asks for neither sacred
+    # section, and a model-served tafsir that volunteers them has them cut and named, with no floor note;
+    # if the floor answers ANYWAY the request is refused (503) as before
     monkeypatch.setattr(R, "_model_available", lambda: True)
     async def _model(prompt, agent, **kw):
         seen["prompt"] = prompt
@@ -10062,8 +10068,9 @@ def test_w456_tafsir_tab_completes_section_11_both_ways(client, monkeypatch):
                 {"posture": "in-house-first", "served_by": "ollama:test", "is_external": False})
     monkeypatch.setattr(R, "ai_text", _model)
     tf2 = client.post("/api/v1/religion/quran-tafsir", json={"surah": 1, "ayah_start": 1}).json()
-    assert "## Translation" in seen["prompt"]
-    assert "## Translation" in tf2["tafsir"] and tf2["sections_withheld"] == [] and "floor_note" not in tf2
+    assert "## Translation" not in seen["prompt"] and "## Transliteration" not in seen["prompt"], seen["prompt"][-600:]
+    assert "## Translation" not in tf2["tafsir"] and "In the name of God" not in tf2["tafsir"] and "bismillah" not in tf2["tafsir"], tf2["tafsir"]
+    assert tf2["sections_withheld"] == ["Transliteration", "Translation"] and "## Exegesis" in tf2["tafsir"] and "floor_note" not in tf2
     assert "NOT a scholarly tafsir" in tf2["disclaimer"]
     async def _floor_anyway(prompt, agent, **kw):
         return ("## Translation\nfloor scaffold", {"posture": "in-house-first", "served_by": "native", "is_external": False})
@@ -52628,3 +52635,930 @@ def test_w669_a_scholar_can_be_added_and_a_decision_says_who_entered_it(client, 
         _hb._evolve_every, _hb._beats_since_evolve = _e0, _b0
     _hm = (_src / "pages" / "organism" / "HeartbeatMonitor.tsx").read_text(encoding="utf-8")
     assert 'data-testid="evolve-pacing">{s.evolve_pacing ||' in _hm and "take effect on the NEXT beat" not in _hm
+
+
+def test_w670_an_established_entity_says_what_it_is_and_what_its_hold_refuses(client, monkeypatch):
+    """W670 - ledger v16 R2.5, R2.6, R2.7, R2.8, R3.0, R4.5: six statements an established entity, its public
+    page or its listing made that were not computed from the entity's own state."""
+    import json
+    import pathlib
+    import re
+    import agentic_core.api.vsb as _vm
+    from agentic_core.api import resource_fabric as _rf
+    from agentic_core.economy import living_vsbs as _lv
+
+    _SRC = pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+    _clean = "A village bakery cooperative selling bread to the local primary school"
+
+    def _events(resp):
+        return [json.loads(l[6:]) for l in resp.text.splitlines() if l.startswith("data: ") and l[6:].strip() != "[DONE]"]
+
+    def _spawn(name):
+        _r = client.post("/api/v1/vsb/spawn", json={"challenge": _clean, "name": name, "domain": "commerce"})
+        assert _r.status_code == 200, _r.text[:300]
+        return re.findall(r"vsb-[0-9a-f]{10}", _r.text)[0], _events(_r)
+
+    # -- 1. R2.5: THE HOLD'S BASIS NAMES EXACTLY THE DOORS THAT REFUSE, AND THE ONES THAT DO NOT ----------------
+    _cid, _floor_events = _spawn("W670 Doors Probe")
+    _nid, _ = _spawn("W670 No Repo Probe")
+    assert not (_vm._REPO_STORE / _nid / "resources" / "cascades.json").exists(), (
+        "the spawn door now generates a repository, so the cascade door below would RUN a cascade")
+    _DOORS = {
+        "repository cascade": lambda: client.post(f"/api/v1/vsb/{_nid}/repo/cascade", json={}),
+        "repository generation": lambda: client.post(f"/api/v1/vsb/{_cid}/repo"),
+        "repository file read": lambda: client.get(f"/api/v1/vsb/{_cid}/repo/file", params={"path": "README.md"}),
+        "repository download": lambda: client.get(f"/api/v1/vsb/{_cid}/repo/zip"),
+        "evolution proposals": lambda: client.post(f"/api/v1/vsb/{_cid}/evolve",
+                                                   json={"trigger": "w670 guard", "refresh_repo": False}),
+        "website": lambda: client.post(f"/api/v1/vsb/{_cid}/website"),
+        "web app": lambda: client.post(f"/api/v1/vsb/{_cid}/webapp"),
+        "phone app": lambda: client.post(f"/api/v1/vsb/{_cid}/mobile"),
+        "repository ship": lambda: client.post(f"/api/v1/vsb/{_cid}/repo/ship"),
+    }
+
+    def _held(r):
+        """(is this the screen's hold, what it says it refused) - any other answer is not the screen's."""
+        if r.status_code != 409:
+            return False, None
+        _d = r.json().get("detail")
+        _is = isinstance(_d, dict) and _d.get("error") == "compliance_fail_hold"
+        return _is, (_d.get("refused") if _is else None)
+
+    #     way 1 - a clean entity: no door is held by the screen, and the repository doors really open
+    _gen = _DOORS["repository generation"]()
+    assert _gen.status_code == 200, _gen.text[:300]
+    _file = _DOORS["repository file read"]()
+    assert _file.status_code == 200 and _file.content, (_file.status_code, _file.text[:200])
+    for _name in ("repository cascade", "repository download", "evolution proposals"):
+        assert _held(_DOORS[_name]())[0] is False, ("a clean entity is held by the screen at", _name)
+    _e0 = client.get(f"/api/v1/vsb/{_cid}").json()
+    assert _e0["status"] != _vm.SCREEN_HELD_STATUS and "Not refused by the screen" not in str(_e0.get("status_basis"))
+
+    #     way 2 - the SAME entity once its latest screen fails (driven): every named door is driven
+    _fail = {"overall": "fail", "verdicts": [{"framework": "driven", "status": "fail"}]}
+    monkeypatch.setattr(_lv, "_history", lambda: {_cid: _fail, _nid: _fail})
+    _seen = {_name: _held(_call()) for _name, _call in _DOORS.items()}
+    monkeypatch.undo()
+    assert set(_seen) == set(_vm.SCREEN_REFUSES) | set(_vm.SCREEN_LEAVES_OPEN), (
+        "the two tuples and the doors this guard drives name different things",
+        sorted(set(_seen) ^ (set(_vm.SCREEN_REFUSES) | set(_vm.SCREEN_LEAVES_OPEN))))
+    assert not set(_vm.SCREEN_REFUSES) & set(_vm.SCREEN_LEAVES_OPEN), "a door is named both refused and open"
+    for _name, (_is, _what) in _seen.items():
+        assert _is == (_name in _vm.SCREEN_REFUSES), (
+            "the basis and the door disagree", _name, "held by the screen" if _is else "not held by the screen")
+    assert {_what for _is, _what in _seen.values() if _is} == set(_vm.SCREEN_REFUSES), (
+        "a refusal names itself differently from the basis", sorted(str(w) for _i, w in _seen.values() if _i))
+    assert _seen["repository download"][0] is True and _seen["website"][0] is True, "the driven hold held nothing"
+    monkeypatch.setattr(_lv, "_history", lambda: {_cid: _fail})
+    _e1 = client.get(f"/api/v1/vsb/{_cid}").json()
+    monkeypatch.undo()
+    _basis = str(_e1.get("status_basis"))
+    assert _e1["status"] == _vm.SCREEN_HELD_STATUS and "FAILED" in _basis and "economy is held" in _basis, _basis
+    _ref_part, _sep, _open_part = _basis.partition(". Not refused by the screen: ")
+    assert _sep, ("the basis does not say what the screen leaves open", _basis)
+    _open_part = _open_part.partition(". The screen is a word list")[0]
+    assert [s.strip() for s in _open_part.split(",")] == list(_vm.SCREEN_LEAVES_OPEN), _open_part
+    assert [s.strip() for s in _ref_part.rpartition("fails: ")[2].split(",")] == list(_vm.SCREEN_REFUSES), _ref_part
+
+    # -- 2. R2.6: "OPERATING" SAYS WHEN NO BODY WAS PROVIDED - and the status VALUE does not move ---------------
+    _ORDER = _vm._BODY_STAGE_ORDER
+    #     the probe is established BEFORE anything is patched, so its own screen and roster rows are real
+    _bare = client.post("/api/v1/genesis/establish", json={
+        "problem": "Small olive growers lose a third of the crop to fruit fly", "name": "W670 Bare Probe",
+        "owner_id": "pytest", "ship_output": False})
+    assert _bare.status_code == 200, _bare.text[:300]
+    _bid = _bare.json()["vsb_id"]
+    monkeypatch.setattr(_lv, "living_statement", lambda: {"registered": True, "autonomous_cycles": True,
+                                                          "autonomous_operation": "ON"})
+    _none = {"vsb_id": "vsb-w670none", "body_pending": {k: False for k in _ORDER},
+             "body_absent": {k: True for k in _ORDER}}
+    _one = dict(_none, vsb_id="vsb-w670one", body_absent={k: k == "operations" for k in _ORDER})
+    _full = dict(_none, vsb_id="vsb-w670full", body_absent={k: False for k in _ORDER})
+    (_s0, _b0), (_s1, _b1), (_s2, _b2) = (_vm._derived_status(x) for x in (_none, _one, _full))
+    assert _s0 == _s1 == _s2 == _vm.OPERATING_STATUS, ("a status VALUE changed for its readers", _s0, _s1, _s2)
+    assert "None of its body was ever provided" in _b0 and all(k in _b0.split("ever provided")[1] for k in _ORDER), _b0
+    assert f"1 of its {len(_ORDER)} body sections were never provided (operations)" in _b1, _b1
+    assert "provided" not in _b2, ("a whole body is described as missing", _b2)
+    assert _vm._body_provided(_none) == [] and _vm._body_provided(_full) == list(_ORDER), (
+        _vm._body_provided(_none), _vm._body_provided(_full))
+    assert _vm._body_provided({}) is None, "an entity with no map is said to have provided nothing - it is not known"
+    assert _vm._rederive(dict(_one))["body_provided"] == [k for k in _ORDER if k != "operations"]
+    #     through the door: an entity established with a problem and nothing else
+    _be = client.get(f"/api/v1/vsb/{_bid}").json()
+    assert _be["status"] == _vm.OPERATING_STATUS, ("the probe is not operating, so the leg below reads nothing",
+                                                   _be["status"], _be.get("status_basis"))
+    assert "None of its body was ever provided" in _be["status_basis"] and _be["body_provided"] == [], (
+        _be["status_basis"], _be.get("body_provided"))
+    monkeypatch.undo()
+    #     the public page: a heading stands over text or is not printed
+    _w0 = _vm._build_website_files({"vsb_id": "v", "name": "N", "challenge": "Bees are dying"},
+                                   {"about": "", "hero": "h", "solution": "s"})
+    for _h in ("<h2>Commercialisation</h2>", "<h2>Our approach</h2>", "<h2>Concept</h2>"):
+        assert _h not in _w0["web/about.html"], ("a heading is printed over nothing", _h)
+    assert "<h2>The problem</h2><p>Bees are dying</p>" in _w0["web/about.html"], _w0["web/about.html"][-500:]
+    assert "Design &amp; delivery" not in _w0["web/solution.html"]
+    _w1 = _vm._build_website_files(
+        {"vsb_id": "v", "name": "N", "challenge": "Bees",
+         "genesis_blueprint": {"concept": "A hive monitor", "design": "A sensor", "commercialisation": "Sell it"}},
+        {"about": "About us", "hero": "h", "solution": "s"})
+    for _h in ("<h2>Commercialisation</h2><p>Sell it</p>", "<h2>Our approach</h2>", "<h2>Concept</h2><p>A hive monitor</p>"):
+        assert _h in _w1["web/about.html"], ("a provided section lost its heading", _h)
+    assert "<h2>The problem</h2>" not in _w1["web/about.html"] and "Design &amp; delivery" in _w1["web/solution.html"]
+
+    # -- 3. R2.8: THE SITE SAYS WHAT ITS WORDS ARE, computed from which path each block took ---------------------
+    assert "standard three-page layout" not in _vm._website_page("t", "index", "b")
+    assert "Living VSB IDBO enterprise" not in _vm._website_page("t", "index", "b", note="a note")
+    assert "a note</footer>" in _vm._website_page("t", "index", "b", note="a note")
+    _real_qm = _vm.gateway.query_meta
+
+    def _site(grounded_kinds):
+        """Generate the site with a model serving the named blocks; every other call goes to the real gateway."""
+        async def _qm(prompt, **kw):
+            if kw.get("agent") != "vsb-website":
+                return await _real_qm(prompt, **kw)
+            _kind = "hero" if "hero tagline" in prompt else "about" if "'About' copy" in prompt else "solution"
+            return {"output": ("Olive growers lose a third of the crop to fruit fly and low cost traps report early"
+                               if _kind in grounded_kinds else "Register a domain name today with managed hosting"),
+                    "served_by": "ollama:w670-test", "is_external": False}
+        monkeypatch.setattr(_vm.gateway, "query_meta", _qm)
+        _m = client.post(f"/api/v1/vsb/{_bid}/website")
+        monkeypatch.undo()
+        assert _m.status_code == 200, _m.text[:300]
+        _pg = client.get(f"/api/v1/vsb/{_bid}/website/page/index").text
+        return _m.json(), _pg[_pg.index("<footer>"):]
+
+    _m0 = client.post(f"/api/v1/vsb/{_bid}/website")                      # the floor: no model serves
+    assert _m0.status_code == 200, _m0.text[:300]
+    _m0 = _m0.json()
+    assert _m0["copy_basis"] == {"hero": "frame", "about": "frame", "solution": "frame"}, _m0["copy_basis"]
+    _f0 = client.get(f"/api/v1/vsb/{_bid}/website/page/index").text
+    _f0 = _f0[_f0.index("<footer>"):]
+    assert "standard three-page layout" in _f0 and "fixed sentence frame; no copy was written for it" in _f0, _f0
+    assert "standard three-page layout" in _m0["template_note"]
+    _m1, _f1 = _site({"hero", "about", "solution"})
+    assert set(_m1["copy_basis"].values()) == {"composed"}, _m1["copy_basis"]
+    assert "Copy was written in-house for: about, hero, solution." in _f1, _f1
+    assert "no copy was written for it" not in _f1 and "fixed sentence frame" not in _f1, _f1
+    _m2, _f2 = _site({"hero"})
+    assert _m2["copy_basis"] == {"hero": "composed", "about": "frame", "solution": "frame"}, _m2["copy_basis"]
+    assert "Copy was written in-house for: hero; the recorded problem statement in a fixed sentence frame for: about, solution." in _f2, _f2
+
+    # -- 4. R3.0: THE FOUNDER'S SENTENCE IS NOT AN AI CEO'S SPECIFICATION --------------------------------------
+    _concept = "A free weekly study circle with a qualified teacher, open to twenty adult learners."
+    _a = _vm._strategic_layer(_concept, None, founder_texts=(_concept, ""))
+    assert _a["holds"] == "other" and _a["present"] is False and "no AI CEO composed it" in _a["basis"], _a
+    _b = _vm._strategic_layer("anything at all", None, source="founder_input")
+    assert _b["holds"] == "other" and _b["present"] is False, _b
+    _c = _vm._strategic_layer("Two depots, 400 households by Q3", None, founder_texts=(_concept, ""),
+                              source="model:ollama:x")
+    assert _c["holds"] == "content" and _c["present"] is True and "AI CEO specification" in _c["basis"], _c
+    assert _vm._strategic_layer("Two depots, 400 households by Q3")["holds"] == "content"      # the one-argument call
+    assert _vm._strategic_layer("", None, source="founder_input")["holds"] == "empty"
+    #     through the Genesis door, which stores the founder's text in the field
+    _g = client.post("/api/v1/genesis/establish", json={
+        "problem": "Adults in the town have nowhere to study together", "concept": _concept,
+        "name": "W670 Strategy Probe", "owner_id": "pytest", "ship_output": False})
+    assert _g.status_code == 200, _g.text[:300]
+    _gid = _g.json()["vsb_id"]
+    _ge = _vm._load_vsb(_gid)
+    assert _ge["ceo_specification"] == _concept and _ge["ceo_specification_source"] == "founder_input", (
+        _ge.get("ceo_specification"), _ge.get("ceo_specification_source"))
+    def _pack(vid):
+        _p = client.post(f"/api/v1/vsb/{vid}/board-pack")
+        assert _p.status_code == 200, _p.text[:300]
+        _p = _p.json()
+        return _p.get("pack") or _p
+    _pk = _pack(_gid)
+    _st = _pk["layers"]["strategic"]
+    assert _st.get("refresh_id") is None and "owner_written" not in _st, (
+        "a refresh or an Owner's edit already fills this layer, so the leg cannot see the field's own reading", _st)
+    assert _st["holds"] == "other" and "strategic" not in _pk["layers_present"], (_st, _pk["layers_present"])
+    #     an entity established BEFORE the source was recorded: the pack compares the field with the blueprint
+    _old = _vm._load_vsb(_gid)
+    _old.pop("ceo_specification_source")
+    _vm._save_vsb(_old)
+    assert _pack(_gid)["layers"]["strategic"]["holds"] == "other", "an older entity's founder text reads as a CEO specification"
+    #     ...and one whose blueprint moved on afterwards: the recorded source decides, the comparison cannot
+    _moved = _vm._load_vsb(_gid)
+    _moved["ceo_specification_source"] = "founder_input"
+    _moved["genesis_blueprint"] = dict(_moved.get("genesis_blueprint") or {}, concept="A different concept, recorded later.")
+    _vm._save_vsb(_moved)
+    assert _pack(_gid)["layers"]["strategic"]["holds"] == "other", "the pack does not read the recorded source"
+    _gsrc = (pathlib.Path(__file__).resolve().parents[1] / "agentic_core" / "api" / "genesis.py").read_text(encoding="utf-8")
+    assert _gsrc.count('"ceo_specification_source": "founder_input"') == 2, (
+        "one of the two establish paths does not record the source (the streamed path is not driven here)")
+    #     the spawn door DOES ask a model: pending on the floor, and content when one serves
+    assert _vm._load_vsb(_cid)["ceo_specification_source"] == "pending", _vm._load_vsb(_cid).get("ceo_specification_source")
+
+    async def _ceo(prompt, **kw):
+        if kw.get("agent") != "vsb_ceo":
+            return await _real_qm(prompt, **kw)
+        return {"output": "Open two depots and serve 400 households by the third quarter.",
+                "served_by": "ollama:w670-test", "is_external": False}
+    monkeypatch.setattr(_vm.gateway, "query_meta", _ceo)
+    _mid, _model_events = _spawn("W670 Model Probe")
+    monkeypatch.undo()
+    _me = _vm._load_vsb(_mid)
+    assert _me["ceo_specification_source"] == "model:ollama:w670-test", _me.get("ceo_specification_source")
+    _mst = _pack(_mid)["layers"]["strategic"]
+    assert _mst["holds"] == "content" and "AI CEO specification" in _mst["basis"], (
+        "a specification a model composed is no longer counted as one", _mst)
+
+    # -- 5. R2.7: A STEP TICKS WHEN ITS EVENT SAYS IT WAS EARNED; fixed copy does not call every entity living ---
+    def _ev(events, stage):
+        _hit = [e for e in events if e.get("stage") == stage]
+        assert len(_hit) == 1, (stage, len(_hit))
+        return _hit[0]
+    _ceo0, _ceo1 = _ev(_floor_events, "ceo_complete"), _ev(_model_events, "ceo_complete")
+    assert _ceo0["data"]["composed"] is False and _ceo0["label"] == "CEO Strategy Pending", _ceo0
+    assert _ceo1["data"]["composed"] is True and _ceo1["label"] == "CEO Strategy Complete", _ceo1
+    _gn = _ev(_floor_events, "genome_complete")
+    assert _gn["data"]["encoded"] is ("encoded in epigenetic registry" in _gn["content"]), _gn
+    assert _ev(_floor_events, "swarm_complete")["data"]["swarm_is_template"] is True
+    _strip = lambda s: re.sub(r"(?m)^\s*//[^\n]*", "", re.sub(r"\{/\*.*?\*/\}", "", s, flags=re.S))
+    _ss = _strip((_SRC / "pages" / "enterprise" / "VSBSpawnStudio.tsx").read_text(encoding="utf-8"))
+    _ck = _strip((_SRC / "pages" / "enterprise" / "VSBCockpit.tsx").read_text(encoding="utf-8"))
+    _meta = _ss[_ss.index("const STAGE_META"):_ss.index("};", _ss.index("const STAGE_META"))]
+    assert re.findall(r"(\w+):\s*\{ icon: CheckCircle2", _meta) == ["gaas_complete"], (
+        "a step nothing verified ticks green by default", re.findall(r"(\w+):\s*\{ icon: CheckCircle2", _meta))
+    _feed = _ss[_ss.index("{events.map((ev, i) => {"):_ss.index("const Icon = meta.icon;")]
+    assert "ev.stage === 'ceo_complete' && ev.data?.composed === true ? STAGE_EARNED" in _feed, _feed
+    assert "ev.stage === 'genome_complete' && ev.data?.encoded === true ? STAGE_EARNED" in _feed, _feed
+    assert "swarm_complete" not in _feed, "the fixed swarm template is given a way to tick"
+    _chip = _ss[_ss.index("Open in Cockpit"):_ss.index("{e.status || 'spawned'}")]
+    assert "e.status === 'operating'" in _chip and "startsWith('held')" in _chip and "=== 'active'" not in _chip, _chip
+    assert "living" not in _chip.lower() and "living" not in _ss[_ss.index("Open in Cockpit") - 400:_ss.index("Open in Cockpit")].lower()
+    _header = _ck[_ck.index("<header>"):_ck.index("</header>")]
+    assert "living" not in _header.lower() and "status, and what it was derived from" in _header, _header
+    for _phrase in ("living VSB", "Living VSB", "living enterprise"):
+        assert _phrase not in _ck, ("fixed copy still calls every entity living", _phrase)
+    assert "detail.status === 'operating' ? 'emerald-500'" in _ck, "the Cockpit's derived badge is gone"
+
+    # -- 6. R4.5: THE STANDARD DELIVERY SWARM IS LISTED AS THE PLATFORM'S DEFAULT; a set one is not -------------
+    _std_stages = [(s["role"], s["instruction"]) for s in _rf.PLATFORM_DELIVERY_STAGES]
+
+    def _listed():
+        _rows = client.get("/api/v1/resources/swarm", params={"vsb_id": _gid}).json()["cascades"]
+        assert len(_rows) == 1, ("the probe entity does not have exactly its one delivery cascade", len(_rows))
+        return _rows[0]
+    _row = _listed()
+    assert [(s["role"], s["instruction"]) for s in _row["stages"]] == _std_stages, "Genesis attaches something else"
+    assert _row["template"] == "platform-default" and "same for every enterprise" in _row["template_basis"], _row
+    _sid = _row["id"]
+    assert client.get(f"/api/v1/resources/swarm/{_sid}").json()["template"] == "platform-default"
+    _own = [{"role": "ai-ceo", "instruction": "Frame the objective for an adult study circle."}] + [
+        dict(s) for s in _rf.PLATFORM_DELIVERY_STAGES[1:]]
+    assert client.put(f"/api/v1/resources/swarm/{_sid}", json={"stages": _own}).status_code == 200
+    _row2 = _listed()
+    assert _row2["template"] is None and "differ" in _row2["template_basis"], _row2
+    assert client.get(f"/api/v1/resources/swarm/{_sid}").json()["template"] is None
+    assert client.put(f"/api/v1/resources/swarm/{_sid}", json={
+        "stages": [dict(s) for s in _rf.PLATFORM_DELIVERY_STAGES]}).status_code == 200
+    assert _listed()["template"] == "platform-default", "the label is stored, not computed from the stages"
+    assert "template" not in next(c for c in _rf._load_swarms() if c["id"] == _sid), "the label was written to the store"
+    _na = (_SRC / "pages" / "developers" / "NativeAI.tsx").read_text(encoding="utf-8")
+    _saved = _na[_na.index("{cascades.slice().reverse().map(c => ("):]
+    _saved = _saved[:_saved.index("startEdit(c)")]
+    assert "{c.template === 'platform-default' && (" in _saved and "title={c.template_basis}" in _saved, _saved
+    assert "template?: string | null; template_basis?: string" in _na[_na.index("interface SavedCascade"):][:400]
+
+
+def test_w671_sacred_text_is_never_composed_and_a_page_shows_what_the_server_returned(client, monkeypatch):
+    """W671 - ledger v16 R1.3, R1.5, R1.6, R3.4, R3.5, R3.6: a prompt that asked a model to translate an ayah,
+    a label that did not say what it backed, and four pages that dropped or hid what the server returns."""
+    import pathlib
+    import re
+    from agentic_core.api import religion as _R
+
+    _SRC = pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+    _nojsx = lambda s: re.sub(r"(?m)^\s*//[^\n]*", "", re.sub(r"\{/\*.*?\*/\}", "", s, flags=re.S))
+
+    # -- 1. R1.3: NO PATH ASKS A MODEL FOR A TRANSLATION OR TRANSLITERATION, AND NO PATH SERVES ONE --------------
+    _seen = {}
+
+    def _model_serves(text):
+        async def _model(prompt, agent, **kw):
+            _seen["prompt"] = prompt
+            return (text, {"posture": "in-house-first", "served_by": "ollama:w671-test", "is_external": False})
+        monkeypatch.setattr(_R, "_model_available", lambda: True)
+        monkeypatch.setattr(_R, "ai_text", _model)
+        _r = client.post("/api/v1/religion/quran-tafsir", json={"surah": 1, "ayah_start": 1})
+        monkeypatch.undo()
+        assert _r.status_code == 200, _r.text[:300]
+        return _r.json()
+
+    #     way 1a - a model is available and VOLUNTEERS both sections: neither was asked for, both are cut
+    _tf = _model_serves("## Transliteration\nbismillah\n## Translation (AI-assisted)\nIn the name of God\n## Exegesis\nnotes")
+    _asked = [l for l in _seen["prompt"].splitlines() if l.startswith("## ") and "transl" in l.lower()]
+    assert _asked == [], ("the prompt asks a model for a sacred section", _asked)
+    assert "## Exegesis" in _seen["prompt"], "the prompt no longer asks for the study sections - this leg reads nothing"
+    assert "In the name of God" not in _tf["tafsir"] and "bismillah" not in _tf["tafsir"], _tf["tafsir"]
+    assert _tf["sections_withheld"] == ["Transliteration", "Translation"], _tf["sections_withheld"]
+    assert "## Exegesis" in _tf["tafsir"] and "floor_note" not in _tf, "a model's exegesis was withheld with them"
+    assert _tf["translation_source"]["composed_here"] is False
+    assert _tf["translation_source"]["sourced_route"] == "/api/v1/qep/translation/1/1", _tf["translation_source"]
+    #     way 1b - a model that volunteers neither: nothing is listed as removed, and the pointer is still there
+    _tf2 = _model_serves("## Exegesis\nnotes on the opening")
+    assert _tf2["sections_withheld"] == [] and "notes on the opening" in _tf2["tafsir"], _tf2
+    assert _tf2["translation_source"]["basis"] == _R._TRANSLATION_BASIS
+    #     way 2 - the floor (this suite)
+    assert _R._model_available() is False
+    _tf0 = client.post("/api/v1/religion/quran-tafsir", json={"surah": 1, "ayah_start": 1}).json()
+    assert _tf0["ai_provenance"]["served_by"] == "native"
+    assert "must come from a model" not in _tf0["floor_note"], _tf0["floor_note"]
+    assert "no translation or transliteration is offered" in _tf0["floor_note"] and _R._TRANSLATION_BASIS in _tf0["floor_note"]
+    assert {"Transliteration", "Translation"} <= set(_tf0["sections_withheld"])
+    assert _tf0["translation_source"]["composed_here"] is False
+    #     a model expected, the floor answered: refused as before, for a reason that is still true
+    async def _floor_anyway(prompt, agent, **kw):
+        return ("## Exegesis\nfloor scaffold", {"posture": "in-house-first", "served_by": "native", "is_external": False})
+    monkeypatch.setattr(_R, "_model_available", lambda: True)
+    monkeypatch.setattr(_R, "ai_text", _floor_anyway)
+    _r503 = client.post("/api/v1/religion/quran-tafsir", json={"surah": 1, "ayah_start": 1})
+    monkeypatch.undo()
+    assert _r503.status_code == 503 and "not served from the floor" in _r503.json()["detail"], _r503.text[:300]
+    assert "requested with a translation" not in _r503.json()["detail"], "the refusal still cites a request nothing makes"
+    #     the two surfaces say the same thing, and the route the sentence names is served
+    from agentic_core.api.qep_intelligence import _SACRED_REFUSAL
+    for _text in (_SACRED_REFUSAL, _R._TRANSLATION_BASIS):
+        assert "whatever model is available" in _text and "/api/v1/qep/translation/{surah}/{ayah}" in _text, _text
+    assert any(getattr(r, "path", "") == "/api/v1/qep/translation/{surah_number}/{ayah_number}" for r in client.app.routes), (
+        "the sentence points at a route that is not served")
+    _hub = (_SRC / "pages" / "domains" / "ReligionHub.tsx").read_text(encoding="utf-8")
+    _at = _hub.index('endpoint="/api/v1/religion/quran-tafsir"')
+    _tab = _hub[_at:_hub.index("title={T['halal'].title}", _at)]
+    assert 'data-testid="tafsir-withheld">{r.floor_note' in _tab and "<>Removed from this reply: " in _tab, (
+        "a model's reply with sections removed is still labelled as the floor's")
+    assert "{!r.floor_note && typeof r.translation_source?.basis === 'string' && (" in _tab and "{r.translation_source.basis}" in _tab
+    assert _hub.count("Withheld on the floor:") == 3, "the floor's own label was lost from one of the three tabs"
+
+    # -- 2. R1.5: THE READER SHOWS WHICH EDITION AND RIWAYAH IT IS SHOWING, from the response ------------------
+    from agentic_core.religious_domain.api import _corpus_provenance as _cp
+    _known, _unknown = _cp("quran-uthmani"), _cp("quran-w671-undeclared")
+    assert _known["riwayah"] and _known["edition"] == "quran-uthmani" and _known["licence"] and _known["provenance_basis"]
+    assert _unknown["riwayah"] is None and "NOT DECLARED" in _unknown["provenance_basis"], _unknown
+    _qs = _nojsx((_SRC / "components" / "QEPStudio.tsx").read_text(encoding="utf-8"))
+    assert "setSurahMeta(d);" in _qs, "the surah response's provenance is fetched and dropped"
+    _iface = _qs[_qs.index("interface CorpusProvenance {"):]
+    _iface = _iface[:_iface.index("}")]
+    for _field in ("source", "edition", "riwayah", "licence", "provenance_basis"):
+        assert _field in _known and re.search(rf"\b{_field}\?:", _iface), ("a rendered field is untyped or not returned", _field)
+    _reader = _qs[_qs.index("authentic text</h3>"):_qs.index("spaced repetition")]
+    _line = _reader[_reader.index('data-testid="reader-provenance"'):]
+    _line = _line[:_line.index("</p>")]
+    assert "edition {surahMeta?.edition ?? 'not stated'}" in _line, _line
+    assert "{surahMeta?.riwayah ? `riwayah ${surahMeta.riwayah}` : 'riwayah not declared'}" in _line, _line
+    for _needle in ("{surahMeta.provenance_basis}</p>", "Licence: {surahMeta.licence}</p>", "{surahMeta.basmala}</p>"):
+        assert _needle in _reader, ("the reader does not show", _needle)
+    _review = _qs[_qs.index("{reviewRef && reviewAyah && ("):_qs.index("recall quality (0 = blackout")]
+    _rline = _review[_review.index('data-testid="review-provenance"'):]
+    _rline = _rline[:_rline.index("</p>")]
+    assert "{reviewAyah.riwayah ? `riwayah ${reviewAyah.riwayah}` : 'riwayah not declared'}" in _rline, _rline
+    assert "edition {reviewAyah.edition ?? 'not stated'}" in _rline, _rline
+    _qh = _nojsx((_SRC / "pages" / "domains" / "QEPReligionHub.tsx").read_text(encoding="utf-8"))
+    _cline = _qh[_qh.index('data-testid="coach-provenance"'):]
+    _cline = _cline[:_cline.index("</span>")]
+    assert "{ayah.riwayah ? `riwayah ${ayah.riwayah}` : 'riwayah not declared'}" in _cline, _cline
+    _sa = _qh[_qh.index("interface SourcedAyah {"):]
+    assert "riwayah?: string | null;" in _sa[:_sa.index("}")] and "edition?: string;" in _sa[:_sa.index("}")]
+    for _page, _name in ((_qs, "QEPStudio"), (_qh, "QEPReligionHub")):
+        assert "Hafs" not in _page and "Warsh" not in _page, ("a riwayah is typed on the page instead of read", _name)
+
+    # -- 3. R1.6: "(engine-backed)" SAYS WHAT IT BACKS; where nothing was found there is no label and no clause --
+    from agentic_core.api import compliance as _C
+    _CLAUSE = "it backs the match reported on this row, not an assessment of the subject"
+    _rows = lambda text: {v["framework"]: v for v in _C.screen_compliance(text)["verdicts"]}
+    _h = _rows("a venture selling alcohol at events")["sharia_halal"]
+    assert _h["coverage"] not in _C.ASSESSING_COVERAGE and "(engine-backed)" in _h["reason"], _h
+    assert _CLAUSE in _h["reason"] and repr(_h["coverage"]) in _h["reason"].split(_CLAUSE)[1], _h["reason"]
+    _l = _rows("the plan involves unfair dismissal of staff")["uk_legal"]
+    assert "(UK engine-backed" in _l["reason"] and "over the subject)" in _l["reason"], _l["reason"]
+    assert _l["reason"].index("over the subject)") < _l["reason"].index(_CLAUSE), _l["reason"]
+    _e = _rows("a plan to exploit users")["ethical"]
+    assert "(engine-backed)" in _e["reason"] and _CLAUSE in _e["reason"], _e["reason"]
+    _bak = _rows("A bakery in Leeds")
+    for _fw in ("sharia_halal", "uk_legal", "ethical"):
+        assert "-backed)" not in _bak[_fw]["reason"] and _CLAUSE not in _bak[_fw]["reason"], (_fw, _bak[_fw]["reason"])
+    assert _C._backing_scope(True, "engine") == "" and _C._backing_scope(False, "vocabulary") == ""
+    assert _CLAUSE in _C._backing_scope(True, "vocabulary") and "'vocabulary'" in _C._backing_scope(True, "vocabulary")
+    _chk = client.post("/api/v1/compliance/check", json={"subject": "a venture selling alcohol at events"})
+    assert _chk.status_code == 200, _chk.text[:300]
+    _row = next(v for v in _chk.json()["verdicts"] if v["framework"] == "sharia_halal")
+    assert "(engine-backed)" in _row["reason"] and _CLAUSE in _row["reason"], _row
+
+    # -- 4. R3.4: THE PLAN OPENING IS MOUNTED WHETHER OR NOT ANYTHING IS RECORDED -------------------------------
+    from agentic_core.api import business_plan as _B
+    _fresh = _B._fresh("vsb-w671-never-created")
+    assert not (_fresh.get("executive_summary") or _fresh.get("concept") or _fresh.get("vision") or _fresh.get("provenance")), (
+        "a fresh plan is no longer the state this leg is about", _fresh)
+    _bp = _nojsx((_SRC / "pages" / "enterprise" / "BusinessPlan.tsx").read_text(encoding="utf-8"))
+    _blk = _bp[_bp.index("{plan && ("):_bp.index("Strategic Layer")]
+    _card, _mount = _blk.index('data-testid="chiefs-opening"'), _blk.index("<PlanOpening")
+    assert _card < _mount, "the opening is mounted outside its card"
+    _between = _blk[_blk.index("plan-generate-note"):_card]
+    _between = _between[_between.index("\n"):]
+    assert "&& (" not in _between and "? (" not in _between, ("the opening card is behind a condition again", _between)
+    assert _between.strip().startswith("<Card"), _between
+    _po = (_SRC / "components" / "PlanOpening.tsx").read_text(encoding="utf-8")
+    _empty = _po[_po.index("{!anyText && ("):_po.index("{edit && (")]
+    assert 'data-testid="plan-owner-edit-open"' in _empty and "No opening recorded yet" in _empty
+    assert "const anyText = shown.some(([k]) => (plan as any)[k]);" in _po and "{anyText && (" in _po   # the other way
+
+    # -- 5. R3.5: THE OWNER'S INSTRUCTION IS NOT DISPLACED BY THE TWIN'S RESTATEMENTS ---------------------------
+    from agentic_core.api import board as _BD
+    _est = client.post("/api/v1/genesis/establish", json={
+        "problem": "A village bakery cooperative selling bread to the local primary school",
+        "name": "W671 Board Probe", "owner_id": "pytest", "ship_output": False})
+    assert _est.status_code == 200, _est.text[:300]
+    _vid = _est.json()["vsb_id"]
+
+    def _own(i, scope=None):
+        return {"directive_id": f"dir-own{i}", "instruction": f"Publish the autumn timetable {i}", "unprompted": False,
+                "created_at": f"t-own{i}", **({"business_plan_scope": scope} if scope else {})}
+
+    def _twin(i, scope=None):
+        _s = {"business_plan_scope": scope} if scope else {}
+        return [{"directive_id": f"dir-t{i}", "instruction": "Publish the autumn timetable", "unprompted": True,
+                 "instruction_source": "the Owner's twin, restating", "created_at": f"t{i}", **_s},
+                {"directive_id": f"dir-t{i}", "kind": "twin_directive_unprompted", "basis": "ISSUED UNPROMPTED",
+                 "created_at": f"t{i}", **_s}]
+
+    def _status(rows, scope=None):
+        monkeypatch.setattr(_BD, "_load", lambda: list(rows))
+        _r = client.get("/api/v1/board/status", params=({"scope": scope} if scope else {}))
+        monkeypatch.undo()
+        assert _r.status_code == 200, _r.text[:300]
+        return _r.json()
+
+    _s = _status([_own(1)] + _twin(1) + _twin(2) + _twin(3))
+    assert len(_s["recent_directives"]) == 5 and all(r.get("directive_id") != "dir-own1" for r in _s["recent_directives"]), (
+        "the fixture does not displace the Owner's row, so the leg below proves nothing")
+    assert _s["latest_owner_instruction"]["directive_id"] == "dir-own1", _s.get("latest_owner_instruction")
+    assert _s["latest_owner_instruction"]["instruction"] == "Publish the autumn timetable 1"
+    assert "; 5 of them are the twin's" in _s["recent_directives_basis"], _s["recent_directives_basis"]
+    _s2 = _status(_twin(1))                                   # the other way: the Owner instructed nothing
+    assert _s2["latest_owner_instruction"] is None and "; 2 of them are the twin's" in _s2["recent_directives_basis"], _s2
+    _s3 = _status(_twin(1) + [_own(1), _own(2)])              # ...and when it IS among the five, the latest one
+    assert _s3["latest_owner_instruction"]["directive_id"] == "dir-own2" and "; 2 of them" in _s3["recent_directives_basis"]
+    #     an entity's own board: only its scope's rows, and another scope's later instruction is not its own
+    _sv = _status([_own(1, _vid)] + _twin(1, _vid) + _twin(2, _vid) + _twin(3, _vid) + [_own(9, "vsb-someone-else")], _vid)
+    assert all(r.get("business_plan_scope") == _vid for r in _sv["recent_directives"]), _sv["recent_directives"]
+    assert _sv["latest_owner_instruction"]["directive_id"] == "dir-own1", _sv.get("latest_owner_instruction")
+    assert "; 5 of them are the twin's" in _sv["recent_directives_basis"], _sv["recent_directives_basis"]
+    _pg = (_SRC / "pages" / "enterprise" / "BoardOfDirectors.tsx").read_text(encoding="utf-8")
+    _list = _pg[_pg.index("Recent Board Deliberations"):_pg.index("Board roster")]
+    assert "{(d as any).unprompted === true && (" in _list and "title={String((d as any).instruction_source ?? '')}" in _list
+    _lo = _pg.index('data-testid="latest-owner-instruction"')
+    assert _lo < _pg.index("(status?.recent_directives ?? []).filter("), "the Owner's row is inside the list's own condition"
+    assert "{String(status.latest_owner_instruction.instruction)}" in _pg[_lo:_lo + 600], "the row is not rendered as text"
+    assert "latest_owner_instruction?: {" in _pg and "recent_directives_basis?: string;" in _pg
+
+    # -- 6. R3.6: THE SWARM TAB SAYS WHICH AXIS IT RUNS AND POSTS THE SAME ONE ----------------------------------
+    from agentic_core.api.swarm import CascadeRequest
+    _si = (_SRC / "components" / "organism" / "SwarmIntelligence.tsx").read_text(encoding="utf-8")
+    _m = re.search(r"const CASCADE_AXIS = \{ domain: '(\w+)', realm: '(\w+)' \} as const;", _si)
+    assert _m, "the axis this tab posts is not one named constant"
+    _body = _si[_si.index("fetch('/api/v1/swarm/cascade'"):_si.index("if (response.ok)")]
+    assert "...CASCADE_AXIS," in _body and "domain: '" not in _body and "realm: '" not in _body, _body
+    assert "coe_specialisms" not in _body, "the notice says no CoE specialism is sent, and one is"
+    for _tid in ('data-testid="cascade-axis-fixed"', 'data-testid="cascade-axis"'):
+        _span = _si[_si.index(_tid):]
+        _span = _span[:_span.index("</span>")]
+        assert "{CASCADE_AXIS.domain}" in _span and "{CASCADE_AXIS.realm}" in _span, (_tid, _span)
+    #     the API accepts the posted axis AND another one, and its own default is not what this tab sends
+    assert CascadeRequest(mission="x", domain=_m.group(1), realm=_m.group(2)).domain == _m.group(1)
+    _other = CascadeRequest(mission="x", domain="religion", realm="scholarship", coe_specialisms=["Tajwid"])
+    assert (_other.domain, _other.realm, _other.coe_specialisms) == ("religion", "scholarship", ["Tajwid"])
+    assert CascadeRequest(mission="x").domain == "general" != _m.group(1)
+
+
+def test_w672_a_figure_or_a_ledger_row_says_what_it_counts(client, monkeypatch):
+    """W672 - ledger v16 tier-2, round C: six figures and records that did not say what they count.
+
+    Every leg DRIVES the state both ways. Nothing here changes a verdict, refuses or gates anything: each
+    fix adds the fact beside the figure, and each leg also holds the old field to its old meaning."""
+    import pathlib
+    import uuid
+    _src = pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+
+    def _page(rel):
+        return (_src / rel).read_text(encoding="utf-8")
+
+    # -- 1. R4.3 A COMPOSED GENOME carries the engine's own "not encoded" label ---------------------------
+    from agentic_core.organism import genome as _gm
+
+    def _genome_run(tag):
+        _c = client.post("/api/v1/resources/compose", json={
+            "name": f"W672 genome {tag}", "usage_area": "synthesis", "resource_ids": ["genome"],
+            "config": {"genome": {"entity_name": "W672 Probe"}}})
+        assert _c.status_code in (200, 201), _c.text[:300]
+        _r = client.post(f"/api/v1/resources/compositions/{_c.json()['id']}/run",
+                         json={"objective": "a hive-health monitor for smallholders"})
+        assert _r.status_code == 200, _r.text[:300]
+        return next(x for x in _r.json()["real_resource_runs"] if x["resource"] == "genome")
+
+    def _engine(encoded):
+        async def _fake(req):
+            _g = {"genome_id": f"genome-w672{'e' if encoded else 'd'}",
+                  "traits": {a: (0.9 if encoded and a == _gm._TRAIT_AXES[0] else 0.5) for a in _gm._TRAIT_AXES},
+                  "fitness_score": 0.7 if encoded else 0.5,
+                  "fitness_provenance": "W672-PROV declared" if encoded else "W672-PROV default",
+                  "encoded": encoded, "served_by": "w672-model" if encoded else "native",
+                  "is_external": False, "expression": ""}
+            if not encoded:
+                _g["encoding_note"] = "W672-NOTE nothing was encoded"
+            return _g
+        return _fake
+
+    monkeypatch.setattr(_gm, "encode_genome", _engine(False))
+    _gd = _genome_run("defaults")
+    assert _gd["encoded"] is False, ("a genome that encoded nothing does not say so on the run", _gd)
+    assert _gd["encoding_note"] == "W672-NOTE nothing was encoded" and _gd["fitness_provenance"] == "W672-PROV default", (
+        "the engine's own note or provenance was dropped or retyped", _gd)
+    assert _gd["served_by"] == "native" and _gd["is_external"] is False, _gd
+    assert _gd["outcome"] == "produced" and _gd["fitness"] == 0.5, ("the outcome or the figure changed", _gd)
+    monkeypatch.setattr(_gm, "encode_genome", _engine(True))
+    _ge = _genome_run("encoded")
+    assert _ge["encoded"] is True and _ge.get("encoding_note") is None and _ge["served_by"] == "w672-model", (
+        "a genome that DID encode is no longer reported as encoded", _ge)
+    assert _ge["fitness_provenance"] == "W672-PROV declared" and _ge["outcome"] == "produced", _ge
+    monkeypatch.undo()
+    _gr = _genome_run("real engine")        # the real engine, whatever serves it: the two labels agree
+    assert isinstance(_gr["encoded"], bool) and _gr["fitness_provenance"] and _gr["served_by"], _gr
+    assert (_gr["encoded"] is False) == bool(_gr.get("encoding_note")), (
+        "the run's encoded flag and the engine's note disagree", _gr)
+    _rf = _page("pages/synthesis/ResourceFabric.tsx")
+    _at = _rf.index("real-runs-heading")
+    _chain = _rf[_at:_rf.index("typeof rr.viable === 'boolean'", _at)]
+    assert _chain.index("rr.encoded === false") < _chain.index(">ran</span>"), (
+        "the not-encoded chip is not reached before the green one")
+    assert "rr.encoding_note ||" in _chain and "returned defaults (not encoded)" in _chain
+    assert "r.encoded === false).length} of those that ran returned defaults" in _chain, (
+        "the heading still counts a run that encoded nothing as plainly having run an engine")
+
+    # -- 2. R4.7 A ROW WRITTEN OVER THE ROUTE is marked as the caller's claim -------------------------------
+    import agentic_core.api.operational_excellence as _oe
+    _rw = client.post("/api/v1/operations/record", json={
+        "kind": "swarm", "resource": "w672-probe", "served_by": "claude-opus", "is_external": False,
+        "reported_by": "platform"})          # a caller cannot write the platform's stamp for itself
+    assert _rw.status_code == 200, _rw.text[:300]
+    _row = _rw.json()
+    assert _row["served_by"] == "claude-opus" and _row["reported_by"] == "caller", (
+        "a row written over the public route is not marked as the caller's claim", _row)
+    _own = _oe.record_outcome("swarm", "w672-probe", served_by="native", is_external=True)
+    assert _own["reported_by"] == "platform", ("the platform's own run path is marked as a caller", _own)
+    _legacy = {"id": "op-w672legacy", "kind": "swarm", "resource": "w672-probe", "served_by": "native",
+               "is_external": False, "success": True, "produced": True}
+
+    def _summary(rows):
+        monkeypatch.setattr(_oe, "_load", lambda: list(rows))
+        _s = client.get("/api/v1/operations/summary")
+        assert _s.status_code == 200, _s.text[:300]
+        return _s.json()
+
+    _s3 = _summary([_row, _own, _legacy])
+    assert _s3["total_runs"] == 3 and _s3["caller_reported_runs"] == 1, _s3
+    assert _s3["in_house_rate"] == round(2 / 3, 3), ("the in-house rate changed its population", _s3)
+    assert _s3["in_house_rate_excluding_caller_reported"] == 0.5, _s3
+    _b3 = _s3["in_house_rate_basis"]
+    assert "2 of 3 row(s) are not marked external" in _b3 and "1 of the 3 were written through POST /operations/record" in _b3, _b3
+    assert "CALLER'S claim" in _b3 and "1 row(s) carry no reported_by" in _b3, _b3
+    _s1 = _summary([_own])
+    assert _s1["caller_reported_runs"] == 0 and _s1["in_house_rate_excluding_caller_reported"] == _s1["in_house_rate"] == 0.0, _s1
+    assert "None of them was written through POST /operations/record" in _s1["in_house_rate_basis"], _s1
+    assert "CALLER'S claim" not in _s1["in_house_rate_basis"] and "Every row says who reported it" in _s1["in_house_rate_basis"], (
+        "a summary with no caller row still says some rows are a caller's claim", _s1["in_house_rate_basis"])
+    _s0 = _summary([_row])
+    assert _s0["caller_reported_runs"] == 1 and _s0["in_house_rate_excluding_caller_reported"] is None, (
+        "a rate over no platform row is a number", _s0)
+    monkeypatch.undo()
+    #    the designed behaviour an older test holds: a caller-reported attempt still scores a model's health
+    for _ in range(3):
+        assert client.post("/api/v1/operations/record", json={
+            "kind": "model_attempt", "resource": "model:w672", "served_by": "w672flaky",
+            "success": False}).status_code == 200
+    assert _oe.model_health()["w672flaky"]["runs"] >= 3, "caller-reported attempts no longer reach model health"
+    _op = _page("pages/OperationalExcellence.tsx")
+    assert 'data-testid="ops-in-house-basis"' in _op and "{summary.in_house_rate_basis}" in _op
+    assert "{summary?.in_house_rate_basis && (" in _op, "the basis line is behind a gate that is not its own field"
+    assert "o.reported_by === 'caller'" in _op and 'data-testid="outcome-caller-reported"' in _op
+
+    # -- 3. R6.5 A FUND ALLOCATION says what it passed, and leaves an audit event ---------------------------
+    from agentic_core.gaas import v5 as _g5
+    import agentic_core.economy.living_vsbs as _lv
+    _kind = "economy.capital_fund.allocation"
+    _seen = []
+    _real_log = _g5.UEGLogger.log
+
+    def _spy(self, ev, *a, **k):
+        if isinstance(ev, dict) and ev.get("type") == _kind:
+            _seen.append(dict(ev))
+        return _real_log(self, ev, *a, **k)
+
+    def _alloc(pid):
+        _a = client.post("/api/v1/fund/allocate", json={"project_id": pid, "project_name": "w672 guard",
+                                                        "amount": 1.0, "purpose": "guard"})
+        assert _a.status_code == 200, ("an allocation that went through before is refused now", _a.status_code, _a.text[:300])
+        assert _a.json()["status"] == "allocated", _a.json()
+        return _a.json()
+
+    _pid = f"w672-no-such-thing-{uuid.uuid4().hex[:6]}"
+    monkeypatch.setattr(_g5.UEGLogger, "log", _spy)
+    monkeypatch.setattr(_lv, "is_registered", lambda vid: False)
+    _a1 = _alloc(_pid)
+    _g1 = _a1["governance"]
+    assert _g1["recipient_registered"] is False and _g1["gate"] == "not applied" and _g1["change_control"] == "not applied", _g1
+    assert "UNGOVERNED RECORD" in _g1["basis"] and f"names '{_pid}', which is not a registered entity" in _g1["basis"], _g1["basis"]
+    assert _g1["audit_event"] == "recorded" and _g1["credited_to"] is None, _g1
+    monkeypatch.setattr(_lv, "is_registered", lambda vid: True)
+    _g2 = _alloc(_pid)["governance"]
+    assert _g2["recipient_registered"] is True and "names a registered entity" in _g2["basis"] and _pid not in _g2["basis"], _g2
+
+    def _unreadable(vid):
+        raise RuntimeError("driven")
+    monkeypatch.setattr(_lv, "is_registered", _unreadable)
+    _g3 = _alloc(_pid)["governance"]            # not known is said, and is never answered as yes or no
+    assert _g3["recipient_registered"] is None and "could not be read (RuntimeError)" in _g3["basis"], _g3
+    assert [e["recipient_registered"] for e in _seen] == [False, True, None], ("the audit events", _seen)
+    assert all(e["gate"] == "not applied" and e["project_id"] == _pid and e["amount_wst"] == 1.0 for e in _seen), _seen
+    _stored = {r["allocation_id"]: r for r in client.get("/api/v1/fund/portfolio").json()["allocations"]}
+    assert _stored[_a1["allocation_id"]]["governance"]["basis"] == _g1["basis"], (
+        "the stored row does not carry what the response said")
+    assert _stored[_a1["allocation_id"]]["status"] == "active"
+
+    def _log_fails(self, ev, *a, **k):
+        if isinstance(ev, dict) and ev.get("type") == _kind:
+            raise RuntimeError("driven")
+        return _real_log(self, ev, *a, **k)
+    monkeypatch.setattr(_g5.UEGLogger, "log", _log_fails)
+    assert _alloc(_pid)["governance"]["audit_event"] == "NOT recorded (RuntimeError)", (
+        "an audit event that was not written is reported as recorded")
+    monkeypatch.undo()
+    _wl = _page("pages/profile/Wallet.tsx")
+    assert 'data-testid="wallet-allocation-governance"' in _wl and "{alloc.governance.basis}" in _wl
+    assert "{alloc.governance?.basis && (" in _wl, "the governance line is behind a gate that is not its own field"
+
+    # -- 4. R6.6 GAP SENSING says it reads presence checks --------------------------------------------------
+    from agentic_core.api import transformation as _tr
+
+    def _pillar(pid, met, of):
+        _frac = round(met / of, 3) if of else 0.0
+        return {"id": pid, "pillar": pid, "realisation": _frac,
+                "status": "realised" if _frac >= 0.999 else ("partial" if _frac > 0 else "seed"),
+                "evidence": [{"label": f"{pid}-{i}", "met": i < met} for i in range(of)],
+                "checks_met": met, "checks_assessed": of,
+                "checks_status": ("no check could be assessed" if not of else "all checks present" if met == of
+                                  else "some checks present" if met else "no check present")}
+
+    def _picture(pillars):
+        monkeypatch.setattr(_tr, "_realise", lambda: {"overall_realisation": 0.5, "measure": "API surface coverage",
+                                                       "pillars": pillars})
+        _al = client.post("/api/v1/cognition/align", json={"execute": False})
+        assert _al.status_code == 200, _al.text[:300]
+        return _al.json(), _tr._transformation_plan(_tr._realise())
+
+    _al1, _tp1 = _picture([_pillar("organism", 3, 3), _pillar("governance", 1, 2), _pillar("economy", 0, 0)])
+    assert [g["gap"] for g in _al1["gaps_routed"]] == ["governance", "economy"], _al1["gaps_routed"]
+    _gb1 = _al1["gaps_basis"]
+    assert _gb1.startswith("2 of 3 pillar(s) are listed as a gap") and "for 1 of them - no check that could be assessed" in _gb1, _gb1
+    assert "The other 1 pass every presence check" in _gb1 and "not a statement that they are delivered" in _gb1, _gb1
+    assert _tp1["immediate_gaps_basis"] == _gb1 and len(_tp1["immediate_gaps"]) == 2, (
+        "the plan and the alignment state two different bases for the same selection", _tp1)
+    _em = client.get("/api/v240/evolution/metrics").json()       # the same three pillars: one passes every check
+    assert _em["dimensions_all_checks_present"] == _em["dimensions_realised"] == 1 and _em["dimensions_total"] == 3, _em
+    assert "neither is a measure of delivery" in _em["dimensions_basis"], _em["dimensions_basis"]
+    _al2, _tp2 = _picture([_pillar("organism", 3, 3), _pillar("governance", 2, 2)])
+    _gb2 = _al2["gaps_basis"]
+    assert _al2["gaps_routed"] == [] and _tp2["immediate_gaps"] == [], _al2
+    assert _gb2.startswith("0 of 2 pillar(s) are listed as a gap") and "The other 2 pass every presence check" in _gb2, _gb2
+    assert "not a statement that they are delivered" in _gb2 and "could be assessed" not in _gb2, (
+        "an empty gap list is not said to be coverage only", _gb2)
+    _em2 = client.get("/api/v240/evolution/metrics").json()
+    assert _em2["dimensions_all_checks_present"] == _em2["dimensions_realised"] == 2 and _em2["dimensions_total"] == 2, _em2
+    monkeypatch.undo()
+    _hm = _page("pages/organism/HeartbeatMonitor.tsx")
+    _hrow = _hm[_hm.index("key: 'auto_align'"):_hm.index("key: 'auto_ship'")]
+    assert "not a measure of delivery" in _hrow and "missing route or an empty store" in _hrow and "vision gap" not in _hrow, _hrow
+    _td = _page("pages/TransformationDashboard.tsx")
+    assert _td.index('data-testid="immediate-gaps-basis"') < _td.index("pic.transformation_plan.immediate_gaps.length > 0 &&"), (
+        "the basis is drawn only when a gap is listed, so an empty list still reads as no gaps")
+    assert "{pic.transformation_plan.immediate_gaps_basis && (" in _td, "the basis is behind a gate that is not its own field"
+    _ci = _page("pages/CognitionIntegration.tsx")
+    assert 'data-testid="align-no-gaps"' in _ci and "align.gaps_basis ||" in _ci and "Fully aligned" not in _ci, (
+        "an empty gap list is still printed as alignment")
+    #    a SOURCE leg, and only that: the deep prompt is reached with a model, which this suite does not have
+    _to = (_src.parents[2] / "agentic_core" / "api" / "transformation_orchestration.py").read_text(encoding="utf-8")
+    assert "Pillars with an unmet presence check (API coverage, not delivery): " in _to and 'f"Open gaps: ' not in _to
+
+    # -- 5. R6.8 A CYCLE THAT SPENT MORE THAN IT TOOK IN says so -------------------------------------------
+    from agentic_core.economy.metabolism import EconomicMetabolism as _EM
+
+    def _cycle(revenue, costs, preserved):
+        _m = _EM(f"w672-cyc-{uuid.uuid4().hex[:8]}")
+        _m.template = dict(_m.template, capital_preserved=preserved)
+        _rep = _m.run_cycle(revenue, costs)
+        return _rep, _rep["intake_revenue"], _rep["operating_costs"], _rep["homeostasis_reserves"]
+
+    _lo, _rev, _cost, _res = _cycle(100.0, 500.0, True)
+    assert _cost > _rev, ("the loss state was not driven", _lo)
+    assert _lo["distributable_profit"] == 0.0 and _lo["capital_preserved"] is True, _lo
+    assert _lo["cycle_result_wst"] == round(_rev - _cost - _res, 2) < 0, _lo
+    assert _lo["operating_loss_wst"] == round(_cost - _rev, 2) > 0, _lo
+    assert _lo["shortfall_after_reserve_wst"] == round(_cost + _res - _rev, 2), _lo
+    assert _lo["cycle_result_basis"].startswith("LOSS: ") and "Nothing was distributable" in _lo["cycle_result_basis"], _lo["cycle_result_basis"]
+    assert "must keep a capital_fund share above zero" in _lo["capital_preserved_basis"], _lo["capital_preserved_basis"]
+    assert "not a statement about what this cycle did to capital" in _lo["capital_preserved_basis"]
+    _sq, _rev, _cost, _res = _cycle(100.0, 90.0, False)
+    assert _cost < _rev and _res > 0 and _cost + _res > _rev, ("the reserve-exceeds-the-remainder state was not driven", _sq)
+    assert _sq["cycle_result_wst"] == round(_rev - _cost - _res, 2) < 0 and _sq["operating_loss_wst"] == 0.0, _sq
+    assert _sq["shortfall_after_reserve_wst"] == round(_cost + _res - _rev, 2) > 0 and _sq["distributable_profit"] == 0.0, _sq
+    assert "LOSS" not in _sq["cycle_result_basis"] and "exceeded that by" in _sq["cycle_result_basis"], _sq["cycle_result_basis"]
+    assert "does not carry it" in _sq["capital_preserved_basis"] and _sq["capital_preserved"] is False, _sq["capital_preserved_basis"]
+    _ok, _rev, _cost, _res = _cycle(500.0, 100.0, True)
+    assert _ok["cycle_result_wst"] == _ok["distributable_profit"] == round(_rev - _cost - _res, 2) > 0, _ok
+    assert _ok["operating_loss_wst"] == 0.0 and _ok["shortfall_after_reserve_wst"] == 0.0, _ok
+    assert "LOSS" not in _ok["cycle_result_basis"] and _ok["cycle_result_basis"].endswith(" distributable"), _ok["cycle_result_basis"]
+    _ve = _page("pages/enterprise/VSBEconomy.tsx")
+    _blk = _ve[_ve.index("{/* Cycle result */}"):_ve.index("energy-unmeasured")]
+    assert 'data-testid="cycle-shortfall"' in _blk and "{cycle.cycle_result_basis}" in _blk
+    assert "{(cycle.cycle_result_wst ?? 0) < 0 && (" in _blk, "the shortfall line is behind a gate that is not the signed result"
+    assert "tone={cycle.distributable_profit > 0 ? 'good' : undefined}" in _blk, (
+        "a zero distributable is still drawn in the good tone")
+
+    # -- 6. R6.9 A CONTRACT DELIVERY says no KPI check was made on it - and none was ------------------------
+    import agentic_core.api.business_plan as _bp
+    _gate_calls = []
+
+    def _refusing_gate(vsb_id):
+        _gate_calls.append(vsb_id)
+        return {"ok": False, "reason": "kpi_not_set", "objectives": 1, "missing": [{"id": "o1", "title": "driven"}],
+                "detail": "driven refusal. " + _bp._KPI_GATE_SCOPE}
+    _ca = client.post("/api/v1/genesis/establish", json={"problem": "w672 client venture", "ship_output": False,
+                                                         "name": "W672 Client"}).json()["vsb_id"]
+    _pb = client.post("/api/v1/genesis/establish", json={"problem": "w672 provider venture", "ship_output": False,
+                                                         "name": "W672 Provider"}).json()["vsb_id"]
+    _ctr = client.post("/api/v1/economy/contracts", json={"client_vsb": _ca, "provider_vsb": _pb,
+                                                          "brief": "produce a supply playbook", "price_wst": 10.0}).json()
+    assert client.post(f"/api/v1/economy/contracts/{_ctr['id']}/accept").json().get("status") == "accepted"
+    monkeypatch.setattr(_bp, "kpi_release_gate", _refusing_gate)     # a gate that would refuse EVERY entity
+    _dl = client.post(f"/api/v1/economy/contracts/{_ctr['id']}/deliver").json()
+    assert _dl.get("status") == "delivered", ("a contract delivery is refused now - nothing new may be gated", _dl)
+    _kg = _dl["delivery"]["kpi_gate"]
+    assert _gate_calls == [] and _kg["applied"] is bool(_gate_calls), (
+        "the delivery's statement about the gate does not match whether the gate was asked", _kg, _gate_calls)
+    assert _kg["basis"].startswith("No KPI check was made on either party") and _kg["basis"].endswith(_bp._KPI_GATE_SCOPE), _kg
+    assert "delivering or settling a contract" in _bp._KPI_GATE_SCOPE and "MARKETPLACE LISTING only" in _bp._KPI_GATE_SCOPE
+    #    the other way, on the door where the gate IS applied: the same entity is asked about, and refused
+    _ls = client.post("/api/v1/marketplace/listings", json={"name": "W672 probe listing", "description": "a probe",
+                                                            "vsb_id": _pb})
+    assert _ls.status_code == 409 and _gate_calls == [_pb], (_ls.status_code, _gate_calls, _ls.text[:200])
+    assert "delivering or settling a contract" in _ls.text, _ls.text[:400]
+    monkeypatch.undo()
+    _sc = _page("pages/enterprise/ServiceContracts.tsx")
+    assert 'data-testid="contract-kpi-gate"' in _sc and "c.delivery?.kpi_gate?.applied === false" in _sc
+
+
+def test_w670_a_record_says_what_was_compared_decided_and_measured(client, monkeypatch):
+    """W670 - ledger v16 tier-2, the record batch: seven statements a record or a response made that were
+    not true. Each leg drives the state both ways; the statement that is true in some state is still made
+    in that state."""
+    import pathlib
+    import types
+    _root = pathlib.Path(__file__).resolve().parents[1]
+
+    # -- 1. R1.2 A COVERAGE THE GATE CALLS NOT ASSESSABLE is no baseline to regress from --------------------
+    _secs = ["Objective", "Method", "Budget"]
+    _pad = ("The service feeds two hundred and forty people a day from three kitchens, bought weekly from "
+            "two local growers and one wholesaler, and it is run by volunteers on a fixed rota. ")
+    _frame = f"# Plan\n\n## Objective\n{_pad}\n\n## Method\n{_pad}\n\n## Budget\n{_pad}\n"
+    _own_part = f"# Plan\n\n## Objective\n{_pad}{_pad}{_pad}\n"
+    _own_full = f"# Plan\n\n## Objective\n{_pad}\n\n## Method\n{_pad}{_pad}\n\n## Budget\n{_pad}{_pad}\n"
+    _d = client.post("/api/v1/deliverables/produce", json={
+        "type": "brief", "brief": "w670 r1.2", "content": _frame, "sections": _secs, "source_served_by": "native"})
+    assert _d.status_code == 200, _d.text[:300]
+    _d = _d.json()
+    _q0 = _d["quality_assurance"]["quality"]
+    assert _q0["not_assessable"] is True and _q0["delivery_coverage"] == 1.0, (
+        "the starting version is assessable, so this leg cannot drive the defect", _q0)
+
+    def _regen(body):
+        _r = client.post(f"/api/v1/deliverables/{_d['id']}/regenerate", json=body)
+        assert _r.status_code == 200, _r.text[:300]
+        _j = _r.json()
+        return _j["improvement"], _j["quality_assurance"]["quality"]
+
+    _i1, _q1 = _regen({"content": _own_part})                  # a frame replaced by a person's own text
+    assert _q1["not_assessable"] is False and _q1["delivery_coverage"] < 1.0, _q1
+    assert _i1["verdict"] == "not_compared" and _i1["not_compared_because"] == ["the version replaced"], (
+        "a person's own text is scored against a coverage that could not fail", _i1)
+    assert _i1["coverage_delta"] is None and _i1["coverage_before"] == 1.0 and _i1["coverage_after"] == _q1["delivery_coverage"], _i1
+    assert _i1["note"].startswith("Not compared: ") and "the version replaced" in _i1["note"] and "scored LOWER" not in _i1["note"], _i1["note"]
+    _i2, _q2 = _regen({"content": _own_full})                  # both assessable: the comparison is made
+    assert _q2["not_assessable"] is False and _i2["verdict"] == "improved" and _i2["coverage_delta"] > 0, (
+        "two assessable versions are no longer compared", _i2)
+    assert _i2["not_compared_because"] is None and _i2["note"] is None, _i2
+    _i3, _ = _regen({"content": _own_part})                    # and a real regression is still called one
+    assert _i3["verdict"] == "regressed" and _i3["coverage_delta"] < 0 and "scored LOWER" in _i3["note"], (
+        "a regression between two assessable versions is no longer reported", _i3)
+    assert _i3["not_compared_because"] is None, _i3
+    _i4, _q4 = _regen({"content": _frame, "source_served_by": "native"})
+    assert _q4["not_assessable"] is True and _i4["verdict"] == "not_compared", (_q4, _i4)
+    assert _i4["not_compared_because"] == ["this version"] and "this version" in _i4["note"], _i4
+    _i5, _ = _regen({"content": _frame, "source_served_by": "native"})   # a frame replaced by a frame
+    assert _i5["verdict"] == "not_compared" and _i5["not_compared_because"] == ["the version replaced", "this version"], (
+        "a frame replaced by a frame is reported unchanged", _i5)
+
+    # -- 2. R4.4 A DEFENCE THAT SET A SWITCH NOTHING ACTS ON does not answer "reconfigured" ---------------
+    import agentic_core.organism.biobus as _bb
+
+    def _engage(level):
+        _r = client.post("/api/v1/cca/immune-reconfigure", json={"simulate_threat": level})
+        assert _r.status_code == 200, _r.text[:300]
+        _j = _r.json()
+        client.post(f"/api/v1/cca/immune-reconfigure/{_j['cca_id']}/revert")
+        return _j
+
+    _el = _engage("ELEVATED")                                  # its lever has no consumer at all
+    assert _el["status"] == "approved", ("ELEVATED is recorded implemented, so this leg reads the wrong state", _el["status"])
+    assert _el["action"] == "lever_set_nothing_acts_on_it", _el["action"]
+    assert _el["message"].endswith("(approved) - the value is stored and nothing acts on it."), _el["message"]
+    monkeypatch.setattr(_bb, "atp_depletion_state", lambda: {"can_deplete": True})
+    _hi = _engage("HIGH")                                      # a consumer that can act
+    assert _hi["status"] == "implemented" and _hi["action"] == "reconfigured", (
+        "a defence that WAS implemented no longer answers reconfigured", _hi["status"], _hi["action"])
+    assert _hi["message"].endswith("(implemented).") and "nothing acts on it" not in _hi["message"], _hi["message"]
+    monkeypatch.setattr(_bb, "atp_depletion_state", lambda: {"can_deplete": False})
+    _hd = _engage("HIGH")                                      # the same lever, its consumer unable to act
+    assert _hd["status"] != "implemented" and _hd["action"] == "lever_set_nothing_acts_on_it", (_hd["status"], _hd["action"])
+    assert "nothing acts on it" in _hd["message"], _hd["message"]
+    monkeypatch.undo()
+
+    # -- 3. R4.8 ONE OBSERVER'S OWN CONFIDENCE is not a consensus ------------------------------------------
+    def _consensus(claims):
+        _r = client.post("/api/v1/collective/consensus", json={"threshold": 0.85, "claims": claims})
+        assert _r.status_code == 200, _r.text[:300]
+        return _r.json()
+
+    _one = _consensus([{"claim": "the supplier is certified", "confidence": 0.99, "reputation": 1.0}])
+    _o = _one["results"][0]
+    assert _o["accepted"] is False and _one["accepted"] == 0, ("one observation is accepted as a consensus", _one)
+    assert _o["observations"] == 1 and _o["basis"].startswith("ONE observation") and "no consensus was reached" in _o["basis"], _o
+    assert _o["consensus_confidence"] == 0.99, ("the figure itself was changed", _o)
+    _two = _consensus([{"claim": "the supplier is certified", "confidence": 0.95, "reputation": 2.0},
+                       {"claim": "the supplier is certified", "confidence": 0.9, "reputation": 1.0}])
+    _t = _two["results"][0]
+    assert _t["accepted"] is True and _two["accepted"] == 1 and _t["observations"] == 2, (
+        "two agreeing observations above the threshold are no longer accepted", _two)
+    assert _t["basis"].startswith("2 observations") and "ONE observation" not in _t["basis"], _t["basis"]
+    _low = _consensus([{"claim": "the price is optimal", "confidence": 0.4, "reputation": 1.0},
+                       {"claim": "the price is optimal", "confidence": 0.5, "reputation": 1.0}])
+    assert _low["results"][0]["accepted"] is False and _low["results"][0]["basis"].startswith("2 observations"), _low
+
+    # -- 4. R4.6 THE MONITOR'S "ACCURACY" says what it is computed from ------------------------------------
+    _dg = client.get("/api/v1/operations/degradation", params={"cycles": 3, "window": 3})
+    assert _dg.status_code == 200, _dg.text[:300]
+    _dg = _dg.json()
+    assert "accuracy_change" in _dg and "latency_change" in _dg, ("the detector's own keys moved", sorted(_dg))
+    assert "RETURNED OUTPUT" in _dg["accuracy_basis"] and "no quality gate" in _dg["accuracy_basis"], _dg["accuracy_basis"]
+
+    # -- 5. R5.4 A SHARE OF PRESENCE CHECKS is not "realisation" -----------------------------------------
+    from agentic_core.api import transformation as _tr
+
+    def _recs(overall):
+        monkeypatch.setattr(_tr, "_realise", lambda: {"overall_realisation": overall, "pillars": []})
+        _r = client.get("/api/v260/user/recommendations")
+        assert _r.status_code == 200, _r.text[:300]
+        return {x["id"]: x for x in _r.json()["recommendations"]}
+
+    _half = _recs(0.5)
+    assert _half["r-transform"]["reason"] == ("50% of presence checks pass - routes mounted and stores non-empty; "
+                                             "coverage, not delivery"), _half["r-transform"]
+    assert "realisation at" not in _half["r-transform"]["reason"]
+    assert "r-transform" not in _recs(1.0), "a full count of presence checks still recommends closing a gap"
+    monkeypatch.undo()
+
+    # -- 6. R4.9 THE HORMONE NAME is a label for three plain cases, and the case is stated ------------------
+    import agentic_core.app_mvp as _app
+    import agentic_core.projects.api as _pa
+
+    def _signal(sockets, running):
+        monkeypatch.setattr(_app._ws, "connections", [object()] * sockets)
+        monkeypatch.setattr(_pa, "_all_projects", lambda: [types.SimpleNamespace(status="running", stage="build")] * running)
+        _r = client.get("/api/v1/biometrics/status")
+        assert _r.status_code == 200, _r.text[:300]
+        return _r.json()["communication"]
+
+    _c1 = _signal(1, 0)
+    assert _c1["neurotransmitter"] == "Dopamine" and _c1["is_active"] is True, _c1
+    assert _c1["basis"] == "a label, not a signal: it names which of three cases holds - a live socket is open", _c1["basis"]
+    _c2 = _signal(0, 1)
+    assert _c2["neurotransmitter"] == "Serotonin" and _c2["basis"].endswith("no socket is open and a project is running"), _c2
+    _c3 = _signal(0, 0)
+    assert _c3["neurotransmitter"] == "Oxytocin" and _c3["basis"].endswith("no socket is open and no project is running"), _c3
+    assert _c3["is_active"] is False and _c3["active_channels"] == [], _c3
+    monkeypatch.undo()
+    _in = (_root / "apps" / "workstation-superapp" / "src" / "pages" / "cognitive" / "Introspection.tsx").read_text(encoding="utf-8")
+    assert 'data-testid="signalling-basis"' in _in and "{bio.communication.basis || " in _in, (
+        "the page does not show what the name stands for")
+    assert "The organism reports which signalling mode is active" not in _in
+    assert "are not measured, so none are shown." in _in, "the true sentence about levels was removed with the false one"

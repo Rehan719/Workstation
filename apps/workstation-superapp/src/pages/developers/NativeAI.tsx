@@ -50,7 +50,7 @@ interface TreeRun {
 }
 // FU-010 (W508) — `vsb_id` added: the API has always returned it on a VSB-bound cascade, and the retire
 // confirmation needs it to say that deleting one also clears that entity's native_swarm pointer.
-interface SavedCascade { id: string; name: string; stages: Stage[]; usage_area: string; created_at: string; context?: string; vsb_id?: string | null }
+interface SavedCascade { id: string; name: string; stages: Stage[]; usage_area: string; created_at: string; context?: string; vsb_id?: string | null; template?: string | null; template_basis?: string }
 
 function kindIcon(kind: string) {
   if (kind === 'native') return Cpu;
@@ -1043,6 +1043,10 @@ export const NativeAI: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-black text-white text-sm">{c.name}</p>
+                      {c.template === 'platform-default' && (
+                        <span data-testid="cascade-template" title={c.template_basis}
+                              className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">platform default — not composed for this solution</span>
+                      )}
                       <p className="text-[9px] text-slate-600 font-bold uppercase mt-0.5">{c.stages.length} stages · {c.stages.map(s => s.role).join(' → ')}</p>
                     </div>
                     <div className="flex items-center gap-2">

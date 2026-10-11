@@ -1242,7 +1242,9 @@ def engage_immune_defence(threat: str | None = None, requested_by: str = "immune
         "immune_threat_measured": _measured_now,
         "impact_tier": plan["tier"],
         "status": change["status"],
-        "action": "reconfigured",
+        #  W670 (ledger v16 R4.4) - "reconfigured" was answered for a lever with no reader and for one whose
+        #  reader cannot act; the action is read from what the record says happened.
+        "action": ("reconfigured" if change["status"] == "implemented" else "lever_set_nothing_acts_on_it"),
         "reason": plan["why"],
         "ueg_logged": ueg_logged,
         "reconfiguration": {"section": plan["section"], "key": plan["key"], "value": plan["value"], "why": plan["why"]},
@@ -1253,7 +1255,9 @@ def engage_immune_defence(threat: str | None = None, requested_by: str = "immune
         "revert_with": (f"POST /api/v1/cca/immune-reconfigure/{cca_id}/revert" if change["reversible"]
                         else "nothing to revert - the lever was not applied, so no prior value was captured"),
         "governed_by": "Change Control Agency (arms-length)",
-        "message": f"Immune reconfigurator: {threat} → {plan['section']}.{plan['key']}={plan['value']} ({change['status']}).",
+        "message": (f"Immune reconfigurator: {threat} → {plan['section']}.{plan['key']}={plan['value']} "
+                    f"({change['status']})" + ("." if change["status"] == "implemented" else
+                                               " - the value is stored and nothing acts on it.")),
     }
 
 

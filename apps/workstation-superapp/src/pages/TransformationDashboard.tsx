@@ -14,7 +14,8 @@ interface Pillar { id: string; pillar: string; realisation: number; status: stri
 interface Picture {
   vision_summary: string;
   realisation: { overall_realisation: number; pillars: Pillar[]; evidence_counts: Record<string, any>; route_census?: { basis?: string; paths?: number } };
-  transformation_plan: { immediate_gaps: { pillar: string; realisation: number; missing: string[] }[]; short_term: string[]; long_term: string[]; plan_lists_basis?: string };
+  transformation_plan: { immediate_gaps: { pillar: string; realisation: number; missing: string[] }[]; short_term: string[]; long_term: string[]; plan_lists_basis?: string;
+    immediate_gaps_basis?: string };   // W672 (ledger v16 R6.6)
 }
 
 // W461 — verified is three-state: true (checked, passed) · false (checked, failed) · null (not assessable)
@@ -339,6 +340,10 @@ export const TransformationDashboard: React.FC = () => {
           {/* Transformation plan */}
           <Card className="p-6 border-highlight/30 bg-highlight/5">
             <h3 className="font-black text-highlight uppercase tracking-widest text-sm mb-4 flex items-center gap-2"><GitBranch size={16} /> Transformation Plan (gap → action)</h3>
+            {/* W672 (ledger v16 R6.6) - shown with or without a list: an empty list is where it is most misread */}
+            {pic.transformation_plan.immediate_gaps_basis && (
+              <p className="text-[10px] text-slate-500 leading-relaxed mb-3" data-testid="immediate-gaps-basis">{pic.transformation_plan.immediate_gaps_basis}</p>
+            )}
             {pic.transformation_plan.immediate_gaps.length > 0 && (
               <div className="mb-4">
                 <p className="text-[10px] font-black uppercase tracking-widest text-amber-400 mb-2">Immediate gaps</p>

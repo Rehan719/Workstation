@@ -29,6 +29,9 @@ interface Status {
   board: string; represents_owner: string; hierarchy: string[];
   chief: Director; directors: Director[]; live?: { organism_health?: number };
   recent_directives?: any[];
+  // W671 (ledger v16 R3.5)
+  latest_owner_instruction?: { directive_id?: string | null; instruction?: string | null; created_at?: string | null; business_plan_scope?: string | null } | null;
+  recent_directives_basis?: string;
 }
 interface ChiefResult {
   directive_reason?: string | null;   // W633 (FU-565)
@@ -370,6 +373,20 @@ export const BoardOfDirectors: React.FC = () => {
 
       {/* W279/W284 — recent board deliberations: the directors' REAL grounded inputs, previously
           typed on Status but never rendered */}
+      {/* W671 (ledger v16 R3.5) — the Owner's own latest instruction, shown whatever the five rows below hold */}
+      {status?.latest_owner_instruction?.instruction && (
+        <Card className="p-4 border-highlight/30" data-testid="latest-owner-instruction">
+          <p className="text-[9px] font-black uppercase tracking-widest text-highlight mb-1">Your latest instruction</p>
+          <p className="text-sm font-black text-white">{String(status.latest_owner_instruction.instruction)}</p>
+          <p className="text-[9px] text-slate-500">
+            {String(status.latest_owner_instruction.created_at ?? 'time not recorded')}
+            {status.latest_owner_instruction.business_plan_scope ? ` · scope ${String(status.latest_owner_instruction.business_plan_scope)}` : ''}
+          </p>
+        </Card>
+      )}
+      {status?.recent_directives_basis && (
+        <p className="text-[9px] text-slate-500" data-testid="recent-directives-basis">{status.recent_directives_basis}</p>
+      )}
       {(status?.recent_directives ?? []).filter((d: RecentDirective) => d.director_inputs || d.topic || d.instruction).length > 0 && (
         <div>
           <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2"><GitBranch size={14} /> Recent Board Deliberations</h3>
@@ -378,6 +395,10 @@ export const BoardOfDirectors: React.FC = () => {
               <Card key={i} className="p-5 space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-500">{d.kind ?? 'chief_instruction'}</span>
+                  {(d as any).unprompted === true && (
+                    <span data-testid="directive-unprompted" title={String((d as any).instruction_source ?? '')}
+                      className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400">restated by your Chief on a beat — not a new instruction from you</span>
+                  )}
                   {(d as any).status && (
                     <span data-testid="deliberation-status" title={(d as any).status_basis}
                       className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${(d as any).status === 'resolved' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>

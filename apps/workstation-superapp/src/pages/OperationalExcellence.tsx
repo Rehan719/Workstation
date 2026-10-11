@@ -11,6 +11,8 @@ interface Summary {
   distinct_resources: number; top_resource: string | null; kinds: string[];
   assessed_runs?: number; unassessed_runs?: number;
   success_rate_basis?: string; produced_rate?: number;
+  // W672 (ledger v16 R4.7) - how much of the in-house rate is a caller's claim
+  caller_reported_runs?: number; in_house_rate_excluding_caller_reported?: number | null; in_house_rate_basis?: string;
 }
 // W583 (P3.25) — what the platform records when it FAILS. `state` is three-valued on purpose and the
 // page MUST distinguish the last two: no failures over a populated ledger is a reliability statement; no
@@ -39,6 +41,7 @@ interface Outcome {
   id: string; kind: string; resource: string; served_by: string;
   is_external: boolean; duration_ms: number; success: boolean | null; created_at: string;
   produced?: boolean; quality_gate?: boolean | null; success_basis?: string;
+  reported_by?: string;   // W672 - 'caller' when the row was written over the public route
 }
 interface ModelHealth { name: string; runs: number; success_rate: number; avg_ms: number; deprioritised: boolean;
   // W577 (FU-298) — a declared baseline that could not be read does not leave a model unscored: it
@@ -102,6 +105,13 @@ export const OperationalExcellence: React.FC = () => {
           <Stat icon={Cpu} label="In-house rate" value={pct(summary.in_house_rate)} />
           <Stat icon={TrendingUp} label="Resources" value={String(summary.distinct_resources)} />
         </div>
+      )}
+      {summary?.in_house_rate_basis && (
+        <p className="text-[10px] text-slate-500 leading-relaxed" data-testid="ops-in-house-basis">
+          In-house rate: {summary.in_house_rate_basis}
+          {(summary.caller_reported_runs ?? 0) > 0 && typeof summary.in_house_rate_excluding_caller_reported === 'number'
+            ? ` Without those rows the rate is ${pct(summary.in_house_rate_excluding_caller_reported)}.` : ''}
+        </p>
       )}
       {summary?.success_rate_basis && (
         <p className="text-[10px] text-amber-400/80 leading-relaxed" data-testid="ops-success-basis">
@@ -273,6 +283,10 @@ export const OperationalExcellence: React.FC = () => {
                   : <span data-testid="outcome-mark" className="text-slate-500" title={o.success_basis || 'produced output; nothing assessed it'}>–</span>}
               <span className="font-bold text-white">{o.resource}</span>
               <span className="text-slate-600 uppercase">{o.kind}</span>
+              {o.reported_by === 'caller' && (
+                <span data-testid="outcome-caller-reported" className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400"
+                      title="written through POST /operations/record: what served this run is the caller's claim, not something the platform observed">caller-reported</span>
+              )}
               {(() => { const b = provenanceBadge(o.served_by, o.is_external); return <span className={`ml-auto text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
               <span className="text-slate-600">{o.duration_ms}ms</span>
             </div>

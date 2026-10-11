@@ -11,7 +11,7 @@ interface Wiring { tiers: Tier[]; connected: number; total: number; coherence: n
   route_census?: { basis?: string; paths?: number } }
 interface Gap { gap: string; realisation: number; routed_to: string; endpoint: string; action: string; missing: string[] }
 // W496 (FU-111) — `measure` is the producer's own statement of what this figure counts
-interface Align { overall_realisation: number; measure?: string; gaps_routed: Gap[]; executed: any[] }
+interface Align { overall_realisation: number; measure?: string; gaps_routed: Gap[]; executed: any[]; gaps_basis?: string }
 
 export const CognitionIntegration: React.FC = () => {
   const [wiring, setWiring] = useState<Wiring | null>(null);
@@ -263,7 +263,9 @@ export const CognitionIntegration: React.FC = () => {
         </div>
         {align ? (
           align.gaps_routed.length === 0
-            ? <p className="text-sm text-emerald-400 font-bold">Fully aligned — no open vision gaps.</p>
+            /* W672 (ledger v16 R6.6) - an empty list was printed in green as alignment; it means every presence check passed */
+            ? <p className="text-sm text-slate-300 font-bold" data-testid="align-no-gaps">No pillar is listed as a gap.{' '}
+                <span className="font-normal text-slate-500">{align.gaps_basis || 'The response did not say what a gap was selected by.'}</span></p>
             : (
               <div className="space-y-2">
                 {/* W493 (FU-176) - "routed" reads as sent; every gap comes back executed:false */}
@@ -277,6 +279,7 @@ export const CognitionIntegration: React.FC = () => {
                   {(align.executed || []).length} acted on
                   {(align.executed || []).length === 0 ? ' (plan only — nothing was sent)' : ''}
                 </p>
+                {align.gaps_basis && <p className="text-[10px] text-slate-500 leading-relaxed" data-testid="align-gaps-basis">{align.gaps_basis}</p>}
                 {align.gaps_routed.map((g, i) => (
                   <div key={i} className="flex items-center justify-between p-3 bg-slate-950 rounded-lg border border-slate-900">
                     <div className="min-w-0">

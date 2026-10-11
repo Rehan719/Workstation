@@ -181,7 +181,14 @@ export const ReligionHub: React.FC = () => {
                           {r.range_note && <p className="text-[10px] text-amber-400 font-bold">Range: {r.range_note}</p>}
                           {r.floor_note && <p className="text-[10px] text-amber-300 font-bold leading-snug">{r.floor_note}</p>}
                           {Array.isArray(r.sections_withheld) && r.sections_withheld.length > 0 && (
-                            <p className="text-[9px] text-slate-500">Withheld on the floor: {r.sections_withheld.join(' · ')}</p>
+                            <p className="text-[9px] text-slate-500" data-testid="tafsir-withheld">{r.floor_note
+                              ? <>Withheld on the floor: {r.sections_withheld.join(' · ')}</>
+                              : <>Removed from this reply: {r.sections_withheld.join(' · ')}</>}</p>
+                          )}
+                          {/* W671 (ledger v16 R1.3) — where a translation of the meanings comes from. The floor note
+                              already carries the same sentence, so it is shown here only when there is no floor note. */}
+                          {!r.floor_note && typeof r.translation_source?.basis === 'string' && (
+                            <p className="text-[9px] text-slate-500" data-testid="tafsir-translation-source">No translation or transliteration is offered: {r.translation_source.basis}</p>
                           )}
                         </div>
                       )}

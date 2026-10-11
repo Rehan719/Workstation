@@ -280,6 +280,30 @@ def _allocate_locked(req: "AllocateRequest"):
         caution = (f"§8 survival instinct: the organism is energy-depleted (ATP {atp:.0%}); this tranche is "
                    f"{frac:.0%} of available capital. Consider a smaller tranche or deferring until recovery.")
 
+    #  W672 (ledger v16 R6.5) - WHAT THIS ALLOCATION PASSED, SAID ON THE RECORD. It is checked for a positive
+    #  amount and for the fund's balance and for nothing else: no constitutional gate, no Change Control hold,
+    #  and the id it names is not looked up. Whether it SHOULD be governed is the Owner's decision and is not
+    #  taken here - nothing new is refused. Three states for the recipient: registered, not registered, or
+    #  not known (the roster could not be read), which is never answered as either of the other two.
+    _reg_why = None
+    try:
+        from agentic_core.economy.living_vsbs import is_registered as _is_registered
+        _registered = bool(_is_registered(req.project_id))
+    except Exception as _reg_err:                        # noqa: BLE001 - not known is said, and refuses nothing
+        _registered, _reg_why = None, type(_reg_err).__name__
+    _pid = str(req.project_id)[:80]
+    _governance = {
+        "gate": "not applied", "change_control": "not applied",
+        "recipient_registered": _registered, "credited_to": None,
+        "basis": ("an UNGOVERNED RECORD: this allocation passed no constitutional gate and no Change Control "
+                  "hold. It "
+                  + ("names a registered entity" if _registered is True else
+                     f"names '{_pid}', which is not a registered entity" if _registered is False else
+                     f"names '{_pid}'; whether that is a registered entity could not be read ({_reg_why})")
+                  + ". This route credited no entity's ledger: it reduced the fund's available figure and "
+                    "did nothing else. Virtual WST."),
+    }
+
     allocation_id = f"alloc-{uuid.uuid4().hex[:8]}"
     allocation = {
         "allocation_id": allocation_id,
@@ -291,6 +315,7 @@ def _allocate_locked(req: "AllocateRequest"):
         "realm": req.realm,
         "status": "active",
         "homeostasis_caution": caution,
+        "governance": dict(_governance),
         "allocated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
 
@@ -298,6 +323,19 @@ def _allocate_locked(req: "AllocateRequest"):
     fund["available"] -= req.amount
     fund["allocations"].append(allocation)
     _save_fund(fund)
+
+    #  W672 (ledger v16 R6.5) - the module's other writer leaves an audit event and this one left none.
+    #  Written after the save, so an event never describes an allocation that was not stored; whether it was
+    #  recorded is said in the response (the stored row was written before this was known).
+    try:
+        from agentic_core.gaas.v5 import UEGLogger
+        UEGLogger().log({"type": "economy.capital_fund.allocation", "allocation_id": allocation_id,
+                         "project_id": req.project_id, "amount_wst": req.amount,
+                         "recipient_registered": _registered, "gate": "not applied",
+                         "change_control": "not applied"})
+        _audit_event = "recorded"
+    except Exception as _ueg_err:                        # noqa: BLE001 - said, never silent
+        _audit_event = f"NOT recorded ({type(_ueg_err).__name__})"
 
     biobus.fire_signal(
         "motor", "fund.allocate",
@@ -313,6 +351,7 @@ def _allocate_locked(req: "AllocateRequest"):
         "status": "allocated",
         "organism": posture,
         "homeostasis_caution": caution,
+        "governance": {**_governance, "audit_event": _audit_event},
     }
 
 
