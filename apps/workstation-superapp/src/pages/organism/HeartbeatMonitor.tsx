@@ -10,6 +10,7 @@ interface Status {
   // W642 (FU-660) — what the loop actually waits now: base interval / phase intensity
   effective_interval_seconds?: number; interval_basis?: string;
   auto_evolve: boolean; auto_economy: boolean; auto_align: boolean; auto_compliance: boolean;
+  evolve_every?: number; beats_since_evolve?: number; evolve_pacing?: string;
   auto_ship: boolean; autonomy_persisted?: boolean; autonomy_restored_at?: string | null;
   auto_metabolic?: boolean; metabolic_every?: number; auto_metabolic_basis?: string;
   circadian_to_atp?: boolean; circadian_to_atp_basis?: string;
@@ -142,7 +143,8 @@ export const HeartbeatMonitor: React.FC = () => {
                 </span>
               </div>
               <p className="text-[10px] text-slate-500 font-semibold mb-3 leading-relaxed">
-                All {AUTONOMY.length} are OFF by default and take effect on the NEXT beat. Money moved by
+                All {AUTONOMY.length} are OFF by default. A switch is read on the next beat; what it then does
+                is paced by its own rule. <span data-testid="evolve-pacing">{s.evolve_pacing || 'How Self-improve is paced could not be read.'}</span> Money moved by
                 self-run is virtual WST.
                 {s.autonomy_persisted === false
                   ? ' ⚠ These settings could NOT be saved — they will revert when the backend restarts.'

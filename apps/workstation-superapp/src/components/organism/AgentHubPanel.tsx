@@ -153,7 +153,7 @@ const AgentHubPanel: React.FC = () => {
               ))}
           </div>
           <div>
-            <p className="text-[9px] font-black uppercase tracking-widest text-slate-600 mb-1.5">Platform roster (swarm, live)</p>
+            <p className="text-[9px] font-black uppercase tracking-widest text-slate-600 mb-1.5">Platform roster (role definitions — not running agents)</p>
             <div className="flex flex-wrap gap-1.5">
               {(agents?.platform_roster ?? []).map((a: any) => (
                 <span key={a.id} className="px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-[9px] font-bold text-slate-400" title={a.expertise}>

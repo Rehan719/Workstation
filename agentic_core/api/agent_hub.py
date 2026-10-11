@@ -431,7 +431,7 @@ async def list_agents(user: dict | None = Depends(get_current_user)) -> dict:
     roster: list[dict] = []
     try:
         from agentic_core.api.swarm import _AGENTS as _SWARM_AGENTS
-        roster = [{"id": k, **v, "source": "swarm roster (live platform agents)"}
+        roster = [{"id": k, **v, "source": "swarm roster (role definitions a cascade can prompt as - not running agents)"}
                   for k, v in _SWARM_AGENTS.items()]
     except Exception:
         roster = []
@@ -445,7 +445,7 @@ async def list_agents(user: dict | None = Depends(get_current_user)) -> dict:
         "registered": registered,
         "platform_roster": roster,
         "note": ("`registered` lists external agent sessions that called /hub/agents/register; "
-                 "`platform_roster` is the swarm's live agent cast. Registration gates nothing "
+                 "`platform_roster` is the swarm's list of role definitions, not running agents. Registration gates nothing "
                  "by itself — it is a presence record."),
     }
 

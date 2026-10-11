@@ -5,6 +5,7 @@ import { QEPStudio } from '../../components/QEPStudio';
 import { Mic, MicOff, Play, CheckCircle2, AlertCircle, Sparkles, BookOpen, Trophy, Glasses, History, Activity, Brain } from 'lucide-react';
 import QEPIntelligence from '../../components/qep/QEPIntelligence';
 import QepDonorStatement from '../../components/QepDonorStatement';
+import ScholarReviewPanel from '../../components/qep/ScholarReviewPanel';
 
 export const QEPReligionHub: React.FC = () => {
   const [activeTab, setActiveTab] = useState('coach');
@@ -25,7 +26,9 @@ export const QEPReligionHub: React.FC = () => {
              { id: 'comp', label: 'Competitions', icon: Trophy },
              // W444 — the intelligence layer (XAI/adaptation/compliance) had no surface
              { id: 'intel', label: 'Intelligence', icon: Brain },
-             { id: 'lab', label: 'AR/VR Lab', icon: Glasses }
+             { id: 'lab', label: 'AR/VR Lab', icon: Glasses },
+             // W669 (FU-693) - the reviewing half of the scholar gate
+             { id: 'review', label: 'Scholar Review', icon: CheckCircle2 }
            ].map(t => (
              <button
                 key={t.id}
@@ -44,6 +47,7 @@ export const QEPReligionHub: React.FC = () => {
       {activeTab === 'intel' && <QEPIntelligence />}
       {activeTab === 'comp' && <QuranCompetitions />}
       {activeTab === 'lab' && <ARVRLab />}
+      {activeTab === 'review' && <ScholarReviewPanel />}
       {/* FU-467 — A.8's transparent donor view, on every tab */}
       <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800">
         <QepDonorStatement />

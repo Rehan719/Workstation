@@ -102,7 +102,7 @@ export const Settings: React.FC = () => {
             {/* W654 (FU-656) - what the choice changes, and where: Genesis and the domain tools alike */}
             <p data-testid="realm-means" className="text-[10px] text-slate-600 mt-1">
               {prefs.defaultRealm && REALM_MEANS[prefs.defaultRealm] ? `${REALM_MEANS[prefs.defaultRealm]} ` : ''}
-              The realm sets how results are written. It applies to Genesis journeys and to every domain tool.
+              The realm is passed to Genesis journeys and to every domain tool. It changes how a result is written only when a model is serving; a result composed by the structured floor is the same for every realm.
             </p>
           </div>
           <div>

@@ -13378,11 +13378,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.37",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W669",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v15 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "OWNER RULED 2026-10-11. Routes and a panel now exist: the roster and the queue can be read, the Owner adds a named scholar with a stated credential (recorded as stated, not verified), and a decision is entered for a scholar on the roster. With authentication off it is recorded as entered by the Owner on the scholar's behalf - attested, not verified - and the learner-facing basis carries that sentence. With authentication on, only an administrator adds a scholar and only the scholar's own account decides. An empty roster still approves nothing. NOT DONE: nothing verifies a credential or that a named scholar agreed; no scholar is on the roster, so every item is still withheld."
     },
     {
       "id": "FU-694",
@@ -14531,11 +14534,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W669",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v16 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "OWNER RULED 2026-10-11. Routes and a panel now exist: the roster and the queue can be read, the Owner adds a named scholar with a stated credential (recorded as stated, not verified), and a decision is entered for a scholar on the roster. With authentication off it is recorded as entered by the Owner on the scholar's behalf - attested, not verified - and the learner-facing basis carries that sentence. With authentication on, only an administrator adds a scholar and only the scholar's own account decides. An empty roster still approves nothing. NOT DONE: nothing verifies a credential or that a named scholar agreed; no scholar is on the roster, so every item is still withheld."
     },
     {
       "id": "FU-753",
@@ -14812,11 +14818,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W669",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v16 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Every action on the Genesis card shows the server's refusal reason whatever its shape: a string, or the review gate's object with what refused and how to clear it. A bare status number is shown only when the server gave no reason, and says so."
     },
     {
       "id": "FU-768",
@@ -14887,11 +14896,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W669",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v16 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The hub's roster source, its note and the panel heading say role definitions a cascade can prompt as, not running agents."
     },
     {
       "id": "FU-772",
@@ -15162,11 +15174,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W669",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v16 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The two Launch targets point at routes the app has (the Living Organisation hub; Settings, where the default realm is chosen), and a guard reads the app's route table and fails if any blueprint route is not in it."
     },
     {
       "id": "FU-786",
@@ -15181,11 +15196,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W669",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v16 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The Settings sentence says the realm is passed to Genesis and every domain tool and changes how a result is written only when a model is serving. NOT DONE: the tool result itself carries no note saying whether the realm was applied."
     },
     {
       "id": "FU-787",
@@ -15388,11 +15406,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W669",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v16 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The heartbeat's status publishes how Self-improve is paced, from the fields the beat reads, and the page prints it in place of the sentence that said every switch acts on the next beat. NOT DONE: the cadence's and the twin directive's last results are still not rendered on that page."
     },
     {
       "id": "FU-797",

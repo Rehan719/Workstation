@@ -11,9 +11,9 @@ router = APIRouter(prefix="/bto", tags=["BTO Configurator"])
 
 COMPONENT_ROUTES: Dict[str, str] = {
     "vsb": "/ceo",
-    "csuite": "/debate",
+    "csuite": "/ceo",          # W669 (ledger v16 R5.2) - /debate is not a route of the app
     "coe": "/audit",
-    "realms": "/realm-editor",
+    "realms": "/settings",     # W669 - /realm-editor is not a route; the default realm is chosen in Settings
     "products": "/bto",
     "services": "/marketplace",
 }

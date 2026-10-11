@@ -245,9 +245,12 @@ app.include_router(realms_router, prefix="/api")
 from agentic_core.api import ai_query as ai_query_api
 app.include_router(ai_query_api.router, prefix="/api")
 
-# 13. Council Judiciary (in-memory precedent adjudication — real logic)
-from agentic_core.api import council_judiciary as judiciary_api
-app.include_router(judiciary_api.router, prefix="/api")
+# 13. (W669, Owner ruling 2026-10-11) The council judiciary route is ARCHIVED, a reversible move to
+#     _archive/agentic_core/api/. No page called it and the pages say no council exists.
+
+# 13b. Scholar review (W669, FU-693) - the roster, the queue and the attested decision
+from agentic_core.api import scholar_review as scholar_review_api
+app.include_router(scholar_review_api.router)
 
 # 14. Treaties (in-memory treaty creation/signing — Treaty Studio frontend calls /api/v250/treaties/*)
 from agentic_core.api.v250 import treaties as treaties_api
