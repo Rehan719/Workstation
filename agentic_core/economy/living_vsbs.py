@@ -619,13 +619,14 @@ def list_living() -> Dict[str, Any]:
                 r["entity_status_basis"] = ("NO ENTITY RECORD exists for this roster row, so there is no "
                                             "derived status to state")
             else:
-                r["entity_status"] = _ent656.get("status")
-                r["entity_status_basis"] = (_ent656.get("status_basis")
-                                            or "the entity's record carries no derived status")
+                #  W668 (ledger v16 R2.2) - derived at this read, not read back from the moment it was stored
+                from agentic_core.api.vsb import _derived_status as _derived668
+                r["entity_status"], r["entity_status_basis"] = _derived668(_ent656)
         except Exception as _exc656:
             r["entity_status"] = None
             r["entity_status_basis"] = (f"NOT KNOWN - the entity's record could not be read "
                                         f"({type(_exc656).__name__}), so its status is not stated")
+        r["lifecycle_basis"] = lifecycle(r)["basis"]      # W668 - the lever is read now, not at registration
         r["status_basis"] = ("'living' is this roster's word for 'registered here'. It does not say the entity "
                              "is operating: `entity_status` is the entity's own derived status")
         r["compliance"] = {

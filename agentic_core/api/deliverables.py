@@ -262,14 +262,14 @@ async def produce(req: ProduceRequest, user: dict | None = Depends(get_current_u
                 or _TYPES.get(req.type, [])
         #  W666 (ledger v16 R1.0) - with no sections given, the "declared structure" above is the list of
         #  headings found in the very text being measured, so its coverage is 1.0 whatever the text says.
-        #  P1.1's ACCEPT (W449) has a person's own document measured and passed this way, so the gate is NOT
-        #  changed here; the record now SAYS where the structure came from. Whether such a text should be
-        #  certified at all is put to the Owner.
+        #  OWNER RULING 2026-10-11 (FU-805): such a text is NOT ASSESSABLE. The first plan item's ACCEPT had a
+        #  person's own document measured and passed this way; the Owner changed it - a caller who wants a
+        #  pasted text measured declares the sections it should have, and then the gate runs as before.
         _self_derived = (not req.sections) and bool(re.search(r"^#{1,2}\s+.+$", req.content, flags=re.M))
         gen = {"content": req.content, "sections": _secs,
                "structure_basis": (("the sections were read from the supplied text's own headings, so its "
-                                    "coverage of them is 1.0 by construction; what can fail here is the length "
-                                    "and stub screen") if _self_derived else None),
+                                    "coverage of them is 1.0 by construction; declare the sections it should "
+                                    "have and it is measured against those") if _self_derived else None),
                "ai_provenance": {"served_by": "verbatim-ingest", "is_external": False,
                                  "source_served_by": req.source_served_by,
                                  "note": "content supplied verbatim by the caller — not regenerated"}}
@@ -281,7 +281,8 @@ async def produce(req: ProduceRequest, user: dict | None = Depends(get_current_u
     # OWNED QMS (real, stateful), held to the §10 Solution-Quality Bar, recorded within the §8 organism.
     _owner = request_owner_id(user if isinstance(user, dict) else None, "default")
     qa = await assure_delivery(gen["content"], gen["sections"], label="deliverable", owner_id=_owner,
-                               served_by=_gate_served_by(gen))
+                               served_by=_gate_served_by(gen),
+                               sections_by_construction=gen.get("structure_basis"))
     if gen.get("structure_basis") and isinstance(qa, dict) and isinstance(qa.get("quality"), dict):
         qa["quality"]["structure_basis"] = gen["structure_basis"]
         qa["quality"]["delivery_coverage_basis"] = (str(qa["quality"].get("delivery_coverage_basis") or "")

@@ -49,6 +49,7 @@ interface JourneyResult {
   // W573 (M1 R2.3) — `ran` is present and FALSE only for a stage the journey never reached (a §11
   // veto stops it after Stage 5). It is ABSENT on a complete journey, so "absent" means ran, and
   // `verified: null` means ran-but-not-assessable. Three different things, none of them "done".
+  journey_id?: string;   // W668 - the server keeps its own record of the journey under this id
   stage_verifications?: Record<string, { verified: boolean | null; ran?: boolean; score: number; sections_present: string; basis?: string }>;
   stages_verified?: string;
   stages_floor_served?: number;
@@ -358,6 +359,8 @@ export const GenesisJourney: React.FC = () => {
       operations: result?.stage_7_operational_intelligence ?? '',
       selected_candidate: cands[0] ?? {},
       stage_verifications: result?.stage_verifications ?? {},
+      // W668 - the server reads the candidate, the tie and the verifications from its own record of this journey
+      journey_id: result?.journey_id ?? '',
       // W450 — the two-step path carries the journey's provenance too, so a floor-served field
       // becomes an honest pending state in the body instead of scaffold
       ai_provenance: (result as any)?.ai_provenance ?? {},

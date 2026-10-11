@@ -125,7 +125,17 @@ def _vsb_state() -> dict:
         # for any org with VSBs (spawning VSBs lowered reported readiness)
         by_status: dict[str, int] = {}
         for v in entities:
+            #  W668 (ledger v16 R2.2) - counted from the status derived NOW; the stored word is from whenever
+            #  a gate, a body section or the ship last changed, and never from the heartbeat changing
+            #  Only a status that WAS derived is derived again: a record with no derivation stamp carries a
+            #  literal from an older writer, and that is counted as the legacy word it is (see below).
             s = str(v.get("status") or "unknown")
+            if v.get("status_derived_at"):
+                try:
+                    from agentic_core.api.vsb import _derived_status as _derived668
+                    s = str(_derived668(v)[0] or "unknown")
+                except Exception:               # noqa: BLE001 - the stored word, rather than no count
+                    pass
             by_status[s] = by_status.get(s, 0) + 1
         #  W593 (FU-425, M1 R2.3) — THE PREDICATE NAMES THE VOCABULARY THE WRITER USES. This read
         #  `s in ("operational", "active")`, and the comment above records the FIRST round of exactly this

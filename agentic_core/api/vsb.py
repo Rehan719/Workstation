@@ -206,12 +206,23 @@ def _build_repo_files(vsb: dict) -> dict:
         from agentic_core.vbs.quality import floor_served as _floor_served0
         _sim_floor0 = (all(_sba0[a] == "native" for a in _sim_agents0) if _sim_agents0
                        else _floor_served0((vsb.get("ai_provenance") or {}).get("served_by")))
-        _ev_lines += [("## Selected Candidate (§4.5 evidence-ranked)" if _ranked else
+        #  W668 (ledger v16 R2.1) - WHOSE FIGURES THESE ARE. Establish sealed whatever candidate and stage
+        #  evidence its request carried; a score nobody ran shipped as "simulated evidence". When the figures
+        #  came from the request and not from this platform's own journey record, the file says so first.
+        _src668 = ((vsb.get("genesis_journey") or {}).get("evidence_source") or {})
+        _caller668 = _src668.get("source") == "caller"
+        _ev_lines += [("## Candidate Supplied by the Caller (NOT measured by this platform)" if _caller668 else
+                       "## Selected Candidate (§4.5 evidence-ranked)" if _ranked else
                        "## Candidate Carried Forward (NOT evidence-ranked — see comparison below)"),
                       f"- id: {_cand.get('id')} · rank: {_cand.get('rank')} · score: {_cand.get('score')}",
                       f"- coverage {_cand.get('coverage')} · specificity {_cand.get('specificity')} · structure {_cand.get('structure')}",
                       f"- framing: {str(_cand.get('framing') or '')[:160]}"]
-        if _cand.get("simulation_score") is not None:       # §4.5 (W305) — simulated evidence
+        if _caller668:
+            _ev_lines += [f"- source of every candidate and stage figure in this file: {_src668.get('basis')}"]
+        if _cand.get("simulation_score") is not None and _caller668:
+            _ev_lines += [f"- score supplied by the caller: {_cand.get('simulation_score')} - NOT simulated "
+                          f"evidence: this platform ran no simulation for it"]
+        elif _cand.get("simulation_score") is not None:       # §4.5 (W305) — simulated evidence
             _ev_lines += [(f"- simulated evidence: {_cand.get('simulation_score')} "
                            f"(modelled {_cand.get('modelled_score')}; declared weights 60/40)") if not _sim_floor0 else
                           (f"- twin-stage score: {_cand.get('simulation_score')} — NOT simulated evidence: the "
@@ -2022,6 +2033,23 @@ def _rederive(vsb: dict) -> dict:
     return vsb
 
 
+def _read_view(vsb: dict) -> dict:
+    """W668 (ledger v16 R2.2) - WHAT A READER IS GIVEN: the status, the stage and the living statement as they
+    are NOW. They were derived when a gate, a body section or the ship changed, and never when the heartbeat
+    did - so an entity went on reading "operating - the heartbeat is tending this entity" after the heartbeat
+    was stopped, beside a roster saying Self-run was off. The stored record is not rewritten by a read; this
+    is a copy, and `status_derived_at` on it is the moment of the read."""
+    v = dict(vsb)
+    try:
+        _rederive(v)
+        if isinstance(v.get("living"), dict) and v["living"].get("registered") is not False:
+            from agentic_core.economy.living_vsbs import living_statement
+            v["living"] = {**living_statement(), "read_at": v.get("status_derived_at")}
+    except Exception as _exc668:                # noqa: BLE001 - the stored view is returned, and says so
+        v["read_view_error"] = f"{type(_exc668).__name__}: the status below is the STORED one, not derived now"
+    return v
+
+
 SCREEN_HELD_STATUS = "held - screen failed"
 
 
@@ -2462,6 +2490,13 @@ async def decide_review_gate(vsb_id: str, stage: str, req: GateDecisionRequest, 
             "entity_status": vsb.get("status"), "entity_status_basis": vsb.get("status_basis")}
 
 
+def _listed_status668(v: dict) -> dict:
+    try:
+        return {"status": _derived_status(v)[0], "stage": _derived_stage(v)[0] or ""}
+    except Exception:                           # noqa: BLE001
+        return {"status": v.get("status", ""), "stage": v.get("stage", "")}
+
+
 def _list_vsbs() -> list[dict]:
     result = []
     for p in sorted(_VSB_STORE.glob("*.json"), key=lambda x: x.stat().st_mtime, reverse=True):
@@ -2471,8 +2506,9 @@ def _list_vsbs() -> list[dict]:
                 "vsb_id": v["vsb_id"],
                 "name": v.get("name", ""),
                 "domain": v.get("domain", ""),
-                "status": v.get("status", ""),
-                "stage": v.get("stage", ""),
+                #  W668 (ledger v16 R2.2) - derived from the whole record at this read, for every reader
+                #  of the list; a record the derivation cannot read keeps its stored words
+                **_listed_status668(v),
                 "owner_id": v.get("owner_id"),   # §17.5 — owner scoping key
                 "created_at": v.get("created_at", ""),
                 # org flags — surface which VSBs are fully-established living organisations
@@ -2502,7 +2538,7 @@ async def get_vsb(vsb_id: str, user: dict | None = Depends(get_current_user)):
     # 404 (not 403) when scoped out — never confirm another tenant's VSB exists
     if not vsb or not user_can_access(user, vsb.get("owner_id")):
         raise HTTPException(status_code=404, detail=f"VSB {vsb_id} not found.")
-    return vsb
+    return _read_view(vsb)
 
 
 @router.get("/{vsb_id}/genome")

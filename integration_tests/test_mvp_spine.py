@@ -1084,7 +1084,9 @@ def test_qms_defect_loop_and_measured_bar(client):
             "living QMS measures what it can and declares the rest unmeasured, never implied.\n\n"
             "## Context\nQuality.\n\n## Key Factors\nEvidence.\n\n## Approach\nHonesty.\n\n## Next Steps\nCommit.")
     dl = client.post("/api/v1/deliverables/produce", json={
-        "type": "brief", "brief": "w307 bar", "content": body}).json()
+        "type": "brief", "brief": "w307 bar", "content": body,
+        #  OWNER RULING 2026-10-11 (FU-805) - a pasted text is measured only against a structure its caller declares
+        "sections": ["Objective", "Context", "Key Factors", "Approach", "Next Steps"]}).json()
     bm = dl["quality_assurance"]["quality"]["bar_measured"]
     assert bm["measured"] >= 2 and bm["not_measured"] > 0
     # W483 retarget — 'compliant' is no longer MEASURED off keyword screens; it is screen-only and
@@ -9325,10 +9327,16 @@ def test_w449_floor_served_gate_is_not_assessable_both_ways(client):
         "source_served_by": {"native": 5}}).json()["quality_assurance"]["quality"]
     assert v1["qms_gate_passed"] is None and "floor-served" in v1["qms_basis"], v1
     v2 = client.post("/api/v1/deliverables/produce", json={
-        "type": "report", "title": "w449 verbatim unknown", "brief": "b", "content": doc}).json()["quality_assurance"]["quality"]
+        "type": "report", "title": "w449 verbatim unknown", "brief": "b", "content": doc,
+        "sections": secs}).json()["quality_assurance"]["quality"]
     assert v2["qms_gate_passed"] is True and "served_by=verbatim-ingest" in v2["qms_basis"], v2
+    #  OWNER RULING 2026-10-11 (FU-805) - the same document with NO declared structure is measured against
+    #  nothing but its own headings, which cannot fail: not assessable, and the record says why
+    v2u = client.post("/api/v1/deliverables/produce", json={
+        "type": "report", "title": "w449 verbatim undeclared", "brief": "b", "content": doc}).json()["quality_assurance"]["quality"]
+    assert v2u["qms_gate_passed"] is None and "own headings" in v2u["qms_basis"], v2u
     v3 = client.post("/api/v1/deliverables/produce", json={
-        "type": "report", "title": "w449 verbatim model", "brief": "b", "content": doc,
+        "type": "report", "title": "w449 verbatim model", "brief": "b", "content": doc, "sections": secs,
         "source_served_by": "ollama:llama3.2"}).json()["quality_assurance"]["quality"]
     assert v3["qms_gate_passed"] is True and "served_by=ollama:llama3.2" in v3["qms_basis"], v3
 
@@ -52273,6 +52281,8 @@ def test_w666_a_start_that_did_not_start_says_so_and_a_route_asserts_only_what_i
     _qa = _dv.get("quality_assurance") or {}
     _q8 = _qa.get("quality") or {}
     assert "own headings" in (_q8.get("structure_basis") or ""), ("the record does not say the structure is the text's own", _q8)
+    assert _q8.get("qms_gate_passed") is None, ("OWNER RULING 2026-10-11: a text measured only against its own "
+                                                "headings is certified", _q8.get("qms_gate_passed"))
     assert "1.0 by construction" in _q8["delivery_coverage_basis"], _q8["delivery_coverage_basis"]
     #     a structure the caller DECLARED is still measured - the strong statement stays true where it is true
     _p2 = client.post("/api/v1/deliverables/produce", json={
@@ -52410,3 +52420,109 @@ def test_w667_a_typed_threat_is_recorded_as_typed_and_a_lever_nothing_can_act_on
     assert not _mob.exists(), "a generated surface still carries the scaffold README that calls it unbuilt"
     assert _web.is_file() and "Written by the founder" in _web.read_text(encoding="utf-8"), (
         "a README that is somebody's own text was removed")
+
+
+def test_w668_establish_reads_the_journeys_own_record_and_a_status_is_derived_when_read(client, monkeypatch):
+    """W668 - ledger v16's last three tier-1 rows: whose evidence a sealed repository prints, and how old a
+    status a reader is given."""
+    import agentic_core.api.vsb as _vm
+    import agentic_core.api.genesis as _gm
+    import agentic_core.economy.living_vsbs as _lv
+
+    def _evidence(vid):
+        _f = client.get(f"/api/v1/vsb/{vid}/repo/file", params={"path": "EVIDENCE.md"})
+        assert _f.status_code == 200, (_f.status_code, _f.text[:200])
+        _j = _f.json() if _f.headers.get("content-type", "").startswith("application/json") else {}
+        return _j.get("content") or _j.get("text") or _f.text
+
+    # -- 1. THE TWO-STEP PATH: the tie lives on the stage, and the server reads it from its own record ----
+    _jr = client.post("/api/v1/genesis/journey", json={"problem": "A rota tool for night-shift nurses on two wards",
+                                                       "domain": "care", "establish": False}).json()
+    _s5 = _jr["stage_5_model_simulate_rank"]
+    assert (_s5.get("tie") or {}).get("detected") or (_s5.get("candidates_distinct") or 9) <= 1, (
+        "this journey ranked distinct candidates, so the leg below cannot show a lost tie", _s5.get("tie"))
+    _cand0 = _s5["candidates"][0]
+    assert "tie" not in _cand0 and "candidates_distinct" not in _cand0, "the candidate now carries the tie itself"
+    assert _gm._read_journey(_jr["journey_id"]) is not None, "the journey kept no record of what it measured"
+    _body = {"problem": "A rota tool for night-shift nurses on two wards", "domain": "care", "name": "W668 Rota",
+             "concept": _jr["phase_1_conceptualisation"]["concept"], "selected_candidate": _cand0,
+             "stage_verifications": _jr["stage_verifications"], "ai_provenance": _jr["ai_provenance"]}
+    _e1 = client.post("/api/v1/genesis/establish", json={**_body, "journey_id": _jr["journey_id"]})
+    assert _e1.status_code == 200, _e1.text[:300]
+    _ev1 = _evidence(_e1.json()["vsb_id"])
+    assert "NOT evidence-ranked" in _ev1 and "## Selected Candidate" not in _ev1, _ev1[:500]
+    assert "Supplied by the Caller" not in _ev1, "the platform's own record is labelled as the caller's"
+    #     the tie and the distinct count are EACH carried from the record - either alone keeps the heading honest,
+    #     so the heading cannot show that both arrived
+    _sc1 = _vm._load_vsb(_e1.json()["vsb_id"])["genesis_journey"]["selected_candidate"]
+    assert _sc1.get("tie") == _s5.get("tie") and _sc1.get("tie") is not None, ("the record's tie did not reach the entity", _sc1.get("tie"))
+    assert _sc1.get("candidates_distinct") == _s5.get("candidates_distinct"), _sc1.get("candidates_distinct")
+
+    # -- 2. A JOURNEY ID WITH A FABRICATED CANDIDATE: the record wins -------------------------------------
+    _fake = {"id": _cand0.get("id"), "rank": 1, "score": 0.99, "simulation_score": 0.931234, "modelled_score": 0.95,
+             "framing": "a candidate nobody modelled"}
+    _e2 = client.post("/api/v1/genesis/establish", json={**_body, "name": "W668 Rota Two", "selected_candidate": _fake,
+                                                         "journey_id": _jr["journey_id"]})
+    assert _e2.status_code == 200, _e2.text[:300]
+    _ev2 = _evidence(_e2.json()["vsb_id"])
+    assert "0.931234" not in _ev2 and "a candidate nobody modelled" not in _ev2, (
+        "a figure typed into the request was sealed although the journey's record was named")
+
+    # -- 3. NO JOURNEY: the figures are printed as the caller's, and no simulation is claimed -------------
+    _e3 = client.post("/api/v1/genesis/establish", json={
+        "problem": "A rota tool for night-shift nurses on two wards", "domain": "care", "name": "W668 Rota Three",
+        "selected_candidate": _fake,
+        "stage_verifications": {"concept": {"verified": True, "score": 0.99, "sections_present": "4/4"}}})
+    assert _e3.status_code == 200, _e3.text[:300]
+    _v3 = _e3.json()["vsb_id"]
+    _ev3 = _evidence(_v3)
+    assert "## Candidate Supplied by the Caller (NOT measured by this platform)" in _ev3, _ev3[:500]
+    assert "score supplied by the caller: 0.931234" in _ev3 and "- simulated evidence:" not in _ev3, _ev3[:700]
+    assert "holds no journey record" in _ev3, _ev3[:700]
+    assert (_vm._load_vsb(_v3)["genesis_journey"]["evidence_source"]["source"]) == "caller"
+    #     an id that names no record is the caller's evidence too, and an id of another shape reads no file
+    assert _gm._read_journey("jny-000000000000") is None
+    #     an id of another shape reads NO file even when a file exists at the path it would name
+    _outside = _gm._journey_store().parent / "w668_outside.json"
+    _outside.write_text('{"journey_id": "outside", "candidates": []}', encoding="utf-8")
+    try:
+        assert _gm._read_journey("../w668_outside") is None, "an id that is not a journey id read a file outside the store"
+    finally:
+        _outside.unlink()
+
+    # -- 4. A STATUS IS DERIVED WHEN READ: the heartbeat changes, nothing is written, the answer follows ---
+    _ent = _vm._load_vsb(_v3)
+    _ent["body_pending"] = {}
+    _ent["review_gates"] = {"stages": [], "decisions": {}}
+    _vm._save_vsb(_ent)
+    assert _vm._screen_hold(_ent) is None and not _vm._gates_blocking(_ent), "the probe entity is held - leg 4 is vacuous"
+
+    def _status(on):
+        monkeypatch.setattr(_lv, "living_statement", lambda: {
+            "registered": True, "autonomous_cycles": on,
+            "autonomous_operation": "ON" if on else "OFF - the heartbeat's Self-run lever is off"})
+        _one = client.get(f"/api/v1/vsb/{_v3}").json()
+        _many = next(e for e in client.get("/api/v1/vsb").json()["entities"] if e.get("vsb_id") == _v3)
+        return _one, _many
+
+    _on1, _on2 = _status(True)
+    assert _on1["status"] == _vm.OPERATING_STATUS == _on2["status"], (_on1["status"], _on2["status"])
+    assert _on1["living"]["autonomous_cycles"] is True
+    _stored = _vm._load_vsb(_v3).get("status")
+    _off1, _off2 = _status(False)
+    assert _off1["status"] == "registered - not operating" == _off2["status"], (
+        "an entity still reads as operating after the heartbeat stopped tending it", _off1["status"])
+    assert _off1["living"]["autonomous_cycles"] is False and "Self-run lever is off" in _off1["status_basis"]
+    assert _vm._load_vsb(_v3).get("status") == _stored, "a read rewrote the stored record"
+    monkeypatch.undo()
+
+    # -- 5. THE ROSTER ROW follows the lever at read time --------------------------------------------------
+    from agentic_core.organism.heartbeat import heartbeat as _hb
+    monkeypatch.setattr(_hb, "auto_economy", False, raising=False)
+    _rows = client.get("/api/v1/economy/living-vsbs").json()["living_vsbs"]
+    _operable = [r for r in _rows if "operable" in str(r.get("lifecycle_basis"))]
+    assert _operable, "no roster row is in an operable state, so the lever's wording cannot be observed"
+    assert all("NOT operated" in r["lifecycle_basis"] for r in _operable), [r["lifecycle_basis"] for r in _operable][:2]
+    monkeypatch.setattr(_hb, "auto_economy", True, raising=False)
+    _rows2 = client.get("/api/v1/economy/living-vsbs").json()["living_vsbs"]
+    assert all("Self-run is on" in r["lifecycle_basis"] for r in _rows2 if "operable" in str(r.get("lifecycle_basis")))
