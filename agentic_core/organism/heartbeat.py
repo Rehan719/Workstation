@@ -1019,7 +1019,7 @@ class OrganismHeartbeat:
                 return out
             from agentic_core.api.change_control import engage_immune_defence
             res = engage_immune_defence(threat, requested_by="organism.heartbeat",
-                                        requested_by_verified=False)
+                                        requested_by_verified=False, threat_source="measured")
             self._last_defence_beat = self.beats
             self.last_immune_defence = {
                 "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),

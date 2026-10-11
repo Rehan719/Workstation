@@ -14636,11 +14636,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.38",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W667",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v16 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The Studio's spawn derives its entity's status from the same facts as the other doors, so the literal does not survive and the organism no longer counts it as operating on a word. NOT DONE: an unknown project id is still accepted (older tests use invented ids), and the Studio's cascade door keeps its own 'active as a record' status with its stated basis."
     },
     {
       "id": "FU-759",
@@ -14652,11 +14655,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.38",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W667",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v16 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "When a surface has been generated, the scaffold README an earlier write left on disk is removed if it still says the folder is built in a later increment; a README with other text is left alone. NOT DONE: the repository route is still not name-gated."
     },
     {
       "id": "FU-760",
@@ -14891,11 +14897,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.38",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W667",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v16 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The halal sentence says the text screened contains the word and that the screen cannot tell the subject's own claim from wording this platform composed around it. NOT DONE: the routes still hand the screen their composed output rather than the person's subject."
     },
     {
       "id": "FU-773",
@@ -14931,11 +14940,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.38",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W667",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v16 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Each catalogue row's computes flag is read from its own status; the basis counts how many compute and how many return a fixed marker; the registry's denominator sentence counts the modules that are registered; the solver's presence is no longer stated there and is read at the minimisation status route. One statement in one place."
     },
     {
       "id": "FU-775",
@@ -15266,11 +15278,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.38",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W667",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v16 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A defence whose lever's only consumer cannot act is recorded as set with the reason, not implemented; when the consumer can act it is implemented as before. The wiring report gains a field saying the consumer cannot act, and the page shows 'wired - cannot act' with the reason. NOT DONE: the fund route's caution threshold rests on the same ATP figure and is unchanged."
     },
     {
       "id": "FU-792",
@@ -15284,11 +15299,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.38",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W667",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v16 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Where a threat level came from is recorded with it: the response, the change record, its rationale and review sentence, its audit trail and the event-graph entry say simulated, measured, or supplied by the caller, with the level the immune system reports at that moment beside it. NOT DONE: the branch that takes no action (a nominal level) does not carry the source; and a simulated level still moves the real lever, as before - it is now recorded as what it is."
     },
     {
       "id": "FU-793",

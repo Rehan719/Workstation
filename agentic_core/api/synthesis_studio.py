@@ -443,6 +443,11 @@ async def spawn_vsb_entity(req: SpawnRequest, user: dict | None = Depends(get_cu
     entity["owner_id"] = owner
     enrich_vsb_entity(entity, owner_id=owner, problem=req.challenge or req.solution_name,
                       domain=req.domain, parent_vsb=getattr(req, 'parent_vsb', '') or '')
+    #  W667 (ledger v16 R2.3) - the literal "active" above survived whenever the screen did not fail, and the
+    #  organism then counted the entity as operating whatever the heartbeat was doing. The status is derived
+    #  from the same facts as at the other two doors; the literal is only what the derivation starts from.
+    from agentic_core.api.vsb import _rederive as _rederive667
+    _rederive667(entity)
     _save_vsb(entity)
 
     return {"entity_id": entity_id, "solution_name": req.solution_name, "structure": structure,

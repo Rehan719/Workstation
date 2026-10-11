@@ -394,8 +394,11 @@ def screen_compliance(text: str, jurisdiction: str = "UK / London",
         # from it. The only thing established is that the subject calls itself halal. A subject's own
         # vocabulary about itself is not a finding, and certainly not a certification.
         halal_status, halal_reason = "review", (
-            f"the subject describes itself with halal vocabulary ('{_HALAL_VOCAB.search(text).group(0)}') "
-            "and no prohibited (haram) term matched — that is the subject's own claim, not a "
+            #  W667 (ledger v16 R4.0) - this said the SUBJECT describes itself so. The screen is handed
+            #  composed output as often as a person's words, and the word was the floor template's own.
+            f"the text screened contains halal vocabulary ('{_HALAL_VOCAB.search(text).group(0)}') "
+            "and no prohibited (haram) term matched — the screen cannot tell whether that word is "
+            "the subject's own claim or wording this platform composed around it; either way it is not a "
             "certification and not an assessment; a halal verdict comes from a certifying body")
     else:
         halal_status, halal_reason, halal_cov = "review", (f"{NO_COVERAGE} — the haram-term screen matched "

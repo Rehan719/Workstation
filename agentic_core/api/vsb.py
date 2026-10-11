@@ -447,6 +447,18 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
                                 ("mobile/README.md", "mobile"), ("mobile/manifest.webmanifest", "mobile")):
         if _generated[_surface]:
             files.pop(_scaffold, None)
+            #  W667 (ledger v16 R2.4) - dropping the placeholder from THIS write left the one an earlier write
+            #  put on disk: a README under the entity's old working name calling the folder a scaffold "built
+            #  in a later increment", beside the generated app. A README that still says so is removed; one
+            #  that does not is somebody's own text and is left alone.
+            if _scaffold.endswith("README.md"):
+                _stale = root / _scaffold
+                try:
+                    if _stale.is_file() and "built in a later increment" in _stale.read_text(
+                            encoding="utf-8", errors="replace"):
+                        _stale.unlink()
+                except OSError:
+                    pass
     from agentic_core.vbs.quality import assure_delivery
     combined = "\n".join(v for k, v in files.items() if k.endswith(".md"))
     # required sections = content headings that genuinely appear in the repo docs (not filenames)

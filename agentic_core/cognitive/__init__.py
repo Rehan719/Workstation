@@ -59,8 +59,8 @@ _ABSENT_BASIS_BY_TIER = {
                      "(2026-09-30). Two of the three fabricate as methods - a hardcoded entropy and a "
                      "compliance of 1.0 - so registering them is not the same as making them honest"),
     EngineTier.BME: ("declared in EngineType and has no registered module. Built by P3.17. Its state is "
-                     "mixed rather than absent: entropic optimal transport has LIVE code with no solver "
-                     "(POT is not installed), the Omega-functional and Schrodinger bridge are archived, the "
+                     "mixed rather than absent: entropic optimal transport has LIVE code (whether its solver is "
+                     "importable is read at /api/v1/minimisation/status, not stated here), the Omega-functional and Schrodinger bridge are archived, the "
                      "diffusion process needs torchsde which is not installed, and the Landauer meter "
                      "already exists at core/transcendent_subsystems/tfel.py fed hardcoded bit counts"),
 }
@@ -119,9 +119,10 @@ def register_all() -> Dict[str, Any]:
                   f"{sum(1 for v in by_tier.values() if v['absent'])} of {len(by_tier)} tiers"
                   + (f"; {len(unavailable)} failed to import" if unavailable else "")),
         "what_the_denominator_means": (
-            f"{len(list(EngineType))} is what the ARCHITECTURE declares, not what works. Only the "
-            f"{by_tier[EngineTier.FOUNDATIONAL.value]['registered']} foundational engines have modules, and "
-            "each of those returns a fixed marker with confidence=None rather than computing"),
+            f"{len(list(EngineType))} is what the ARCHITECTURE declares, not what works. "
+            f"{len(registered)} have modules and are registered; of those, the "
+            f"{by_tier[EngineTier.FOUNDATIONAL.value]['registered']} foundational engines each return a "
+            "fixed marker with confidence=None rather than computing"),
         "what_registration_does_not_mean": ("registration is not computation, and the two registered tiers "
                                             "differ: the six FOUNDATIONAL engines return a fixed marker with "
                                             "confidence=None because they have no path to a model (FU-275), "

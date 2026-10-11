@@ -83,8 +83,9 @@ _ENGINE_REGISTRY = {
 for _e in _ENGINE_REGISTRY.values():
     _e.setdefault("implemented", True)
     _e.setdefault("status", "built")
-    # the six that exist return fixed markers rather than computing — said here, not implied away
-    _e.setdefault("computes", False)
+    #  W667 (ledger v16 R4.2) - every row was stamped computes False, including the rows whose own status
+    #  says they compute. The flag is read from the status the row declares.
+    _e.setdefault("computes", _e.get("status") == "built-computes")
 _IMPLEMENTED = [e for e, i in _ENGINE_REGISTRY.items() if i["implemented"]]
 
 
@@ -120,10 +121,11 @@ async def list_engines():
         "layers": {k: _layers.get(k, 0) for k in ("foundational", "meta", "auxiliary")},
         "layers_implemented": {k: _layers_impl.get(k, 0)
                                for k in ("foundational", "meta", "auxiliary")},
-        "basis": (f"{len(_IMPLEMENTED)} of the {len(_ENGINE_REGISTRY)} engines exist as modules and run; the "
-                  f"{len(_ENGINE_REGISTRY) - len(_IMPLEMENTED)} meta engines are PLANNED (no module yet — the "
-                  "delivery plan builds them under P3.13). No engine computes yet: each of the "
-                  f"{len(_IMPLEMENTED)} returns a fixed marker, which P3.12 also carries."),
+        "basis": (lambda _c: (
+            f"{len(_IMPLEMENTED)} of the {len(_ENGINE_REGISTRY)} engines in this table exist as modules; "
+            f"{_c} compute their named quantity or refuse with a stated basis, and the other "
+            f"{len(_IMPLEMENTED) - _c} return a fixed marker rather than computing"))(
+                sum(1 for _i in _ENGINE_REGISTRY.values() if _i.get("implemented") and _i.get("computes"))),
         # The registry's own answer, so this route stops being the only witness to its own claim.
         "registry": {
             "registered": _registered,
