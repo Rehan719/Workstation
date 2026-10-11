@@ -14586,11 +14586,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.38",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W668",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v16 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The journey writes its own record of what it measured; establish, given the journey's id, reads the candidate, the tie, the stage verifications and the provenance from that record and ignores the request's copies, so the page's two-step button no longer loses the tie and a typed figure is not sealed. The page sends the journey's id."
     },
     {
       "id": "FU-756",
@@ -14604,11 +14607,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.38",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W668",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v16 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The journey writes its own record of what it measured; establish, given the journey's id, reads the candidate, the tie, the stage verifications and the provenance from that record and ignores the request's copies, so the page's two-step button no longer loses the tie and a typed figure is not sealed. With no record, the evidence file is headed as supplied by the caller and not measured by this platform, names that source, and prints a supplied score as supplied, not as simulated evidence. NOT DONE: a body typed into the request with no provenance is still taken as the founder's own writing, which is what the standalone establish path is for - so floor-shaped text posted by a caller is not detected as such."
     },
     {
       "id": "FU-757",
@@ -14620,11 +14626,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.38",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W668",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v16 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A reader is given the status, the stage and the living statement as they are at the read: on one entity, in the list, and on the roster row, whose life-cycle sentence reads the lever now. The stored record is not rewritten by a read. The organism's count derives again only records that were derived in the first place; a record carrying a literal from an older writer is counted as that word."
     },
     {
       "id": "FU-758",
@@ -15531,10 +15540,13 @@
       "severity": "medium",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W668",
       "note": "",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "OWNER RULED 2026-10-11: a pasted text measured only against its own headings is not assessable unless its caller declares a structure. Built: such a text records the gate as not run and says why; a declared structure is measured as before. The first plan item's ACCEPT is amended by this ruling, and the two older tests that held the earlier behaviour now declare their structure and each gains the undeclared case."
     },
     {
       "id": "FU-806",

@@ -782,6 +782,7 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         stage_verifications[_sid]["derived_from"] = _s["basis"]
     stages_verified = sum(1 for v in stage_verifications.values() if v["verified"])
     stages_assessable = sum(1 for v in stage_verifications.values() if v["verified"] is not None)
+    _record_journey(journey_id, stage_5, stage_verifications, provenance)   # W668 - what establish reads
 
     # ── Continual operational delivery within the LIVING QMS: the journey's buildable + go-to-market
     # delivery is gated by the OWNED QMS, held to the §10 Solution-Quality Bar, recorded within the §8
@@ -856,6 +857,7 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
                                      "selection_basis": (stage_5 or {}).get("selection_basis")}
                                     if (stage_5 or {}).get("candidates") else {}),
                 stage_verifications=stage_verifications,
+                journey_id=journey_id,       # W668 - the one-call path names its own journey
                 ai_provenance={**provenance, "body_served_by": body_served_by(provenance)},    # W449 — the entity knows who served its body (F2)
                 review_gates=list(req.review_gates or [])),   # W452 — gates set at birth
                 user=user if isinstance(user, dict) else None)   # W302+W304 - the whole journey flows
@@ -997,6 +999,9 @@ class EstablishRequest(BaseModel):
     operations: str = ""
     selected_candidate: dict = {}
     stage_verifications: dict = {}
+    #  W668 - the journey this establishment follows. With it, the candidate, the tie and the stage
+    #  verifications are read from the platform's own record and the request's copies are ignored.
+    journey_id: str = ""
     # W449 (refuter F2) — the journey's provenance (served_by count map, per-agent servers) is STORED
     # on the entity so the repo / webapp / mobile gates know who wrote the concept they measure.
     # Empty for the standalone /establish path: origin unknown → the gate runs as before.
@@ -1187,6 +1192,79 @@ def _birth_gates(req: "EstablishRequest") -> dict:
     return {"stages": stages, "decisions": {}}
 
 
+#  W668 (ledger v16 R2.0, R2.1) - THE JOURNEY'S OWN RECORD OF WHAT IT MEASURED. The journey returned an id and
+#  kept nothing: establish took the candidate, the stage verifications and the tie from the request, so the
+#  page's two-step button lost the tie (it lives on the stage, not the candidate) and shipped "evidence-ranked"
+#  over three identical candidates, and a caller could post a simulation score nobody ran and have it sealed
+#  as simulated evidence. The record is what establish reads when it is given the journey's id.
+_JOURNEY_ID_RE = __import__("re").compile(r"^jny-[0-9a-f]{12}$")
+
+
+def _journey_store():
+    from agentic_core.config import data_path
+    p = data_path("genesis_journeys")
+    p.mkdir(parents=True, exist_ok=True)
+    return p
+
+
+def _record_journey(journey_id: str, stage_5: Any, stage_verifications: Any, provenance: Any) -> None:
+    """Never raises: a journey is not lost to a record that could not be written - and then establish finds
+    no record and labels the evidence as the caller's, which is the true statement in that case."""
+    try:
+        from agentic_core.config import atomic_write_json
+        s5 = stage_5 if isinstance(stage_5, dict) else {}
+        atomic_write_json(_journey_store() / f"{journey_id}.json", {
+            "journey_id": journey_id,
+            "recorded_at": __import__("time").strftime("%Y-%m-%dT%H:%M:%SZ", __import__("time").gmtime()),
+            "candidates": [c for c in (s5.get("candidates") or []) if isinstance(c, dict)],
+            "tie": s5.get("tie"), "candidates_distinct": s5.get("candidates_distinct"),
+            "selection_basis": s5.get("selection_basis"),
+            "stage_verifications": stage_verifications if isinstance(stage_verifications, dict) else {},
+            "ai_provenance": provenance if isinstance(provenance, dict) else {}})
+    except Exception:                           # noqa: BLE001 - see the docstring: absence is then stated
+        pass
+
+
+def _read_journey(journey_id: str):
+    import json as _json
+    if not isinstance(journey_id, str) or not _JOURNEY_ID_RE.match(journey_id):
+        return None
+    try:
+        return _json.loads((_journey_store() / f"{journey_id}.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def _apply_journey_record(req: "EstablishRequest") -> dict:
+    """Replace the request's evidence with the journey's own record when there is one; say which it was.
+
+    Returns the evidence source, stored on the entity and printed in its EVIDENCE.md. Idempotent."""
+    if req.__dict__.get("_w668_evidence_source"):
+        return req.__dict__["_w668_evidence_source"]
+    rec = _read_journey(getattr(req, "journey_id", "") or "")
+    if rec:
+        cands = rec.get("candidates") or []
+        want = (req.selected_candidate or {}).get("id") if isinstance(req.selected_candidate, dict) else None
+        pick = next((c for c in cands if want is not None and c.get("id") == want), cands[0] if cands else {})
+        req.selected_candidate = ({**pick, "tie": rec.get("tie"),
+                                   "candidates_distinct": rec.get("candidates_distinct"),
+                                   "selection_basis": rec.get("selection_basis")} if pick else {})
+        req.stage_verifications = rec.get("stage_verifications") or {}
+        if rec.get("ai_provenance"):
+            req.ai_provenance = {**rec["ai_provenance"], "body_served_by": body_served_by(rec["ai_provenance"])}
+        src = {"source": "journey_record", "journey_id": rec.get("journey_id"),
+               "basis": (f"read from this platform's own record of journey {rec.get('journey_id')} - not from "
+                         f"the establish request")}
+    elif (req.selected_candidate or req.stage_verifications):
+        src = {"source": "caller", "journey_id": (getattr(req, "journey_id", "") or None),
+               "basis": ("supplied in the establish request; this platform holds no journey record for it and "
+                         "measured none of it")}
+    else:
+        src = {"source": "none", "journey_id": None, "basis": "no candidate or stage evidence was supplied"}
+    req.__dict__["_w668_evidence_source"] = src
+    return src
+
+
 def _resolve_body_fields(req: "EstablishRequest") -> tuple:
     """Replace floor-served body fields on `req`; return ({field: floor-pending?}, {field: absent?}).
 
@@ -1365,6 +1443,7 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
     # §17.5 user isolation — with auth enabled, the established VSB's owner is ALWAYS the
     # authenticated user (server-side stamp). Single-user mode unchanged.
     req.owner_id = request_owner_id(user, req.owner_id)
+    _apply_journey_record(req)         # W668 - the platform's record first, so the veto reads the real candidate
     _refuse_vetoed_candidate(req)      # W485 — a vetoed approach establishes nothing
     import uuid as _uuid
     import time as _time
@@ -1468,6 +1547,7 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
             "operations": req.operations,
             "selected_candidate": req.selected_candidate,
             "stage_verifications": req.stage_verifications,
+            "evidence_source": _apply_journey_record(req),      # W668 - whose figures these are
         },
         "ai_provenance": dict(req.ai_provenance or {}),   # W449 — who served the body (F2)
         "review_gates": birth_gates,                        # W452 — Mode 3 gates, set at birth
@@ -1629,6 +1709,7 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
     import time as _time
 
     req.owner_id = request_owner_id(user, req.owner_id)   # §17.5 — server-side owner stamp
+    _apply_journey_record(req)         # W668 - the platform's record first (both paths)
     _refuse_vetoed_candidate(req)      # W485 — a vetoed approach establishes nothing (both paths)
     # W452 (refuter F1) — a bad gate id must be a REAL 400: raised inside the generator it arrived
     # after the 200 headers as an empty stream the page read as success.
@@ -1692,7 +1773,8 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
             # §4 (W304) — the full journey record survives on the SSE path too
             "genesis_journey": {"research": req.research, "operations": req.operations,
                                 "selected_candidate": req.selected_candidate,
-                                "stage_verifications": req.stage_verifications},
+                                "stage_verifications": req.stage_verifications,
+                                "evidence_source": _apply_journey_record(req)},
             "ai_provenance": dict(req.ai_provenance or {}),   # W449 — parity with the blocking path (F2)
             "review_gates": birth_gates,                        # W452 — parity with the blocking path
             "name_source": name_source, "name_pending": name_source == "slug",   # W450
