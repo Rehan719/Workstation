@@ -680,6 +680,91 @@ def peek_pending_transfers(vsb_id: str) -> float:
     return round(rec.get("pending_wst", 0.0), 2)
 
 
+_VENTURE_MEMO_HEAD = "§12 reinvestment from "       # the memo ventures.py writes for a position's credit
+
+
+def intake_sources(vsb_id: str) -> Dict[str, Any]:
+    """P3.30 (FU-745; OWNER RULING 2026-10-10: not reversed, but flagged) - WHERE THIS ENTITY'S RECORDED
+    CREDITS CAME FROM. READ-ONLY: it moves nothing, reverses nothing and writes nothing.
+
+    Since W658 a scope that is not a registered living entity cannot fund one. Credits made BEFORE that
+    stand on the receivers' records, and nothing read a record and said which of them came from such a
+    scope. This reads the receiver's own pending record - the rows record_transfer and credit_venture_intake
+    wrote - and, for each, whether its sender is on the living roster NOW. Three states per row: True,
+    False (flagged), None (not known: the row names no sender, or the roster could not be read).
+
+    What it cannot say is stated, not implied: 'registered' is the roster as it stands when this is read,
+    not as it stood when the credit was made; and the record keeps recent rows only, so an older credit is
+    known by its id alone."""
+    try:
+        d = _read_pending()
+    except PendingStoreUnavailable as e:
+        return {"vsb_id": vsb_id, "readable": False, "credits": [], "recorded_credits": None,
+                "from_unregistered_now": None, "sender_not_known": None, "credited_ids_on_record": None,
+                "basis": f"NOT KNOWN: the pending-transfers store could not be read ({e}). Nothing is flagged "
+                         f"and nothing is cleared.",
+                "disclaimer": "Virtual/simulated WST — no real funds moved."}
+    rec = d.get(vsb_id) or {}
+    _roster_why = None
+
+    def _registered(sender):
+        nonlocal _roster_why
+        try:
+            from agentic_core.economy.living_vsbs import is_registered as _is_registered
+            return bool(_is_registered(sender))
+        except Exception as _e:                              # noqa: BLE001 - not known is said, never guessed
+            _roster_why = f"{type(_e).__name__}: {_e}"
+            return None
+
+    credits: List[Dict[str, Any]] = []
+    for t in (rec.get("transfers") or []):
+        if not isinstance(t, dict):
+            continue
+        _venture = t.get("kind") == "venture_position"
+        if _venture:
+            _memo = str(t.get("memo") or "")
+            _sender = _memo[len(_VENTURE_MEMO_HEAD):].strip() if _memo.startswith(_VENTURE_MEMO_HEAD) else ""
+            _how = ("read from the memo this platform wrote for the position's credit" if _sender else
+                    "this venture credit's row names no investor, so its sender is not known from it")
+        else:
+            _sender = str(t.get("from_vsb") or "")
+            _how = ("the sender this transfer's row records" if _sender else
+                    "this row records no sender")
+        _reg = _registered(_sender) if _sender else None
+        credits.append({
+            "id": t.get("transfer_id") or t.get("ref"),
+            "kind": "venture_position" if _venture else "transfer",
+            "amount_wst": t.get("amount_wst"), "at": t.get("at"),
+            "sender": _sender or None, "sender_basis": _how,
+            "sender_registered_now": _reg,
+            "flag": ("FROM A SCOPE THAT IS NOT A REGISTERED LIVING ENTITY: its books are a simulation. "
+                     "Flagged, not reversed." if _reg is False else None)})
+    _ids = rec.get("credited_ids") if isinstance(rec.get("credited_ids"), list) else None
+    _older = (len(_ids) - len(credits)) if _ids is not None else None
+    _flagged = sum(1 for c in credits if c["sender_registered_now"] is False)
+    _unknown = sum(1 for c in credits if c["sender_registered_now"] is None)
+    return {
+        "vsb_id": vsb_id, "readable": True, "credits": credits,
+        "recorded_credits": len(credits),
+        "from_unregistered_now": _flagged,
+        "sender_not_known": _unknown,
+        "credited_ids_on_record": (len(_ids) if _ids is not None else None),
+        "basis": (
+            f"FLAGGED, NOT REVERSED (Owner ruling 2026-10-10): {_flagged} of {len(credits)} recorded credit(s) "
+            f"name a sender that is not a registered living entity on the roster as it is read NOW - which is "
+            f"not a statement about the roster when the credit was made. {_unknown} name no sender or could "
+            f"not be checked"
+            + (f" (the roster could not be read: {_roster_why})" if _roster_why else "")
+            + ". "
+            + (f"{_older} older credit(s) are on this record by id only: their rows are no longer kept, so "
+               f"their sender is not known from it. " if (_older or 0) > 0 else
+               "Every credited id on this record still has its row. " if _older == 0 else
+               "This record keeps no list of credited ids, so whether older credits exist is not known from it. ")
+            + "Nothing here was moved, reversed or written."),
+        "disclaimer": "Virtual/simulated WST — no real funds moved.",
+    }
+
+
 def return_pending_transfers(vsb_id: str, amount: float) -> None:
     """W467 (register FU-044) — give back inter-VSB receipts a cycle drained (consume_pending_transfers) when that cycle
     then wrote nothing to the ledger: they reached no books, so they wait for the next cycle."""

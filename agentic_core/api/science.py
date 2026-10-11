@@ -147,6 +147,10 @@ async def generate_hypotheses(req: HypothesisRequest):
         "research_question": req.research_question,
         "domain": req.domain,
         "hypotheses_raw": hypotheses if hypotheses else [raw],
+        #  P3.30 (ledger v16 R5.10) - the same lines as ONE text, for a surface that shows text. Added beside
+        #  the list, which keeps its shape for its readers; nothing is composed here that the list does not hold.
+        "hypotheses_text": "\n\n".join((hypotheses if hypotheses else [raw])
+                                       + ([f"Recommendation: {recommendation}"] if recommendation else [])),
         "recommendation": recommendation,
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),

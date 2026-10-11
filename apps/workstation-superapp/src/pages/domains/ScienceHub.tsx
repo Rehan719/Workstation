@@ -48,13 +48,29 @@ export const ScienceHub: React.FC = () => {
             </h3>
             <div className="flex gap-4 p-1 rounded-2xl bg-slate-900 border border-slate-800">
                <button type="button" onClick={() => setActiveTab('research')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'research' ? 'bg-slate-800 text-highlight shadow-lg' : 'text-slate-500 hover:text-white'}`}>Research</button>
+               {/* P3.30 (ledger v16 R5.10) — POST /api/v1/science/hypothesis had no screen */}
+               <button type="button" onClick={() => setActiveTab('hypothesis')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'hypothesis' ? 'bg-slate-800 text-highlight shadow-lg' : 'text-slate-500 hover:text-white'}`}>Hypotheses</button>
                <button type="button" onClick={() => setActiveTab('design')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'design' ? 'bg-slate-800 text-highlight shadow-lg' : 'text-slate-500 hover:text-white'}`}>Experiment Design</button>
                <button type="button" onClick={() => setActiveTab('literature')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'literature' ? 'bg-slate-800 text-highlight shadow-lg' : 'text-slate-500 hover:text-white'}`}>Literature</button>
             </div>
          </div>
 
          <div className="space-y-12">
-            {activeTab === 'design' ? (
+            {activeTab === 'hypothesis' ? (
+              <DomainTool
+                title={T['hypothesis'].title}
+                description={<>Pose a research question — you get candidate hypotheses, each with a null and an alternative, a rationale and a suggested test. Any feasibility or novelty figure in the text is the composing model's own estimate: nothing here measures either. What served the answer is shown with it.</>}
+                endpoint="/api/v1/science/hypothesis"
+                resultKey="hypotheses_text"
+                submitLabel="Generate hypotheses"
+                fields={[
+                  { name: 'research_question', label: 'Research question', type: 'textarea', placeholder: 'e.g. Does a later school start time improve attendance in secondary schools?' },
+                  { name: 'domain', label: 'Domain', type: 'text', default: 'general', placeholder: 'education | medicine | physics | …' },
+                  { name: 'background_context', label: 'Background (optional)', type: 'text', placeholder: 'what is already known, in a sentence' },
+                  { name: 'num_hypotheses', label: 'How many (2 to 5)', type: 'select', options: ['2', '3', '4', '5'], default: '3' },
+                ]}
+              />
+            ) : activeTab === 'design' ? (
               <DomainTool
                 title={T['design'].title}
                 description={<>State a hypothesis — Workstation's <span className="text-aura">own</span> AI designs a rigorous study (variables, controls, sampling &amp; power, procedure, analysis plan, validity, ethics), grounded in your chosen methodology, in-house.</>}

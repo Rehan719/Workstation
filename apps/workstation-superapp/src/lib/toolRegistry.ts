@@ -30,6 +30,7 @@ export const TOOL_REGISTRY: DomainTools[] = [
   ]},
   { name: 'Science', route: '/science', tools: [
     form('research', 'Research Synthesiser', 'Synthesise a research question into a structured, methodology-grounded evidence report.'),
+    form('hypothesis', 'Hypothesis Generator', 'Candidate hypotheses for a research question: a null and an alternative, a rationale and a suggested test. Any feasibility or novelty figure in the text is the composing model’s own estimate, not a measurement.'),
     form('design', 'Experiment Designer', 'Design a rigorous study from a hypothesis: variables, controls, sampling and power, procedure, analysis plan, validity, ethics.'),
     form('literature', 'Literature Review', 'Map the literature into a themed review outline (themes, key works, gaps).'),
   ]},

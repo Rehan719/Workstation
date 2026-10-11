@@ -86,12 +86,14 @@ interface WebsiteManifest {
 interface WebAppManifest {
   vsb_id: string; name: string; kind: string; interactive: boolean; file_count: number;
   features: string[]; preview: string;
+  note?: string;   // P3.30 (ledger v15 R2[7]) — the manifest's own statement that this is the standard template
   quality_assurance?: { quality?: { qms_gate_passed?: boolean; document_controlled?: boolean;
     compliance?: { overall?: string; compliant?: boolean } } };
 }
 interface PwaManifest {
   vsb_id: string; name: string; kind: string; installable: boolean; offline_capable: boolean;
   file_count: number; features: string[]; preview: string;
+  note?: string;   // P3.30 (ledger v15 R2[7])
   quality_assurance?: { quality?: { qms_gate_passed?: boolean; document_controlled?: boolean;
     compliance?: { overall?: string; compliant?: boolean } } };
 }
@@ -161,6 +163,7 @@ interface ReviewGates {
   mode: string; stages: string[];
   lifecycle: { id: string; name: string; description: string }[];
   statuses: { stage: string; gated: boolean; status: string; blocks_progress: boolean }[];
+  holds?: string[]; not_held?: string[]; holds_basis?: string;   // P3.30 (ledger v14 R3[7]) — the server's own list
 }
 
 // W303 — idempotent seed reader: module-level cache survives React StrictMode's double-mount
@@ -630,10 +633,10 @@ export const GenesisJourney: React.FC = () => {
           {[
             { icon: Lightbulb,  key: 'concept',           label: 'Conceptualise',          desc: 'Cognitive cascade + MJM → optimal concept' },
             { icon: Eye,        key: 'research',          label: 'Innovate & Research',     desc: 'Best/latest approaches: science·tech·business·law' },
-            { icon: Brain,      key: null,                label: 'Model · Simulate · Rank', desc: 'Candidate solutions scored on evidence → best' },
+            { icon: Brain,      key: null,                label: 'Model · Simulate · Rank', desc: 'Candidate solutions compared' },
             { icon: Layers,     key: 'design',            label: 'Design & Development',    desc: 'Architecture, components, MVP scope' },
             { icon: ShieldCheck,key: 'operations',        label: 'Operational Intelligence',desc: 'Deliverability · compliance · operability (§11 screens it)' },
-            { icon: Rocket,     key: 'commercialisation', label: 'Commercialise',           desc: 'GTM + revenue + living VSB blueprint' },
+            { icon: Rocket,     key: 'commercialisation', label: 'Commercialise',           desc: 'GTM + revenue + VSB blueprint' },
           ].map(({ icon: Icon, key, label, desc }, i) => {
             const st = railState(key, result);
             const done = st.done;
@@ -720,8 +723,8 @@ export const GenesisJourney: React.FC = () => {
         <div className="pt-2 flex flex-col @[560px]:flex-row @[560px]:items-end gap-3 flex-wrap">
           <label className="flex items-center gap-2 cursor-pointer select-none">
             <input type="checkbox" checked={establishOnComplete} onChange={e => setEstablishOnComplete(e.target.checked)}
-              className="accent-highlight w-4 h-4" aria-label="Establish living VSB on completion" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Establish living VSB on completion <span className="text-slate-600 normal-case">(one continuous workflow → living enterprise)</span></span>
+              className="accent-highlight w-4 h-4" aria-label="Establish a VSB on completion" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Establish a VSB on completion <span className="text-slate-600 normal-case">(one continuous workflow; the result says whether it is established or its body is still pending)</span></span>
           </label>
           {establishOnComplete && (
             <div>
@@ -744,7 +747,7 @@ export const GenesisJourney: React.FC = () => {
         <div className="flex items-center gap-4 pt-2">
           <Button onClick={run} disabled={running || !problem.trim()} className="flex items-center gap-2 bg-highlight text-sovereign">
             {running ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-            {running ? (establishOnComplete ? 'Concept → living enterprise…' : 'Running Sovereign Journey…')
+            {running ? (establishOnComplete ? 'Concept → enterprise…' : 'Running Sovereign Journey…')
                      : (establishOnComplete ? 'Launch Journey → Establish VSB' : 'Launch Genesis Journey')}
           </Button>
           {error && <p className="text-vital text-xs font-bold flex items-center gap-2"><AlertCircle size={14} /> {error}</p>}
@@ -761,7 +764,7 @@ export const GenesisJourney: React.FC = () => {
           )}
           {/* §4.9 (W306) — take the journey out in any selectable live format */}
           <Card className="p-4 border-slate-800 flex items-center justify-between gap-3 flex-wrap">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Export the journey (§4.9) — becomes a living, QMS-gated deliverable</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Export the journey (§4.9) as a deliverable</p>
             <div className="flex items-center gap-2">
               <Button onClick={() => exportJourney('report')} disabled={!!exporting}
                 className="flex items-center gap-2 bg-slate-900 text-highlight text-[11px]">
@@ -970,6 +973,25 @@ export const GenesisJourney: React.FC = () => {
                 <span key={e} className="px-2 py-0.5 rounded-md bg-highlight/10 text-highlight text-[9px] font-black uppercase tracking-wider">{e}</span>
               ))}
             </div>
+            {/* P3.30 (ledger v13 R2[1]) — the chips name the CALLS this journey made. On an all-floor journey they read
+                as six lenses and MJM having reasoned. What served the journey's calls is read from the journey's
+                own provenance and said beneath the chips. */}
+            {(() => {
+              const sb = result.ai_provenance?.served_by;
+              const served = sb ? Object.keys(sb).filter(k => Number(sb[k] ?? 0) > 0) : [];
+              const floorCalls = sb ? Number(sb['native'] ?? 0) : 0;
+              return (
+                <p className="text-[9px] text-slate-500 mt-2 leading-relaxed" data-testid="engines-used-basis">
+                  {served.length === 0
+                    ? 'These are the calls this journey made. What served them was not returned with it.'
+                    : served.every(k => k === 'native')
+                      ? `These are the calls this journey made, not engines that reasoned: all ${floorCalls} of its AI calls were served by the deterministic floor, which answers each with a structured frame. gaas.v5 is the intent gate.`
+                      : floorCalls > 0
+                        ? `These are the calls this journey made. ${floorCalls} of its AI calls were served by the deterministic floor (a structured frame); the rest by ${served.filter(k => k !== 'native').join(', ')}. gaas.v5 is the intent gate.`
+                        : `These are the calls this journey made, served by ${served.join(', ')}. gaas.v5 is the intent gate.`}
+                </p>
+              );
+            })()}
             {/* W494 (FU-130 refutation) — same verdict, same omission: this gate saw the intent and
                 the domain, not the journey's content. */}
             <p className="text-[9px] font-mono text-slate-500 mt-3" data-testid="journey-intent-gate"
@@ -1234,6 +1256,10 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                               )}
                             </div>
                             <p className="text-[9px] text-slate-500">{webapp.features.join(' · ')}</p>
+                            {/* P3.30 (ledger v15 R2[7]) — the manifest has said this since W618; the card did not */}
+                            <p className="text-[9px] text-amber-400/80 leading-relaxed" data-testid="webapp-template-note">
+                              {typeof webapp.note === 'string' && webapp.note ? webapp.note : 'The server sent no note saying what this app is.'}
+                            </p>
                             <button type="button" onClick={() => openExport(webapp.preview).catch(e => setError(`Preview failed: ${e.message}`))}
                               className="inline-block text-[10px] font-black uppercase tracking-widest text-highlight border border-highlight/40 px-3 py-1.5 rounded-lg hover:bg-highlight/10 transition-colors">
                                 Open the web app →
@@ -1267,6 +1293,9 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                               )}
                             </div>
                             <p className="text-[9px] text-slate-500">{pwa.features.join(' · ')}</p>
+                            <p className="text-[9px] text-amber-400/80 leading-relaxed" data-testid="pwa-template-note">
+                              {typeof pwa.note === 'string' && pwa.note ? pwa.note : 'The server sent no note saying what this app is.'}
+                            </p>
                             <button type="button" onClick={() => openExport(pwa.preview).catch(e => setError(`Preview failed: ${e.message}`))}
                               className="inline-block text-[10px] font-black uppercase tracking-widest text-aura border border-aura/40 px-3 py-1.5 rounded-lg hover:bg-aura/10 transition-colors">
                                 Open the phone app →
@@ -1379,7 +1408,7 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                               </p>
                             )}
                             {/* W452 (P1.4) — the copy says what a gate DOES: it used to say only that decisions were recorded */}
-                            <p className="text-[9px] text-amber-300/90">A gated stage that is <b>pending</b> or <b>rejected</b> blocks this enterprise's lifecycle movers — ship, evolve, cascades, plan orchestration and the organism's autonomous re-ship/evolve — with a 409 that names the gate, until a human approves it (or ungates the stage).</p>
+                            <p className="text-[9px] text-amber-300/90" data-testid="gates-holds">A gated stage that is <b>pending</b> or <b>rejected</b> holds these movers of this enterprise, each refused with a 409 that names the gate until a human approves it (or ungates the stage): <b>{Array.isArray(gates.holds) && gates.holds.length > 0 ? gates.holds.join(' · ') : 'the list was not returned with this response'}</b>.{typeof gates.holds_basis === 'string' && gates.holds_basis ? ` ${gates.holds_basis}` : ''}</p>
                             {/* W620 (FU-483) — what a gate does NOT do: the journey has already run, so no stage is paused */}
                             <p className="text-[9px] text-slate-500" data-testid="gates-scope-note">A gate does not pause the stage it is named after: the journey that composed this enterprise has already run. It holds the movers above. These eight gate stages are the gate vocabulary; the journey's own stages and a Project's three are different lists.</p>
                             <div className="flex flex-wrap gap-1.5">

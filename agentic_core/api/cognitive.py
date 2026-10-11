@@ -231,21 +231,33 @@ class MJMRequest(BaseModel):
 async def run_mjm(req: MJMRequest):
     """
     Run MJM (Mushahida-Jaiza-Muaina) lifecycle:
-    Observe → Analyse → Act. Returns evaluated result with compliance score.
+    Observe → Analyse → Act. Returns the lifecycle's answer with what it did and did not assess.
+
+    P3.30 (ledger v16 R4.14) - this route answered 500 on EVERY call. The consultation contract requires an
+    `engine` and the request was built without one, OUTSIDE the try, so the contract's own refusal was raised
+    where nothing could turn it into an answer. The engine is named here ('mjm': a lifecycle, which the
+    contract accepts by that name) and the request is built inside the try. No compliance score is returned:
+    the lifecycle computes none (P3.12), and the response says so beside the confidence it does not have.
     """
-    consultation = ConsultationRequest(query=req.query, context=req.context)
     try:
+        consultation = ConsultationRequest(engine="mjm", query=req.query, context=req.context)
         response = await _mjm.consult(consultation)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"MJM consultation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"MJM consultation failed: {type(e).__name__}: {e}")
 
     return {
         "query": req.query,
         "engine": response.engine,
         "answer": response.answer,
         "confidence": response.confidence,
+        #  P3.30 (R4.14) - carried from the lifecycle's own response, never retyped here: why there is no
+        #  confidence, what served the answer, and what the constitutional screen did (None = not assessed)
+        "confidence_basis": response.confidence_basis,
+        "served_by": response.served_by,
+        "is_external": response.is_external,
         "constitutional_validation": {
             "passed": response.constitutional_validation.passed,
+            "basis": response.constitutional_validation.basis,
         },
         "reasoning_trace": response.reasoning_trace,
         "status": "complete",

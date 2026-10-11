@@ -897,13 +897,27 @@ def _is_grounded(text: str, source: str, need: int = 2) -> bool:
     return len(toks(text) & src) >= min(need, len(src))
 
 
+def _cut_at_word(text, limit):
+    """P3.30 (ledger v13 R2[7]) - the longest prefix of `text` that ends at a word and is no longer than
+    `limit`, marked as cut. The website tagline was `subject[:120]`: a public page whose headline stopped
+    in the middle of a word with nothing to show the sentence went on. A text that fits is returned as it
+    is; a single word longer than the limit is cut hard, because there is no word boundary to cut at."""
+    t = str(text or "")
+    if len(t) <= limit:
+        return t
+    head = t[:limit + 1]
+    spaces = [i for i, ch in enumerate(head) if ch.isspace()]
+    cut = head[:spaces[-1]] if spaces else t[:limit]
+    return cut.rstrip(" ,;:—-") + "…"
+
+
 def _entity_fallback_copy(name: str, challenge: str, concept: str, kind: str) -> str:
     """§13 (W355/W356) — deterministic, TRUTHFUL public copy built from the entity's own data,
     used whenever the model can't be trusted for a public page (floor-served, ungrounded, or
     narration-laden). Honest and on-topic by construction — never fabricated, never off-subject."""
     subj = (challenge or concept or f"{name}'s mission").strip().rstrip(".")
     if kind == "hero":
-        return f"{name} — {subj[:120]}"
+        return f"{name} — {_cut_at_word(subj, 120)}"
     if kind == "about":
         base = f"{name} is a purpose-built venture addressing {subj}."
         return base + (f" Its approach: {concept.strip()[:400]}" if concept.strip() else "")
@@ -2371,6 +2385,25 @@ def _stage_label(vsb: dict) -> str:
     return str(vsb.get("stage") or "no stage reached")
 
 
+#  P3.30 (ledger v14 R3[7]) - WHAT A REVIEW GATE HOLDS, IN ONE PLACE. Each name is the `mover` a route hands to
+#  _refuse_gated (here and in business_plan.py, economy.py, resource_fabric.py and swarm.py). The gate panel
+#  listed five of them from memory and left out the board pack and the public surfaces. A guard collects the
+#  names from the call sites and compares them with this tuple, so the list cannot drift from the code.
+GATE_HOLDS = ("ship", "repo", "website", "web app", "phone app", "board pack", "repo cascade", "evolve",
+              "evolution apply", "cascade", "swarm run", "orchestrate", "contract delivery")
+#  ...and what it does not: the economy cycle reads the lifecycle and the compliance holds, never the gates
+#  (Owner: a review gate holds the ship, the board pack and the public surfaces, not the economy).
+GATE_DOES_NOT_HOLD = ("economy cycle",)
+
+
+def _gate_scope() -> dict:
+    """What a pending or rejected gate holds for an entity, for the two responses the gate panel renders."""
+    return {"holds": list(GATE_HOLDS), "not_held": list(GATE_DOES_NOT_HOLD),
+            "holds_basis": ("The heartbeat's own re-ship, evolve and evolution auto-apply are held as well. "
+                            "NOT held: the entity's economy cycle - a gate holds the ship, the board pack "
+                            "and the public surfaces, not the economy.")}
+
+
 def _refuse_gated(vsb: dict, mover: str) -> None:
     """The shared Mode 3 guard: a lifecycle mover refuses while any gated stage awaits or failed its
     human review. 409 with the gate, its status and the way out — never a silent pass, never a bare
@@ -2489,6 +2522,7 @@ async def get_review_gates(vsb_id: str, user: dict | None = Depends(get_current_
             "stages": rg.get("stages", []), "lifecycle": _lifecycle_meta(),
             "statuses": [_gate_status(rg, s[0]) for s in _CONCEPT_TO_COMMERCIALISE_STAGES],
             "gated_count": len(rg.get("stages", [])),
+            **_gate_scope(),                                   # P3.30 (ledger v14 R3[7])
             #  W633 (FU-564) - these stages are NOT the Genesis journey's: said, so no reader takes them for one lifecycle
             "lifecycle_basis": (f"these {len(_CONCEPT_TO_COMMERCIALISE_STAGES)} stages are the entity's GOVERNANCE "
                                 "lifecycle, a separate list from the Genesis journey's own stages (GET "
@@ -2520,6 +2554,7 @@ async def set_review_gates(vsb_id: str, req: ReviewGatesRequest, user: dict | No
     return {"vsb_id": vsb_id, "mode": "Mode 3 — optional human review gates (set in the VSB genome)",
             "stages": rg["stages"], "lifecycle": _lifecycle_meta(),
             "statuses": [_gate_status(rg, s[0]) for s in _CONCEPT_TO_COMMERCIALISE_STAGES],
+            **_gate_scope(),                                   # P3.30 - this response replaces the panel's state
             "dcs_hash": dcs_hash}
 
 
@@ -2745,6 +2780,43 @@ def enrich_vsb_entity(entity: dict, *, owner_id: str = "default", problem: str =
         except Exception as _exc:
             entity["first_screen"] = {"error": f"{_exc.__class__.__name__}: {str(_exc)[:140]}"}
     return entity
+
+
+#  P3.30 (ledger v16 R2.14) - THE TWO FIGURES THE CASCADE CARRIES THAT NO ENGINE COMPUTED. The alignment and
+#  anomaly engines return a fixed figure whatever they are handed (P3.12; the cascade calls them with the plan
+#  and no metrics), and the spawn door wrote the whole cascade report onto the entity record: a new
+#  enterprise's own file then held an alignment score and a threat score nobody assessed. (section, figure).
+_CASCADE_FIXED_FIGURES = (("alignment", "alignment"), ("alerts", "threat_score"))
+
+
+def _stored_cascade_record(cascade_result):
+    """What the entity record keeps of the cascade: everything it reported, with each fixed figure replaced by
+    None and a basis - the shape MJM's own compliance field already has. Only a figure that is PRESENT and
+    numeric is withheld, and the record names which were; a cascade that returned none (it raised, or an
+    engine refused) is stored as it came and says nothing was withheld. The live report the stream and the
+    governance gate read is not touched: this is a copy for the record."""
+    if not isinstance(cascade_result, dict):
+        return cascade_result
+    out = dict(cascade_result)
+    withheld = []
+    for _section, _figure in _CASCADE_FIXED_FIGURES:
+        _sub = out.get(_section)
+        _val = _sub.get(_figure) if isinstance(_sub, dict) else None
+        if isinstance(_val, (int, float)) and not isinstance(_val, bool):
+            out[_section] = {
+                **_sub, _figure: None,
+                f"{_figure}_basis": ("NOT ASSESSED: this engine returns one fixed figure whatever it is "
+                                     "given and read nothing of this enterprise, so the figure is not "
+                                     "kept on the record (P3.12)"),
+                "status_basis": ("the engine's status word is its fixed return too: it reports that the "
+                                 "call completed, not that anything was found aligned or safe")}
+            withheld.append(f"{_section}.{_figure}")
+    out["figures_withheld"] = withheld
+    out["figures_withheld_basis"] = (
+        (f"{len(withheld)} figure(s) the cascade returned are not kept ({', '.join(withheld)}): each is an "
+         f"engine's fixed marker, not an assessment of this enterprise") if withheld else
+        "the cascade returned no fixed engine figure, so nothing was withheld from this record")
+    return out
 
 
 class SpawnRequest(BaseModel):
@@ -3017,7 +3089,7 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
                 ("model:" + str(_spawn_prov["served_by_agent"]["vsb_ceo"]))
                 if (_spawn_prov.get("served_by_agent") or {}).get("vsb_ceo") else "not recorded"),
             "swarm_config": swarm_config,
-            "cascade_analysis": cascade_result,
+            "cascade_analysis": _stored_cascade_record(cascade_result),     # P3.30 (R2.14)
             "mjm_result": mjm_result,
             "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "elapsed_seconds": round(time.time() - started, 2),

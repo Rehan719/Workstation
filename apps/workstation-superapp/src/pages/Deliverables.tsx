@@ -129,10 +129,14 @@ export const Deliverables: React.FC = () => {
     try {
       const rr = await fetch('/api/v1/refine', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ previous: selected.content, instruction: refineInstr, context: selected.title }),
+        // W671 (Owner ruling 2026-10-11) - a religion-domain deliverable is named as one, so the route's scholar rule applies
+        body: JSON.stringify({ previous: selected.content, instruction: refineInstr, context: selected.title,
+                               source_endpoint: String((selected as any).domain || '').toLowerCase() === 'religion' ? '/api/v1/religion/deliverable' : '' }),
       });
       if (!rr.ok) throw new Error(`refine HTTP ${rr.status}`);
       const rj = await rr.json();
+      // a withheld rewrite is NOT a new version: the route returned the draft unchanged, so nothing is saved
+      if (rj?.refine_withheld) throw new Error(`Scholar review — the rewrite is withheld and no new version was saved: ${String(rj?.review_note || 'it awaits a named scholar\'s review')}`);
       const refined = String(rj?.refined ?? '');
       if (!refined.trim()) throw new Error('refine returned empty content');
       const vr = await fetch(`/api/v1/deliverables/${selected.id}/regenerate`, {

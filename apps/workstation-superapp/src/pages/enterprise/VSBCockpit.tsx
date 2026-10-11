@@ -6,6 +6,9 @@ import axios from 'axios';
 import { Card, Button, Badge } from '@workstation/ui';
 import { Building2, Crown, Users, Target, ShieldCheck, Workflow, Loader2, Play, Boxes, ScrollText, MessageCircle, Send, Coins, Mic, Volume2, Paperclip, Download } from 'lucide-react';
 import { PlanOpening } from '../../components/PlanOpening';   // W505 (FU-074)
+import { DictateButton } from '../../components/DictateButton';   // P3.30 (ledger v16 R3.14, R2.9)
+import { getPrefs } from '../../lib/userPrefs';
+import { domainLabel } from '../../lib/taxonomy';                 // P3.30 (ledger v16 R5.7)
 
 // The VSB Enterprise Cockpit — interact with a generated living VSB IDBO Enterprise: its
 // organisational structure, the Chief's digital twin + Board, the living business plan
@@ -403,6 +406,95 @@ export const VSBCockpit: React.FC = () => {
     }
   };
 
+  // P3.30 (ledger v16 R3.10) - THE BOARD PACK OF THE ENTITY ON SCREEN. It could be assembled only on the Genesis
+  // page in the session that established the entity, and its history was read by nothing. Every answer is
+  // TIED TO THE ENTITY IT WAS ISSUED FOR (the W503 pattern above), and a refusal - a review gate holds the
+  // pack, as does a pending name or a missing concept - is shown as text through detailText.
+  const [pack, setPack] = useState<Dict | null>(null);
+  const [packList, setPackList] = useState<Dict | null>(null);
+  const [packBusy, setPackBusy] = useState(false);
+  const [packMsg, setPackMsg] = useState('');
+  const loadPacks = async (id: string) => {
+    try {
+      const r = await axios.get(`/api/v1/vsb/${id}/board-packs`);
+      if (id !== selectedRef.current) return;
+      setPackList(r.data);
+    } catch (e: any) {
+      if (id !== selectedRef.current) return;
+      setPackList(null); setPackMsg(`The board pack history could not be read: ${detailText(e?.response?.data?.detail ?? e?.message)}`);
+    }
+  };
+  const loadLatestPack = async (id: string) => {
+    try {
+      const r = await axios.get(`/api/v1/vsb/${id}/board-pack`);
+      if (id !== selectedRef.current) return;
+      setPack(r.data);
+    } catch (e: any) {
+      if (id !== selectedRef.current) return;
+      setPack(null);
+      // a 404 is "none assembled yet", which the history's own count says; anything else is said here
+      if (e?.response?.status !== 404) setPackMsg(`The latest board pack could not be read: ${detailText(e?.response?.data?.detail ?? e?.message)}`);
+    }
+  };
+  useEffect(() => {
+    setPack(null); setPackList(null); setPackMsg(''); setPackBusy(false);
+    if (selected && tab === 'chief') { loadPacks(selected); loadLatestPack(selected); }
+  }, [selected, tab]);
+  const assemblePack = async () => {
+    if (!selected) return;
+    const issuedFor = selected;
+    setPackBusy(true); setPackMsg('');
+    try {
+      const r = await axios.post(`/api/v1/vsb/${issuedFor}/board-pack`);
+      if (issuedFor !== selectedRef.current) return;
+      setPack(r.data);
+      await loadPacks(issuedFor);
+    } catch (e: any) {
+      if (issuedFor !== selectedRef.current) return;
+      setPackMsg(`Not assembled: ${detailText(e?.response?.data?.detail ?? e?.message)}`);
+    }
+    if (issuedFor === selectedRef.current) setPackBusy(false);
+  };
+
+  // P3.30 (ledger v16 R2.9) - A FOUNDER WRITES A BODY SECTION IN THEIR OWN WORDS. The route has existed since
+  // W655 and no page called it, so an entity born on the floor could never leave "body pending" from the UI.
+  // Which sections are offered is read from the entity's own record (body_pending / body_absent), never typed
+  // here; the server decides what it accepts and its refusal is shown as text. The concept has its own route.
+  const [bodyDraft, setBodyDraft] = useState<Record<string, string>>({});
+  const [bodyBusy, setBodyBusy] = useState('');
+  const [bodyMsg, setBodyMsg] = useState('');
+  useEffect(() => { setBodyDraft({}); setBodyBusy(''); setBodyMsg(''); }, [selected]);
+  const saveBodySection = async (section: string) => {
+    if (!selected) return;
+    const issuedFor = selected;
+    const text = (bodyDraft[section] ?? '').trim();
+    if (!text) return;
+    setBodyBusy(section); setBodyMsg('');
+    let saved: Dict | null = null;
+    try {
+      const r = section === 'concept'
+        ? await axios.post(`/api/v1/vsb/${issuedFor}/concept`, { concept: text })
+        : await axios.post(`/api/v1/vsb/${issuedFor}/body/${encodeURIComponent(section)}`, { text });
+      saved = r.data ?? {};
+    } catch (e: any) {
+      if (issuedFor === selectedRef.current) {
+        setBodyMsg(`${section}: NOT recorded — ${detailText(e?.response?.data?.detail ?? e?.message)}`);
+        setBodyBusy('');
+      }
+      return;
+    }
+    if (issuedFor !== selectedRef.current) return;
+    setBodyDraft(d => ({ ...d, [section]: '' }));
+    setBodyMsg(`${section}: recorded as your own words. The entity now reads "${String(saved?.status ?? 'status not returned')}"${saved?.status_basis ? ` — ${String(saved.status_basis)}` : ''}.`);
+    try {
+      const d = await axios.get(`/api/v1/vsb/${issuedFor}`);
+      if (issuedFor === selectedRef.current) setDetail(d.data);
+    } catch {
+      if (issuedFor === selectedRef.current) setBodyMsg(m => `${m} The record could not be re-read, so the list above may be out of date: reload the page.`);
+    }
+    if (issuedFor === selectedRef.current) setBodyBusy('');
+  };
+
   const instructChief = async () => {
     if (!selected || !chiefText.trim()) return;
     setChiefBusy(true); setChiefResult(null);
@@ -678,7 +770,7 @@ export const VSBCockpit: React.FC = () => {
               className="flex-1 min-w-[240px] bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-white">
               {vsbs.length === 0 && <option value="">No established VSBs yet — spawn one in the VSB Spawn Studio</option>}
               {vsbs.length > 0 && options.length === 0 && <option value="">No VSB matches “{vsbFilter}”</option>}
-              {options.map(v => <option key={v.vsb_id} value={v.vsb_id}>{v.name || v.vsb_id}{v.domain ? ` · ${v.domain}` : ''}{v.has_board ? ' ✓' : ''}</option>)}
+              {options.map(v => <option key={v.vsb_id} value={v.vsb_id}>{v.name || v.vsb_id}{v.domain ? ` · ${domainLabel(v.domain)}` : ''}{v.has_board ? ' ✓' : ''}</option>)}
             </select>
             {vsbs.length > 8 && (
               // Never truncate silently: a capped list that looks complete is worse than a long one.
@@ -721,7 +813,8 @@ export const VSBCockpit: React.FC = () => {
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <h3 className="text-lg font-black text-white">{detail.name}{detail.name_pending && <span className="ml-2 align-middle text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400" title="a working slug from the founder's words — name it on the Genesis page">working name — pending the founder's</span>}</h3>
                   <div className="flex gap-2">
-                    {detail.domain && <Badge color="highlight">{detail.domain}</Badge>}
+                    {/* P3.30 (ledger v16 R5.7) — a value outside the six domains is shown as itself and named as that */}
+                    {detail.domain && <Badge color="highlight">{domainLabel(detail.domain)}</Badge>}
                     {/* W496 (FU-100) - an emerald badge asserted a healthy state for every status the
                         entity could carry, including "held" and "body pending". */}
                     {detail.status && (
@@ -746,6 +839,38 @@ export const VSBCockpit: React.FC = () => {
                 </div>
                 <p className="text-[11px] text-slate-500 leading-relaxed">{detail.challenge}</p>
                 <p className="text-[9px] font-mono text-slate-600">{detail.vsb_id} · realm: {detail.realm} · owner: {detail.owner_id}</p>
+                {/* P3.30 (ledger v16 R2.9) — the sections this entity's own record lists as awaiting the owned model
+                    or never provided, each with a box for the founder's own words. Nothing is listed here that the
+                    record does not list. */}
+                {(() => {
+                  const pend: Record<string, any> = (detail.body_pending && typeof detail.body_pending === 'object') ? detail.body_pending : {};
+                  const absent: Record<string, any> = (detail.body_absent && typeof detail.body_absent === 'object') ? detail.body_absent : {};
+                  const names = Array.from(new Set([...Object.keys(pend).filter(k => !!pend[k]), ...Object.keys(absent).filter(k => !!absent[k])]));
+                  if (names.length === 0) return null;
+                  return (
+                    <div className="mt-3 pt-3 border-t border-slate-800 space-y-3" data-testid="cockpit-body-sections">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-amber-400">Sections of this entity's body that are not written ({names.length})</p>
+                      <p className="text-[10px] text-slate-500 leading-relaxed">Write any of them in your own words. The server records it as the founder's text, derives the status again, and marks a body that was already shipped as stale.</p>
+                      {names.map(sec => (
+                        <div key={sec} className="space-y-1.5" data-testid={`cockpit-body-section-${sec}`}>
+                          <p className="text-[10px] font-bold text-slate-300">{sec} <span className="font-normal text-slate-500">— {pend[sec] ? 'awaiting the owned model' : 'never provided'}</span></p>
+                          <textarea aria-label={`Your own words for ${sec}`} value={bodyDraft[sec] ?? ''} onChange={e => setBodyDraft(d => ({ ...d, [sec]: e.target.value }))} rows={3}
+                            placeholder={`Write the ${sec} in your own words`}
+                            className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-highlight/50" />
+                          <div className="flex flex-wrap items-center gap-2">
+                            <DictateButton lang={getPrefs().dictationLanguage || getPrefs().language || 'en-US'}
+                              onTranscript={text => setBodyDraft(d => ({ ...d, [sec]: (d[sec] ? d[sec] + ' ' : '') + text }))} />
+                            <Button type="button" data-testid={`cockpit-body-save-${sec}`} onClick={() => saveBodySection(sec)}
+                              disabled={bodyBusy === sec || !(bodyDraft[sec] ?? '').trim()} className="text-[10px] px-3 py-1">
+                              {bodyBusy === sec ? 'Recording…' : `Record my ${sec}`}
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                      {bodyMsg && <p role="status" data-testid="cockpit-body-message" className="text-[11px] text-amber-400 font-bold">{bodyMsg}</p>}
+                    </div>
+                  );
+                })()}
               </Card>
               <Card className="p-6">
                 {/* W574 (M1 R4.4) — THIS IS THE PLATFORM'S STANDING STRUCTURE, NOT THIS ENTITY'S
@@ -805,12 +930,75 @@ export const VSBCockpit: React.FC = () => {
                 </Card>
               )}
               {gateMsg && <p data-testid="cockpit-gate-message" className="text-[11px] text-amber-400 font-bold">{gateMsg}</p>}
+              {/* P3.30 (ledger v16 R3.10) — assemble the Board Pack here, and read its layers and history. Each layer
+                  is a LINE with its basis in body text; the history is the server's list, newest first. */}
+              <Card className="p-6 space-y-3" data-testid="cockpit-board-pack">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><ScrollText size={14} /> Board Pack (§17.3)</h4>
+                  <Button type="button" data-testid="cockpit-pack-assemble" onClick={assemblePack} disabled={packBusy} className="text-[10px] px-3 py-1 flex items-center gap-2">
+                    {packBusy ? <Loader2 size={12} className="animate-spin" /> : <ScrollText size={12} />} {packBusy ? 'Assembling…' : 'Assemble Board Pack'}
+                  </Button>
+                </div>
+                {packMsg && <p role="alert" data-testid="cockpit-pack-message" className="text-[11px] text-amber-400 font-bold">{packMsg}</p>}
+                {pack ? (
+                  <div className="space-y-2" data-testid="cockpit-pack-latest">
+                    <p className="text-[11px] text-slate-300 font-bold">
+                      Version {String(pack.version ?? 'not stated')} · assembled {String(pack.generated_at ?? 'at a time not recorded')}
+                      {pack.unchanged && pack.unchanged_since ? ` · unchanged since ${String(pack.unchanged_since)}` : ''}
+                    </p>
+                    {(() => { const b = provenanceMapBadge(pack.ai_provenance?.served_by, pack.ai_provenance?.any_external);
+                      return <span data-testid="cockpit-pack-provenance" className={`inline-block text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
+                    <p className="text-[10px] text-slate-500" data-testid="cockpit-pack-dcs">
+                      Document control: {pack.dcs_covers ? String(pack.dcs_covers) : (pack.dcs_registered ? 'registered' : 'NOT registered')}
+                    </p>
+                    {Object.entries((pack.layers_state && typeof pack.layers_state === 'object') ? pack.layers_state as Record<string, any> : {}).map(([k, v]) => (
+                      <p key={k} className="text-[10px] text-slate-400 leading-relaxed" data-testid={`cockpit-pack-layer-${k}`}>
+                        <span className="font-black uppercase text-slate-300">{k.replace('_', ' ')}</span>: holds {String(v?.holds ?? 'not stated')} — {String(v?.basis ?? 'no basis is recorded for this layer')}
+                      </p>
+                    ))}
+                    {pack.layers?.constitutional && typeof pack.layers.constitutional === 'object' && (
+                      <p className="text-[10px] text-slate-500 leading-relaxed" data-testid="cockpit-pack-constitutional-sources">
+                        Mission: {String(pack.layers.constitutional.mission_source ?? 'source not stated')}. Vision: {String(pack.layers.constitutional.vision_source ?? 'source not stated')}. Values: {String(pack.layers.constitutional.values_source ?? 'source not stated')}.
+                      </p>
+                    )}
+                    {pack.entity_compliance && typeof pack.entity_compliance === 'object' && (
+                      <p className="text-[10px] text-slate-500">
+                        Entity §11: {pack.entity_compliance.known === false ? 'not known' : String(pack.entity_compliance.verdict ?? 'never screened')} — {String(pack.entity_compliance.basis ?? '')}
+                      </p>
+                    )}
+                    {pack.concept_note && <p className="text-[10px] text-amber-400/80">{String(pack.concept_note)}</p>}
+                    <pre className="text-[10px] text-slate-400 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto font-sans">{String(pack.narrative ?? '').slice(0, 1200)}</pre>
+                  </div>
+                ) : (
+                  packList && Number(packList.total ?? 0) === 0 && (
+                    <p className="text-[11px] text-slate-500" data-testid="cockpit-pack-none">No board pack has been assembled for this entity.</p>
+                  )
+                )}
+                {packList && Array.isArray(packList.board_packs) && packList.board_packs.length > 0 && (
+                  <div className="pt-2 border-t border-slate-800 space-y-1" data-testid="cockpit-pack-history">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">
+                      History — {String(packList.total ?? packList.board_packs.length)} assembl{Number(packList.total ?? packList.board_packs.length) === 1 ? 'y' : 'ies'}, {String(packList.versions ?? 'an unstated number of')} distinct version(s)
+                    </p>
+                    {packList.note && <p className="text-[9px] text-slate-600">{String(packList.note)}</p>}
+                    {(packList.board_packs as Dict[]).slice(0, 10).map((p, i) => (
+                      <p key={`${String(p.generated_at)}-${i}`} className="text-[10px] font-mono text-slate-500">
+                        {String(p.generated_at ?? 'time not recorded')} · v{String(p.version ?? '?')} · {p.dcs_registered ? 'DCS-registered' : 'not DCS-registered'} · {String(p.content_hash ?? '').slice(0, 12) || 'no content hash'}
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </Card>
               {/* W300 — instruct THIS entity's Chief: apex delegation scoped to the VSB's own plan */}
               <Card className="p-6 space-y-3 border-highlight/30 bg-highlight/5">
                 <h4 className="text-[10px] font-black uppercase tracking-widest text-highlight flex items-center gap-2"><Crown size={14} /> Instruct this entity's Chief</h4>
                 <textarea value={chiefText} onChange={e => setChiefText(e.target.value)} rows={2}
                   placeholder="Give the Chief an instruction — it is recorded on THIS entity's living plan and passed to its AI CEO. The result says what came back."
                   className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-highlight/50 resize-none" />
+                {/* P3.30 (ledger v16 R3.14) — dictation into the instruction; appended, never sent on its own */}
+                <div data-testid="cockpit-chief-dictate">
+                  <DictateButton lang={getPrefs().dictationLanguage || getPrefs().language || 'en-US'}
+                    onTranscript={text => setChiefText(prev => (prev ? prev + ' ' : '') + text)} />
+                </div>
                 <Button type="button" onClick={instructChief} disabled={chiefBusy || !chiefText.trim()}
                   className="bg-highlight text-sovereign text-xs flex items-center gap-2">
                   {chiefBusy ? <Loader2 size={13} className="animate-spin" /> : <Crown size={13} />} Issue instruction

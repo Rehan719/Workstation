@@ -24,6 +24,15 @@ export const CadencePanel: React.FC<{ scope: string }> = ({ scope }) => {
           <span className="font-black uppercase text-slate-300">{layer.replace('_', ' ')}</span> ({l.period}):{' '}
           {l.ever_refreshed ? `last refreshed ${String(l.last_refresh_at).slice(0, 10)} · ${l.refresh_count} on record` : 'never refreshed'}
           {' · '}{l.due?.due ? 'DUE' : 'not due'} — {l.due?.reason}
+          {/* P3.30 (ledger v13 R3[7], v16 R3.9) — what served the latest refresh and on what basis, as body text:
+              the layer's sentence is derived from the plan's own counts unless a caller supplied it. */}
+          {l.latest && (
+            <span className="block text-[9px] text-amber-300/80" data-testid={`cadence-source-${layer}`}>
+              latest refresh served by {String(l.latest.served_by ?? 'not recorded')}
+              {l.latest.applied === false ? ' — kept as a proposal, not written to the plan' : ''}
+              {l.latest.provenance_basis ? `. ${String(l.latest.provenance_basis)}` : '. No basis was recorded for it.'}
+            </span>
+          )}
         </p>
       ))}
       {st?.signals_basis && <p className="text-[9px] text-amber-300/80" data-testid="cadence-signals">{st.signals_basis}.</p>}

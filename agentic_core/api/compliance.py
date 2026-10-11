@@ -40,7 +40,18 @@ _HARAM = re.compile(
 # way: this screen may raise a concern, never certify its absence.
 _LENDING_CONTEXT = re.compile(
     r"\b(loan|loans|lend\w*|borrow\w*|financ\w*|credit|debt|mortgage|overdraft|repay\w*|"
-    r"instal(?:l)?ment)\w*", re.IGNORECASE)
+    r"instal(?:l)?ment|deposit|savings?|saver)\w*", re.IGNORECASE)
+#  P3.30 (ledger v16 R1.7) - MONEY HELD AT INTEREST IS THE SAME CONCERN AS MONEY LENT AT INTEREST. The context
+#  list above knew only lending words, so "a savings account paying 3% interest" carried a rate token and no
+#  context, and the screen answered that nothing matched. The three deposit words are added to the list (a
+#  rate token is still required beside one, and the verdict is still REVIEW), and this names which kind of
+#  context matched so the reason does not call a deposit a loan.
+_DEPOSIT_WORD = re.compile(r"(deposit|saving|saver)", re.IGNORECASE)
+#  P3.30 (ledger v15 R1[9]) - THE CATEGORY WORD IS NOT A PROHIBITED THING. It sits in the vocabulary above
+#  beside the things it names, so a brief ASKING whether something falls in the category was failed exactly
+#  as an offer of alcohol is. The word alone does not say whether the text asks about, describes, avoids or
+#  offers anything; that is a REVIEW. A named prohibited thing beside it still fails.
+_CATEGORY_WORD = re.compile(r"haram", re.IGNORECASE)
 _RIBA_SIGNAL = re.compile(
     r"\b(apr|aer|interest[- ](?:bearing|charge|charges|rate|rates|payment|payments|accru\w*)|"
     r"(?:charg\w+|pay\w*|accru\w*|earn\w*)\s+interest|compound(?:ing|ed)?\s+(?:interest|monthly|annually)|"
@@ -380,24 +391,48 @@ def screen_compliance(text: str, jurisdiction: str = "UK / London",
     halal_cov = "vocabulary"
     _hits = list(_HARAM.finditer(text))
     _offered = [m for m in _hits if not _negated(text, m)]
-    _negated_only = bool(_hits) and not _offered
-    if _offered:
-        halal_status, halal_reason = "fail", (f"haram term present in the text: '{_offered[0].group(0)}' — a keyword "
+    #  P3.30 (v15 R1[9]) - the offered hits that NAME a prohibited thing, apart from the category word itself
+    _named = [m for m in _offered if not _CATEGORY_WORD.fullmatch(m.group(0))]
+    _category_only = bool(_offered) and not _named
+    #  unchanged for every text without the category word (then _named is _offered): a negated mention and
+    #  no named thing offered. With it, the engine's keyword rule matching the SAME negated phrase still
+    #  does not turn a review into a fail.
+    _negated_only = len(_hits) > len(_offered) and not _named
+    if _named:
+        #  P3.30 (ledger v16 R1.7) - EVERY DISTINCT TERM IS NAMED. The reason quoted the first match and
+        #  stopped, so a subject offering four prohibited things read as offering one. The first term keeps
+        #  its place and the sentence keeps its shape; the others follow it.
+        _terms: List[str] = []
+        for _nm in _named:
+            if _nm.group(0).lower() not in [t.lower() for t in _terms]:
+                _terms.append(_nm.group(0))
+        _more = (f" (and {len(_terms) - 1} more matched: " + ", ".join(f"'{t}'" for t in _terms[1:]) + ")"
+                 if len(_terms) > 1 else "")
+        halal_status, halal_reason = "fail", (f"haram term present in the text: '{_terms[0]}'{_more} — a keyword "
                                               "screen, not a certification")
-    elif _hits:
+    elif _hits and not _offered:
         _m = _hits[0]
         _phrase = " ".join(text[max(0, _m.start() - 24):min(len(text), _m.end() + 6)].split())
         halal_status, halal_reason = "review", (f"haram-vocabulary term '{_m.group(0)}' appears only in a negating "
                                                 f"phrase ('{_phrase}'); the screen cannot tell offered from avoided — "
                                                 "review, not a certification")
+    elif _category_only:
+        _cw = _offered[0].group(0)
+        halal_status, halal_reason = "review", (
+            f"the category word '{_cw}' appears in the text and no named prohibited thing is offered in it. "
+            f"The word alone does not say whether the text asks about, describes, avoids or offers something "
+            f"prohibited, and this screen cannot tell which — REVIEW: not a fail, not a clearance and not a "
+            f"certification; whether something falls in that category is a ruling for a qualified scholar")
     elif (_LENDING_CONTEXT.search(text) and _RIBA_SIGNAL.search(text)
           and not _negated(text, _RIBA_SIGNAL.search(text))):
         # §11 (W496, FU-106) — the lending context and the rate token are both present, so the text
         # describes a charge on money lent. That is the definition of the thing this screen exists to
         # raise, and the previous vocabulary did not contain any of the words it was written in.
         _sig = _RIBA_SIGNAL.search(text).group(0)
+        _ctx = _LENDING_CONTEXT.search(text).group(0)
+        _ctx_kind = "a deposit or savings context" if _DEPOSIT_WORD.match(_ctx) else "a lending context"
         halal_status, halal_reason, halal_cov = "review", (
-            f"a lending context and an interest/rate token both appear ('{_sig}'), which is the riba "
+            f"{_ctx_kind} ('{_ctx}') and an interest/rate token both appear ('{_sig}'), which is the riba "
             f"concern this screen exists to raise - the earlier vocabulary matched none of the ways "
             f"interest is normally written (APR, a percentage rate, 'interest charge'). REVIEW, not a "
             f"fail: whether a charge is riba is a ruling for a qualified scholar, not a regex"), "vocabulary"
@@ -431,7 +466,10 @@ def screen_compliance(text: str, jurisdiction: str = "UK / London",
     # Consulted LAST and never over a fail: a certificate does not make a prohibited substance found in the
     # text permissible, so a haram term still fails with one present. This is the only path in this module
     # that produces coverage 'engine', and therefore the only one whose pass `assessed()` will honour.
-    if halal_status != "fail":
+    #  P3.30 (v15 R1[9]) - a text carrying the category word was a fail, so no certificate was ever consulted
+    #  over it. It is a review now, and the certificate is STILL not consulted over it: softening a refusal
+    #  to a flag must not open a path by which the same text is cleared.
+    if halal_status != "fail" and not _category_only:
         _cert = verify_halal_certificate(subject_id or "", today=today)
         if _cert["state"] == "cleared":
             halal_status, halal_cov = "pass", "engine"

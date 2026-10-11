@@ -12799,11 +12799,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W671",
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region on the M3 item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Ledger v14 region R1, 1 finding(s). [9] Most of Appendix A's fifteen features have no implementation,…: the same subject is ledger v16 R1.10, R1.11, carried by row FU-799, where it is built or stated and guarded as of W671."
     },
     {
       "id": "FU-664",
@@ -12831,11 +12834,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W671",
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region on the M3 item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Ledger v14 region R3, 3 finding(s). [6] The specialist Directors never act from any page: the board…: the same subject is ledger v16 R3.11, carried by row FU-801, where it is built or stated and guarded as of W671. [7] Review gates (Mode 3) hold the movers and are recorded, but a…: built in W671 and held by its guard. [8] The Chief-owned Business Plan opening, strategy and living…: built in W671 and held by its guard."
     },
     {
       "id": "FU-666",
@@ -12863,11 +12869,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W671",
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region on the M3 item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Ledger v14 region R5, 1 finding(s). [8] The Quran Education Platform delivers its sourced-text, SM-2…: the same subject is ledger v16 R5.6, carried by row FU-803, where it is built or stated and guarded as of W671."
     },
     {
       "id": "FU-668",
@@ -15798,6 +15807,546 @@
       "closed_by": null,
       "note": "",
       "slot_source": "an instrument for a disclosed and unreached capability, which is the item that holds such rows",
+      "tier": 3
+    },
+    {
+      "id": "FU-815",
+      "title": "A spawned entity's genome record and its MJM event carry the string 'None' as a result",
+      "why": "The spawn pipeline writes the text of a missing value into the genome specification and the event content, and the cognitive route answers 'MJM Lifecycle Result: None'. Read from code; drive it, then say that the step returned nothing.",
+      "source": "W671 (found while building the third-phase code fixes and the scholar rule)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/api/vsb.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.39",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
+      "tier": 2
+    },
+    {
+      "id": "FU-816",
+      "title": "The re-verification route answers \"real\": true for an attested re-verification",
+      "why": "An attested re-verification is counted separately since this round, but its own answer still says it is real. Read from code; drive it.",
+      "source": "W671 (found while building the third-phase code fixes and the scholar rule)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/vbs/qms.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.39",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
+      "tier": 2
+    },
+    {
+      "id": "FU-817",
+      "title": "The Chief model route's method sentence still says a modelled twin",
+      "why": "The record now carries whether the Chief carries the Owner's record; the route's method sentence was not reworded.",
+      "source": "W671 (found while building the third-phase code fixes and the scholar rule)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/api/board.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.39",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
+      "tier": 2
+    },
+    {
+      "id": "FU-818",
+      "title": "The entity's life-cycle sentence and the Cockpit's gate line still list three things a review gate holds",
+      "why": "The review-gates answer now lists every mover a gate holds, from one tuple; two older sentences still name three. Read the tuple in both.",
+      "source": "W671 (found while building the third-phase code fixes and the scholar rule)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/api/vsb.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.39",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
+      "tier": 2
+    },
+    {
+      "id": "FU-819",
+      "title": "The Quran status route gives the model reason before the ruling for why recitation is not scored",
+      "why": "Recitation is not scored by ruling; the status route leads with the absence of a model. The ruling should come first.",
+      "source": "W671 (found while building the third-phase code fixes and the scholar rule)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/religious_domain/api.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.39",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
+      "tier": 2
+    },
+    {
+      "id": "FU-820",
+      "title": "The four Religion tabs describe only the floor's withholding",
+      "why": "Since this round a model-served answer is withheld until a named scholar approves it; the tab copy still speaks only of the floor.",
+      "source": "W671 (found while building the third-phase code fixes and the scholar rule)",
+      "found": "2026-10-11",
+      "files": [
+        "apps/workstation-superapp/src/pages/domains/ReligionHub.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.39",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
+      "tier": 2
+    },
+    {
+      "id": "FU-821",
+      "title": "The gate's empty-roster sentence speaks of teaching content and a learner to a researcher",
+      "why": "The same gate now serves the research tools and the refine route; its sentence was written for the teaching path.",
+      "source": "W671 (found while building the third-phase code fixes and the scholar rule)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/api/scholar_review.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.39",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
+      "tier": 2
+    },
+    {
+      "id": "FU-822",
+      "title": "HYPOTHESIS: the immune health scope sentence says AI failures and compliance only, while health falls on every non-review event",
+      "why": "Read from code, not driven. A test pins the sentence. Drive both and correct whichever is wrong.",
+      "source": "W671 (found while building the third-phase code fixes and the scholar rule)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/organism/immune.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.39",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
+      "tier": 2
+    },
+    {
+      "id": "FU-823",
+      "title": "Forge runs only the first seven stages while its pipeline lists all, and two stages of one type share one configuration",
+      "why": "Also: no per-stage record of what served, and the page shows only a status number for a refused pipeline.",
+      "source": "W671 (found while building the third-phase code fixes and the scholar rule)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/api/forge.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-824",
+      "title": "The employment tools pass little of what the person wrote as the person's text",
+      "why": "The interview route passes role and organisation only; the application route passes neither the questions, the person specification nor the experience.",
+      "source": "W671 (found while building the third-phase code fixes and the scholar rule)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/api/employment.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-825",
+      "title": "The law route's list of authorities is untyped",
+      "why": "A non-string entry is not refused at the door.",
+      "source": "W671 (found while building the third-phase code fixes and the scholar rule)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/api/law.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-826",
+      "title": "Fields added this round are read by no page",
+      "why": "The transfers intake-sources read, the avatar's suggested-areas basis, the directive's restated kind and the charity directives match note are returned and shown nowhere.",
+      "source": "W671 (found while building the third-phase code fixes and the scholar rule)",
+      "found": "2026-10-11",
+      "files": [
+        "apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-827",
+      "title": "Whether the tree and ensemble runs say what the person wrote was not read",
+      "why": "The swarm run was corrected this round; these two were not examined.",
+      "source": "W671 (found while building the third-phase code fixes and the scholar rule)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/api/native_ai.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-828",
+      "title": "Venture rows are not trimmed while transfer rows are trimmed to fifty",
+      "why": "One list is bounded and its sibling is not.",
+      "source": "W671 (found while building the third-phase code fixes and the scholar rule)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/economy/transfers.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-829",
+      "title": "Education feedback's four remaining floor sections were not assessed for over-claim",
+      "why": "The marking headings were corrected this round; the rest of the floor's feedback frame was not read.",
+      "source": "W671 (found while building the third-phase code fixes and the scholar rule)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/api/education.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-830",
+      "title": "The Cockpit's plan tab has no action-plan layer",
+      "why": "The Business Plan page shows it since this round; the Cockpit's own plan tab does not.",
+      "source": "W671 (found while building the third-phase code fixes and the scholar rule)",
+      "found": "2026-10-11",
+      "files": [
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-831",
+      "title": "A raw domain value is printed on two entity pages",
+      "why": "The label helper added this round is used on the Contribute card only.",
+      "source": "W671 (found while building the third-phase code fixes and the scholar rule)",
+      "found": "2026-10-11",
+      "files": [
+        "apps/workstation-superapp/src/pages/enterprise/VSBSpawnStudio.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-832",
+      "title": "No field names which body sections a founder may write",
+      "why": "The Cockpit lists them from the pending and absent maps; nothing states the rule.",
+      "source": "W671 (found while building the third-phase code fixes and the scholar rule)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/api/vsb.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-833",
+      "title": "The suite's comment-stripping helper cuts through a file whose string literal contains a block-comment opener",
+      "why": "A guard that reads AttachDocument.tsx or App.tsx through it reads a mutilated text; this round's guard reads them raw.",
+      "source": "W671 (found while building the third-phase code fixes and the scholar rule)",
+      "found": "2026-10-11",
+      "files": [
+        "integration_tests/test_mvp_spine.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-834",
+      "title": "The finance card has no state for routes that exist with no page",
+      "why": "It was reworded this round; a 'routes only' state would say it exactly.",
+      "source": "W671 (found while building the third-phase code fixes and the scholar rule)",
+      "found": "2026-10-11",
+      "files": [
+        "apps/workstation-superapp/src/components/QEPFlagshipFeatures.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-835",
+      "title": "The curriculum framework select offers ids, not names",
+      "why": "It is filled from the API since this round, and shows what the API calls them.",
+      "source": "W671 (found while building the third-phase code fixes and the scholar rule)",
+      "found": "2026-10-11",
+      "files": [
+        "apps/workstation-superapp/src/pages/domains/EducationHub.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-836",
+      "title": "The scholar review queue is not capped, expired or grouped",
+      "why": "A model that varies its wording queues a new item for every reply, each holding the full text and the person's question. Not reachable until a model serves.",
+      "source": "W671 (found while building the third-phase code fixes and the scholar rule)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/api/scholar_review.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-837",
+      "title": "Taking a withheld Religion result on to Genesis seeds an empty text",
+      "why": "The bridge passes the result text, which is empty when the answer is withheld.",
+      "source": "W671 (found while building the third-phase code fixes and the scholar rule)",
+      "found": "2026-10-11",
+      "files": [
+        "apps/workstation-superapp/src/components/DomainTool.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-838",
+      "title": "Tests that branch on what served would write the real review store where a model serves",
+      "why": "On a machine with a model, unstubbed Religion tests reach the scholar gate with the real store paths.",
+      "source": "W671 (found while building the third-phase code fixes and the scholar rule)",
+      "found": "2026-10-11",
+      "files": [
+        "integration_tests/test_mvp_spine.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-839",
+      "title": "The withheld-sections note counts the scholar gate's summary lines as sections",
+      "why": "A counted phrase such as 'two further sections' is one entry and reads as one section.",
+      "source": "W671 (found while building the third-phase code fixes and the scholar rule)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/api/_ai_provenance.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-840",
+      "title": "After a refine, the export carries the original result's review note, not the refine's own",
+      "why": "Read from the component, not rendered: an approved refine's basis is neither shown nor carried into copy and download.",
+      "source": "W671 (found while building the third-phase code fixes and the scholar rule)",
+      "found": "2026-10-11",
+      "files": [
+        "apps/workstation-superapp/src/components/DomainTool.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-841",
+      "title": "An approval of a rewrite is of the text alone",
+      "why": "An identical rewrite of a different draft is released by the same approval, and the queue item's reference holds only the instruction. Also: the religious-content reading is a word list, which can flag and never clear.",
+      "source": "W671 (found while building the third-phase code fixes and the scholar rule)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/api/refine.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-842",
+      "title": "DECIDE LATER (Owner, after the mid-way audit): should the Appraisal Cell make recommendations a person can send to Change Control",
+      "why": "It makes none today and nothing consumes it. The Owner ruled on 2026-10-11 to register this and decide after the audit; Change Control would still decide every change.",
+      "source": "W671 (found while building the third-phase code fixes and the scholar rule)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/api/method.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-843",
+      "title": "DECIDE LATER (Owner, after the mid-way audit): retire the entity spawn route",
+      "why": "After the one-door ruling no page calls it, and about seventy tests create entities through it. The Owner ruled on 2026-10-11 to keep it, labelled, and decide after the audit.",
+      "source": "W671 (found while building the third-phase code fixes and the scholar rule)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/api/vsb.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-844",
+      "title": "CHARTER (Owner ruled 2026-10-11): a people capability for an entity - staff records, payroll and wellbeing - inside Workstation",
+      "why": "The Owner amended the 2026-10-09 ruling against a people registry: these capabilities are wanted within and for the Workstation entity and its enterprises. Charter it as its own plan item in the next round. Constraints to write into the item: payroll is virtual until real money is ruled; no record of a real person is held before authentication is on and the readiness round has landed; wellbeing is what a person records about themselves and is never a score or a judgement of a person; the external brief's vocabulary is not adopted.",
+      "source": "W671 (Owner ruling in chat, on the external people-and-organisation brief)",
+      "found": "2026-10-11",
+      "files": [
+        "docs/FABLE_DELIVERY_PROMPT.md"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ruled by the Owner; to be chartered as its own item in the round that lands the brief's assessment",
       "tier": 3
     }
   ],

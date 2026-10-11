@@ -109,6 +109,10 @@ async def forge_resources():
     return {
         "resources": [{"id": k, "name": v["name"], "role": v["role"],
                        "biomimetic": v["biomimetic"], "params": v["params"]} for k, v in _STAGES.items()],
+        #  P3.30 (ledger v16 R4.12) - `params` names keys; the request field that carries them is `config`
+        "params_basis": ("`params` lists the keys a stage's configuration may carry. On POST /forge/run each "
+                         "stage is {\"type\": <id>, \"config\": {<key>: <value>}} - the request field is "
+                         "`config`, and a stage `type` that is not one of the ids above is refused (422)."),
         "usage_areas": ["synthesis", "build_to_order", "forge"],
         "reconfigurable": True, "rerunnable": True, "reusable": True,
     }
@@ -132,9 +136,21 @@ _DEFAULT_PIPELINE = ["petri_dish", "laboratory", "factory"]
 
 
 async def _execute(req: ForgeRunRequest) -> Dict[str, Any]:
+    #  P3.30 (ledger v16 R4.12) - AN UNKNOWN STAGE IS REFUSED, NOT REPLACED. Unknown types were filtered out,
+    #  and when none was left the default three-stage pipeline ran in their place: a caller who asked for a
+    #  stage that does not exist received a different pipeline's run with nothing to say so, and a mixed list
+    #  ran a silent subset. Refused HERE - the one function both /run and /rerun reach - before any call is
+    #  made or any row is stored, with a text detail naming what was unknown and what exists.
+    _unknown = [str(s.type) for s in req.stages if s.type not in _STAGES]
+    if _unknown:
+        raise HTTPException(status_code=422, detail=(
+            f"unknown Forge stage type(s): {', '.join(repr(u[:60]) for u in _unknown)}. Nothing was run and "
+            f"nothing was stored. The stage types are: {', '.join(sorted(_STAGES))}. Send no stages at all "
+            f"to run the default pipeline ({' -> '.join(_DEFAULT_PIPELINE)})."))
     run_id = f"forge-{uuid.uuid4().hex[:8]}"
     start = time.time()
-    stage_ids = [s.type for s in req.stages if s.type in _STAGES] or _DEFAULT_PIPELINE
+    stage_ids = [s.type for s in req.stages] or list(_DEFAULT_PIPELINE)
+    _pipeline_source = "requested" if req.stages else "default"
     configs = {s.type: s.config for s in req.stages}
 
     # In-house-first AI with provenance: every stage records which OWNED resource served it.
@@ -208,6 +224,11 @@ async def _execute(req: ForgeRunRequest) -> Dict[str, Any]:
         "objective": req.objective, "domain": req.domain, "realm": req.realm,
         "usage_area": req.usage_area,
         "pipeline": stage_ids,
+        #  P3.30 (R4.12) - whether these stages were asked for or are the default for a request naming none
+        "pipeline_source": _pipeline_source,
+        "pipeline_basis": ("the stages the request named, in its order" if _pipeline_source == "requested" else
+                           "the request named no stage, so the default pipeline ran: "
+                           + " -> ".join(_DEFAULT_PIPELINE)),
         "ceo_framing": ceo,
         "stage_outputs": outputs,
         "integrated_deliverable": integration,

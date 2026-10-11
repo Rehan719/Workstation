@@ -288,11 +288,25 @@ async def application_support(req: ApplicationRequest):
     )
     statement, provenance = await ai_text(prompt, "employment_application", realm=req.realm,
         user_text=person_said(req.target_role, req.organisation))
+    #  P3.30 (ledger v16 R5.11) - `questions_answered` was the number of questions in the REQUEST, returned
+    #  whatever served: the floor composes a frame around headings and answers none, and the field said 1.
+    #  The number asked is added under its own name. The older field keeps its name and is a number only when
+    #  it can be one: 0 when nothing was asked, None on the floor, and with a model the number that was PUT
+    #  to it - which nothing here checks was answered, and the basis says so.
+    _asked = len(req.questions)
+    _on_floor = bool((provenance or {}).get("floor_note"))
     return {
         "application_id": uuid.uuid4().hex[:10],
         "target_role": req.target_role,
         "organisation": req.organisation,
-        "questions_answered": len(req.questions),
+        "questions_asked": _asked,
+        "questions_answered": (0 if not _asked else None if _on_floor else _asked),
+        "questions_answered_basis": (
+            "no application question was asked" if not _asked else
+            f"NOT ANSWERED: {_asked} question(s) were asked and the native floor served this - it composes a "
+            f"structured frame and answers no question" if _on_floor else
+            f"{_asked} question(s) were put to the model that served this; nothing here checks that each "
+            f"was answered - read the statement"),
         "statement": statement,
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),

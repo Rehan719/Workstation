@@ -101,6 +101,11 @@ const withDisclosures = (body: string, data: any): string =>
   + (data?.screen_note ? `\n\n[${data.screen_note}]` : '')
   + (data?.floor_note ? `\n\n[${data.floor_note}]` : '')
   + (!data?.floor_note && data?.ai_provenance?.floor_note ? `\n\n[${data.ai_provenance.floor_note}]` : '')
+  // REL (Owner ruling 2026-10-11) — the scholar gate's statement travels with the text a person keeps, exactly as
+  // the floor note does: why a model's answer is withheld, or who approved the text that is shown
+  + (typeof data?.review_note === 'string' && data.review_note ? `\n\n[${data.review_note}]` : '')
+  + (data?.scholar_review?.state === 'approved' && typeof data?.scholar_review?.basis === 'string'
+      ? `\n\n[scholar review: ${data.scholar_review.basis}]` : '')
   + (data?.ai_provenance?.profile_state === 'not_usable_by_floor' && data?.ai_provenance?.profile_basis
       ? `\n\n[profile: ${data.ai_provenance.profile_basis}]` : '')
   + (data?.disclaimer ? `\n\n_${data.disclaimer}_` : '');
@@ -132,6 +137,7 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
   const [copied, setCopied] = useState(false);
   const [refineText, setRefineText] = useState('');
   const [refining, setRefining] = useState(false);
+  const [refineNote, setRefineNote] = useState('');   // W671 - why a rewrite was withheld, in the server's words
   const [refinedText, setRefinedText] = useState<string | null>(null);
   const [refineProv, setRefineProv] = useState<Record<string, any> | null>(null);
   const [refineCount, setRefineCount] = useState(0);
@@ -197,7 +203,10 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
     if (!refineText.trim() || refining) return;
     setRefining(true);
     try {
-      const r = await axios.post('/api/v1/refine', { previous: displayText, instruction: refineText, context: title });
+      const r = await axios.post('/api/v1/refine', { previous: displayText, instruction: refineText, context: title, source_endpoint: endpoint });
+      // W671 (Owner ruling 2026-10-11) - a rewrite of religious content a scholar has not approved is not shown:
+      // the server returns the draft as it was, with the reason, and that reason is what the person is told.
+      setRefineNote(r.data.refine_withheld ? String(r.data.review_note || 'The rewrite was withheld pending scholar review.') : '');
       const newText = String(r.data.refined ?? displayText);
       setRefinedText(newText);
       setRefineProv(r.data.ai_provenance ?? null);
@@ -390,6 +399,7 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
           {/* Iterative refinement — advance/develop/refine this output in-house, each step builds on the last */}
           <div className="pt-3 border-t border-slate-800/60 space-y-2">
             <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">Refine this output</label>
+            {refineNote && <p role="status" data-testid="refine-withheld" className="text-[10px] text-amber-400 font-semibold leading-relaxed">Scholar review — the rewrite is withheld: {refineNote}</p>}
             <div className="flex items-center gap-2 flex-wrap">
               <input aria-label="Refinement instruction" value={refineText} onChange={e => setRefineText(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') refine(); }}

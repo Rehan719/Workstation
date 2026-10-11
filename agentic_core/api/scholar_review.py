@@ -26,6 +26,12 @@ withhold on the floor and already say "AI-assisted scholarly research only — N
 substitute", with a referral to a qualified scholar. A tool that says "take this to a scholar" is a
 different act from teaching a curriculum. That line is the author's, not the Owner's, and is registered as
 its own row rather than buried here.
+
+RULED 2026-10-11 (REL). The Owner drew that line the other way: on the five Religion RESEARCH tools, what a
+MODEL composes is withheld until a named scholar on the roster has approved that exact text - this same
+gate, asked by agentic_core/api/religion.py (`_scholar_gated`) under keys that begin "religion-research:".
+What is retrieved from a named source is still shown, and the floor's own withholding is unchanged. The
+paragraph above is kept as the record of what the scope was before the ruling.
 """
 from __future__ import annotations
 

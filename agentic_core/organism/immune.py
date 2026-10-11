@@ -1,10 +1,14 @@
 """
-IDBO Immune System — error rate monitoring that feeds the organism's health state.
+IDBO Immune System — a failure sensor that feeds the organism's health state.
 
-Tracks:
-- Failed AI gateway calls per endpoint (sliding 5-minute window)
-- HTTP 5xx error counts
-- Rate-limit throttle events
+What is recorded here, each by a caller that exists (a sliding 5-minute window):
+- AI gateway and model-tier calls that failed or timed out   (ai/gateway.py, ai/native/orchestrator.py)
+- compliance fails, regressions and review escalations       (vbs/quality.py, organism/heartbeat.py)
+- quality non-conformances and operations reported as failed (organism/biobus.py record_error)
+
+NOT recorded: a route answering with a server error, and rate-limit throttling. No middleware and no
+other caller writes either kind, so neither is counted and this is not the health of the whole platform
+(P3.30, ledger v13 R6[5]: this docstring listed both as tracked).
 
 Exposes read API for biometrics endpoint to incorporate immune health into organism vitals.
 """
@@ -21,7 +25,7 @@ from typing import Deque
 class _ErrorEvent:
     ts: float
     endpoint: str
-    error_type: str  # "ai_failure" | "http_5xx" | "rate_limit" | "timeout"
+    error_type: str  # written today: ai_failure, timeout, compliance_*, quality_*, or a failed operation's name
 
 
 class ImmuneSystem:

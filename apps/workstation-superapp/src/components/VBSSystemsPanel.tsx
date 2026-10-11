@@ -16,7 +16,9 @@ interface DefectRow { id: string; label: string; status: string; opened_at: stri
 // W534 (FU-298) — store_incomplete / counts_are_incomplete are present ONLY when the QMS store
 // could not be read whole. An unreadable store drops defects from the RATE'S NUMERATOR, so the
 // figure below is flattered by exactly the rows it could not read.
-interface DefectSummary { gates_run: number; defects_total: number; gate_failures: number; open?: number; corrected?: number; closed?: number; non_conformance_rate: number; rate_basis?: string; what_if_gates?: number; what_if_failures?: number; store_incomplete?: string; counts_are_incomplete?: boolean }
+interface DefectSummary { gates_run: number; defects_total: number; gate_failures: number; open?: number; corrected?: number; closed?: number; non_conformance_rate: number; rate_basis?: string; what_if_gates?: number; what_if_failures?: number; store_incomplete?: string; counts_are_incomplete?: boolean;
+  // P3.30 (ledger v16 R1.12) - how many gates IN the rate were closed or failed on figures their caller typed
+  attested_reverifications?: number; defects_closed_on_attestation?: number; attested_basis?: string }
 
 function Chip({ tone, children, title }: { tone: 'ok' | 'warn' | 'dim'; children: React.ReactNode; title?: string }) {
   const cls = tone === 'ok' ? 'bg-emerald-500/15 text-emerald-400' : tone === 'warn' ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-400';
@@ -208,6 +210,12 @@ export const VBSSystemsPanel: React.FC = () => {
               {(defects.summary.what_if_gates ?? 0) > 0 && (
                 <Chip tone="dim" title="gates run on typed metrics — excluded from the rate">
                   {defects.summary.what_if_gates} what-if
+                </Chip>
+              )}
+              {/* P3.30 (R1.12) — these ARE in the rate (by ruling); the chip says how many, in its own text */}
+              {((defects.summary.attested_reverifications ?? 0) > 0 || (defects.summary.defects_closed_on_attestation ?? 0) > 0) && (
+                <Chip tone="warn" title={defects.summary.attested_basis}>
+                  {defects.summary.attested_reverifications ?? 0} re-verified on typed figures (in the rate) · {defects.summary.defects_closed_on_attestation ?? 0} closed that way
                 </Chip>
               )}
               <Chip tone={(defects.summary.open ?? 0) > 0 ? 'warn' : 'ok'}>{defects.summary.open ?? 0} open</Chip>

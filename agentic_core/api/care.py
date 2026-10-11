@@ -150,8 +150,15 @@ async def risk_assessment(req: RiskAssessRequest):
         "Reference current clinical guidelines. Be specific about thresholds and actions."
     )
 
+    #  P3.30 (ledger v15 R5[8]) - THE RECORDED OBSERVATIONS ARE THE PERSON'S WORDS TOO. Only the clinical
+    #  context was named, so a request carrying observations and no context told the floor nothing had been
+    #  said. Each observation the person recorded is passed as its own line, "key: value", exactly as the
+    #  prompt above already prints it; a value that is not text or a number is left out, not stringified.
+    _observed = [f"{k}: {v}" for k, v in (req.patient_data or {}).items()
+                 if isinstance(k, str) and isinstance(v, (str, int, float)) and not isinstance(v, bool)
+                 and str(v).strip()]
     assessment, provenance = await ai_text(prompt, "care_risk_assess", realm=req.realm,
-        user_text=person_said(req.clinical_context))
+        user_text=person_said(req.clinical_context, _observed))
 
     return {
         "assessment_id": uuid.uuid4().hex[:10],
