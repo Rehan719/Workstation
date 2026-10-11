@@ -104,9 +104,21 @@ _CCA_POINTER = ("this key changes LIVE organism behaviour and is governed by the
 
 def wiring_for(section: str, key: str) -> dict[str, Any]:
     consumer = _CONSUMERS.get((section, key))
-    return {"wired": consumer is not None,
-            "consumer": consumer or "stored-only — nothing reads this key back",
-            "governed": (section, key) in _GOVERNED_KEYS}
+    out = {"wired": consumer is not None,
+           "consumer": consumer or "stored-only — nothing reads this key back",
+           "governed": (section, key) in _GOVERNED_KEYS}
+    #  W667 (ledger v16 R6.2) - "wired" says a reader exists, not that it can act. The throttle's reader acts
+    #  only at low ATP; where ATP cannot fall, that is said beside the chip. Present only when it is false.
+    if (section, key) == ("organism", "metabolic_throttle"):
+        try:
+            from agentic_core.organism.biobus import atp_depletion_state
+            if not atp_depletion_state().get("can_deplete"):
+                out["consumer_can_act"] = False
+                out["consumer_can_act_basis"] = ("its consumer acts only at low ATP, and ATP cannot fall on "
+                                                 "this deployment, so setting it changes nothing")
+        except Exception:                           # noqa: BLE001 - not known, so not stated
+            pass
+    return out
 
 
 def _load_config() -> dict:

@@ -40,7 +40,7 @@ interface Genome {
 }
 interface ConfigPayload {
   config: Record<string, any>; governed_keys: string[]; note: string;
-  key_wiring: { section: string; key: string; wired: boolean; consumer: string; governed: boolean }[];
+  key_wiring: { section: string; key: string; wired: boolean; consumer: string; governed: boolean; consumer_can_act?: boolean; consumer_can_act_basis?: string }[];
 }
 interface Suggestion { section: string; key: string; suggested_value: string; coerced_value: any; valid: boolean; invalid_reason?: string; rationale: string; wired: boolean; consumer: string; governed: boolean }
 
@@ -521,7 +521,8 @@ export const OrganismAnatomy: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     {k.governed && <Chip tone="gov">governed</Chip>}
-                    <Chip tone={k.wired ? 'ok' : 'dim'}>{k.wired ? 'wired' : 'stored-only'}</Chip>
+                    <Chip tone={k.wired && k.consumer_can_act !== false ? 'ok' : 'dim'}>{!k.wired ? 'stored-only' : k.consumer_can_act === false ? 'wired · cannot act' : 'wired'}</Chip>
+                    {k.consumer_can_act === false && <span className="text-[9px] text-amber-400" data-testid="consumer-cannot-act">{k.consumer_can_act_basis}</span>}
                     {k.governed ? (
                       <button type="button" onClick={() => setProposal({ section: k.section, key: k.key, value: String(val) })}
                         className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded border border-highlight/40 text-highlight hover:bg-highlight/10">propose</button>

@@ -4237,9 +4237,13 @@ def test_cca_immune_reconfigurator(client):
     rec = client.get(f"/api/v1/cca/{e['cca_id']}").json()
     assert rec["change_type"] == "immune_reconfiguration" and rec["immune_threat_at_submit"] == "ELEVATED"
     assert any(a["event"] == "lever_set_no_consumer" for a in rec["audit_trail"])
-    # HIGH → metabolic_throttle, which HAS a wired consumer (heartbeat) — genuinely implemented
+    # HIGH → metabolic_throttle, which has a wired consumer (heartbeat). W667 (ledger v16 R6.2) - this
+    # asserted "implemented" unconditionally, the second false claim this test has held: that consumer acts
+    # only at low ATP, and where ATP cannot fall the lever is SET and nothing will act on it. The record
+    # follows the organism's own report; W667's guard drives both states.
+    from agentic_core.organism.biobus import atp_depletion_state as _atp667
     h = client.post("/api/v1/cca/immune-reconfigure", json={"simulate_threat": "HIGH"}).json()
-    assert h["status"] == "implemented" and h["applied"]
+    assert h["applied"] and h["status"] == ("implemented" if _atp667().get("can_deplete") else "approved"), h["status"]
     # CRITICAL containment is MEDIUM-tier. W459 — it no longer carries `requires_ratification`:
     # that flag was set here and READ NOWHERE, so the record claimed a Board ratification process
     # that does not exist while marking itself implemented in the same request. What it does carry
@@ -52308,3 +52312,101 @@ def test_w666_a_start_that_did_not_start_says_so_and_a_route_asserts_only_what_i
         _code = "\n".join(l for l in _t.splitlines() if not l.strip().startswith(("//", "{/*", "*")))
         assert "self" + "-running" not in _code, (_f, "says an enterprise runs itself without reading the levers")
         assert "heartbeat levers you turn on" in _code, _f
+
+
+def test_w667_a_typed_threat_is_recorded_as_typed_and_a_lever_nothing_can_act_on_is_not_implemented(client, monkeypatch):
+    """W667 - ledger v16 tier-1, second batch: six statements a record or a response made that were not true."""
+    import pathlib
+    import re
+    import agentic_core.organism.biobus as _bb
+    import agentic_core.api.vsb as _vm
+    from agentic_core.organism import reconfiguration as _rc
+
+    # -- 1. A SIMULATED THREAT says it is simulated, everywhere it is written ---------------------------
+    def _engage(can_deplete):
+        monkeypatch.setattr(_bb, "atp_depletion_state", lambda: {"can_deplete": can_deplete})
+        _r = client.post("/api/v1/cca/immune-reconfigure", json={"simulate_threat": "HIGH"})
+        assert _r.status_code == 200, _r.text[:300]
+        _j = _r.json()
+        _rec = client.get(f"/api/v1/cca/{_j['cca_id']}").json()
+        _rec = _rec.get("change") or _rec
+        client.post(f"/api/v1/cca/immune-reconfigure/{_j['cca_id']}/revert")
+        return _j, _rec
+
+    _j, _rec = _engage(False)
+    assert _j["threat_source"] == "simulated" and "immune_threat_measured" in _j, _j
+    assert _rec["threat_source"] == "simulated", _rec.get("threat_source")
+    assert "simulated" in _rec["rationale"] and "NOT read from the immune system" in _rec["rationale"], _rec["rationale"]
+    assert "simulated" in _rec["review_result"], _rec["review_result"]
+    assert _rec["audit_trail"][0].get("threat_source") == "simulated", _rec["audit_trail"][0]
+    #     a level handed in by code with no stated source is not called measured
+    from agentic_core.api.change_control import engage_immune_defence as _eid, revert_immune_defence as _rev
+    _d = _eid("HIGH")
+    assert _d["threat_source"] == "supplied by the caller", _d["threat_source"]
+    _rev(_d["cca_id"])
+
+    # -- 2. A LEVER WHOSE CONSUMER CANNOT ACT is set, not implemented - and is implemented when it can ---
+    assert _j["status"] != "implemented", ("a lever nothing can act on is recorded implemented", _j["status"])
+    assert any(e.get("event") == "lever_set_no_effective_consumer" for e in _rec["audit_trail"]), _rec["audit_trail"]
+    assert "ATP cannot fall" in (_rec.get("no_effective_consumer") or ""), _rec.get("no_effective_consumer")
+    _j2, _rec2 = _engage(True)
+    assert _j2["status"] == "implemented" and not _rec2.get("no_effective_consumer"), (
+        "a lever whose consumer CAN act is no longer recorded implemented", _j2["status"])
+    monkeypatch.setattr(_bb, "atp_depletion_state", lambda: {"can_deplete": False})
+    _w = _rc.wiring_for("organism", "metabolic_throttle")
+    assert _w["wired"] is True and _w.get("consumer_can_act") is False and "ATP cannot fall" in _w["consumer_can_act_basis"], _w
+    monkeypatch.setattr(_bb, "atp_depletion_state", lambda: {"can_deplete": True})
+    assert "consumer_can_act" not in _rc.wiring_for("organism", "metabolic_throttle")
+    monkeypatch.undo()
+    _pg = (pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages"
+           / "organism" / "OrganismAnatomy.tsx").read_text(encoding="utf-8")
+    assert "k.consumer_can_act === false ? 'wired · cannot act'" in _pg and "{k.consumer_can_act_basis}" in _pg, (
+        "the page still shows a lever nothing can act on as plainly wired")
+
+    # -- 3. THE HALAL SENTENCE attributes the word to the text screened ---------------------------------
+    from agentic_core.api.compliance import screen_compliance
+    _h = next(v for v in screen_compliance("Score each option against value, feasibility and values-fit "
+                                           "(halal/beneficence)")["verdicts"] if v["framework"] == "sharia_halal")
+    assert _h["status"] == "review" and "the text screened contains" in _h["reason"], _h
+    assert "describes itself" not in _h["reason"] and "cannot tell" in _h["reason"], _h["reason"]
+
+    # -- 4. THE COGNITIVE CATALOGUE says one thing --------------------------------------------------------
+    _ce = client.get("/api/v1/cognitive/engines").json()
+    _rows = _ce["engines"]
+    assert any(r["status"] == "built-computes" for r in _rows), "no row declares that it computes - the leg below is vacuous"
+    for _r in _rows:
+        assert _r["computes"] == (_r["status"] == "built-computes"), ("a row's flag contradicts its status", _r)
+    _nc = sum(1 for r in _rows if r.get("implemented") and r["computes"])
+    assert f"{_nc} compute" in _ce["basis"] and "No engine computes" not in _ce["basis"], _ce["basis"]
+    _reg = _ce["registry"]
+    assert "Only the" not in _reg["what_the_denominator_means"], _reg["what_the_denominator_means"]
+    assert f"{_reg['registered_count']} have modules" in _reg["what_the_denominator_means"], _reg["what_the_denominator_means"]
+    assert "POT is not installed" not in str(_ce), "the catalogue still states the solver's absence beside a route that reads it"
+
+    # -- 5. THE STUDIO'S ENTITY carries a derived status, not a literal -----------------------------------
+    _sr = client.post("/api/v1/studio/vsb/spawn", json={
+        "project_id": "w667-project", "challenge": "A village bakery cooperative selling bread to the local school",
+        "solution_name": "W667 Studio Probe", "domain": "commerce"})
+    assert _sr.status_code == 200, _sr.text[:300]
+    _se = client.get(f"/api/v1/studio/vsb/{_sr.json()['entity_id']}").json()
+    _se = _se.get("entity") or _se
+    assert _se.get("status") != "active", ("the Studio's literal status survived", _se.get("status"))
+    assert _se.get("status") == _vm._derived_status(_se)[0] and _se.get("status_derived_at"), _se.get("status")
+
+    # -- 6. A GENERATED SURFACE'S STALE SCAFFOLD README is removed; somebody's own README is not ----------
+    _v = client.post("/api/v1/vsb/spawn", json={"challenge": "A village bakery cooperative selling bread",
+                                                 "name": "W667 Scaffold Probe", "domain": "commerce"})
+    assert _v.status_code == 200, _v.text[:300]
+    _vid = re.findall(r"vsb-[0-9a-f]{10}", _v.text)[0]
+    assert client.post(f"/api/v1/vsb/{_vid}/repo").status_code == 200
+    _root = _vm._REPO_STORE / _vid
+    _mob, _web = _root / "mobile" / "README.md", _root / "webapp" / "README.md"
+    assert _mob.is_file() and "built in a later increment" in _mob.read_text(encoding="utf-8"), (
+        "the repo step no longer writes the scaffold README this leg removes - the leg is vacuous")
+    (_root / "mobile" / "app.json").write_text("{}", encoding="utf-8")
+    (_root / "webapp" / "app.json").write_text("{}", encoding="utf-8")
+    _web.write_text("# Our web app\nWritten by the founder.\n", encoding="utf-8")
+    assert client.post(f"/api/v1/vsb/{_vid}/repo").status_code == 200
+    assert not _mob.exists(), "a generated surface still carries the scaffold README that calls it unbuilt"
+    assert _web.is_file() and "Written by the founder" in _web.read_text(encoding="utf-8"), (
+        "a README that is somebody's own text was removed")

@@ -1088,7 +1088,7 @@ class ImmuneReconfigureRequest(BaseModel):
 
 
 def engage_immune_defence(threat: str | None = None, requested_by: str = "immune_system",
-                         requested_by_verified: bool = False) -> dict:
+                         requested_by_verified: bool = False, threat_source: str | None = None) -> dict:
     """The immune reconfigurator's UNGATED core. W506 (P2.7(3)).
 
     Extracted from the HTTP route so the organism can engage its own defence without crossing an admin
@@ -1099,7 +1099,17 @@ def engage_immune_defence(threat: str | None = None, requested_by: str = "immune
     Everything here was already true of the route except the reversal: the prior value is now captured
     from the write path's own `old_value`, so `revert_immune_defence` has something to restore.
     """
-    threat = (threat or _immune_threat()).upper()
+    #  W667 (ledger v16 R6.3) - WHERE THE THREAT LEVEL CAME FROM travels with everything written about it. A
+    #  level typed into the request was recorded as "Immune threat level HIGH" in the change record, its audit
+    #  trail and the event graph, with nothing to tell it from a reading. The level the immune system reports
+    #  at this moment is recorded beside it.
+    _measured_now = str(_immune_threat() or "").upper()
+    if threat_source is None:
+        threat_source = "measured" if not threat else "supplied by the caller"
+    threat = (threat or _measured_now).upper()
+    _threat_note = (f"threat level {threat} read from the immune system" if threat_source == "measured" else
+                    f"threat level {threat} {threat_source}, NOT read from the immune system, which reports "
+                    f"{_measured_now or 'nothing'} at this moment")
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     plan = _IMMUNE_DEFENCE.get(threat)
     if plan is None:
@@ -1123,7 +1133,9 @@ def engage_immune_defence(threat: str | None = None, requested_by: str = "immune
         "title": f"Immune defence: {plan['section']}.{plan['key']} = {plan['value']}",
         "change_type": "immune_reconfiguration",
         "description": plan["why"],
-        "rationale": f"Immune threat level {threat}; defensive, reversible reconfiguration.",
+        "rationale": f"Immune {_threat_note}; defensive, reversible reconfiguration.",
+        "threat_source": threat_source,
+        "immune_threat_measured_at_submit": _measured_now,
         "affected_systems": ["organism", plan["section"], "immune_system", "reconfiguration_engine"],
         "submitted_by": "immune_system",
         "submitted_at": now,
@@ -1143,6 +1155,7 @@ def engage_immune_defence(threat: str | None = None, requested_by: str = "immune
         "reverts_to": None,
         "review_result": None, "decision": None, "reviewed_at": None, "implemented_at": None,
         "audit_trail": [{"event": "submitted", "ts": now, "by": "immune_system", "immune_threat": threat,
+                         "threat_source": threat_source, "immune_threat_measured": _measured_now,
                          "requested_by": requested_by, "by_verified": requested_by_verified}],
     }
     biobus.fire_signal("sensory", "cca.immune_reconfigure", f"Immune defence proposed [{threat}]", 0.6)
@@ -1152,7 +1165,7 @@ def engage_immune_defence(threat: str | None = None, requested_by: str = "immune
     change["decision"] = "auto_approved_immune_defence"
     change["decision_source"] = "immune_defence_reflex"   # W464 — the mechanism that decided, named
     change["reviewed_at"] = now
-    change["review_result"] = f"Auto-approved defensive reconfiguration under immune threat {threat}."
+    change["review_result"] = f"Auto-approved defensive reconfiguration: {_threat_note}."
     # the reflex decided, not the caller — the caller's identity is never stamped as the decider
     change["audit_trail"].append({"event": "auto_approved", "ts": now, "by": "cca",
                                  "decided_by": "auto_approve_immune_defence"})
@@ -1176,7 +1189,25 @@ def engage_immune_defence(threat: str | None = None, requested_by: str = "immune
                                     "value": applied.get("old_value")}
             change["reversible"] = True
         _consumer = _LEVER_CONSUMERS.get(plan["key"])
-        if _consumer:
+        #  W667 (ledger v16 R6.2) - the throttle's only reader acts when ATP is low, and the organism's own
+        #  homeostasis report says ATP cannot fall. A lever whose consumer can never fire was recorded
+        #  "implemented". It is recorded as set, with the reason nothing will act on it.
+        _dead = None
+        if plan["key"] == "metabolic_throttle":
+            try:
+                from agentic_core.organism.biobus import atp_depletion_state as _atp_state667
+                _atp = _atp_state667()
+                if not _atp.get("can_deplete"):
+                    _dead = ("its consumer suppresses the evolve tick only at low ATP, and ATP cannot fall on "
+                             "this deployment (minimum production exceeds maximum consumption)")
+            except Exception as _e667:              # noqa: BLE001 - unknown is said, not assumed live
+                _dead = f"whether its consumer can act could not be read ({type(_e667).__name__})"
+        if _consumer and _dead:
+            change["status"] = "approved"
+            change["audit_trail"].append({"event": "lever_set_no_effective_consumer", "ts": now,
+                                          "applied": applied, "consumer": _consumer, "note": _dead})
+            change["no_effective_consumer"] = _dead
+        elif _consumer:
             change["status"] = "implemented"
             change["implemented_at"] = now
             _record_variance(change, now, "implemented")      # W581 (FU-313)
@@ -1200,12 +1231,15 @@ def engage_immune_defence(threat: str | None = None, requested_by: str = "immune
                                 "decision_source": "immune_defence_reflex", "decided_by": "auto_approve_immune_defence",
                                 "by": "cca", "by_verified": False, "requested_by": requested_by,
                                 "requested_by_verified": requested_by_verified, "immune_threat": threat,
+                                "threat_source": threat_source, "immune_threat_measured": _measured_now,
                                 "implemented": change["status"] == "implemented"})
     # W581 — the nominal-state sibling above carries `action` and `reason`; a caller reading either here
     # got undefined. This branch DID reconfigure, so it says which action and why rather than omitting both.
     return {
         "cca_id": cca_id,
         "threat_level": threat,
+        "threat_source": threat_source,
+        "immune_threat_measured": _measured_now,
         "impact_tier": plan["tier"],
         "status": change["status"],
         "action": "reconfigured",
@@ -1290,7 +1324,8 @@ async def immune_reconfigure(req: ImmuneReconfigureRequest = ImmuneReconfigureRe
     threat >= HIGH. One body of code, two callers: the reflex is no longer a button nobody presses.
     The admin is recorded as the REQUESTER; the reflex remains the decider.
     """
-    return engage_immune_defence(req.simulate_threat, _actor(user), _verified(user))
+    return engage_immune_defence(req.simulate_threat, _actor(user), _verified(user),
+                                 threat_source=("simulated" if req.simulate_threat else "measured"))
 
 
 @router.post("/immune-reconfigure/{cca_id}/revert")
