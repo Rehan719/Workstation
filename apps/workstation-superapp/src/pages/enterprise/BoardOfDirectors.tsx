@@ -1,4 +1,6 @@
 import { provenanceMapBadge, apiJson, errorMessage } from '../../lib/api';
+import { DictateButton } from '../../components/DictateButton';   // P3.30 (ledger v16 R3.14)
+import { getPrefs } from '../../lib/userPrefs';
 import React, { useState, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
 import {
@@ -51,6 +53,14 @@ interface RecentDirective {
   directors_engaged?: string[];
   director_inputs?: Record<string, { title: string; live_grounding: string; input: string }>;
 }
+// P3.30 (ledger v16 R3.11) — what POST /api/v1/board/directive returns: the record it stored
+interface BoardDeliberation {
+  kind?: string; topic?: string; domain?: string; resolution?: string;
+  status?: string; status_basis?: string; chaired_by?: string; created_at?: string;
+  directors_engaged?: string[];
+  director_inputs?: Record<string, { title?: string; live_grounding?: string; input?: string }>;
+  ai_provenance?: { served_by?: Record<string, number>; any_external?: boolean };
+}
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -67,6 +77,7 @@ export const BoardOfDirectors: React.FC = () => {
   //  conflated with a Chief that has no inputs: the second is a fact the model states, the first is not.
   const [chiefModel, setChiefModel] = useState<{
     is_modelled_twin: boolean; reported_as: string; owner_inputs: number;
+    carries_owner_record?: boolean;   // P3.30 (ledger v16 R3.8) — the same fact under the name of what it is
     instructions: { count: number }; decisions: { count: number };
     profile: { declared_by_owner: boolean }; basis: string; method?: string;
   } | null>(null);
@@ -78,6 +89,12 @@ export const BoardOfDirectors: React.FC = () => {
   const [ratNotes, setRatNotes] = useState<Record<string, string>>({});
   const [ownerDirection, setOwnerDirection] = useState<Record<string, boolean>>({});
   const [ratBusy, setRatBusy] = useState<string | null>(null);
+  // P3.30 (ledger v16 R3.11) — a topic put to the Board from this page
+  const [topic, setTopic] = useState('');
+  const [topicDomain, setTopicDomain] = useState('');
+  const [boardBusy, setBoardBusy] = useState(false);
+  const [boardErr, setBoardErr] = useState('');
+  const [boardResult, setBoardResult] = useState<BoardDeliberation | null>(null);
   const [ratResult, setRatResult] = useState<{ id: string; ok: boolean; message: string } | null>(null);
 
   const loadRatifications = async () => {
@@ -144,6 +161,26 @@ export const BoardOfDirectors: React.FC = () => {
       setRatBusy(null);
       loadRatifications();
     }
+  };
+
+  // P3.30 (ledger v16 R3.11) — the deliberation route had no control on any page. The topic and the optional
+  // domain are captured BEFORE the request, and a refusal is shown as text (errorMessage flattens the detail).
+  const putTopic = async () => {
+    const t = topic.trim();
+    if (!t) return;
+    const d = topicDomain.trim();
+    setBoardBusy(true); setBoardErr(''); setBoardResult(null);
+    try {
+      const r = await apiJson<BoardDeliberation>('/api/v1/board/directive',
+        { method: 'POST', body: d ? { topic: t, domain: d, scope: 'workstation' } : { topic: t, scope: 'workstation' } });
+      setBoardResult(r);
+      setTopic('');
+      fetch('/api/v1/board/status').then(x => x.json()).then(setStatus)
+        .catch(() => setLoadErr('The topic was recorded, but the list of recent deliberations could not be re-read.'));
+    } catch (e) {
+      setBoardErr(`Not put to the Board: ${errorMessage(e)}`);
+    }
+    setBoardBusy(false);
   };
 
   const instruct = async () => {
@@ -301,6 +338,12 @@ export const BoardOfDirectors: React.FC = () => {
           rows={3}
           className="w-full bg-slate-900 border border-slate-800 rounded-2xl p-4 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-highlight/50 resize-none"
         />
+        {/* P3.30 (ledger v16 R3.14) — the Chief could be instructed by typed text only. The button renders nothing
+            where the browser has no speech recognition; what is dictated is appended, never sent on its own. */}
+        <div data-testid="chief-instruction-dictate">
+          <DictateButton lang={getPrefs().dictationLanguage || getPrefs().language || 'en-US'}
+            onTranscript={text => setInstruction(prev => (prev ? prev + ' ' : '') + text)} />
+        </div>
         <div className="flex flex-wrap items-center gap-4">
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={cascade} onChange={e => setCascade(e.target.checked)} className="accent-highlight w-4 h-4" />
@@ -370,6 +413,57 @@ export const BoardOfDirectors: React.FC = () => {
           )}
         </div>
       )}
+
+      {/* P3.30 (ledger v16 R3.11) — PUT A TOPIC TO THE BOARD. The specialist deliberation existed as a route no
+          screen called. The STATUS is the headline of what comes back and its basis is body text beneath it:
+          on the deterministic floor the topic is framed and nothing weighs it, and that must be read before
+          the text that follows. */}
+      <Card className="p-8 space-y-4 border-slate-800" data-testid="board-topic-form">
+        <div>
+          <h3 className="font-black text-white text-sm uppercase tracking-wide flex items-center gap-2"><Users size={15} className="text-highlight" /> Put a topic to the Board</h3>
+          <p className="text-[10px] text-slate-500 font-bold mt-1">What comes back is shown with its own status and with what served it.</p>
+        </div>
+        <textarea data-testid="board-topic" aria-label="Topic for the Board" value={topic} onChange={e => setTopic(e.target.value)} rows={2}
+          placeholder="A question for the Board"
+          className="w-full bg-slate-900 border border-slate-800 rounded-2xl p-4 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-highlight/50 resize-none" />
+        <div className="flex flex-wrap items-center gap-3">
+          <input data-testid="board-topic-domain" aria-label="Domain (optional)" value={topicDomain} onChange={e => setTopicDomain(e.target.value)}
+            placeholder="Domain (optional)"
+            className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-[11px] text-white placeholder:text-slate-600 w-56" />
+          <Button onClick={putTopic} disabled={boardBusy || !topic.trim()} data-testid="board-topic-submit" className="flex items-center gap-2 bg-slate-800 text-white ml-auto">
+            {boardBusy ? <Loader2 size={16} className="animate-spin" /> : <Users size={16} />}
+            {boardBusy ? 'Before the Board…' : 'Put to the Board'}
+          </Button>
+        </div>
+        {boardErr && <p role="alert" data-testid="board-topic-error" className="text-vital text-xs font-bold">{boardErr}</p>}
+        {boardResult && (
+          <div className="space-y-3 pt-3 border-t border-slate-800" data-testid="board-topic-result">
+            <p data-testid="board-topic-status" className={`text-sm font-black uppercase tracking-wide ${boardResult.status === 'resolved' ? 'text-emerald-400' : 'text-amber-400'}`}>
+              {boardResult.status === 'resolved' ? 'Resolved by the Board'
+                : boardResult.status === 'framed_floor_not_deliberated' ? 'Framed by the floor — not deliberated'
+                : `Status: ${String(boardResult.status ?? 'not returned')}`}
+            </p>
+            <p data-testid="board-topic-status-basis" className="text-[11px] text-slate-300 leading-relaxed">
+              {typeof boardResult.status_basis === 'string' && boardResult.status_basis
+                ? boardResult.status_basis : 'The response gave no basis for that status.'}
+            </p>
+            {boardResult.ai_provenance?.served_by && (() => { const b = provenanceMapBadge(boardResult.ai_provenance?.served_by, boardResult.ai_provenance?.any_external); return (
+              <span data-testid="board-topic-provenance" className={`inline-block text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>
+            ); })()}
+            {Object.values(boardResult.director_inputs ?? {}).map((di, i) => (
+              <div key={`${String(di.title ?? 'director')}-${i}`} className="border-l-2 border-highlight/30 pl-3 space-y-0.5">
+                <p className="text-[10px] font-black uppercase text-highlight">{String(di.title ?? 'director')}</p>
+                <p className="text-[9px] text-slate-500 italic">live grounding: {String(di.live_grounding ?? 'not returned')}</p>
+                <p className="text-[11px] text-slate-300 leading-relaxed">{String(di.input ?? '').slice(0, 600)}</p>
+              </div>
+            ))}
+            <div>
+              <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">Resolution text — read with the status above</p>
+              <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{String(boardResult.resolution ?? '')}</p>
+            </div>
+          </div>
+        )}
+      </Card>
 
       {/* W279/W284 — recent board deliberations: the directors' REAL grounded inputs, previously
           typed on Status but never rendered */}

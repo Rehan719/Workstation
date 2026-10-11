@@ -17,11 +17,12 @@ export const QEPReligionHub: React.FC = () => {
           <h1 className="text-3xl @[480px]:text-4xl @[680px]:text-6xl font-black mb-1 text-white tracking-tighter uppercase italic break-words">QEP <span className="text-aura">Religion</span></h1>
           {/* W625 (FU-538, M2 v9 R5.5) — "Advanced AI Flagship • v1.0" headed a hub where most of A.6's fifteen features are
               absent, and the hub never said so. The header now says what stage it is at and where the state of each is. */}
-          <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]" data-testid="qep-hub-stage">Quran Education Platform • in development — a few features live; the roadmap states each one's state</p>
+          <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]" data-testid="qep-hub-stage">Quran Education Platform • in development — a few features live; <a href="/religion?tab=qep" data-testid="qep-roadmap-link" className="underline underline-offset-2">the roadmap on the Religion hub (its QEP tab)</a> states each one's state</p>
         </div>
         <div className="flex gap-2 p-1 rounded-2xl bg-slate-900 border border-slate-800 flex-wrap shrink-0">
            {[
-             { id: 'coach', label: 'AI Coach', icon: Mic },
+             // P3.30 (ledger v13 R5[4]) — nothing coaches and nothing is scored (A.9.1); the tab says so
+             { id: 'coach', label: 'Recitation (not scored)', icon: MicOff },
              { id: 'mem', label: 'Memorization', icon: BookOpen },
              { id: 'comp', label: 'Competitions', icon: Trophy },
              // W444 — the intelligence layer (XAI/adaptation/compliance) had no surface

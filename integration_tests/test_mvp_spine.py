@@ -7491,7 +7491,8 @@ def test_w423_domainshub_tool_counts_match_what_is_wired():
 
     #  W662 (FU-726) - 24 since the Legal Document Analyser moved onto the shared component (it was the second
     #  custom surface); the registry now names 1 custom surface + the flagship beside the forms
-    assert sum(int(v) for v in declared.values()) == 24
+    #  P3.30 (ledger v16 R5.10) - 25 since the Hypothesis Generator was mounted on the Science hub
+    assert sum(int(v) for v in declared.values()) == 25
 
 
 def test_w425_regeneration_improves_the_prior_draft_and_says_whether_it_did(client):
@@ -10067,11 +10068,36 @@ def test_w456_tafsir_tab_completes_section_11_both_ways(client, monkeypatch):
         return ("## Transliteration (of the provided text only)\nbismillah\n## Translation (AI-assisted)\nIn the name of God\n## Exegesis\nnotes",
                 {"posture": "in-house-first", "served_by": "ollama:test", "is_external": False})
     monkeypatch.setattr(R, "ai_text", _model)
+    #  REL (Owner ruling 2026-10-11) - a model-served tafsir is reviewed text now. The scholar roster and the
+    #  review queue are pointed at a scratch directory for these legs, so the real stores are never written and
+    #  every other test keeps its empty roster. The redirection ends with the monkeypatch.undo() below.
+    import tempfile as _tmp_rel
+    from agentic_core.api import scholar_review as _sr_rel
+    _dir_rel = Path(_tmp_rel.mkdtemp(prefix="rel-w456-"))
+    monkeypatch.setattr(_sr_rel, "_roster_path", lambda: _dir_rel / "scholar_roster.json")
+    monkeypatch.setattr(_sr_rel, "_review_path", lambda: _dir_rel / "scholar_review.json")
+    assert _sr_rel.roster_is_empty(), "the scratch roster is not empty, so the withheld leg below proves nothing"
     tf2 = client.post("/api/v1/religion/quran-tafsir", json={"surah": 1, "ayah_start": 1}).json()
     assert "## Translation" not in seen["prompt"] and "## Transliteration" not in seen["prompt"], seen["prompt"][-600:]
     assert "## Translation" not in tf2["tafsir"] and "In the name of God" not in tf2["tafsir"] and "bismillah" not in tf2["tafsir"], tf2["tafsir"]
-    assert tf2["sections_withheld"] == ["Transliteration", "Translation"] and "## Exegesis" in tf2["tafsir"] and "floor_note" not in tf2
-    assert "NOT a scholarly tafsir" in tf2["disclaimer"]
+    #  RETARGETED (REL): Transliteration and Translation are removed ALWAYS - no approval releases them. The
+    #  Exegesis is a model's scholarship and follows the scholar rule, driven both ways.
+    #  state 1 - nobody on the roster: withheld, named, queued, and said in review_note (never floor_note)
+    assert tf2["sections_withheld"] == ["Transliteration", "Translation", "Exegesis"] and "floor_note" not in tf2, tf2["sections_withheld"]
+    assert tf2["tafsir"] == "" and "## Exegesis" not in str(tf2), "a model's exegesis is shown though nobody reviewed it"
+    assert "named scholar" in tf2["review_note"] and tf2["scholar_review"]["state"] == "withheld", tf2
+    assert "NOT a scholarly tafsir" in tf2["disclaimer"] and "AI-labelled content" not in tf2["disclaimer"], tf2["disclaimer"]
+    _key_rel = tf2["scholar_review"]["content_key"]
+    _item_rel = [i for i in client.get("/api/v1/scholar-review/queue").json()["items"] if i["content_key"] == _key_rel]
+    assert len(_item_rel) == 1 and _item_rel[0]["body"] == "## Exegesis\nnotes", ("the queue does not hold the text awaiting review", _item_rel)
+    #  state 2 - a scholar is added and approves that exact text: it is shown, and the sacred sections still are not
+    assert client.post("/api/v1/scholar-review/roster", json={"scholar_id": "rel-w456", "name": "Shaykh Rel W456", "credential": "stated"}).status_code == 200
+    assert client.post("/api/v1/scholar-review/decide", json={"content_key": _key_rel, "scholar_id": "rel-w456", "approve": True}).status_code == 200
+    tf3 = client.post("/api/v1/religion/quran-tafsir", json={"surah": 1, "ayah_start": 1}).json()
+    assert tf3["tafsir"] == "## Exegesis\nnotes" and tf3["sections_withheld"] == ["Transliteration", "Translation"], tf3
+    assert "In the name of God" not in str(tf3) and "bismillah" not in str(tf3), "an approval released a sacred section"
+    assert "Shaykh Rel W456" in tf3["scholar_review"]["basis"] and "review_note" not in tf3 and "floor_note" not in tf3, tf3
+    assert "NOT a scholarly tafsir" in tf3["disclaimer"] and "Shaykh Rel W456" in tf3["disclaimer"], tf3["disclaimer"]
     async def _floor_anyway(prompt, agent, **kw):
         return ("## Translation\nfloor scaffold", {"posture": "in-house-first", "served_by": "native", "is_external": False})
     monkeypatch.setattr(R, "ai_text", _floor_anyway)
@@ -18667,7 +18693,10 @@ def test_w483_a_keyword_screen_flags_and_never_clears(client):
         #  W637 (ledger v13 R1.8) — the two research sections are withheld on the floor with the judging three
         assert hr["sections_withheld"] == ["Halal Status Assessment", "Critical Issues", "Flagged Ingredients",
                                            "Recommended Certifying Bodies",
-                                           "Market-Specific Requirements"], hr["sections_withheld"]
+                                           "Market-Specific Requirements",
+                                           #  P3.30 (ledger v15 R1[5]) - the three process sections follow
+                                           "Cross-Contamination Risks", "Manufacturing Considerations",
+                                           "Steps to Achieve Certification"], hr["sections_withheld"]
         for _h637 in ("## Recommended Certifying Bodies", "## Market-Specific Requirements"):
             assert _h637 not in (hr["assessment"] or ""), (
                 "the floor still serves a research heading the halal tool says it withheld", _h637)
@@ -22364,9 +22393,11 @@ def test_w498_the_floor_does_not_grade_a_hadith_or_state_a_madhab_position(clien
         assert "NOTHING WAS RESEARCHED, GRADED OR ATTRIBUTED" in _hb["floor_note"], _hb["floor_note"]
         assert "NOTHING WAS GRADED OR ATTRIBUTED" in _hb["disclaimer"], _hb["disclaimer"]
     else:
-        # a model served it: the sections stand, and nothing is withheld
-        assert _hb["sections_withheld"] == [], _hb
+        # a model served it (RETARGETED, REL - Owner ruling 2026-10-11): what it composed is withheld until a
+        # named scholar approves that exact text, so the response carries the review note or an approval -
+        # and never the floor's note
         assert "floor_note" not in _hb, _hb
+        assert _hb.get("review_note") or (_hb.get("scholar_review") or {}).get("state") == "approved", _hb
 
     # ── the fiqh route: no primary source, no school position, no qiyas ─────────────────────────────
     _f = client.post("/api/v1/religion/fatwa-research",
@@ -27874,7 +27905,7 @@ def test_w509_fu009_a_stage_model_reaches_the_engine_and_a_run_is_identified_and
 
     seen = {}
 
-    async def _swarm(agent, stages, context="", prefer_external=False, timeout=30.0):
+    async def _swarm(agent, stages, context="", prefer_external=False, timeout=30.0, user_text=None):
         # capture what the ENGINE was handed: this is where a dropped contract field shows up
         seen["stages"] = [dict(x) for x in stages]
         return {"agent": agent, "stages": len(stages), "final": "out", "any_external": False,
@@ -47327,8 +47358,11 @@ def test_w630_p226_the_four_v10_tier1_statements_are_true(client, monkeypatch):
     _ok = client.post("/api/v1/qep/tajweed/analyse", json={"surah": 1, "ayah": 2,
                                                            "recited_text": "الحمد لله رب العالمين"}).json()
     assert _ok["reference_source"] == "fetched" and _ok["comparison"]["comparable"] is True, _ok
-    assert client.post("/api/v1/qep/tajweed/analyse", json={"surah": 1, "ayah": 9,
+    assert client.post("/api/v1/qep/tajweed/analyse", json={"surah": 1, "ayah": 3,
                                                             "recited_text": "x"}).status_code == 503
+    #  P3.30 (ledger v15 R1[15]) - 1:9 does not exist: that is a 422 about the ayah, not a 503 about the source
+    assert client.post("/api/v1/qep/tajweed/analyse", json={"surah": 1, "ayah": 9,
+                                                            "recited_text": "x"}).status_code == 422
     _sup = client.post("/api/v1/qep/tajweed/analyse", json={"ayah_text": "مرحبا بكم",
                                                              "recited_text": "مرحبا بكم"}).json()
     assert _sup["reference_source"] == "supplied_by_caller" and "qiraat" not in _sup["comparison"], (
@@ -49284,13 +49318,31 @@ def test_w642_a_floor_served_tool_does_not_disclaim_as_if_a_model_wrote_it(clien
     #  (b) A MODEL SERVES: the model wording is back, and the floor's sentence is gone
     async def _model(prompt, agent, *a, **k):
         return "## Draft\nmodel text", {"served_by": "ollama:probe", "is_external": False, "posture": "in-house-first"}
+    #  REL (Owner ruling 2026-10-11) - a model-served Religion tool queues its text for scholarly review. The
+    #  roster and the queue are pointed at a scratch directory inside each iteration (undone with it), so the
+    #  real stores are never written and the roster these legs see is empty.
+    import pathlib as _pl_rel
+    import tempfile as _tmp_rel
+    from agentic_core.api import scholar_review as _sr_rel
+    _dir_rel = _pl_rel.Path(_tmp_rel.mkdtemp(prefix="rel-w642-"))
     for _mod, _path, _body, _safety in _ROUTES:
         _m = importlib.import_module(f"agentic_core.api.{_mod}")
         monkeypatch.setattr(_m, "ai_text", _model)
+        monkeypatch.setattr(_sr_rel, "_roster_path", lambda: _dir_rel / "scholar_roster.json")
+        monkeypatch.setattr(_sr_rel, "_review_path", lambda: _dir_rel / "scholar_review.json")
         _j = client.post(_path, json=_body).json()
         monkeypatch.undo()
         _d = _j.get("disclaimer") or ""
         assert _safety in _d and FLOOR_DISCLAIMER not in _d, ("a model-served tool carries the floor's disclaimer", _path, _d)
+        if _mod == "religion":
+            #  RETARGETED (REL): with nobody on the roster the model's answer is WITHHELD, so the disclaimer
+            #  makes no AI claim over it - it says the answer is withheld. The approved state, where the claim
+            #  returns with the reviewer's name, is driven by the REL guard.
+            assert _j.get("review_note") and "floor_note" not in _j and "model text" not in str(_j), (
+                "a model-served Religion tool shows what the model composed with nobody having reviewed it", _path, _j)
+            assert "it is WITHHELD" in _d and not any(_c in _d for _c in _AI_CLAIM), (
+                "a withheld answer is still disclaimed as AI-assisted work", _path, _d)
+            continue
         assert any(_c in _d for _c in _AI_CLAIM), ("the model's own claim was dropped when a model served", _path, _d)
 
     #  (c) THE SCORE CLAIM FOLLOWS WHETHER A SCORE WAS COMPUTED: a tool with no published arithmetic does not
@@ -52936,13 +52988,30 @@ def test_w671_sacred_text_is_never_composed_and_a_page_shows_what_the_server_ret
     # -- 1. R1.3: NO PATH ASKS A MODEL FOR A TRANSLATION OR TRANSLITERATION, AND NO PATH SERVES ONE --------------
     _seen = {}
 
-    def _model_serves(text):
+    #  REL (Owner ruling 2026-10-11) - a model-served tafsir is reviewed text now. The scholar roster and the
+    #  review queue are pointed at a scratch directory inside each call (undone with it), so the real stores are
+    #  never written; the directory outlives the calls, so an approval entered in one is read by the next.
+    import tempfile as _tmp_rel
+    from agentic_core.api import scholar_review as _sr_rel
+    _dir_rel = pathlib.Path(_tmp_rel.mkdtemp(prefix="rel-w671-"))
+
+    def _model_serves(text, approve_as=None):
         async def _model(prompt, agent, **kw):
             _seen["prompt"] = prompt
             return (text, {"posture": "in-house-first", "served_by": "ollama:w671-test", "is_external": False})
         monkeypatch.setattr(_R, "_model_available", lambda: True)
         monkeypatch.setattr(_R, "ai_text", _model)
+        monkeypatch.setattr(_sr_rel, "_roster_path", lambda: _dir_rel / "scholar_roster.json")
+        monkeypatch.setattr(_sr_rel, "_review_path", lambda: _dir_rel / "scholar_review.json")
         _r = client.post("/api/v1/religion/quran-tafsir", json={"surah": 1, "ayah_start": 1})
+        if approve_as and _r.status_code == 200:
+            #  a named scholar is recorded and approves the exact text this reply queued; then it is asked again
+            _sid, _name = approve_as
+            _add = client.post("/api/v1/scholar-review/roster", json={"scholar_id": _sid, "name": _name, "credential": "stated"})
+            _dec = client.post("/api/v1/scholar-review/decide", json={
+                "content_key": _r.json()["scholar_review"]["content_key"], "scholar_id": _sid, "approve": True})
+            assert _add.status_code == 200 and _dec.status_code == 200, (_add.text[:200], _dec.text[:200])
+            _r = client.post("/api/v1/religion/quran-tafsir", json={"surah": 1, "ayah_start": 1})
         monkeypatch.undo()
         assert _r.status_code == 200, _r.text[:300]
         return _r.json()
@@ -52953,13 +53022,26 @@ def test_w671_sacred_text_is_never_composed_and_a_page_shows_what_the_server_ret
     assert _asked == [], ("the prompt asks a model for a sacred section", _asked)
     assert "## Exegesis" in _seen["prompt"], "the prompt no longer asks for the study sections - this leg reads nothing"
     assert "In the name of God" not in _tf["tafsir"] and "bismillah" not in _tf["tafsir"], _tf["tafsir"]
-    assert _tf["sections_withheld"] == ["Transliteration", "Translation"], _tf["sections_withheld"]
-    assert "## Exegesis" in _tf["tafsir"] and "floor_note" not in _tf, "a model's exegesis was withheld with them"
+    #  RETARGETED (REL): the two sacred sections are removed always; the Exegesis a model composed is withheld
+    #  while nobody on the roster has approved it - named, and said in review_note, never in floor_note
+    assert _tf["sections_withheld"] == ["Transliteration", "Translation", "Exegesis"], _tf["sections_withheld"]
+    assert _tf["tafsir"] == "" and "floor_note" not in _tf and "named scholar" in _tf["review_note"], _tf
+    assert _tf["scholar_review"]["state"] == "withheld", _tf["scholar_review"]
     assert _tf["translation_source"]["composed_here"] is False
     assert _tf["translation_source"]["sourced_route"] == "/api/v1/qep/translation/1/1", _tf["translation_source"]
-    #     way 1b - a model that volunteers neither: nothing is listed as removed, and the pointer is still there
+    #     way 1b - a model that volunteers neither: no sacred section is listed, and the pointer is still there.
+    #     RETARGETED (REL): its exegesis is withheld with nobody on the roster ...
     _tf2 = _model_serves("## Exegesis\nnotes on the opening")
-    assert _tf2["sections_withheld"] == [] and "notes on the opening" in _tf2["tafsir"], _tf2
+    assert _tf2["sections_withheld"] == ["Exegesis"] and "notes on the opening" not in str(_tf2), _tf2
+    #     ... and shown whole once a named scholar has approved that exact text, with nothing listed as removed
+    _tf3 = _model_serves("## Exegesis\nnotes on the opening", approve_as=("rel-w671", "Shaykh Rel W671"))
+    assert _tf3["sections_withheld"] == [] and _tf3["tafsir"] == "## Exegesis\nnotes on the opening", _tf3
+    assert "Shaykh Rel W671" in _tf3["scholar_review"]["basis"] and "review_note" not in _tf3, _tf3
+    #     way 1a again, approved: the exegesis is shown and NEITHER sacred section is - no approval releases one
+    _tf4 = _model_serves("## Transliteration\nbismillah\n## Translation (AI-assisted)\nIn the name of God\n## Exegesis\nnotes",
+                         approve_as=("rel-w671", "Shaykh Rel W671"))
+    assert _tf4["tafsir"] == "## Exegesis\nnotes" and _tf4["sections_withheld"] == ["Transliteration", "Translation"], _tf4
+    assert "In the name of God" not in str(_tf4) and "bismillah" not in str(_tf4), "an approval released a sacred section"
     assert _tf2["translation_source"]["basis"] == _R._TRANSLATION_BASIS
     #     way 2 - the floor (this suite)
     assert _R._model_available() is False
@@ -53562,3 +53644,1675 @@ def test_w670_a_record_says_what_was_compared_decided_and_measured(client, monke
         "the page does not show what the name stands for")
     assert "The organism reports which signalling mode is active" not in _in
     assert "are not measured, so none are shown." in _in, "the true sentence about levels was removed with the false one"
+
+
+def test_p3a_r1_a_refusal_or_a_count_says_what_happened(client, monkeypatch):
+    """P3.30 backend round 1 - ten changes, each driven BOTH ways. No leg sits behind an `if`; a leg that
+    needs a state asserts that state first.
+
+    1 /cognitive/mjm answers, and a failure inside it is received; 2 a particular of the wrong shape is a 422
+    naming the field and the right shape still locates a line; 3 an unknown Forge stage is refused and stores
+    nothing, a default pipeline says it is one; 4 questions_answered is a number only when something answered;
+    5 the charity method sentence follows the directive and the grants; 6 a directive id that matches no cause
+    is said to match none; 7 an interest-paying deposit raises the riba concern and every offered term is
+    named; 8 the category word is a review, a named thing still fails, and no certificate clears either;
+    9 the drafter and the risk narrative pass what the person typed; 10 the immune docstring names only
+    writers that exist."""
+    import pathlib
+    import re
+    import tempfile
+    import uuid
+    _root = pathlib.Path(__file__).resolve().parents[1]
+    _tag = uuid.uuid4().hex[:8]
+
+    # -- 1. R4.14 POST /cognitive/mjm ANSWERS; a failure inside it is RECEIVED -------------------------------
+    import agentic_core.api.cognitive as _cg
+    _m = client.post("/api/v1/cognitive/mjm", json={"query": f"p3a {_tag}: is the night rota fair to both wards?"})
+    assert _m.status_code == 200, ("the MJM route does not answer", _m.status_code, _m.text[:300])
+    _mj = _m.json()
+    assert _mj["engine"] == "mjm" and _mj["status"] == "complete" and isinstance(_mj["answer"], str), _mj
+    assert _mj["confidence"] is None and "not computed" in (_mj["confidence_basis"] or ""), (
+        "a lifecycle that scores nothing returns a confidence, or no reason for having none", _mj)
+    assert _mj["served_by"] and _mj["is_external"] is False, _mj
+    _cv = _mj["constitutional_validation"]
+    assert _cv["passed"] is not True and isinstance(_cv["basis"], str) and _cv["basis"], (
+        "the screen is reported as a pass, or with no statement of what it did", _cv)
+
+    async def _consult_fails(request):
+        raise RuntimeError("driven consult failure")
+    monkeypatch.setattr(_cg._mjm, "consult", _consult_fails)
+    _mf = client.post("/api/v1/cognitive/mjm", json={"query": "p3a failure leg"})
+    assert _mf.status_code == 500 and "RuntimeError: driven consult failure" in str(_mf.json().get("detail")), (
+        _mf.status_code, _mf.text[:300])
+    monkeypatch.undo()
+
+    class _ContractRefuses:
+        def __init__(self, **kw):
+            raise ValueError("driven contract refusal")
+    monkeypatch.setattr(_cg, "ConsultationRequest", _ContractRefuses)
+    #  if the request were built OUTSIDE the try this call would RAISE into the test instead of answering
+    _mc = client.post("/api/v1/cognitive/mjm", json={"query": "p3a contract leg"})
+    assert _mc.status_code == 500 and "ValueError: driven contract refusal" in str(_mc.json().get("detail")), (
+        "a refusal by the consultation contract is not received by the caller", _mc.status_code, _mc.text[:300])
+    monkeypatch.undo()
+
+    # -- 2. R5.12 A PARTICULAR OF THE WRONG SHAPE is a 422 naming the field; the right shape still locates ----
+    from agentic_core.legal import bundle as _bd
+    _bdir = pathlib.Path(tempfile.mkdtemp(prefix="p3a-bundle-"))
+    monkeypatch.setenv(_bd.ENV_VAR, str(_bdir))
+    (_bdir / "letter.txt").write_text("Dear Ms Example,\nYou were dismissed on 3 March.\n", encoding="utf-8")
+    _plain = client.post("/api/v1/law/matter/assemble", json={
+        "template_id": "nda", "particulars": ["date of dismissal"], "authorities": []})
+    assert _plain.status_code == 422 and "particulars" in _plain.text, (
+        "a particular sent as plain text is not refused by the contract", _plain.status_code, _plain.text[:300])
+    _nonword = client.post("/api/v1/law/matter/assemble", json={
+        "template_id": "nda", "particulars": [{"name": "x", "words": "dismissed"}], "authorities": []})
+    assert _nonword.status_code == 422 and "words" in _nonword.text, (_nonword.status_code, _nonword.text[:300])
+    _shape = client.post("/api/v1/law/matter/assemble", json={
+        "template_id": "nda", "authorities": [],
+        "particulars": [{"name": "date of dismissal", "words": ["dismissed", "on"], "note": "an extra key"},
+                        {"name": "employer's name", "words": ["zzqx-no-such-word"]}, {}]})
+    assert _shape.status_code == 200, (_shape.status_code, _shape.text[:300])
+    _ps = _shape.json()["particulars"]
+    assert len(_ps) == 3 and _ps[0]["particular"] == "date of dismissal" and _ps[0]["found"] is True, _ps
+    assert _ps[0]["document"] == "letter.txt" and _ps[0]["line"] == 2, ("the typed particular lost its words", _ps[0])
+    assert _ps[1]["found"] is False and _ps[1]["rendered"].startswith("[BLANK:"), _ps[1]
+    assert _ps[2]["particular"] == "" and _ps[2]["found"] is False, ("an empty particular is no longer a blank", _ps[2])
+    monkeypatch.undo()
+
+    # -- 3. R4.12 AN UNKNOWN FORGE STAGE is refused and stores nothing; a default pipeline says it is one ----
+    import agentic_core.api.forge as _fg
+
+    def _stored(tag):
+        return [r for r in _fg._load() if tag in str(r.get("objective"))]
+    _bad_tag, _good_tag, _def_tag = f"p3a-bad-{_tag}", f"p3a-good-{_tag}", f"p3a-default-{_tag}"
+    _u = client.post("/api/v1/forge/run", json={"objective": _bad_tag, "stages": [{"type": "nonsense_stage"}]})
+    assert _u.status_code == 422, ("an unknown stage type is not refused", _u.status_code, _u.text[:300])
+    _ud = _u.json()["detail"]
+    assert isinstance(_ud, str) and "'nonsense_stage'" in _ud and "Nothing was run" in _ud, _ud
+    assert all(k in _ud for k in _fg._STAGES), ("the refusal does not name the stage types that exist", _ud)
+    _mx = client.post("/api/v1/forge/run", json={"objective": _bad_tag, "stages": [
+        {"type": "laboratory"}, {"type": "nonsense_stage"}]})
+    assert _mx.status_code == 422, ("a mixed list ran a silent subset", _mx.status_code, _mx.text[:300])
+    assert _stored(_bad_tag) == [], "a refused run was stored"
+    _gd = client.post("/api/v1/forge/run", json={"objective": _good_tag, "stages": [{"type": "laboratory"}]})
+    assert _gd.status_code == 200, _gd.text[:300]
+    _gj = _gd.json()
+    assert _gj["pipeline"] == ["laboratory"] and _gj["pipeline_source"] == "requested", _gj.get("pipeline_source")
+    assert "the request named" in _gj["pipeline_basis"] and "default" not in _gj["pipeline_basis"], _gj["pipeline_basis"]
+    assert len(_stored(_good_tag)) == 1, "the store read above cannot see a run, so the refused leg proved nothing"
+    _df = client.post("/api/v1/forge/run", json={"objective": _def_tag})
+    assert _df.status_code == 200, _df.text[:300]
+    _dj = _df.json()
+    assert _dj["pipeline"] == list(_fg._DEFAULT_PIPELINE) and _dj["pipeline_source"] == "default", _dj.get("pipeline_source")
+    assert " -> ".join(_fg._DEFAULT_PIPELINE) in _dj["pipeline_basis"], _dj["pipeline_basis"]
+    #    a rerun of a stored run goes through the same function and is not refused
+    _rr = client.post(f"/api/v1/forge/runs/{_gj['run_id']}/rerun")
+    assert _rr.status_code == 200 and _rr.json()["pipeline_source"] == "requested", (_rr.status_code, _rr.text[:200])
+    assert "`config`" in client.get("/api/v1/forge/resources").json()["params_basis"]
+
+    # -- 4. R5.11 questions_answered IS A NUMBER ONLY WHEN SOMETHING ANSWERED --------------------------------
+    import agentic_core.api.employment as _emp
+
+    def _serves(floor):
+        async def _fake(prompt, agent, *a, **k):
+            _prov = {"served_by": "native" if floor else "ollama:probe", "is_external": False,
+                     "posture": "in-house-first"}
+            if floor:
+                _prov["floor_note"] = "driven floor"
+            return "## Supporting Statement\ndriven text", _prov
+        return _fake
+
+    def _apply(questions):
+        _r = client.post("/api/v1/employment/application", json={
+            "target_role": "Band 5 Staff Nurse", "questions": questions})
+        assert _r.status_code == 200, _r.text[:300]
+        return _r.json()
+    _two = ["Describe handling a deteriorating patient.", "Why this trust?"]
+    monkeypatch.setattr(_emp, "ai_text", _serves(True))
+    _ef = _apply(_two)
+    assert _ef["questions_asked"] == 2 and _ef["questions_answered"] is None, (
+        "the floor answered no question and the response counts answers", _ef)
+    assert _ef["questions_answered_basis"].startswith("NOT ANSWERED: 2 question(s)"), _ef["questions_answered_basis"]
+    _e0 = _apply([])
+    assert _e0["questions_asked"] == 0 and _e0["questions_answered"] == 0, _e0
+    assert _e0["questions_answered_basis"] == "no application question was asked", _e0["questions_answered_basis"]
+    monkeypatch.setattr(_emp, "ai_text", _serves(False))
+    _em = _apply(_two)
+    assert _em["questions_asked"] == 2 and _em["questions_answered"] == 2, (
+        "a model was put two questions and the response says none or does not say", _em)
+    assert "nothing here checks" in _em["questions_answered_basis"] and "NOT ANSWERED" not in _em["questions_answered_basis"]
+    monkeypatch.undo()
+
+    # -- 5. R6.14 THE CHARITY METHOD SENTENCE follows the directive and the grants ----------------------------
+    import agentic_core.api.compliance as _cp
+    from agentic_core.economy import charity as _ch
+    _cdir = pathlib.Path(tempfile.mkdtemp(prefix="p3a-charity-"))
+    monkeypatch.setattr(_ch, "_DIRECTIVES_STORE", _cdir / "directives.json")
+    monkeypatch.setattr(_ch, "_SIGNALS_STORE", _cdir / "signals.json")
+    _a1 = _ch.CharityIntelligence(exclusions=[], priorities=["clean_water"], require_100pct=True).allocate(1000.0)
+    _g1, _m1 = _a1["grants"], _a1["method"]
+    assert _g1, "no grant was made, so the method sentence is printed over nothing"
+    _unchecked = sum(1 for g in _g1 if g["donation_100pct_verified"] == "not_checked")
+    _rev = sum(1 for g in _g1 if g["compliance"] == "review")
+    assert _m1.startswith("weighted rank over CURATED priority weights"), _m1
+    assert "100%-donation causes only" not in _m1 and "ELIGIBILITY FLAG are considered" in _m1, _m1
+    assert f"was not checked for {_unchecked} of the {len(_g1)} grant(s) here" in _m1 and _unchecked == len(_g1), _m1
+    assert f"each of the {len(_g1)} grant(s) went through the compliance screen" in _m1, _m1
+    assert f"{_rev} 'review' (raised or not assessed - not a clearance), {len(_g1) - _rev} other" in _m1, _m1
+    assert f"{len(_a1['excluded_by_compliance'])} cause(s) were refused or unscreened" in _m1, _m1
+    _a2 = _ch.CharityIntelligence(exclusions=[], priorities=["clean_water"], require_100pct=False).allocate(1000.0)
+    assert "OFF by directive" in _a2["method"] and "ELIGIBILITY FLAG are considered" not in _a2["method"], _a2["method"]
+    #    the screen's count is read from the grants: drive it to all-pass and to all-refused
+    monkeypatch.setattr(_cp, "screen_compliance", lambda *a, **k: {"overall": "pass"})
+    _a3 = _ch.CharityIntelligence(exclusions=[], priorities=["clean_water"], require_100pct=True).allocate(1000.0)
+    assert _a3["grants"] and f"0 'review' (raised or not assessed - not a clearance), {len(_a3['grants'])} other" in _a3["method"], _a3["method"]
+    monkeypatch.setattr(_cp, "screen_compliance", lambda *a, **k: {"overall": "fail"})
+    _a4 = _ch.CharityIntelligence(exclusions=[], priorities=["clean_water"], require_100pct=True).allocate(1000.0)
+    assert _a4["grants"] == [] and _a4["excluded_by_compliance"], _a4
+    assert "each of the 0 grant(s)" in _a4["method"], _a4["method"]
+    assert f"{len(_a4['excluded_by_compliance'])} cause(s) were refused or unscreened" in _a4["method"], _a4["method"]
+    #    (the driven screen stays in place for leg 6, which screens nothing, and is undone with it)
+
+    # -- 6. v15 R6[12] A DIRECTIVE ID THAT MATCHES NO CAUSE is stored as written and SAID to match none -------
+    _d0 = _ch.get_directives()
+    assert _d0["priorities_source"] == "never_set" and _d0["priorities_unknown"] == [] and _d0["exclusions_unknown"] == [], _d0
+    assert _d0["directives_match_note"] == "the record names no cause id", _d0["directives_match_note"]
+    _d1 = _ch.set_directives(priorities=["clean_water", "p3a_no_such_cause"], exclusions=["dawah", "p3a_typo_excl"])
+    assert _d1["priorities"] == ["clean_water", "p3a_no_such_cause"] and _d1["priorities_source"] == "owner", (
+        "the Owner's directive is no longer stored as written", _d1)
+    assert _d1["exclusions"] == ["dawah", "p3a_typo_excl"], _d1["exclusions"]
+    assert _d1["priorities_unknown"] == ["p3a_no_such_cause"] and _d1["exclusions_unknown"] == ["p3a_typo_excl"], _d1
+    _n1 = _d1["directives_match_note"]
+    assert "1 named priority id(s) match no known cause (p3a_no_such_cause)" in _n1, _n1
+    assert "1 named exclusion id(s) match no known cause (p3a_typo_excl)" in _n1 and "EXCLUDES NOTHING" in _n1, _n1
+    assert all(c["id"] in _n1 for c in _ch._CANDIDATES), ("the note does not list the ids that exist", _n1)
+    _d2 = _ch.set_directives(priorities=["clean_water"], exclusions=["dawah"])
+    assert _d2["priorities_unknown"] == [] and _d2["exclusions_unknown"] == [], _d2
+    assert _d2["directives_match_note"] == "every id the record names is a known cause", _d2["directives_match_note"]
+    #    an approved signal makes its id a known cause
+    import json as _json
+    (_cdir / "signals.json").write_text(_json.dumps([{"id": "p3a_signal_cause", "cause": "a driven signal row"}]), encoding="utf-8")
+    _d3 = _ch.set_directives(priorities=["p3a_signal_cause"], exclusions=[])
+    assert _d3["priorities_unknown"] == [], ("an approved signal's id is called unknown", _d3)
+    #    the route carries the same fields
+    _dr = client.post("/api/v1/economy/charity/directives", json={
+        "priorities": ["clean_water"], "exclusions": ["p3a_route_typo"], "require_100pct": True})
+    assert _dr.status_code == 200 and _dr.json()["exclusions_unknown"] == ["p3a_route_typo"], (_dr.status_code, _dr.text[:300])
+    #    a store that cannot be read: not known, never "none"
+    (_cdir / "directives.json").write_text("{ not json", encoding="utf-8")
+    _d4 = _ch.get_directives()
+    assert _d4["priorities_source"] == "unreadable" and _d4["priorities_unknown"] is None and _d4["exclusions_unknown"] is None, _d4
+    assert "could not be determined" in _d4["directives_match_note"], _d4["directives_match_note"]
+    monkeypatch.undo()
+
+    # -- 7. R1.7 AN INTEREST-PAYING DEPOSIT raises the riba concern; EVERY offered term is named -------------
+    def _halal(text, **kw):
+        return next(v for v in _cp.screen_compliance(text, **kw)["verdicts"] if v["framework"] == "sharia_halal")
+    _dep = _halal("A savings account paying 3% interest to its holders")
+    assert _dep["status"] == "review" and "riba concern" in _dep["reason"], _dep
+    assert "a deposit or savings context ('savings')" in _dep["reason"] and "('3% interest')" in _dep["reason"], _dep["reason"]
+    _loan = _halal("We offer financing: a loan at 12% APR.")
+    assert "a lending context ('financing')" in _loan["reason"] and "deposit" not in _loan["reason"], _loan["reason"]
+    for _t in ("A 5% discount on savings for members", "Our savings account pays no interest",
+               "A savings club with no interest charge"):
+        assert "riba concern" not in _halal(_t)["reason"], ("a deposit word alone, or a negated rate, raised riba", _t)
+    _many = _halal("We sell beer, wine, bacon and run a betting shop")
+    assert _many["status"] == "fail", _many
+    assert _many["reason"].startswith(
+        "haram term present in the text: 'beer' (and 3 more matched: 'wine', 'bacon', 'betting') — a keyword"), _many["reason"]
+    _one = _halal("A bar serving beer and more Beer to customers")
+    assert _one["status"] == "fail" and "more matched" not in _one["reason"], ("one term repeated is counted as several", _one)
+    assert _one["reason"].startswith("haram term present in the text: 'beer' — a keyword"), _one["reason"]
+
+    # -- 8. v15 R1[9] THE CATEGORY WORD is a REVIEW; a named thing still FAILS; nothing is cleared ------------
+    _ask = "A short brief on whether music is haram"
+    _q = _halal(_ask)
+    assert _q["status"] == "review", ("a text carrying only the category word is failed", _q)
+    assert "the category word 'haram' appears" in _q["reason"] and "haram term present" not in _q["reason"], _q["reason"]
+    assert "not a clearance" in _q["reason"], _q["reason"]
+    _whole = _cp.screen_compliance(_ask)
+    assert _whole["overall"] != "pass" and _whole["compliant"] is not True, ("the softened verdict cleared the text", _whole)
+    _via = client.post("/api/v1/compliance/check", json={"subject": _ask}).json()
+    assert next(v for v in _via["verdicts"] if v["framework"] == "sharia_halal")["status"] == "review", _via
+    _both = _halal("Is music haram, and may we serve wine at the launch?")
+    assert _both["status"] == "fail" and "haram term present in the text: 'wine'" in _both["reason"], (
+        "a named prohibited thing beside the category word no longer fails", _both)
+    _negc = _halal("A bakery with no haram ingredients")
+    assert _negc["status"] == "review" and "negating phrase" in _negc["reason"], _negc
+    #    a certificate clears an ordinary text here (the precondition) and does NOT clear the category text
+    monkeypatch.setattr(_cp, "verify_halal_certificate", lambda subject_id, today=None: {
+        "state": "cleared", "certificate_id": "P3A-CERT", "body": "a driven body", "expires": "2099-01-01",
+        "checked_on": "2026-01-01", "source": "driven"})
+    assert _halal("An oat bar baked for a school canteen", subject_id="p3a-subject")["status"] == "pass", (
+        "the driven certificate clears nothing, so the next assertion would prove nothing")
+    _qc = _halal(_ask, subject_id="p3a-subject")
+    assert _qc["status"] == "review" and "VERIFIED against certificate" not in _qc["reason"], (
+        "a certificate cleared a text that used to fail", _qc)
+    assert _halal("A bar serving beer to customers", subject_id="p3a-subject")["status"] == "fail"
+    monkeypatch.undo()
+    #    the engine's own finding still fails a category-only text; over a negated phrase it still does not
+
+    class _Eng:
+        def audit_transaction(self, tx):
+            return {"violations": ["HARAM_ELEMENT_DRIVEN"], "is_compliant": False}
+    monkeypatch.setattr(_cp, "_halal_engine", lambda: _Eng())
+    _eq = _halal(_ask)
+    assert _eq["status"] == "fail" and "Engine violations" in _eq["reason"], ("an engine finding no longer fails", _eq)
+    _en = _halal("We serve no alcohol. Is music haram?")
+    assert _en["status"] == "review" and "same negated phrase" in _en["reason"], _en
+    monkeypatch.undo()
+
+    # -- 9. v15 R5[8] THE DRAFTER AND THE RISK NARRATIVE pass what the person typed ---------------------------
+    import agentic_core.api.care as _care
+    import agentic_core.api.law as _law
+    _said = {}
+
+    def _hears(tag):
+        async def _fake(prompt, agent, *a, **k):
+            _said[tag] = k.get("user_text", "<not passed>")
+            return "## Draft\ndriven text", {"served_by": "ollama:probe", "is_external": False, "posture": "in-house-first"}
+        return _fake
+    monkeypatch.setattr(_law, "ai_text", _hears("law"))
+    monkeypatch.setattr(_care, "ai_text", _hears("care"))
+
+    def _draft(body):
+        assert client.post("/api/v1/law/generate", json={"template_id": "nda", **body}).status_code == 200
+        return _said["law"]
+    assert _draft({"parties": {"party_a": "Zephyrine Ltd", "party_b": "Quillon Co", "meta": {"k": 1}}}) == (
+        "Zephyrine Ltd" + chr(10) + "Quillon Co"), ("the party names did not reach the call as the person's text", _said)
+    assert _draft({"parties": {"party_a": "Zephyrine Ltd"}, "custom_instructions": "Keep it to one page."}) == (
+        "Keep it to one page." + chr(10) + "Zephyrine Ltd"), _said
+    assert _draft({"parties": {}}) is None, ("nothing was typed and the call says something was", _said)
+    assert _draft({"parties": {"party_a": {"nested": "object"}}}) is None, ("a nested object was stringified", _said)
+
+    def _risk(body):
+        assert client.post("/api/v1/care/risk-assess", json={"tool": "mental_health", **body}).status_code == 200
+        return _said["care"]
+    assert _risk({"patient_data": {"mood": "low", "sleep_hours": 4, "consented": True, "history": {"a": 1}}}) == (
+        "mood: low" + chr(10) + "sleep_hours: 4"), ("the recorded observations did not reach the call", _said)
+    assert _risk({"patient_data": {"mood": "low"}, "clinical_context": "post-op day 2"}) == (
+        "post-op day 2" + chr(10) + "mood: low"), _said
+    assert _risk({"patient_data": {}}) is None, ("nothing was recorded and the call says something was", _said)
+    monkeypatch.undo()
+
+    # -- 10. v13 R6[5] THE IMMUNE DOCSTRING names only writers that exist (a source leg: nothing to drive) ---
+    import agentic_core.organism.immune as _im
+    _doc = _im.__doc__ or ""
+    _ac = _root / "agentic_core"
+    for _rel in ("ai/gateway.py", "ai/native/orchestrator.py", "vbs/quality.py", "organism/heartbeat.py"):
+        assert _rel in _doc, ("the docstring does not name this writer", _rel)
+        assert "immune.record(" in (_ac / _rel).read_text(encoding="utf-8"), ("a named writer does not write", _rel)
+    assert "organism/biobus.py record_error" in _doc and "immune.record(" in (_ac / "organism/biobus.py").read_text(encoding="utf-8")
+    _feeds = re.compile(r"""(?:immune\.record|record_error)\([^)]*["'](?:http_5xx|rate_limit)["']""")
+    _writers = sorted(str(p.relative_to(_ac)) for p in _ac.rglob("*.py")
+                      if "_archive" not in p.parts and _feeds.search(p.read_text(encoding="utf-8", errors="replace")))
+    #    computed both ways: the two kinds are called tracked exactly when something writes them
+    assert ("HTTP 5xx error counts" in _doc or "Rate-limit throttle events" in _doc) == bool(_writers), (
+        "the docstring's claim about server errors and rate limits does not match the writers", _writers)
+    assert ("NOT recorded: a route answering with a server error, and rate-limit throttling" in _doc) == (not _writers), (
+        "the docstring's statement of what is NOT recorded does not match the writers", _writers)
+
+
+def test_p3a_r2_a_record_holds_what_happened(client, monkeypatch):
+    """P3.30 backend round 2 - ten changes, each driven BOTH ways. No leg sits behind an `if`; a leg that
+    needs a state asserts that state first.
+
+    1 the spawn door keeps no fixed engine figure on the entity record (and keeps a refusal as it came);
+    2 a long tagline is cut at a word and says so; 3 the Chief's model says it carries a record, and an
+    unprompted directive says what it restated; 4 attested re-verifications are counted and the rate does not
+    move (OWNER 2026-10-11); 5 a swarm run passes the words typed in THIS request; 6 past credits from an
+    unregistered scope are flagged on read and nothing is written; 7 an ayah that does not exist is a 422;
+    8 two marking sections are withheld on the floor and the text says so; 9 the navigation match says what
+    it is; 10 the halal floor withholds its three process sections."""
+    import asyncio
+    import json
+    import pathlib
+    import tempfile
+    import uuid
+    _root = pathlib.Path(__file__).resolve().parents[1]
+    _tag = uuid.uuid4().hex[:8]
+
+    # -- 1. R2.14 THE SPAWN DOOR keeps no fixed engine figure on the entity record ----------------------------
+    import agentic_core.api.vsb as _vsb
+
+    def _num(v):
+        return isinstance(v, (int, float)) and not isinstance(v, bool)
+    #    THE PRECONDITION the withholding rests on: the two engines return one figure whatever they are handed.
+    #    If this goes red an engine has started computing, and _stored_cascade_record must stop nulling it.
+    _c1 = _ensure_loop().run_until_complete(_vsb._cascade.execute_cascade({"problem": "a village bakery"}))
+    _c2 = _ensure_loop().run_until_complete(_vsb._cascade.execute_cascade(
+        {"problem": "an orbital debris tracking consortium", "domain": "science", "scope": "concept"}))
+    assert _num(_c1["alignment"]["alignment"]) and _num(_c1["alerts"]["threat_score"]), _c1
+    assert _c1["alignment"] == _c2["alignment"] and _c1["alerts"] == _c2["alerts"], (
+        "an engine returned different figures for different problems: it computes now, so the record must keep it",
+        _c1["alignment"], _c2["alignment"], _c1["alerts"], _c2["alerts"])
+    _kept = _vsb._stored_cascade_record(_c1)
+    assert _num(_c1["alignment"]["alignment"]), "the live cascade report was changed by making the record's copy"
+    assert _kept["alignment"]["alignment"] is None and _kept["engines_ran"] == _c1["engines_ran"], _kept
+    assert _vsb._stored_cascade_record({"alignment": {"alignment": True}})["figures_withheld"] == [], "a flag is not a figure"
+    assert _vsb._stored_cascade_record("not a report") == "not a report"
+
+    def _spawn(challenge, name):
+        _r = client.post("/api/v1/vsb/spawn", json={"challenge": challenge, "name": name, "domain": "commerce"})
+        assert _r.status_code == 200, _r.text[:200]
+        _evs = [json.loads(l[6:]) for l in _r.text.splitlines() if l.startswith("data: ")]
+        _done = [e for e in _evs if e.get("stage") == "complete"]
+        assert _done, ("the spawn did not complete, so no record was read", [e.get("stage") for e in _evs])
+        _ent = _vsb._load_vsb(_done[-1]["data"]["vsb_id"])
+        assert isinstance(_ent, dict) and "cascade_analysis" in _ent, "the stored entity carries no cascade record"
+        return _ent
+    _ca = _spawn(f"p3a {_tag}: a village bakery cooperative selling bread", f"P3A One {_tag}")["cascade_analysis"]
+    assert _ca["alignment"]["alignment"] is None and "NOT ASSESSED" in _ca["alignment"]["alignment_basis"], (
+        "the entity record holds an alignment figure no engine computed", _ca.get("alignment"))
+    assert _ca["alerts"]["threat_score"] is None and "NOT ASSESSED" in _ca["alerts"]["threat_score_basis"], (
+        "the entity record holds a threat figure no engine computed", _ca.get("alerts"))
+    assert "fixed return" in _ca["alignment"]["status_basis"] and "fixed return" in _ca["alerts"]["status_basis"]
+    assert _ca["figures_withheld"] == ["alignment.alignment", "alerts.threat_score"], _ca["figures_withheld"]
+    assert "2 figure(s) the cascade returned are not kept" in _ca["figures_withheld_basis"], _ca["figures_withheld_basis"]
+    assert not [k for sec in ("alignment", "alerts") for k, v in _ca[sec].items() if _num(v)], (
+        "a numeric figure is still on the record under one of the two engine sections", _ca["alignment"], _ca["alerts"])
+    assert len(_ca["engines_ran"]) == 6 and _ca["status"] == "completed", ("the rest of the report was lost", _ca)
+
+    class _Refusing:
+        async def execute_cascade(self, problem):
+            return {"plan": {"goals": []}, "status": "completed", "engines_ran": ["inkashaf"],
+                    "alignment": {"status": "REJECTED", "reason": "High toxicity"},
+                    "alerts": {"status": "ALERT", "reason": "Hypoxia"}}
+    monkeypatch.setattr(_vsb, "_cascade", _Refusing())
+    _cr = _spawn(f"p3a {_tag}: a second village bakery cooperative", f"P3A Two {_tag}")["cascade_analysis"]
+    assert _cr["alignment"] == {"status": "REJECTED", "reason": "High toxicity"}, ("an engine's refusal was rewritten", _cr)
+    assert _cr["alerts"] == {"status": "ALERT", "reason": "Hypoxia"} and _cr["figures_withheld"] == [], _cr
+    assert "nothing was withheld" in _cr["figures_withheld_basis"], _cr["figures_withheld_basis"]
+    monkeypatch.undo()
+
+    # -- 2. v13 R2[7] A LONG TAGLINE is cut at a word and says so ----------------------------------------------
+    _long = ("Affordable fresh bread baked every morning for families across three neighbourhoods of east Leeds "
+             "delivered by bicycle before school starts and paid for weekly by standing order")
+    assert len(_long) > 120 and _long[120] != " " and _long[119] != " ", "the probe does not land mid-word at 120"
+    _hero = _vsb._entity_fallback_copy("LoafLink", _long, "", "hero")
+    assert _hero.startswith("LoafLink — ") and _hero.endswith("…"), ("a cut tagline does not say it was cut", _hero)
+    _keep = _hero[len("LoafLink — "):-1]
+    assert _long.startswith(_keep) and len(_keep) <= 120 and _long[len(_keep)] == " ", (
+        "the tagline is not cut at a word boundary", _keep)
+    assert len(_keep) + 1 + len(_long[len(_keep) + 1:].split()[0]) > 120, ("more whole words would have fitted", _keep)
+    assert _vsb._entity_fallback_copy("LoafLink", "bread for Leeds", "", "hero") == "LoafLink — bread for Leeds"
+    _fits = ("word " * 24).strip()
+    assert len(_fits) == 119 and _vsb._entity_fallback_copy("L", _fits, "", "hero") == f"L — {_fits}", "a text that fits was cut"
+    assert _vsb._entity_fallback_copy("L", "x" * 200, "", "hero") == "L — " + "x" * 120 + "…"
+
+    # -- 3. R3.8 THE CHIEF CARRIES A RECORD, and an unprompted directive says WHAT it restated -----------------
+    import agentic_core.api.board as _bd
+    from agentic_core.api import change_control as _cca
+    _ccadir = pathlib.Path(tempfile.mkdtemp(prefix="p3a-cca-"))
+    monkeypatch.setattr(_cca, "_CCA_STORE", _ccadir)
+    assert _bd._owner_decisions() == [], "the decisions store was redirected and still yields decisions"
+
+    def _decision(scope, at):
+        _cid = f"cca-p3a-{uuid.uuid4().hex[:6]}"
+        (_ccadir / f"{_cid}.json").write_text(json.dumps({
+            "cca_id": _cid, "title": f"a change the Owner ratified for {scope}", "status": "approved", "vsb_id": scope,
+            "board_ratification": {"decision": "ratify", "notes": "driven", **({"at": at} if at else {})}}), encoding="utf-8")
+
+    def _instruction(text, scope, at):
+        return {"kind": "chief_instruction", "instruction": text, "business_plan_scope": scope, "created_at": at}
+    _sa, _sb, _sc, _sd, _se = (f"p3a-{x}-{_tag}" for x in "abcde")
+    _rows_before = _bd._load()
+    try:
+        _bd._save([])
+        _role = _bd.founder_model(_sa)
+        assert _role["is_modelled_twin"] is False and _role["carries_owner_record"] is False, _role
+        #    A: an instruction, then a NEWER decision - the instruction is what is restated, and it says so
+        _decision(_sa, "2026-10-06T00:00:00Z")
+        _bd._save([_instruction("Close the autumn audit", _sa, "2026-10-05T00:00:00Z")])
+        _ma = _bd.founder_model(_sa)
+        assert _ma["carries_owner_record"] is True and _ma["is_modelled_twin"] is True, _ma
+        assert _ma["instructions"]["count"] == 1 and _ma["decisions"]["count"] == 1, ("state A was not driven", _ma)
+        _da = asyncio.run(_bd.twin_directive_unprompted(_sa))
+        assert _da["issued"] is True and "Close the autumn audit" in _da["acted_on"], _da
+        assert _da["restated_kind"] == "instruction" and _da["restated_is_latest_input"] is False, (
+            "a newer decision exists and the directive still calls the instruction the latest input", _da)
+        assert "latest instruction" in _da["basis"] and "is NOT what was restated" in _da["basis"], _da["basis"]
+        assert "latest input" not in _da["basis"] and "most recent recorded input" not in _da["basis"], _da["basis"]
+        _un = [r for r in _bd._load() if r.get("unprompted") and r.get("instruction_source")]
+        assert _un, "the unprompted directive left no row to read its source from"
+        assert "their latest recorded instruction (or, where they wrote none, their latest recorded decision)" in _un[-1]["instruction_source"]
+        #    B: a decision, then a NEWER instruction - the instruction IS the latest input
+        _decision(_sb, "2026-10-01T00:00:00Z")
+        _bd._save([_instruction("Open the spring ledger", _sb, "2026-10-05T00:00:00Z")])
+        _db = asyncio.run(_bd.twin_directive_unprompted(_sb))
+        assert _db["issued"] is True and _db["restated_kind"] == "instruction" and _db["restated_is_latest_input"] is True, _db
+        assert "their most recent recorded input" in _db["basis"] and "NOT what was restated" not in _db["basis"], _db["basis"]
+        #    C: a decision and NO instruction - the decision is stated, and it does not call it an instruction of theirs
+        _decision(_sc, "2026-10-02T00:00:00Z")
+        _bd._save([])
+        _dc = asyncio.run(_bd.twin_directive_unprompted(_sc))
+        assert _dc["issued"] is True and _dc["restated_kind"] == "decision" and _dc["restated_is_latest_input"] is True, _dc
+        assert "has written no instruction for this scope" in _dc["basis"] and "latest instruction verbatim" not in _dc["basis"], _dc["basis"]
+        #    D: a decision with no timestamp - which is newer is NOT KNOWN, and is not answered either way
+        _decision(_sd, None)
+        _bd._save([_instruction("Review the winter rota", _sd, "2026-10-05T00:00:00Z")])
+        _dd = asyncio.run(_bd.twin_directive_unprompted(_sd))
+        assert _dd["issued"] is True and _dd["restated_is_latest_input"] is None, _dd
+        assert "could not be told from the timestamps" in _dd["basis"], _dd["basis"]
+        #    E: an instruction and no decision at all
+        _bd._save([_instruction("Publish the summer notice", _se, "2026-10-05T00:00:00Z")])
+        _de = asyncio.run(_bd.twin_directive_unprompted(_se))
+        assert _de["issued"] is True and _de["restated_is_latest_input"] is True and _de["restated_kind"] == "instruction", _de
+    finally:
+        _bd._save(_rows_before)
+    monkeypatch.undo()
+
+    # -- 4. R1.12 ATTESTED RE-VERIFICATIONS ARE COUNTED and the rate does not move (OWNER 2026-10-11) ---------
+    from agentic_core.vbs.registry import qms as _qms
+
+    def _sum():
+        return client.get("/api/v1/vbs/qms/defects").json()["summary"]
+
+    def _corrected_defect(label, count_in_rate=True):
+        _ok = _ensure_loop().run_until_complete(_qms.run_quality_gates(
+            {"coverage": 0.5, "stubs_found": False}, label=label, count_in_rate=count_in_rate,
+            delivery_ref={"content_sha3": "p3a", "required_sections": ["Alpha"], "label": label}))
+        assert _ok is False, "the gate should have failed at coverage 0.5"
+        _id = [x for x in _qms.defects if x.get("label") == label][-1]["id"]
+        assert client.post(f"/api/v1/vbs/qms/defects/{_id}/correct", json={"correction": "p3a"}).status_code == 200
+        return _id
+
+    def _reverify(defect_id, body):
+        _b = _sum()
+        _r = client.post(f"/api/v1/vbs/qms/defects/{defect_id}/reverify", json=body)
+        assert _r.status_code == 200, _r.text[:300]
+        return _b, _r.json(), _sum()
+
+    def _rate_is_its_own(s):
+        assert s["non_conformance_rate"] == round(s["gate_failures"] / s["gates_run"], 4), (
+            "the rate is no longer gate failures over gates run", s)
+    #    attested and passing: counted, closed that way, and STILL one more gate in the rate
+    _b, _res, _a = _reverify(_corrected_defect(f"p3a-att-{_tag}"), {"coverage": 1.0})
+    assert _res["passed"] is True and _res["defect"]["reverify_basis"] == "caller_attested", _res
+    assert _a["attested_reverifications"] == _b["attested_reverifications"] + 1, (_b, _a)
+    assert _a["defects_closed_on_attestation"] == _b["defects_closed_on_attestation"] + 1, (_b, _a)
+    assert _a["gates_run"] == _b["gates_run"] + 1 and _a["gate_failures"] == _b["gate_failures"], (
+        "an attested re-verification left the rate - by ruling it stays in", _b, _a)
+    _rate_is_its_own(_a)
+    assert _a["attested_counted_since"], _a
+    assert f"{_a['attested_reverifications']} of the {_a['gates_run']} gate(s) in this rate" in _a["attested_basis"], _a["attested_basis"]
+    assert "STAY in the rate" in _a["attested_basis"] and f"counted since {_a['attested_counted_since']}" in _a["attested_basis"]
+    assert f"{_a['defects_closed_on_attestation']} defect(s) closed now" in _a["attested_basis"], _a["attested_basis"]
+    #    WHEN COUNTING BEGAN is written by the FIRST attested re-verification only, so this leg drives that
+    #    state itself: a store that already holds the counter (any earlier run) never reaches the line.
+    _st = _qms._load_state()
+    _kept = {k: _st.pop(k) for k in ("attested_reverifications", "attested_counted_since") if k in _st}
+    _qms._save_state()
+    try:
+        _b, _res, _a = _reverify(_corrected_defect(f"p3a-first-{_tag}"), {"coverage": 1.0})
+        assert _b["attested_reverifications"] == 0 and _b["attested_counted_since"] is None, _b
+        assert _a["attested_reverifications"] == 1 and _a["attested_counted_since"], (
+            "the first attested re-verification did not record when counting began", _a)
+        assert f"counted since {_a['attested_counted_since']}" in _a["attested_basis"], _a["attested_basis"]
+    finally:
+        _st = _qms._load_state()
+        _st["attested_reverifications"] = int(_kept.get("attested_reverifications", 0)) + int(_st.get("attested_reverifications", 0))
+        if _kept.get("attested_counted_since"):
+            _st["attested_counted_since"] = _kept["attested_counted_since"]
+        _qms._save_state()
+    #    attested and FAILING: counted, raises the failures exactly as before, closes nothing
+    _b, _res, _a = _reverify(_corrected_defect(f"p3a-attfail-{_tag}"), {"coverage": 0.1})
+    assert _res["passed"] is False and _res["defect"]["status"] == "open", _res
+    assert _a["attested_reverifications"] == _b["attested_reverifications"] + 1, (_b, _a)
+    assert _a["gate_failures"] == _b["gate_failures"] + 1 and _a["gates_run"] == _b["gates_run"] + 1, (_b, _a)
+    assert _a["defects_closed_on_attestation"] == _b["defects_closed_on_attestation"], (_b, _a)
+    _rate_is_its_own(_a)
+    #    MEASURED from content: in the rate, and in neither attested count
+    _b, _res, _a = _reverify(_corrected_defect(f"p3a-meas-{_tag}"), {"content": "## Alpha" + chr(10) + "y " * 200})
+    assert _res["passed"] is True and _res["defect"]["reverify_basis"].startswith("measured_from_content"), _res
+    assert _a["attested_reverifications"] == _b["attested_reverifications"], ("a measured re-verification was counted as attested", _b, _a)
+    assert _a["defects_closed_on_attestation"] == _b["defects_closed_on_attestation"], (_b, _a)
+    assert _a["gates_run"] == _b["gates_run"] + 1, (_b, _a)
+    #    a WHAT-IF defect re-verified on typed figures: outside the rate, so outside the count of gates in it
+    _b, _res, _a = _reverify(_corrected_defect(f"p3a-whatif-{_tag}", count_in_rate=False), {"coverage": 1.0})
+    assert _res["defect"]["what_if"] is True and _res["defect"]["reverify_basis"] == "caller_attested", _res
+    assert _a["attested_reverifications"] == _b["attested_reverifications"] and _a["gates_run"] == _b["gates_run"], (_b, _a)
+    assert _a["defects_closed_on_attestation"] == _b["defects_closed_on_attestation"], (_b, _a)
+    assert _a["what_if_gates"] == _b["what_if_gates"] + 1, (_b, _a)
+    _vp = (_root / "apps/workstation-superapp/src/components/VBSSystemsPanel.tsx").read_text(encoding="utf-8")
+    assert "{defects.summary.attested_reverifications ?? 0} re-verified on typed figures (in the rate)" in _vp, (
+        "the panel does not say in its own text how many gates in the rate were attested")
+    assert "(defects.summary.attested_reverifications ?? 0) > 0 || (defects.summary.defects_closed_on_attestation ?? 0) > 0" in _vp
+    assert "title={defects.summary.attested_basis}" in _vp
+
+    # -- 5. R4.17 A SWARM RUN passes the words typed in THIS request, and nothing composed ---------------------
+    from agentic_core.ai.native import orchestrator as _orch
+    _heard = []
+
+    async def _hears(agent, stages, context="", prefer_external=False, timeout=30.0, user_text="<not passed>"):
+        _heard.append({"context": context, "user_text": user_text})
+        return {"agent": agent, "stages": len(stages), "final": "out", "any_external": False, "homeostasis": {},
+                "trace": [{"step": 1, "role": "a", "served_by": "native", "output": "1"}]}
+    monkeypatch.setattr(_orch, "swarm", _hears)
+    _st = [{"role": "planner", "instruction": "Plan it."}]
+
+    def _ran(path, body):
+        _n = len(_heard)
+        _r = client.post(path, json=body)
+        assert _r.status_code == 200 and len(_heard) == _n + 1, (path, _r.status_code, _r.text[:200])
+        return _heard[-1]
+    assert _ran("/api/v1/resources/swarm/run", {"context": "  Zephyrine orchard irrigation  ", "stages": _st})["user_text"] == (
+        "Zephyrine orchard irrigation"), ("the run did not pass the person's words", _heard[-1])
+    assert _ran("/api/v1/resources/swarm/run", {"stages": _st})["user_text"] is None, _heard[-1]
+    assert _ran("/api/v1/resources/swarm/run", {"context": "   ", "stages": _st})["user_text"] is None, _heard[-1]
+    _sid = client.post("/api/v1/resources/swarm/define", json={
+        "name": f"p3a cascade {_tag}", "stages": _st, "context": "the designer's saved context"}).json()["id"]
+    _saved = _ran("/api/v1/resources/swarm/run", {"swarm_id": _sid})
+    assert "the designer's saved context" in _saved["context"] and _saved["user_text"] is None, (
+        "a saved cascade's own text was passed as the words of the person running it", _saved)
+    assert _ran("/api/v1/resources/swarm/run", {"swarm_id": _sid, "context": "my own words today"})["user_text"] == "my own words today"
+    assert _ran("/api/v1/native-ai/swarm", {"agent": "p3a", "context": "Quillon ferry timetable"})["user_text"] == "Quillon ferry timetable"
+    assert _ran("/api/v1/native-ai/swarm", {"agent": "p3a"})["user_text"] is None, _heard[-1]
+    monkeypatch.undo()
+
+    # -- 6. FU-745 PAST CREDITS FROM AN UNREGISTERED SCOPE are flagged on read; nothing is written -------------
+    import agentic_core.economy.living_vsbs as _lv
+    import agentic_core.economy.transfers as _tr
+    _pstore = pathlib.Path(tempfile.mkdtemp(prefix="p3a-pending-")) / "pending.json"
+    monkeypatch.setattr(_tr, "_PENDING_STORE", _pstore)
+    _recv, _reg = f"vsb-p3a-recv-{_tag}", "vsb-p3a-registered"
+    assert _tr._VENTURE_MEMO_HEAD == chr(167) + "12 reinvestment from "
+    assert 'reinvestment from {vsb_id}"' in (_root / "agentic_core/economy/ventures.py").read_text(encoding="utf-8"), (
+        "the writer of the venture memo no longer writes the head this reader parses")
+    _pstore.write_text(json.dumps({_recv: {
+        "vsb_id": _recv, "pending_wst": 31.0, "consumed_total_wst": 0.0,
+        "transfers": [
+            {"transfer_id": "xfer-p3a-1", "from_vsb": _reg, "amount_wst": 10.0, "memo": "", "at": "2026-09-01T00:00:00Z"},
+            {"transfer_id": "xfer-p3a-2", "from_vsb": "p3a-simulated-scope", "amount_wst": 15.0, "memo": "", "at": "2026-09-02T00:00:00Z"},
+            {"ref": "venture:p3a-1", "amount_wst": 5.0, "at": "2026-09-03T00:00:00Z", "kind": "venture_position",
+             "memo": chr(167) + "12 reinvestment from p3a-unregistered-investor"},
+            {"ref": "venture:p3a-2", "amount_wst": 1.0, "at": "2026-09-04T00:00:00Z", "kind": "venture_position",
+             "memo": "a memo a caller wrote"}],
+        "credited_ids": ["xfer-p3a-0-older", "xfer-p3a-1", "xfer-p3a-2", "venture:p3a-1", "venture:p3a-2"]}}), encoding="utf-8")
+    _bytes = _pstore.read_bytes()
+
+    def _sources(vsb_id=_recv):
+        _r = client.get("/api/v1/economy/transfers/intake-sources", params={"vsb_id": vsb_id})
+        assert _r.status_code == 200, _r.text[:300]
+        return _r.json()
+    monkeypatch.setattr(_lv, "is_registered", lambda vid: vid == _reg)
+    _s = _sources()
+    _by = {c["id"]: c for c in _s["credits"]}
+    assert _s["readable"] is True and _s["recorded_credits"] == 4 and _s["credited_ids_on_record"] == 5, _s
+    assert _s["from_unregistered_now"] == 2 and _s["sender_not_known"] == 1, _s
+    assert _by["xfer-p3a-1"]["sender_registered_now"] is True and _by["xfer-p3a-1"]["flag"] is None, _by["xfer-p3a-1"]
+    assert _by["xfer-p3a-2"]["sender_registered_now"] is False and "Flagged, not reversed" in _by["xfer-p3a-2"]["flag"], _by["xfer-p3a-2"]
+    assert _by["venture:p3a-1"]["sender"] == "p3a-unregistered-investor" and _by["venture:p3a-1"]["sender_registered_now"] is False
+    assert _by["venture:p3a-2"]["sender"] is None and _by["venture:p3a-2"]["sender_registered_now"] is None and _by["venture:p3a-2"]["flag"] is None
+    assert "FLAGGED, NOT REVERSED" in _s["basis"] and "2 of 4 recorded credit(s)" in _s["basis"], _s["basis"]
+    assert "1 older credit(s) are on this record by id only" in _s["basis"] and "read NOW" in _s["basis"], _s["basis"]
+    monkeypatch.setattr(_lv, "is_registered", lambda vid: True)
+    _s2 = _sources()
+    assert _s2["from_unregistered_now"] == 0 and all(c["flag"] is None for c in _s2["credits"]), (
+        "a credit from a registered entity is flagged", _s2)
+    assert _s2["sender_not_known"] == 1, _s2
+
+    def _roster_unreadable(vid):
+        raise RuntimeError("driven roster failure")
+    monkeypatch.setattr(_lv, "is_registered", _roster_unreadable)
+    _s3 = _sources()
+    assert _s3["from_unregistered_now"] == 0 and _s3["sender_not_known"] == 4, ("an unreadable roster was answered as yes or no", _s3)
+    assert "the roster could not be read: RuntimeError: driven roster failure" in _s3["basis"], _s3["basis"]
+    assert _sources(f"vsb-p3a-nobody-{_tag}")["recorded_credits"] == 0
+    assert _pstore.read_bytes() == _bytes, "reading the sources wrote to the pending store"
+    _pstore.write_text("{ not json", encoding="utf-8")
+    _s4 = _sources()
+    assert _s4["readable"] is False and _s4["from_unregistered_now"] is None and _s4["basis"].startswith("NOT KNOWN"), _s4
+    monkeypatch.undo()
+
+    # -- 7. v15 R1[15] AN AYAH THAT DOES NOT EXIST is a 422, before anything is fetched ------------------------
+    import agentic_core.religious_domain.api as _rd
+    _fetched = []
+
+    async def _no_source(s, a):
+        _fetched.append((s, a))
+        return None
+    monkeypatch.setattr(_rd, "fetch_ayah_arabic", _no_source)
+
+    def _recall(s, a):
+        return client.post("/api/v1/qep/tajweed/analyse", json={"surah": s, "ayah": a, "recited_text": "x"})
+    _none = _recall(1, 9)
+    assert _none.status_code == 422 and _none.json()["detail"] == "surah 1 has 7 ayaat — ayah 9 does not exist", (
+        _none.status_code, _none.text[:200])
+    assert _recall(114, 7).status_code == 422 and _fetched == [], ("a fetch was attempted for an ayah that does not exist", _fetched)
+    _down = _recall(1, 3)
+    assert _down.status_code == 503 and _fetched == [(1, 3)], (_down.status_code, _fetched)
+    assert "unreachable" in _down.json()["detail"] and "no such ayah" not in _down.json()["detail"], _down.text[:300]
+    assert _recall(114, 6).status_code == 503, "the last ayah of a surah is refused as not existing"
+    monkeypatch.undo()
+
+    # -- 8. v13 R5[3] TWO MARKING SECTIONS are withheld on the floor, and the text says so ---------------------
+    import agentic_core.api.education as _edu
+    _SIX = chr(10).join([
+        "## Overall Impression (2-3 sentences)", "A-OVERALL.", "", "## Strengths (specific)", "B-STRENGTHS.", "",
+        "## Areas to Develop (specific, prioritised)", "C-AREAS.", "",
+        "## Criterion-by-Criterion (if a rubric was provided)", "D-CRITERIA.", "",
+        "## Actionable Next Steps (3-4 concrete things)", "E-STEPS.", "",
+        "## Indicative Level / Grade (a RANGE with a one-line justification)", "F-GRADE."])
+
+    def _marks(floor, text=_SIX):
+        async def _fake(prompt, agent, *a, **k):
+            _prov = {"served_by": "native" if floor else "ollama:probe", "is_external": False, "posture": "in-house-first",
+                     "quality_assurance": {"delivery_coverage": 1.0, "stub_found": False, "qms_basis": "driven."}}
+            if floor:
+                _prov["floor_note"] = "driven floor note"
+            return text, _prov
+        monkeypatch.setattr(_edu, "ai_text", _fake)
+        _r = client.post("/api/v1/education/feedback", json={
+            "student_work": "An essay on the causes of the First World War.", "subject": "History", "task": "Explain the causes."})
+        assert _r.status_code == 200, _r.text[:300]
+        return _r.json()
+    _fl = _marks(True)
+    assert _fl["sections_withheld"] == ["Criterion-by-Criterion", "Indicative Level / Grade"], _fl["sections_withheld"]
+    assert "D-CRITERIA." not in _fl["feedback"] and "F-GRADE." not in _fl["feedback"], ("a marking section is still served on the floor", _fl["feedback"])
+    assert "## Criterion-by-Criterion" not in _fl["feedback"] and "## Indicative Level" not in _fl["feedback"]
+    assert all(k in _fl["feedback"] for k in ("A-OVERALL.", "B-STRENGTHS.", "C-AREAS.", "E-STEPS.")), _fl["feedback"]
+    assert "_Withheld on the native floor: Criterion-by-Criterion · Indicative Level / Grade." in _fl["feedback"], (
+        "the returned text does not say what was withheld from it", _fl["feedback"][-400:])
+    _qa = _fl["ai_provenance"]["quality_assurance"]
+    assert _qa["delivery_coverage"] is None and _qa["delivery_coverage_before_withholding"] == 1.0 and _qa["sections_withheld_count"] == 2, _qa
+    assert "floor_note" not in _fl and _fl["ai_provenance"]["floor_note"] == "driven floor note", (
+        "a top-level floor note would stop the page printing the provenance's own", sorted(_fl))
+    _md = _marks(False)
+    assert _md["sections_withheld"] == [] and "D-CRITERIA." in _md["feedback"] and "F-GRADE." in _md["feedback"], (
+        "a model's marking was withheld", _md)
+    assert "Withheld on the native floor" not in _md["feedback"], _md["feedback"][-300:]
+    assert _md["ai_provenance"]["quality_assurance"]["delivery_coverage"] == 1.0
+    _fn = _marks(True, "## Overall Impression" + chr(10) + "A-OVERALL.")
+    assert _fn["sections_withheld"] == [] and "Withheld on the native floor" not in _fn["feedback"], (
+        "the text says sections were withheld when none was there to withhold", _fn)
+    monkeypatch.undo()
+
+    # -- 9. v13 R5[6] THE NAVIGATION MATCH says what it is, matched or not; silence stays silence --------------
+    from agentic_core.avatars.api import _PLATFORM_AREAS
+
+    def _chat(message):
+        _r = client.post("/api/v1/avatar/chat", json={"message": message, "context": "general"})
+        assert _r.status_code == 200, _r.text[:300]
+        return _r.json()
+    _n_areas = f"{len(_PLATFORM_AREAS)} areas"
+    _g = _chat("How do I set up a business that sells bread?")
+    assert any(a["route"] == "/genesis" for a in _g["suggested_areas"]), ("an ordinary way of asking matched nothing", _g["suggested_areas"])
+    assert _g["suggested_areas_basis"].startswith(f"{len(_g['suggested_areas'])} platform area(s) suggested by a keyword match"), _g["suggested_areas_basis"]
+    assert _n_areas in _g["suggested_areas_basis"] and "words, not meaning" in _g["suggested_areas_basis"]
+    assert any(a["route"] == "/domains" for a in _chat("Can you draft a contract for my supplier?")["suggested_areas"])
+    _q = _chat("thank you, that was helpful")
+    assert _q["suggested_areas"] == [], ("a message that matched nothing was given a forced suggestion", _q["suggested_areas"])
+    assert _q["suggested_areas_basis"].startswith("No platform area is suggested") and _n_areas in _q["suggested_areas_basis"], _q["suggested_areas_basis"]
+    assert "does not say that no area of the platform fits" in _q["suggested_areas_basis"], _q["suggested_areas_basis"]
+
+    # -- 10. v15 R1[5] THE HALAL FLOOR withholds its three process sections -------------------------------------
+    import agentic_core.api.religion as _rel
+    _FIVE = ["Cross-Contamination Risks", "Manufacturing Considerations", "Recommended Certifying Bodies (by target market)",
+             "Steps to Achieve Certification", "Market-Specific Requirements"]
+    _JUDGING = ["Halal Status Assessment", "Critical Issues", "Flagged Ingredients"]
+
+    def _review(floor, headings):
+        async def _fake(prompt, agent, *a, **k):
+            _prov = {"served_by": "native" if floor else "ollama:probe", "is_external": False, "posture": "in-house-first",
+                     "quality_assurance": {"delivery_coverage": 1.0, "stub_found": False, "qms_basis": "driven."}}
+            if floor:
+                _prov["floor_note"] = "driven floor note"
+            return chr(10).join(f"## {h}{chr(10)}BODY-{i}.{chr(10)}" for i, h in enumerate(headings)), _prov
+        monkeypatch.setattr(_rel, "ai_text", _fake)
+        monkeypatch.setattr(_rel, "_model_available", lambda: not floor)
+        _r = client.post("/api/v1/religion/halal-review", json={
+            "product_name": "Oat bar", "product_description": "a baked oat snack", "ingredients": ["oats", "gelatine"]})
+        assert _r.status_code == 200, _r.text[:300]
+        return _r.json()
+    _hf = _review(True, _FIVE)
+    assert _hf["sections_withheld"] == _JUDGING + ["Recommended Certifying Bodies", "Market-Specific Requirements",
+                                                   "Cross-Contamination Risks", "Manufacturing Considerations",
+                                                   "Steps to Achieve Certification"], _hf["sections_withheld"]
+    assert "## " not in _hf["assessment"] and "BODY-" not in _hf["assessment"], ("a templated section is still served", _hf["assessment"])
+    assert _hf["assessment"].startswith("No section of this pre-assessment is served on the native floor: all 8 are withheld"), _hf["assessment"]
+    assert "no section of the pre-assessment remains" in _hf["floor_note"] and "accredited certifying body" in _hf["floor_note"], _hf["floor_note"]
+    assert "section(s) that remain" not in _hf["floor_note"], _hf["floor_note"]
+    assert {f["ingredient"] for f in _hf["ingredient_screen"]["flagged"]} == {"gelatine"}, "the ingredient screen was lost"
+    _hk = _review(True, _FIVE + ["Storage Notes"])
+    assert "## Storage Notes" in _hk["assessment"] and "No section of this pre-assessment" not in _hk["assessment"], _hk["assessment"]
+    assert "the 1 section(s) that remain are a structured frame" in _hk["floor_note"], _hk["floor_note"]
+    #  RETARGETED (int6_make_v2; REL, Owner ruling 2026-10-11 - rel_edits_v2 is applied in this same round). This leg
+    #  asserted that a MODEL's pre-assessment is returned whole with nothing withheld. Under the ruling what a model
+    #  composes is withheld until a named scholar on the roster approves that exact text, so with nobody on the
+    #  roster none of it is returned, and the gate names the same eight sections the floor withholds, in the same
+    #  order. The scholar roster and the review queue are pointed at a scratch directory for this call (undone
+    #  just below), so the real stores are never written. The approved state is driven by the REL guard.
+    import pathlib as _pl_rel
+    import tempfile as _tmp_rel
+    from agentic_core.api import scholar_review as _sr_rel
+    _dir_rel = _pl_rel.Path(_tmp_rel.mkdtemp(prefix="rel-p3a-r2-"))
+    monkeypatch.setattr(_sr_rel, "_roster_path", lambda: _dir_rel / "scholar_roster.json")
+    monkeypatch.setattr(_sr_rel, "_review_path", lambda: _dir_rel / "scholar_review.json")
+    assert _sr_rel.roster_is_empty(), "the scratch roster is not empty, so the withheld leg below proves nothing"
+    _hm = _review(False, _JUDGING + _FIVE)
+    assert "floor_note" not in _hm and _hm["assessment"] == "" and "BODY-" not in str(_hm), (
+        "a model's pre-assessment is shown though no scholar approved it", _hm)
+    assert _hm["scholar_review"]["state"] == "withheld" and "named scholar" in _hm["review_note"], _hm
+    assert _hm["sections_withheld"] == _JUDGING + ["Recommended Certifying Bodies", "Market-Specific Requirements",
+                                                   "Cross-Contamination Risks", "Manufacturing Considerations",
+                                                   "Steps to Achieve Certification"], (
+        "the gate does not name the eight sections the floor withholds", _hm["sections_withheld"])
+    assert {f["ingredient"] for f in _hm["ingredient_screen"]["flagged"]} == {"gelatine"}, "the ingredient screen is not returned beside a withheld answer"
+    monkeypatch.undo()
+
+
+def test_p3b_r3_board_chief_plan_and_entity_pages_say_what_they_hold(client, monkeypatch):
+    """P3.30 round 3 (ledger v16 R3.8, R3.9, R3.10, R3.11, R3.14, R2.9, R5.7; v13 R3[7]; v14 R3[8]).
+
+    Nine changes on the Board, Business Plan and Cockpit pages. COVERAGE STATED: dictation itself (the browser's
+    speech recognition) cannot be driven in this suite - leg 3 holds that the button is mounted on both
+    instruction boxes and appends to the instruction state, and that is all it holds. Nothing here compiles
+    TypeScript: the page legs read source."""
+    import asyncio
+    import pathlib
+    import re
+    import uuid
+    _root = pathlib.Path(__file__).resolve().parents[1]
+    _src = _root / "apps" / "workstation-superapp" / "src"
+    _u = uuid.uuid4().hex[:8]
+
+    def _page(rel):
+        return _code_only((_src / rel).read_text(encoding="utf-8"))
+
+    def _between(text, a, b):
+        i = text.index(a)
+        return text[i:text.index(b, i + len(a))]
+
+    _bd = _page("pages/enterprise/BoardOfDirectors.tsx")
+    _bpx = _page("pages/enterprise/BusinessPlan.tsx")
+    _ck = _page("pages/enterprise/VSBCockpit.tsx")
+    _cp = _page("components/CadencePanel.tsx")
+
+    # -- 1. C1 (R3.8) THE CHIEF CARRIES A RECORD, and the unprompted directive says what it restated ---------
+    from agentic_core.api import board as _b
+    _scope = f"p3br3-chief-{_u}"
+    monkeypatch.setattr(_b, "_owner_decisions", lambda *a, **k: [])
+    _m0 = _b.founder_model(_scope)
+    assert _m0["carries_owner_record"] is False and _m0["is_modelled_twin"] is False, _m0
+    _words = f"P3B-{_u} open the second counter on market days"
+    _b._save(_b._load_for_write() + [{"kind": "chief_instruction", "instruction": _words,
+                                      "business_plan_scope": _scope, "created_at": "2026-10-05T00:00:00Z"}])
+    _m1 = _b.founder_model(_scope)
+    assert _m1["carries_owner_record"] is True and _m1["is_modelled_twin"] is True, _m1
+    _api = client.get("/api/v1/board/chief/model", params={"scope": _scope}).json()
+    assert _api["carries_owner_record"] is True and _api["carries_owner_record"] == _api["is_modelled_twin"], _api
+    #    (a) an instruction and no decision: it restates the instruction, and says "instruction"
+    _i1 = asyncio.run(_b.twin_directive_unprompted(_scope))
+    assert _i1["issued"] is True and _i1["restated_kind"] == "instruction" and _i1["restated_is_latest_input"] is True, _i1
+    assert _words in str(_i1["acted_on"]), _i1["acted_on"]
+    assert "latest instruction verbatim" in _i1["basis"] and "is NOT what was restated" not in _i1["basis"], _i1["basis"]
+    assert "latest input" not in _i1["basis"], ("the basis still calls what it restated the latest input", _i1["basis"])
+    #    (b) a NEWER decision: the instruction is still what is restated, and the basis says the newer input is not
+    _dec = {"cca_id": "p3b-cca", "decision": "ratify", "title": "P3B probe change", "notes": ""}
+    monkeypatch.setattr(_b, "_owner_decisions", lambda *a, **k: [dict(_dec, at="2026-10-06T00:00:00Z")])
+    _i2 = asyncio.run(_b.twin_directive_unprompted(_scope))
+    assert _i2["issued"] is True and _i2["restated_kind"] == "instruction" and _i2["restated_is_latest_input"] is False, _i2
+    assert "is NOT what was restated" in _i2["basis"] and _words in str(_i2["acted_on"]), _i2["basis"]
+    #    (c) the other way: decisions that are OLDER than the instruction are not called newer
+    monkeypatch.setattr(_b, "_owner_decisions", lambda *a, **k: [dict(_dec, at="2026-10-01T00:00:00Z"),
+                                                                  dict(_dec, cca_id="p3b-cca2", at="2026-10-02T00:00:00Z")])
+    _i3 = asyncio.run(_b.twin_directive_unprompted(_scope))
+    assert _i3["issued"] is True and _i3["restated_is_latest_input"] is True, _i3
+    assert "is NOT what was restated" not in _i3["basis"], _i3["basis"]
+    #    (d) no instruction at all: a decision is put into a sentence, and that is NOT called verbatim
+    _scope2 = f"p3br3-decision-{_u}"
+    monkeypatch.setattr(_b, "_owner_decisions", lambda *a, **k: [dict(_dec, at="2026-10-06T00:00:00Z")])
+    _i4 = asyncio.run(_b.twin_directive_unprompted(_scope2))
+    assert _i4["issued"] is True and _i4["restated_kind"] == "decision", _i4
+    assert "has written no instruction for this scope" in _i4["basis"] and "verbatim" not in _i4["basis"], _i4["basis"]
+    #    (e) the row the Board page lists says the same of itself
+    _row = [r for r in _b._load() if r.get("unprompted") and r.get("business_plan_scope") == _scope][-1]
+    assert "latest recorded instruction" in _row["instruction_source"] and "NOT a new instruction" in _row["instruction_source"], _row["instruction_source"]
+    assert "latest input" not in _row["instruction_source"], _row["instruction_source"]
+    monkeypatch.undo()
+    assert "carries_owner_record?: boolean;" in _bd, "the Board page does not type the field it is sent"
+    assert "chiefModel.is_modelled_twin ? (" in _bd, "the branch an older test pins was changed"
+
+    # -- 2. C2 (R3.11) A TOPIC IS PUT TO THE BOARD FROM THE PAGE, and its status is the headline --------------
+    def _served(by):
+        async def _fake(prompt, agent, provenance=None, user_text=None):
+            if provenance is not None:
+                provenance["served_by"][by] = provenance["served_by"].get(by, 0) + 1
+            return f"P3B text served by {by}"
+        return _fake
+
+    monkeypatch.setattr(_b, "_q", _served("native"))
+    _f = client.post("/api/v1/board/directive", json={"topic": f"p3b {_u} second site", "scope": "workstation"})
+    assert _f.status_code == 200, _f.text[:300]
+    assert _f.json()["status"] == "framed_floor_not_deliberated" and "FRAMED, not deliberated" in _f.json()["status_basis"], _f.json()
+    monkeypatch.setattr(_b, "_q", _served("p3b-model"))
+    _r = client.post("/api/v1/board/directive", json={"topic": f"p3b {_u} second site", "domain": "science", "scope": "workstation"})
+    assert _r.status_code == 200 and _r.json()["status"] == "resolved", (_r.status_code, _r.text[:300])
+    assert "FRAMED" not in _r.json()["status_basis"] and _r.json()["director_inputs"], _r.json()
+    #    a field the model does not declare is refused, so the page sends the three it declares and no other
+    assert client.post("/api/v1/board/directive", json={"topic": "x", "owner": "y"}).status_code == 422
+    monkeypatch.undo()
+    assert "apiJson<BoardDeliberation>('/api/v1/board/directive'" in _bd, "the Board page does not call the deliberation route"
+    assert "body: d ? { topic: t, domain: d, scope: 'workstation' } : { topic: t, scope: 'workstation' }" in _bd
+    assert "setBoardErr(`Not put to the Board: ${errorMessage(e)}`)" in _bd, "a refusal is not shown, or not as text"
+    _form = _between(_bd, 'data-testid="board-topic-form"', "Recent Board Deliberations")
+    assert "{boardResult && (" in _form and "{boardErr && <p role=\"alert\"" in _form, "the result or the refusal is behind another gate"
+    _i_status, _i_basis, _i_res = (_form.index('data-testid="board-topic-status"'),
+                                   _form.index('data-testid="board-topic-status-basis"'),
+                                   _form.index("boardResult.resolution"))
+    assert _i_status < _i_basis < _i_res, "the status is not the headline: the resolution text is reached first"
+    assert "boardResult.status === 'framed_floor_not_deliberated' ? 'Framed by the floor" in _form
+    assert "? boardResult.status_basis : 'The response gave no basis for that status.'" in _form, (
+        "the basis is not rendered as body text")
+    assert "title={boardResult.status_basis" not in _form, "the basis is a tooltip"
+
+    # -- 3. C3 (R3.14) DICTATION IS MOUNTED ON BOTH INSTRUCTION BOXES (mounted, not driven - see the docstring)
+    assert "import { DictateButton } from '../../components/DictateButton';" in _bd
+    _box = _between(_bd, 'placeholder="Give your Chief an instruction', "Delegate a timelined action plan")
+    assert "<DictateButton" in _box and "setInstruction(prev => (prev ? prev + ' ' : '') + text)" in _box, (
+        "the Board page's instruction box has no dictation, or it does not append to the instruction")
+    assert "import { DictateButton } from '../../components/DictateButton';" in _ck
+    _cbox = _between(_ck, "Instruct this entity's Chief", "Issue instruction")
+    assert "<DictateButton" in _cbox and "setChiefText(prev => (prev ? prev + ' ' : '') + text)" in _cbox, (
+        "the Cockpit's instruction box has no dictation, or it does not append to the instruction")
+
+    # -- 4. C4 (R3.9) THE ACTION-PLAN LAYER REACHES THE PLAN PAYLOAD AND THE PAGE, with what wrote it ---------
+    from agentic_core.organism import cadence as _cad
+    _pscope = f"p3br3-plan-{_u}"
+    _p0 = client.get("/api/v1/business-plan", params={"scope": _pscope})
+    assert _p0.status_code == 200 and not _p0.json().get("action_plan"), ("a fresh plan already carries an action plan", _p0.text[:200])
+    _e1 = _cad.refresh(_pscope, "action_plan", force=True)["entry"]
+    _p1 = client.get("/api/v1/business-plan", params={"scope": _pscope}).json()
+    assert _p1["action_plan"] == _e1["content"] and _p1["action_plan"].strip(), _p1.get("action_plan")
+    _last1 = [r for r in _p1["refreshes"] if r.get("plan_field") == "action_plan"][-1]
+    assert _last1["served_by"] == "deterministic-floor" and _last1["applied"] is True, _last1
+    assert _last1["provenance_basis"].startswith("DERIVED from the plan's own stored state"), _last1["provenance_basis"]
+    _cad.refresh(_pscope, "action_plan", force=True, content="P3B supplied action plan", served_by="p3b-model")
+    _p2 = client.get("/api/v1/business-plan", params={"scope": _pscope}).json()
+    _last2 = [r for r in _p2["refreshes"] if r.get("plan_field") == "action_plan"][-1]
+    assert _p2["action_plan"] == "P3B supplied action plan" and _last2["served_by"] == "p3b-model", _last2
+    assert "action_plan?: string; refreshes?: PlanRefresh[]" in _bpx, "the page does not type the two fields it renders"
+    _ls = _between(_bpx, "const layerSource = (plan: Plan, field: 'strategy' | 'action_plan')", "export const BusinessPlan")
+    assert "r.plan_field === field && r.applied !== false" in _ls, "a proposal that was not written is named as the source"
+    assert "if (String(last.content ?? '') !== String(plan[field] ?? '')) return null;" in _ls, (
+        "text the cadence did not write (an Owner's edit, a model's draft) is attributed to the cadence")
+    assert "String(last.served_by ?? 'not recorded')" in _ls and "last.provenance_basis" in _ls
+    _ap = _between(_bpx, 'data-testid="plan-action-plan"', "<CadencePanel scope={scope} />")
+    assert "{typeof plan.action_plan === 'string' && plan.action_plan.trim() ? (" in _ap, "the action plan's gate is not its own field"
+    assert "{layerSource(plan, 'action_plan') ??" in _ap and 'data-testid="plan-action-plan-absent"' in _ap
+    assert "title={layerSource" not in _bpx, "what wrote a layer is a tooltip"
+    assert "{plan.strategy && layerSource(plan, 'strategy') && (" in _bpx
+
+    # -- 5. C5 (v13 R3[7]) THE CADENCE PANEL says what served each layer's latest refresh ---------------------
+    _cs = client.get("/api/v1/organism/cadence", params={"scope": _pscope})
+    assert _cs.status_code == 200, _cs.text[:300]
+    _layers = _cs.json()["layers"]
+    assert _layers["action_plan"]["latest"]["served_by"] == "p3b-model", _layers["action_plan"]["latest"]
+    assert _layers["strategic"]["latest"] is None and _layers["strategic"]["ever_refreshed"] is False, _layers["strategic"]
+    _row5 = _between(_cp, "Object.entries(st.layers || {})", "{st?.signals_basis && <p")
+    assert "{l.latest && (" in _row5 and "String(l.latest.served_by ?? 'not recorded')" in _row5, (
+        "the panel does not say what served the latest refresh, or says it for a layer that has none")
+    assert "l.latest.provenance_basis ? `. ${String(l.latest.provenance_basis)}`" in _row5 and "l.latest.applied === false" in _row5
+    assert "title=" not in _row5, "the source is a tooltip"
+
+    # -- 6. C6 (v14 R3[8]) "Chief: AI-Generate" PASSES THE FOUNDER'S OWN DESCRIPTION ---------------------------
+    from agentic_core.api import business_plan as _bp
+    _seen = []
+
+    async def _cap(prompt, **kw):
+        _seen.append((prompt, kw))
+        return {"output": "", "served_by": "native", "is_external": False}
+    monkeypatch.setattr(_bp.gateway, "query_meta", _cap)
+    _ctx = f"P3B-CONTEXT-{_u} a mobile bakery for two estates"
+    assert client.post("/api/v1/business-plan/generate", json={"scope": _pscope, "context": _ctx}).status_code == 200
+    assert _seen and f"Owner context: {_ctx}" in _seen[-1][0] and _seen[-1][1].get("user_text") == _ctx, (
+        "the description did not reach the Chief's prompt as the person's own text", _seen[-1][1] if _seen else None)
+    _seen.clear()
+    assert client.post("/api/v1/business-plan/generate", json={"scope": _pscope}).status_code == 200
+    assert _seen and "Owner context:" not in _seen[-1][0] and _seen[-1][1].get("user_text") is None, (
+        "a generation with no description still carries one")
+    monkeypatch.undo()
+    _gen = _between(_bpx, "const generate = async () => {", "const addObjective = async () => {")
+    assert _gen.index("const context = genContext.trim();") < _gen.index("await fetch('/api/v1/business-plan/generate'"), (
+        "the description is read after the request began")
+    assert "body: JSON.stringify(context ? { scope, context } : { scope })" in _gen, "the page still sends the scope alone"
+    assert "typeof ed === 'string' ? ed : JSON.stringify(ed)" in _gen, "a structured refusal detail would be rendered as an object"
+    assert 'data-testid="plan-generate-context" value={genContext} onChange={e => setGenContext(e.target.value)}' in _bpx
+    assert 'data-testid="plan-generate-note"' in _bpx          # the note an older test holds stays on this page
+
+    # -- 7. C7 (R3.10) THE BOARD PACK is assembled and read for ANY entity, and a gate's refusal is its own path
+    _e = client.post("/api/v1/genesis/establish", json={
+        "problem": f"p3b {_u}: a neighbourhood bakery in Leeds", "name": f"P3B Bakery {_u}", "concept": "a bakery",
+        "design": "ovens and a route", "commercialisation": "subscriptions", "ship_output": False})
+    assert _e.status_code == 200, _e.text[:300]
+    _vid = _e.json()["vsb_id"]
+    assert client.get(f"/api/v1/vsb/{_vid}/board-pack").status_code == 404
+    assert client.get(f"/api/v1/vsb/{_vid}/board-packs").json()["total"] == 0
+    _pk = client.post(f"/api/v1/vsb/{_vid}/board-pack")
+    assert _pk.status_code == 200, (_pk.status_code, _pk.text[:300])
+    _pack = _pk.json()
+    assert _pack["layers_state"] and all(
+        isinstance(v, dict) and "holds" in v for v in _pack["layers_state"].values()), _pack["layers_state"]
+    assert all(_pack["layers"]["constitutional"].get(k) for k in ("mission_source", "vision_source", "values_source"))
+    _hist = client.get(f"/api/v1/vsb/{_vid}/board-packs").json()
+    assert _hist["total"] == 1 and _hist["board_packs"][0]["version"] == _pack["version"], _hist
+    assert client.get(f"/api/v1/vsb/{_vid}/board-pack").json()["content_hash"] == _pack["content_hash"]
+    assert client.post(f"/api/v1/vsb/{_vid}/review-gates", json={"stages": ["design"]}).status_code == 200
+    _held = client.post(f"/api/v1/vsb/{_vid}/board-pack")
+    assert _held.status_code == 409, ("a pending gate no longer holds the board pack", _held.status_code)
+    _hd = _held.json()["detail"]
+    assert isinstance(_hd, dict) and _hd["mover"] == "board pack" and _hd["gate"] == "design" and _hd["status"] == "pending", _hd
+    assert client.get(f"/api/v1/vsb/{_vid}/board-packs").json()["total"] == 1, "a refused assembly was filed"
+    assert client.post(f"/api/v1/vsb/{_vid}/review-gates/design/decision", json={"decision": "approve"}).status_code == 200
+    assert client.post(f"/api/v1/vsb/{_vid}/board-pack").status_code == 200, "an approved gate still holds the pack"
+    _fn = _between(_ck, "const [pack, setPack] = useState<Dict | null>(null);", "const [bodyDraft, setBodyDraft]")
+    for _call in ("axios.get(`/api/v1/vsb/${id}/board-packs`)", "axios.get(`/api/v1/vsb/${id}/board-pack`)",
+                  "axios.post(`/api/v1/vsb/${issuedFor}/board-pack`)"):
+        assert _call in _fn, ("the Cockpit does not call", _call)
+    assert "/api/v1/economy/" not in _fn, "the Cockpit's board pack reads the economy pack"
+    assert "setPackMsg(`Not assembled: ${detailText(e?.response?.data?.detail ?? e?.message)}`)" in _fn, (
+        "a refusal (a dict for a gate) is not flattened to text")
+    assert _fn.count("!== selectedRef.current) return;") >= 6, "an answer is not tied to the entity it was issued for"
+    assert "if (e?.response?.status !== 404) setPackMsg(" in _fn
+    _card = _between(_ck, 'data-testid="cockpit-board-pack"', "Instruct this entity's Chief")
+    assert "{packMsg && <p role=\"alert\"" in _card and "{pack ? (" in _card
+    assert "String(v?.basis ?? 'no basis is recorded for this layer')" in _card and "pack.layers_state" in _card, (
+        "a layer is shown without its basis in body text")
+    assert "pack.layers.constitutional.mission_source" in _card and 'data-testid="cockpit-pack-history"' in _card
+    assert "packList && Array.isArray(packList.board_packs) && packList.board_packs.length > 0 && (" in _card
+    assert "title={String(v?.basis" not in _card
+
+    # -- 8. C8 (R2.9) A FOUNDER WRITES A PENDING SECTION FROM THE COCKPIT; the list is the record's own ---------
+    from agentic_core.api import vsb as _vsb
+    _rec = _vsb._load_vsb(_vid)
+    _rec["body_pending"] = dict(_rec.get("body_pending") or {}, design=True)
+    _vsb._save_vsb(_rec)
+    assert client.get(f"/api/v1/vsb/{_vid}").json()["body_pending"]["design"] is True     # what the page lists from
+    _txt = "Two deck ovens, a proving room and one delivery route before seven."
+    _w = client.post(f"/api/v1/vsb/{_vid}/body/design", json={"text": _txt})
+    assert _w.status_code == 200 and _w.json().get("status"), (_w.status_code, _w.text[:300])
+    assert not client.get(f"/api/v1/vsb/{_vid}").json()["body_pending"]["design"], "the section is still listed after it was written"
+    _no = client.post(f"/api/v1/vsb/{_vid}/body/ceo_specification", json={"text": _txt})
+    assert _no.status_code == 404 and isinstance(_no.json()["detail"], str) and "design" in _no.json()["detail"], _no.text[:300]
+    _sv = _between(_ck, "const saveBodySection = async (section: string) => {", "const instructChief = async () => {")
+    assert "axios.post(`/api/v1/vsb/${issuedFor}/body/${encodeURIComponent(section)}`, { text })" in _sv
+    assert "axios.post(`/api/v1/vsb/${issuedFor}/concept`, { concept: text })" in _sv
+    assert "NOT recorded — ${detailText(e?.response?.data?.detail ?? e?.message)}" in _sv, "a refusal is not shown as text"
+    assert _sv.index("const text = (bodyDraft[section] ?? '').trim();") < _sv.index("await axios.post("), (
+        "the draft is read after the request began")
+    _ed = _between(_ck, "const pend: Record<string, any> =", 'data-testid="cockpit-body-message"')
+    assert "(detail.body_pending && typeof detail.body_pending === 'object') ? detail.body_pending : {}" in _ed
+    assert "(detail.body_absent && typeof detail.body_absent === 'object') ? detail.body_absent : {}" in _ed
+    assert "Object.keys(pend).filter(k => !!pend[k])" in _ed and "if (names.length === 0) return null;" in _ed
+    for _typed in _vsb._FOUNDER_SECTIONS:
+        assert f"'{_typed}'" not in _ed, ("the Cockpit types a section name instead of reading the record", _typed)
+
+    # -- 9. C9 (R5.7) A VALUE OUTSIDE THE SIX DOMAINS IS NAMED AS THAT, by one rule in both languages ----------
+    from agentic_core import taxonomy as _tx
+    for _d in _tx.DOMAINS:
+        assert _tx.domain_label(_d) == _tx.DOMAIN_LABELS[_d] and _tx.domain_label(_d.upper()) == _tx.DOMAIN_LABELS[_d], _d
+    assert _tx.domain_label("enterprise") == "enterprise — general (outside the six domains)"
+    assert _tx.domain_label("") == "no domain recorded" and _tx.domain_label(None) == "no domain recorded"
+    assert _tx.normalise_domain("enterprise") == "enterprise", "the label changed what the taxonomy accepts"
+    _txs = _page("lib/taxonomy.ts")
+    _ts_domains = re.findall(r"'([a-z]+)'", re.search(r"export const DOMAINS = \[(.*?)\] as const;", _txs).group(1))
+    assert tuple(_ts_domains) == tuple(_tx.DOMAINS), ("the two domain lists disagree", _ts_domains, _tx.DOMAINS)
+    _fnts = _between(_txs, "export const domainLabel = (value: unknown): string => {", "};")
+    assert "(DOMAINS as readonly string[]).includes(v) ? DOMAIN_LABELS[v] : `${v} — general (outside the six domains)`" in _fnts
+    assert "if (!v) return 'no domain recorded';" in _fnts
+    assert '<Badge color="highlight">{domainLabel(detail.domain)}</Badge>' in _ck and "` · ${domainLabel(v.domain)}`" in _ck, (
+        "the Cockpit prints the raw domain value")
+    _cb = _page("pages/Contribute.tsx")
+    _area = _between(_cb, "{ title: 'Domains', desc: '", "icon: HeartPulse }")
+    assert all(_lbl in _area for _lbl in _tx.DOMAIN_LABELS.values()), ("the Domains card does not name the six", _area)
+    assert "Realms" not in _area
+
+
+def test_p3b_r4_domain_qep_and_genesis_surfaces_say_what_exists(client, monkeypatch):
+    """P3.30 round 4 (ledger v16 R1.11, R2.13, R5.5, R5.10; v13 R1[7], R2[1], R5[4]; v14 R3[7]; v15 R2[7], R2[12]).
+
+    Nine changes on the QEP, domain and Genesis surfaces. COVERAGE STATED: nothing here compiles TypeScript or
+    renders a page - the page legs read source, inside the slice of the block they are about. The scan for
+    callers of a route reads apps/workstation-superapp/src (*.ts, *.tsx) and says how many files it read."""
+    import pathlib
+    import re
+    import uuid
+    _root = pathlib.Path(__file__).resolve().parents[1]
+    _src = _root / "apps" / "workstation-superapp" / "src"
+    _u = uuid.uuid4().hex[:8]
+
+    def _page(rel):
+        return _code_only((_src / rel).read_text(encoding="utf-8"))
+
+    def _between(text, a, b):
+        i = text.index(a)
+        return text[i:text.index(b, i + len(a))]
+
+    _files = [f for f in _src.rglob("*") if f.suffix in (".ts", ".tsx")]
+    assert len(_files) > 100, ("the caller scan read too few files to mean anything", len(_files))
+    _all = {str(f.relative_to(_src)).replace("\\", "/"): _code_only(f.read_text(encoding="utf-8", errors="replace"))
+            for f in _files}
+
+    def _callers(fragment):
+        return sorted(k for k, v in _all.items() if fragment in v)
+
+    from agentic_core.route_inventory import mounted_paths
+    _paths, _census = mounted_paths()
+    assert _paths is not None, ("the route table could not be read, so nothing below can be held to it", _census)
+
+    # -- 1. D1 (R1.11) THE FINANCE CARD says what exists: routes that are mounted, and no screen that sends ----
+    _qf = _page("components/QEPFlagshipFeatures.tsx")
+    _k = _qf.index("id: 'finance'")
+    _card = _qf[_k:_qf.index("},", _k)]
+    _routes = [p for p in _paths if p.endswith("/contribute/zakat") or p.endswith("/contribute/sponsor-a-student")]
+    assert ("is recorded by its route" in _card) == (len(_routes) == 2), (
+        "the card and the route table disagree about whether the contribution routes exist", _routes, _card[:200])
+    _send = _callers("contribute/zakat") + _callers("contribute/sponsor-a-student")
+    assert ("No screen sends one yet" in _card) == (not _send), (
+        "the card and the pages disagree about whether a screen sends a contribution", _send)
+    assert not _card.split("desc: '", 1)[1].startswith("Planned"), "the card still opens as planned over routes that exist"
+    assert "Virtual WST only" in _card and "no real payment rails are enabled" in _card and "rules on nobody" in _card
+
+    # -- 2. D2 (R2.13) THE ATTACH CONTROL says what it does not read, where a caller's hint cannot replace it --
+    #    read RAW: this file holds the literal 'text/*', which the comment-stripper takes for the start of a
+    #    block comment and cuts through to the next one - the accept list itself would be removed
+    _ad = (_src / "components" / "AttachDocument.tsx").read_text(encoding="utf-8")
+    _accept = _between(_ad, "accept={[", "].join(',')}") + _between(_ad, "export const TEXT_DOC_EXT = [", "];")
+    _media = [m for m in ("image/", "audio/", "video/", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".mp3", ".mp4", ".wav")
+              if m in _accept]
+    _line = [ln for ln in _ad.splitlines() if 'data-testid="attach-not-read"' in ln]
+    assert (len(_line) == 1 and "images, audio and video are not read" in _line[0]) == (not _media), (
+        "the sentence and the accept list disagree", _media, _line)
+    assert "hint" not in _line[0], "the sentence sits inside the hint a caller replaces"
+    assert "{hint ?? 'your own data" in _ad, "the caller's hint was removed"
+
+    # -- 3. D3 (v13 R1[7], R5[4]) THE /qep HEADER LINKS TO THE ROADMAP IT NAMES; the tab says what it is -------
+    _qh = _page("pages/domains/QEPReligionHub.tsx")
+    _hdr = _between(_qh, 'data-testid="qep-hub-stage"', "</p>")
+    assert 'href="/religion?tab=qep"' in _hdr and "in development" in _hdr, _hdr
+    _app = (_src / "App.tsx").read_text(encoding="utf-8")       # raw: a route path may hold the two characters /*
+    _rh = _page("pages/domains/ReligionHub.tsx")
+    assert re.search(r'path="/religion"\s+element=\{<ReligionHub />\}', _app), "/religion no longer renders the Religion hub"
+    assert "new URLSearchParams(window.location.search).get('tab') || 'wisdom'" in _rh, "the hub no longer opens the tab a link names"
+    assert "<QEPFlagshipFeatures />" in _between(_rh, "{activeTab === 'qep' ? (", ") : activeTab === 'dialogue' ? ("), (
+        "the link's target tab does not render the roadmap")
+    assert "<QEPFlagshipFeatures" not in _qh or 'href="/religion?tab=qep"' not in _hdr, (
+        "the roadmap is on /qep now: the header should say so instead of linking away")
+    assert "{ id: 'coach', label: 'Recitation (not scored)', icon: MicOff }" in _qh, "the tab still promises a coach"
+    assert "by ruling (A.9.1)" in _qh                                   # the reason an older test holds
+
+    # -- 4. D4 (R5.10) FRAMEWORKS FROM THE API · A HYPOTHESIS TAB · INTERFAITH STATED AS ABSENT ----------------
+    _ids = [f["id"] for f in client.get("/api/v1/education/frameworks").json()["frameworks"]]
+    _eh = _page("pages/domains/EducationHub.tsx")
+    assert "fetch('/api/v1/education/frameworks')" in _eh, "the hub does not read the list"
+    assert "options: (frameworks && frameworks.length > 0 ? frameworks : ['bloom']), default: 'bloom' }" in _eh
+    assert "bloom" in _ids, "the fallback and default the page types is not a framework the API lists"
+    for _typed in ("solo", "backward_design", "competency"):
+        assert (_typed in _ids) or (f"'{_typed}'" not in _eh), ("the page still types a framework the API does not list", _typed)
+    assert "{frameworksNote && <span" in _eh and "setFrameworksNote(`The framework list could not be read" in _eh, (
+        "a failed read of the list is silent")
+    #    the hypothesis route: one text beside the list, driven both ways
+    from agentic_core.api import science as _sci
+
+    def _ai(text, by):
+        async def _fake(prompt, agent, **kw):
+            return text, {"posture": "in-house-first", "served_by": by, "is_external": False}
+        return _fake
+
+    monkeypatch.setattr(_sci, "ai_text", _ai(
+        "HYPOTHESIS_1 | H0: no change | H1: a rise\nnoise\nHYPOTHESIS_2 | H0: none | H1: a fall\nRECOMMENDATION: pursue the first",
+        "p3b-model"))
+    _h = client.post("/api/v1/science/hypothesis", json={"research_question": f"p3b {_u}", "num_hypotheses": "3"})
+    assert _h.status_code == 200, _h.text[:300]
+    _hj = _h.json()
+    assert len(_hj["hypotheses_raw"]) == 2 and _hj["recommendation"] == "pursue the first", _hj
+    assert _hj["hypotheses_text"] == "\n\n".join(_hj["hypotheses_raw"] + ["Recommendation: pursue the first"]), _hj["hypotheses_text"]
+    monkeypatch.setattr(_sci, "ai_text", _ai("a frame with no such lines", "native"))
+    _hf = client.post("/api/v1/science/hypothesis", json={"research_question": f"p3b {_u}"}).json()
+    assert _hf["hypotheses_raw"] == ["a frame with no such lines"] and _hf["hypotheses_text"] == "a frame with no such lines", _hf
+    monkeypatch.undo()
+    _sh = _page("pages/domains/ScienceHub.tsx")
+    _tool = _between(_sh, "{activeTab === 'hypothesis' ? (", ") : activeTab === 'design' ? (")
+    assert re.search(r"<DomainTool\s+title=\{T\['hypothesis'\]\.title\}", _tool), "the tab does not mount the registry's tool"
+    assert 'endpoint="/api/v1/science/hypothesis"' in _tool and 'resultKey="hypotheses_text"' in _tool
+    assert "setActiveTab('hypothesis')" in _sh and "form('hypothesis', 'Hypothesis Generator'," in _page("lib/toolRegistry.ts")
+    assert "/api/v1/science/hypothesis" in _paths
+    #    interfaith: withheld whole on the floor, shown unreviewed when a model serves - which is why it is absent
+    from agentic_core.api import religion as _rel
+    _frame = "## Overview\nx\n## Islam's Perspective on mercy\ny\n## Points of Convergence\nz\n"
+    monkeypatch.setattr(_rel, "ai_text", _ai(_frame, "native"))
+    _if = client.post("/api/v1/religion/interfaith", json={"topic": "mercy", "traditions": ["Islam"]}).json()
+    assert _if["sections_withheld"] and _if.get("floor_note") and "Perspective" not in _if["analysis"], _if
+    monkeypatch.setattr(_rel, "ai_text", _ai(_frame, "p3b-model"))
+    #  int6_make_v2 (REL, Owner ruling 2026-10-11 - rel_edits_v2 is applied in this same round): a model-served
+    #  Religion tool queues its text for scholarly review. The roster and the queue are pointed at a scratch
+    #  directory for this call (undone two lines below), so this stub's text never reaches the real review queue.
+    #  With REL applied `_unreviewed` is False here - the answer is withheld - and the assertion below holds for
+    #  that reason; without REL it holds because the tool is not mounted. Nothing else in this guard moved.
+    import pathlib as _pl_rel
+    import tempfile as _tmp_rel
+    from agentic_core.api import scholar_review as _sr_rel
+    _dir_rel = _pl_rel.Path(_tmp_rel.mkdtemp(prefix="rel-p3b-r4-"))
+    monkeypatch.setattr(_sr_rel, "_roster_path", lambda: _dir_rel / "scholar_roster.json")
+    monkeypatch.setattr(_sr_rel, "_review_path", lambda: _dir_rel / "scholar_review.json")
+    _im = client.post("/api/v1/religion/interfaith", json={"topic": "mercy", "traditions": ["Islam"]}).json()
+    _unreviewed = (_im["sections_withheld"] == [] and "Islam's Perspective on mercy" in _im["analysis"]
+                   and not _im.get("review_state"))
+    monkeypatch.undo()
+    _mounted = _callers("religion/interfaith")
+    _says_absent = 'data-testid="religion-interfaith-absent"' in _rh
+    assert _says_absent == (not _mounted), ("the page's statement and the callers disagree", _mounted)
+    assert not (_mounted and _unreviewed), (
+        "interfaith analysis is on a screen while a model-served answer states each tradition's position with no "
+        "named scholar's review", _mounted)
+    #  W671 - the sentence said a model's answer would be shown unreviewed; since the same round it is withheld
+    assert "withheld" in _between(_rh, 'data-testid="religion-interfaith-absent"', "</p>") and \
+        "until a named scholar approves" in _between(_rh, 'data-testid="religion-interfaith-absent"', "</p>")
+
+    # -- 5. D5 (R5.5) THE APPROVAL PANEL says what an approval does while no goals are recorded ---------------
+    from agentic_core.avatars.core import balance_objectives as _bo
+    monkeypatch.setattr(_bo, "get", lambda: {"objectives": None, "basis": "P3B none recorded"})
+    _g0 = client.get("/api/v1/avatar/balance-objectives").json()
+    assert _g0["objectives"] is None and _g0["basis"] == "P3B none recorded", _g0
+    monkeypatch.setattr(_bo, "get", lambda: {"objectives": [{"name": "mean_sentence_words", "direction": "min"}],
+                                              "basis": "P3B recorded"})
+    assert client.get("/api/v1/avatar/balance-objectives").json()["objectives"], "the goals the page reads are not returned"
+    monkeypatch.undo()
+    _av = _page("components/AvatarClearancePanel.tsx")
+    _gate = "{goals && !(Array.isArray(goals.objectives) && goals.objectives.length > 0) && ("
+    assert _gate in _av, "the warning is unconditional, or its condition does not read the goals payload"
+    assert _av.index(_gate) < _av.index('data-testid="avatar-ratification-record"'), "the warning comes after the button"
+    _warn = _between(_av, _gate, "</p>")
+    assert 'data-testid="avatar-approval-without-goals"' in _warn and "String(goals.basis ??" in _warn
+    assert "withholds it" in _warn and "marked as not cleared" in _warn
+    assert "method: 'PUT'" not in _av, "a goals editor was added: the Owner ruled that it waits"
+
+    # -- 6. D6 (v13 R2[1]) "ENGINES USED" CHIPS say what served the calls they name ---------------------------
+    _gj = _page("pages/synthesis/GenesisJourney.tsx")
+    _j = client.post("/api/v1/genesis/journey", json={"problem": f"p3b {_u}: a bakery van for two estates"})
+    assert _j.status_code == 200, _j.text[:300]
+    _jj = _j.json()
+    assert isinstance(_jj["ai_provenance"]["served_by"], dict) and _jj["ai_provenance"]["served_by"], _jj["ai_provenance"]
+    assert "gaas.v5" in _jj["engines_used"], _jj["engines_used"]
+    _chips = _between(_gj, "{result.engines_used.map(e => (", 'data-testid="journey-intent-gate"')
+    assert 'data-testid="engines-used-basis"' in _chips and "const sb = result.ai_provenance?.served_by;" in _chips, (
+        "the caption is not computed from the journey's own provenance")
+    assert "served.every(k => k === 'native')" in _chips and "not engines that reasoned" in _chips
+    assert "served.length === 0" in _chips and "was not returned with it" in _chips, "an absent provenance is read as a model's"
+
+    # -- 7. D7 (v15 R2[7]) THE WEB APP AND PHONE APP CARDS carry the server's template note --------------------
+    _e = client.post("/api/v1/genesis/establish", json={
+        "problem": f"p3b {_u}: a neighbourhood bakery in Leeds", "name": f"P3B Four {_u}", "concept": "a bakery",
+        "design": "ovens and a route", "commercialisation": "subscriptions", "ship_output": False})
+    assert _e.status_code == 200, _e.text[:300]
+    _vid = _e.json()["vsb_id"]
+    for _door, _tid, _var in (("webapp", "webapp-template-note", "webapp"), ("mobile", "pwa-template-note", "pwa")):
+        _m = client.post(f"/api/v1/vsb/{_vid}/{_door}")
+        assert _m.status_code == 200 and "STANDARD TEMPLATE" in str(_m.json().get("note")), (_door, _m.status_code, _m.text[:200])
+        _p = _between(_gj, f'data-testid="{_tid}"', "</p>")
+        assert f"typeof {_var}.note === 'string' && {_var}.note ? {_var}.note :" in _p, (_door, "the card does not print the note")
+    assert _gj.count("  note?: string;") == 2, "the two manifest types do not declare the field the cards render"
+
+    # -- 8. D8 (v15 R2[12]) FOUR STATIC LABELS no longer promise an outcome -------------------------------------
+    _rail = _between(_gj, "fine-resolution lifecycle", "].map(({ icon: Icon, key, label, desc }, i)")
+    assert "desc: 'Candidate solutions compared' }" in _rail and "desc: 'GTM + revenue + VSB blueprint' }" in _rail
+    assert "living" not in _rail and "→ best" not in _rail, "a rail tile promises an outcome its own state chip decides"
+    _est = _between(_gj, "checked={establishOnComplete}", "{establishOnComplete && (")
+    assert 'aria-label="Establish a VSB on completion"' in _est and "living" not in _est, _est[:300]
+    assert "the result says whether it is established or its body is still pending" in _est
+    _exp = _between(_gj, "Export the journey (§4.9)", "</p>")
+    assert _exp == "Export the journey (§4.9) as a deliverable", ("the export heading promises more than an export", _exp)
+    assert "'Concept → enterprise…'" in _gj
+
+    # -- 9. D9 (v14 R3[7]) THE GATE PANEL LISTS WHAT A GATE HOLDS, from the server's list ----------------------
+    from agentic_core.api import vsb as _vsb
+    _called = set()
+    for _f in ("vsb.py", "business_plan.py", "economy.py", "resource_fabric.py", "swarm.py"):
+        _py = _code_only((_root / "agentic_core" / "api" / _f).read_text(encoding="utf-8"))
+        _called |= set(re.findall(r'_refuse_gated\((?:[^()"]|\([^()]*\))*?,\s*"([^"]+)"\)', _py))
+    assert _called == set(_vsb.GATE_HOLDS), ("the list and the call sites disagree",
+                                             sorted(_called - set(_vsb.GATE_HOLDS)), sorted(set(_vsb.GATE_HOLDS) - _called))
+    _lv = _code_only((_root / "agentic_core" / "economy" / "living_vsbs.py").read_text(encoding="utf-8"))
+    _cycle_reads_gates = any(n in _lv for n in ("_gate_block_reason", "_gates_blocking", "_refuse_gated"))
+    assert ("economy cycle" in _vsb.GATE_DOES_NOT_HOLD) == (not _cycle_reads_gates), (
+        "the economy cycle now reads the review gates (or stopped): the not-held list must say the same")
+    _g0 = client.get(f"/api/v1/vsb/{_vid}/review-gates").json()
+    assert _g0["holds"] == list(_vsb.GATE_HOLDS) and _g0["not_held"] == list(_vsb.GATE_DOES_NOT_HOLD), _g0.get("holds")
+    assert "not the economy" in _g0["holds_basis"] and "separate list from the Genesis journey" in _g0["lifecycle_basis"]
+    _open = client.post(f"/api/v1/vsb/{_vid}/website")
+    assert not (_open.status_code == 409 and isinstance(_open.json().get("detail"), dict) and _open.json()["detail"].get("gate")), (
+        "an ungated entity is held by a gate", _open.text[:200])
+    _set = client.post(f"/api/v1/vsb/{_vid}/review-gates", json={"stages": ["design"]})
+    assert _set.status_code == 200 and _set.json()["holds"] == _g0["holds"], "the response that replaces the panel's state drops the list"
+    for _door, _mover in (("board-pack", "board pack"), ("website", "website"), ("webapp", "web app"), ("mobile", "phone app")):
+        _r = client.post(f"/api/v1/vsb/{_vid}/{_door}")
+        assert _r.status_code == 409, (_door, "a pending gate does not hold it", _r.status_code)
+        _d = _r.json()["detail"]
+        assert _d["mover"] == _mover and _d["mover"] in _g0["holds"], (_door, _d)
+    assert client.post(f"/api/v1/vsb/{_vid}/review-gates/design/decision", json={"decision": "approve"}).status_code == 200
+    _after = client.post(f"/api/v1/vsb/{_vid}/website")
+    assert not (_after.status_code == 409 and isinstance(_after.json().get("detail"), dict)
+                and _after.json()["detail"].get("gate")), ("an approved gate still holds the website", _after.text[:200])
+    assert "holds?: string[]; not_held?: string[]; holds_basis?: string;" in _between(_gj, "interface ReviewGates {", "\n}")
+    _copy = _between(_gj, 'data-testid="gates-holds"', "</p>")
+    assert "{Array.isArray(gates.holds) && gates.holds.length > 0 ? gates.holds.join(' · ') : 'the list was not returned with this response'}" in _copy
+    assert "typeof gates.holds_basis === 'string' && gates.holds_basis ? ` ${gates.holds_basis}` : ''" in _copy
+    assert not [m for m in _vsb.GATE_HOLDS if len(m) > 6 and m in _copy], "the panel types a mover instead of reading the list"
+
+
+def test_rel_a_model_composed_religious_answer_is_withheld_until_a_named_scholar_approves_that_text(client, monkeypatch):
+    """REL (Owner ruling 2026-10-11) - on the five Religion research tools, what a MODEL composes is withheld
+    until a named scholar on the roster has approved that exact text; what is retrieved from a named source is
+    still shown; the floor behaves as it did.
+
+    Every tool is driven through every state, each precondition asserted first: the floor; a model with nobody
+    on the roster; a model with a scholar recorded and nothing decided; that exact text approved through the
+    routes; the text edited after the approval; and (once) a text rejected. The model is stood in at the
+    tool's own AI call, as the W456 and W671 guards do it. The scholar roster and the review queue are pointed
+    at a scratch directory for the whole test, so the real stores are never written; they are compared with
+    their starting bytes at the end all the same, and put back if anything moved."""
+    import pathlib
+    import re
+    import tempfile
+    import agentic_core.api.religion as _R
+    import agentic_core.api.scholar_review as _sr
+    import agentic_core.religious_domain.api as _rda
+    from agentic_core.api._ai_provenance import FLOOR_DISCLAIMER
+
+    _SERVED = "ollama:rel-guard"
+    _SID, _SNAME = "rel-guard-s1", "Shaykha Rel Guard"
+    _ARABIC = "ابجد هوز حطي"       # plain abjad letters standing in for the source; no scripture is typed here
+    _AI_CLAIMS = ("AI-assisted", "AI pre-assessment", "AI-labelled")
+    _Q = "/api/v1/scholar-review/queue"
+    _OWN, _LOOSE = "further section(s) under the model's own headings", "text under no heading"
+    #  every sentence a stub "composes" carries a RELX marker, headings of its own included, so "appears nowhere
+    #  in the response" is asserted on each of them and not on one lucky sentence
+    _TOOLS = [
+        {"tool": "fatwa-research", "path": "/api/v1/religion/fatwa-research", "key": "research",
+         "body": {"question": "May a traveller shorten the prayer on a long journey?", "madhab": "hanafi"},
+         "asked": "May a traveller shorten the prayer on a long journey?",
+         "text": ("RELX-F0 a sentence before any heading.\n## The Question (Mas'ala)\nRELX-F1 the question as the "
+                  "model restated it.\n## Primary Sources (Quran and Hadith)\nRELX-F2 a source the model named.\n"
+                  "## Position of the Hanafi School\nRELX-F3 the position the model stated.\n"
+                  "## RELX-F4 a heading of the model's own\nRELX-F5 text under it."),
+         "named": {"Primary Sources", "Position of the Hanafi School"}, "labels": (_OWN, _LOOSE),
+         "never": set(), "sacred": [], "floor": "NO RESEARCH WAS PERFORMED", "withheld": _R._WITHHELD_CLAIM},
+        {"tool": "hadith-study", "path": "/api/v1/religion/hadith-study", "key": "study",
+         "body": {"hadith": "Actions are but by intentions", "focus": "authentication"},
+         "asked": "Actions are but by intentions",
+         "text": ("RELX-D0 a sentence before any heading.\n## Identification\nRELX-D1 a collection the model "
+                  "named.\n## Chain (Isnad) Considerations\nRELX-D2 a chain the model described.\n## Grading\n"
+                  "sahih - RELX-D3 a grade the model stated.\n## RELX-D4 a heading of the model's own\n"
+                  "RELX-D5 text under it."),
+         "named": {"Identification", "Chain (Isnad) Considerations", "Grading"}, "labels": (_OWN, _LOOSE),
+         "never": set(), "sacred": [], "floor": "NOTHING WAS GRADED OR ATTRIBUTED", "withheld": _R._WITHHELD_CLAIM},
+        {"tool": "quran-tafsir", "path": "/api/v1/religion/quran-tafsir", "key": "tafsir",
+         "body": {"surah": 1, "ayah_start": 1}, "asked": "Surah 1:1",
+         "text": ("RELX-T0 a sentence before any heading.\n## Transliteration\nRELX-T8 stand-in letters, not a "
+                  "transliteration.\n## Translation (AI-assisted)\nRELX-T9 a stand-in rendering, not a "
+                  "translation.\n## Exegesis (detailed explanation)\nRELX-T1 the model's exegesis.\n"
+                  "## Key Lessons and Guidance\nRELX-T2 the model's lessons.\n"
+                  "## RELX-T3 a heading of the model's own\nRELX-T4 text under it."),
+         "named": {"Transliteration", "Translation", "Exegesis", "Key Lessons and Guidance"}, "labels": (_OWN, _LOOSE),
+         "never": {"RELX-T8", "RELX-T9"}, "sacred": ["Transliteration", "Translation"],
+         "floor": "structured frame composed by the native floor",
+         "withheld": "The study notes a model composed are WITHHELD"},
+        {"tool": "halal-review", "path": "/api/v1/religion/halal-review", "key": "assessment",
+         "body": {"product_name": "Oat bar", "product_description": "A baked oat bar.", "ingredients": ["oats", "gelatine"]},
+         "asked": "Oat bar - A baked oat bar.",
+         "text": ("## Halal Status Assessment\nCOMPLIANT - RELX-H1 a status the model stated.\n## Critical Issues\n"
+                  "RELX-H2 an issue the model raised.\n## Cross-Contamination Risks\nRELX-H3 a risk the model "
+                  "described.\n## Recommended Certifying Bodies (by target market)\nRELX-H4 a body the model named."),
+         #  int6_make_v2: "Cross-Contamination Risks" is one of the EIGHT shared headings since p3a_r2 (the floor
+         #  withholds it), so the gate names it by our name; nothing in this stub is under a heading of the model's own
+         "named": {"Halal Status Assessment", "Critical Issues", "Cross-Contamination Risks",
+                   "Recommended Certifying Bodies"}, "labels": (),
+         "never": set(), "sacred": [], "floor": FLOOR_DISCLAIMER, "withheld": _R._WITHHELD_CLAIM},
+        {"tool": "interfaith", "path": "/api/v1/religion/interfaith", "key": "analysis",
+         "body": {"topic": "Charity", "traditions": ["Islam", "Christianity"]}, "asked": "Charity (Islam, Christianity)",
+         "text": ("## Overview\nRELX-I1 an overview the model wrote.\n## Islam's Perspective on Charity\nRELX-I2 a "
+                  "position the model stated.\n## Christianity's Perspective on Charity\nRELX-I3 a position the "
+                  "model stated.\n## Points of Convergence\nRELX-I4 a comparison the model drew."),
+         "named": {"Overview", "Islam's Perspective on Charity", "Christianity's Perspective on Charity",
+                   "Points of Convergence"}, "labels": (),
+         "never": set(), "sacred": [], "floor": FLOOR_DISCLAIMER, "withheld": _R._WITHHELD_CLAIM},
+    ]
+    _SOURCED = ("reference", "arabic_text", "arabic_source", "translation_source")     # tafsir: retrieved, never composed
+
+    _serve = {"text": None}
+    _real_ai = _R.ai_text
+
+    async def _ai(prompt, agent, **kw):
+        if _serve["text"] is None:
+            return await _real_ai(prompt, agent, **kw)                 # the floor, as this suite serves it
+        return (_serve["text"], {"posture": "in-house-first", "served_by": _SERVED, "is_external": False})
+
+    async def _source(surah, ayah):
+        return _ARABIC
+
+    def _ask(t, text):
+        _serve["text"] = text
+        _r = client.post(t["path"], json=t["body"])
+        assert _r.status_code == 200, (t["tool"], _r.status_code, _r.text[:300])
+        return _r, _r.json()
+
+    def _marks(text):
+        return set(re.findall(r"RELX-[A-Z]\d", text))
+
+    def _queued(key):
+        return [i for i in client.get(_Q).json()["items"] if i["content_key"] == key]
+
+    def _still_sourced(t, j, floor_j):
+        if t["tool"] == "quran-tafsir":
+            assert _ARABIC in j["arabic_text"], "the stand-in source did not reach arabic_text - this leg reads nothing"
+            assert {k: j[k] for k in _SOURCED} == {k: floor_j[k] for k in _SOURCED}, (
+                "what is retrieved from a named source changed with the review state", {k: j[k] for k in _SOURCED})
+        if t["tool"] == "halal-review":
+            assert j["ingredient_screen"]["flagged"] and j["ingredient_screen"] == floor_j["ingredient_screen"], (
+                "the deterministic ingredient screen changed with the review state", j["ingredient_screen"])
+
+    _real = [(_p, _p.read_bytes() if _p.exists() else None) for _p in (_sr._roster_path(), _sr._review_path())]
+    _dir = pathlib.Path(tempfile.mkdtemp(prefix="rel-guard-"))
+    _moved = []
+    monkeypatch.setattr(_sr, "_roster_path", lambda: _dir / "scholar_roster.json")
+    monkeypatch.setattr(_sr, "_review_path", lambda: _dir / "scholar_review.json")
+    monkeypatch.setattr(_R, "ai_text", _ai)
+    monkeypatch.setattr(_rda, "fetch_ayah_arabic", _source)
+    try:
+        assert _R._model_available() is False, "a model resource is available here, so the floor legs below would not be the floor"
+        assert _sr.roster_is_empty() and client.get(_Q).json()["total"] == 0, "the scratch stores are not empty"
+
+        # -- 0. THE FLOOR, UNCHANGED: its own note, its own disclaimer, nothing queued, no review keys ----------
+        _floor = {}
+        for _t in _TOOLS:
+            _r, _j = _ask(_t, None)
+            assert _j["ai_provenance"]["served_by"] == "native", (_t["tool"], "the floor did not serve - this leg is not the floor state")
+            assert _j.get("floor_note") and _j["sections_withheld"], (_t["tool"], "the floor no longer withholds and says so", sorted(_j))
+            assert "review_note" not in _j and "scholar_review" not in _j, (_t["tool"], "the floor's answer carries the scholar gate's keys")
+            assert _t["floor"] in _j["disclaimer"] and _t["withheld"] not in _j["disclaimer"], (_t["tool"], _j["disclaimer"])
+            _floor[_t["tool"]] = _j
+        assert set(_floor["quran-tafsir"]["sections_withheld"]) == set(_R._TAFSIR_SACRED) | set(_R._TAFSIR_STUDY), (
+            "the floor's tafsir list is no longer the shared one", _floor["quran-tafsir"]["sections_withheld"])
+        assert _ARABIC in _floor["quran-tafsir"]["arabic_text"]
+        #  int6_make_v2: the halal floor and the gate read ONE list of eight headings (judging, research, process)
+        assert len(_R._HALAL_JUDGING + _R._HALAL_RESEARCH + _R._HALAL_PROCESS) == 8, "the shared halal list is not p3a_r2's eight"
+        assert set(_floor["halal-review"]["sections_withheld"]) <= set(_R._HALAL_JUDGING + _R._HALAL_RESEARCH + _R._HALAL_PROCESS), (
+            "the halal floor names a section the shared list does not hold", _floor["halal-review"]["sections_withheld"])
+        assert client.get(_Q).json()["total"] == 0, "the floor queued something for scholarly review"
+
+        # -- 1. A MODEL SERVES, NOBODY IS ON THE ROSTER: nothing it composed is anywhere in the response ---------
+        _keys = {}
+        for _t in _TOOLS:
+            _m = _marks(_t["text"])
+            assert len(_m) >= 4 and _t["never"] <= _m, (_t["tool"], "the stub carries too few markers to prove anything", _m)
+            _r, _j = _ask(_t, _t["text"])
+            assert _j["ai_provenance"]["served_by"] == _SERVED, (_t["tool"], "the stand-in model did not serve")
+            assert [m for m in sorted(_m) if m in _r.text] == [], (
+                _t["tool"], "text a model composed is in the response though no scholar approved it", _r.text[:600])
+            assert _j[_t["key"]] == "", (_t["tool"], _j[_t["key"]])
+            assert "floor_note" not in _j, (_t["tool"], "a model-served answer carries the floor's note", _j.get("floor_note"))
+            assert isinstance(_j.get("review_note"), str), (_t["tool"], "no review note", sorted(_j))
+            assert "WITHHELD until a named scholar" in _j["review_note"] and _SERVED in _j["review_note"], _j["review_note"]
+            assert "awaiting a named scholar's review" in _j["review_note"] and "nothing is shown in its place" in _j["review_note"]
+            _sv = _j["scholar_review"]
+            assert _sv["state"] == "withheld" and "no scholar" in _sv["basis"].lower(), (_t["tool"], _sv)
+            _key = _sv["content_key"]
+            assert _key.startswith("religion-research:" + _t["tool"] + ":"), (_t["tool"], "the key does not name the tool", _key)
+            _names = _j["sections_withheld"]
+            assert _t["named"] <= set(_names), (_t["tool"], "a withheld section is not named", _names)
+            assert _names[:len(_t["sacred"])] == _t["sacred"], (_t["tool"], _names)
+            for _label in _t["labels"]:
+                assert any(_label in n for n in _names), (_t["tool"], "what the model wrote outside the named sections is not accounted for", _label, _names)
+            if _t["tool"] == "halal-review":
+                #  int6_make_v2: every section of the halal stub is one of the eight, so each is NAMED and none is counted
+                assert _names == ["Halal Status Assessment", "Critical Issues", "Recommended Certifying Bodies",
+                                  "Cross-Contamination Risks"], ("the gate does not name the floor's eight in the floor's order", _names)
+            _d = _j["disclaimer"]
+            assert _t["withheld"] in _d and _t["floor"] not in _d, (_t["tool"], "the disclaimer does not say the answer is withheld", _d)
+            assert not any(c in _d for c in _AI_CLAIMS), (_t["tool"], "a withheld answer is disclaimed as AI-assisted work", _d)
+            _still_sourced(_t, _j, _floor[_t["tool"]])
+            _items = _queued(_key)
+            assert len(_items) == 1 and _items[0]["state"] == "in_review" and _items[0]["surface"] == "religion-research", (_t["tool"], _items)
+            assert _items[0]["reference"] == _t["tool"] + ": " + _t["asked"], (_t["tool"], "the queue does not say which tool and question", _items[0]["reference"])
+            _body = _items[0]["body"]
+            assert all(m in _body for m in _m - _t["never"]) and not any(m in _body for m in _t["never"]), (
+                _t["tool"], "the text queued for review is not the text a scholar may approve", _body)
+            _no = client.post("/api/v1/scholar-review/decide", json={"content_key": _key, "scholar_id": _SID, "approve": True})
+            assert _no.status_code == 409, (_t["tool"], "an approval was recorded with nobody on the roster", _no.status_code)
+            _keys[_t["tool"]] = _key
+        assert client.get(_Q).json()["total"] == len(_TOOLS)
+        #     asked again, the same text is the same item: the queue does not grow
+        _ask(_TOOLS[0], _TOOLS[0]["text"])
+        assert client.get(_Q).json()["total"] == len(_TOOLS), "an identical text was queued twice"
+
+        # -- 2. A SCHOLAR IS RECORDED, NOTHING DECIDED: still withheld, and now said to be in review -------------
+        _add = client.post("/api/v1/scholar-review/roster", json={"scholar_id": _SID, "name": _SNAME, "credential": "stated for the guard"})
+        assert _add.status_code == 200 and not _sr.roster_is_empty(), _add.text[:200]
+        for _t in _TOOLS:
+            _r, _j = _ask(_t, _t["text"])
+            assert [m for m in sorted(_marks(_t["text"])) if m in _r.text] == [], (_t["tool"], "a scholar on the roster released a text nobody approved")
+            assert _j["scholar_review"]["state"] == "in_review" and _j["scholar_review"]["content_key"] == _keys[_t["tool"]], _j["scholar_review"]
+            assert "review_note" in _j and "floor_note" not in _j and _j[_t["key"]] == "", (_t["tool"], sorted(_j))
+
+        # -- 3. THAT EXACT TEXT IS APPROVED THROUGH THE ROUTE: shown whole, and the basis names who and how ------
+        for _t in _TOOLS:
+            _m = _marks(_t["text"])
+            _ok = client.post("/api/v1/scholar-review/decide", json={"content_key": _keys[_t["tool"]], "scholar_id": _SID, "approve": True})
+            assert _ok.status_code == 200 and _ok.json()["record"]["attestation"] == _sr.ATTESTED, (_t["tool"], _ok.text[:300])
+            _r, _j = _ask(_t, _t["text"])
+            assert _j[_t["key"]] == _queued(_keys[_t["tool"]])[0]["body"], (_t["tool"], "what is shown is not the text that was approved")
+            assert all(m in _j[_t["key"]] for m in _m - _t["never"]), (_t["tool"], "an approved text is not shown whole", _j[_t["key"]])
+            assert not any(m in _r.text for m in _t["never"]), (_t["tool"], "an approval released a section that is removed on every path")
+            assert _j["sections_withheld"] == _t["sacred"], (_t["tool"], _j["sections_withheld"])
+            assert "review_note" not in _j and "floor_note" not in _j, (_t["tool"], sorted(_j))
+            _sv = _j["scholar_review"]
+            assert _sv["state"] == "approved" and _sv["content_key"] == _keys[_t["tool"]], _sv
+            assert _SNAME in _sv["basis"] and _sr.ATTESTED in _sv["basis"], (_t["tool"], "the basis does not name the scholar and the footing", _sv["basis"])
+            _d = _j["disclaimer"]
+            assert _SNAME in _d and _sr.ATTESTED in _d, (_t["tool"], "the disclaimer over an approved text does not say who approved it", _d)
+            assert _t["withheld"] not in _d and _t["floor"] not in _d, (_t["tool"], _d)
+            _still_sourced(_t, _j, _floor[_t["tool"]])
+
+        # -- 4. THE TEXT IS EDITED AFTER THE APPROVAL: withheld again; the approved text keeps its approval ------
+        for _t in _TOOLS:
+            _edited = _t["text"] + "\nRELX-E9 one sentence added after the approval."
+            _r, _j = _ask(_t, _edited)
+            assert [m for m in sorted(_marks(_edited)) if m in _r.text] == [], (
+                _t["tool"], "an edited text inherited the approval of the text before it", _r.text[:600])
+            _k2 = _j["scholar_review"]["content_key"]
+            assert _j["scholar_review"]["state"] == "in_review" and _k2 != _keys[_t["tool"]], _j["scholar_review"]
+            assert "review_note" in _j and _j[_t["key"]] == "", (_t["tool"], sorted(_j))
+            assert _queued(_k2)[0]["state"] == "in_review" and _queued(_keys[_t["tool"]])[0]["state"] == "approved", (
+                _t["tool"], "a different text unseated or took over an approval")
+            _r, _j = _ask(_t, _t["text"])
+            assert _j["scholar_review"]["state"] == "approved" and "RELX-" in _j[_t["key"]], (
+                _t["tool"], "the approved text lost its approval when another text was queued", _j["scholar_review"])
+            _t["edited"], _t["edited_key"] = _edited, _k2
+        assert client.get(_Q).json()["total"] == 2 * len(_TOOLS), "each distinct text is one item; that is the whole queue"
+
+        # -- 5. A REJECTED TEXT STAYS WITHHELD, and is not said to be awaiting review ----------------------------
+        _t = _TOOLS[0]
+        _rej = client.post("/api/v1/scholar-review/decide", json={"content_key": _t["edited_key"], "scholar_id": _SID, "approve": False, "note": "guard"})
+        assert _rej.status_code == 200, _rej.text[:200]
+        _r, _j = _ask(_t, _t["edited"])
+        assert [m for m in sorted(_marks(_t["edited"])) if m in _r.text] == [], "a rejected text is shown"
+        assert _j["scholar_review"]["state"] == "withheld" and "rejected" in _j["review_note"].lower(), _j["scholar_review"]
+        assert "It is not awaiting review" in _j["review_note"] and "awaiting a named scholar's review" not in _j["review_note"], _j["review_note"]
+        assert _queued(_t["edited_key"])[0]["state"] == "rejected", "asking again re-queued a text a scholar rejected"
+    finally:
+        monkeypatch.undo()
+        for _p, _b in _real:
+            _now = _p.read_bytes() if _p.exists() else None
+            if _now != _b:
+                _moved.append(str(_p))
+                if _b is None:
+                    _p.unlink()
+                else:
+                    _p.write_bytes(_b)
+    assert _moved == [], ("the guard wrote to the real scholar stores (they were put back)", _moved)
+
+    # -- 6. THE PAGES print the gate's statement where they print the floor's, each under its own label ---------
+    _src = pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+    _hub = _code_only((_src / "pages" / "domains" / "ReligionHub.tsx").read_text(encoding="utf-8"))
+    assert "const scholarReviewLines = (r: any) => (" in _hub
+    assert _hub.count("{scholarReviewLines(r)}") == 4, ("fiqh, tafsir, hadith and halal each print the scholar lines", _hub.count("{scholarReviewLines(r)}"))
+    assert "{typeof r?.review_note === 'string' && r.review_note !== '' && (" in _hub and "withheld: {r.review_note}</p>" in _hub, (
+        "the review note is not printed, or is printed without first being checked to be a string")
+    assert "{r?.scholar_review?.state === 'approved' && typeof r?.scholar_review?.basis === 'string' && (" in _hub
+    assert "Scholar review: {r.scholar_review.basis}</p>" in _hub and "{r.scholar_review}" not in _hub, (
+        "the approval's basis is not printed, or the object itself is rendered")
+    assert _hub.count("<>Withheld pending scholar review: ") == 2 and _hub.count("Withheld on the floor:") == 3, (
+        "a model's withheld sections are still labelled as the floor's on the fiqh or hadith tab")
+    _tool = _code_only((_src / "components" / "DomainTool.tsx").read_text(encoding="utf-8"))
+    assert "+ (typeof data?.review_note === 'string' && data.review_note ? `\\n\\n[${data.review_note}]` : '')" in _tool, (
+        "the review note does not travel with the copied, downloaded or saved text")
+    assert "? `\\n\\n[scholar review: ${data.scholar_review.basis}]` : '')" in _tool, (
+        "the approval's basis does not travel with the copied, downloaded or saved text")
+    _panel = _code_only((_src / "components" / "qep" / "ScholarReviewPanel.tsx").read_text(encoding="utf-8"))
+    assert 'data-testid="scholar-item-key">{it.content_key}</p>}' in _panel, "the panel does not show which tool an item came from"
+
+
+def test_rel_refine_a_rewrite_of_religious_content_follows_the_scholar_rule(client, monkeypatch, tmp_path):
+    """W671 - OWNER RULING 2026-10-11: a model's rewrite of religious content is model-composed religious content.
+    The refine route withholds it until a named scholar approves that exact text, whichever page calls it."""
+    import pathlib
+    import agentic_core.api.refine as _rf
+    import agentic_core.api.scholar_review as _sr
+
+    #  the scholar stores are redirected, so the real roster and queue are never written
+    monkeypatch.setattr(_sr, "_roster_path", lambda: tmp_path / "roster.json")
+    monkeypatch.setattr(_sr, "_review_path", lambda: tmp_path / "review.json")
+    _draft = "## Notes\nA short note on the opening chapter, as the person wrote it."
+    _rewrite = "ZZ-REWRITE a model's reworded study note on the opening chapter."
+
+    def _serve(served_by):
+        async def _ai(prompt, agent, **kw):
+            return _rewrite, {"served_by": served_by, "is_external": False}
+        monkeypatch.setattr(_rf, "ai_text", _ai)
+
+    def _post(**extra):
+        r = client.post("/api/v1/refine", json={"previous": _draft, "instruction": "make it clearer", **extra})
+        assert r.status_code == 200, r.text[:300]
+        return r.json()
+
+    # -- 1. a MODEL-served rewrite of a Religion tool's draft, nobody on the roster: withheld, queued ------
+    _serve("test-model")
+    _a = _post(source_endpoint="/api/v1/religion/quran-tafsir")
+    assert _a["refine_withheld"] is True and _a["refined"] == _draft, ("an unreviewed rewrite was returned", _a["refined"][:80])
+    assert "ZZ-REWRITE" not in str(_a), "the model's rewrite appears somewhere in the response"
+    assert "WITHHELD" in _a["review_note"] and _a["scholar_review"]["state"] in ("withheld", "in_review"), _a
+    assert "Religion tool" in _a["religious_basis"], _a["religious_basis"]
+    _q = client.get("/api/v1/scholar-review/queue").json()["items"]
+    assert any(i["body"] == _rewrite and i["content_key"].startswith("religion-research:refine:") for i in _q), (
+        "the rewrite was withheld and never queued for a scholar")
+
+    # -- 2. the gate does not depend on the page's hint: the TEXT is read too ------------------------------
+    _b = client.post("/api/v1/refine", json={"previous": "## Tafsir\nNotes on a surah of the Quran.",
+                                             "instruction": "expand the tafsir"}).json()
+    assert _b["refine_withheld"] is True and "ZZ-REWRITE" not in str(_b), ("a religious draft with no source hint was rewritten", _b)
+    assert "names" in _b["religious_basis"], _b["religious_basis"]
+    #    each of the two readings of the text is enough ON ITS OWN: a term only the subject screen holds,
+    #    and a word only the route's own list holds
+    for _term, _text in (("hadith", "## Notes\nA note on one hadith, as the person wrote it."),
+                         ("zakat", "## Notes\nA note on zakat, as the person wrote it.")):
+        _b2 = client.post("/api/v1/refine", json={"previous": _text, "instruction": "make it clearer"}).json()
+        assert _b2.get("refine_withheld") is True and "ZZ-REWRITE" not in str(_b2), (
+            f"a draft naming {_term} with no source hint was rewritten and returned", _b2)
+        assert _term in _b2["religious_basis"], _b2["religious_basis"]
+
+    # -- 3. approved by a named scholar: shown, and the basis says on what footing ------------------------
+    assert client.post("/api/v1/scholar-review/roster", json={"scholar_id": "r1", "name": "Shaykha Reviewer",
+                                                              "credential": "stated"}).status_code == 200
+    _key = next(i["content_key"] for i in _q if i["body"] == _rewrite)
+    assert client.post("/api/v1/scholar-review/decide", json={"content_key": _key, "scholar_id": "r1",
+                                                              "approve": True}).status_code == 200
+    _c = _post(source_endpoint="/api/v1/religion/quran-tafsir")
+    assert _c["refine_withheld"] is False and _c["refined"] == _rewrite, _c
+    assert "Shaykha Reviewer" in _c["scholar_review"]["basis"] and "attested, not verified" in _c["scholar_review"]["basis"], _c["scholar_review"]
+
+    # -- 4. a DIFFERENT rewrite is a different text: the approval does not cover it ------------------------
+    _rewrite2 = _rewrite + " With one more sentence."
+    async def _ai2(prompt, agent, **kw):
+        return _rewrite2, {"served_by": "test-model", "is_external": False}
+    monkeypatch.setattr(_rf, "ai_text", _ai2)
+    _d = _post(source_endpoint="/api/v1/religion/quran-tafsir")
+    assert _d["refine_withheld"] is True and _d["refined"] == _draft, "an approval was inherited by another text"
+
+    # -- 5. an ordinary draft is rewritten as before; and the floor's path is unchanged --------------------
+    _serve("test-model")
+    _e = client.post("/api/v1/refine", json={"previous": "## Plan\nA brief care plan for a ward.",
+                                             "instruction": "make it more concise"}).json()
+    assert _e["refined"] == _rewrite and "refine_withheld" not in _e and "review_note" not in _e, _e
+    _serve("native")
+    _f = _post(source_endpoint="/api/v1/religion/quran-tafsir")
+    assert _f["refined"].startswith(_draft) and "preserved verbatim" in _f["refined"] and "refine_withheld" not in _f, _f
+
+    # -- 6. the page says which tool the draft came from, and shows a withheld rewrite as withheld ---------
+    _dt = (pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "components"
+           / "DomainTool.tsx").read_text(encoding="utf-8")
+    assert "context: title, source_endpoint: endpoint }" in _dt and 'data-testid="refine-withheld"' in _dt
+    assert "setRefineNote(r.data.refine_withheld ?" in _dt, "the page does not read whether the rewrite was withheld"
+
+
+def test_rel_refine_the_gate_reads_the_rewrite_and_a_withheld_rewrite_is_not_saved(client, monkeypatch, tmp_path):
+    """W671 - the refine gate, corrected before it shipped: it read the page's hint and a subject list over the
+    draft and the instruction, and never the REWRITE - so a model could turn an unflagged draft into religious
+    content and have it returned; and a second page called the route with no hint and saved a withheld rewrite
+    as a new version."""
+    import pathlib
+    import agentic_core.api.refine as _rf
+    import agentic_core.api.scholar_review as _sr
+    monkeypatch.setattr(_sr, "_roster_path", lambda: tmp_path / "roster.json")
+    monkeypatch.setattr(_sr, "_review_path", lambda: tmp_path / "review.json")
+
+    def _serve(text, served_by="test-model", qa=None):
+        async def _ai(prompt, agent, **kw):
+            return text, {"served_by": served_by, "is_external": False,
+                          **({"quality_assurance": qa} if qa is not None else {})}
+        monkeypatch.setattr(_rf, "ai_text", _ai)
+
+    _plain = "## Plan\nA brief plan for a community lunch."
+
+    # -- 1. an UNFLAGGED draft and instruction, a rewrite that is religious content: withheld ---------------
+    _serve("ZZ-RULING It is permissible according to this fatwa to combine the two.", qa={"quality": {"delivery_coverage": 1.0}})
+    assert _rf._religious_reason(_rf.RefineRequest(previous=_plain, instruction="add a note")) is None, (
+        "the draft and the instruction are flagged on their own, so this leg cannot show the rewrite being read")
+    _a = client.post("/api/v1/refine", json={"previous": _plain, "instruction": "add a note"}).json()
+    assert _a["refine_withheld"] is True and _a["refined"] == _plain and "ZZ-RULING" not in str(_a), (
+        "a religious rewrite of an unflagged draft was returned", _a)
+    assert "fatwa" in _a["religious_basis"] and "rewrite" in _a["religious_basis"], _a["religious_basis"]
+    #     the figures measured on the withheld rewrite do not travel beside the draft
+    assert "quality_assurance" not in _a["ai_provenance"] and "withheld" in _a["ai_provenance"]["quality_assurance_basis"], _a["ai_provenance"]
+
+    # -- 2. words outside the teaching-subject list are read too, as whole words ---------------------------
+    for _instr in ("turn this into a fatwa", "make it suitable for Ramadan", "compare the interfaith positions"):
+        _b = client.post("/api/v1/refine", json={"previous": _plain, "instruction": _instr}).json()
+        assert _b.get("refine_withheld") is True, ("a religious instruction was not gated", _instr, _b.get("religious_screen"))
+    _serve("A shorter plan for the community lunch.")
+    _c = client.post("/api/v1/refine", json={"previous": _plain + " Imaming is not a word; nor is halalish.",
+                                             "instruction": "make it shorter"}).json()
+    assert "refine_withheld" not in _c and _c["refined"] == "A shorter plan for the community lunch.", (
+        "a word inside another word gated an ordinary draft", _c)
+    assert "cannot" not in _c.get("religious_screen", "") and "never clear" in _c["religious_screen"], _c.get("religious_screen")
+
+    # -- 3. approved: what is returned is the text the gate approved ---------------------------------------
+    _serve("  ZZ-APPROVED a reviewed note on the tafsir of the opening chapter.  \n")
+    _d = client.post("/api/v1/refine", json={"previous": _plain, "instruction": "x", "source_endpoint": "/api/v1/religion/quran-tafsir"}).json()
+    assert _d["refine_withheld"] is True
+    client.post("/api/v1/scholar-review/roster", json={"scholar_id": "g2", "name": "Reviewer Two", "credential": "stated"})
+    _key = _d["scholar_review"]["content_key"]
+    assert client.post("/api/v1/scholar-review/decide", json={"content_key": _key, "scholar_id": "g2", "approve": True}).status_code == 200
+    _e = client.post("/api/v1/refine", json={"previous": _plain, "instruction": "x", "source_endpoint": "/api/v1/religion/quran-tafsir"}).json()
+    _approved = _sr._load(_sr._review_path())[_key]["body"]
+    assert _e["refine_withheld"] is False and _e["refined"] == _approved, ("the route returned its own copy, not the approved text", _e["refined"])
+
+    # -- 4. the SECOND caller: the Deliverables page names the domain and saves nothing when withheld -------
+    _dv = (pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages"
+           / "Deliverables.tsx").read_text(encoding="utf-8")
+    _fn = _dv[_dv.index("const refineToNextVersion = async () => {"):]
+    _fn = _fn[:_fn.index("setRefining(false);")]
+    assert "source_endpoint:" in _fn and "=== 'religion'" in _fn, "the page does not say a religion deliverable is one"
+    assert _fn.index("if (rj?.refine_withheld) throw") < _fn.index("/regenerate`"), (
+        "a withheld rewrite can still be saved as a new version")

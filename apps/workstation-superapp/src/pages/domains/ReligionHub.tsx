@@ -14,6 +14,21 @@ import { toolsFor } from '../../lib/toolRegistry';
 
 interface Madhab { id: string; name: string; region: string; founder: string }
 
+// REL (Owner ruling 2026-10-11) — what a MODEL composes on these tools is withheld until a named scholar on the
+// roster approves that exact text. The server says so in `review_note` (a key of its own: `floor_note` means
+// the floor served) and, once approved, in `scholar_review.basis`. Both are printed as the server wrote them,
+// and each is checked to be a string first, so an object never reaches React as a child.
+const scholarReviewLines = (r: any) => (
+  <>
+    {typeof r?.review_note === 'string' && r.review_note !== '' && (
+      <p data-testid="scholar-review-note" className="text-[10px] text-amber-300 font-bold leading-snug">Scholar review — withheld: {r.review_note}</p>
+    )}
+    {r?.scholar_review?.state === 'approved' && typeof r?.scholar_review?.basis === 'string' && (
+      <p data-testid="scholar-review-approved" className="text-[10px] text-emerald-300 font-bold leading-snug">Scholar review: {r.scholar_review.basis}</p>
+    )}
+  </>
+);
+
 export const ReligionHub: React.FC = () => {
   const T = toolsFor('/religion');   // W470 — the one tool registry the front doors count from
   const navigate = useNavigate();
@@ -93,6 +108,16 @@ export const ReligionHub: React.FC = () => {
                   </div>
                </div>
 
+               {/* P3.30 (ledger v16 R5.10) — A STATED ABSENCE, NOT A MOUNT. POST /api/v1/religion/interfaith exists and
+                   no screen calls it. On the deterministic floor it withholds every section. Served by a model it
+                   returns each tradition's position under a disclaimer, with no named scholar's approval - and
+                   religious teaching content is withheld until a named scholar approves it. So it is not offered
+                   here, and the page says that rather than staying silent. */}
+               <p className="text-[10px] text-slate-500 leading-relaxed" data-testid="religion-interfaith-absent">
+                  Not on this page: interfaith comparative analysis. A route for it exists and no screen calls it.
+                  It is not offered here: served by a model, its statement of each tradition's position is withheld
+                  until a named scholar approves that exact text, so a screen for it would show nothing yet.
+               </p>
                <div className="space-y-4">
                   {activeTab === 'qep' ? (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-12">
@@ -144,8 +169,11 @@ export const ReligionHub: React.FC = () => {
                               the deterministic floor served it. That has to reach the screen, or the page
                               shows a shorter answer with no word about why it is shorter. */}
                           {r.floor_note && <p className="text-[10px] text-amber-300 font-bold leading-snug">{r.floor_note}</p>}
+                          {scholarReviewLines(r)}
                           {Array.isArray(r.sections_withheld) && r.sections_withheld.length > 0 && (
-                            <p className="text-[9px] text-slate-500">Withheld on the floor: {r.sections_withheld.join(' · ')}</p>
+                            <p className="text-[9px] text-slate-500">{r.floor_note
+                              ? <>Withheld on the floor: {r.sections_withheld.join(' · ')}</>
+                              : <>Withheld pending scholar review: {r.sections_withheld.join(' · ')}</>}</p>
                           )}
                         </div>
                       )}
@@ -180,6 +208,7 @@ export const ReligionHub: React.FC = () => {
                           {r.arabic_source && <p className="text-[9px] text-slate-500">Arabic: {r.arabic_source}</p>}
                           {r.range_note && <p className="text-[10px] text-amber-400 font-bold">Range: {r.range_note}</p>}
                           {r.floor_note && <p className="text-[10px] text-amber-300 font-bold leading-snug">{r.floor_note}</p>}
+                          {scholarReviewLines(r)}
                           {Array.isArray(r.sections_withheld) && r.sections_withheld.length > 0 && (
                             <p className="text-[9px] text-slate-500" data-testid="tafsir-withheld">{r.floor_note
                               ? <>Withheld on the floor: {r.sections_withheld.join(' · ')}</>
@@ -238,6 +267,7 @@ export const ReligionHub: React.FC = () => {
                                 <p className="text-[10px] text-slate-600 leading-relaxed mt-3">{scr.basis}</p>
                               </div>
                             )}
+                            {scholarReviewLines(r)}
                             {!!withheld.length && (
                               <div data-testid="halal-withheld" className="p-4 rounded-2xl bg-slate-950 border border-slate-800">
                                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
@@ -278,8 +308,11 @@ export const ReligionHub: React.FC = () => {
                               the deterministic floor served it. That has to reach the screen, or the page
                               shows a shorter answer with no word about why it is shorter. */}
                           {r.floor_note && <p className="text-[10px] text-amber-300 font-bold leading-snug">{r.floor_note}</p>}
+                          {scholarReviewLines(r)}
                           {Array.isArray(r.sections_withheld) && r.sections_withheld.length > 0 && (
-                            <p className="text-[9px] text-slate-500">Withheld on the floor: {r.sections_withheld.join(' · ')}</p>
+                            <p className="text-[9px] text-slate-500">{r.floor_note
+                              ? <>Withheld on the floor: {r.sections_withheld.join(' · ')}</>
+                              : <>Withheld pending scholar review: {r.sections_withheld.join(' · ')}</>}</p>
                           )}
                         </div>
                       )}

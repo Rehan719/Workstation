@@ -63,6 +63,15 @@ export const AvatarClearancePanel: React.FC = () => {
           </li>
         ))}
       </ul>
+      {/* P3.30 (ledger v16 R5.5) — said BEFORE the button, and only while it is true: the condition reads the goals
+          payload this panel already fetches. No goals editor is added here (the Owner ruled that it waits). */}
+      {goals && !(Array.isArray(goals.objectives) && goals.objectives.length > 0) && (
+        <p className="text-[10px] text-amber-400/90 leading-relaxed" data-testid="avatar-approval-without-goals">
+          Before you record an approval: no reply goals are recorded ({String(goals.basis ?? 'the goals record was not read')}).
+          With an approval and no goals, the chain runs on every reply in that mode and withholds it. With no
+          approval the avatar's ordinary answer is shown and marked as not cleared. Reply goals are set by the Owner.
+        </p>
+      )}
       <div className="flex gap-2">
         <input value={purpose} onChange={e => setPurpose(e.target.value)} placeholder="e.g. help me revise maths"
           className="flex-1 bg-slate-950 border border-slate-800 rounded px-2 py-1 text-[11px] text-slate-200"

@@ -105,6 +105,8 @@ const ScholarReviewPanel: React.FC = () => {
         {items.map(it => (
           <div key={it.content_key} className="p-3 rounded-xl bg-slate-950 border border-slate-900 mb-2" data-testid="scholar-item">
             <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">{it.surface} · {it.reference || it.content_key} · <span className="text-white">{it.state}</span></p>
+            {/* REL — the key names the surface, the tool and the text's hash; shown when the line above shows the reference instead */}
+            {it.reference && <p className="text-[9px] text-slate-600 break-all" data-testid="scholar-item-key">{it.content_key}</p>}
             <pre className="text-[11px] text-slate-300 whitespace-pre-wrap mt-2 max-h-48 overflow-auto">{it.body}</pre>
             {it.reviewer_id && (
               <p className="text-[10px] text-amber-400 mt-2" data-testid="scholar-decision">

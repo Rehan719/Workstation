@@ -191,6 +191,15 @@ class QualityManagementSystem:
                 d["reverified"] = passed
                 d["reverify_meta"] = {"coverage": coverage, "stubs_found": stubs_found}
                 d["reverify_basis"] = str(metadata.get("basis", "caller_attested"))
+                #  P3.30 (ledger v16 R1.12; OWNER RULING 2026-10-11) - A RE-VERIFICATION RUN ON FIGURES ITS
+                #  CALLER TYPED STAYS IN THE RATE, AND IS COUNTED. The gate above has already been counted
+                #  into gates_run (and gate_failures when it failed) exactly as before: nothing here moves
+                #  either. This counts how many of those gates were attested rather than measured, from the
+                #  first one after the counter exists, and records when counting began.
+                if d["reverify_basis"] == "caller_attested" and not _what_if:
+                    if "attested_reverifications" not in st:
+                        st["attested_counted_since"] = _now()
+                    st["attested_reverifications"] = int(st.get("attested_reverifications", 0)) + 1
                 d["reverified_at"] = _now()
                 d["status"] = "closed" if passed else "open"
                 self._save_state()
@@ -202,6 +211,15 @@ class QualityManagementSystem:
         by = {"open": 0, "corrected": 0, "closed": 0}
         for d in st["defects"]:
             by[d.get("status", "open")] = by.get(d.get("status", "open"), 0) + 1
+        #  P3.30 (R1.12; OWNER RULING 2026-10-11) - how much of the rate rests on typed figures. Two counts
+        #  with two sources: the counter of attested re-verification GATES (from when it began), and the
+        #  defects that are closed NOW and were last re-verified that way, read from the defect rows
+        #  themselves (so it covers the history the counter does not). The rate is not recomputed from either.
+        _att = int(st.get("attested_reverifications", 0))
+        _att_since = st.get("attested_counted_since")
+        _closed_att = sum(1 for d in st["defects"]
+                          if d.get("status") == "closed" and not d.get("what_if")
+                          and d.get("reverify_basis") == "caller_attested")
         return {"gates_run": int(st.get("gates_run", 0)),
                 "defects_total": int(st.get("defects_total", 0)),
                 "gate_failures": self._gate_failures(st), **by,
@@ -213,6 +231,19 @@ class QualityManagementSystem:
                 # W489 — what the rate is OVER, and what it deliberately leaves out
                 "what_if_gates": int(st.get("what_if_gates", 0)),
                 "what_if_failures": int(st.get("what_if_failures", 0)),
+                "attested_reverifications": _att,
+                "attested_counted_since": _att_since,
+                "defects_closed_on_attestation": _closed_att,
+                "attested_basis": (
+                    (f"{_att} of the {int(st.get('gates_run', 0))} gate(s) in this rate are re-verifications of "
+                     f"a delivery defect run on coverage figures their caller TYPED (caller_attested), "
+                     f"counted since {_att_since}; earlier ones are in the rate and not in this count. "
+                     if _att_since else
+                     "No caller-attested re-verification has been counted: the counter starts at the first "
+                     "one after it was added, and any run before that is in the rate and not in this count. ")
+                    + f"{_closed_att} defect(s) closed now were last re-verified on typed figures. By ruling "
+                      f"(OWNER 2026-10-11) attested re-verifications STAY in the rate: these counts stand "
+                      f"beside it and change it by nothing."),
                 "rate_basis": ("gate failures / gates run across ALL deliveries on this platform (every "
                                "entity and tenant share one QMS store) — not one entity's record. "
                                "What-if gates run on typed metrics, and re-verifications of the defects "

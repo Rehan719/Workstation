@@ -129,6 +129,10 @@ export const AttachDocument: React.FC<AttachDocumentProps> = ({ onText, hint, cl
           </span>
         )}
         <span className="text-[9px] text-slate-600">{hint ?? 'your own data — read in-browser, stays with this request'}</span>
+        {/* P3.30 (ledger v16 R2.13) — said beside the control for every caller: it is NOT inside the hint, which
+            a caller replaces. It describes the accept list above; if image or media intake is ever added there,
+            this sentence goes. */}
+        <span className="text-[9px] text-slate-600" data-testid="attach-not-read">Text files and text-layer PDFs only — images, audio and video are not read.</span>
       </div>
       {err && <p className="text-[9px] text-amber-400 font-bold">{err}</p>}
     </div>

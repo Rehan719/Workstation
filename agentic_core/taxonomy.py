@@ -106,6 +106,18 @@ def normalise_realm(value: str, default: str = "enterprise") -> str:
     return v if v in REALMS else default
 
 
+def domain_label(value: str) -> str:
+    """P3.30 (ledger v16 R5.7) - HOW A DOMAIN VALUE IS SHOWN. `normalise_domain` deliberately lets a free-text
+    value through ("not a straitjacket"), so an entity can carry `enterprise` - a realm's name - where one of
+    the six domains is expected, and a page printed it as if it were one. Nothing is rejected here: a member
+    is shown by its label, and anything else is shown as itself and named as outside the six.
+    apps/workstation-superapp/src/lib/taxonomy.ts `domainLabel` mirrors this; a guard holds the two together."""
+    v = str(value or "").strip().lower()
+    if not v:
+        return "no domain recorded"
+    return DOMAIN_LABELS[v] if v in DOMAINS else f"{v} — general (outside the six domains)"
+
+
 def normalise_domain(value: str, default: str = "enterprise") -> str:
     """Domains normalise to themselves; anything else passes through unchanged when it is a
     genuine free-text domain (e.g. 'enterprise' used as a general workspace) — the taxonomy is

@@ -100,6 +100,32 @@ def get_directives(strict: bool = False) -> Dict[str, Any]:
     _psource = ("unreadable" if _unreadable else
                 "owner" if _named else
                 "none_set" if d else "never_set")
+    #  P3.30 (ledger v15 R6[12]) - A NAMED ID THAT MATCHES NO CAUSE. A directive is stored as the Owner wrote
+    #  it, and that stays so: the page warns before the save and the save is theirs to make. What the record
+    #  never said afterwards is that an id matches nothing - a misspelt priority is boosted nowhere, and a
+    #  misspelt EXCLUSION excludes nothing while reading as an exclusion in force. Computed when read, from
+    #  the causes that exist now (the curated set and the approved signals); three states, and "not known"
+    #  is never answered as "none".
+    _excl = [str(x) for x in (d.get("exclusions") or [])]
+    try:
+        if _unreadable:
+            raise RuntimeError("the directives store could not be read, so the ids it names are not known")
+        _known = {c["id"] for c in _CANDIDATES} | {s["id"] for s in approved_signals()}
+        _p_unknown = [p for p in _named if p not in _known]
+        _x_unknown = [x for x in _excl if x not in _known]
+        _match_note = (
+            ("every id the record names is a known cause" if (_named or _excl) else
+             "the record names no cause id") if not (_p_unknown or _x_unknown) else
+            "; ".join(
+                ([f"{len(_p_unknown)} named priority id(s) match no known cause ({', '.join(_p_unknown)}): "
+                  f"each is stored as written and boosts nothing"] if _p_unknown else [])
+                + ([f"{len(_x_unknown)} named exclusion id(s) match no known cause ({', '.join(_x_unknown)}): "
+                    f"each is stored as written and EXCLUDES NOTHING"] if _x_unknown else []))
+            + f". The known cause ids are: {', '.join(sorted(_known))}")
+    except Exception as _known_err:                      # noqa: BLE001 - not known is said, never a blank
+        _p_unknown = _x_unknown = None
+        _match_note = (f"whether the named ids match a known cause could not be determined "
+                       f"({type(_known_err).__name__}: {_known_err})")
     return {
         "priorities": _in_force,
         "priorities_owner_named": _named,
@@ -121,6 +147,9 @@ def get_directives(strict: bool = False) -> Dict[str, Any]:
                    "owner_set" if _named else
                    "defaults (2026-06-21 Owner directive)"),
         "directives_readable": _unreadable is None,
+        "priorities_unknown": _p_unknown,
+        "exclusions_unknown": _x_unknown,
+        "directives_match_note": _match_note,
         "updated_at": d.get("updated_at"),
     }
 
@@ -305,14 +334,31 @@ class CharityIntelligence:
                            "donation_100pct_verified": "not_checked",
                            "weights_source": w.get("weights_source", "curated"),
                            "compliance": w["compliance"]})
+        #  P3.30 (ledger v16 R6.14) - TWO CLAUSES OF THE METHOD SENTENCE, EACH FOLLOWING ITS OWN FACT. It read
+        #  as though only causes giving all of a donation are funded and as though every grant had been
+        #  cleared, over grants that each say the first was never checked and that mostly carry a 'review'.
+        #  What the flag is depends on the directive; what the screen returned is counted from the grants.
+        _unchecked = sum(1 for g in grants if g.get("donation_100pct_verified") == "not_checked")
+        _flag_clause = (
+            ("only causes carrying the curated 100%-donation ELIGIBILITY FLAG are considered - a typed "
+             "constant per cause" if self.require_100pct else
+             "the 100%-donation rule is OFF by directive, so causes without the curated flag are considered too")
+            + f"; whether all of a grant reaches its cause was not checked for {_unchecked} of the "
+              f"{len(grants)} grant(s) here")
+        _reviewed = sum(1 for g in grants if g.get("compliance") == "review")
+        _screen_clause = (
+            f"each of the {len(grants)} grant(s) went through the compliance screen and carries its own "
+            f"verdict: {_reviewed} 'review' (raised or not assessed - not a clearance), "
+            f"{len(grants) - _reviewed} other; {len(excluded)} cause(s) were refused or unscreened and "
+            f"received nothing")
         return {
             "budget_wst": round(budget, 2),
             # W415 — `method` asserted the split was driven by measured urgency/gravity/reach/trust.
             # The weighting arithmetic is real; the inputs are editorial weights nobody measured,
             # and the string never said so — which is what made the ratings credible downstream.
             "method": ("weighted rank over CURATED priority weights (urgency · gravity · reach · "
-                       "marginal-impact · trust), budget split pro-rata by score; 100%-donation "
-                       "causes only; every grant compliance-screened (halal/ethical)"),
+                       "marginal-impact · trust), budget split pro-rata by score; "
+                       + _flag_clause + "; " + _screen_clause),
             "weights_provenance": ("curated — the 0..1 cause weights are editorial values encoding the "
                                    "Owner's 2026-06-21 directive; no needs, impact or trust data is "
                                    "measured or sourced. Live feeds pending Owner approval."),

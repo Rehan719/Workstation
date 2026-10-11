@@ -285,6 +285,10 @@ def founder_model(scope: "str | None" = None, owner: "str | None" = None) -> Dic
                       "source": "the Owner's ratify/refuse decisions recorded by the Board in Change Control"},
         "owner_inputs": n_i + n_d,
         "is_modelled_twin": is_twin,
+        #  P3.30 (ledger v16 R3.8) - THE SAME FACT UNDER THE NAME OF WHAT IT IS. Nothing is modelled; the Chief
+        #  carries what the Owner wrote and decided. The older key keeps its name and its readers (the page
+        #  and five tests branch on it); this one is added beside it and is always equal to it.
+        "carries_owner_record": is_twin,
         #  W635 (FU-583) - nothing is fitted or evaluated, so the word 'modelled' is not used: the Chief CARRIES
         #  what the Owner wrote (is_modelled_twin keeps its name for callers; its meaning is 'has an Owner record')
         "reported_as": "chief carrying your record" if is_twin else "role",
@@ -581,11 +585,38 @@ async def twin_directive_unprompted(scope: str = "workstation") -> Dict[str, Any
 
     #  the Owner's OWN latest words, verbatim — an unprompted directive restates what they asked for
     _latest = ""
+    _restated_kind = None
     if m["instructions"]["count"]:
         _latest = str(m["instructions"]["recent"][-1].get("instruction") or "")
+        _restated_kind = "instruction"
     elif m["decisions"]["count"]:
         _d = m["decisions"]["recent"][0]
         _latest = f"Act on the Owner's recorded decision to {_d.get('decision')}: {_d.get('title')}"
+        _restated_kind = "decision"
+    #  P3.30 (ledger v16 R3.8) - WHAT WAS RESTATED, AND WHETHER IT IS THE OWNER'S LATEST INPUT. An instruction
+    #  is restated whenever one exists, so when the Owner's newer input was a DECISION the directive restated
+    #  the older instruction and its basis still called that their latest input. Decided from the
+    #  timestamps on the two records; when either is missing the answer is None (not known), never a guess.
+    _i_at = (str(m["instructions"]["recent"][-1].get("at") or "")[:19]
+             if (_restated_kind == "instruction" and m["instructions"]["recent"]) else "")
+    _d_at = max((str(x.get("at") or "")[:19] for x in (m["decisions"]["recent"] or [])), default="")
+    if _restated_kind == "decision" or not m["decisions"]["count"]:
+        _is_latest = True                 # nothing of the other kind exists to be newer
+    elif len(_i_at) == 19 and len(_d_at) == 19:
+        _is_latest = _i_at >= _d_at
+    else:
+        _is_latest = None
+    _restated_basis = (
+        ("The Owner has written no instruction for this scope, so it states their most recently recorded "
+         "decision as an instruction: the sentence is built from that decision's own verb and title and "
+         "nothing else is invented. ") if _restated_kind == "decision" else
+        ("It restates the Owner's own latest instruction verbatim - their most recent recorded input - "
+         "and nothing is invented. ") if _is_latest is True else
+        ("It restates the Owner's own latest instruction verbatim and nothing is invented. A decision the "
+         "Owner recorded AFTER that instruction is their newer input, and it is NOT what was restated. ")
+        if _is_latest is False else
+        ("It restates the Owner's own latest instruction verbatim and nothing is invented. Whether a "
+         "recorded decision is newer than it could not be told from the timestamps on record. "))
     if not _latest.strip():
         return {"issued": False, "reason": "no_readable_input", "owner_inputs": m["owner_inputs"],
                 "founder_model_basis": m["basis"],
@@ -613,8 +644,11 @@ async def twin_directive_unprompted(scope: str = "workstation") -> Dict[str, Any
         "governance": (res.get("governance") or {}).get("status"),
         "owner_inputs": m["owner_inputs"],
         "founder_model_basis": m["basis"],
-        "basis": (f"ISSUED UNPROMPTED by the twin, driven by a beat and not by a manual call. It restates "
-                  f"the Owner's own latest input verbatim and nothing is invented. It ran through the "
+        "restated_kind": _restated_kind,
+        "restated_is_latest_input": _is_latest,
+        "basis": (f"ISSUED UNPROMPTED by the twin, driven by a beat and not by a manual call. "
+                  + _restated_basis +
+                  f"It ran through the "
                   f"gaas.v5 apex gate and was cascaded to the AI CEO. "
                   + ("The AI CEO's plan yielded NO readable objective, so the instruction itself was filed "
                      "as ONE fallback objective: a record of the instruction on the living plan, not a "
@@ -917,7 +951,8 @@ async def chief_instruct(req: ChiefInstruction, user: dict | None = Depends(get_
         # P3.4 (W587) — stamped so the founder model can tell the Owner's own words from the twin's
         # restatement of them. A row without this field predates the unprompted path and is the Owner's.
         "unprompted": bool(req.unprompted),
-        "instruction_source": ("the Owner's twin, restating their latest input on a beat - NOT a new "
+        "instruction_source": ("the Owner's twin, restating on a beat their latest recorded instruction "
+                               "(or, where they wrote none, their latest recorded decision) - NOT a new "
                                "instruction from the Owner, and not counted as one"
                                if req.unprompted else
                                "supplied directly by the caller as the Owner's own instruction"),

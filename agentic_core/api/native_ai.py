@@ -596,7 +596,10 @@ async def native_swarm(req: SwarmRequest):
     if _halt:
         return {"agent": req.agent, "stages": 0, "trace": [], "any_external": False, "homeostasis": None,
                 "final": f"[CONSTITUTIONAL REFUSAL] {_halt.get('refused_reason')}", "governance_checkpoint": _halt}
-    res = await orchestrator.swarm(req.agent, stages, context=req.context, prefer_external=req.prefer_external)
+    #  P3.30 (ledger v16 R4.17) - the context field is what the person typed on this console; the stage
+    #  instructions may be the page's defaults and are not passed as theirs
+    res = await orchestrator.swarm(req.agent, stages, context=req.context, prefer_external=req.prefer_external,
+                                   user_text=((req.context or "").strip() or None))
     res["governance_checkpoint"] = console_post_gate(req.agent, str(res.get("final") or ""))
     return res
 

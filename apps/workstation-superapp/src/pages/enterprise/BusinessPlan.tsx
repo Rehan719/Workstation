@@ -23,7 +23,21 @@ interface RoadmapPhase { timeline: string; progress_pct: number; complete: boole
 interface Roadmap { living: boolean; phases: RoadmapPhase[]; overall_progress_pct: number; current_phase: string | null; next_milestone: { phase: string; title: string } | null; note?: string; unscheduled_count?: number; unparsed_timelines?: string[] }
 // W471 — who wrote the opening (the generation's provenance) and which fields the owner set
 interface PlanProvenance { served_by?: Record<string, number>; any_external?: boolean; generated_at?: string; preamble?: string; body_pending?: string[]; written?: string[] }
-interface Plan { provenance?: PlanProvenance; owner_edits?: Record<string, string>; scope: string; owner: string; executive_summary: string; concept: string; mission: string; vision: string; strategy: string; aims: string[]; objectives: Objective[]; roadmap?: Roadmap; updated_at: string | null }
+// P3.30 (ledger v16 R3.9) — one §17.3 cadence refresh as the plan stores it (agentic_core/organism/cadence.py)
+interface PlanRefresh { layer?: string; at?: string; plan_field?: string; content?: string; applied?: boolean; withheld_reason?: string | null; served_by?: string; is_external?: boolean; provenance_basis?: string; trigger?: string }
+interface Plan { provenance?: PlanProvenance; owner_edits?: Record<string, string>; scope: string; owner: string; executive_summary: string; concept: string; mission: string; vision: string; strategy: string; aims: string[]; objectives: Objective[]; roadmap?: Roadmap; updated_at: string | null;
+  action_plan?: string; refreshes?: PlanRefresh[] }
+
+// P3.30 (ledger v16 R3.9) — WHAT WROTE THE TEXT ON SCREEN. The latest cadence refresh that was WRITTEN to this
+// field, and only while the field still holds that refresh's text: an Owner's edit or a model's draft made
+// since is not the cadence's, and saying so would mislabel it. Null means no such refresh is on record.
+const layerSource = (plan: Plan, field: 'strategy' | 'action_plan'): string | null => {
+  const rows = (plan.refreshes ?? []).filter(r => !!r && r.plan_field === field && r.applied !== false);
+  const last = rows[rows.length - 1];
+  if (!last) return null;
+  if (String(last.content ?? '') !== String(plan[field] ?? '')) return null;
+  return `Written by the ${field === 'strategy' ? 'strategic' : 'action-plan'} cadence on ${String(last.at ?? '').slice(0, 10) || 'a date not recorded'} — served by ${String(last.served_by ?? 'not recorded')}. ${String(last.provenance_basis ?? 'No basis was recorded for it.')}`;
+};
 
 const STATUS_TONE: Record<string, string> = { done: 'text-emerald-400', in_progress: 'text-highlight', blocked: 'text-vital', planned: 'text-slate-500' };
 
@@ -62,14 +76,22 @@ export const BusinessPlan: React.FC = () => {
 
   const [actErr, setActErr] = useState('');   // W329 — actions never fail silently
   const [genNote, setGenNote] = useState('');  // W471 — a generation that wrote nothing says so
+  // P3.30 (ledger v14 R3[8], v15 R3[14]) — the founder's own description for the Chief's draft
+  const [genContext, setGenContext] = useState('');
   // W505 (FU-074) — the owner-edit state, the OPENING field list and the save call all moved into
   // components/PlanOpening.tsx, which BOTH this page and the VSB Cockpit's plan tab now render.
   const generate = async () => {
     setBusy(true);
     setActErr('');
     try {
-      const r = await fetch('/api/v1/business-plan/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope }) });
-      if (!r.ok) setActErr(`Generate failed (HTTP ${r.status})`);
+      // P3.30 — the route has always taken `context` and told the model (and the floor) that it is the person's
+      // own text; this page sent the scope alone. Captured before the request.
+      const context = genContext.trim();
+      const r = await fetch('/api/v1/business-plan/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(context ? { scope, context } : { scope }) });
+      if (!r.ok) {
+        const ed = (await r.json().catch(() => null))?.detail;
+        setActErr(`Generate failed (HTTP ${r.status})${ed ? `: ${typeof ed === 'string' ? ed : JSON.stringify(ed)}` : ''}`);
+      }
       else { const d = await r.json().catch(() => null); setGenNote(d?.reason || (d?.written?.length ? `Chief wrote: ${d.written.join(', ')}` : '')); }
       await load();
     } catch { setActErr('Backend unreachable — nothing changed'); }
@@ -187,8 +209,36 @@ export const BusinessPlan: React.FC = () => {
                 {busy ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} Chief: AI-Generate
               </Button>
             </div>
+            <div className="mb-4">
+              <label htmlFor="plan-generate-context" className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1 block">
+                What should the plan cover? <span className="normal-case tracking-normal text-slate-600">(optional — sent with Chief: AI-Generate as your own words)</span>
+              </label>
+              <textarea id="plan-generate-context" data-testid="plan-generate-context" value={genContext} onChange={e => setGenContext(e.target.value)} rows={2}
+                placeholder="Describe the enterprise and what you want from this plan"
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-highlight/50 resize-none" />
+            </div>
             {plan.mission && <Field label="Mission" value={plan.mission} edited={plan.owner_edits?.mission} />}
             {plan.strategy && <Field label="Strategy" value={plan.strategy} edited={plan.owner_edits?.strategy} />}
+            {/* P3.30 (ledger v16 R3.9) — a Strategy the cadence derived from the plan's own counts read as a strategy
+                somebody composed. What wrote it is said beneath it, in body text. */}
+            {plan.strategy && layerSource(plan, 'strategy') && (
+              <p className="text-[10px] text-amber-300/80 -mt-2 mb-3 leading-relaxed" data-testid="plan-strategy-source">{layerSource(plan, 'strategy')}</p>
+            )}
+            {/* P3.30 (ledger v16 R3.9) — THE ACTION-PLAN LAYER WAS SHOWN ON NO PAGE. The plan has carried it since the
+                §17.3 cadence was built; it is rendered here with what wrote it, and its absence is said. */}
+            <div className="mb-3" data-testid="plan-action-plan">
+              <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">Action plan (§17.3)</p>
+              {typeof plan.action_plan === 'string' && plan.action_plan.trim() ? (
+                <>
+                  <p className="text-sm text-slate-300 leading-relaxed">{plan.action_plan}</p>
+                  <p className="text-[10px] text-amber-300/80 mt-1 leading-relaxed" data-testid="plan-action-plan-source">
+                    {layerSource(plan, 'action_plan') ?? 'No cadence refresh on record matches this text, so what composed it is not recorded here.'}
+                  </p>
+                </>
+              ) : (
+                <p className="text-[11px] text-slate-500" data-testid="plan-action-plan-absent">No action plan is recorded for this scope: no action-plan refresh has been written to it.</p>
+              )}
+            </div>
             {/* W615 (FU-487) — a cadence refresh never overwrites the Owner's edit; it is kept as a proposal */}
             {(() => {
               const prop = ((plan as any).refreshes || []).filter((r: any) => r.plan_field === 'strategy' && r.applied === false).slice(-1)[0];

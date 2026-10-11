@@ -42,6 +42,139 @@ _FAITH_TRADITIONS = [
 ]
 
 
+# -- REL (Owner ruling 2026-10-11) - WHAT A MODEL COMPOSES ON THESE FIVE TOOLS IS WITHHELD UNTIL A NAMED SCHOLAR
+#  ON THE ROSTER HAS APPROVED THAT EXACT TEXT - the rule that already governs teaching content
+#  (scholar_review.py), applied here. What is RETRIEVED from a named source - the Qur'anic Arabic and its source
+#  line, the pointer to a named translator's edition, the deterministic ingredient screen - is not composed and
+#  is still shown.
+#
+#  ONE LIST PER TOOL, read by the floor branch and by the scholar gate, so the two cannot drift: the floor cuts
+#  these sections because nothing researched them, the gate names them because nobody has reviewed them.
+def _fatwa_sections(madhab_name: str) -> tuple:
+    return (
+        "Primary Sources (Quran and Hadith)", "Primary Sources",
+        "Position of the " + madhab_name + " School",
+        "Positions of Other Schools (brief comparison)", "Positions of Other Schools",
+        "Legal Reasoning (Qiyas/Ijtihad)", "Legal Reasoning",
+        "Scholarly Consensus (Ijma) if applicable", "Scholarly Consensus",
+        # bare forms the floor shortens to
+        "Primary", "Position", "Positions", "Legal", "Consensus",
+        # a summary of nothing researched, and "considerations" nothing considered, are the same
+        # claim as the sections above - only the restated question survives the floor
+        "Contemporary Considerations", "Contemporary", "Research Summary", "Research")
+
+
+_HADITH_SECTIONS = (
+    "Identification (the likely narration; the collection(s) and hadith number(s) where it appears, if recognisable)",
+    "Identification",
+    "Text (Matn) — the Arabic if known, plus an English translation", "Text (Matn)",
+    # the floor emits SHORTENED headings ("## Chain"), so the bare form is listed too: a
+    # withhold list that only knows the long form leaves the section standing (measured W498)
+    "Chain (Isnad) Considerations", "Chain (Isnad)", "Chain",
+    "Grading (authenticity grade — sahih / hasan / da'if / mawdu' — per recognised scholars, naming who graded it)",
+    "Grading",
+    "Explanation (Sharh) — the meaning and context", "Explanation (Sharh)",
+    "Application & Rulings Derived (how scholars have understood and applied it)",
+    "Application & Rulings Derived", "Related Narrations")
+
+#  Tafsir has two lists, and they are different rules. The SACRED pair is removed on every path and no approval
+#  releases it (a model never translates or transliterates Qur'anic text - ruling A.9.3); the STUDY five are a
+#  model's scholarship and follow the scholar gate.
+_TAFSIR_SACRED = ("Transliteration", "Translation")
+_TAFSIR_STUDY = ("Context of Revelation", "Linguistic Analysis", "Exegesis", "Related Verses",
+                 "Key Lessons and Guidance")
+
+_HALAL_JUDGING = ("Halal Status Assessment", "Critical Issues", "Flagged Ingredients")
+_HALAL_RESEARCH = ("Recommended Certifying Bodies", "Market-Specific Requirements")
+#  P3.30 (ledger v15 R1[5]) - the three process sections the floor fills from the same template. They were a
+#  local tuple of the floor branch (`_process`); they live here so the gate names them too.
+_HALAL_PROCESS = ("Cross-Contamination Risks", "Manufacturing Considerations", "Steps to Achieve Certification")
+
+
+def _interfaith_sections(traditions: list, topic: str) -> tuple:
+    #  the per-tradition headings are built FROM THE REQUEST, so the list is built the same way (W593)
+    _heads: list[str] = []
+    for _t in traditions:
+        _heads += [f"{_t}'s Perspective on {topic}", f"{_t}'s Perspective", f"{_t}"]
+    return tuple(
+        _heads + ["Points of Convergence", "Points of Divergence", "Convergence", "Divergence",
+                  "Suggested Resources for Further Study", "Suggested Resources", "Resources",
+                  "Dialogue Questions (5 open questions for respectful discussion)",
+                  "Dialogue Questions", "Overview"])
+
+
+_REVIEW_SURFACE = "religion-research"
+_WITHHELD_CLAIM = ("A model composed an answer and it is WITHHELD: no named scholar on the roster has approved that "
+                   "exact text, so none of it is shown here.")
+
+
+def _scholar_gated(tool: str, composed: str, asked: str, headings: tuple, provenance: "dict | None") -> tuple:
+    """A MODEL composed `composed` for one of the five research tools. Returns
+    (text to show, [what was withheld], scholar_review, review_note).
+
+    The text is queued for review under a key made of the tool and the hash of the text, and the scholar gate
+    is asked about that exact text. APPROVED: the text is returned whole, with the gate's own sentence naming
+    the reviewer and the footing the decision was entered on. ANYTHING ELSE: none of it is returned. The
+    sections of `headings` (the list the floor branch cuts) are named by OUR names for them; whatever else the
+    model wrote is counted, never quoted - a heading a model invented is its text too.
+
+    The key carries the hash, so a different text is a different item: an approval is never reset by another
+    reply, and it is never inherited by one. A read of the review store that fails raises, and the request
+    fails with it - nothing composed is shown on a store this could not read.
+    """
+    from agentic_core.api import scholar_review as _sr
+    _served = str((provenance or {}).get("served_by") or "a model")
+    body = (composed or "").strip()
+    if not body:
+        _why = ("A model served this request and nothing it composed remains to be reviewed (it returned no "
+                "text, or only sections that are removed on every path), so nothing was queued for scholarly "
+                "review and nothing is shown.")
+        return "", [], {"state": "withheld", "basis": _why, "content_key": None}, _why
+    key = f"{_REVIEW_SURFACE}:{tool}:{_sr.body_hash(body)}"
+    rec = _sr.submit_if_new(key, _REVIEW_SURFACE, body,
+                            reference=(tool + ": " + " ".join(str(asked or "").split()))[:300])
+    published, _state, why = _sr.published_body(key, body)
+    if published is not None:
+        return body, [], {"state": "approved", "basis": why, "content_key": key}, None
+    rest, names = _withhold_sections(body, headings)
+    _own = len(re.findall(r"(?m)^##\s", rest))
+    if _own:
+        names.append(f"{_own} further section(s) under the model's own headings")
+    if re.split(r"(?m)^##\s", rest, maxsplit=1)[0].strip():
+        names.append("text under no heading")
+    queued = rec.get("state") == _sr.IN_REVIEW
+    awaiting = queued and not _sr.roster_is_empty()
+    note = (f"A model composed this answer ({_served}); the deterministic floor did not serve it. By the Owner's "
+            "ruling of 2026-10-11, model-composed religious content is WITHHELD until a named scholar on the "
+            "roster has approved that exact text, and nothing is shown in its place. "
+            + ("It is in the review queue, awaiting a named scholar's review. " if queued else
+               "It is not awaiting review. ")
+            + why)
+    return "", names, {"state": "in_review" if awaiting else "withheld", "basis": why, "content_key": key}, note
+
+
+def _review_fields(review_note, scholar_review) -> dict:
+    """The two keys a MODEL-served answer adds to a tool's response; the floor adds neither. `review_note` is a
+    key of its own: readers of `floor_note` take that key to mean the floor served."""
+    out: dict = {}
+    if review_note:
+        out["review_note"] = review_note
+    if scholar_review:
+        out["scholar_review"] = scholar_review
+    return out
+
+
+def _gate_claim(review: "dict | None", approved_claim: str) -> str:
+    """The CLAIM half of a tool's disclaimer. `review` is None when the gate was not asked (the floor served):
+    the claim is returned as written and the caller's floor wording decides. Approved: the claim, and why the
+    text is shown. Anything else: the answer is withheld, so no claim about an answer is made."""
+    if not review:
+        return approved_claim
+    if review.get("state") == "approved":
+        return f"{approved_claim} It is shown because a named scholar approved this exact text: {review.get('basis')}"
+    return _WITHHELD_CLAIM
+
+
 @router.get("/schools")
 async def list_schools():
     """Return the main schools of Islamic jurisprudence."""
@@ -102,18 +235,15 @@ async def fatwa_research(req: FatwaResearchRequest):
     _floor = (provenance or {}).get("served_by") == "native"
     sections_withheld: list[str] = []
     floor_note = None
+    scholar_review = None
+    review_note = None
+    if not _floor:
+        #  REL (Owner ruling 2026-10-11) - a model composed this: shown only once a named scholar has approved
+        #  this exact text; until then none of it is, and the response says so.
+        research, sections_withheld, scholar_review, review_note = _scholar_gated(
+            "fatwa-research", research, req.question, _fatwa_sections(madhab_info["name"]), provenance)
     if _floor:
-        research, sections_withheld = _withhold_sections(research, (
-            "Primary Sources (Quran and Hadith)", "Primary Sources",
-            "Position of the " + madhab_info["name"] + " School",
-            "Positions of Other Schools (brief comparison)", "Positions of Other Schools",
-            "Legal Reasoning (Qiyas/Ijtihad)", "Legal Reasoning",
-            "Scholarly Consensus (Ijma) if applicable", "Scholarly Consensus",
-            # bare forms the floor shortens to
-            "Primary", "Position", "Positions", "Legal", "Consensus",
-            # a summary of nothing researched, and "considerations" nothing considered, are the same
-            # claim as the sections above - only the restated question survives the floor
-            "Contemporary Considerations", "Contemporary", "Research Summary", "Research"))
+        research, sections_withheld = _withhold_sections(research, _fatwa_sections(madhab_info["name"]))
         floor_note = (
             "served by the deterministic native floor — NO jurisprudential research happened. The floor "
             "composes the headings it is asked for from the words of the request; it does not read a "
@@ -129,13 +259,17 @@ async def fatwa_research(req: FatwaResearchRequest):
         "research": research,
         "sections_withheld": sections_withheld,
         **({"floor_note": floor_note} if floor_note else {}),
+        **_review_fields(review_note, scholar_review),      # REL: only when a model served
         "ai_provenance": _note_withheld659(provenance, sections_withheld),
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "disclaimer": (
             ("NO RESEARCH WAS PERFORMED — the deterministic floor served this, so what remains is a "
              "structured frame over your own question, not scholarship. It is NOT a fatwa and NOT a "
              "ruling. Consult a qualified Islamic scholar or mufti." if _floor else
-             "This is AI-assisted scholarly research only. It is NOT a fatwa and does not constitute "
+             #  REL - true in each state: the claim is made only over a text a scholar approved; over a
+             #  withheld answer it says the answer is withheld
+             _gate_claim(scholar_review, "This is AI-assisted scholarly research only.")
+             + " It is NOT a fatwa and does not constitute "
              "a religious ruling. Please consult a qualified Islamic scholar or mufti for personal "
              "guidance.")
         ),
@@ -184,19 +318,15 @@ async def hadith_study(req: HadithStudyRequest):
     _floor = (provenance or {}).get("served_by") == "native"
     sections_withheld: list[str] = []
     floor_note = None
+    scholar_review = None
+    review_note = None
+    if not _floor:
+        #  REL (Owner ruling 2026-10-11) - a grade, an isnad or a matn a model composed is shown only once a
+        #  named scholar has approved this exact text
+        research, sections_withheld, scholar_review, review_note = _scholar_gated(
+            "hadith-study", research, req.hadith, _HADITH_SECTIONS, provenance)
     if _floor:
-        research, sections_withheld = _withhold_sections(research, (
-            "Identification (the likely narration; the collection(s) and hadith number(s) where it appears, if recognisable)",
-            "Identification",
-            "Text (Matn) — the Arabic if known, plus an English translation", "Text (Matn)",
-            # the floor emits SHORTENED headings ("## Chain"), so the bare form is listed too: a
-            # withhold list that only knows the long form leaves the section standing (measured W498)
-            "Chain (Isnad) Considerations", "Chain (Isnad)", "Chain",
-            "Grading (authenticity grade — sahih / hasan / da'if / mawdu' — per recognised scholars, naming who graded it)",
-            "Grading",
-            "Explanation (Sharh) — the meaning and context", "Explanation (Sharh)",
-            "Application & Rulings Derived (how scholars have understood and applied it)",
-            "Application & Rulings Derived", "Related Narrations"))
+        research, sections_withheld = _withhold_sections(research, _HADITH_SECTIONS)
         floor_note = (
             "served by the deterministic native floor — NOTHING WAS RESEARCHED, GRADED OR ATTRIBUTED. The "
             "floor composes the headings it is asked for from the words of the request; it does not "
@@ -211,6 +341,7 @@ async def hadith_study(req: HadithStudyRequest):
         "study": research,
         "sections_withheld": sections_withheld,
         **({"floor_note": floor_note} if floor_note else {}),
+        **_review_fields(review_note, scholar_review),      # REL: only when a model served
         "ai_provenance": _note_withheld659(provenance, sections_withheld),
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "disclaimer": (
@@ -218,10 +349,14 @@ async def hadith_study(req: HadithStudyRequest):
              "identified and no authenticity grade was determined. What remains is a structured frame "
              "over your own text. Verify any hadith against an authenticated collection (Bukhari, Muslim, "
              "the four Sunan) and a qualified scholar." if _floor else
-             "AI-assisted scholarly research only — NOT a ruling and NOT a substitute for authenticated "
-             "hadith collections. Hadith grading and attribution must be verified with qualified "
-             "scholars; treat any grade stated here as provisional until confirmed against a recognised "
-             "source.")
+             #  REL - true in each state: "any grade stated here" is said only where a grade is shown
+             _gate_claim(scholar_review, "AI-assisted scholarly research only.")
+             + " It is NOT a ruling and NOT a substitute for authenticated hadith collections. "
+             + ("Hadith grading and attribution must be verified with qualified "
+                "scholars; treat any grade stated here as provisional until confirmed against a recognised "
+                "source." if (scholar_review or {}).get("state") == "approved" else
+                "No grade or attribution is stated here. Verify any hadith against an authenticated collection "
+                "(Bukhari, Muslim, the four Sunan) and a qualified scholar."))
         ),
     }
 
@@ -343,9 +478,18 @@ async def quran_tafsir(req: QuranTafsirRequest):
     #  them; what is listed is what was actually removed, so a reply that carried neither lists nothing and
     #  its measured coverage stays the coverage of the text returned. The floor branch below runs its own,
     #  wider cut.
+    scholar_review = None
+    review_note = None
     if (provenance or {}).get("served_by") != "native":
-        tafsir, _sacred671 = _withhold_sections(tafsir, ("Transliteration", "Translation"))
-        sections_withheld = list(_sacred671)
+        #  ALWAYS, AND BEFORE REVIEW: the text a scholar is shown and approves never contains either sacred
+        #  section, so no approval can release one.
+        tafsir, _sacred671 = _withhold_sections(tafsir, _TAFSIR_SACRED)
+        #  REL (Owner ruling 2026-10-11) - what remains is a model's exegesis: shown only once a named scholar
+        #  has approved this exact text. The sourced Arabic, its source line and the translation pointer are
+        #  not composed and are returned on every path.
+        tafsir, _held, scholar_review, review_note = _scholar_gated(
+            "quran-tafsir", tafsir, reference, _TAFSIR_STUDY, provenance)
+        sections_withheld = list(_sacred671) + _held
     if (provenance or {}).get("served_by") == "native":
         if _model_expected:
             from fastapi import HTTPException
@@ -358,14 +502,10 @@ async def quran_tafsir(req: QuranTafsirRequest):
         #  instruction line and labelled the reader's request terms. The floor composes headings, not
         #  exegesis, so the five are withheld and named; the sourced Arabic, the reference and the referral
         #  stand. Matched on leading words: the prompt's headings carry parenthetical tails.
-        tafsir, _cut = _withhold_sections(tafsir, (
-            "Transliteration", "Translation",
-            "Context of Revelation", "Linguistic Analysis", "Exegesis", "Related Verses",
-            "Key Lessons and Guidance"))
+        tafsir, _cut = _withhold_sections(tafsir, _TAFSIR_SACRED + _TAFSIR_STUDY)
         #  what was never requested on the floor, plus what was ACTUALLY cut — not a fixed pair, because a
         #  list naming a section as withheld while the reply still carries it is the defect itself
-        sections_withheld = ["Transliteration", "Translation"] + [
-            h for h in _cut if h not in ("Transliteration", "Translation")]
+        sections_withheld = list(_TAFSIR_SACRED) + [h for h in _cut if h not in _TAFSIR_SACRED]
         floor_note = ("served by the deterministic native floor — no translation or transliteration is "
                       "offered (" + _TRANSLATION_BASIS + "; the floor composes headings, not meaning). "
                       + ("The sourced Arabic above is authentic; " if arabic_text else
@@ -394,6 +534,7 @@ async def quran_tafsir(req: QuranTafsirRequest):
                                "sourced_route": f"/api/v1/qep/translation/{surah}/{ayah_start}",
                                "basis": _TRANSLATION_BASIS},
         **({"floor_note": floor_note} if floor_note else {}),
+        **_review_fields(review_note, scholar_review),      # REL: only when a model served
         "ai_provenance": _note_withheld659(provenance, sections_withheld),
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         # W456 — the §11 disclaimer the fatwa and halal tools carried and this one did not
@@ -403,11 +544,18 @@ async def quran_tafsir(req: QuranTafsirRequest):
             "Study aid — NOT a scholarly tafsir and NOT a ruling. "
             + ("The Arabic is sourced from alquran.cloud and is never AI-generated. " if arabic_text else
                "No Arabic is shown: it could not be fetched, and it is never AI-generated. ")
-            + ("Everything else here is a structured frame composed by the native floor, not scholarship"
-               if str((provenance or {}).get("served_by", "native")).startswith("native") else
-               "Everything else here is AI-labelled content")
-            + " - read it with, and check it against, the classical tafasir and a qualified teacher. Scholarly "
-              "translations and interpretations differ; where they do, learn from a scholar."
+            #  REL - three states. Withheld: nothing a model composed is shown, so there is no "it" to read.
+            #  Floor: as before, word for word. Approved: AI-labelled content, and why it is shown.
+            + ("The study notes a model composed are WITHHELD until a named scholar on the roster approves that "
+               "exact text, and nothing is shown in their place. Study this passage with the classical tafasir "
+               "and a qualified teacher. Scholarly "
+               if scholar_review and scholar_review.get("state") != "approved" else
+               ("Everything else here is a structured frame composed by the native floor, not scholarship"
+                if not scholar_review else
+                "Everything else here is AI-labelled content, shown because a named scholar approved this exact "
+                "text (" + str(scholar_review.get("basis")) + ")")
+               + " - read it with, and check it against, the classical tafasir and a qualified teacher. Scholarly ")
+            + "translations and interpretations differ; where they do, learn from a scholar."
         ),
     }
 
@@ -578,9 +726,17 @@ async def halal_pre_assessment(req: HalalReviewRequest):
         user_text=person_said(req.product_name, req.product_description, req.ingredients,
                               req.manufacturing_process))
 
-    _judging = ("Halal Status Assessment", "Critical Issues", "Flagged Ingredients")
     sections_withheld: list[str] = []
     floor_note = None
+    scholar_review = None
+    review_note = None
+    if (provenance or {}).get("served_by") != "native":
+        #  REL (Owner ruling 2026-10-11) - a status, an issue or a recommended body a model composed is shown
+        #  only once a named scholar has approved this exact text. The ingredient screen is a word list this
+        #  module computes; it is not composed and is returned on every path.
+        assessment, sections_withheld, scholar_review, review_note = _scholar_gated(
+            "halal-review", assessment, req.product_name + " - " + req.product_description,
+            _HALAL_JUDGING + _HALAL_RESEARCH + _HALAL_PROCESS, provenance)
     if (provenance or {}).get("served_by") == "native":
         if _model_expected:
             # A model was available and the floor still answered: the judging sections were in the
@@ -594,15 +750,27 @@ async def halal_pre_assessment(req: HalalReviewRequest):
         #  Certifying Bodies" and "Market-Specific Requirements" and filled them from a template: a list of
         #  recommended bodies nobody looked up. A halal status rests on a certificate verified with its
         #  body (Owner, 2026-09-29), so on the floor these are withheld and named, like the judging three.
-        _research637 = ("Recommended Certifying Bodies", "Market-Specific Requirements")
-        assessment, _cut = _withhold_sections(assessment, _judging + _research637)
-        sections_withheld = list(_judging) + [h for h in _research637 if h in _cut]
+        #  P3.30 (ledger v15 R1[5]) - AND THE THREE PROCESS SECTIONS. W637 withheld the two research
+        #  sections and left these, which the floor fills from the same template: contamination risks,
+        #  manufacturing considerations and certification steps for a product whose ingredient list and
+        #  process it did not read. Withheld and named like the other five; what is left is said from what
+        #  IS left, and a reply with no section at all says that rather than arriving empty.
+        assessment, _cut = _withhold_sections(assessment, _HALAL_JUDGING + _HALAL_RESEARCH + _HALAL_PROCESS)
+        sections_withheld = list(_HALAL_JUDGING) + [h for h in _HALAL_RESEARCH + _HALAL_PROCESS if h in _cut]
+        _left = re.findall(r"(?m)^##\s+\S", assessment or "")
+        if not _left:
+            assessment = ((assessment + "\n\n") if assessment else "") + (
+                f"No section of this pre-assessment is served on the native floor: all "
+                f"{len(sections_withheld)} are withheld and named beside this text. The ingredient screen is "
+                f"the only contribution here, and it is a word list.")
         floor_note = (
             "served by the deterministic native floor — no halal status, critical issues or flagged "
             "ingredients are offered. The floor composes the headings it is given and cannot read an "
             "ingredient list, so a status from it would be the shape of a verdict with nothing behind "
-            "it. The ingredient screen below is a deterministic word list, and the notes that remain "
-            "are a structured frame. A halal status comes from an accredited certifying body.")
+            "it. The ingredient screen below is a deterministic word list, and "
+            + (f"the {len(_left)} section(s) that remain are a structured frame. " if _left else
+               "no section of the pre-assessment remains: every one was withheld. ")
+            + "A halal status comes from an accredited certifying body.")
 
     return {
         "assessment_id": uuid.uuid4().hex[:10],
@@ -616,10 +784,11 @@ async def halal_pre_assessment(req: HalalReviewRequest):
         "ingredient_screen": _screen_ingredients(req.ingredients),
         "sections_withheld": sections_withheld,
         **({"floor_note": floor_note} if floor_note else {}),
+        **_review_fields(review_note, scholar_review),      # REL: only when a model served
         "ai_provenance": _note_withheld659(provenance, sections_withheld),
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "disclaimer": disclaimer_for(
-            provenance, "This is an AI pre-assessment tool only.",
+            provenance, _gate_claim(scholar_review, "This is an AI pre-assessment tool only."),
             "Official halal certification must be obtained from an accredited halal certifying body. This "
             "assessment does not constitute certification."),
     }
@@ -680,15 +849,16 @@ async def interfaith_dialogue(req: InterfaithRequest):
     _floor = (provenance or {}).get("served_by") == "native"
     sections_withheld: list[str] = []
     floor_note = None
+    scholar_review = None
+    review_note = None
+    if not _floor:
+        #  REL (Owner ruling 2026-10-11) - a tradition's position a model composed is shown only once a named
+        #  scholar has approved this exact text
+        analysis, sections_withheld, scholar_review, review_note = _scholar_gated(
+            "interfaith", analysis, req.topic + " (" + ", ".join(traditions) + ")",
+            _interfaith_sections(traditions, req.topic), provenance)
     if _floor:
-        _heads = []
-        for _t in traditions:
-            _heads += [f"{_t}'s Perspective on {req.topic}", f"{_t}'s Perspective", f"{_t}"]
-        analysis, sections_withheld = _withhold_sections(analysis, tuple(
-            _heads + ["Points of Convergence", "Points of Divergence", "Convergence", "Divergence",
-                      "Suggested Resources for Further Study", "Suggested Resources", "Resources",
-                      "Dialogue Questions (5 open questions for respectful discussion)",
-                      "Dialogue Questions", "Overview"]))
+        analysis, sections_withheld = _withhold_sections(analysis, _interfaith_sections(traditions, req.topic))
         floor_note = (
             "served by the deterministic native floor — NO comparative research happened. The floor "
             "composes the headings it is asked for from the words of the request; it does not read a "
@@ -705,10 +875,11 @@ async def interfaith_dialogue(req: InterfaithRequest):
         "analysis": analysis,
         "sections_withheld": sections_withheld,
         **({"floor_note": floor_note} if floor_note else {}),
+        **_review_fields(review_note, scholar_review),      # REL: only when a model served
         "ai_provenance": _note_withheld659(provenance, sections_withheld),
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "disclaimer": disclaimer_for(
-            provenance, "AI-assisted comparative material.",
+            provenance, _gate_claim(scholar_review, "AI-assisted comparative material."),
             "Not scholarship and not a statement of any tradition's position. It represents no faith community "
             "and speaks for none of them; where it was served by the deterministic floor the research sections "
             "are WITHHELD and named in `sections_withheld`. Consult qualified representatives of each tradition."),

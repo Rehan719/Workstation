@@ -28,6 +28,15 @@ export const DOMAIN_LABELS: Record<string, string> = {
   law: 'Law', employment: 'Employment', care: 'Care',
 };
 
+// P3.30 (ledger v16 R5.7) — how a domain VALUE is shown, mirroring agentic_core/taxonomy.py domain_label. The
+// backend lets a free-text value through, so an entity can carry `enterprise` where one of the six domains is
+// expected; a page printed it as if it were one. A member shows its label; anything else is named as outside.
+export const domainLabel = (value: unknown): string => {
+  const v = String(value ?? '').trim().toLowerCase();
+  if (!v) return 'no domain recorded';
+  return (DOMAINS as readonly string[]).includes(v) ? DOMAIN_LABELS[v] : `${v} — general (outside the six domains)`;
+};
+
 // General-purpose workspace domains the backend tolerates as free text (normalise_domain passes
 // them through) — for facility tools that operate outside the six named Domains.
 export const WORKSPACE_DOMAINS = ['general', 'enterprise', 'technology', ...DOMAINS] as const;

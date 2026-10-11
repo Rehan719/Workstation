@@ -18,6 +18,7 @@ from pydantic import BaseModel
 import functools
 
 from agentic_core.api._ai_provenance import ai_text as _ai_text, person_said, disclaimer_for
+from agentic_core.api._ai_provenance import note_withheld      # P3.30 - the coverage figure follows the text returned
 
 #  W637 (FU-597) — this router's domain, bound once. Every ai_text call below carries it, so the native floor
 #  prints the real domain instead of "the request named no domain".
@@ -223,13 +224,32 @@ async def marking_feedback(req: FeedbackRequest):
     feedback, provenance = await ai_text(prompt, "education_feedback", realm=req.realm,
         user_text=person_said(req.task, req.subject))
 
+    #  P3.30 (ledger v13 R5[3]) - ON THE FLOOR THE TWO MARKING SECTIONS ARE WITHHELD. The floor composes the
+    #  headings it is given and is told only the task and the subject as the person's words - the student's
+    #  work never reaches it as something to read - so a section headed as a criterion-by-criterion
+    #  assessment or as a level and grade was the shape of a mark with nothing behind it. Both are cut, named
+    #  in `sections_withheld`, and SAID IN THE TEXT ITSELF, so the statement travels with a copy, a download
+    #  and a saved version. (No top-level floor note is added: the page prints the provenance's own floor
+    #  note, and stops printing it when the response carries one of its own.)
+    sections_withheld: list = []
+    if (provenance or {}).get("floor_note"):
+        from agentic_core.api.religion import _withhold_sections
+        feedback, sections_withheld = _withhold_sections(
+            feedback, ("Criterion-by-Criterion", "Indicative Level / Grade"))
+        if sections_withheld:
+            feedback = ((feedback + "\n\n") if feedback else "") + (
+                f"_Withheld on the native floor: {' · '.join(sections_withheld)}. The floor does not read the "
+                f"student's work, so no assessment against criteria and no level or grade is offered here; "
+                f"what remains above is a structured frame, not marking._")
+
     return {
         "feedback_id": uuid.uuid4().hex[:10],
         "subject": req.subject,
         "level": req.level,
         "tone": req.tone,
         "feedback": feedback,
-        "ai_provenance": provenance,
+        "sections_withheld": sections_withheld,
+        "ai_provenance": note_withheld(provenance, sections_withheld),
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "disclaimer": disclaimer_for(
             provenance, "AI-assisted marking and feedback.",

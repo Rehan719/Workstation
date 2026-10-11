@@ -1,5 +1,5 @@
 import { StartProjectCTA } from '../../components/StartProjectCTA';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, Badge, Button } from '@workstation/ui';
 import { Layers, GraduationCap, History } from 'lucide-react';
@@ -12,6 +12,24 @@ export const EducationHub: React.FC = () => {
   const navigate = useNavigate();
   const { layout, emotionalAdjustment } = useAdaptiveUI();
   const [activeTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'lessons');
+  // P3.30 (ledger v16 R5.10) — the curriculum frameworks the API lists (GET /api/v1/education/frameworks had no
+  // caller: this select offered four typed values, three of which that list does not hold). Null = not read
+  // yet; a failed read is SAID, and only the default is offered then.
+  const [frameworks, setFrameworks] = useState<string[] | null>(null);
+  const [frameworksNote, setFrameworksNote] = useState('');
+  useEffect(() => {
+    let alive = true;
+    fetch('/api/v1/education/frameworks')
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then(d => {
+        if (!alive) return;
+        const ids = (Array.isArray(d?.frameworks) ? d.frameworks : []).map((f: any) => String(f?.id ?? '')).filter(Boolean);
+        if (ids.length === 0) throw new Error('the list came back empty');
+        setFrameworks(ids); setFrameworksNote('');
+      })
+      .catch(e => { if (alive) { setFrameworks(null); setFrameworksNote(`The framework list could not be read (${String(e?.message ?? e)}), so only the default framework is offered below.`); } });
+    return () => { alive = false; };
+  }, []);
 
   return (
     <div className="space-y-12 pb-24">
@@ -57,7 +75,7 @@ export const EducationHub: React.FC = () => {
             {activeTab === 'curriculum' ? (
               <DomainTool
                 title={T['curriculum'].title}
-                description={<>Design a full course — Workstation's <span className="text-highlight">own</span> AI builds a structured, framework-aligned curriculum (week-by-week plan, objectives, assessment), in-house.</>}
+                description={<>Design a full course — Workstation's <span className="text-highlight">own</span> AI builds a structured, framework-aligned curriculum (week-by-week plan, objectives, assessment), in-house.{frameworksNote && <span className="block mt-1 text-amber-400" data-testid="education-frameworks-note">{frameworksNote}</span>}</>}
                 endpoint="/api/v1/education/curriculum"
                 resultKey="curriculum"
                 submitLabel="Design curriculum"
@@ -65,7 +83,7 @@ export const EducationHub: React.FC = () => {
                   { name: 'subject', label: 'Subject', type: 'text', placeholder: 'e.g. Introduction to Machine Learning', default: 'Introduction to Machine Learning' },
                   { name: 'level', label: 'Level', type: 'text', placeholder: 'e.g. GCSE / A-Level / University Year 1', default: 'University Year 1' },
                   { name: 'duration_weeks', label: 'Duration (weeks)', type: 'text', default: '12' },
-                  { name: 'framework', label: 'Framework', type: 'select', options: ['bloom', 'solo', 'backward_design', 'competency'], default: 'bloom' },
+                  { name: 'framework', label: 'Framework', type: 'select', options: (frameworks && frameworks.length > 0 ? frameworks : ['bloom']), default: 'bloom' },
                   { name: 'learning_objectives_count', label: 'Learning objectives', type: 'text', default: '6' },
                 ]}
               />

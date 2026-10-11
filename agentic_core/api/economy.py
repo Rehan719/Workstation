@@ -790,6 +790,16 @@ async def open_transfers(from_vsb: str, user: dict | None = Depends(get_current_
     return {"from_vsb": from_vsb, **res, "disclaimer": "Virtual/simulated WST — no real funds moved."}
 
 
+@router.get("/transfers/intake-sources")
+async def transfer_intake_sources(vsb_id: str, user: dict | None = Depends(get_current_user)):
+    """P3.30 (FU-745; OWNER RULING 2026-10-10: not reversed, but flagged) - the credits recorded for an
+    entity, each with whether its sender is a registered living entity now. READ-ONLY: nothing is moved,
+    reversed or written. Owner-scoped like every other read of an entity's economy."""
+    _require_economy_access(vsb_id, user)
+    from agentic_core.economy import transfers as _tr
+    return await asyncio.to_thread(_tr.intake_sources, vsb_id)
+
+
 @router.post("/transfers/reconcile")
 async def reconcile_transfers(user: dict | None = Depends(get_current_user)):
     """W466 (register FU-023) — complete every stranded transfer (a debited sender, an uncredited receiver) older than

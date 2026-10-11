@@ -81,9 +81,18 @@ _TEMPLATE_PROMPTS: dict[str, str] = {
 }
 
 
+class ParticularSpec(BaseModel):
+    """P3.30 (ledger v16 R5.12) - ONE PARTICULAR: what it is called and the words a bundle line must carry.
+    The field was an untyped list, so a particular sent as plain text reached the specialist's `.get()` and
+    the route answered 500. Typed, a wrong shape is refused by the contract with a 422 that names the field.
+    Both fields keep the defaults the specialist already tolerated (no name, no words -> a BLANK)."""
+    name: str = ""
+    words: list[str] = []
+
+
 class AssembleRequest(BaseModel):
     template_id: str
-    particulars: list = []        # [{name, words: [..]}] - each filled ONLY from a located bundle line
+    particulars: list[ParticularSpec] = []   # each filled ONLY from a located bundle line
     authorities: list = []        # names of statutes or cases - each resolved against the corpus or refused
 
 
@@ -93,7 +102,8 @@ async def matter_assemble(req: AssembleRequest, user: dict | None = Depends(get_
     the one named folder (with its document and line), or is a BLANK; every authority is resolved against the
     corpus or refused; a filing-shaped artefact is a draft until the Owner approves it. Not legal advice."""
     from agentic_core.legal import specialist
-    return specialist.assemble(req.template_id, req.particulars, req.authorities)
+    #  the specialist is handed the plain dicts it has always read; its code is unchanged
+    return specialist.assemble(req.template_id, [p.model_dump() for p in req.particulars], req.authorities)
 
 
 @router.post("/matter/artefacts/{artefact_id}/approve")
@@ -293,8 +303,12 @@ async def generate_document(req: GenerateRequest):
         + "\nGenerate the complete legal document now in Markdown format with proper headings and clause numbering."
     )
 
+    #  P3.30 (ledger v15 R5[8]) - THE PARTY NAMES ARE THE PERSON'S WORDS TOO. Only the instructions were named,
+    #  so a request carrying parties and no instructions told the floor that nothing had been said. The VALUES
+    #  the person typed are passed, one per line; person_said drops anything that is not a string, so a nested
+    #  object is never stringified into words nobody wrote. The keys are form labels and are not passed.
     document, provenance = await ai_text(prompt, "law_generator", realm=req.realm,
-        user_text=person_said(req.custom_instructions))
+        user_text=person_said(req.custom_instructions, list((req.parties or {}).values())))
 
     template_name = next(
         (t["name"] for t in _TEMPLATES if t["id"] == req.template_id),

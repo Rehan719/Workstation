@@ -1973,8 +1973,13 @@ async def run_swarm(req: RunSwarmRequest, user: dict | None = Depends(get_curren
     if _halt:
         return {"run_id": swarm_run_id, "swarm_id": req.swarm_id, "refused": True, "trace": [],
                 "final": f"[CONSTITUTIONAL REFUSAL] {_halt.get('refused_reason')}", "governance_checkpoint": _halt}
+    #  P3.30 (ledger v16 R4.17) - WHOSE WORDS. `context` may by now hold a saved cascade's own text and the
+    #  living entity's grounding, which the person did not type, so it is not passed as theirs (the engine's
+    #  own rule, W640). What they typed for THIS run is `req.context`, and that is what the floor is told is
+    #  theirs; with none typed it is told nothing was said.
     res = await orchestrator.swarm(req.agent, stages, context=context,
-                                   prefer_external=req.prefer_external, timeout=req.timeout)
+                                   prefer_external=req.prefer_external, timeout=req.timeout,
+                                   user_text=((req.context or "").strip() or None))
     res["governance_checkpoint"] = console_post_gate(req.agent, str(res.get("final") or ""))
     _ms = int((time.time() - _t0) * 1000)
     # W509 (FU-009) — what genuinely served each stage, and what each stage ASKED for. A stage whose

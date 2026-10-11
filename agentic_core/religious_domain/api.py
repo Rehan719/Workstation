@@ -835,11 +835,20 @@ async def tajweed_analyse(req: WrittenRecallRequest):
     no claim about pronunciation, recitation, or articulation is made anywhere in the payload."""
     from fastapi.concurrency import run_in_threadpool
     if req.surah is not None and req.ayah is not None:
+        #  P3.30 (ledger v15 R1[15]) - AN AYAH THAT DOES NOT EXIST IS NOT AN UNAVAILABLE SOURCE. The fetch
+        #  answers None for an ayah beyond its surah's count, and that None was reported as a 503 - a false
+        #  statement about the source, on the one door that did not check the bounds. Checked here with the
+        #  same table and the same words the other doors use, before anything is fetched.
+        if req.ayah > _AYAH_COUNTS[req.surah]:
+            raise HTTPException(status_code=422,
+                                detail=f"surah {req.surah} has {_AYAH_COUNTS[req.surah]} ayaat — "
+                                       f"ayah {req.ayah} does not exist")
         reference = await fetch_ayah_arabic(req.surah, req.ayah)
         if not reference:
             raise HTTPException(status_code=503, detail=(
-                f"the authoritative text of {req.surah}:{req.ayah} could not be fetched (source unreachable, no "
-                f"cache, or no such ayah) - nothing is compared against text the platform did not source"))
+                f"the authoritative text of {req.surah}:{req.ayah} could not be fetched (the source is "
+                f"unreachable and no cached copy exists) - nothing is compared against text the platform did "
+                f"not source"))
         source = {"reference_source": "fetched", "reference": f"{req.surah}:{req.ayah} quran-uthmani",
                   "reference_basis": "the reference Arabic was fetched by the server from the sourced edition"}
     elif req.ayah_text:

@@ -127,6 +127,10 @@ class ChatResponse(BaseModel):
     profile_state: Optional[str] = None     # W616 (FU-397) — applied | none_written | unreadable | …
     profile_basis: Optional[str] = None
     suggested_areas: List[Dict[str, str]] = []   # §5/§9 guided navigation — WHITELISTED platform areas only
+    #  P3.30 (ledger v13 R5[6]) - what the list above IS, whether or not it is empty. An empty list is still
+    #  an empty list (no forced suggestion - that is designed and tested); this says an empty list means no
+    #  KEYWORD matched, which is not the same as no area of the platform fitting the question.
+    suggested_areas_basis: Optional[str] = None
 
 
 # ── §5/§9 guided navigation — the avatar can take the user to any platform area ──
@@ -136,10 +140,12 @@ class ChatResponse(BaseModel):
 _PLATFORM_AREAS: List[Dict[str, Any]] = [
     {"route": "/genesis", "label": "Genesis — Concept → Commercialisation",
      "keywords": ["genesis", "journey", "concept", "commercialis", "start a business", "my idea",
-                  "establish", "new venture", "found a", "startup"]},
+                  "establish", "new venture", "found a", "startup",
+                  #  P3.30 (ledger v13 R5[6]) - the ordinary ways of asking for this
+                  "build a business", "create a business", "set up a business", "set up a company"]},
     {"route": "/domains", "label": "Work in a Domain",
      "keywords": ["domain tool", "law", "legal", "science", "care plan", "education", "religion",
-                  "quran", "employment", "cv", "lesson"]},
+                  "quran", "employment", "cv", "lesson", "contract", "draft a"]},
     {"route": "/resource-fabric", "label": "Resource Fabric Composer",
      "keywords": ["fabric", "compose", "composition", "combine resources", "reconfigure", "reactor",
                   "incubator", "petri", "simulator"]},
@@ -183,6 +189,17 @@ def _suggest_areas(message: str, limit: int = 3) -> List[Dict[str, str]]:
                                        "because": "matched: " + ", ".join(hits[:3])}))
     scored.sort(key=lambda x: -x[0])
     return [a for _, a in scored[:limit]]
+
+
+def _suggested_areas_basis(areas: List[Dict[str, str]]) -> str:
+    """P3.30 (ledger v13 R5[6]) - one sentence on what a list of suggested areas is, computed from the list."""
+    n = len(_PLATFORM_AREAS)
+    if areas:
+        return (f"{len(areas)} platform area(s) suggested by a keyword match: a word or phrase in your message "
+                f"is on a fixed list for one of {n} areas. The match reads words, not meaning.")
+    return (f"No platform area is suggested: no word or phrase in your message is on the keyword list for any "
+            f"of the {n} areas. The list reads words, not meaning, so this does not say that no area of the "
+            f"platform fits what you asked.")
 
 
 def _hold_phrase(reg: dict) -> str:
@@ -662,6 +679,7 @@ async def chat(request: ChatRequest, user: dict | None = Depends(get_current_use
         profile_applied=bool(meta.get("profile_applied")),
         profile_state=meta.get("profile_state"), profile_basis=meta.get("profile_basis"),
         suggested_areas=_suggest_areas(request.message),
+        suggested_areas_basis=_suggested_areas_basis(_suggest_areas(request.message)),
     )
 
 
