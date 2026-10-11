@@ -12996,6 +12996,13 @@ def _w464_healthy(monkeypatch, CC, h=0.87):
         c = dict(real_ctx())
         c["composite_health"] = h
         c["immune"] = {**(c.get("immune") or {}), "threat_level": "NOMINAL"}
+        #  W664 - THE HELPER STATES THE HEALTH IT PROMISES. Since W658 the measured score is absent on a platform
+        #  that has observed no call in five minutes, and the gates then HOLD. These tests are about decisions
+        #  on a healthy platform, and they passed only when an earlier test in the same process had made a call:
+        #  run alone, the LOW change was held. The state each test needs is set here, not inherited from order.
+        c["composite_health_measured_only"] = h
+        c["composite_health_measured_weight"] = c.get("composite_health_measured_weight") or 0.4
+        c["mode_decidable"] = True
         return c
     monkeypatch.setattr(CC.biobus, "organism_context", _ctx)
     monkeypatch.setattr(CC, "_immune_threat", lambda: "NOMINAL")
@@ -52069,3 +52076,95 @@ def test_w663_a_screen_failed_entity_reads_as_held_a_gate_is_decidable_after_rel
     _gc = _rm[_rm.find("id: 'guidance'"):][:700]
     assert "A.12.3" in _gc and "A.9.5" in _gc, "the guidance card does not name the rulings that govern it"
     assert "Guided playlists are fixed syllabus content" not in _rm, "a card still says playlists exist"
+
+
+def test_w664_an_audit_run_can_be_pointed_and_the_ledger_says_whether_it_went(client):
+    """Owner ruling 2026-10-10: a zero run counts only with no region at the cap, and the run after it must be
+    pointed at what the one before did not exercise. Ledger v15 listed 306 routes and 31 pages it did not
+    exercise, and nothing could hand that list to the next run.
+
+    THE INVARIANT: what "not exercised" means is computed in one place; the next run can be given that list;
+    the record says what the run was pointed at; and the ledger says how many of those it then exercised -
+    computed, so a run that was pointed and went elsewhere cannot read as covered.
+    """
+    import importlib.util as _ilu
+    import json as _j
+    import os as _os
+    import pathlib as _pl
+    import subprocess as _sp
+    import sys as _sys
+    import tempfile as _tf
+
+    _root = _pl.Path(__file__).resolve().parents[1]
+    _spec = _ilu.spec_from_file_location("_rfl664", _root / "scripts" / "render_fidelity_ledger.py")
+    _rfl = _ilu.module_from_spec(_spec)
+    _spec.loader.exec_module(_rfl)
+    _d = _pl.Path(_tf.mkdtemp())
+    _census = {"routes": ["GET /api/v1/a", "POST /api/v1/b", "GET /api/v1/c"],
+               "pages": [{"path": "/alpha", "component": "Alpha"}, {"path": "/beta", "component": "Beta"}]}
+
+    def _region(routes, files, directed=None):
+        r = {"region": "R1", "summary": "", "hit_the_cap": False, "unlisted_findings": 0, "cap": 20,
+             "findings": [{"id": "R1.0", "section": "finding 0", "verdict": "PARTIAL", "tier": 2,
+                           "vision_claim": "c", "observed": "o", "evidence": "e"}],
+             "verdicts": [{"index": 0, "corrected_verdict": "PARTIAL", "corrected_tier": 2, "refuted": False,
+                           "reproduced": True, "reason": "r", "evidence": "x"}],
+             "surfaces_exercised": {"routes": routes, "files": files}}
+        if directed is not None:
+            r["directed"] = directed
+        return [r]
+
+    # ── 1. ONE FUNCTION, and it gives the table's arithmetic ─────────────────────────────────────────
+    _cov = _rfl.coverage(_region(["GET /api/v1/a", "GET /api/v1/not-real"], ["x/pages/Alpha.tsx"]), _census)
+    assert _cov["routes_not_exercised"] == ["GET /api/v1/c", "POST /api/v1/b"], _cov["routes_not_exercised"]
+    assert [p["component"] for p in _cov["pages_not_exercised"]] == ["Beta"], _cov["pages_not_exercised"]
+    assert _cov["routes_stray"] == ["GET /api/v1/not-real"], _cov["routes_stray"]
+
+    # ── 2. THE SCRIPT that points the next run, on the real v15 record and census ─────────────────────
+    _runs = _root / "docs" / "fidelity_runs"
+    _p = _sp.run([_sys.executable, str(_root / "scripts" / "audit_unexercised.py"),
+                  str(_runs / "ledger_v15_W654_ab829862.json"), str(_runs / "census_v15_W654_ab829862.json")],
+                 capture_output=True, text=True, encoding="utf-8", env=dict(_os.environ, PYTHONIOENCODING="utf-8"))
+    assert _p.returncode == 0, _p.stderr[-400:]
+    _un = _j.loads(_p.stdout)
+    #  the ledger's own figures, READ FROM THE LEDGER'S ARCHIVE OF THAT RUN rather than typed here
+    #  (v15 is kept whole at this path from W664, so this leg does not depend on which edition is current)
+    _lt = (_root / "docs" / "VISION_FIDELITY_LEDGER_v15.md").read_text(encoding="utf-8")
+    import re as _re
+    _mr = _re.search(r"\| API routes \| (\d+) \| (\d+) \| (\d+) \|", _lt)
+    _mp = _re.search(r"\| pages \| (\d+) \| (\d+) \| (\d+) \|", _lt)
+    assert _mr and _mp, "ledger v15's coverage table could not be read, so this leg would compare nothing"
+    assert len(_un["routes"]) == int(_mr.group(3)) and len(_un["pages"]) == int(_mp.group(3)), (
+        "the script and the ledger disagree about what was not exercised",
+        len(_un["routes"]), _mr.group(3), len(_un["pages"]), _mp.group(3))
+    assert _un["routes"] and _un["pages"] and _un["counts"]["routes_not_exercised"] == len(_un["routes"]), _un["counts"]
+
+    # ── 3. THE LEDGER SAYS WHETHER THE RUN WAS POINTED, AND HOW MANY OF THOSE IT REACHED ─────────────
+    def _render(regions, name):
+        _src = _d / (name + ".json")
+        _src.write_text(_j.dumps(regions), encoding="utf-8")
+        _cf = _d / "census.json"
+        _cf.write_text(_j.dumps(_census), encoding="utf-8")
+        _dst = _d / name
+        _q = _sp.run([_sys.executable, str(_root / "scripts" / "render_fidelity_ledger.py"), str(_src), str(_dst),
+                      "deadbeef", "2026-01-01", "8031", "16", "W664", str(_cf)],
+                     capture_output=True, text=True, encoding="utf-8", env=dict(_os.environ, PYTHONIOENCODING="utf-8"))
+        assert _q.returncode == 0, (_q.stdout or "")[-300:] + (_q.stderr or "")[-300:]
+        return " ".join(_dst.read_text(encoding="utf-8").split())
+    _dir = {"from": "ledger_v15", "routes": ["POST /api/v1/b", "GET /api/v1/c"], "pages": ["Beta"]}
+    _went = _render(_region(["POST /api/v1/b"], ["x/pages/Beta.tsx"], _dir), "went.md")
+    assert "POINTED at what an earlier run did not exercise" in _went and "2 API routes and 1 pages" in _went, _went[-900:]
+    assert "exercised **1 routes and 1 pages**" in _went, (
+        "the ledger does not say how many of the surfaces it was pointed at the run reached")
+    _ignored = _render(_region(["GET /api/v1/a"], ["x/pages/Alpha.tsx"], _dir), "ignored.md")
+    assert "exercised **0 routes and 0 pages**" in _ignored, (
+        "a run that was pointed and went elsewhere reads as if it had gone where it was pointed")
+    _plain = _render(_region(["GET /api/v1/a"], ["x/pages/Alpha.tsx"]), "plain.md")
+    assert "NOT pointed" in _plain and "POINTED at what" not in _plain, "an unpointed run does not say so"
+
+    # ── 4. THE WORKFLOW passes the direction to the assessor and returns it on both paths ─────────────
+    _wf = (_root / "scripts" / "workflows" / "fidelity_audit_v7.js").read_text(encoding="utf-8")
+    assert "agent(COMMON + DIRECTION + " in _wf, "the direction is not in the assessor's prompt"
+    assert _wf.count("directed: DIRECTED") == 2, ("a region of the record does not say what the run was pointed at",
+                                                  _wf.count("directed: DIRECTED"))
+    assert "${UNEX_ROUTES.join(" in _wf and "A.unexercised" in _wf, "the workflow does not read the list it is given"
