@@ -16561,7 +16561,10 @@ def test_w471_board_pack_and_chiefs_opening_are_honest_both_ways(client, monkeyp
     gj = (root / "synthesis/GenesisJourney.tsx").read_text(encoding="utf-8")
     assert "provenanceMapBadge(pack.ai_provenance.served_by" in gj and 'data-testid="pack-version"' in gj
     assert "unchanged since ${pack.unchanged_since}" in gj
-    assert "typeof d?.detail === 'string' ? d.detail" in gj                     # the server's refusal, shown
+    #  W669 (ledger v16 R3.3) - this pinned the one-line form, which showed a refusal only when its detail was
+    #  a string; a review gate's detail is an object and was dropped. The same intent, on the helper that now
+    #  serves every action of the card.
+    assert "typeof det === 'string' && det" in gj and "setError(await refusalText(res))" in gj   # the server's refusal, shown
     vsb_src = pathlib.Path("agentic_core/api/vsb.py").read_text(encoding="utf-8")
     assert "qa = await assure_delivery(narrative, [" in vsb_src and "Sections: Executive Summary · Strategic Position" not in vsb_src
 
@@ -52215,21 +52218,11 @@ def test_w666_a_start_that_did_not_start_says_so_and_a_route_asserts_only_what_i
     finally:
         _hb._task, _hb.running = _task0, _run0
 
-    # -- 2. COUNCIL: nothing is adjudicated at import, and a match is called a match -------------------
-    import agentic_core.api.council_judiciary as _cj
-    _saved = dict(_cj._rulings)
-    try:
-        _cj._rulings.clear()
-        assert client.get("/api/council/judge/rulings").json() == [], "rulings exist that nobody filed"
-        assert not hasattr(_cj, "_seed_initial_rulings"), "the import-time seeding is back"
-        _d = client.post("/api/council/judge/disputes", json={
-            "description": "A learner asked whether their quota of free data lessons could be shared"}).json()
-        assert "enalty applied" not in _d["decision"], ("a keyword match is reported as a penalty applied", _d)
-        assert "No penalty is applied" in _d["decision"] or "Nothing was adjudicated" in _d["decision"], _d
-        assert "no council exists" in _d["basis"], _d
-    finally:
-        _cj._rulings.clear()
-        _cj._rulings.update(_saved)
+    # -- 2. COUNCIL: the route was archived by the Owner's ruling of 2026-10-11 (W669); it answers nothing ---
+    assert client.get("/api/council/judge/rulings").status_code == 404, "the archived council route is mounted"
+    assert client.post("/api/council/judge/disputes", json={"description": "x"}).status_code in (404, 405)
+    assert (_root / "_archive" / "agentic_core" / "api" / "council_judiciary.py").is_file(), (
+        "the archived module is gone - the move was to be reversible")
 
     # -- 3. THE FUND REPORT: no figure is returned that nothing computed -------------------------------
     _ep = client.get("/api/v310/fund/epoch-synthesis").json()
@@ -52526,3 +52519,112 @@ def test_w668_establish_reads_the_journeys_own_record_and_a_status_is_derived_wh
     monkeypatch.setattr(_hb, "auto_economy", True, raising=False)
     _rows2 = client.get("/api/v1/economy/living-vsbs").json()["living_vsbs"]
     assert all("Self-run is on" in r["lifecycle_basis"] for r in _rows2 if "operable" in str(r.get("lifecycle_basis")))
+
+
+def test_w669_a_scholar_can_be_added_and_a_decision_says_who_entered_it(client, monkeypatch):
+    """W669 - FU-693 by the Owner's ruling of 2026-10-11 (the reviewing half of the scholar gate), and the first
+    of ledger v16's tier-2 rows: statements a page made beside a field that said otherwise."""
+    import pathlib
+    import re
+    import agentic_core.api.scholar_review as _sr
+    _root = pathlib.Path(__file__).resolve().parents[1]
+    _src = _root / "apps" / "workstation-superapp" / "src"
+
+    # -- 1. THE SCHOLAR GATE: inert with an empty roster, releasable once a named scholar is recorded -------
+    _paths = (_sr._roster_path(), _sr._review_path())
+    _kept = [(p, p.read_bytes() if p.exists() else None) for p in _paths]
+    try:
+        for _p, _ in _kept:
+            if _p.exists():
+                _p.unlink()
+        _st = client.get("/api/v1/scholar-review/status").json()
+        assert _st["roster_is_empty"] is True and _st["roster"] == {}, _st
+        assert _st["footing"]["authentication"] == "off" and "attested, not verified" in _st["footing"]["who_decides"], _st["footing"]
+        _body = "## Lesson\nA short lesson outline composed for a learner."
+        _sr.submit("w669:lesson", "study_plan", _body, reference="lesson 1")
+        _q = client.get("/api/v1/scholar-review/queue").json()
+        assert _q["total"] == 1 and _q["items"][0]["state"] == "in_review" and _q["items"][0]["body"] == _body, _q
+        #     the designed state is kept: with nobody on the roster nothing can be approved
+        _no = client.post("/api/v1/scholar-review/decide", json={"content_key": "w669:lesson", "scholar_id": "anyone", "approve": True})
+        assert _no.status_code == 409 and "No scholar is on the roster" in _no.text, (_no.status_code, _no.text[:200])
+        assert _sr.published_body("w669:lesson", _body)[0] is None
+        #     a scholar is a named person with a stated credential - none may be blank
+        assert client.post("/api/v1/scholar-review/roster", json={"scholar_id": "s1", "name": " ", "credential": "x"}).status_code == 422
+        _add = client.post("/api/v1/scholar-review/roster", json={"scholar_id": "s1", "name": "Shaykh Example", "credential": "ijazah, stated"})
+        assert _add.status_code == 200 and "not verified" in _add.json()["credential_basis"], _add.text[:200]
+        assert _add.json()["added_by"] == "the Owner (single-user mode)", _add.json()
+        #     a reviewer who is not on the roster is still refused
+        _bad = client.post("/api/v1/scholar-review/decide", json={"content_key": "w669:lesson", "scholar_id": "s2", "approve": True})
+        assert _bad.status_code == 409 and "not on the scholar roster" in _bad.text
+        _ok = client.post("/api/v1/scholar-review/decide", json={"content_key": "w669:lesson", "scholar_id": "s1", "approve": True, "note": "reviewed"})
+        assert _ok.status_code == 200, _ok.text[:200]
+        _rec = _ok.json()["record"]
+        assert _rec["state"] == "approved" and _rec["entered_by"] == "the Owner (single-user mode)", _rec
+        assert _rec["attestation"] == _sr.ATTESTED and "attested, not verified" in _rec["attestation"], _rec
+        _pb = _sr.published_body("w669:lesson", _body)
+        assert _pb[0] == _body and "Shaykh Example" in _pb[2] and "attested, not verified" in _pb[2], _pb
+        #     an approval is of a text: the text changes, the approval no longer covers it
+        assert _sr.published_body("w669:lesson", _body + " edited")[0] is None
+
+        #     WITH AUTHENTICATION ON nobody decides on a scholar's behalf, and only an administrator adds one
+        monkeypatch.setattr(_sr, "auth_enabled", lambda: True)
+        _a = client.post("/api/v1/scholar-review/roster", json={"scholar_id": "s3", "name": "N", "credential": "c"})
+        assert _a.status_code in (401, 403), ("a scholar was added without an administrator", _a.status_code)
+        _d = client.post("/api/v1/scholar-review/decide", json={"content_key": "w669:lesson", "scholar_id": "s1", "approve": False})
+        assert _d.status_code in (401, 403), ("a decision was entered on a scholar's behalf with authentication on", _d.status_code)
+        assert _sr._load(_sr._review_path())["w669:lesson"]["state"] == "approved", "the refused decision was recorded"
+        assert "s3" not in _sr.roster()
+        assert client.get("/api/v1/scholar-review/status").json()["footing"]["authentication"] == "on"
+        monkeypatch.undo()
+    finally:
+        for _p, _b in _kept:
+            if _b is None:
+                if _p.exists():
+                    _p.unlink()
+            else:
+                _p.write_bytes(_b)
+    assert _sr.roster_is_empty() or _kept[0][1] is not None, "the guard left a scholar on the roster"
+    _panel = (_src / "components" / "qep" / "ScholarReviewPanel.tsx").read_text(encoding="utf-8")
+    assert "{it.attestation ? ` — ${it.attestation}` : ''}" in _panel and 'data-testid="scholar-footing"' in _panel, (
+        "the panel does not show the footing a decision was entered on")
+    _hub = (_src / "pages" / "domains" / "QEPReligionHub.tsx").read_text(encoding="utf-8")
+    assert "{activeTab === 'review' && <ScholarReviewPanel />}" in _hub, "the panel is on no screen"
+
+    # -- 2. A REFUSAL'S REASON reaches the founder whatever its shape (ledger v16 R3.3) -------------------
+    _gj = (_src / "pages" / "synthesis" / "GenesisJourney.tsx").read_text(encoding="utf-8")
+    assert "const refusalText = async (res: Response)" in _gj and "det.clear_by" in _gj and "det.error" in _gj
+    assert _gj.count("setError(await refusalText(res))") >= 6, _gj.count("setError(await refusalText(res))")
+    assert "setError(`Action failed (HTTP ${res.status}).`)" not in _gj, "an action still reports only its status number"
+
+    # -- 3. ROLE DEFINITIONS are not called live agents (R3.7) ---------------------------------------------
+    _ha = client.get("/api/v1/hub/agents").json()
+    assert _ha["platform_roster"], "the roster is empty, so its label cannot be read"
+    assert all("not running agents" in a["source"] and "live" not in a["source"] for a in _ha["platform_roster"]), _ha["platform_roster"][0]
+    assert "live agent cast" not in _ha["note"] and "not running agents" in _ha["note"], _ha["note"]
+    _hp = (_src / "components" / "organism" / "AgentHubPanel.tsx").read_text(encoding="utf-8")
+    assert "role definitions — not running agents" in _hp and "(swarm, live)" not in _hp
+
+    # -- 4. EVERY ROUTE a blueprint can launch exists in the app (R5.2) -------------------------------------
+    from agentic_core.catalog.bto import COMPONENT_ROUTES as _cr
+    _routes = set(re.findall(r'path="(/[^"]*)"', (_src / "App.tsx").read_text(encoding="utf-8")))
+    assert len(_routes) > 20, "the app's route table was not read"
+    assert not [r for r in _cr.values() if r not in _routes], ("a Launch button opens a page that does not exist",
+                                                               [r for r in _cr.values() if r not in _routes])
+
+    # -- 5. WHAT THE REALM CHANGES is said for the case that holds (R5.3) ----------------------------------
+    _set = (_src / "pages" / "Settings.tsx").read_text(encoding="utf-8")
+    assert "only when a model is serving" in _set and "The realm sets how results are written." not in _set
+
+    # -- 6. SELF-IMPROVE IS PACED, and the page says the rule the beat reads (R6.7) -------------------------
+    import agentic_core.organism.heartbeat as _hbm
+    _hb = _hbm.heartbeat
+    _e0, _b0 = _hb._evolve_every, _hb._beats_since_evolve
+    try:
+        _hb._evolve_every, _hb._beats_since_evolve = 7, 3
+        _hs = client.get("/api/v1/heartbeat/status").json()
+        assert _hs["evolve_every"] == 7 and _hs["beats_since_evolve"] == 3, _hs
+        assert "once every 7 beats" in _hs["evolve_pacing"] and "maintenance phase" in _hs["evolve_pacing"] and "3 beat(s)" in _hs["evolve_pacing"], _hs["evolve_pacing"]
+    finally:
+        _hb._evolve_every, _hb._beats_since_evolve = _e0, _b0
+    _hm = (_src / "pages" / "organism" / "HeartbeatMonitor.tsx").read_text(encoding="utf-8")
+    assert 'data-testid="evolve-pacing">{s.evolve_pacing ||' in _hm and "take effect on the NEXT beat" not in _hm

@@ -129,7 +129,12 @@ def submit_if_new(content_key: str, surface: str, body: str, reference: str = ""
     return submit(content_key, surface, body, reference)
 
 
-def decide(content_key: str, reviewer_id: str, approve: bool, note: str = "") -> Dict[str, Any]:
+ATTESTED = "entered by the Owner on the scholar's behalf - attested, not verified"
+OWN_ACCOUNT = "entered by the scholar's own account"
+
+
+def decide(content_key: str, reviewer_id: str, approve: bool, note: str = "",
+           entered_by: Optional[str] = None, attestation: Optional[str] = None) -> Dict[str, Any]:
     """Approve or reject. THE REVIEWER MUST BE ON THE ROSTER — there is no trust score to assert.
 
     The refusals are distinguished on purpose: an empty roster and an unknown reviewer are different
@@ -155,6 +160,11 @@ def decide(content_key: str, reviewer_id: str, approve: bool, note: str = "") ->
     rec["reviewer_id"] = reviewer_id
     rec["reviewed_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     rec["decision_note"] = note or None
+    #  W669 (FU-693, Owner ruling 2026-10-11) - who typed this decision in, and on what footing. With
+    #  authentication off the product cannot know that the named scholar is the one at the keyboard, so the
+    #  record says the Owner entered it and that it is attested, not verified.
+    rec["entered_by"] = entered_by
+    rec["attestation"] = attestation
     recs[content_key] = rec
     _save(_review_path(), recs)
     #  SHAPE-COMPLETE: the refusals above all carry `reason` and `detail`, so this carries them too and
@@ -189,9 +199,12 @@ def published_body(content_key: str, body: str) -> Tuple[Optional[str], str, str
             return (None, "withheld", (
                 "This was approved, but the text has CHANGED since that approval, so the approval no "
                 "longer covers what would be shown. It is withheld until the new text is reviewed."))
+        _name = (roster().get(str(rec.get("reviewer_id"))) or {}).get("name") or rec.get("reviewer_id")
         return (rec.get("body") or body, APPROVED, (
-            f"Reviewed and approved by {rec.get('reviewer_id')} on "
-            f"{str(rec.get('reviewed_at'))[:10]}."))
+            f"Reviewed and approved by {_name}"
+            + (f" ({rec.get('reviewer_id')})" if _name != rec.get("reviewer_id") else "")
+            + f" on {str(rec.get('reviewed_at'))[:10]}"
+            + (f" - {rec['attestation']}." if rec.get("attestation") else ".")))
     if state == REJECTED:
         return (None, "withheld", (
             "A reviewer rejected this content, so it is not shown."
@@ -214,3 +227,80 @@ def gate_status() -> Dict[str, Any]:
             "item is withheld - the designed state until the Owner engages a reviewer. An approval is "
             "bound to the exact text approved, so an edit afterwards falls back to withheld."),
     }
+
+
+# -- W669 (FU-693, Owner ruling 2026-10-11) - THE REVIEWING HALF, REACHABLE -----------------------------------
+#  The gate withheld correctly and nothing could ever release it: no route added a scholar, showed the queue or
+#  recorded a decision. The Owner ruled who may do what. WITH AUTHENTICATION OFF the Owner adds named scholars
+#  and enters a scholar's decision on their behalf, recorded as attested and not verified. WITH IT ON only an
+#  administrator adds a scholar and only the account whose username is the scholar's id decides.
+from fastapi import APIRouter, Depends, HTTPException          # noqa: E402
+from pydantic import BaseModel                                 # noqa: E402
+
+from agentic_core.auth.core import auth_enabled, get_current_user   # noqa: E402
+
+router = APIRouter(prefix="/api/v1/scholar-review", tags=["scholar-review"])
+
+
+class ScholarRequest(BaseModel):
+    scholar_id: str
+    name: str
+    credential: str
+
+
+class DecisionRequest(BaseModel):
+    content_key: str
+    scholar_id: str
+    approve: bool
+    note: str = ""
+
+
+def _footing() -> Dict[str, Any]:
+    on = bool(auth_enabled())
+    return {"authentication": "on" if on else "off",
+            "who_adds_a_scholar": "an administrator" if on else "the Owner (single-user mode)",
+            "who_decides": ("only the account whose username is the scholar's id" if on else
+                            "the Owner, on the named scholar's behalf: " + ATTESTED)}
+
+
+@router.get("/status")
+async def scholar_review_status():
+    return {**gate_status(), "roster": roster(), "footing": _footing()}
+
+
+@router.get("/queue")
+async def scholar_review_queue():
+    recs = _load(_review_path())
+    return {"items": sorted(recs.values(), key=lambda r: str(r.get("submitted_at") or ""), reverse=True),
+            "total": len(recs), "footing": _footing()}
+
+
+@router.post("/roster")
+async def scholar_review_add(req: ScholarRequest, user: dict | None = Depends(get_current_user)):
+    sid, name, cred = req.scholar_id.strip(), req.name.strip(), req.credential.strip()
+    if not (sid and name and cred):
+        raise HTTPException(status_code=422, detail="A scholar is recorded with an id, a name and a stated "
+                                                    "credential; none may be blank.")
+    if auth_enabled() and not (isinstance(user, dict) and user.get("role") == "admin"):
+        raise HTTPException(status_code=403, detail="Only an administrator adds a scholar to the roster.")
+    by = (user.get("username") if isinstance(user, dict) and auth_enabled() else "the Owner (single-user mode)")
+    return {"scholar_id": sid, **add_scholar(sid, name, cred, added_by=str(by)),
+            "credential_basis": "the credential is recorded as stated; this platform has not verified it"}
+
+
+@router.post("/decide")
+async def scholar_review_decide(req: DecisionRequest, user: dict | None = Depends(get_current_user)):
+    if auth_enabled():
+        me = user.get("username") if isinstance(user, dict) else None
+        if me != req.scholar_id:
+            raise HTTPException(status_code=403, detail=(
+                "With authentication on, a decision is entered only by the scholar's own account "
+                f"({req.scholar_id!r}); nobody decides on a scholar's behalf."))
+        out = decide(req.content_key, req.scholar_id, req.approve, req.note,
+                     entered_by=str(me), attestation=OWN_ACCOUNT)
+    else:
+        out = decide(req.content_key, req.scholar_id, req.approve, req.note,
+                     entered_by="the Owner (single-user mode)", attestation=ATTESTED)
+    if not out["ok"]:
+        raise HTTPException(status_code=409, detail=out["detail"])
+    return out

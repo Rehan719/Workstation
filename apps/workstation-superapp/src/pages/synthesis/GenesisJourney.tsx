@@ -419,7 +419,7 @@ export const GenesisJourney: React.FC = () => {
     setRepoBusy(true); setRepo(null);
     try {
       const res = await fetch(`/api/v1/vsb/${vsb.vsb_id}/repo`, { method: 'POST' });
-      if (res.ok) setRepo(await res.json()); else setError(`Action failed (HTTP ${res.status}).`);
+      if (res.ok) setRepo(await res.json()); else setError(await refusalText(res));
     } catch { setError('Action failed — backend unreachable; nothing changed.'); }   // W344 — never a silent click
     setRepoBusy(false);
   };
@@ -430,7 +430,7 @@ export const GenesisJourney: React.FC = () => {
     setSiteBusy(true); setSite(null);
     try {
       const res = await fetch(`/api/v1/vsb/${vsb.vsb_id}/website`, { method: 'POST' });
-      if (res.ok) setSite(await res.json()); else setError(`Action failed (HTTP ${res.status}).`);
+      if (res.ok) setSite(await res.json()); else setError(await refusalText(res));
     } catch { setError('Action failed — backend unreachable; nothing changed.'); }   // W344 — never a silent click
     setSiteBusy(false);
   };
@@ -441,7 +441,7 @@ export const GenesisJourney: React.FC = () => {
     setWebappBusy(true); setWebapp(null);
     try {
       const res = await fetch(`/api/v1/vsb/${vsb.vsb_id}/webapp`, { method: 'POST' });
-      if (res.ok) setWebapp(await res.json()); else setError(`Action failed (HTTP ${res.status}).`);
+      if (res.ok) setWebapp(await res.json()); else setError(await refusalText(res));
     } catch { setError('Action failed — backend unreachable; nothing changed.'); }   // W344 — never a silent click
     setWebappBusy(false);
   };
@@ -452,9 +452,22 @@ export const GenesisJourney: React.FC = () => {
     setPwaBusy(true); setPwa(null);
     try {
       const res = await fetch(`/api/v1/vsb/${vsb.vsb_id}/mobile`, { method: 'POST' });
-      if (res.ok) setPwa(await res.json()); else setError(`Action failed (HTTP ${res.status}).`);
+      if (res.ok) setPwa(await res.json()); else setError(await refusalText(res));
     } catch { setError('Action failed — backend unreachable; nothing changed.'); }   // W344 — never a silent click
     setPwaBusy(false);
+  };
+
+  // W669 (ledger v16 R3.3) - a refusal's detail is a string from some routes and an object from the review
+  // gates ({error, clear_by}); an object was dropped and the founder shown only the status number.
+  const refusalText = async (res: Response): Promise<string> => {
+    const d = await res.json().catch(() => null);
+    const det = d?.detail;
+    if (typeof det === 'string' && det) return det;
+    if (det && typeof det === 'object') {
+      const parts = [det.error, det.reason, det.clear_by ? `Clear by: ${det.clear_by}` : ''].filter(x => typeof x === 'string' && x);
+      if (parts.length) return parts.join(' ');
+    }
+    return `Action failed (HTTP ${res.status}) and the server gave no reason.`;
   };
 
   // §17.3 — assemble the Living Business System's on-demand Board Pack (DCS-registered)
@@ -464,10 +477,7 @@ export const GenesisJourney: React.FC = () => {
     try {
       const res = await fetch(`/api/v1/vsb/${vsb.vsb_id}/board-pack`, { method: 'POST' });
       if (res.ok) setPack(await res.json());
-      else {   // W471 — the server's reason (no concept recorded, name pending, a review gate), never a bare status
-        const d = await res.json().catch(() => null);
-        setError(typeof d?.detail === 'string' ? d.detail : `Action failed (HTTP ${res.status}).`);
-      }
+      else setError(await refusalText(res));   // W471, W669 — the server's reason, whatever its shape
     } catch { setError('Action failed — backend unreachable; nothing changed.'); }   // W344 — never a silent click
     setPackBusy(false);
   };
@@ -485,7 +495,7 @@ export const GenesisJourney: React.FC = () => {
       const res = await fetch(`/api/v1/vsb/${vsb.vsb_id}/review-gates`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stages: next }),
       });
-      if (res.ok) setGates(await res.json()); else setError(`Action failed (HTTP ${res.status}).`);
+      if (res.ok) setGates(await res.json()); else setError(await refusalText(res));
     } catch { setError('Action failed — backend unreachable; nothing changed.'); }   // W344
   };
   const decideGate = async (stage: string, decision: 'approve' | 'reject') => {

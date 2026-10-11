@@ -1344,6 +1344,14 @@ class OrganismHeartbeat:
             "interval_basis": ("interval_seconds is the BASE; the loop waits base / phase intensity, which is "
                                "effective_interval_seconds for the current phase and changes when the phase does"),
             "auto_evolve": self.auto_evolve,
+            #  W669 (ledger v16 R6.7) - Self-improve is PACED and phase-bound, and nothing said so: the page
+            #  told the Owner every switch acts on the next beat. The rule is published from the fields the
+            #  beat itself reads, so the sentence cannot drift from the code.
+            "evolve_every": self._evolve_every,
+            "beats_since_evolve": self._beats_since_evolve,
+            "evolve_pacing": (f"Self-improve is attempted once every {self._evolve_every} beats, and only in a "
+                              f"maintenance phase; {self._beats_since_evolve} beat(s) have passed since the "
+                              f"last attempt"),
             "auto_economy": self.auto_economy,
             "auto_align": self.auto_align,
             "auto_compliance": self.auto_compliance,          # §11 (W288) — continuous re-screening
