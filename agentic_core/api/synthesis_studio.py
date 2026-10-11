@@ -375,7 +375,7 @@ async def synthesise(req: SynthesiseRequest,
             pass
 
         duration_ms = int((time.time() - start) * 1000)
-        yield f'data: {json.dumps({"stage": "done", "synthesis_id": synthesis_id, "entity_id": entity_id, "solution_name": solution_name, "duration_ms": duration_ms, "stages_completed": len(_CASCADE_STAGES)})}\n\n'
+        yield f'data: {json.dumps({"stage": "done", "synthesis_id": synthesis_id, "entity_id": entity_id, "solution_name": solution_name, "duration_ms": duration_ms, "stages_completed": len(_CASCADE_STAGES), "entity_status": entity.get("status"), "status_basis": entity.get("status_basis"), "first_screen": (entity.get("first_screen") or {}).get("overall")})}\n\n'
 
     return StreamingResponse(
         stream(),
@@ -447,6 +447,9 @@ async def spawn_vsb_entity(req: SpawnRequest, user: dict | None = Depends(get_cu
 
     return {"entity_id": entity_id, "solution_name": req.solution_name, "structure": structure,
             "status": "spawned", "has_board": "board" in entity,
+            #  W663 (FU-690) - what the entity's own record says, beside the fact that it was spawned
+            "entity_status": entity.get("status"), "status_basis": entity.get("status_basis"),
+            "first_screen": (entity.get("first_screen") or {}).get("overall"),
             "economy": entity.get("economy"), "living": entity.get("living")}
 
 

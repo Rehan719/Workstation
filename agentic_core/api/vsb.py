@@ -125,6 +125,7 @@ def _autonomy_phrase(vsb: dict) -> str:
     st = str(vsb.get("status") or "").strip()
     return {"operating": "operating: the organism runs its economic cycles",
             "held": "held: a review gate blocks progress",
+            "held - screen failed": "held: its latest compliance screen failed, so its economy is held and nothing is shipped",
             "body pending": "body pending: sections still await the owned model",
             }.get(st, f"{st or 'status not derived'}: not yet operating on its own")
 
@@ -2009,6 +2010,35 @@ def _rederive(vsb: dict) -> dict:
     return vsb
 
 
+SCREEN_HELD_STATUS = "held - screen failed"
+
+
+def _screen_hold(vsb: dict):
+    """W663 (ledger v15 FU-690) - is this entity's LATEST section-11 screen a FAIL? Returns the failed frameworks
+    (a list, possibly empty when the record names none), None when the latest screen did not fail or there is
+    none, and the string "unknown" when the history could not be read - which is NOT a hold: a status must not
+    say an entity is held on a record nobody could read (the ship route answers that case with its own 503)."""
+    _id = str(vsb.get("vsb_id") or vsb.get("entity_id") or "")
+    if not _id:
+        return None
+    try:
+        from agentic_core.economy import living_vsbs as _lv663
+        _h = (_lv663._history().get(_id) or {})
+    except Exception:                          # noqa: BLE001 - unknown, said as unknown
+        return "unknown"
+    if _h.get("overall") != "fail":
+        return None
+    return [str(v.get("framework")) for v in (_h.get("verdicts") or [])
+            if isinstance(v, dict) and v.get("status") == "fail"]
+
+
+def _screen_hold_basis(frameworks) -> str:
+    return ("its latest section-11 screen FAILED"
+            + (f" ({', '.join(frameworks)})" if frameworks else "")
+            + ": its economy is held and its ship and public surfaces are refused until the screen no longer "
+              "fails. The screen is a word list - it matched a term it refuses and has not assessed the enterprise")
+
+
 def _derived_status(vsb: dict) -> tuple:
     """§3.3 (W496, FU-100) — THE STATUS IS DERIVED FROM FACTS, NEVER WRITTEN AS A LITERAL.
 
@@ -2023,6 +2053,11 @@ def _derived_status(vsb: dict) -> tuple:
     (a section still awaits the owned model), `registered — not operating` (nothing tends it), or
     `operating`.
     """
+    #  W663 (FU-690) - THE SCREEN FIRST. A failed screen holds the economy and refuses the ship whatever the
+    #  gates and the body say, and this status said none of it.
+    _sh663 = _screen_hold(vsb)
+    if isinstance(_sh663, list):
+        return (SCREEN_HELD_STATUS, _screen_hold_basis(_sh663))
     blk = _gates_blocking(vsb)
     if blk:
         return ("held", "a review gate blocks progress (Mode 3): "
@@ -2574,6 +2609,14 @@ def enrich_vsb_entity(entity: dict, *, owner_id: str = "default", problem: str =
             _fs = screen_living_vsb(str(vsb_id))
             entity["first_screen"] = _fs if _fs is not None else {
                 "not_screened": "the entity is not on the living roster, so there was nothing to screen"}
+            #  W663 (FU-690) - APPLIED HERE, from the screen just run, so no door's literal ("active", on the
+            #  Studio's two) survives a failed first screen. Doors that derive their status afterwards reach
+            #  the same value through _derived_status.
+            if isinstance(_fs, dict) and _fs.get("overall") == "fail":
+                entity["status"] = SCREEN_HELD_STATUS
+                entity["status_basis"] = _screen_hold_basis(
+                    [str(v.get("framework")) for v in (_fs.get("verdicts") or [])
+                     if isinstance(v, dict) and v.get("status") == "fail"])
         except Exception as _exc:
             entity["first_screen"] = {"error": f"{_exc.__class__.__name__}: {str(_exc)[:140]}"}
     return entity

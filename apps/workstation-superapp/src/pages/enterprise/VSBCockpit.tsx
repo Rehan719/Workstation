@@ -339,7 +339,7 @@ export const VSBCockpit: React.FC = () => {
 
   // W452 — a Mode 3 gate refusal arrives as a dict {error, gate, status, …}: render the gate, not '[object Object]'
   const detailText = (d: any): string => (d && typeof d === 'object')
-    ? (d.error ? `${d.error} — gate '${d.gate}' is ${d.status}` : JSON.stringify(d))
+    ? (d.error ? `${d.error} — gate '${d.gate}' is ${d.status}${typeof d.clear_by === 'string' ? `. ${d.clear_by}` : ''}` : JSON.stringify(d))
     : String(d ?? 'failed');
   // W503 (FU-263) — 'apply' was missing entirely: the cockpit filed proposals and Change Control
   // approved them, and nothing in the product then APPLIED one, so the genome mutation needed an API
@@ -369,6 +369,38 @@ export const VSBCockpit: React.FC = () => {
                                + detailText(e?.response?.data?.detail ?? e?.message) });
     }
     setGrowthBusy('');
+  };
+
+  // W663 (FU-704) - THE REVIEW GATES OF THE ENTITY ON SCREEN. A pending gate could be decided only on the
+  // Genesis page in the session that established the entity; this page opens any entity, so it decides here.
+  const [gates, setGates] = useState<Dict | null>(null);
+  const [gateMsg, setGateMsg] = useState('');
+  // TIED TO THE ENTITY IT WAS ISSUED FOR (the W503 pattern above): an answer that arrives after the founder
+  // has switched entity is not shown on the entity now on screen.
+  const loadGates = async (id: string) => {
+    try {
+      const r = await axios.get(`/api/v1/vsb/${id}/review-gates`);
+      if (id !== selectedRef.current) return;
+      setGates(r.data);
+    } catch (e: any) {
+      if (id !== selectedRef.current) return;
+      setGates(null); setGateMsg(`Review gates could not be read: ${detailText(e?.response?.data?.detail ?? e?.message)}`);
+    }
+  };
+  useEffect(() => { setGates(null); setGateMsg(''); if (selected && tab === 'chief') loadGates(selected); }, [selected, tab]);
+  const decideGate = async (stage: string, decision: 'approve' | 'reject') => {
+    if (!selected) return;
+    const issuedFor = selected;
+    setGateMsg('');
+    try {
+      const r = await axios.post(`/api/v1/vsb/${issuedFor}/review-gates/${stage}/decision`, { decision });
+      if (issuedFor !== selectedRef.current) return;
+      setGateMsg(`${stage}: ${r.data?.status ?? decision}. The entity now reads "${r.data?.entity_status ?? 'status not returned'}".`);
+      await loadGates(issuedFor);
+    } catch (e: any) {
+      if (issuedFor !== selectedRef.current) return;
+      setGateMsg(`Not decided: ${detailText(e?.response?.data?.detail ?? e?.message)}`);
+    }
   };
 
   const instructChief = async () => {
@@ -693,7 +725,7 @@ export const VSBCockpit: React.FC = () => {
                         entity could carry, including "held" and "body pending". */}
                     {detail.status && (
                       <Badge color={detail.status === 'operating' ? 'emerald-500'
-                                    : detail.status === 'held' ? 'vital' : 'slate-500'}>{detail.status}</Badge>
+                                    : String(detail.status).startsWith('held') ? 'vital' : 'slate-500'}>{detail.status}</Badge>
                     )}
                     {(detail as any).status_basis && (
                       <span className="text-[9px] text-slate-500" data-testid="cockpit-status-basis">{(detail as any).status_basis}</span>
@@ -752,6 +784,26 @@ export const VSBCockpit: React.FC = () => {
           {/* Chief & Board */}
           {tab === 'chief' && (
             <div className="space-y-4">
+              {/* W663 (FU-704) - the entity's review gates, decidable here after any reload */}
+              {gates && Array.isArray(gates.statuses) && gates.statuses.some((g: any) => g?.gated) && (
+                <Card className="p-6 space-y-3" data-testid="cockpit-review-gates">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Review gates on this entity</h4>
+                  {gates.statuses.filter((g: any) => g?.gated).map((g: any) => (
+                    <div key={String(g.stage)} className="flex flex-wrap items-center gap-3 text-[11px] text-slate-300">
+                      <span className="font-black uppercase">{String(g.stage)}</span>
+                      <span data-testid="cockpit-gate-status" className={g.blocks_progress ? 'text-amber-400 font-bold' : 'text-slate-400'}>{String(g.status)}{g.blocks_progress ? ' — blocks ship, evolve and cascade' : ''}</span>
+                      {g.decision?.decided_by && <span className="text-[10px] text-slate-500">decided by: {String(g.decision.decided_by)}</span>}
+                      {g.blocks_progress && (
+                        <>
+                          <Button type="button" data-testid="cockpit-gate-approve" onClick={() => decideGate(String(g.stage), 'approve')} className="text-[10px] px-3 py-1">Approve</Button>
+                          <Button type="button" variant="outline" onClick={() => decideGate(String(g.stage), 'reject')} className="text-[10px] px-3 py-1">Reject</Button>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </Card>
+              )}
+              {gateMsg && <p data-testid="cockpit-gate-message" className="text-[11px] text-amber-400 font-bold">{gateMsg}</p>}
               {/* W300 — instruct THIS entity's Chief: apex delegation scoped to the VSB's own plan */}
               <Card className="p-6 space-y-3 border-highlight/30 bg-highlight/5">
                 <h4 className="text-[10px] font-black uppercase tracking-widest text-highlight flex items-center gap-2"><Crown size={14} /> Instruct this entity's Chief</h4>
