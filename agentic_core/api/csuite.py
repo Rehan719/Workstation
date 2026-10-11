@@ -124,6 +124,9 @@ async def get_cto_infra() -> dict:
         # so the absence is visible.
         "uptime":          None,
         "pqc_status":      "not_checked",
-        "ai_provider":     "Anthropic Claude" if __import__("os").getenv("ANTHROPIC_API_KEY") else "Ollama (local)",
+        #  W666 (ledger v16 R3.2) - a provider was NAMED here from whether an API key was set, so with no
+        #  key it said a local model that was not serving. This route checks nothing about serving.
+        "ai_provider":     None,
+        "ai_provider_status": "not_checked - what serves is measured at /api/v1/native-ai/status",
         "computed_at":     time.time(),
     }

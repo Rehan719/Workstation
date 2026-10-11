@@ -405,7 +405,7 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
           {primary && (form[primary] || '').trim() && (
             <div className="pt-3 border-t border-slate-800/60 flex items-center justify-between gap-3 flex-wrap">
               <p className="text-[10px] text-slate-500 leading-relaxed max-w-sm">
-                Want to take this further? Commercialise it end-to-end into your own self-running <span className="text-highlight font-bold">VSB IDBO enterprise</span>.
+                Want to take this further? Commercialise it end-to-end into your own <span className="text-highlight font-bold">VSB IDBO enterprise</span>, run by the heartbeat levers you turn on.
               </p>
               <Button type="button"
                 onClick={() => { const sid = `seed_${Date.now().toString(36)}`; try { sessionStorage.setItem(`ws_genesis_${sid}`, JSON.stringify({ title, domain: domainSeed, input: primary ? form[primary] : '', output: String(result?.[resultKey] ?? result?.deliverable ?? '') })); } catch { /* seed best-effort */ } navigate(`/genesis?seed=${sid}${domainSeed ? `&domain=${encodeURIComponent(domainSeed)}` : ''}`); }}

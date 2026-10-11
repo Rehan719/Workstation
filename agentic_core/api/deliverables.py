@@ -260,7 +260,16 @@ async def produce(req: ProduceRequest, user: dict | None = Depends(get_current_u
         _secs = req.sections or [m.group(1).strip() for m in
                                  re.finditer(r"^#{1,2}\s+(.+)$", req.content, flags=re.M)][:24] \
                 or _TYPES.get(req.type, [])
+        #  W666 (ledger v16 R1.0) - with no sections given, the "declared structure" above is the list of
+        #  headings found in the very text being measured, so its coverage is 1.0 whatever the text says.
+        #  P1.1's ACCEPT (W449) has a person's own document measured and passed this way, so the gate is NOT
+        #  changed here; the record now SAYS where the structure came from. Whether such a text should be
+        #  certified at all is put to the Owner.
+        _self_derived = (not req.sections) and bool(re.search(r"^#{1,2}\s+.+$", req.content, flags=re.M))
         gen = {"content": req.content, "sections": _secs,
+               "structure_basis": (("the sections were read from the supplied text's own headings, so its "
+                                    "coverage of them is 1.0 by construction; what can fail here is the length "
+                                    "and stub screen") if _self_derived else None),
                "ai_provenance": {"served_by": "verbatim-ingest", "is_external": False,
                                  "source_served_by": req.source_served_by,
                                  "note": "content supplied verbatim by the caller — not regenerated"}}
@@ -273,6 +282,10 @@ async def produce(req: ProduceRequest, user: dict | None = Depends(get_current_u
     _owner = request_owner_id(user if isinstance(user, dict) else None, "default")
     qa = await assure_delivery(gen["content"], gen["sections"], label="deliverable", owner_id=_owner,
                                served_by=_gate_served_by(gen))
+    if gen.get("structure_basis") and isinstance(qa, dict) and isinstance(qa.get("quality"), dict):
+        qa["quality"]["structure_basis"] = gen["structure_basis"]
+        qa["quality"]["delivery_coverage_basis"] = (str(qa["quality"].get("delivery_coverage_basis") or "")
+                                                    + " - " + gen["structure_basis"])
     # §13→§8: producing a living deliverable is real cognitive work — register it with the homeostatic
     # controller so it EXPENDS metabolic ATP and carries the organism posture (like the cognition paths).
     try:
@@ -400,6 +413,21 @@ _FLOOR_PHRASE = ("structured floor — not model analysis: composed by the deter
 
 
 def _provenance_phrase(d: Dict[str, Any]) -> str:
+    """W666 (ledger v16 R1.1) - a verbatim ingest's origin is whatever the caller typed into the request.
+
+    The phrase below resolved that string as if the platform had measured it, so an export read
+    "composed in-house by <anything>" over text the platform never composed. The origin is still shown,
+    as what it is: the caller's declaration, which nothing here verified.
+    """
+    inner = _provenance_phrase_resolved(d)
+    prov = d.get("ai_provenance") or {}
+    if prov.get("served_by") == "verbatim-ingest" and prov.get("source_served_by") not in (None, "", {}, []):
+        return ("supplied verbatim by the caller, who declared its origin as: " + inner +
+                " - the platform did not compose this text here and has not verified that origin")
+    return inner
+
+
+def _provenance_phrase_resolved(d: Dict[str, Any]) -> str:
     """W490 (sweep S3.12, C7) — WHAT COMPOSED THIS FILE, in the words the browser exports already use.
 
     Every server-rendered export credited the platform's own AI fabric, naming the served_by token in

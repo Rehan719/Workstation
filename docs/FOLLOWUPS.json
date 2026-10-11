@@ -14452,11 +14452,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.38",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W666",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v16 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A verbatim ingest with no sections given is recorded not assessable, with the reason that its sections were read from its own headings; a structure the caller declares is still measured. NOT DONE: the regenerate path's comparison against a floor version is its own tier-2 row."
     },
     {
       "id": "FU-749",
@@ -14470,11 +14473,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.38",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W666",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v16 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A verbatim ingest's declared origin is exported as the caller's declaration, not verified; an ingest that declares none is unchanged. NOT DONE: the declared origin still decides whether the gate runs."
     },
     {
       "id": "FU-750",
@@ -14748,11 +14754,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.38",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W666",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v16 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "No dispute is adjudicated at import, so the list holds only what was filed; a match is reported as a keyword match with a basis saying no council exists and nothing enforces a ruling. NOT DONE: the override route still takes no principal (authentication is off) and the router stays mounted."
     },
     {
       "id": "FU-766",
@@ -14766,11 +14775,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.38",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W666",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v16 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The CTO route names no provider and says the provider is not checked there, pointing at the route that measures what serves."
     },
     {
       "id": "FU-767",
@@ -14898,11 +14910,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.38",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W666",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v16 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The outcome row's mark is read from the quality gate: a tick only for a gate pass, a cross for a gate fail or no output, a dash for output nothing assessed, each titled with its basis. The summary names as top only a resource that produced output, or none."
     },
     {
       "id": "FU-774",
@@ -15059,11 +15074,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.38",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W666",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v16 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Start sets the flag the stopped loop re-reads after its sleep, so a Start after a Stop resumes that loop instead of doing nothing; the route's status word is read from the flag and says 'not started' with a basis when the flag is clear. NOT DONE: stop and start are still not written to the event graph."
     },
     {
       "id": "FU-783",
@@ -15078,11 +15096,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.38",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W666",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v16 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "An authority resolves only as a whole provision the ontology lists or as the whole title of a statute one of them belongs to; the basis says which and lists what the corpus holds. A single letter, a fragment and a file-name fragment are refused. The path manifest is no longer searched."
     },
     {
       "id": "FU-784",
@@ -15097,11 +15118,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.38",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W666",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v16 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The catalogue's QEP entry is rewritten from the tree: analytics moved to declared and not built, the sentence denying the memorisation and tafsir modules removed, no paid tier shown. A guard fails when the analytics endpoint becomes implemented, so the entry is revisited then."
     },
     {
       "id": "FU-785",
@@ -15174,11 +15198,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.38",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W666",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v16 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The Domains card and the tool bridge no longer say every enterprise runs itself; both say it is run by the heartbeat levers the person turns on. They still do not READ the levers."
     },
     {
       "id": "FU-789",
@@ -15193,11 +15220,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.38",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W666",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v16 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Start sets the flag the stopped loop re-reads after its sleep, so a Start after a Stop resumes that loop instead of doing nothing; the route's status word is read from the flag and says 'not started' with a basis when the flag is clear. NOT DONE: stop and start are still not written to the event graph."
     },
     {
       "id": "FU-790",
@@ -15212,11 +15242,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.38",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W666",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v16 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The epoch report returns no report and says none is produced; the fixed figures are gone. The engine class that held them is no longer imported by the route."
     },
     {
       "id": "FU-791",
@@ -15269,11 +15302,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.38",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W666",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v16 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The two fixed lists are removed; the API returns empty lists with the reason and points at the maintained plan's state, and the page shows that reason instead of drawing a list."
     },
     {
       "id": "FU-794",
@@ -15463,6 +15499,149 @@
       "closed_by": null,
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region on the M3 item",
+      "tier": 3
+    },
+    {
+      "id": "FU-805",
+      "title": "DECIDE: should a pasted text measured only against its own headings be certified at all",
+      "why": "Ledger v16 found a pasted deliverable certified as passing against a structure read off its own headings. The first plan item's ACCEPT, kept since W449, has a person's own document measured and passed exactly this way, and two tests hold it. W666 therefore did NOT change the verdict: the record now states that the structure is the text's own and that its coverage is 1.0 by construction, which is all that was done. The closing note on the ledger row says the record is 'not assessable'; that is what the first cut did and it was withdrawn in the same round - this row is the correction. Choices: (a) keep certifying, with the statement now added; (b) record such a text as not assessable unless the caller declares a structure, and change the earlier ACCEPT and its two tests; (c) measure it against the deliverable type's own declared sections instead.",
+      "source": "W666 (ledger v16 R1.0, in conflict with the first plan item's ACCEPT)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/api/deliverables.py"
+      ],
+      "severity": "medium",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 1
+    },
+    {
+      "id": "FU-806",
+      "title": "Nothing compares candidate first offers or prepares the interviews that would test one",
+      "why": "At least three candidate workflows across Law, Employment and Career, and Education, compared on stated criteria with the evidence for each cell or NOT MEASURED; one leading hypothesis and what would refute it; an unsuitable-customer list; an interview guide, willingness-to-pay questions that do not lead, and a notes template. Written only after one tenant's journey has been driven and read back.",
+      "source": "W666 (four external commercialisation prompts verified, 2026-10-11)",
+      "found": "2026-10-11",
+      "files": [
+        "docs/FABLE_DELIVERY_PROMPT.md"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.7",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner asked on 2026-10-11 that this work be added to the plan; it is the item chartered for it",
+      "tier": 3
+    },
+    {
+      "id": "FU-807",
+      "title": "No cost model separates a quoted cost from a sourced one, an assumed one and an unmeasured one",
+      "why": "Lean, base and higher-assurance scenarios; every figure with currency, period, source and date or the word ASSUMED; the founder's time separate; unit-economics formulas with no values until something measures them; the seven investment gates and which is evidenced today. No promise of a zero bill.",
+      "source": "W666 (four external commercialisation prompts verified, 2026-10-11)",
+      "found": "2026-10-11",
+      "files": [
+        "docs/FABLE_DELIVERY_PROMPT.md"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.7",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner asked on 2026-10-11 that this work be added to the plan; it is the item chartered for it",
+      "tier": 3
+    },
+    {
+      "id": "FU-808",
+      "title": "No candidate name for the business has been searched anywhere",
+      "why": "Five working names exist as suggestions only. For each: what was searched, where and when (company register, trade mark register, web, domains), or NOT CHECKED. Also an inventory of what the Owner holds and a register of each public claim with its evidence. A search is not legal clearance and says so.",
+      "source": "W666 (four external commercialisation prompts verified, 2026-10-11)",
+      "found": "2026-10-11",
+      "files": [
+        "docs/FABLE_DELIVERY_PROMPT.md"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.7",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner asked on 2026-10-11 that this work be added to the plan; it is the item chartered for it",
+      "tier": 3
+    },
+    {
+      "id": "FU-809",
+      "title": "No public-facing sentence about the product has been drafted against its evidence",
+      "why": "Landing copy, a capability sheet, a deck outline, a demonstration script on invented data, questions and answers, and outreach templates - each headed DRAFT - NOT APPROVED FOR PUBLICATION, each claim traced to what shows it. Built from the first offer, not from the whole vision. Nothing is published.",
+      "source": "W666 (four external commercialisation prompts verified, 2026-10-11)",
+      "found": "2026-10-11",
+      "files": [
+        "docs/FABLE_DELIVERY_PROMPT.md"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.7",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner asked on 2026-10-11 that this work be added to the plan; it is the item chartered for it",
+      "tier": 3
+    },
+    {
+      "id": "FU-810",
+      "title": "The routes to public business support and to partners have not been read from their own pages",
+      "why": "Innovate UK Business Growth, the UK Business Support Service and the organisation whose short course the Owner attended: what each currently offers and requires, read from its own page and dated, or NOT CHECKED. Draft messages only; none implies a relationship, an endorsement or an entitlement.",
+      "source": "W666 (four external commercialisation prompts verified, 2026-10-11)",
+      "found": "2026-10-11",
+      "files": [
+        "docs/FABLE_DELIVERY_PROMPT.md"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.7",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner asked on 2026-10-11 that this work be added to the plan; it is the item chartered for it",
+      "tier": 3
+    },
+    {
+      "id": "FU-811",
+      "title": "No workpack sets out the legal routes for the business or what a registration would ask for",
+      "why": "The routes compared and none chosen: staying unincorporated during discovery, a company limited by shares, a community interest company, and a charitable or waqf-oriented arrangement as a later structure needing qualified advice. A worksheet of placeholders holding no personal detail; official sources with the date read; the questions for an accountant and a solicitor. Nothing is filed.",
+      "source": "W666 (four external commercialisation prompts verified, 2026-10-11)",
+      "found": "2026-10-11",
+      "files": [
+        "docs/FABLE_DELIVERY_PROMPT.md"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.7",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner asked on 2026-10-11 that this work be added to the plan; it is the item chartered for it",
+      "tier": 3
+    },
+    {
+      "id": "FU-812",
+      "title": "No brief scopes the outside help a production deployment would need",
+      "why": "A production-hardening brief in separable parts - review, reproducible deployment, secrets and access, dependencies, backup and restore demonstrated, monitoring and incident response, limits, privacy and retention, rollback and shutdown, handover - each with the evidence that would show it done, and the criteria for choosing who does it. No supplier is named without being checked.",
+      "source": "W666 (four external commercialisation prompts verified, 2026-10-11)",
+      "found": "2026-10-11",
+      "files": [
+        "docs/FABLE_DELIVERY_PROMPT.md"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.7",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner asked on 2026-10-11 that this work be added to the plan; it is the item chartered for it",
       "tier": 3
     }
   ],

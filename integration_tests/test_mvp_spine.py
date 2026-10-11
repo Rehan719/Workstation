@@ -52168,3 +52168,143 @@ def test_w664_an_audit_run_can_be_pointed_and_the_ledger_says_whether_it_went(cl
     assert _wf.count("directed: DIRECTED") == 2, ("a region of the record does not say what the run was pointed at",
                                                   _wf.count("directed: DIRECTED"))
     assert "${UNEX_ROUTES.join(" in _wf and "A.unexercised" in _wf, "the workflow does not read the list it is given"
+
+
+def test_w666_a_start_that_did_not_start_says_so_and_a_route_asserts_only_what_it_read(client, monkeypatch):
+    """W666 - ledger v16 tier-1, first batch: eleven statements a reached surface made that were not true."""
+    import pathlib as _pl
+    _root = _pl.Path(__file__).resolve().parents[1]
+    _src = _root / "apps" / "workstation-superapp" / "src"
+
+    # -- 1. HEARTBEAT: Start after Stop resumes the loop that is still asleep, and the route reads the flag --
+    import agentic_core.organism.heartbeat as _hbm
+    _hb = _hbm.heartbeat
+
+    class _Alive:
+        def done(self):
+            return False
+    _task0, _run0 = _hb._task, _hb.running
+    try:
+        _hb._task = _Alive()
+        _hb.running = False
+        _hb.start()
+        assert _hb.running is True, "start() with the stopped loop still alive left the heartbeat stopped"
+        _hb.running = False
+        monkeypatch.setattr(_hb, "start", lambda: None)
+        _r = client.post("/api/v1/heartbeat/start").json()
+        assert _r["running"] is False and _r["status"] != "started", ("a start that did not start answers started", _r)
+        assert "still clear" in _r["status_basis"], _r
+        monkeypatch.undo()
+        _hb.running = True
+        monkeypatch.setattr(_hb, "start", lambda: None)
+        _r2 = client.post("/api/v1/heartbeat/start").json()
+        assert _r2["running"] is True and _r2["status"] == "started", ("a running heartbeat no longer answers started", _r2)
+        monkeypatch.undo()
+    finally:
+        _hb._task, _hb.running = _task0, _run0
+
+    # -- 2. COUNCIL: nothing is adjudicated at import, and a match is called a match -------------------
+    import agentic_core.api.council_judiciary as _cj
+    _saved = dict(_cj._rulings)
+    try:
+        _cj._rulings.clear()
+        assert client.get("/api/council/judge/rulings").json() == [], "rulings exist that nobody filed"
+        assert not hasattr(_cj, "_seed_initial_rulings"), "the import-time seeding is back"
+        _d = client.post("/api/council/judge/disputes", json={
+            "description": "A learner asked whether their quota of free data lessons could be shared"}).json()
+        assert "enalty applied" not in _d["decision"], ("a keyword match is reported as a penalty applied", _d)
+        assert "No penalty is applied" in _d["decision"] or "Nothing was adjudicated" in _d["decision"], _d
+        assert "no council exists" in _d["basis"], _d
+    finally:
+        _cj._rulings.clear()
+        _cj._rulings.update(_saved)
+
+    # -- 3. THE FUND REPORT: no figure is returned that nothing computed -------------------------------
+    _ep = client.get("/api/v310/fund/epoch-synthesis").json()
+    assert _ep.get("report") is None and "total_economic_volume" not in _ep and "narrative" not in _ep, _ep
+    assert "No epoch report" in _ep["detail"], _ep
+    assert client.get("/api/v1/economy/status").status_code == 200, "the route the detail points at does not answer"
+
+    # -- 4. THE CTO ROUTE names no provider it did not check -------------------------------------------
+    _cto = client.get("/api/csuite/cto/infrastructure").json()
+    assert _cto["ai_provider"] is None and _cto["ai_provider_status"].startswith("not_checked"), _cto
+    assert client.get("/api/v1/native-ai/status").status_code == 200
+
+    # -- 5. THE TRANSFORMATION PLAN returns no fixed list as a derived one ------------------------------
+    _tp = client.get("/api/v1/transformation").json()["transformation_plan"]
+    assert _tp["short_term"] == [] and _tp["long_term"] == [], ("a fixed list is returned as the plan", _tp)
+    assert "/api/v1/plan/state" in _tp["plan_lists_basis"], _tp
+    assert client.get("/api/v1/plan/state").status_code == 200
+    _td = (_src / "pages" / "TransformationDashboard.tsx").read_text(encoding="utf-8")
+    assert 'data-testid="plan-lists-basis"' in _td and "plan_lists_basis ||" in _td, (
+        "the page does not show why no list is drawn")
+
+    # -- 6. THE CATALOGUE's QEP entry is written from the tree ------------------------------------------
+    _prods = client.get("/api/v1/catalog/products").json()
+    _flat = _prods if isinstance(_prods, list) else (_prods.get("products") or _prods)
+    _q = (_flat.get("qep-sdk") if isinstance(_flat, dict) else
+          next(p for p in _flat if p.get("id") == "qep-sdk" or p.get("name") == "QEP-as-a-Service SDK"))
+    assert not any("analytics" in f.lower() for f in _q["features"]), ("analytics listed as a feature", _q["features"])
+    assert any("analytics" in f.lower() for f in _q["features_declared_not_built"]), _q
+    assert "no hifz" not in _q["features_basis"] and "vision document" not in _q["features_basis"], _q["features_basis"]
+    assert "Pro" not in str(_q.get("tier")), ("a paid tier is shown for a platform ruled free", _q.get("tier"))
+    _an = client.get("/api/qep/analytics/overview")
+    assert "not implemented" in _an.text.lower(), "the analytics endpoint is implemented now - move it back to features"
+
+    # -- 7. LAW: an authority resolves by its whole name, never by a fragment --------------------------
+    from agentic_core.legal.specialist import resolve_authority as _ra
+    for _frag in ("e", "Act", "Equality", "Act 2010", "mock_apk", "Equality Act 2010 Section 999", "Section 13"):
+        assert _ra(_frag)["resolved"] is False, ("a fragment resolved as an authority", _frag, _ra(_frag))
+    _st = _ra("equality act 2010")
+    assert _st["resolved"] is True and _st["matched"] == "statute" and "and no others" in _st["basis"], _st
+    _pv = _ra("Equality Act 2010 Section 13")
+    assert _pv["resolved"] is True and _pv["matched"] == "provision", _pv
+
+    # -- 8. DELIVERABLES: headings read off the measured text are not a declared structure -------------
+    _body = "## Notes\n" + ("words that say nothing at all about anything. " * 12)
+    _p = client.post("/api/v1/deliverables/produce", json={"type": "report", "brief": "A full market report",
+                                                           "content": _body, "source_served_by": "anything-i-type"})
+    assert _p.status_code == 200, _p.text
+    _dv = _p.json().get("deliverable") or _p.json()
+    _qa = _dv.get("quality_assurance") or {}
+    _q8 = _qa.get("quality") or {}
+    assert "own headings" in (_q8.get("structure_basis") or ""), ("the record does not say the structure is the text's own", _q8)
+    assert "1.0 by construction" in _q8["delivery_coverage_basis"], _q8["delivery_coverage_basis"]
+    #     a structure the caller DECLARED is still measured - the strong statement stays true where it is true
+    _p2 = client.post("/api/v1/deliverables/produce", json={
+        "type": "report", "brief": "A full market report", "sections": ["Notes", "Market Size"],
+        "content": _body, "source_served_by": "anything-i-type"}).json()
+    _qa2 = (_p2.get("deliverable") or _p2).get("quality_assurance") or {}
+    assert not (_qa2.get("quality") or {}).get("structure_basis"), ("a declared structure is treated as self-derived", _qa2)
+    assert "by construction" not in (_qa2.get("quality") or {}).get("delivery_coverage_basis", ""), _qa2
+    #     and a declared origin is exported as a declaration
+    _md = client.get(f"/api/v1/deliverables/{_dv['id']}/export?format=md").text
+    assert "who declared its origin as" in _md and "has not verified that origin" in _md, _md[:400]
+    _line = next(l for l in _md.splitlines() if "anything-i-type" in l)
+    assert not _line.strip("_ ").split(" · ", 1)[-1].startswith("composed in-house"), _line
+    _p3 = client.post("/api/v1/deliverables/produce", json={"type": "report", "brief": "b", "content": _body}).json()
+    _md3 = client.get(f"/api/v1/deliverables/{(_p3.get('deliverable') or _p3)['id']}/export?format=md").text
+    assert "records no origin for it" in _md3 and "who declared" not in _md3, _md3[:400]
+
+    # -- 9. OPERATIONS: a run nothing assessed is not ticked, and "top" is a resource that produced ------
+    _ops = (_src / "pages" / "OperationalExcellence.tsx").read_text(encoding="utf-8")
+    _mark = _ops[_ops.index("{outcomes.map(o => ("):]
+    _mark = _mark[:_mark.index("{o.resource}")]
+    assert "o.quality_gate === true" in _mark and "o.success ?" not in _mark, (
+        "the outcome row's tick is read from a field that only means output was returned")
+    import agentic_core.api.operational_excellence as _oe
+    monkeypatch.setattr(_oe, "_load", lambda: [
+        {"resource": "/failing", "kind": "route_failure", "success": False, "produced": False},
+        {"resource": "/failing", "kind": "route_failure", "success": False, "produced": False},
+        {"resource": "/working", "kind": "tool", "success": True, "produced": True}])
+    assert client.get("/api/v1/operations/summary").json()["top_resource"] == "/working"
+    monkeypatch.setattr(_oe, "_load", lambda: [
+        {"resource": "/failing", "kind": "route_failure", "success": False, "produced": False}])
+    assert client.get("/api/v1/operations/summary").json()["top_resource"] is None, "a resource that never produced is top"
+
+    # -- 10. THE TWO SENTENCES that said every enterprise runs itself ----------------------------------
+    for _f in ("pages/domains/DomainsHub.tsx", "components/DomainTool.tsx"):
+        _t = (_src / _f).read_text(encoding="utf-8")
+        _code = "\n".join(l for l in _t.splitlines() if not l.strip().startswith(("//", "{/*", "*")))
+        assert "self" + "-running" not in _code, (_f, "says an enterprise runs itself without reading the levers")
+        assert "heartbeat levers you turn on" in _code, _f

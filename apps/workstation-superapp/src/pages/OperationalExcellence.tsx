@@ -265,7 +265,12 @@ export const OperationalExcellence: React.FC = () => {
         <div className="space-y-1.5">
           {outcomes.map(o => (
             <div key={o.id} className="flex items-center gap-2 text-[10px] p-2 rounded-lg bg-slate-950 border border-slate-900">
-              {o.success ? <CheckCircle2 size={11} className="text-emerald-400" /> : <span className="text-vital">✕</span>}
+              {/* W666 (ledger v16 R4.1) - the mark is read from the quality gate; a run nothing assessed is not ticked */}
+              {o.quality_gate === true
+                ? <span data-testid="outcome-mark" title={o.success_basis || 'passed the quality gate'}><CheckCircle2 size={11} className="text-emerald-400" /></span>
+                : o.quality_gate === false || !(o.produced ?? o.success)
+                  ? <span data-testid="outcome-mark" className="text-vital" title={o.success_basis || 'did not pass'}>✕</span>
+                  : <span data-testid="outcome-mark" className="text-slate-500" title={o.success_basis || 'produced output; nothing assessed it'}>–</span>}
               <span className="font-bold text-white">{o.resource}</span>
               <span className="text-slate-600 uppercase">{o.kind}</span>
               {(() => { const b = provenanceBadge(o.served_by, o.is_external); return <span className={`ml-auto text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}

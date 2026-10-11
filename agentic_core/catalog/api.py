@@ -74,20 +74,22 @@ CATALOG_OVERRIDES: Dict[str, Dict[str, Any]] = {
         "features": ["Constitutional Compliance Checking", "C-Suite Coordination", "Quad-Engine Bridge"],
     },
     "qep-sdk": {
-        # §14 (W496, FU-114) - the Quran Education Platform is a VISION DOCUMENT
-        # (docs/QURAN_EDUCATION_PLATFORM_VISION.md), not a built product: there is no hifz, tafsir or
-        # recitation module in the live tree. Two of the three features named here are reachable only
-        # through qep_analytics; scholarly trust scoring is not this product's.
+        #  W666 (ledger v16 R5.1) - this entry was written in W496, before the Quran Education Platform
+        #  was built, and still said it had no memorisation or tafsir module while listing as a feature
+        #  the analytics endpoints that themselves answer "not implemented". It is rewritten from the
+        #  tree: what is listed is served, the analytics are named as not built, and no paid tier is
+        #  shown because the Owner ruled the platform free at the point of use.
         "name": "QEP-as-a-Service SDK",
-        "tier": "Standard/Pro/Enterprise",
+        "tier": "Domain",
         "category": "Domain (Quran Education Platform)",
-        "features": ["Quranic-studies analytics endpoints (qep_analytics)",
-                     "Quiz generation via the education surface"],
-        "features_declared_not_built": ["Scholarly Annotation Trust Scoring"],
-        "features_basis": ("the platform's Quran surfaces are analytics endpoints; the Quran Education "
-                           "Platform itself is a vision document with no hifz, tafsir or recitation "
-                           "module in the live tree, and Quranic text is only ever RETRIEVED from an "
-                           "authorised source, never generated"),
+        "features": ["Qur'an text retrieved from a named source, never generated",
+                     "Memorisation review scheduling"],
+        "features_declared_not_built": ["Quranic-studies analytics endpoints",
+                                        "Scholarly Annotation Trust Scoring"],
+        "features_basis": ("no SDK package is published: the features listed are served by this "
+                           "platform's own Quran Education routes (their state is at /api/v1/qep/status), "
+                           "the analytics endpoints answer that they are not implemented, and the "
+                           "platform is free at the point of use, so no paid tier is offered"),
     },
     "signature-product-suite": {
         "name": "Signature Product Suite",

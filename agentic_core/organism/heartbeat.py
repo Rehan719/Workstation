@@ -1113,6 +1113,11 @@ class OrganismHeartbeat:
 
     def start(self) -> None:
         if self._task and not self._task.done():
+            #  W666 (ledger v16 R6.0, R4.10) - stop() only clears the flag; the loop it stopped is still
+            #  inside its sleep (200 s in a rest phase) and exits when it wakes. Returning here without
+            #  setting the flag back made Start a no-op for that long, while the route answered that it
+            #  had started. The loop re-reads the flag after its sleep, so setting it resumes that loop.
+            self.running = True
             return
         self.running = True
         try:            # W506 (P2.7(2)) - the arcs go on the bus before the rhythm does, so a burst in the

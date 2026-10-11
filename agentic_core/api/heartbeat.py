@@ -47,7 +47,11 @@ async def beat():
 @router.post("/start")
 async def start():
     _hb_mod.heartbeat.start()
-    return {"running": _hb_mod.heartbeat.running, "status": "started"}
+    #  W666 (ledger v16 R6.0) - the status word is read from the flag, never written beside it.
+    _running = bool(_hb_mod.heartbeat.running)
+    return {"running": _running, "status": "started" if _running else "not started",
+            "status_basis": ("the heartbeat's running flag is set" if _running else
+                             "start was called and the heartbeat's running flag is still clear")}
 
 
 @router.post("/stop")
