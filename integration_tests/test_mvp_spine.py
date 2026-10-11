@@ -42068,7 +42068,10 @@ def test_w593_p220_the_qep_flagship_service_reports_only_what_it_holds():
     assert len(_descs440) >= 13, ("the card array stopped parsing, so this leg measures nothing",
                                   sorted(_descs440))
     # W613 (FU-476) — "Not offered, by ruling" is a state too: a ratified boundary, not a backlog item
-    _MARKERS440 = ("Planned:", "LIVE", "NOT measured", "are real", "is recorded", "No cohort", "Not offered, by ruling")
+    #  W663 - "Not built (" joins the convention: four cards added for feature areas the roadmap omitted say
+    #  exactly that, and it is a disclosure of state like the others
+    _MARKERS440 = ("Planned:", "LIVE", "NOT measured", "are real", "is recorded", "No cohort", "Not offered, by ruling",
+                   "Not built (")
     _bare440 = {k: v[:70] for k, v in _descs440.items()
                 if not any(m in v for m in _MARKERS440)}
     assert not _bare440, (
@@ -51949,3 +51952,120 @@ def test_w662_a_control_is_named_for_what_it_opens_and_composed_text_is_not_call
     assert "axios.post('/api/v1/law/analyse'" not in _lh, "a hand-built form still posts to the analyser"
     assert "name: 'document_text'" in _lh[_k:_k + 900] and "name: 'analysis_focus'" in _lh[_k:_k + 900], (
         "the component does not send the two fields the route reads")
+
+
+def test_w663_a_screen_failed_entity_reads_as_held_a_gate_is_decidable_after_reload_and_the_roadmap_is_whole(client, monkeypatch):
+    """Ledger v15, three rows.
+
+    FU-690  An entity whose section-11 screen failed has its economy held and its ship refused, and its STATUS
+            said none of that: the Studio wrote 'active' and every other door derived "body pending". THE
+            INVARIANT: at every door, an entity whose latest screen failed reads "held - screen failed" with
+            the frameworks; a clean one does not; an unreadable history is not a hold; and the status follows
+            the latest screen, so it clears when the screen no longer fails.
+    FU-704  A pending review gate could be decided only in the session that established the entity. The
+            Cockpit lists the selected entity's gates and decides them (source legs; the routes are driven).
+    FU-694  The QEP roadmap was four feature areas shorter than Appendix A's register.
+    """
+    import json, re
+    import pathlib as _pl
+    from agentic_core.api import vsb as _vm
+    from agentic_core.api.compliance import screen_compliance
+    from agentic_core.economy import living_vsbs as _lv
+
+    _bad = next((t for t in ("An online casino with interest-bearing loans for members",
+                             "A lending desk built on riba with casino gambling revenue")
+                 if screen_compliance(t)["overall"] == "fail"), None)
+    assert _bad, "no candidate subject is refused by the screen, so every leg below would be vacuous"
+    _clean = "A village bakery cooperative selling bread to the local primary school"
+
+    def _entity(_id):
+        _e = client.get(f"/api/v1/vsb/{_id}")
+        assert _e.status_code == 200, _e.text[:200]
+        return _e.json()
+
+    def _spawn(challenge, name):
+        _r = client.post("/api/v1/vsb/spawn", json={"challenge": challenge, "name": name, "domain": "commerce"})
+        assert _r.status_code == 200, _r.text[:300]
+        return re.findall(r"vsb-[0-9a-f]{10}", _r.text)[0]
+
+    # (a) THE SPAWN DOOR
+    _vid = _spawn(_bad, "W663 Held Probe")
+    _e = _entity(_vid)
+    assert _e.get("status") == _vm.SCREEN_HELD_STATUS, ("a screen-failed entity does not read as held", _e.get("status"))
+    assert "FAILED" in str(_e.get("status_basis")) and "economy is held" in str(_e.get("status_basis")), _e.get("status_basis")
+    _cid = _spawn(_clean, "W663 Clean Probe")
+    assert _entity(_cid).get("status") != _vm.SCREEN_HELD_STATUS, "a clean entity reads as held"
+
+    # (b) THE STUDIO DOOR: no literal survives a failed screen, and the answer says so
+    _sr = client.post("/api/v1/studio/vsb/spawn", json={"project_id": "w663-project", "challenge": _bad,
+                                                         "solution_name": "W663 Studio Probe", "domain": "commerce"})
+    assert _sr.status_code == 200, (_sr.status_code, _sr.text[:300])
+    _sj = _sr.json()
+    assert _sj.get("entity_status") == _vm.SCREEN_HELD_STATUS and _sj.get("first_screen") == "fail", (
+        "the Studio's answer does not say its entity is held for a failed screen",
+        {k: _sj.get(k) for k in ("status", "entity_status", "first_screen")})
+    _sid = (re.findall(r"vsb-[0-9a-f]{8,10}", json.dumps(_sj)) or [None])[0]
+    assert _sid and _entity(_sid).get("status") == _vm.SCREEN_HELD_STATUS, "the Studio's stored entity still reads active"
+
+    # (c) GENESIS derives after its first screen
+    _g = client.post("/api/v1/genesis/establish", json={"problem": _bad, "domain": "enterprise",
+                                                        "name": "W663 Genesis Probe", "ship_output": False})
+    assert _g.status_code == 200, (_g.status_code, _g.text[:300])
+    _gid = _g.json()["vsb_id"]
+    assert (_lv._history().get(_gid) or {}).get("overall") == "fail", "the Genesis probe's screen did not fail"
+    assert _entity(_gid).get("status") == _vm.SCREEN_HELD_STATUS, (
+        "an entity established from a refused subject does not read as held", _entity(_gid).get("status"))
+
+    # (d) THE STATUS FOLLOWS THE LATEST SCREEN, and an unreadable history is not a hold
+    _rec = dict(_entity(_vid))
+    monkeypatch.setattr(_lv, "_history", lambda: {_vid: {"overall": "review", "verdicts": []}})
+    assert _vm._derived_status(_rec)[0] != _vm.SCREEN_HELD_STATUS, "the status stays held after the screen stops failing"
+
+    def _unreadable():
+        raise RuntimeError("driven: the history cannot be read")
+    monkeypatch.setattr(_lv, "_history", _unreadable)
+    assert _vm._screen_hold(_rec) == "unknown" and _vm._derived_status(_rec)[0] != _vm.SCREEN_HELD_STATUS, (
+        "an entity is called held on a history nobody could read")
+    monkeypatch.undo()
+    #  the phrase is the status's OWN words. (A blind removed the entry and the first version of this leg stayed
+    #  green: the fallback phrase quotes the status value, so looking for the value proved nothing.)
+    _ph = _vm._autonomy_phrase({"status": _vm.SCREEN_HELD_STATUS})
+    assert "compliance screen failed" in _ph and "not yet operating on its own" not in _ph, (
+        "the entity's operating phrase has no words for this status and falls back to the generic one", _ph)
+
+    # (e) FU-704: the gate routes the Cockpit calls, and the Cockpit's control
+    assert client.post(f"/api/v1/vsb/{_cid}/review-gates", json={"stages": ["design"]}).status_code == 200
+    _gs = client.get(f"/api/v1/vsb/{_cid}/review-gates").json()
+    _d = next(s for s in _gs["statuses"] if s["stage"] == "design")
+    assert _d["gated"] is True and _d["blocks_progress"] is True, _d
+    _dec = client.post(f"/api/v1/vsb/{_cid}/review-gates/design/decision", json={"decision": "approve"})
+    assert _dec.status_code == 200 and _dec.json().get("entity_status"), _dec.text[:200]
+    _d2 = next(s for s in client.get(f"/api/v1/vsb/{_cid}/review-gates").json()["statuses"] if s["stage"] == "design")
+    assert _d2["blocks_progress"] is False and (_d2.get("decision") or {}).get("decided_by"), _d2
+    _src = _pl.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    _ck = _code_only((_src / "pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8"))
+    _i = _ck.find('data-testid="cockpit-review-gates"')
+    assert _i > 0, "the Cockpit has no review-gate control"
+    assert "gates.statuses.some(" in _ck[_i - 260:_i], "the control is not shown from the entity's own gates"
+    assert "/review-gates`" in _ck and "/review-gates/${stage}/decision`" in _ck, "the Cockpit does not call the gate routes"
+    #  and a decision is tied to the entity it was issued for (the W503 pattern; an older guard caught the
+    #  first version of this control reading the selected entity after its await)
+    _dg = _ck[_ck.find("const decideGate = async"):][:900]
+    assert "const issuedFor = selected;" in _dg and "issuedFor !== selectedRef.current" in _dg, (
+        "a gate decision's answer can land on another entity's screen")
+    _j = _ck.find('data-testid="cockpit-gate-approve"')
+    assert _j > 0 and "g.blocks_progress && (" in _ck[_j - 320:_j], "Approve is not offered exactly where a gate blocks"
+    assert "d.clear_by" in _ck, "a gate refusal still drops the server's own instruction"
+    assert "String(detail.status).startsWith('held')" in _ck, "the badge has no colour for a screen-held entity"
+
+    # (f) FU-694: the roadmap carries the four areas, each as not built
+    _rm = _code_only((_src / "components/QEPFlagshipFeatures.tsx").read_text(encoding="utf-8"))
+    for _id, _needle in (("roles", "feature 1"), ("live_sessions", "feature 8"), ("admin_parent", "feature 15"),
+                         ("guidance", "A.7")):
+        _k = _rm.find("id: '" + _id + "'")
+        assert _k > 0, (_id, "the roadmap has no card for this feature area")
+        _card = _rm[_k:_k + 620]
+        assert "Not built" in _card and _needle in _card, (_id, _card[:200])
+    _gc = _rm[_rm.find("id: 'guidance'"):][:700]
+    assert "A.12.3" in _gc and "A.9.5" in _gc, "the guidance card does not name the rulings that govern it"
+    assert "Guided playlists are fixed syllabus content" not in _rm, "a card still says playlists exist"

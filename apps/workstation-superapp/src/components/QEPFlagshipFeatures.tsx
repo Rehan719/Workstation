@@ -35,7 +35,7 @@ export const QEPFlagshipFeatures: React.FC = () => {
     { id: 'memorization', name: 'Memorization Suite', icon: Book, color: 'text-highlight', kind: 'live', desc: 'LIVE (W439): real SM-2 scheduling, reviews and progress — in the QEP studio above.' },
     { id: 'competitions', name: 'Competitions', icon: Trophy, color: 'text-aura', kind: 'live', desc: 'LIVE: the leaderboard in the QEP studio above ranks recorded XP, with its formula shown. Tournaments are not built, and a recitation contest never will be: recitation is never scored (A.9.1).' },
     { id: 'ar_vr', name: 'AI/AR Immersion', icon: Glasses, color: 'text-vital', desc: 'Planned: 360° history and Tajwīd overlays — no WebXR code and no scene asset exist yet.' },
-    { id: 'education', name: 'Learn-Teach', icon: GraduationCap, color: 'text-aura', desc: 'Guided playlists are fixed syllabus content. No cohort, session or retention data is recorded, so no student analytics are reported.' },
+    { id: 'education', name: 'Learn-Teach', icon: GraduationCap, color: 'text-aura', desc: 'Planned: guided playlists - none is reachable yet. No cohort, session or retention data is recorded, so no student analytics are reported.' },
     // W593 (FU-433, M1 R5.0) — this read 'Interface adjusts to age and emotion.' Appendix A.9.4
     // RATIFIES the opposite: adaptation follows an explicit SAVED PREFERENCE (the W428 profile),
     // never inferred affect, and reopening it needs an Owner ruling. The live mechanism is already
@@ -50,6 +50,13 @@ export const QEPFlagshipFeatures: React.FC = () => {
     { id: 'finance', name: 'Islamic Finance', icon: CreditCard, color: 'text-aura', desc: 'Planned: zakat-eligible donations — no payment rails are enabled (Owner-gated).' },
     { id: 'assistant', name: 'AI Assistant', icon: MessageCircle, color: 'text-vital', desc: 'Planned: conversational guidance — no reasoning resource is wired here, so no answer is produced. A ruling belongs to a qualified scholar.' },
     { id: 'swarm', name: 'Swarm Learning', icon: Share2, color: 'text-aura', desc: 'Planned: AI-coordinated group pacing — not implemented; nothing writes a study swarm yet.' },
+    // W663 (FU-694, ledger v15) - the register on this page was four areas shorter than Appendix A's, and the
+    // header says the roadmap states each one's state. These four are not built; each card says so, and names
+    // the ruling that governs it where there is one.
+    { id: 'roles', name: 'Learner, Teacher, Parent and Admin Roles', icon: Users, color: 'text-highlight', desc: 'Not built (Appendix A.6, feature 1): there are no separate roles. Every learner in this studio is one local profile, and the studio says so.' },
+    { id: 'live_sessions', name: 'Live Sessions', icon: GraduationCap, color: 'text-vital', desc: 'Not built (Appendix A.6, feature 8): no live class, whiteboard or recording exists.' },
+    { id: 'admin_parent', name: 'Admin Console and Parental Insights', icon: LineChart, color: 'text-aura', desc: 'Not built (Appendix A.6, feature 15): no admin console and no report to a parent exists. Nothing about a child is collected for one.' },
+    { id: 'guidance', name: 'Personalised Guidance (four pillars)', icon: MessageCircle, color: 'text-highlight', desc: 'Not built (Appendix A.7): spiritual development, character, acts of worship, and rights and relationships. Guidance that draws on sacred text needs a named scholar\'s approval before a learner sees it (A.12.3), and no spiritual state is ever inferred or scored (A.9.5).' },
   ];
 
   // Ledger cluster 3 — this used to sleep 1.2s and render hardcoded mock results for all 13

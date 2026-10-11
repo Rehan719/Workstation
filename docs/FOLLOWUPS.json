@@ -13316,11 +13316,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.37",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W663",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v15 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "An entity whose latest section-11 screen failed reads 'held - screen failed' at every door, with the failed frameworks and what is refused: the status derivation reads the screen first, the shared enrichment applies it from the screen it has just run (so the Studio's literal 'active' does not survive), and Genesis derives again after its own first screen. The Studio's two answers carry the entity's status, its basis and the screen's verdict. A NEW status value, not a second meaning for 'held'. An unreadable history is not a hold. The status follows the latest screen."
     },
     {
       "id": "FU-691",
@@ -13393,11 +13396,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.37",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W663",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v15 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The QEP roadmap has a card for each of the four feature areas it omitted - roles, live sessions, the admin console and parental insights, and the four guidance pillars - each saying it is not built and naming the ruling that governs it. The card that said playlists exist says none is reachable. Nothing was built."
     },
     {
       "id": "FU-695",
@@ -13582,11 +13588,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.37",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W663",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v15 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The Cockpit, which opens any entity, lists the selected entity's review gates and offers Approve and Reject on each gate that blocks; a decided gate shows who decided it; a gate refusal shows the server's own instruction. NOT DONE: gates still cannot be SET from the Cockpit or at establishment through the page - they are decided here, and set on the Genesis page or by the API."
     },
     {
       "id": "FU-705",

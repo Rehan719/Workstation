@@ -1553,6 +1553,12 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
         birth_vitals["first_screen"] = screen_living_vsb(vsb_id)
     except Exception as exc:
         birth_vitals["first_screen"] = {"error": str(exc)[:160]}
+    #  W663 (FU-690) - the status was derived above, BEFORE this screen existed. Derived again now, so an
+    #  entity born from a subject the screen fails says it is held, in its record and in this answer.
+    try:
+        vsb_mod._save_vsb(vsb_mod._rederive(entity))
+    except Exception:                              # noqa: BLE001 - the birth is not lost to a re-derive
+        pass
     try:
         from agentic_core.economy.living_vsbs import operate_vsb
         birth_vitals["first_cycle"] = operate_vsb(vsb_id, source="establishment")   # W656 (R2.5)
@@ -1752,6 +1758,11 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
                          f"§11 verdict: {_fs.get('overall', '?')}", _fs)
         except Exception as exc:
             birth_vitals["first_screen"] = {"error": str(exc)[:160]}
+        #  W663 (FU-690) - derived again now that the first screen exists (the streamed path, like the other)
+        try:
+            vsb_mod._save_vsb(vsb_mod._rederive(entity))
+        except Exception:                          # noqa: BLE001
+            pass
         try:
             from agentic_core.economy.living_vsbs import operate_vsb
             birth_vitals["first_cycle"] = operate_vsb(vsb_id, source="establishment")   # W656 (R2.5)
