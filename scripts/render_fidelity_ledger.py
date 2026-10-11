@@ -202,6 +202,27 @@ def standing_tier(f, v):
         return None
 
 
+def coverage(regions, census):
+    """W664 - what a run exercised against a census, as ONE function: the ledger's coverage table and
+    scripts/audit_unexercised.py (which points the next run) both call it, so the two cannot disagree about
+    what "not exercised" means. A route is exercised when an assessor listed its METHOD and template; a page
+    when an assessor listed the file of its top-level component."""
+    routes = sorted(set(census.get("routes") or []))
+    pages = [p for p in (census.get("pages") or []) if isinstance(p, dict) and p.get("component")]
+    claimed_r, claimed_f = set(), set()
+    for r in regions:
+        se = r.get("surfaces_exercised") or {}
+        claimed_r |= {str(x).strip() for x in (se.get("routes") or [])}
+        claimed_f |= {str(x).strip().replace(chr(92), "/") for x in (se.get("files") or [])}
+    stems = {f.rsplit("/", 1)[-1].rsplit(".", 1)[0] for f in claimed_f}
+    return {"routes_total": len(routes), "pages_total": len(pages),
+            "routes_exercised": [x for x in routes if x in claimed_r],
+            "routes_not_exercised": [x for x in routes if x not in claimed_r],
+            "routes_stray": sorted(claimed_r - set(routes)),
+            "pages_exercised": [p for p in pages if p["component"] in stems],
+            "pages_not_exercised": [p for p in pages if p["component"] not in stems]}
+
+
 def main(src, dst, head, date, port="8024", version="3", round_name="W446", census=None):
     regions = json.load(open(src, encoding="utf-8"))
     by_key = {r["region"]: r for r in regions}
@@ -505,17 +526,9 @@ def main(src, dst, head, date, port="8024", version="3", round_name="W446", cens
     if _census is not None:
         _routes = sorted(set(_census.get("routes") or []))
         _pages = [p for p in (_census.get("pages") or []) if isinstance(p, dict) and p.get("component")]
-        _claimed_r, _claimed_f = set(), set()
-        for _r in regions:
-            _se = _r.get("surfaces_exercised") or {}
-            _claimed_r |= {str(x).strip() for x in (_se.get("routes") or [])}
-            _claimed_f |= {str(x).strip().replace(chr(92), "/") for x in (_se.get("files") or [])}
-        _stems = {f.rsplit("/", 1)[-1].rsplit(".", 1)[0] for f in _claimed_f}
-        _hit_r = [x for x in _routes if x in _claimed_r]
-        _miss_r = [x for x in _routes if x not in _claimed_r]
-        _stray_r = sorted(_claimed_r - set(_routes))
-        _hit_p = [p for p in _pages if p["component"] in _stems]
-        _miss_p = [p for p in _pages if p["component"] not in _stems]
+        _cov = coverage(regions, _census)          # W664 - one function, shared with audit_unexercised.py
+        _hit_r, _miss_r, _stray_r = _cov["routes_exercised"], _cov["routes_not_exercised"], _cov["routes_stray"]
+        _hit_p, _miss_p = _cov["pages_exercised"], _cov["pages_not_exercised"]
         _unlisted = sum(int(r.get("unlisted_findings") or 0) for r in regions)
         w("## Coverage — what this run exercised, against a census computed from the tree")
         w("")
@@ -530,6 +543,23 @@ def main(src, dst, head, date, port="8024", version="3", round_name="W446", cens
           "refuters did not check it. A page counts as exercised only when an assessor named the file of its "
           "top-level component, so a page whose work is in child components can read as not exercised. A surface "
           "not exercised is NOT a clean surface.*")
+        w("")
+        #  W664 (Owner ruling 2026-10-10) - WAS THIS RUN POINTED, AND DID IT GO WHERE IT WAS POINTED? Computed
+        #  from the record: a run that was handed a direction and ignored it says so here.
+        _dir = next((r.get("directed") for r in regions if isinstance(r.get("directed"), dict)), None)
+        if _dir:
+            _dr = [str(x) for x in (_dir.get("routes") or [])]
+            _dp = [str(x) for x in (_dir.get("pages") or [])]
+            _got_r = [x for x in _dr if x in set(_hit_r)]
+            _got_p = [c for c in _dp if c in {p["component"] for p in _hit_p}]
+            _from = str(_dir.get("from") or "source not stated")
+            w(f"**This run was POINTED at what an earlier run did not exercise** ({_from}): "
+              f"{len(_dr)} API routes and {len(_dp)} pages. Of those it exercised "
+              f"**{len(_got_r)} routes and {len(_got_p)} pages**; the rest are in the lists below with every other "
+              f"surface this run did not reach. Being pointed is not being covered.")
+        else:
+            w("This run was NOT pointed at the surfaces an earlier run left unexercised: its assessors chose what "
+              "to exercise from their region briefs alone.")
         w("")
         if _stray_r:
             w(f"**Claimed but not in the census ({len(_stray_r)})** — not counted above; an assessor's path that "

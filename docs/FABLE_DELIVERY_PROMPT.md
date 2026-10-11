@@ -4644,6 +4644,16 @@ PHASE P2 — REACH AND DISCLOSURE (Tier 2; delivered_by: build; ESTIMATED ~9 rou
  P2.34 ✅ DONE W654 [CLOSED ON ACCEPT (6): rows closed W651; M1 RE-RAN W654, ledger v15, standing Tier-1 16] [MILESTONE M1 re-run, W639 — ledger v14 · Tier-1 ×27 · 12 agents] THE TWELFTH TRUTH PASS. ROWS: the standing tier-1 findings of ledger v14, one row each. ACCEPT: P2.22's six clauses, unchanged.
  P2.35 [MILESTONE M2 re-run, W639 — ledger v14 · Tier-2 ×16 · 12 agents] THE INVISIBLE SHORTFALLS, SEVENTH PASS. ROWS: the standing tier-2 findings of ledger v14, one row each. ACCEPT: P2.23's, unchanged; M1 and M2 re-run together when the tier-1 item and this item close.
  P2.36 [MILESTONE M1 re-run, W654 — ledger v15 · Tier-1 ×16 · 12 agents] THE THIRTEENTH TRUTH PASS. ROWS: the standing tier-1 findings of ledger v15, one row each. ACCEPT: P2.22's six clauses, unchanged.
+      W655, W656 — all sixteen rows closed, each with a guard driven red. The item stays open: it closes on the
+      re-run, not on its rows.
+      W664 — THE RE-RUN CAN BE POINTED (Owner ruling 2026-10-10: the run after a qualifying zero must target what
+      the one before did not exercise). scripts/audit_unexercised.py turns a run's record and census into the
+      routes and pages it did not exercise, by the same function the ledger's coverage table uses; the workflow
+      takes that list (args.unexercised) and tells each assessor to exercise those first; every region of the
+      record carries what the run was pointed at; and the ledger prints how many of those the run then reached,
+      computed, so a run that was pointed and went elsewhere cannot read as covered. On ledger v15 the list is
+      306 routes and 31 pages, the ledger's own figures. Ledger v15 is kept whole at
+      docs/VISION_FIDELITY_LEDGER_v15.md.
  P2.37 [MILESTONE M2 re-run, W654 — ledger v15 · Tier-2 ×27 · 12 agents] THE INVISIBLE SHORTFALLS, EIGHTH PASS. ROWS: the standing tier-2 findings of ledger v15, one row each. ACCEPT: P2.23's, unchanged; M1 and M2 re-run together when the tier-1 item and this item close.
  MILESTONE M2: fidelity workflow re-run → Tier-2 invisible-shortfall count 0; reach scatter
    resolved (wired or recorded-retired); ledger v5.
