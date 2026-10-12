@@ -369,6 +369,10 @@ async def list_deliverables(vsb_id: Optional[str] = None,
                   # emerald "in-house" while the DETAIL pane one level down showed amber "via <token>"
                   "is_external": (d.get("ai_provenance") or {}).get("is_external"),
                   "qms_gate_passed": d.get("quality_assurance", {}).get("quality", {}).get("qms_gate_passed"),
+                  #  ledger v17 (FU-933) - the stub screen's finding reaches the LIST row, beside the verdict
+                  "stub_found": ((d.get("quality_assurance") or {}).get("quality") or {}).get("stub_found"),
+                  "stub_marker_found": ((d.get("quality_assurance") or {}).get("quality") or {}).get("stub_marker_found"),
+                  "substantive_length": ((d.get("quality_assurance") or {}).get("quality") or {}).get("substantive_length"),
                   # W455 — a FAIL is visible on the list row, not only in the detail pane
                   "compliance_overall": ((d.get("quality_assurance") or {}).get("quality") or {}).get("compliance", {}).get("overall"),
                   "updated_at": d.get("updated_at")} for d in rows]

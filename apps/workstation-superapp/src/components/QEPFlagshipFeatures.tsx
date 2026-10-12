@@ -32,7 +32,7 @@ export const QEPFlagshipFeatures: React.FC = () => {
     // is live in the QEP studio. A boundary shown as a backlog item is the defect, so each card now says which
     // it is, and `kind` drives the panel so a click cannot say 'no backend' about a live module.
     { id: 'tajwid', name: 'AI Tajwīd Coach', icon: Mic, color: 'text-aura', kind: 'refused', desc: 'Not offered, by ruling: recitation is never scored (Appendix A.9.1). Only an Owner ruling over a validated, scholar-reviewed phonetic model could reopen it. Written-recall and Tajwīd teaching tools ARE live in the QEP studio.' },
-    { id: 'memorization', name: 'Memorization Suite', icon: Book, color: 'text-highlight', kind: 'live', desc: 'LIVE (W439): real SM-2 scheduling, reviews and progress — in the QEP studio above.' },
+    { id: 'memorization', name: 'Memorization Suite', icon: Book, color: 'text-highlight', kind: 'live', desc: 'LIVE (W439): real SM-2 scheduling, reviews and progress — in the QEP studio above. Flashcards, progress heatmaps and audio looping are not built.' },
     { id: 'competitions', name: 'Competitions', icon: Trophy, color: 'text-aura', kind: 'live', desc: 'LIVE: the leaderboard in the QEP studio above ranks recorded XP, with its formula shown. Tournaments are not built, and a recitation contest never will be: recitation is never scored (A.9.1).' },
     { id: 'ar_vr', name: 'AI/AR Immersion', icon: Glasses, color: 'text-vital', desc: 'Planned: 360° history and Tajwīd overlays — no WebXR code and no scene asset exist yet.' },
     { id: 'education', name: 'Learn-Teach', icon: GraduationCap, color: 'text-aura', desc: 'Planned: guided playlists - none is reachable yet. No cohort, session or retention data is recorded, so no student analytics are reported.' },

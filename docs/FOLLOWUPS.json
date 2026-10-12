@@ -18090,11 +18090,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-934",
@@ -18126,11 +18129,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-936",
@@ -18160,11 +18166,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-938",
@@ -18393,11 +18402,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-950",
@@ -18430,11 +18442,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-952",
@@ -18446,11 +18461,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-953",
@@ -18462,11 +18480,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-954",
@@ -18543,11 +18564,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-958",
@@ -18665,11 +18689,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-964",
@@ -18684,11 +18711,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-965",
@@ -18761,11 +18791,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-969",
@@ -18865,11 +18898,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-974",
@@ -18883,11 +18919,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-975",
@@ -18901,11 +18940,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-976",
@@ -18919,11 +18961,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-977",
@@ -18937,11 +18982,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-978",
@@ -18972,11 +19020,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-980",
@@ -19104,11 +19155,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-988",
@@ -19122,11 +19176,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-989",
@@ -19140,11 +19197,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-990",
@@ -19308,11 +19368,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-999",
@@ -19326,11 +19389,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-1000",
@@ -19344,11 +19410,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-1001",
@@ -19542,11 +19611,14 @@
       "severity": "low",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "PERFORMED BY THE OWNER on 2026-10-12 at their own terminal (the app's permission layer refused the act to the round): 8 book files and 2 folders moved into data/_moved_books_20261012-155706, sizes and digests checked, nothing deleted; reverse with move_books.py --reverse and that folder's name. June's residue (2,505 + 74 files) moved the same day on the Owner's word into two _moved_residue folders."
     },
     {
       "id": "FU-1012",
@@ -19614,11 +19686,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-1016",
@@ -19632,11 +19707,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-1017",
@@ -19650,11 +19728,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-1018",
@@ -19668,11 +19749,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-1019",
@@ -19686,11 +19770,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-1020",
@@ -19761,11 +19848,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-1024",
@@ -19779,11 +19869,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-1025",
@@ -19797,11 +19890,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-1026",
@@ -19815,11 +19911,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-1027",
@@ -19833,11 +19932,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-1028",
@@ -19851,11 +19953,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-1029",
@@ -19905,11 +20010,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.12",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W677",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W677 with a guard that drives the state; its blind was driven red (126 of 126 across the round's three lists, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-1032",
@@ -19964,6 +20072,206 @@
       "note": "",
       "slot_source": "measured in this round and not done in it",
       "tier": 3
+    },
+    {
+      "id": "FU-1035",
+      "title": "A heading inside a person's pasted document becomes a section the answer must have",
+      "why": "Confirmed on the pure function: the floor's section reader returns a pasted document's own heading ahead of the instruction's, the floor prints it as its own heading and the quality gate measures coverage against it - on this machine, with no model. The fix is prepared with the shared helper: sections are read from the instruction alone and a person's material is delimited as data.",
+      "source": "W677 (found while preparing the shared-helper round; assessment section 24.5)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/ai/native/engine.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.10",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 2
+    },
+    {
+      "id": "FU-1036",
+      "title": "Every audit edition examined the floor-only configuration, which is not what the Owner runs",
+      "why": "A local model is installed on the Owner's machine and is the gateway's default; only the suite and the audit backend disable it. Ruled: the audit runs in both configurations and every slice says which.",
+      "source": "W677 (the quality and cell documents re-read against this machine's own records; assessment section 26; ruled 2026-10-12)",
+      "found": "2026-10-12",
+      "files": [
+        "scripts/workflows/fidelity_audit_v7.js"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.10",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 2
+    },
+    {
+      "id": "FU-1037",
+      "title": "The Instrument Cell's registry holds none of the 25 forms on the six domain pages",
+      "why": "Its 41 resources are engines, organism systems and enterprise mechanisms. So declared needs, the availability check and the stated level stop short of the first thing the platform offers a person. Ruled: the domain forms are registered, and each page's sentence and the coverage register's state are read from the cell.",
+      "source": "W677 (the quality and cell documents re-read against this machine's own records; assessment section 26; ruled 2026-10-12)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/resource_fabric.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.32",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 2
+    },
+    {
+      "id": "FU-1038",
+      "title": "The durable defect loop has never completed a cycle: nineteen defects opened, none corrected, none re-verified",
+      "why": "Read from the Owner's store: 73 gates run, 19 defects, all open; fifteen belong to a door since retired. Ruled: the loop is turned once for real - those fifteen closed with that reason, the other four corrected and re-verified or reported as not reproducible.",
+      "source": "W677 (the quality and cell documents re-read against this machine's own records; assessment section 26; ruled 2026-10-12)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/vbs/quality.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.10",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 2
+    },
+    {
+      "id": "FU-1039",
+      "title": "The operations record's quality field has never held a verdict, and the rankings are described as excellence",
+      "why": "All 2,000 rows on the Owner's store carry no quality verdict. Ruled: the field is written from the gate that holds the verdict; until then the ranking says it ranks what produced output.",
+      "source": "W677 (the quality and cell documents re-read against this machine's own records; assessment section 26; ruled 2026-10-12)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/operational_excellence.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.10",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-1040",
+      "title": "A test double's rows are in the Owner's real store",
+      "why": "162 of the 2,000 operation rows were served by a provider named for a test double. Some run did not isolate its data. Ruled: find the writer, and move those rows aside reversibly under the rule already ruled for test entities.",
+      "source": "W677 (the quality and cell documents re-read against this machine's own records; assessment section 26; ruled 2026-10-12)",
+      "found": "2026-10-12",
+      "files": [
+        "integration_tests/test_mvp_spine.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.10",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-1041",
+      "title": "The method's own data last learned at W515 and no answer says how far it trails the work",
+      "why": "docs/DELIVERY_METHOD.json exists so the method does not live in an assistant's notes; its latest lesson cites W515 (file last changed 2026-09-30) while 25 of the 52 lessons in the assistant's notes cite a later round, and GET /api/v1/method/learning reports nothing about currency (driven 2026-10-12). Prepared: C:/tmp/w640t/collab/mcur_edits.py and method_candidates.json.",
+      "source": "W677 (three external documents on working with a person, read against this machine's own record; assessment section 27)",
+      "found": "2026-10-12",
+      "files": [
+        "docs/DELIVERY_METHOD.json",
+        "agentic_core/api/method.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.14",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner chartered this item on 2026-10-12 and these rows are its clauses 1, 3, 4 and 5",
+      "tier": 2
+    },
+    {
+      "id": "FU-1042",
+      "title": "A project loses the words a person first wrote on the first edit",
+      "why": "Driven on a scratch store 2026-10-12: a project created with one description and edited to another holds the first description nowhere in its record and nowhere on disk. The journey ships a founder's problem statement verbatim; a project does not keep it.",
+      "source": "W677 (three external documents on working with a person, read against this machine's own record; assessment section 27)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/projects/api.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.14",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner chartered this item on 2026-10-12 and these rows are its clauses 1, 3, 4 and 5",
+      "tier": 2
+    },
+    {
+      "id": "FU-1043",
+      "title": "A project edit naming a field the record does not hold answers 200 and changes nothing, and no state says a project waits on the person",
+      "why": "Driven 2026-10-12: PATCH with status waiting_on_person returned 200 and the status stayed idle. The status has four values (idle, running, done, error); the application names something awaiting a person's decision at one site.",
+      "source": "W677 (three external documents on working with a person, read against this machine's own record; assessment section 27)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/projects/api.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.14",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner chartered this item on 2026-10-12 and these rows are its clauses 1, 3, 4 and 5",
+      "tier": 2
+    },
+    {
+      "id": "FU-1044",
+      "title": "Whether the proposed item on working with a person is chartered, and its six questions",
+      "why": "Assessment section 27 proposes a plan item of nine clauses from the record of the work together; a new item and its scope are the Owner's. The questions are in the W677 report with a recommendation each.",
+      "source": "W677 (three external documents on working with a person, read against this machine's own record; assessment section 27)",
+      "found": "2026-10-12",
+      "files": [
+        "docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md"
+      ],
+      "severity": "medium",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "done",
+      "closed_by": "W677",
+      "note": "",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "RULED by the Owner on 2026-10-12: all recommendations accepted; the item is chartered in the fifth phase and the rulings are recorded in assessment section 27.5. The move of the old books is not among them."
+    },
+    {
+      "id": "FU-1045",
+      "title": "A failing assertion on the settings object prints its fields, which include keys",
+      "why": "W677's suite: a guard compared a route's answer with settings.has_ai_provider and pytest printed the settings object's repr - with a key's opening characters - into the run's log. The guard now binds plain values first; the object itself still prints its keys to any caller that reprs it.",
+      "source": "W677 (the round's own full suite)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/config.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.41",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found by W677's own full suite; the config area has no routed owner",
+      "tier": 2
     }
   ],
   "routes": [

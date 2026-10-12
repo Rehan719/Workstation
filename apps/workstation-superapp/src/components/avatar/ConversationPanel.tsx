@@ -148,7 +148,9 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({ avatar }) 
                   profile: NOT applied — {m.profileBasis || 'your saved profile could not be read'}.
                 </p>
               )}
-              {m.role === 'assistant' && m.profileApplied === false && m.servedBy === 'native' && m.profileState !== 'unreadable' && m.profileState !== 'error' && (
+              {/* ledger v17 (FU-964) — keyed on the server's own state. A reply with no saved profile also has
+                  profileApplied false, and it was told the floor "does not read your profile". */}
+              {m.role === 'assistant' && m.profileApplied === false && m.servedBy === 'native' && m.profileState === 'not_usable_by_floor' && (
                 <p data-testid="profile-not-usable" className="text-[9px] font-bold text-amber-400 px-1">
                   profile: not usable by the floor — the structured floor answered this, and it does not
                   read your profile. Set up the owned model and ask again.

@@ -730,8 +730,19 @@ async def system_info():
         "environment": settings.environment,
         "auth_enabled": settings.auth_enabled,
         "has_ai_provider": settings.has_ai_provider,
+        #  ledger v17 (FU-968) - the two echoes below read as "an external model serves by default" on a
+        #  deployment where nothing routes to one. Each says what it is, and where the serving mode is reported.
+        "has_ai_provider_basis": ("true when an ANTHROPIC_API_KEY or OPENAI_API_KEY value is configured. "
+                                  "Presence only: it is not permission to use an external provider "
+                                  "(see external_use_permitted) and not a working key"),
+        "external_use_permitted": os.getenv("AI_ALLOW_EXTERNAL", "false").lower() == "true",
         "gateway_rpm": settings.gateway_rpm,
         "default_model": settings.default_model,
+        "default_model_basis": ("the configured DEFAULT_MODEL name, echoed. It is NOT what serves a request: "
+                                "an owned local model serves when one is reachable, an external model only "
+                                "when external use is permitted and a key works, and otherwise the "
+                                "deterministic floor answers"),
+        "effective_serving_mode_at": "/api/v1/avatar/status",
         "cors_origins_count": len(settings.cors_origins),
         "cors_wildcard": "*" in settings.cors_origins,
         "config_warnings": settings.validate(),

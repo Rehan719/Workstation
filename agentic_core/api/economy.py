@@ -161,6 +161,7 @@ async def economy_status(vsb_id: str = "workstation-idbo", entity_type: str | No
         if e.__class__.__name__ == "StoreUnavailable":
             owner_source = "living_registry_unavailable"
     out = EconomicMetabolism(vsb_id, entity_type, owner).status()
+    out.update(_registration(vsb_id))          # the same fact a cycle states, on the answer a reload reads
     out["attribution"] = {"entity_type_source": et_source, "owner_source": owner_source,
                           **_form_disclosure(_claimed_type, entity_type, et_source)}
     return out
@@ -194,6 +195,25 @@ def _intake_not_back(e: BaseException) -> str:
     return (" The " + " and ".join(k.replace("_", " ") for k in lost) + " it had drained could not be put back on their "
             "queue — running the cycle again does not bring them back. Each failed give-back is written to the server "
             "log with its amount, and to the UEG as economy.cycle_intake_give_back_failed when the UEG can be written.")
+
+
+def _registration(vsb_id: str) -> Dict[str, Any]:
+    """Whether `vsb_id` is a registered living entity - READ from the roster, the fact a cycle already states.
+    Three answers and not two: when the roster cannot be read the registration is NOT KNOWN, never assumed."""
+    try:
+        from agentic_core.economy.living_vsbs import _load as _lv_load
+        _rec = _lv_load().get(vsb_id)
+    except Exception as _e:                                  # noqa: BLE001 - reported, never read as either answer
+        return {"registration": "NOT KNOWN",
+                "registration_basis": (f"the roster of living entities could not be read ({_e.__class__.__name__}), so "
+                                       f"whether '{vsb_id}' is a registered entity is not known. Virtual WST only.")}
+    if _rec:
+        return {"registration": "REGISTERED",
+                "registration_basis": f"'{vsb_id}' is on the roster of living entities. Virtual WST only."}
+    return {"registration": "UNREGISTERED",
+            "registration_basis": (f"'{vsb_id}' is not a registered living entity: these books and any Owner accrual "
+                                   f"were written by SIMULATION cycles run on request values and belong to no entity "
+                                   f"that exists. Virtual WST only.")}
 
 
 def _cycle_raised(req, kind: str, detail: str, exc=None) -> None:
@@ -2235,6 +2255,7 @@ async def board_pack(vsb_id: str = "workstation-idbo", entity_type: str | None =
         # attributed to nothing, because the books held no source then.
         "ledger": {"entry_count": stmt["entry_count"], "recent": stmt["recent"],
                    "by_source": _postings_split(m.ledger)},
+        **_registration(vsb_id),               # the same fact a cycle states, on the answer a reload reads
         "governance": "gaas.v5-gated cycles · UEG append-only audit · arms-length distribution policy",
         "disclaimer": "Virtual/simulated WST only — no real funds. Real-money rails are gated until the Owner "
                       "authorises them AND a compliance review passes.",

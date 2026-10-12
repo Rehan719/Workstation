@@ -36,7 +36,7 @@ export const TOOL_REGISTRY: DomainTools[] = [
   ]},
   { name: 'Education', route: '/education', tools: [
     form('lessons', 'Lesson Plan Generator', 'A classroom-ready lesson plan (objectives, sequence, differentiation, assessment).'),
-    form('curriculum', 'Curriculum Designer', 'A full framework-aligned, week-by-week curriculum with objectives and assessment.'),
+    form('curriculum', 'Curriculum Designer', 'A week-by-week curriculum outline with objectives and assessment. Only a framework\'s name is held, so nothing is checked against one.'),
     form('assessment', 'Assessment Builder', 'Quizzes, rubrics, exams, project briefs and formative checks with mark schemes.'),
     form('feedback', 'Marking & Feedback', 'Mark a student’s work against the task and rubric with constructive feedback and an indicative level. An aid to your judgement, never a grade.'),
   ]},
@@ -49,7 +49,7 @@ export const TOOL_REGISTRY: DomainTools[] = [
   { name: 'Care', route: '/care', tools: [
     form('clinical', 'Clinical Handover (SBAR)', 'Compose a structured clinical handover in the SBAR/ISBAR framework.'),
     form('care-plan', 'Care Plan Builder', 'A person-centred care plan: goals, interventions, review schedule.'),
-    form('risk', 'Clinical Risk Assessment', 'Score a validated tool from its published table (NEWS2 · MUST · Waterlow · NICE CG161 factor count) with AI interpretation. A decision aid.'),
+    form('risk', 'Clinical Risk Assessment', 'Score a validated tool from its published table (NEWS2 · MUST · Waterlow) with AI interpretation. A decision aid.'),
     form('safeguarding', 'Safeguarding Triage', 'Structure the response to a safeguarding concern under the Care Act 2014: immediate safety, category, who to notify, what to record.'),
   ]},
   { name: 'Employment', route: '/employment', tools: [

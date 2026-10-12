@@ -2,12 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { FileText, Loader2, Sparkles, RefreshCw, Layers, Download } from 'lucide-react';
 import { downloadExport } from '../lib/download';
-import { apiJson, errorMessage, provenanceBadge, qmsChip, complianceChip, immuneReading } from '../lib/api';
+import { apiJson, errorMessage, provenanceBadge, qmsChip, qmsStubFlag, complianceChip, immuneReading } from '../lib/api';
 
 interface DType { id: string; sections: string[] }
 interface DeliverableSummary {
   id: string; type: string; title: string; vsb_id?: string;
   versions: number; served_by?: string; updated_at?: string; qms_gate_passed?: boolean | null;
+  stub_found?: boolean | null; stub_marker_found?: boolean | null; substantive_length?: boolean | null;   // FU-933
   is_external?: boolean;   // W490 (refutation) — without it the ROW badge greened an external serve
   compliance_overall?: string | null;   // W455 — a FAIL is visible on the row
 }
@@ -215,9 +216,13 @@ export const Deliverables: React.FC = () => {
                       amber. One call, all three fields. */}
                   {(() => { const b = provenanceBadge(d.served_by, d.is_external);
                     return <span className={`px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
-                  {(() => { const c = qmsChip({ qms_gate_passed: d.qms_gate_passed }); return c && (
+                  {(() => { const q933 = { qms_gate_passed: d.qms_gate_passed, stub_found: d.stub_found,
+                              stub_marker_found: d.stub_marker_found, substantive_length: d.substantive_length };
+                    const c = qmsChip(q933); const f933 = c && c.verdict === 'not assessable' ? qmsStubFlag(q933) : '';
+                    return c && (<>
                     <span className={c.verdict === 'pass' ? 'text-slate-200' : c.verdict === 'fail' ? 'text-vital' : 'text-slate-500'} title={`Living-QMS structure gate: ${c.verdict} — ${c.title}`}>● QMS structure</span>
-                  ); })()}
+                    {f933 && <span className="text-amber-300" data-testid="deliv-row-stub-flag">{f933}</span>}
+                  </>); })()}
                   {d.compliance_overall === 'fail' && <span className="px-1.5 py-0.5 rounded bg-vital/15 text-vital" title="§11 compliance FAIL — routed to Change Control; every export carries the verdict on page one">compliance FAIL</span>}
                 </p>
               </button>

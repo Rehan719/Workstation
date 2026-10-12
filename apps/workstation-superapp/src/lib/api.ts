@@ -297,7 +297,18 @@ export const provenanceMapBadge = (servedBy: Record<string, number> | null | und
 export type QmsQuality = {
   qms_gate_passed?: boolean | null; qms_basis?: string | null;
   delivery_coverage?: number | null; document_controlled?: boolean | null;
+  stub_found?: boolean | null; stub_marker_found?: boolean | null; substantive_length?: boolean | null;
 } | null | undefined;
+// ledger v17 (FU-933) — the length-and-stub screen runs even when the coverage gate cannot. Its finding
+// was in the record and on no surface: a text holding a stub marker was shown as a grey dash. '' = nothing found.
+// A record written before `stub_marker_found` existed is read from the two older fields.
+export const qmsStubFlag = (q: QmsQuality): string => {
+  if (!q) return '';
+  const marker = q.stub_marker_found ?? (q.stub_found === true && q.substantive_length !== false);
+  if (marker === true) return 'stub marker found';
+  if (q.substantive_length === false) return 'too short to assess';
+  return '';
+};
 export const QMS_GATE_MEASURES = 'Structure gate: every declared section heading is present and no stub marker '
   + 'was found. Headings and markers only — the content was not read, so this is not a finding that the delivery '
   + 'is specifically designed or verified.';
@@ -306,8 +317,13 @@ export const qmsChip = (q: QmsQuality, prefix = 'QMS') => {
   const v = q.qms_gate_passed;
   const cov = typeof q.delivery_coverage === 'number' ? ` · cov ${Math.round(q.delivery_coverage * 100)}%` : '';
   const doc = q.document_controlled ? ' · doc-controlled' : '';
-  if (v === null) return { verdict: 'not assessable' as const, label: `${prefix} —`, cls: 'bg-slate-800 text-slate-500',
-    title: q.qms_basis || 'not assessable — floor-served: the floor emits the requested headings, so the gate cannot measure it' };
+  if (v === null) {
+    const flag = qmsStubFlag(q);
+    const why = q.qms_basis || 'not assessable — floor-served: the floor emits the requested headings, so the gate cannot measure it';
+    return { verdict: 'not assessable' as const, label: flag ? `${prefix} — ${flag}` : `${prefix} —`,
+      cls: flag ? 'bg-amber-500/15 text-amber-300' : 'bg-slate-800 text-slate-500',
+      title: flag ? `The length and stub screen found: ${flag}. The coverage gate did not run — ${why}` : why };
+  }
   // OWNER RULING 2026-10-12 (ledger v17 R1.0) - the LABEL says what passed: the structure gate. `verdict`
   // keeps its three values for the pages that branch on it; the words a person reads are no longer a bare "pass".
   // A structure pass is drawn in a NEUTRAL colour: the colour of a good result is not earned by headings.

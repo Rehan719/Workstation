@@ -686,7 +686,11 @@ async def generate_plan(req: GenerateRequest):
         "them; represent only what the Owner has actually stated) drafting/refreshing the LIVING "
         f"business plan for scope '{req.scope}'.\n\n"
         + _chief_grounding(req.scope, plan)
-        + (f"Current vision realisation: {int(realisation*100)}%\n" if realisation is not None else "")
+        #  ledger v17 (FU-949) - the figure is API surface coverage (transformation.py names it so in `measure`);
+        #  the Chief's model was handed it under a name that says the vision is that far delivered.
+        + (f"API surface coverage (pillar routers mounted and stores non-empty; this is NOT delivery and "
+           f"NOT a measure of how far the vision is delivered): {int(realisation*100)}%\n"
+           if realisation is not None else "")
         + (f"Existing strategy: {plan.get('strategy','')[:300]}\n" if plan.get("strategy") else "")
         + (f"Owner context: {req.context}\n" if req.context else "")
         + "\nProduce these sections, each under its own '## ' heading:\n"

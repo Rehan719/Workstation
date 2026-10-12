@@ -144,7 +144,7 @@ function QMSPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-white/50">Draft an ISO 9001:2015-aligned Quality Management System frame: policy and objective headings, process-map and audit-programme outlines, and a certification checklist to work through. A draft frame to complete and review — not a certifiable document.</p>
+      <p className="text-sm text-white/50">Draft a Quality Management System outline (headings in the manner of ISO 9001; no edition is held or claimed): policy and objective headings, process-map and audit-programme outlines, and a certification checklist to work through. A draft frame to complete and review — not a certifiable document.</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <Field label="Organisation Name"><Input value={org} onChange={setOrg} placeholder="Acme Ltd" /></Field>
         <Field label="Domain"><Select value={domain} onChange={setDomain} options={DOMAIN_OPTIONS} /></Field>
@@ -246,7 +246,7 @@ function EMSPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-white/50">Draft an ISO 14001:2015-aligned Environmental Management System frame: aspects- and legal-register skeletons, objectives, and an energy/carbon outline to complete with your own figures. A draft frame to complete and review — not a certifiable document.</p>
+      <p className="text-sm text-white/50">Draft an Environmental Management System outline (headings in the manner of ISO 14001; no edition is held or claimed): aspects- and legal-register skeletons, objectives, and an energy/carbon outline to complete with your own figures. A draft frame to complete and review — not a certifiable document.</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <Field label="Organisation Name"><Input value={org} onChange={setOrg} placeholder="GreenTech Ltd" /></Field>
         <Field label="Domain"><Select value={domain} onChange={setDomain} options={DOMAIN_OPTIONS} /></Field>

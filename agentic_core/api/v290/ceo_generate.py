@@ -173,6 +173,10 @@ class BlueprintResponse(BaseModel):
     domain: str
     deliverable: str          # the produced document — see ai_provenance for WHAT composed it
     nodes: list[dict]         # Structured pipeline nodes for canvas
+    #  where the nodes came from, said once for the whole canvas: "extracted" from the document's own pipeline
+    #  section, or "template_fallback" - four boxes made from the intent's first words when it has none
+    nodes_source: str | None = None
+    nodes_basis: str | None = None
     generated_at: float
     # W490 (sweep S12.4, C7) — what served this blueprint. Without it the page showed a success tick
     # over the deterministic floor's own outline and called it a Concept Blueprint.
@@ -231,6 +235,14 @@ async def generate_blueprint(req: BlueprintRequest) -> BlueprintResponse:
             pass  # non-fatal — blueprint still returned
 
     nodes = _extract_nodes(deliverable, req.intent)
+    _sources = sorted({str(n.get("source")) for n in nodes})
+    _nodes_source = _sources[0] if len(_sources) == 1 else "mixed"
+    _nodes_basis = (
+        "A TEMPLATE, not this blueprint's pipeline: the document holds no pipeline section, so these boxes were "
+        "made from the first words of the intent and two fixed names. Nothing was extracted or designed."
+        if _nodes_source == "template_fallback" else
+        "taken from the pipeline section of the document above; the boxes are that section's own lines, in order"
+        if _nodes_source == "extracted" else f"node sources: {', '.join(_sources)}")
 
     return BlueprintResponse(
         status="complete",
@@ -241,6 +253,8 @@ async def generate_blueprint(req: BlueprintRequest) -> BlueprintResponse:
         domain=req.domain,
         deliverable=deliverable,
         nodes=nodes,
+        nodes_source=_nodes_source,
+        nodes_basis=_nodes_basis,
         generated_at=time.time(),
         ai_provenance=_prov,
     )

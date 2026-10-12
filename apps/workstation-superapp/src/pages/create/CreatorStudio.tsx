@@ -30,7 +30,9 @@ interface BlueprintResponse {
   realm: string;
   domain: string;
   deliverable: string;
-  nodes: Array<{ id: string; label: string; position: { x: number; y: number } }>;
+  nodes: Array<{ id: string; label: string; position: { x: number; y: number }; source?: string }>;
+  nodes_source?: string | null;
+  nodes_basis?: string | null;
   generated_at: number;
   // W490 (sweep S12.4, C7) — what composed the deliverable. A success tick over the deterministic
   // floor's own outline told the user the AI CEO had synthesised a blueprint for them.
@@ -97,17 +99,20 @@ export const CreatorStudio: React.FC = () => {
       // Populate canvas with the pipeline nodes from the AI response
       const newNodes: Node[] = bp.nodes.map((n) => ({
         id: n.id,
-        data: { label: n.label },
+        data: { label: n.source === 'template_fallback' ? `${n.label} (template)` : n.label },
         position: n.position,
-        style: { background: '#0f172a', color: '#64ffda', border: '1px solid #64ffda', borderRadius: 12 },
+        //  a template node is drawn dashed and grey: it is a placeholder, not a part of this blueprint
+        style: n.source === 'template_fallback'
+          ? { background: '#0f172a', color: '#94a3b8', border: '1px dashed #64748b', borderRadius: 12 }
+          : { background: '#0f172a', color: '#64ffda', border: '1px solid #64ffda', borderRadius: 12 },
       }));
       // Auto-connect sequential nodes
       const newEdges: Edge[] = newNodes.slice(1).map((n, i) => ({
         id: `e${i}-${i+1}`,
         source: newNodes[i].id,
         target: n.id,
-        animated: true,
-        style: { stroke: '#64ffda' },
+        animated: bp.nodes_source !== 'template_fallback',
+        style: { stroke: bp.nodes_source === 'template_fallback' ? '#64748b' : '#64ffda' },
       }));
       setNodes(newNodes);
       setEdges(newEdges);
@@ -276,6 +281,11 @@ export const CreatorStudio: React.FC = () => {
             )}
           </div>
 
+          {blueprint && !error && blueprint.nodes_source === 'template_fallback' && (
+            <p data-testid="creator-nodes-template" className="text-[10px] font-bold text-amber-300 px-2">
+              {blueprint.nodes_basis}
+            </p>
+          )}
           {/* ReactFlow canvas */}
           <div className="flex-1 bg-slate-950/50 border border-white/5 rounded-[2rem] relative overflow-hidden">
             <ReactFlow

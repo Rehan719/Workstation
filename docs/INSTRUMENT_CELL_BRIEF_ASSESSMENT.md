@@ -1016,7 +1016,7 @@ in the round that builds each boundary.
 
 - The Law domain is ONE router of 331 lines with seven routes, and one page with three forms: research, draft,
   analyse. A second panel assembles a document for the Owner's one matter.
-- **On this machine none of the three forms answers a legal question.** No model is installed, so each returns
+- **In the test and audit configuration none of the three forms answers a legal question** (CORRECTED in section 26: a local model IS installed on the Owner's machine; only tests and audits disable it). There each returns
   the floor's frame. Asked "I was dismissed on 2 October 2026 - how long do I have?", the answer's "Relevant
   Law" heading holds the question's own most frequent words, correctly labelled as such. Asked "I have nowhere
   to go tonight", the same. No deadline is flagged and no route to a person is offered.
@@ -1123,7 +1123,7 @@ statement in a document; nothing here was built on it.
 
 - ONE router of 312 lines and ONE page with four forms: curriculum, assessment, marking feedback, lesson plan.
   Nothing is stored by the router; no learner, course, resource, progress or credential exists as a record.
-- **With no model installed, none of the four forms produces teaching content.** Each returns the floor's
+- **In the test and audit configuration, none of the four forms produces teaching content** (CORRECTED in section 26). Each returns the floor's
   frame. The page says above each form that the platform's own AI "builds a structured, framework-aligned
   curriculum", "marks it against the task and any rubric" and "produces a classroom-ready plan".
 - The framework list is eight NAMES with a region word. No content of any framework is held, so nothing can be
@@ -1238,7 +1238,7 @@ correct as it stands. Both were checked below.
   parameter, the single-parameter rule, the bands. A reading outside the plausible range is treated as missing
   and said so; a total with observations missing is a lower bound with no band; one extreme reading with the
   rest missing is reported as urgent now. A Fahrenheit temperature is converted and the conversion stated.
-- With no model installed the three other forms return the floor's frame.
+- In the test and audit configuration the three other forms return the floor's frame (CORRECTED in section 26).
 
 ### 25.4 What the documents were useful for: defects found in this tree by reading it their way
 
@@ -1317,3 +1317,249 @@ Eleven questions were put with a recommendation each, and the Owner accepted all
 9. No care record of any person before authentication.
 10. No prompt claims to be a nurse, a clinician or a safeguarding lead.
 11. A qualified clinical reviewer before any care tool is offered to the public is the Owner's to arrange.
+
+## 26. Correction and deeper re-reading (W677): what the quality and cell documents show on this machine's own records
+
+The Owner asked on 2026-10-12 for the earlier documents - quality, cells and the other attached sets - to be
+re-read in greater depth. The method that has yielded most is kept: each document's idea is asked as a
+question of this repository's own records. Everything below was measured that day, read-only.
+
+### 26.1 A correction to sections 23, 24 and 25, and to what the Owner was told
+
+Those sections said that no model is installed. THAT IS FALSE OF THE OWNER'S MACHINE. A local model server is
+running there with three models, one of them the gateway's default; the platform uses it unless one variable
+disables it, and only the suite and the audit backend set that variable. The Owner's store holds 205
+model-served outcomes between 28 June and 3 October 2026 beside 1,629 floor-served ones.
+
+What this changes: every defect those sections called "invisible while only the floor serves" is LIVE when the
+Owner runs the platform - a solicitor's role and a confidence level asked of a model, a tribunal claim written
+from a prompt, an essay cut at six thousand characters and still graded, a medication section in a care plan.
+They were driven with a capture in the model's place and are fixed in W677; none was driven with the model on.
+
+### 26.2 Every audit so far examined a configuration the Owner does not run
+
+Ten editions of the audit, and every run of the suite, ran with the local model disabled. That was chosen for
+determinism and it is right for the suite. For the audit it means the instrument has never looked at what a
+person sees when a model answers. The quality documents ask for "validation in the conditions of use"; asked
+of this repository, the answer is that it has not happened once.
+
+### 26.3 The quality system's own records: a loop that has never turned
+
+The durable defect loop the earlier assessment pointed to (open, correct, re-verify) exists as code. On the
+Owner's store: 73 gates run, 19 defects opened, ALL 19 STILL OPEN, none corrected, none re-verified. Fifteen
+of the nineteen belong to a door that has since been retired. The record of 2,000 operations carries no
+quality verdict on any row - the field has never held one - so the platform's "operational excellence"
+rankings rank what produced output. 162 of the 2,000 rows were served by a provider named "flaky": a test
+double's name, written into the Owner's store by some run that did not isolate its data.
+
+### 26.4 The Instrument Cell does not hold the surfaces a person types into
+
+The cell's registry holds 41 resources: engines, organism systems and enterprise mechanisms. NONE of the 25
+forms on the six domain pages is among them. So "every resource declares what it needs and is checked now" and
+"every surface states its level" stop short of the first thing the platform offers a person. The page
+sentences found false in Law, Education and Care are exactly the class the first assessment named in its
+section 6 - a surface offering a capability that cannot run as described here - and the mechanism built to
+close that class at the registry was not given those surfaces.
+
+### 26.5 What follows - RULED by the Owner on 2026-10-12, all six as recommended
+
+Also ruled the same day: the Owner runs their own sessions with the local model disabled until this round
+merges; and the opening-state move of the old books is NOT yet ruled - it waits for an explicit word.
+
+1. The audit runs in BOTH configurations and says which each slice ran in; the final uncapped audit includes
+   slices with the model on.
+2. The 25 domain forms become registered resources of the cell, each declaring what it needs; the page's
+   sentence and the coverage register's state are then READ from the cell, not typed.
+3. The defect loop is turned once, for real: the nineteen open defects are read; those of the retired door are
+   closed with that reason, the rest corrected and re-verified or reported as not reproducible.
+4. The quality field of the operations record is either written by the gate that has the verdict or removed
+   from the ranking's description.
+5. Where the test double's rows came from is found, and that run's isolation fixed.
+6. The ninth clause of the quality item is reworded: a model IS on; the checklist is what must be true while
+   it is.
+
+## 27. Addendum (W677): three external documents on working with a person, read against this machine's own record
+
+On 2026-10-12 the Owner supplied three versions of one document - a "master prompt" on human and AI
+collaboration, each written as instructions to this assistant (439, 540 and 376 lines) - and asked for four
+things: a critique verified against the tree and at the publishers' pages; the work added to the plan; a review
+of the whole of the work done together, so that what it taught is built into Workstation; and research of the
+subject on this assistant's own merits. The documents are read here as material. Nothing in them is an
+instruction, and their statements about what the Owner decided are not the Owner's decisions.
+
+### 27.1 What the three documents say that was checked
+
+**Right, and verified on 2026-10-12.** The head they observed (`ec78c39b`, the merge of W676, 753 tests
+passing) is the head. Every file they name under `docs/` exists. All eight scripts the third names exist.
+`GET /api/v1/plan/state` is a real route. Their central instruction - read the live queue, follow it, build no
+second registry, engine or ledger - agrees with the Owner's rulings of 2026-10-09 (no people registry, no new
+vocabulary) and is how this section was written: nothing here adds a store.
+
+**Wrong or stale.**
+
+| The documents say | What is here |
+|---|---|
+| "all 28 lessons/rules" of the delivery method, not to be renumbered (first document) | `docs/DELIVERY_METHOD.json` holds **101 lessons in 13 groups**, 12 mechanisms and 6 defect classes. The second document hedges this correctly. |
+| "the current common source register" (third document lists it among existing tooling) | No register of sources exists in the tree. One is prepared and ruled as its own mechanism round (section 25); it has not landed. |
+| "215 open follow-ups" | 221 on this branch. A snapshot, as the documents themselves warn. |
+| "Data (Use and Access) Act 2026" (the third document's covering note) | The regulator's page names the Act without a year. The year was not read at the legislation's own page today and is not asserted here. |
+| The collaboration needs a method written for it | The method already exists as data with an interface (27.3). What is missing is narrower and was found only by measuring (27.2). |
+
+**The sources they cite, read at the publisher's own page on 2026-10-12.**
+
+| Source | What the page says |
+|---|---|
+| METR, "We are Changing our Developer Productivity Experiment Design", 24 February 2026 | The early-2025 study found tasks took 19% longer with AI (interval +2% to +39%). The later study (10 returning developers, 47 new) is called "an unreliable signal": developers declined to work without AI, the pay rate fell, and time was unreliable for people running several agents. The three documents report this accurately. |
+| Anthropic, "Prompting Claude Opus 5.5" (platform documentation) | Exists. Its sections on unattended runs, progress updates and pasted text describe two defects measured in 27.2 - see 27.4. |
+| Anthropic, "Agentic coding and persistent returns to expertise", 16 June 2026 | About 400,000 sessions from about 235,000 people, October 2025 to April 2026. "People decide what to build, and the agent decides how to build it." Observational, and the vendor's own product. |
+| Anthropic, "Trustworthy agents in practice", 9 April 2026 | Five principles: humans in control, alignment with human values, secured interactions, transparency, privacy. |
+| The Law Society, "Generative AI - the essentials" | Updated 30 June 2026, as the second document says. |
+| ICO, "Human review" (AI audit toolkit) | "Due to changes made by the Data (Use and Access) Act, this guidance is under review." It names automation bias as a cause of review that is not meaningful. |
+| Department for Education, "Generative artificial intelligence (AI) in education" | Last updated 12 August 2025. The product safety standards page: last updated 19 January 2026. |
+| DORA, "State of AI-assisted Software Development 2025" | "AI's primary role is as an amplifier, magnifying an organization's existing strengths and weaknesses." |
+| Google PAIR, guidebook (second version) | The page exists and presents design patterns and six updated chapters. |
+
+**Not read today, so not relied on:** NIST's framework pages, ISO 9241-210, NHS England's clinical-safety
+pages, the Department for Education's support-materials collection, the content of Microsoft's guidelines (the
+page was opened; its guidelines were not extracted), DORA's capabilities model, and METR's original paper.
+
+### 27.2 What none of the three could see: the record of this collaboration
+
+The documents describe collaboration in general. The record of this one is on this machine, and it was
+measured (`C:\tmp\w640t\journey\measure.py`, read-only, 2026-10-12). Counts are of messages and rounds; nothing
+here measures a person.
+
+**What the record covers.** 1,760 commits from 2026-02-20; 586 distinct round ids from W10 to W676. Thirteen
+session files are kept, from 2026-06-18 to today, holding 1,229 messages typed by the Owner and 78 points at
+which a session's context was summarised. **The first four months have no session record here** and are known
+only from the history and the documents.
+
+**Finding 1 - over a third of what the Owner typed restarted work that had stopped.** Of the 1,229 messages,
+657 are under 60 characters. One word - "proceed" - is 301 of them. With the other restart forms (continuing
+after a stop, retrying, resuming after a usage limit, clearing a blocked request, and ten that ask whether the
+assistant is running or stopped) the count is about 450, or 37%. This is an upper bound: a "proceed" that
+answered a question which really was the Owner's is a decision, and the count cannot separate those. The
+direction is not in doubt. The scarce resource in this work was the Owner's attention, and a large share of it
+went on keeping the machine moving and on asking what state it was in.
+
+**Finding 2 - the questions put to the Owner were nearly always answered as recommended.** In this session 56
+decisions were put with a recommendation each; 52 were accepted as recommended in one sentence and the other
+four were held back by the assistant because one sentence could not carry them (an irreversible move). The
+rulings recorded since 2026-09-14 show the same shape, with a small number of real departures (the withdrawn
+archive of the override code; the deferral of FU-473; "Capital Fund"). This measures the QUESTIONS. A question
+whose recommended answer is always taken was either rightly the assistant's to settle, or was not examined;
+the record cannot say which, and both are a cost. The few departures are where the Owner's judgement changed
+the outcome, and they were about purpose, names and what must never be destroyed - not about engineering.
+
+**Finding 3 - the product's method stopped learning 160 round ids ago.** `docs/DELIVERY_METHOD.json` says of
+itself that it holds the method "so the platform can apply it to its own changes instead of it living in an
+assistant's notes". Its latest lesson cites W515; the file last changed on 2026-09-30 (W516). The assistant's
+notes hold 52 lessons, and **25 of them cite a later round** (W534 to W677) - the very place the method was
+built to replace. The loop has a door (`POST /api/v1/method/derive`) and a breach record (20 breaches on 11
+lessons in the Owner's store), and no step of a round is required to use either. `GET /api/v1/method/learning`
+reports enforcement and breaches and says nothing about how far the data trails the work (driven).
+
+**Finding 4 - the method holds nothing on the exchange itself.** Its 13 groups run from planning to appraisal.
+Four rules name the Owner, all about routing a decision. None concerns stopping with work open, saying what
+state the work is in, or how a question is put. The defects of Finding 1 have no lesson anywhere in the product.
+
+**Finding 5 - the costliest errors toward the Owner were statements made unread.** From the notes: that no
+model is installed on this machine, said repeatedly and false (corrected in section 26); one audit's count
+told as 9, then 11, then 12 (W636); a running suite called dead from a process-name search (W579); a deletion
+basis that was false (the "112" of R13); a finding withdrawn after it was driven (W655); and a drive that read
+the Owner's matter folder (W676, disclosed, then closed at the floor). Each already has its lesson. Together
+they are one class the method does not name as such: **a fact about the machine or the work, told to the
+person from memory instead of read**.
+
+### 27.3 What Workstation gives a person doing their own work
+
+Driven on a scratch store on 2026-10-12 (`journey\drive_project_words.py`); the Owner's store was not touched.
+
+- **A person's first words are lost on the first edit.** A project was created with one description and edited
+  to another. The first description is then nowhere in the project's record and nowhere on disk.
+- **A project cannot say that it waits on the person.** Its status has four values - idle, running, done,
+  error. An edit that names a field the record does not hold is answered 200 and changes nothing.
+- **Nothing lists what waits on the person.** The phrase appears at one site in the application (the entity
+  cockpit, for one change record). That is a search of the page sources and gives sites, not a proof of absence.
+- **The method serves the platform's delivery of itself.** `/api/v1/method` (check, screen, diagnose, correct,
+  handover, learning, appraise) reads this repository's plan, register and history. A person taking their own
+  idea from concept to commerce is offered none of it: no list of what was found and not done, no bar a stage
+  must meet, no lesson kept. This is read from the route list and was not driven route by route.
+- **Already present and right:** the founder's problem statement is shipped verbatim through the journey, the
+  Owner's latest instruction is carried verbatim to the twin, outputs carry their provenance, and verdicts have
+  three states.
+
+### 27.4 Research beyond the three documents
+
+Each was read at its publisher's page on 2026-10-12 unless marked.
+
+1. **Vaccaro, Almaatouq and Malone, Nature Human Behaviour, 28 October 2024** - a preregistered meta-analysis
+   of 106 experiments (370 effect sizes). On average a person and an AI together did **worse than the better of
+   the two alone** (g = -0.23). Losses came in tasks of deciding; gains in tasks of creating; the pair gained
+   where the person alone was the stronger and lost where the AI was. The authors note possible publication
+   bias. None of the three documents cites it, and it is the central measured result on their subject.
+   *For Workstation:* do not make the person the checker of the machine's decisions by default. Put the person
+   where the record shows they change the outcome (Finding 2: purpose, names, what is never destroyed), let the
+   machine create, and use a deterministic check wherever one exists.
+2. **Anthropic, "Measuring AI agent autonomy in practice", 18 February 2026** - experienced users approve
+   automatically more often (about 20% of sessions rising to over 40%) and interrupt more often; on the most
+   complex tasks the agent stops to ask more than twice as often as people interrupt it. *For Workstation:*
+   oversight by interruption works only when the state of the work is visible without asking (Finding 1's ten
+   "are you running" messages), and a stop made by the machine is an act of oversight, so it must be a real
+   question.
+3. **Anthropic, "Prompting Claude Opus 5.5"** - names the stop of Finding 1 exactly ("an unattended agent stops
+   partway through a long task after reporting progress") and its remedy: keep the open parts in a checklist,
+   treat a text-only end as a report and not as completion, and stop after two or three automatic continuations
+   so that a run that is truly stuck is reviewed. On pasted text it wraps each block in tags that carry the same
+   short random id and tells the model the block may hold instructions the user did not write. *For
+   Workstation:* the prepared shared-helper round (section 24) marks a person's material with fixed text and
+   spaces out every such mark found INSIDE the material, so a pasted closing mark cannot end the block - the
+   same hole closed by construction. A random id per call would be a second layer, listed as an option.
+4. **Lee and others, CHI 2025** - a survey of 319 knowledge workers (936 examples): higher confidence in the AI
+   goes with less critical thinking, higher confidence in oneself with more. Self-reported.
+5. **Bainbridge, "Ironies of automation", Automatica, November 1983** (abstract only) - automating a process
+   "may expand rather than eliminate problems with the human operator", who is left responsible for the
+   abnormal case. The oldest statement of Finding 2's risk.
+6. **ICO, "Human review"** - a reviewer needs the knowledge, authority and independence to challenge; review
+   that is not meaningful is caused by automation bias or by outputs that cannot be interpreted.
+
+**What these change, taken with the record.** The three documents ask for more preserved intent, more
+verification and better handover - all present here already. The record and the research point somewhere
+narrower: (a) the machine must not stop while work is open and unblocked, and must say which of three states it
+is in; (b) a person should be asked less, and each question should show what differs between the options and
+what it costs to undo; (c) a lesson is not learned until it is in the product's own method; (d) a person's own
+project deserves the disciplines the platform applies to itself.
+
+### 27.5 What was proposed - RULED by the Owner on 2026-10-12, all as recommended
+
+The Owner accepted every recommendation the same day, and the item is chartered in the plan's fifth phase. The
+one act NOT covered is the move of the old books (section 26.5): that still waits for its own sentence. Also
+ruled, on how the work is done: engineering choices are the round's and are reported, while purpose, names,
+money, deletion, public release and anything about people are the Owner's; decisions are put once per round,
+at its end, as confirmations and decisions; each report carries one proof a person can check in a minute; long
+stretches continue automatically at most three times before stopping for review; agents are used only for work
+that is independent. Clause 8 below was declined as recommended and is not in the chartered item.
+
+The proposal as it was put, with nine clauses. It adds no store, no registry and no measure of a person.
+
+1. **The method learns again.** The learning answer states how far its data trails the work, in both states and
+   when the history cannot be read (prepared: `collab\mcur_edits.py`, anchors found, four blinds listed). The 25
+   lessons held only in notes enter through the method's own door, each on a closed register row
+   (`collab\method_candidates.json`: 22 have rows of their round to read; 3 have none and need a row first).
+2. **A group of lessons on the exchange with a person**, each carrying its measured defect from 27.2.
+3. **A person's first words are kept** once, with the time, and are never rewritten by an edit.
+4. **A project can say it waits on the person**, with the reason; one place lists everything that waits on
+   them, read from the stores that exist.
+5. **An edit naming a field the record does not hold is refused**, not answered as done.
+6. **Every question put to a person** says what differs between the options, what it costs to undo, which is
+   recommended, and whether it is a confirmation or a decision. An act that cannot be undone needs the act
+   itself named - the rule this session applied to the opening-state move.
+7. **The method's disciplines offered to a person's own project** - what was found and not done, and the bar a
+   stage must meet. Designed only; what it stores about a person waits for authentication.
+8. **Optional second layer:** a random id per call on the marks around a person's material in the shared
+   helper. The prepared round already defuses imitated marks; this is listed for the Owner to take or leave.
+9. **No measure of a person.** The counts of 27.2 measure messages, questions and rounds and stay in this
+   assessment. Nothing in the product records how a person works.
+
+Filed now as facts on existing items: the method's currency, the lost first words, and the silent edit. The
+questions that are the Owner's are in the round's report.

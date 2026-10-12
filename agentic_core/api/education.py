@@ -27,9 +27,16 @@ from agentic_core.religious_domain.subject_screen import refuse_if_religious_tea
 
 router = APIRouter(prefix="/api/v1/education", tags=["education"])
 
+#  OWNER RULING 2026-10-12 - ONLY THE NAME OF A FRAMEWORK IS HELD. No content of any framework is in this
+#  platform, so nothing is checked against one and nothing is "aligned" to one. The id `uk_national` is kept
+#  for saved records; its name was a curriculum that does not exist (the national curriculum is England's).
+FRAMEWORK_HELD = ("only this framework's NAME is held: none of its content is in this platform, so nothing "
+                  "below was checked against it")
 _FRAMEWORKS = [
     {"id": "bloom", "name": "Bloom's Taxonomy", "region": "International"},
-    {"id": "uk_national", "name": "UK National Curriculum", "region": "England"},
+    {"id": "uk_national", "name": "National Curriculum (England)", "region": "England",
+     "page": "https://www.gov.uk/national-curriculum", "read_on": "2026-10-12",
+     "says": "the national curriculum of England's maintained schools; academies and private schools need not follow it"},
     {"id": "cambridge_igcse", "name": "Cambridge IGCSE", "region": "International"},
     {"id": "ib", "name": "International Baccalaureate (IB)", "region": "International"},
     {"id": "montessori", "name": "Montessori Method", "region": "International"},
@@ -37,6 +44,14 @@ _FRAMEWORKS = [
     {"id": "competency_based", "name": "Competency-Based Education", "region": "International"},
     {"id": "ubd", "name": "Understanding by Design (UbD)", "region": "International"},
 ]
+for _f in _FRAMEWORKS:
+    _f["held"] = "name only"
+_FRAMEWORK_IDS = tuple(f["id"] for f in _FRAMEWORKS)
+#  typed once: what the religion screen's silence means, and who these tools are for
+SCREEN_NOT_CLEARED = ("Not reviewed as religious teaching content: this platform's subject screen did not "
+                      "flag it. The screen cannot certify a subject as secular - it can only flag one.")
+FOR_WHOM = "For a teacher or an adult learner."
+WORK_LIMIT = 6000          # characters of a student's work handed to the composer
 
 _ASSESSMENT_TYPES = {
     "quiz": "Create a 10-question quiz with answer key. Mix question types: multiple choice (5), short answer (3), and true/false (2). Include a marking scheme.",
@@ -49,7 +64,7 @@ _ASSESSMENT_TYPES = {
 
 @router.get("/frameworks")
 async def list_frameworks():
-    return {"frameworks": _FRAMEWORKS, "total": len(_FRAMEWORKS)}
+    return {"frameworks": _FRAMEWORKS, "total": len(_FRAMEWORKS), "held_basis": FRAMEWORK_HELD}
 
 
 class CurriculumRequest(BaseModel):
@@ -73,11 +88,19 @@ async def design_curriculum(req: CurriculumRequest):
     behind the gate and say where they go. The screen can only FLAG, never clear, and the response says so.
     """
     _screen = refuse_if_religious_teaching("curriculum", req.subject, req.level, req.framework)   # W659 - one function, four routes
+    if req.framework not in _FRAMEWORK_IDS:
+        raise HTTPException(status_code=422, detail=(
+            f"'{req.framework}' is not a framework this platform lists. The listed names are: "
+            + ", ".join(_FRAMEWORK_IDS) + ". Only names are held - no framework's content."))
     n_weeks = min(max(req.duration_weeks, 4), 52)
     n_objectives = min(max(req.learning_objectives_count, 3), 10)
+    _adjusted = ([f"duration: {req.duration_weeks} weeks was asked for and {n_weeks} was used (the range is 4 to 52)"]
+                 if n_weeks != req.duration_weeks else []) + (
+                [f"objectives: {req.learning_objectives_count} was asked for and {n_objectives} was used (the range is 3 to 10)"]
+                 if n_objectives != req.learning_objectives_count else [])
 
     prompt = (
-        f"You are a master curriculum designer with expertise in {req.framework.replace('_', ' ')}.\n"
+        f"Claim no professional role.\n"
         f"Design a complete {n_weeks}-week curriculum.\n\n"
         f"Subject: {req.subject}\n"
         f"Level: {req.level}\n"
@@ -103,7 +126,10 @@ async def design_curriculum(req: CurriculumRequest):
         "level": req.level,
         "duration_weeks": n_weeks,
         "framework": req.framework,
-        "curriculum": curriculum,
+        "framework_basis": FRAMEWORK_HELD,
+        "adjusted": _adjusted,
+        "curriculum": (curriculum or "") + "\n\n_" + FOR_WHOM + " Framework: " + FRAMEWORK_HELD + "."
+                      + ((" Adjusted: " + "; ".join(_adjusted) + ".") if _adjusted else "") + "_",
         "ai_provenance": provenance,
         #  P3.10 — the screen's result travels WITH the output. It did not clear this subject; it only
         #  failed to flag it, and those are different facts. A reader who sees a curriculum served here
@@ -125,6 +151,14 @@ async def design_curriculum(req: CurriculumRequest):
     }
 
 
+_LESSON_NOTE = (FOR_WHOM + " A draft for a teacher to check and adapt: nothing in it was checked against a "
+                "curriculum or by a person. " + SCREEN_NOT_CLEARED)
+_NEEDS_NOTE = (" The needs you typed were sent to the composer exactly as typed - do not name a pupil in "
+               "that field.")
+_ASSESSMENT_NOTE = (FOR_WHOM + " A draft: the answer key and mark scheme were checked by nobody - check every "
+                    "answer before use. Not an official paper of any awarding body. " + SCREEN_NOT_CLEARED)
+
+
 class LessonPlanRequest(BaseModel):
     subject: str
     topic: str
@@ -141,11 +175,11 @@ async def generate_lesson_plan(req: LessonPlanRequest):
     """
     Generate a detailed, structured lesson plan ready for classroom delivery.
     """
-    refuse_if_religious_teaching("lesson plan", req.subject, req.topic, req.level)      # W659 (ledger v15 FU-689)
+    _screen = refuse_if_religious_teaching("lesson plan", req.subject, req.topic, req.level)      # W659 (ledger v15 FU-689)
     duration = min(max(req.duration_minutes, 20), 180)
 
     prompt = (
-        f"You are an outstanding teacher and lesson planning expert. "
+        f"Claim no professional role. "
         f"Create a detailed, classroom-ready lesson plan.\n\n"
         f"Subject: {req.subject}\n"
         f"Topic: {req.topic}\n"
@@ -177,7 +211,10 @@ async def generate_lesson_plan(req: LessonPlanRequest):
         "topic": req.topic,
         "level": req.level,
         "duration_minutes": duration,
-        "lesson_plan": plan,
+        "lesson_plan": (plan or "") + "\n\n_" + _LESSON_NOTE + (_NEEDS_NOTE if req.special_needs.strip() else "") + "_",
+        "religious_subject_screen": _screen,
+        "screen_note": SCREEN_NOT_CLEARED,
+        "disclaimer": disclaimer_for(provenance, "An AI-drafted lesson plan.", _LESSON_NOTE),
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
@@ -202,13 +239,20 @@ async def marking_feedback(req: FeedbackRequest):
     #  W659 - marking is teaching content too. The SUBJECT and the TASK are screened; the student's own work is not
     #  (a history essay that mentions a faith is not a religious-teaching request).
     refuse_if_religious_teaching("marking feedback", req.subject, req.task)
+    #  OWNER RULING 2026-10-12 - BLANK WORK IS REFUSED, AND WORK NOT READ WHOLE IS NOT GRADED. The work was cut
+    #  at a fixed length inside the prompt and a grade returned with nothing said; blank work was graded too.
+    _work = req.student_work or ""
+    if not _work.strip():
+        raise HTTPException(status_code=422, detail=(
+            "No student work was supplied, so there is nothing to mark. Paste the work and try again."))
+    _cut = len(_work) > WORK_LIMIT
     prompt = (
-        "You are an experienced, fair teacher and examiner. Mark the student's work against the task and any "
+        "Claim no professional role. Mark the student's work against the task and any "
         "rubric, and give warm but honest, actionable feedback. Be specific and point to evidence in the work.\n\n"
         f"Subject: {req.subject}\nLevel: {req.level}\nFeedback tone: {req.tone}\n"
         + (f"Task / question:\n{req.task}\n\n" if req.task else "")
         + (f"Rubric / marking criteria:\n{req.rubric}\n\n" if req.rubric else "")
-        + f"STUDENT WORK:\n{req.student_work[:6000]}\n\n"
+        + f"STUDENT WORK:\n{_work[:WORK_LIMIT]}\n\n"
         "Produce:\n"
         "## Overall Impression (2-3 sentences)\n"
         "## Strengths (specific, with evidence from the work)\n"
@@ -232,16 +276,25 @@ async def marking_feedback(req: FeedbackRequest):
     #  and a saved version. (No top-level floor note is added: the page prints the provenance's own floor
     #  note, and stops printing it when the response carries one of its own.)
     sections_withheld: list = []
-    if (provenance or {}).get("floor_note"):
+    _on_floor = bool((provenance or {}).get("floor_note"))
+    if _on_floor or _cut:
         from agentic_core.api.religion import _withhold_sections
         feedback, sections_withheld = _withhold_sections(
             feedback, ("Criterion-by-Criterion", "Indicative Level / Grade"))
-        if sections_withheld:
+        if sections_withheld and _on_floor:
             feedback = ((feedback + "\n\n") if feedback else "") + (
                 f"_Withheld on the native floor: {' · '.join(sections_withheld)}. The floor does not read the "
                 f"student's work, so no assessment against criteria and no level or grade is offered here; "
                 f"what remains above is a structured frame, not marking._")
 
+    if _cut:
+        #  said in the TEXT, so it travels with a copy, a download and a saved version
+        feedback = ((feedback + "\n\n") if feedback else "") + (
+            f"_ONLY PART OF THE WORK WAS READ: the first {WORK_LIMIT:,} of {len(_work):,} characters. "
+            + (f"Withheld for that reason: {' · '.join(sections_withheld)} - an assessment against criteria "
+               f"or a level for work that was not read whole would be of something else. "
+               if sections_withheld and not _on_floor else "")
+            + "Shorten the work or mark it in parts._")
     return {
         "feedback_id": uuid.uuid4().hex[:10],
         "subject": req.subject,
@@ -249,6 +302,7 @@ async def marking_feedback(req: FeedbackRequest):
         "tone": req.tone,
         "feedback": feedback,
         "sections_withheld": sections_withheld,
+        "work_read": {"chars": len(_work), "read_chars": min(len(_work), WORK_LIMIT), "read_whole": not _cut},
         "ai_provenance": note_withheld(provenance, sections_withheld),
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "disclaimer": disclaimer_for(
@@ -272,18 +326,19 @@ async def create_assessment(req: AssessmentRequest):
     """
     Create a complete assessment instrument (quiz, rubric, exam, etc.)
     """
-    refuse_if_religious_teaching("assessment", req.subject, req.topic, req.level)       # W659 (ledger v15 FU-689)
-    type_prompt = _ASSESSMENT_TYPES.get(
-        req.assessment_type,
-        f"Create a comprehensive {req.assessment_type.replace('_', ' ')} assessment."
-    )
+    _screen = refuse_if_religious_teaching("assessment", req.subject, req.topic, req.level)       # W659 (ledger v15 FU-689)
+    if req.assessment_type not in _ASSESSMENT_TYPES:
+        raise HTTPException(status_code=422, detail=(
+            f"'{req.assessment_type}' is not an assessment type this platform drafts. The types are: "
+            + ", ".join(_ASSESSMENT_TYPES) + "."))
+    type_prompt = _ASSESSMENT_TYPES[req.assessment_type]
 
     objectives_context = ""
     if req.learning_objectives:
         objectives_context = f"Learning objectives being assessed:\n" + "\n".join(f"- {o}" for o in req.learning_objectives) + "\n\n"
 
     prompt = (
-        f"You are an expert assessment designer.\n"
+        f"Claim no professional role.\n"
         f"Subject: {req.subject}\n"
         f"Topic: {req.topic}\n"
         f"Level: {req.level}\n"
@@ -306,7 +361,10 @@ async def create_assessment(req: AssessmentRequest):
         "topic": req.topic,
         "level": req.level,
         "assessment_type": req.assessment_type,
-        "assessment": assessment,
+        "assessment": (assessment or "") + "\n\n_" + _ASSESSMENT_NOTE + "_",
+        "religious_subject_screen": _screen,
+        "screen_note": SCREEN_NOT_CLEARED,
+        "disclaimer": disclaimer_for(provenance, "An AI-drafted assessment.", _ASSESSMENT_NOTE),
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }

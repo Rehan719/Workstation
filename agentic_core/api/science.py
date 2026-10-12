@@ -279,6 +279,23 @@ class GmpSignRequest(BaseModel):
     note: str = ""
 
 
+def _gmp_signer_identity(rec) -> dict:
+    """ledger v17 (FU-963) - WHAT IS KNOWN OF WHO SIGNED, said beside the sentence naming the signatory.
+    {identity_verified: False | None, identity_basis}. Never True: nothing here verifies a signer."""
+    if not isinstance(rec, dict) or not rec.get("signatory_id"):
+        return {"identity_verified": None,
+                "identity_basis": "no sign-off is recorded on this record, so there is no signer to speak of"}
+    _by = rec.get("sign_requested_by")
+    return {"identity_verified": False,
+            "identity_basis": (
+                f"NOT VERIFIED - the signatory id {rec.get('signatory_id')!r} was a field of the request and "
+                f"was checked only for being on the QA roster. It is not bound to the account that sent the "
+                f"request (" + (f"sent by the account {_by!r}" if _by else
+                                "no account is recorded: authentication was off, or the sign-off predates "
+                                "this field") +
+                "), so this record does not establish who signed it")}
+
+
 @router.post("/gmp/roster")
 async def gmp_add_signatory(req: GmpSignatoryRequest, admin: dict = Depends(require_admin)):
     """The Owner engages a QA signatory. Until one is engaged, no GMP record is released."""
@@ -302,10 +319,11 @@ async def gmp_submit(req: GmpRecordRequest, user: dict | None = Depends(get_curr
 async def gmp_sign(record_id: str, req: GmpSignRequest, user: dict | None = Depends(get_current_user)):
     """QA sign-off by a signatory ON THE ROSTER; every refusal names which of three facts it is."""
     from agentic_core.science import gmp_signoff
-    res = gmp_signoff.sign(record_id, req.signatory_id, req.approve, req.note)
+    res = gmp_signoff.sign(record_id, req.signatory_id, req.approve, req.note,
+                           requested_by=(user.get("username") if isinstance(user, dict) else None))
     if not res["ok"]:
         raise HTTPException(status_code=409, detail=res)
-    return res
+    return {**res, **_gmp_signer_identity(res.get("record"))}
 
 
 @router.get("/gmp/records/{record_id}")
@@ -313,4 +331,5 @@ async def gmp_record(record_id: str, user: dict | None = Depends(get_current_use
     """The record's body ONLY when QA signed it; otherwise withheld, with the reason."""
     from agentic_core.science import gmp_signoff
     body, state, why = gmp_signoff.released(record_id)
-    return {"record_id": record_id, "body": body, "state": state, "basis": why}
+    return {"record_id": record_id, "body": body, "state": state, "basis": why,
+            **_gmp_signer_identity(gmp_signoff._load("records").get(record_id))}

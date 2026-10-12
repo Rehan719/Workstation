@@ -581,11 +581,18 @@ export const VSBEconomy: React.FC = () => {
       )}
 
       {/* W658 - a simulated cycle says so, above its figures: nothing below belongs to an entity that exists */}
-      {simBasis && (
+      {(() => {
+        //  the notice is read from whichever answer the page holds: the cycle just run, the loaded board pack,
+        //  or the Owner payments - so a reload or a second visitor sees it too
+        const _sim = simBasis
+          || (bp?.registration === 'UNREGISTERED' && typeof bp?.registration_basis === 'string' ? bp.registration_basis : '')
+          || (pay?.simulated === true && typeof pay?.simulated_basis === 'string' ? pay.simulated_basis : '');
+        return _sim ? (
         <p data-testid="economy-simulation-notice" className="text-[11px] text-amber-400 font-bold leading-relaxed border border-amber-500/30 rounded-xl p-3">
-          SIMULATION — {simBasis} Its funds are not transferred or invested into registered entities, and it pays nothing into the shared capital fund.
+          SIMULATION — {_sim} Its funds are not transferred or invested into registered entities, and it pays nothing into the shared capital fund.
         </p>
-      )}
+        ) : null;
+      })()}
       {/* Cycle result */}
       {cycle && (
         <div className="space-y-6">

@@ -409,6 +409,17 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
         "delivery_coverage_basis": _cov_basis,
         "substantive_length": _substantive(content),
         "stub_found": stub,
+        #  ledger v17 (FU-933) - `stub_found` is "a marker matched OR the text is too short". When the gate
+        #  cannot run, its basis speaks of coverage only and this finding reached no surface. The two parts
+        #  are named, and the sentence is carried whether or not the gate ran.
+        "stub_marker_found": bool(_STUB_RE.search(content or "")),
+        "stub_screen_basis": (
+            "the length and stub screen ran on this text, whether or not the coverage gate could: "
+            + ("; ".join(
+                (["a stub marker matched"] if _STUB_RE.search(content or "") else [])
+                + ([f"the text is under the minimum of {_MIN_SUBSTANTIVE} characters"]
+                   if not _substantive(content) else []))
+               if stub else "no stub marker matched and the text is not under the minimum length")),
         "served_by": _served_label,
         "not_assessable": _floor,
     }

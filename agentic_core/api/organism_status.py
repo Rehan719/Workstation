@@ -339,6 +339,32 @@ def _genome_state() -> dict:
 
 # ── Main status endpoint ──────────────────────────────────────────────────────
 
+def _reconfig_wiring(features: dict, domains_config: dict) -> dict:
+    """ledger v17 (FU-979) - HOW MANY OF THE SWITCHES THE OVERVIEW COUNTS ARE READ BY ANYTHING.
+    The overview printed "Features active", "Domains on" and a provider chip as live state; the wiring table
+    says most of those keys are stored only. Counted here with the table's own function."""
+    try:
+        from agentic_core.organism.reconfiguration import wiring_for
+        _fw = sum(1 for k in (features or {}) if wiring_for("features", k)["wired"])
+        _dw = sum(1 for k in (domains_config or {}) if wiring_for("domains", k)["wired"])
+        _pp, _rpm = wiring_for("gateway", "preferred_provider"), wiring_for("gateway", "rpm_limit")
+    except Exception as _exc:                          # noqa: BLE001 - said, never assumed wired
+        return {"features_wired": None, "domains_wired": None, "preferred_provider_wired": None,
+                "rpm_limit_wired": None,
+                "wiring_basis": f"NOT CHECKED - the wiring table could not be read ({_exc.__class__.__name__})"}
+    return {"features_wired": _fw, "features_total": len(features or {}),
+            "domains_wired": _dw, "domains_total": len(domains_config or {}),
+            "preferred_provider_wired": _pp["wired"], "rpm_limit_wired": _rpm["wired"],
+            "wiring_basis": (
+                f"These are stored switches. {_fw} of {len(features or {})} feature flag(s) and {_dw} of "
+                f"{len(domains_config or {})} domain flag(s) are read by anything, so switching any other one "
+                f"changes nothing. The provider preference is "
+                + ("read by: " + _pp["consumer"] if _pp["wired"] else "stored only - nothing reads it")
+                + "; the RPM limit is "
+                + ("read by: " + _rpm["consumer"] if _rpm["wired"] else "stored only - nothing reads it")
+                + ". The per-key table is on the Anatomy tab.")}
+
+
 @router.get("/status")
 async def organism_status():
     """
@@ -432,6 +458,7 @@ async def organism_status():
                 "domains_enabled": sum(1 for d in domains_config.values() if d.get("enabled")),
                 "rpm_limit": ctx["runtime_config"]["rpm_limit"],
                 "preferred_provider": ctx["runtime_config"]["preferred_provider"],
+                **_reconfig_wiring(features, domains_config),          # ledger v17 (FU-979)
             },
         },
 

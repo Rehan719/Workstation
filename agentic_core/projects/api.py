@@ -538,6 +538,16 @@ async def advance_stage(project_id: str,
             detail=f"Run the AI workflow at least once in the '{project.stage}' stage before advancing.",
         )
 
+    #  ledger v17 (FU-965) - a proposal to advance this project was pending, this route advanced the stage
+    #  anyway, and the proposal stayed pending. While one is pending the decision belongs to it.
+    _pending965 = next((p for p in _all_proposals()
+                        if p.status == "pending" and p.project_id == project.id), None)
+    if _pending965 is not None:
+        raise HTTPException(status_code=409, detail=(
+            f"A governance proposal to advance this project from '{_pending965.from_stage}' to "
+            f"'{_pending965.to_stage}' is pending ({_pending965.id}), so the stage was NOT advanced here. "
+            f"Approve or reject that proposal in the Governance Hub; the stage moves when it is approved."))
+
     prev_stage = project.stage
     project.stage = STAGE_ORDER[current_idx + 1]
     project.status = "idle"

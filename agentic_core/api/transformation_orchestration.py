@@ -540,7 +540,10 @@ async def orchestrate(req: OrchestrateRequest):
         "governance": governance, "validation": validation,
         # W508 — carried on the run, because a check computed and not reported is rendered nowhere
         "method_check": _method_check,
-        "dynamic": True, "adaptive": True, "responsive": signals > 0,
+        #  ledger v17 (FU-949) - two literals stood here beside `responsive`, stored on every run and true
+        #  whatever the run did. Nothing computed them and nothing reads them; they are gone. `responsive`
+        #  is computed and stays.
+        "responsive": signals > 0,
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     try:
