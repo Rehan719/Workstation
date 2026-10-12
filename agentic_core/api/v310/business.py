@@ -62,8 +62,16 @@ async def generate_business_plan(req: PlanRequest) -> Dict[str, Any]:
                        "or risks are invented in its place."),
         }
 
-    result["status"] = "plan_synthesized"
-    result["generated_at"] = time.time()
+    #  ledger v17 R3.2 / R5.3 - `status` was "plan_synthesized" on every answer, the one that says
+    #  `generated: false` included. A reply that parsed to something other than an object is not a plan either.
+    if not isinstance(result, dict):
+        result = {"generated": False, "raw": raw[:2000] if raw else "",
+                  "detail": ("The model's reply parsed, but not to a business plan object. No projections, "
+                             "steps or risks are invented in its place.")}
+    result.setdefault("generated", True)
+    result["status"] = "plan_synthesized" if result["generated"] is True else "not_generated"
+    result["served_by"] = _br.get("served_by")
+    result["generated_at"] = time.time() if result["generated"] is True else None
     return result
 
 

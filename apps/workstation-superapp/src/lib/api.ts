@@ -298,6 +298,9 @@ export type QmsQuality = {
   qms_gate_passed?: boolean | null; qms_basis?: string | null;
   delivery_coverage?: number | null; document_controlled?: boolean | null;
 } | null | undefined;
+export const QMS_GATE_MEASURES = 'Structure gate: every declared section heading is present and no stub marker '
+  + 'was found. Headings and markers only — the content was not read, so this is not a finding that the delivery '
+  + 'is specifically designed or verified.';
 export const qmsChip = (q: QmsQuality, prefix = 'QMS') => {
   if (!q || q.qms_gate_passed === undefined) return null;   // no gate ran (or a gate error) — no chip
   const v = q.qms_gate_passed;
@@ -305,10 +308,13 @@ export const qmsChip = (q: QmsQuality, prefix = 'QMS') => {
   const doc = q.document_controlled ? ' · doc-controlled' : '';
   if (v === null) return { verdict: 'not assessable' as const, label: `${prefix} —`, cls: 'bg-slate-800 text-slate-500',
     title: q.qms_basis || 'not assessable — floor-served: the floor emits the requested headings, so the gate cannot measure it' };
-  if (v) return { verdict: 'pass' as const, label: `${prefix} pass${cov}${doc}`, cls: 'bg-emerald-500/15 text-emerald-400',
-    title: q.qms_basis || 'living-QMS gate passed on real coverage/stub metrics' };
-  return { verdict: 'fail' as const, label: `${prefix} fail${cov}${doc}`, cls: 'bg-vital/15 text-vital',
-    title: q.qms_basis || 'living-QMS gate failed on real coverage/stub metrics' };
+  // OWNER RULING 2026-10-12 (ledger v17 R1.0) - the LABEL says what passed: the structure gate. `verdict`
+  // keeps its three values for the pages that branch on it; the words a person reads are no longer a bare "pass".
+  // A structure pass is drawn in a NEUTRAL colour: the colour of a good result is not earned by headings.
+  const said = typeof q.qms_basis === 'string' && q.qms_basis.includes('content was not read');
+  const title = said ? (q.qms_basis as string) : `${q.qms_basis ? `${q.qms_basis} — ` : ''}${QMS_GATE_MEASURES}`;
+  if (v) return { verdict: 'pass' as const, label: `${prefix} structure pass${cov}${doc}`, cls: 'bg-slate-700/40 text-slate-200', title };
+  return { verdict: 'fail' as const, label: `${prefix} structure fail${cov}${doc}`, cls: 'bg-vital/15 text-vital', title };
 };
 
 /**

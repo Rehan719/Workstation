@@ -126,6 +126,14 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({ avatar }) 
                   profile: applied — your saved profile shaped this answer.
                 </p>
               )}
+              {/* ledger v17 R5.1 - Settings tells the person an unapproved answer "is shown and marked as not
+                  cleared"; nothing marked it. The server's own reason is printed, as text, under every reply
+                  the chain did not clear. */}
+              {m.role === 'assistant' && m.cleared !== true && !!m.clearanceReason && (
+                <p data-testid="avatar-not-cleared" className="text-[9px] font-bold text-amber-400 px-1">
+                  not cleared: {String(m.clearanceReason)}
+                </p>
+              )}
               {m.role === 'assistant' && m.groundedIn && (
                 <p data-testid="avatar-grounded-in" className="text-[9px] font-bold text-slate-500 px-1">
                   {/* W648 (FU-650) — "grounded in" is said only when the reply USED the record; on the floor

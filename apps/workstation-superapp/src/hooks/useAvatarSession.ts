@@ -33,6 +33,8 @@ export interface AvatarMessage {
   groundingUsed?: boolean | null; // W648 (FU-650) — false when the record reached the prompt and the floor did not read it
   groundingBasis?: string | null;
   profileBasis?: string | null;
+  cleared?: boolean | null;          // ledger v17 R5.1 - true only when the clearance chain approved this reply
+  clearanceReason?: string | null;   // the server's own sentence; shown under any reply that was not cleared
 }
 
 export type AvatarFaceState = 'idle' | 'thinking' | 'speaking';
@@ -270,6 +272,8 @@ export function useAvatarSession() {
         groundingUsed: resp.data.grounding_used ?? null,       // W648 (FU-650)
         groundingBasis: resp.data.grounding_basis ?? null,
         profileBasis: resp.data.profile_basis ?? null,
+        cleared: resp.data.cleared ?? null,
+        clearanceReason: typeof resp.data.clearance_reason === 'string' ? resp.data.clearance_reason : null,
       }]);
       if (speakReplies) speakText(replyText);
       setAiStatus('online');

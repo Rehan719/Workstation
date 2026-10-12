@@ -17968,11 +17968,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.40",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W676",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v17 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "fixed in W676 with a guard that drives the property and blinds driven red; the fix was reviewed against the whole answer its function returns"
     },
     {
       "id": "FU-928",
@@ -17986,11 +17989,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.40",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W676",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v17 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "fixed in W676 with a guard that drives the property and blinds driven red; the fix was reviewed against the whole answer its function returns"
     },
     {
       "id": "FU-929",
@@ -18004,11 +18010,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.40",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W676",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v17 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "fixed in W676 with a guard that drives the property and blinds driven red; the fix was reviewed against the whole answer its function returns"
     },
     {
       "id": "FU-930",
@@ -18022,11 +18031,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.40",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W676",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v17 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "fixed in W676 with a guard that drives the property and blinds driven red; the fix was reviewed against the whole answer its function returns"
     },
     {
       "id": "FU-931",
@@ -18040,11 +18052,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.40",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W676",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v17 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "fixed in W676 with a guard that drives the property and blinds driven red; the fix was reviewed against the whole answer its function returns"
     },
     {
       "id": "FU-932",
@@ -18182,11 +18197,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.40",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W676",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v17 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "fixed in W676 with a guard that drives the property and blinds driven red; the fix was reviewed against the whole answer its function returns"
     },
     {
       "id": "FU-940",
@@ -18200,11 +18218,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.40",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W676",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v17 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "fixed in W676 with a guard that drives the property and blinds driven red; the fix was reviewed against the whole answer its function returns"
     },
     {
       "id": "FU-941",
@@ -18307,11 +18328,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.40",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W676",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v17 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "fixed in W676 with a guard that drives the property and blinds driven red; the fix was reviewed against the whole answer its function returns"
     },
     {
       "id": "FU-947",
@@ -18325,11 +18349,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.40",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W676",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v17 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "fixed in W676 with a guard that drives the property and blinds driven red; the fix was reviewed against the whole answer its function returns"
     },
     {
       "id": "FU-948",
@@ -18343,11 +18370,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.40",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W676",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v17 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "fixed in W676 with a guard that drives the property and blinds driven red; the fix was reviewed against the whole answer its function returns"
     },
     {
       "id": "FU-949",
@@ -18450,11 +18480,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.40",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W676",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v17 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "fixed in W676 with a guard that drives the property and blinds driven red; the fix was reviewed against the whole answer its function returns"
     },
     {
       "id": "FU-955",
@@ -18469,11 +18502,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.40",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W676",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v17 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "fixed in W676 with a guard that drives the property and blinds driven red; the fix was reviewed against the whole answer its function returns"
     },
     {
       "id": "FU-956",
@@ -18488,11 +18524,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.40",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W676",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v17 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "fixed in W676 with a guard that drives the property and blinds driven red; the fix was reviewed against the whole answer its function returns"
     },
     {
       "id": "FU-957",
@@ -18542,11 +18581,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.40",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W676",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v17 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "fixed in W676 with a guard that drives the property and blinds driven red; the fix was reviewed against the whole answer its function returns"
     },
     {
       "id": "FU-960",
@@ -18562,11 +18604,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.40",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W676",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v17 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "fixed in W676 with a guard that drives the property and blinds driven red; the fix was reviewed against the whole answer its function returns"
     },
     {
       "id": "FU-961",
@@ -18580,11 +18625,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.40",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W676",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v17 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "fixed in W676 with a guard that drives the property and blinds driven red; the fix was reviewed against the whole answer its function returns"
     },
     {
       "id": "FU-962",
@@ -18596,11 +18644,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.40",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W676",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v17 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "fixed in W676 with a guard that drives the property and blinds driven red; the fix was reviewed against the whole answer its function returns"
     },
     {
       "id": "FU-963",
@@ -18750,11 +18801,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.40",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W676",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v17 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "fixed in W676 with a guard that drives the property and blinds driven red; the fix was reviewed against the whole answer its function returns"
     },
     {
       "id": "FU-971",
@@ -18768,11 +18822,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.40",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W676",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v17 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "fixed in W676 with a guard that drives the property and blinds driven red; the fix was reviewed against the whole answer its function returns"
     },
     {
       "id": "FU-972",
@@ -18786,11 +18843,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.40",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W676",
       "note": "",
       "slot_source": "the standing tier-1 findings of ledger v17 ride this item by its charter",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "fixed in W676 with a guard that drives the property and blinds driven red; the fix was reviewed against the whole answer its function returns"
     },
     {
       "id": "FU-973",
@@ -19012,6 +19072,897 @@
       "closed_by": null,
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region on the M3 item",
+      "tier": 3
+    },
+    {
+      "id": "FU-986",
+      "title": "The nonconformance route answers Recorded and stores nothing",
+      "why": "It returns an eight-character id kept nowhere and the sentence that it was recorded. A durable defect loop exists behind another door (the delivery gate's defects: stored, corrected, re-verified). A reported nonconformance should open a defect there, marked person-reported and counted apart from measured ones.",
+      "source": "W676 (the quality and finance documents used as lenses on this repository's own records; assessment sections 20 and 22)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/management_systems.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.41",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 2
+    },
+    {
+      "id": "FU-987",
+      "title": "A generated quality or environmental framework is said to be aligned to an edition its publisher has withdrawn",
+      "why": "The catalogue, two prompts and two answer fields name the 2015 editions of two standards. Their publisher's pages, opened on 2026-10-12, list 2026 editions as published. Name the current edition with the date it was read, and say that this is a generated outline and not a conformity assessment. Hold or send no standard's text.",
+      "source": "W676 (the quality and finance documents used as lenses on this repository's own records; assessment sections 20 and 22)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/management_systems.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.41",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 2
+    },
+    {
+      "id": "FU-988",
+      "title": "The nonconformance route takes any word as a severity and treats it as minor",
+      "why": "A free string; an unknown value takes the minor path for the signal and its strength. Refuse it.",
+      "source": "W676 (the quality and finance documents used as lenses on this repository's own records; assessment sections 20 and 22)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/management_systems.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-989",
+      "title": "The standards catalogue lists two attainment levels as standards",
+      "why": "A maturity level and a certification grade sit in the list beside standards; a framework generated under one reads as a level held.",
+      "source": "W676 (the quality and finance documents used as lenses on this repository's own records; assessment sections 20 and 22)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/management_systems.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-990",
+      "title": "One tier-1 finding of the mid-way audit is the previous audit's finding returned, and three subjects recur across editions",
+      "why": "Read from the run records with the renderer's own rule: the quality gate certifying headings (v16, then v17 through another door); a resource that did not run said to have run (v15, v16, v17); transformation asserted from constants (v15, v16, v17); Change Control's auto-approval record (v15, v17). As a screen, 35 of 53 standing findings of v17 name a file an earlier standing finding named. Build the effectiveness check; reopen the returned rows.",
+      "source": "W676 (the quality and finance documents used as lenses on this repository's own records; assessment sections 20 and 22)",
+      "found": "2026-10-12",
+      "files": [
+        "docs/VISION_FIDELITY_LEDGER.md"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.10",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 2
+    },
+    {
+      "id": "FU-991",
+      "title": "One file is named by standing findings in every one of ten audit editions",
+      "why": "Forty-two standing findings across editions 8 to 17 name it; the establishment route's file has thirty-four and its page thirty-one. Site fixes there do not converge. One source for each stated fact, read by every surface.",
+      "source": "W676 (the quality and finance documents used as lenses on this repository's own records; assessment sections 20 and 22)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/vsb.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.10",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-992",
+      "title": "Pages are verified by reading their source text, and one frontend test file exists for 130 page and component files",
+      "why": "Of 702 tests 518 drive a route; of the newest 80, 54 also assert on file text. Five of the twenty tier-1 findings of the mid-way audit are sentences on a page or in a generated app. A presence check cannot see a disabled gate.",
+      "source": "W676 (the quality and finance documents used as lenses on this repository's own records; assessment sections 20 and 22)",
+      "found": "2026-10-12",
+      "files": [
+        "integration_tests/test_mvp_spine.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.10",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-993",
+      "title": "The audit has never been run against planted defects or deliberately false findings",
+      "why": "108 of 120 findings survived refutation in the mid-way audit, and nothing measures whether the refuter discriminates. Plant known defects and false findings in one slice; give one slice to two assessors and estimate what both miss.",
+      "source": "W676 (the quality and finance documents used as lenses on this repository's own records; assessment sections 20 and 22)",
+      "found": "2026-10-12",
+      "files": [
+        "scripts/workflows/fidelity_audit_v7.js"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.10",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-994",
+      "title": "A gate pass on an entity's delivery records simulated revenue",
+      "why": "With the gate measuring headings, structure alone earns. Ruled 2026-10-12: nothing earns on a structure pass; a delivery's revenue waits on a person's acceptance.",
+      "source": "W676 (the quality and finance documents used as lenses on this repository's own records; assessment sections 20 and 22)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/swarm.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.10",
+      "status": "done",
+      "closed_by": "W676",
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "a gate pass no longer records revenue; the answer says a delivery earns on a person's acceptance, and the kept code is behind one constant, driven both ways"
+    },
+    {
+      "id": "FU-995",
+      "title": "HYPOTHESIS: attached or ingested text reaches a model with nothing marking it as data and not instruction",
+      "why": "Absence by a search of the gateway and ingest paths; not driven, and not visible to any audit while only the floor serves. What a person typed is already a separate channel; build the boundary on it before any model is installed.",
+      "source": "W676 (the quality and finance documents used as lenses on this repository's own records; assessment sections 20 and 22)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/ai/gateway.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.10",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-996",
+      "title": "The fix rule is in the plan and not yet in the method",
+      "why": "The method is amended only through Change Control: a candidate lesson is derived from a confirmed, closed defect row and ratified. The rule that a fix reviews the whole answer its function returns is applied in the tier-1 round by hand; derive it as a candidate from a closed tier-1 row of that round and put it to Change Control, on the Owner's store and not a test store.",
+      "source": "W676 (the quality and finance documents used as lenses on this repository's own records; assessment sections 20 and 22)",
+      "found": "2026-10-12",
+      "files": [
+        "docs/DELIVERY_METHOD.json"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.10",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-997",
+      "title": "A test, audit or drive process is handed the Owner's matter folder",
+      "why": "The folder is named by an absolute path in a committed file; one environment variable redirects it and no runner set it. An audit agent of an earlier edition wrote in its own record that it had searched the real folder. The Owner's rule is that nothing about the matter leaves the machine, and a test log or an agent's transcript is off the machine.",
+      "source": "W676 (the quality and finance documents used as lenses on this repository's own records; assessment sections 20 and 22)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/legal/bundle.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.41",
+      "status": "done",
+      "closed_by": "W676",
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the suite and the audit backend name a folder of no one, and the resolver holds the committed path back from any test, audit or drive process; driven with the variable removed"
+    },
+    {
+      "id": "FU-998",
+      "title": "A tribunal claim or a cease-and-desist letter can be generated with none of the clerk's gates",
+      "why": "Driven: the generator answers 200 with a document for a filing-shaped template, with no located lines, no refusal of an unknown authority and no draft held for approval. Its prompt asks for a compelling particulars section with the grounds already chosen. One door: the generator refuses those templates and names the clerk.",
+      "source": "W676 (the quality and finance documents used as lenses on this repository's own records; assessment sections 20 and 22)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/law.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.41",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 2
+    },
+    {
+      "id": "FU-999",
+      "title": "Three prompts claim a solicitor's role and ask for a likely position with a confidence level",
+      "why": "The Owner ruled for the matter that no outcome or probability is produced; the public research form asks a model for one, and to name real statutes, with nothing resolving a named authority before it is shown. Invisible while only the floor serves.",
+      "source": "W676 (the quality and finance documents used as lenses on this repository's own records; assessment sections 20 and 22)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/law.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.41",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 2
+    },
+    {
+      "id": "FU-1000",
+      "title": "A drafting prompt types a statutory figure, a default term and an Act by its year, and calls its output compliant",
+      "why": "A typed rule is right until the law changes and then wrong silently; the tribunal time limits changed on 2026-10-01. Remove the figures or give each its source and the date read.",
+      "source": "W676 (the quality and finance documents used as lenses on this repository's own records; assessment sections 20 and 22)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/law.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-1001",
+      "title": "The list the clerk resolves authorities against holds four provisions of one statute beside machine-made sub-concepts",
+      "why": "Concepts named with a numbered suffix sit beside real ones. The clerk reads only the rules list, which is honest and thin; say on the panel how many provisions are held.",
+      "source": "W676 (the quality and finance documents used as lenses on this repository's own records; assessment sections 20 and 22)",
+      "found": "2026-10-12",
+      "files": [
+        "knowledge/Law/EmploymentTribunal/ontology/uk_employment_law_v9.json"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-1002",
+      "title": "An audit agent recorded a privacy observation in a note about what it left behind, and nothing was filed",
+      "why": "The instrument collects findings and ignores the residue notes its agents write. Read those notes as candidates at every audit.",
+      "source": "W676 (the quality and finance documents used as lenses on this repository's own records; assessment sections 20 and 22)",
+      "found": "2026-10-12",
+      "files": [
+        "scripts/workflows/fidelity_audit_v7.js"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.10",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-1003",
+      "title": "No route lets a person accept a delivery, so no delivery can earn",
+      "why": "By ruling a delivery's revenue waits on a person's acceptance. The recording code is kept behind one constant and switched off; the acceptance route, who may accept, and the event it records are to be built with the claims item.",
+      "source": "W676 (the quality and finance documents used as lenses on this repository's own records; assessment sections 20 and 22)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/swarm.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.3",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-1004",
+      "title": "The double-entry books record three per cent of the revenue the pots report",
+      "why": "On the Owner's store (newest record 2026-09-01): every one of 107 ledgers holds the older pots, 3,277,900 of revenue split to the unit; 46 hold double-entry postings recording 96,900. Since double-entry began the two agree except for one cycle of 1,000 with a pot entry and no posting. History, not a live fault - but the view, statements and any reconciliation must say which book a figure is from. Ruled: double-entry is the book of record.",
+      "source": "W676 (the quality and finance documents used as lenses on this repository's own records; assessment sections 20 and 22)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/economy/ledger.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.9",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 2
+    },
+    {
+      "id": "FU-1005",
+      "title": "Half the capital fund is held by three test allocations made in June that nothing can release",
+      "why": "Three allocations of 50,000, 4,975,000 and 1,000 to project ids that are not entities, still marked active; the fund page shows half deployed. Ruled 2026-10-12: reversed by a recorded reversal. The fund's reversal does not exist yet.",
+      "source": "W676 (the quality and finance documents used as lenses on this repository's own records; assessment sections 20 and 22)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/capital_fund.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.9",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 2
+    },
+    {
+      "id": "FU-1006",
+      "title": "The fund received 1,464 of the 500,364 that cycles set aside for it",
+      "why": "Two contributions, both in late August, against the sum of every ledger's fund pot. Old data or a contribution that fails quietly: read the contribution path and say which.",
+      "source": "W676 (the quality and finance documents used as lenses on this repository's own records; assessment sections 20 and 22)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/capital_fund.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.9",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-1007",
+      "title": "Forty-four of ninety-nine owner accounts with a balance name a test owner, and fifty-eight name the Owner for an entity that has no record",
+      "why": "The payments account's owner name is whatever the first accrual passed. Ruled 2026-10-12 (amending the same day's earlier ruling): the payee is resolved from the entity's owner record and the account's name is kept as history. An account whose entity has no record has no payee.",
+      "source": "W676 (the quality and finance documents used as lenses on this repository's own records; assessment sections 20 and 22)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/economy/owner_payments.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.9",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 2
+    },
+    {
+      "id": "FU-1008",
+      "title": "Roster, entity records, ledgers and owner accounts are four populations that do not match",
+      "why": "36, 70, 107 and 103 on the Owner's store; 59 ledgers belong to no entity record. A reconciliation read across them is the first clause of the money-on-paper item by ruling.",
+      "source": "W676 (the quality and finance documents used as lenses on this repository's own records; assessment sections 20 and 22)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/economy/living_vsbs.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.9",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-1009",
+      "title": "The apex account has accrued 30,200 while its ledger's owner pot says 343,500, and two entities differ by one cycle",
+      "why": "Read from the store. The two small differences look like an accrual that failed and was not re-applied; the apex is an unregistered simulation. Reconcile and say which record is the owner's share.",
+      "source": "W676 (the quality and finance documents used as lenses on this repository's own records; assessment sections 20 and 22)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/economy/owner_payments.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.9",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-1010",
+      "title": "Revenue is a number the caller of a cycle supplies, and nothing states how much value exists",
+      "why": "Every later figure - the owner's share, charity, the fund - is arithmetic on it. Ruled: every figure in the finance view says where its value entered.",
+      "source": "W676 (the quality and finance documents used as lenses on this repository's own records; assessment sections 20 and 22)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/economy.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.9",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-1011",
+      "title": "DECISION TAKEN, ACTION THE OWNER'S: move the test-era books aside as a reversible move",
+      "why": "Ruled 2026-10-12: an opening state, keeping the Owner's two entities and the apex. Nothing is deleted and the move is the Owner's to make or to tell me to make; a list of what would move, and the command that reverses it, is prepared first and shown.",
+      "source": "W676 (the quality and finance documents used as lenses on this repository's own records; assessment sections 20 and 22)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/economy/living_vsbs.py"
+      ],
+      "severity": "low",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-1012",
+      "title": "A person asking how long they have is shown no deadline and no route to a person",
+      "why": "Driven with no model: the research form answers a dismissal-date question with the question's own words under headings. A deadline is arithmetic on a dated rule and a route is a row in a directory; neither needs generation.",
+      "source": "W676 (three external documents on an advice capability, read against the tree; assessment section 23)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/law.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.11",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 2
+    },
+    {
+      "id": "FU-1013",
+      "title": "The Law page offers three forms that answer nothing on this machine and says so only inside each answer",
+      "why": "A person learns that no research was performed after submitting. Say on the page, before the form, what this machine can and cannot do, and put the tools that need no model first.",
+      "source": "W676 (three external documents on an advice capability, read against the tree; assessment section 23)",
+      "found": "2026-10-12",
+      "files": [
+        "apps/workstation-superapp/src/pages/domains/LawHub.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.11",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-1014",
+      "title": "ACTION THE OWNER'S: a qualified person's view before any advice tool is offered to the public",
+      "why": "Ruled 2026-10-12. Which advice is regulated was stated from general knowledge and not read at a regulator's page; whether offering these tools to the public needs authorisation is not a question this platform can answer for itself. Nothing is public until authentication and release are switched by the Owner.",
+      "source": "W676 (three external documents on an advice capability, read against the tree; assessment section 23)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/law.py"
+      ],
+      "severity": "low",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-1015",
+      "title": "An essay is cut at 6,000 characters and graded with no word that it was cut",
+      "why": "Driven with a capture in the model's place: 8,250 characters sent, 6,000 reached the prompt, and the answer carried a grade and nothing saying a quarter of the work was unread. The floor's withholding covers only the floor. Say how much was read; when the work was not read whole, withhold the criterion and grade sections.",
+      "source": "W676 (three external documents on an Education domain, read against the tree and driven; assessment section 24)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/education.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.41",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 2
+    },
+    {
+      "id": "FU-1016",
+      "title": "Blank work is accepted for marking and a grade is returned on the model path",
+      "why": "Driven: empty and whitespace work answer 200, and with a capture in the model's place a grade comes back. Refuse blank work before anything is composed.",
+      "source": "W676 (three external documents on an Education domain, read against the tree and driven; assessment section 24)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/education.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.41",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 2
+    },
+    {
+      "id": "FU-1017",
+      "title": "A lesson or an assessment is returned with no disclaimer, no word that its answer key is unchecked and no screen note",
+      "why": "The curriculum answer carries the religion screen's not-cleared note and the marking answer a disclaimer; the lesson and assessment answers carry neither, and the assessment prompt asks for a complete answer key that nothing verifies.",
+      "source": "W676 (three external documents on an Education domain, read against the tree and driven; assessment section 24)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/education.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.41",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 2
+    },
+    {
+      "id": "FU-1018",
+      "title": "A framework that does not exist is accepted and printed back as the curriculum's framework, and clamps are silent",
+      "why": "Driven: a made-up framework answers 200 and is echoed; the prompt tells a model it has expertise in it. 500 weeks becomes 52 and a negative objective count becomes 3 with nothing said. A made-up assessment type is accepted and echoed.",
+      "source": "W676 (three external documents on an Education domain, read against the tree and driven; assessment section 24)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/education.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-1019",
+      "title": "The framework list names a UK National Curriculum, which does not exist",
+      "why": "The government's page, read 2026-10-12, describes the national curriculum of England's maintained schools. The list holds eight names and a region word and no content of any framework; say that only the name is held.",
+      "source": "W676 (three external documents on an Education domain, read against the tree and driven; assessment section 24)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/education.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-1020",
+      "title": "The Education page says each form builds, marks or produces what this machine does not",
+      "why": "Above each form: a framework-aligned curriculum, marking against the task and rubric, a classroom-ready plan. With no model installed each returns the floor's frame and says so only inside the answer.",
+      "source": "W676 (three external documents on an Education domain, read against the tree and driven; assessment section 24)",
+      "found": "2026-10-12",
+      "files": [
+        "apps/workstation-superapp/src/pages/domains/EducationHub.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-1021",
+      "title": "The shared text helper takes one string, so a cut cannot be reported and a person's material cannot be marked as data",
+      "why": "Measured as sites: 25 forms across six domain pages, 83 prompt lines claiming a role, about 46 fixed cuts of a person's text, all through one helper to which instruction, role and material arrive already joined. Hand the material over as its own argument; the helper cuts it, records how much was read of how much, marks it as data, and every answer carries the figure.",
+      "source": "W676 (three external documents on an Education domain, read against the tree and driven; assessment section 24)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/_ai_provenance.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.10",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 2
+    },
+    {
+      "id": "FU-1022",
+      "title": "A safeguarding concern about immediate danger is answered with no emergency number in the text",
+      "why": "Driven: 2,705 characters of the floor's frame, the number nowhere in it, the sentence only in a field after the text; the one test asserted the number in that field. A typed line is now the first line of the text whoever composed the rest.",
+      "source": "W676 (three external documents on a Care domain, read against the tree and driven; assessment section 25)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/care.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.41",
+      "status": "done",
+      "closed_by": "W676",
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "a typed emergency line is the first line of the safeguarding text whoever composed the rest, driven on the floor, with a capture in the model's place and with a composer that returns nothing"
+    },
+    {
+      "id": "FU-1023",
+      "title": "The falls entry implements a guideline its publisher replaced in April 2025 and cites a paragraph that now says something else",
+      "why": "Read at the publisher's page 2026-10-12: the old guideline is replaced; the replacement's first recommendation is not to use falls-risk prediction tools, and its rule for offering an assessment is not the one applied here. With one factor recorded and six unread the answer says no trigger recorded.",
+      "source": "W676 (three external documents on a Care domain, read against the tree and driven; assessment section 25)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/care/scoring.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.41",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 2
+    },
+    {
+      "id": "FU-1024",
+      "title": "A child's safeguarding concern is answered under the adult framework and any jurisdiction is accepted",
+      "why": "Driven: a six-year-old's bruises with a made-up jurisdiction answers 200 and echoes it; nothing says a child's concern follows a different route. The prompt asks a model for placeholder contacts.",
+      "source": "W676 (three external documents on a Care domain, read against the tree and driven; assessment section 25)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/care.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.41",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 2
+    },
+    {
+      "id": "FU-1025",
+      "title": "The clinical handover carries no disclaimer, and two care prompts claim a registered professional's role",
+      "why": "The handover answer has no disclaimer field at all. One prompt opens as a registered nurse and one as an experienced clinician.",
+      "source": "W676 (three external documents on a Care domain, read against the tree and driven; assessment section 25)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/care.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.41",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 2
+    },
+    {
+      "id": "FU-1026",
+      "title": "A care plan asks a model for a medication section about a named patient and returns it with one disclaimer at the end",
+      "why": "Driven with a capture in the model's place: a sentence changing a dose came back inside the plan. The profile, name and medicines included, is sent whole. Mark each such section as unreviewed where it is read, or do not ask for it.",
+      "source": "W676 (three external documents on a Care domain, read against the tree and driven; assessment section 25)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/care.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.41",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 2
+    },
+    {
+      "id": "FU-1027",
+      "title": "The care catalogue states sources that name nothing, and one fact two ways",
+      "why": "Two entries give a source that is not a publication; the early warning score is attributed to one body in the catalogue and another in the scorer; safeguarding and falls are typed as risk scores and neither has a score.",
+      "source": "W676 (three external documents on a Care domain, read against the tree and driven; assessment section 25)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/care.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-1028",
+      "title": "A care tool that does not exist is accepted and given a title",
+      "why": "Driven: a made-up tool id answers 200 with a title made from its id, and a model would be asked to interpret an assessment under that name. Refuse an id the catalogue does not hold.",
+      "source": "W676 (three external documents on a Care domain, read against the tree and driven; assessment section 25)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/care.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-1029",
+      "title": "The second oxygen scale is chosen by the caller with no word about when it applies",
+      "why": "A saturation of 90 on air scores 0 under it. The block records the scale used and nothing about who may choose it; say so beside the score.",
+      "source": "W676 (three external documents on a Care domain, read against the tree and driven; assessment section 25)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/care/scoring.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-1030",
+      "title": "No audit compares what the platform cites with what its publisher says today",
+      "why": "Three domains each held a source typed as a name with no page, date read or status: a statute by its year, a curriculum that does not exist, a guideline replaced eighteen months ago and still driving a rule through ten audit editions. One register of sources for every domain, a check that fails on a name with no row, and a replaced row failing every reader that still uses it.",
+      "source": "W676 (three external documents on a Care domain, read against the tree and driven; assessment section 25)",
+      "found": "2026-10-12",
+      "files": [
+        "scripts/workflows/fidelity_audit_v7.js"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.10",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 2
+    },
+    {
+      "id": "FU-1031",
+      "title": "A named child's needs typed into the lesson form are sent whole in the prompt",
+      "why": "Driven with a capture in the model's place. Ruled: the field says not to name a pupil and the answer says the text was sent as typed; nothing pretends to detect a name.",
+      "source": "W676 (three external documents on an Education domain, read against the tree and driven; assessment section 24)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/education.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.12",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-1032",
+      "title": "DECIDE LATER (Owner): whether children may use the Education tools, and with what safeguards",
+      "why": "Ruled 2026-10-12 that the tools are for a teacher or an adult learner until this is decided. Nothing establishes who is using the platform, and the safeguarding guidance read applies to schools and colleges in England.",
+      "source": "W676 (three external documents on an Education domain, read against the tree and driven; assessment section 24)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/education.py"
+      ],
+      "severity": "low",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-1033",
+      "title": "The reuse terms of the three scoring instruments have not been read",
+      "why": "Whether each may be embedded in a product offered commercially is unknown here. Ruled: read at their owners' pages; an instrument whose terms do not allow this use is withdrawn.",
+      "source": "W676 (three external documents on a Care domain, read against the tree and driven; assessment section 25)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/care/scoring.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.13",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-1034",
+      "title": "ACTION THE OWNER'S: a qualified clinical reviewer before any care tool is offered to the public",
+      "why": "Ruled 2026-10-12. The scorer matched its chart where tested, and that is arithmetic, not clinical review; whether a function is a regulated one was not read at any regulator's page. Nothing is public until authentication and release are switched by the Owner.",
+      "source": "W676 (three external documents on a Care domain, read against the tree and driven; assessment section 25)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/care.py"
+      ],
+      "severity": "low",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "measured in this round and not done in it",
       "tier": 3
     }
   ],

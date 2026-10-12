@@ -41,6 +41,8 @@ if _port_in_use(PORT):
 for sub in ("data", "projects", "proposals", "synth", "listings"):
     (STORE / sub).mkdir(parents=True, exist_ok=True)
 
+os.environ["WORKSTATION_AUDIT_BACKEND"] = "1"       # W676: an audit agent is never handed the Owner's matter folder
+os.environ["LEGAL_BUNDLE_DIR"] = str(STORE / "legal_bundle_of_no_one")
 os.environ.update({
     "DATA_DIR": str(STORE / "data"),
     "WORKSTATION_DATA_DIR": str(STORE / "data"),

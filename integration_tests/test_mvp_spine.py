@@ -465,8 +465,10 @@ def test_evolution_generate(client):
     })
     assert r.status_code == 200
     body = r.json()
-    assert "proposals" in body
-    assert len(body["proposals"]) >= 1
+    assert "proposals" in body and body["generated"] == len(body["proposals"])
+    if not body["proposals"]:              # ledger v17 R4.0 retarget: nothing parsed, nothing invented
+        assert body["generated"] == 0 and body["basis"], body
+        return
     p = body["proposals"][0]
     assert "id" in p and "title" in p and "status" in p
     assert p["status"] == "pending"
@@ -1088,7 +1090,12 @@ def test_qms_defect_loop_and_measured_bar(client):
         #  OWNER RULING 2026-10-11 (FU-805) - a pasted text is measured only against a structure its caller declares
         "sections": ["Objective", "Context", "Key Factors", "Approach", "Next Steps"]}).json()
     bm = dl["quality_assurance"]["quality"]["bar_measured"]
-    assert bm["measured"] >= 2 and bm["not_measured"] > 0
+    #  OWNER RULING 2026-10-12 (ledger v17 R1.0) retarget - the gate's two figures are STRUCTURE evidence under
+    #  their own names; "specifically designed" and "verified" are not measured from headings
+    assert bm["not_measured"] > 0 and bm["measured"] == len(bm["measured_criteria"])
+    assert set(bm["gate_measurements"]) == {"declared sections present", "no stub marker found"}, bm.get("gate_measurements")
+    assert all(bm["criteria"][k]["met"] is None and bm["criteria"][k]["source"] == "none"
+               for k in ("specifically designed", "verified")), bm["criteria"]
     # W483 retarget — 'compliant' is no longer MEASURED off keyword screens; it is screen-only and
     # met=None until a framework that could actually assess the subject passes it.
     assert bm["criteria"]["compliant"]["measured"] is False
@@ -1452,6 +1459,18 @@ def test_capital_compounds_and_proposals_commercialise(client):
     r = client.post("/api/v1/swarm/cascade", json={
         "mission": "w294 catalogue proposals", "domain": "enterprise"}).json()
     _measure_objectives(vid)                                 # W627 (FU-541): curation lists for the entity
+    #  ledger v17 R3.1 retarget - curation publishes only what the cascade PROPOSED
+    from agentic_core.api import swarm as _sw31
+    from agentic_core.config import atomic_write_json as _awj31, data_path as _dp31, read_json_strict as _rjs31
+    assert _sw31.CURATE_ONLY_PROPOSED_ITEMS is True
+    _rows31 = _rjs31(_dp31("proposed_catalogue.json"), list, expect=list)
+    _row31 = next(p for p in _rows31 if p.get("run_id") == r["run_id"])
+    if "Halal Meal Planning Service" not in (_row31.get("items") or []):
+        _typed = client.post(f"/api/v1/swarm/catalogue/proposed/{r['run_id']}/curate", json={
+            "item": "Halal Meal Planning Service", "price_wst": 25, "vsb_id": vid})
+        assert _typed.status_code == 409 and _typed.json()["detail"]["error"] == "item_not_proposed_by_this_cascade", _typed.text[:300]
+        _row31.update(status="proposed", items=["Halal Meal Planning Service"])      # the proposal, set by this test
+        _awj31(_dp31("proposed_catalogue.json"), _rows31)
     cur = client.post(f"/api/v1/swarm/catalogue/proposed/{r['run_id']}/curate", json={
         "item": "Halal Meal Planning Service",
         "description": "transparent community nutrition benefit",
@@ -1499,8 +1518,11 @@ def test_economy_fed_by_real_work(client):
     assert rec.get("revenue_recognised_for") == vid                  # the sale reached the books
     r = client.post("/api/v1/swarm/cascade", json={
         "mission": "w293 deliver for the entity", "domain": "enterprise", "scope": vid}).json()
+    #  W676 - a gate pass no longer records the tariff (Owner ruling 2026-10-12: nothing earns on a structure
+    #  pass). This leg sat behind an `if` that is never true on the floor, so it had proved nothing either way;
+    #  the property is driven in test_w676_nothing_earns_on_a_structure_pass.
     if r["quality"].get("qms_gate_passed"):
-        assert (r.get("economic_event") or {}).get("revenue_wst") == 250.0   # the declared tariff
+        assert (r.get("economic_event") or {}).get("revenue_recorded") is False
     expected = pending_summary(vid)["pending_revenue_wst"]
     assert expected >= 80.0                                          # at least the sale landed
     op1 = _tick()
@@ -5961,7 +5983,7 @@ def test_stale_repo_loop_closes_and_records_honestly(client):
         heartbeat.configure(auto_ship=False)                       # never leave the flag on
     assert s2.get("stale") is False
     msg = (s2.get("version_control") or {}).get("message", "")
-    assert "compliance None" not in msg and "QMS" in msg and "QMS fail" not in msg   # honest aggregate, not fabricated (W449: a not-assessable surface never renders as fail)
+    assert "compliance None" not in msg and "QMS" in msg and "QMS fail" not in msg and "structure gate fail" not in msg   # honest aggregate, not fabricated (W449: a not-assessable surface never renders as fail)
     ev2 = client.get("/api/v1/gaas/ueg/events", params={"limit": 300}).json()
     t2 = [((e.get("data") or {}).get("type")) for e in (ev2.get("events") or ev2.get("nodes") or [])]
     assert "vsb.repo.reshipped_on_drift" in t2
@@ -7344,17 +7366,19 @@ def test_w419_attestation_is_not_counted_as_measurement():
     # W483 retarget — 'compliant' and 'safe' left the MEASURED bucket for their own 'screen-only'
     # one, because the §11 rows they were read from are keyword screens that cannot clear a subject.
     # The separation is the point of this test, and there is one more bucket to separate now.
-    assert bar["measured"] == 2, bar["summary"]
+    assert bar["measured"] == 0, bar["summary"]        # R1.0 retarget: nothing of the sixteen is measured from headings
     assert bar["attested"] == 2, bar["summary"]
     assert bar["screen_only"] == 2, bar["summary"]
-    assert set(bar["measured_criteria"]) == {"specifically designed", "verified"}
+    assert set(bar["measured_criteria"]) == set()      # R1.0 retarget (Owner ruling 2026-10-12)
+    assert all(v["met"] is True for v in bar["gate_measurements"].values()), bar["gate_measurements"]
+    assert bar["criteria"]["verified"]["met"] is None and bar["criteria"]["specifically designed"]["met"] is None
     assert set(bar["screen_only_criteria"]) == {"compliant", "safe"}
     assert bar["measured"] + bar["attested"] + bar["not_measured"] == 16
 
     # And with NO caller evidence the gate still measures its own two and claims nothing else
     # (W483: 'compliant' and 'safe' moved to the screen-only bucket).
     bare = _measure_bar(1.0, False, True, 0.6, compliance, None)
-    assert bare["measured"] == 2 and bare["attested"] == 0 and bare["screen_only"] == 2
+    assert bare["measured"] == 0 and bare["attested"] == 0 and bare["screen_only"] == 2      # R1.0 retarget
     assert bare["criteria"]["best-in-class"]["met"] is None
 
 
@@ -9323,7 +9347,10 @@ def test_w449_floor_served_gate_is_not_assessable_both_ways(client):
     model = loop.run_until_complete(assure_delivery(doc, secs, label="w449", served_by="ollama:llama3.2"))["quality"]
     assert model["qms_gate_passed"] is True and model["delivery_coverage"] == 1.0
     v = model["bar_measured"]["criteria"]["verified"]
-    assert v["met"] is True and v["source"] == "gate" and "verified" in model["bar_measured"]["measured_criteria"]
+    #  R1.0 retarget (Owner ruling 2026-10-12): a structure pass is not "verified: met"
+    assert v["met"] is None and v["source"] == "none" and "verified" not in model["bar_measured"]["measured_criteria"], v
+    assert model["bar_measured"]["gate_measurements"]["declared sections present"]["met"] is True
+    assert "content was not read" in model["qms_basis"], model["qms_basis"]
     assert gates_run() == before + 1
     # …and the gate can still FAIL on real content
     bad = loop.run_until_complete(assure_delivery(doc + "\nTODO finish", secs, label="w449", served_by="ollama:llama3.2"))["quality"]
@@ -38995,8 +39022,11 @@ def test_w579_p218b_the_split_is_gone_and_a_page_is_actually_rendered(client):
     #  argument of the migration row: a scan asks whether the code says it, a render asks whether a
     #  person sees it, and the gate's OPENING BRACE is what a disabling prefix displaces (W503's class).
     _khpage579 = (_app / "src/pages/coe/KnowledgeHub.tsx").read_text(encoding="utf-8", errors="replace")
-    _khcode579 = _re579.sub(r"(?m)^\\s*//.*$", " ",
-                            _re579.sub(r"/\\*.*?\\*/", " ", _khpage579, flags=_re579.S))
+    #  W676 - the two patterns here were written with doubled backslashes inside raw strings, so the first one
+    #  deleted everything between any two slashes and the needle below survived by luck. They are now what
+    #  they were meant to be: block comments, then whole-line comments.
+    _khcode579 = _re579.sub(r"(?m)^\s*//.*$", " ",
+                            _re579.sub(r"/\*.*?\*/", " ", _khpage579, flags=_re579.S))
     assert "{insight.detail && (" in _khcode579, (
         "the insights list no longer renders an insight's DETAIL. W576 moved a failed computation into "
         "`insights` so no consumer could ignore it and put the clause refusing the 'you have no "
@@ -49091,7 +49121,9 @@ def test_w641_the_preview_names_engines_the_fabric_will_not_run_and_no_shared_no
     _list = client.get("/api/v1/resources").json()["resources"]
     assert len(_list) == len(_fab._REGISTRY)
     for _row in _list:
-        _want = True if _states[_row["id"]] == "available" else False if _states[_row["id"]] == "prompt_stage_only" else None
+        #  ledger v17 R4.2 retarget - a branch that runs no engine is not "the fabric runs its engine"
+        _want = ((_fab._resource_kind(_row["id"]) == "facility_run") if _states[_row["id"]] == "available"
+                 else False if _states[_row["id"]] == "prompt_stage_only" else None)
         assert _row["fabric_runs_engine"] is _want and _row["fabric_runs_basis"], (_row["id"], _row.get("fabric_runs_engine"))
     #  the registry rows themselves are NOT written to: the statement is per request
     assert all("fabric_runs_engine" not in r for r in _fab._REGISTRY), "the list mutated the registry"
@@ -59402,3 +59434,1112 @@ def test_w673b_the_smallest_set_is_found_and_not_guessed():
         _rf._REGISTRY[:] = _saved_reg
         _rf._BY_ID.clear()
         _rf._BY_ID.update(_saved_by)
+
+
+def test_w676_no_test_or_audit_process_opens_the_owners_matter_folder(client, monkeypatch, tmp_path):
+    """W676 - the Owner's rule is that nothing about the matter leaves the machine. The folder was named by an
+    absolute path in a committed file and no runner redirected it, so a test, an audit agent or a drive could be
+    handed its lines. Three floors, each driven: the suite names a folder of no one; a process with no variable
+    is held back from the committed path; and the route says so."""
+    import json as _json
+    import os as _os
+    import pathlib as _pl
+    from agentic_core.legal import bundle as _b
+    _committed = str(_json.loads((_pl.Path(_b.__file__).parent / "matter.json").read_text(encoding="utf-8")).get("bundle_dir") or "")
+    assert _committed, "the committed file names no folder, so this guard would prove nothing"
+    # 1. as the suite runs: the variable is set by the suite's own configuration, and it is not the committed path
+    _amb = _os.environ.get(_b.ENV_VAR, "")
+    assert _amb and _pl.Path(_amb).resolve() != _pl.Path(_committed).resolve(), _amb
+    _r = _b.resolve_bundle_dir()
+    assert _r.get("path") in (None, _os.path.realpath(_amb)) and _r.get("path") != _os.path.realpath(_committed), _r
+    # 2. the variable removed: the resolver itself holds the committed path back, and says why
+    monkeypatch.delenv(_b.ENV_VAR, raising=False)
+    _h = _b.resolve_bundle_dir()
+    assert _h["state"] == _b.UNSET and _h["path"] is None and _h.get("held_back") is True, _h
+    assert "NOT opened" in _h["basis"] and _b.ENV_VAR in _h["basis"], _h["basis"]
+    _ls = _b.list_documents()
+    assert _ls["documents"] is None and _ls["count"] is None, ("documents were listed from a folder that was held back", _ls)
+    _s = client.get("/api/v1/law/bundle").json()
+    assert _committed not in _json.dumps(_s) or _s.get("folder") is None, ("the route still names the folder as open", _s)
+    _a = client.post("/api/v1/law/matter/assemble", json={"template_id": "et1_claim",
+                     "particulars": [{"name": "w676 probe", "words": ["the"]}], "authorities": []})
+    assert _a.status_code == 200 and _committed not in _a.text, "the clerk answered from the committed folder"
+    # 2b. EVERY environment marker removed (as at import time, before a test is current): the fallback alone
+    #     still holds the path back, and says which marker it was
+    for _k in _b._NOT_THE_OWNERS:
+        monkeypatch.delenv(_k, raising=False)
+    assert _b._not_the_owners_process() == "pytest is loaded", _b._not_the_owners_process()
+    _hb = _b.resolve_bundle_dir()
+    assert _hb.get("held_back") is True and "pytest is loaded" in _hb["basis"], _hb
+    # 3. with no marker at all the committed path IS resolved - so leg 2 is a refusal and not a missing folder
+    monkeypatch.setattr(_b, "_not_the_owners_process", lambda: "")
+    _o = _b.resolve_bundle_dir()
+    #    (only the folder's existence is asked; nothing in it is listed or read here)
+    assert _o.get("held_back") is not True and _o["state"] in (_b.CONFIGURED_PRESENT, _b.CONFIGURED_ABSENT), _o
+    assert _o["source"] == "agentic_core/legal/matter.json", _o
+    # 4. the audit backend names its own folder before anything is imported
+    _boot = (_pl.Path(_b.__file__).resolve().parents[2] / "scripts" / "boot_audit_backend.py").read_text(encoding="utf-8")
+    assert _boot.index('os.environ["LEGAL_BUNDLE_DIR"]') < _boot.index("os.environ.update({"), "the audit backend sets it too late"
+
+
+def test_w676_nothing_earns_on_a_structure_pass(client, monkeypatch):
+    """W676 - OWNER RULING 2026-10-12. A quality-gate pass on an entity's delivery recorded a simulated tariff as
+    revenue, and the gate measures structure. Driven with the gate made to pass: nothing is recorded, the answer
+    says why and what a delivery earns on; with the kept code switched back, the tariff is recorded - so the
+    first leg is not passing because the gate never passed."""
+    import agentic_core.api.swarm as _sw
+    from agentic_core.economy import revenue as _rev
+
+    async def _passes(text, sections, **kw):
+        return {"quality": {"qms_gate_passed": True, "qms_basis": "w676: made to pass", "delivery_coverage": 1.0,
+                            "stub_found": False, "substantive_length": True},
+                "biomimetic": {}}
+    monkeypatch.setattr(_sw, "assure_delivery", _passes)
+    _vid = "w676-earns-" + __import__("uuid").uuid4().hex[:6]
+
+    def _recorded():
+        _p = _rev.peek_pending(_vid)
+        return (_p["revenue"], _p["costs"], _p["events"])
+
+    _before = _recorded()
+    r = client.post("/api/v1/swarm/cascade", json={"mission": "w676 structure-pass probe", "domain": "enterprise", "scope": _vid})
+    assert r.status_code == 200, r.text[:300]
+    _j = r.json()
+    assert _j["quality"].get("qms_gate_passed") is True, ("the gate was not made to pass, so this proves nothing", _j["quality"])
+    _ev = _j.get("economic_event") or {}
+    assert _ev.get("revenue_recorded") is False and _ev.get("revenue_wst") is None, ("a structure pass earned", _ev)
+    assert "accepts" in _ev.get("basis", "") and "structure" in _ev["basis"] and _ev.get("earns_on"), _ev
+    assert _recorded() == _before, ("a revenue or cost event was recorded on a structure pass", _recorded())
+    #    the kept code, switched back: the tariff IS recorded - the leg above is a real refusal, not an idle path
+    monkeypatch.setattr(_sw, "DELIVERY_EARNS_ON_GATE_PASS", True)
+    r2 = client.post("/api/v1/swarm/cascade", json={"mission": "w676 kept-code probe", "domain": "enterprise", "scope": _vid})
+    assert (r2.json().get("economic_event") or {}).get("revenue_wst"), r2.json().get("economic_event")
+    assert _recorded() != _before, "with the kept code restored nothing was recorded either"
+    monkeypatch.setattr(_sw, "DELIVERY_EARNS_ON_GATE_PASS", False)
+    #    the platform's own scope never earned and still does not; a gate that did not pass says nothing of money
+    r3 = client.post("/api/v1/swarm/cascade", json={"mission": "w676 platform probe", "domain": "enterprise", "scope": "workstation"})
+    assert r3.json().get("economic_event") is None
+
+
+def test_t1_r10_the_gate_reports_what_it_measured_and_marks_nothing_met_from_headings(client, monkeypatch):
+    """Ledger v17 R1.0, OWNER RULING 2026-10-12 - the quality gate reports WHAT IT MEASURED.
+
+    Filler under the declared headings was recorded "specifically designed: met" and "verified: met" and shown
+    as a green pass. THE PROPERTIES: neither criterion is met (or failed) from headings - both are NOT MEASURED,
+    with the gate's two figures as supporting evidence; the figures are kept under names that say what they are
+    ("declared sections present", "no stub marker found"), each driven both ways; `qms_gate_passed` keeps its
+    meaning; the basis and the chip a person reads say STRUCTURE and say the content was not read.
+    The QMS gate's own rule is stood in for (same rule, no store write) so a driven failure opens no defect."""
+    import pathlib
+    from agentic_core.vbs import quality as _q
+    from agentic_core.vbs.registry import qms as _qms
+
+    async def _rule(md, **_kw):
+        return (md["coverage"] >= _qms.min_coverage) and not md["stubs_found"]
+    monkeypatch.setattr(_qms, "run_quality_gates", _rule)
+    _secs = ["Objective", "Context", "Key Factors"]
+    _filler = "\n".join(f"## {s}\n" + "The quick brown fox jumps over the lazy dog. " * 6 for s in _secs)
+    _DSP, _NSM = _q.DECLARED_SECTIONS_PRESENT, _q.NO_STUB_MARKER_FOUND
+    assert (_DSP, _NSM) == ("declared sections present", "no stub marker found")
+
+    def _gate(text, secs, served="ollama:t1-probe"):
+        return _ensure_loop().run_until_complete(
+            _q.assure_delivery(text, secs, label="t1-r10", served_by=served))["quality"]
+
+    # -- 1. filler under every declared heading: the structure passes, and NOTHING is called designed or verified
+    q = _gate(_filler, _secs)
+    bar, c = q["bar_measured"], q["bar_measured"]["criteria"]
+    assert q["qms_gate_passed"] is True and q["delivery_coverage"] == 1.0, "precondition: the structure gate passes filler"
+    for _name in ("specifically designed", "verified"):
+        assert c[_name]["met"] is None and c[_name]["measured"] is False and c[_name]["source"] == "none", (
+            "a criterion is still decided from heading coverage", _name, c[_name])
+        assert c[_name]["basis"].startswith("NOT MEASURED") and "never content" in c[_name]["basis"], c[_name]["basis"]
+        assert c[_name]["supporting_evidence"] == {_DSP: {"met": True, "figure": 1.0}, _NSM: {"met": True, "figure": True}}, (
+            "the figures the gate computed do not travel with the criterion", c[_name])
+    assert not ({"specifically designed", "verified"} & set(bar["measured_criteria"])), bar["measured_criteria"]
+    assert bar["measured"] == len(bar["measured_criteria"]) and bar["measured"] + bar["attested"] + bar["not_measured"] == 16
+    gm = bar["gate_measurements"]
+    assert set(gm) == {_DSP, _NSM}, gm
+    assert gm[_DSP] == {**gm[_DSP], "met": True, "figure": 1.0, "minimum": _qms.min_coverage, "measured": True}
+    assert gm[_NSM]["met"] is True and q["stub_found"] is False
+    assert "content was not read" in bar["gate_measurements_summary"] and bar["gate_measurements_basis"] == _q.GATE_MEASURES
+    assert q["qms_basis"].startswith("structure gate") and "content was not read" in q["qms_basis"], q["qms_basis"]
+    assert "real coverage" not in q["qms_basis"] and q["qms_gate_measures"] == _q.GATE_MEASURES
+    assert "not a finding" in _q.GATE_MEASURES
+
+    # -- 2. DRIVEN THE OTHER WAY, one measurement at a time: each fails under its OWN name, the criteria stay None
+    assert _qms.min_coverage > 0.5, ("precondition: half the declared sections is under the gate's minimum", _qms.min_coverage)
+    q2 = _gate(_filler, _secs + ["Risks", "Budget", "Timeline"])
+    g2 = q2["bar_measured"]["gate_measurements"]
+    assert q2["qms_gate_passed"] is False and g2[_DSP]["met"] is False and g2[_DSP]["figure"] == 0.5 and g2[_NSM]["met"] is True, g2
+    q3 = _gate(_filler + "\nTODO finish this", _secs)
+    g3 = q3["bar_measured"]["gate_measurements"]
+    assert q3["qms_gate_passed"] is False and g3[_NSM]["met"] is False and g3[_DSP]["met"] is True, g3
+    for _qq in (q2, q3):
+        for _name in ("specifically designed", "verified"):
+            assert _qq["bar_measured"]["criteria"][_name]["met"] is None, (
+                "a structure failure is recorded as the criterion FAILED - it is not measured either way", _name)
+
+    # -- 3. no declared structure, and floor-served: what was not measured is said, never invented
+    q4 = _gate(_filler, None)
+    assert q4["qms_gate_passed"] is None and q4["bar_measured"]["gate_measurements"][_DSP]["met"] is None
+    assert q4["bar_measured"]["gate_measurements"][_DSP]["measured"] is False
+    q5 = _gate(_filler, _secs, served="native")
+    assert q5["qms_gate_passed"] is None and q5["bar_measured"]["gate_measurements"] == {}
+    assert "not assessable" in q5["bar_measured"]["criteria"]["verified"]["basis"]
+    assert q5["bar_measured"]["gate_measurements_summary"].startswith("none")
+
+    # -- 4. THROUGH THE ROUTE the audit drove: a pasted text under its caller's declared headings
+    _five = ["Objective", "Context", "Key Factors", "Approach", "Next Steps"]
+    _body = "\n".join(f"## {s}\n" + "The quick brown fox jumps over the lazy dog. " * 4 for s in _five)
+    _r = client.post("/api/v1/deliverables/produce", json={
+        "type": "brief", "brief": "t1 r10 filler under declared headings", "content": _body, "sections": _five})
+    assert _r.status_code == 200, _r.text[:300]
+    _rq = _r.json()["quality_assurance"]["quality"]
+    assert _rq["qms_gate_passed"] is True, ("precondition: the route's gate passes filler", _rq.get("qms_basis"))
+    for _name in ("specifically designed", "verified"):
+        assert _rq["bar_measured"]["criteria"][_name]["met"] is None, (_name, _rq["bar_measured"]["criteria"][_name])
+    assert _rq["bar_measured"]["gate_measurements"][_DSP]["met"] is True and "content was not read" in _rq["qms_basis"]
+
+    # -- 5. THE CHIP AND THE TOOLTIPS, read for the exact text and the condition that prints it
+    _src = pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+    _api = (_src / "lib" / "api.ts").read_text(encoding="utf-8")
+    _chip = _api[_api.index("export const qmsChip"):_api.index("\n};", _api.index("export const qmsChip"))]
+    assert "if (v) return { verdict: 'pass' as const, label: `${prefix} structure pass${cov}${doc}`" in _chip, _chip[-600:]
+    assert "return { verdict: 'fail' as const, label: `${prefix} structure fail${cov}${doc}`" in _chip
+    #    the pass line itself carries the neutral class, and the colour of a good result is on no line of the chip
+    _pass_line = [l for l in _chip.splitlines() if l.lstrip().startswith("if (v) return")]
+    assert len(_pass_line) == 1 and "cls: 'bg-slate-700/40 text-slate-200'" in _pass_line[0], _pass_line
+    assert "emerald" not in _chip, "a structure pass is still drawn as a good result"
+    assert "`${prefix} pass${cov}" not in _chip and "`${prefix} fail${cov}" not in _chip, "a bare pass or fail is still a label"
+    assert "the content was not read" in _api[_api.index("export const QMS_GATE_MEASURES"):_api.index("export const qmsChip")]
+    assert "q.qms_basis.includes('content was not read')" in _chip and "${QMS_GATE_MEASURES}" in _chip
+    _dv = (_src / "pages" / "Deliverables.tsx").read_text(encoding="utf-8")
+    _gj = (_src / "pages" / "synthesis" / "GenesisJourney.tsx").read_text(encoding="utf-8")
+    assert "QMS structure</span>" in _dv and "Living-QMS structure gate: ${c.verdict}" in _dv
+    assert "bar_measured?.gate_measurements_summary ?? 'not recorded on this delivery'}" in _dv
+    assert "bar_measured?.gate_measurements_summary ?? 'not recorded on this run'}" in _gj
+    for _pg in (_dv, _gj):
+        assert "STRUCTURE EVIDENCE (not a bar criterion): ${" in _pg and "\nMEASURED by this gate: ${" not in _pg
+    assert "'QMS structure pass'" in (_src / "pages" / "enterprise" / "ServiceContracts.tsx").read_text(encoding="utf-8")
+
+
+def test_t1_r11_the_hifz_count_is_the_ayaat_with_a_successful_review_on_every_review(client, monkeypatch, tmp_path):
+    """Ledger v17 R1.1 - the "memorised" figure equals the basis printed beside it.
+
+    It was the cards with a repetition, recomputed only on a success: after 1:1 q5, 2:255 q4, 1:1 q0, 1:2 q5 it
+    read 2 while three ayaat had a successful review. THE PROPERTIES: the count is recomputed on every review
+    (a failure included) and when read; an ayah with a success on record stays counted after a later failure; a
+    first review that fails is not counted; and a card whose history is not known is reported, never guessed.
+    Both stores are this test's own (tmp_path). No Qur'an text is touched: only ayah references."""
+    import pathlib
+    import uuid
+    from agentic_core.religious_domain import api as _ra
+    monkeypatch.setattr(_ra, "_HIFZ_STORE", tmp_path / "hifz")
+    monkeypatch.setattr(_ra, "_GAMI_STORE", tmp_path / "gami")
+    (tmp_path / "hifz").mkdir()
+    (tmp_path / "gami").mkdir()
+    _uid = f"t1r11{uuid.uuid4().hex[:8]}"
+
+    def _review(ref, quality):
+        _r = client.post("/api/v1/qep/hifz/review", json={"uid": _uid, "ayah_ref": ref, "quality": quality})
+        assert _r.status_code == 200, _r.text[:300]
+        return _r.json()
+
+    def _progress():
+        return client.get(f"/api/v1/qep/hifz/progress/{_uid}").json()
+
+    _seen = [_review("1:1", 5)["total_ayaat_memorised"], _review("2:255", 4)["total_ayaat_memorised"]]
+    _after_fail = _review("1:1", 0)
+    _last = _review("1:2", 5)
+    assert _seen == [1, 2], _seen
+    assert _after_fail["total_ayaat_memorised"] == 2, ("the count was not recomputed on a failed review", _after_fail)
+    assert _last["total_ayaat_memorised"] == 3, (
+        "three ayaat each have a successful review and the figure beside that basis is not three", _last)
+    assert "at least one successful" in _last["memorised_basis"] and "not a hifz certification" in _last["memorised_basis"]
+    assert _last["memorised_not_known"] == 0 and _progress()["total_ayaat_memorised"] == 3
+    _card = _ra._load_hifz(_uid)["cards"]["1:1"]
+    assert _card["repetitions"] == 0 and _card["ever_successful"] is True, ("precondition: 1:1 failed last and succeeded before", _card)
+
+    # a FIRST review that fails is not a successful review, and the count says so
+    assert _review("1:3", 1)["total_ayaat_memorised"] == 3
+    assert _ra._load_hifz(_uid)["cards"]["1:3"]["ever_successful"] is False
+
+    # a card written before the flag existed: counted from a kept session, else NOT KNOWN once history is cut
+    _h = _ra._load_hifz(_uid)
+    _legacy = {"repetitions": 0, "interval": 1, "efactor": 2.5, "next_review_date": "2026-01-01", "last_reviewed": "2026-01-01"}
+    _h["cards"]["1:4"] = dict(_legacy)                    # reviewed, never successfully, no flag
+    _h["cards"]["1:6"] = dict(_legacy)                    # no flag either, and a kept session shows its success
+    _h["sessions"].append({"ayah_ref": "1:6", "quality": 4, "reviewed_at": "x", "next_review_date": "x"})
+    assert len(_h["sessions"]) < _ra._HIFZ_SESSIONS_KEPT
+    assert _ra._hifz_memorised(_h) == {**_ra._hifz_memorised(_h), "count": 4, "not_known": 0}, (
+        "with the whole history kept, 1:6 is counted from its session and nothing is unknown", _ra._hifz_memorised(_h))
+    _h["sessions"] = ([{"ayah_ref": "1:5", "quality": 1, "reviewed_at": "x", "next_review_date": "x"}]
+                      * _ra._HIFZ_SESSIONS_KEPT)
+    _cut = _ra._hifz_memorised(_h)
+    assert _cut["count"] == 3, ("the three cards that carry the flag are counted whatever the sessions hold", _cut)
+    assert _cut["not_known"] == 2 and "not counted and not ruled out" in _cut["basis"], _cut
+    _h["total_ayaat_memorised"] = 99                      # a stale stored figure must not be what is read
+    _ra._save_hifz(_uid, _h)
+    _pg = _progress()
+    assert _pg["total_ayaat_memorised"] == 3 and _pg["memorised_not_known"] == 2 and "not ruled out" in _pg["memorised_basis"], _pg
+
+    # the page prints the figure beside the server's own basis
+    _studio = (pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "components"
+               / "QEPStudio.tsx").read_text(encoding="utf-8")
+    assert "{progress.total_ayaat_memorised} memorised" in _studio
+    assert "{reviewResult.memorised_basis && (" in _studio and "{reviewResult.memorised_basis}" in _studio
+
+
+def test_t1_r12_the_interval_rationale_follows_the_branch_the_engine_took(client):
+    """Ledger v17 R1.2 - the SM-2 explanation said "the prior interval of 10 day(s) anchors the next spacing step"
+    with +0.583 under RESET -> 1 day, where the engine discarded the interval.
+
+    THE PROPERTIES, each driven on its own inputs: on a reset the interval row says it was discarded; on a flat
+    step it says it is not used; only when the interval compounds does it say it anchors the step. An input the
+    engine's branch did not read is `used_by_engine: false` with no contribution, and the page prints "not used"."""
+    import pathlib
+    from agentic_core.religious_domain.memorization.engine import MemorizationEngine
+
+    def _x(ease, interval, rep, quality):
+        _r = client.get("/api/v1/qep/xai/explanations", params={
+            "ease_factor": ease, "interval_days": interval, "repetition": rep, "last_quality": quality})
+        assert _r.status_code == 200, _r.text[:300]
+        _j = _r.json()
+        return _j, {c["feature"]: c for c in _j["explanations"]}
+
+    # RESET - the engine's answer first, so the leg is about the branch it really took
+    assert MemorizationEngine().calculate_next_review(quality=1, repetitions=5, previous_interval=10, previous_efactor=1.3)[0] == 1
+    _j, _by = _x(1.3, 10, 5, 1)
+    assert _j["decision"] == "reset" and _j["next_interval_days"] == 1
+    assert "anchors" not in _by["interval_days"]["rationale"] and "discarded" in _by["interval_days"]["rationale"], _by["interval_days"]
+    assert _by["interval_days"]["used_by_engine"] is False and _by["interval_days"]["contribution"] == 0.0
+    assert _by["interval_days"]["display_weight_if_used"] > 0, "the figure that was shown is not kept under its own name"
+    assert [f for f, c in _by.items() if c["used_by_engine"]] == ["last_quality"], _by
+    assert all(c["contribution"] == 0.0 for f, c in _by.items() if f != "last_quality")
+
+    # FLAT - one prior repetition schedules six days whatever the interval was
+    assert MemorizationEngine().calculate_next_review(quality=5, repetitions=1, previous_interval=10, previous_efactor=2.9)[0] == 6
+    _j, _by = _x(2.9, 10, 1, 5)
+    assert _j["next_interval_days"] == 6
+    assert "is not used" in _by["interval_days"]["rationale"] and "flat 6 days" in _by["interval_days"]["rationale"], _by["interval_days"]
+    assert _by["interval_days"]["used_by_engine"] is False and _by["ease_factor"]["used_by_engine"] is False
+    assert _by["repetition"]["used_by_engine"] is True and _by["last_quality"]["used_by_engine"] is True
+
+    # COMPOUNDING - here, and only here, the sentence is true and the weight is shown
+    _j, _by = _x(2.5, 6, 3, 4)
+    assert _j["next_interval_days"] > 6
+    assert "anchors the next spacing step" in _by["interval_days"]["rationale"]
+    assert all(c["used_by_engine"] is True for c in _by.values()), _by
+    assert _by["interval_days"]["contribution"] == round(_j["model_weights"]["interval_weight"] * (6 / 6), 3)
+    assert "display_weight_if_used" not in _by["interval_days"]
+
+    _pg = (pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "components"
+           / "qep" / "QEPIntelligence.tsx").read_text(encoding="utf-8")
+    assert "{c.used_by_engine === false ? 'not used' : `+${c.contribution}`}" in _pg
+    assert ">+{c.contribution}</span>" not in _pg, "the weight is still printed whether or not the engine used the input"
+
+
+def test_t1_r13_article_21_says_the_ruling_guardrail_is_built_where_it_is(client):
+    """Ledger v17 R1.3 - the Constitution page said the religious-ruling guardrail was NOT BUILT and that no code
+    implements it, while it is wired and refusing.
+
+    THE PROPERTIES: article 21 no longer says so; what it says instead is CHECKED here - the two gates exist and
+    report on every interception, each route the article names calls the refusal, and one of them is driven to
+    its 409; and the article stays UNMET, in part, because a composing route that does not call it still exists."""
+    import pathlib
+    import re
+    from agentic_core.gaas.v5 import horizon_guardrails as _hg
+
+    _d = client.get("/api/v154/constitution/articles").json()
+    _a = next(a for a in _d["articles"] if a["id"] == "21")
+    assert "NOT BUILT" not in (_a["verified"] or "") and "no code implements" not in (_a["unmet_reason"] or ""), _a
+    assert "specification only" not in (_a["unmet_reason"] or "")
+    assert "horizon_guardrails.py" in _a["verified"] and "409" in _a["verified"], _a["verified"]
+    assert _a["unmet"] is True and _a["unmet_reason"].startswith("in part"), _a
+    assert "21" in _d["articles_recording_a_breach"]
+
+    # what the article now claims, checked: the two gates report on every screen ...
+    _all = _hg.screen_all("a plain sentence about a delivery rota")
+    assert {"religious_ruling", "theological_proof"} <= set(_all["gates"]), sorted(_all["gates"])
+    # ... each of the five routes it names calls the refusal ...
+    _root = pathlib.Path(__file__).resolve().parents[1] / "agentic_core"
+    _calls = {rel: len(re.findall(r"(?m)^\s+(?:_refuse_ruling659|refuse_faith_ruling)\(",
+                                  (_root / rel).read_text(encoding="utf-8")))
+              for rel in ("api/deliverables.py", "api/swarm.py", "synthesis/api.py")}
+    assert _calls["api/deliverables.py"] >= 1 and _calls["api/swarm.py"] >= 2 and _calls["synthesis/api.py"] >= 2, _calls
+    # ... and one of them is driven to the refusal the article describes
+    _ask = "Please issue a fatwa: is it halal or haram to trade shares on margin?"
+    assert _hg.religious_ruling_gate(_ask)["escalate"] is True, "precondition: the gate fires on this request"
+    _r = client.post("/api/v1/deliverables/produce", json={"type": "brief", "brief": _ask})
+    assert _r.status_code == 409 and "religious_ruling" in _r.json()["detail"]["refused_by"], (_r.status_code, _r.text[:300])
+    # ... and "in part" is true: the Genesis journey composes text and does not call the refusal
+    assert "refuse_faith_ruling" not in (_root / "api" / "genesis.py").read_text(encoding="utf-8"), (
+        "the journey now calls the refusal: re-read which routes still do not, and the article's status")
+
+
+def test_t1_r14_the_intercept_route_says_it_executed_nothing_and_a_halt_is_not_a_verdict(client, monkeypatch):
+    """Ledger v17 R1.4 - POST /api/v1/gaas/intercept answered "Action '...' executed under constitutional
+    supervision." It executes nothing; and with the breaker open it gave a harmless action the EARLIER trip's
+    reason as if it were a finding about that action.
+
+    THE PROPERTIES: an allowed intent with no proposed output returns output None and executed False with the
+    reason; a proposed output is returned as supplied and still not "executed"; a halt on an open breaker says
+    the action was NOT EVALUATED and whose reason it is showing. The breaker is driven here and left closed."""
+    from agentic_core.api import constitutional_gaas as _cg
+    client.post("/api/v1/gaas/breaker/reset")
+    try:
+        _ok = client.post("/api/v1/gaas/intercept", json={"action_type": "t1_r14_harmless_probe"})
+        assert _ok.status_code == 200, _ok.text[:300]
+        _j = _ok.json()
+        assert _j["status"] == "allowed", ("precondition: a harmless intent is allowed", _j)
+        assert "executed under" not in _ok.text and "supervision" not in _ok.text, _ok.text[:300]
+        assert _j["executed"] is False and "runs no action" in _j["executed_basis"], _j
+        assert _j["output"] is None and "no proposed_output was supplied" in _j["output_basis"], _j
+        assert "evaluated" not in _j and "halted_basis" not in _j, "an allowed action carries a halt's fields"
+
+        _p = client.post("/api/v1/gaas/intercept", json={
+            "action_type": "t1_r14_harmless_probe", "proposed_output": "A short status report on the rota."}).json()
+        assert _p["status"] == "allowed" and _p["output"] == "A short status report on the rota.", _p
+        assert _p["executed"] is False and "output_basis" not in _p, _p
+
+        # the breaker OPEN, driven: the action is not judged, and the answer says whose reason it shows
+        _br = _cg._INTERCEPTOR.circuit_breaker
+        monkeypatch.setattr(_br, "should_halt", lambda: True)
+        monkeypatch.setattr(_br, "trip_reason", "T1-R14 an earlier action tripped this", raising=False)
+        _h = client.post("/api/v1/gaas/intercept", json={"action_type": "t1_r14_write_report"}).json()
+        assert _h["status"] == "halted" and _h["reason"] == "T1-R14 an earlier action tripped this", _h
+        assert _h["evaluated"] is False and _h["executed"] is False, _h
+        assert _h["halted_basis"].startswith("NOT EVALUATED") and "T1-R14 an earlier action tripped this" in _h["halted_basis"]
+        assert "not a finding about 't1_r14_write_report'" in _h["halted_basis"], _h["halted_basis"]
+    finally:
+        monkeypatch.undo()
+        client.post("/api/v1/gaas/breaker/reset")                    # the breaker is shared - leave it closed
+    assert client.get("/api/v1/gaas/status").json()["circuit_breaker"]["tripped"] is False
+
+
+def test_t1_r21_what_the_ceo_is_handed_follows_the_founders_text_and_the_plan_is_told(client):
+    """Ledger v17 R2.1 - the shipped ORGANISATION.md and the generated apps printed the platform's pending marker
+    under "the founder's commercialisation text", and went on doing so after the founder wrote one; the entity's
+    plan record kept every section pending.
+
+    THE PROPERTIES: what the AI CEO is handed is derived from the entity as it stands (absent, pending, the
+    founder's own text, or a model's specification) and labelled as that; a founder's write updates the field
+    and never a model's specification; a marker or a blank is never recorded as `founder_input`; and the plan
+    record takes a concept it does not have, keeps one it has, and drops a written section from its pending list.
+    The entity and its plan record are this test's own."""
+    import uuid
+    from agentic_core.api import business_plan as _bpm
+    from agentic_core.api import vsb as _vm
+
+    _g = client.post("/api/v1/genesis/establish", json={
+        "problem": "Night-shift carers in one town have no shared handover record",
+        "name": f"T1 R21 Probe {uuid.uuid4().hex[:5]}", "owner_id": "pytest", "ship_output": False})
+    assert _g.status_code == 200, _g.text[:300]
+    _vid = _g.json()["vsb_id"]
+    _MARK = "content pending the owned model — this enterprise has not yet composed its own commercialisation"
+
+    # -- 1. born with nothing: the source is not "founder_input", and the shipped file says nothing is recorded
+    _e = _vm._load_vsb(_vid)
+    assert not str(_e.get("ceo_specification") or "").strip(), "precondition: no commercialisation or concept was given"
+    assert _e["ceo_specification_source"] == "absent", ("a blank is recorded as the founder's input", _e.get("ceo_specification_source"))
+    _h = _vm._ceo_handed(_e)
+    assert _h["kind"] == "absent" and _h["value"] is None, _h
+    _org = _vm._build_repo_files(_e)["ORGANISATION.md"]
+    assert "Nothing is recorded in its place" in _org and "founder's" not in _org.split("## Board")[0], _org[:500]
+    # -- 2. the pending marker: a platform sentence is never labelled as the founder's
+    _m = _vm._rederive(dict(_e, ceo_specification=_MARK, ceo_specification_source="founder_input"))
+    assert _m["ceo_specification_source"] == "pending", _m["ceo_specification_source"]
+    _hm = _vm._ceo_handed(_m)
+    assert _hm["kind"] == "pending" and _hm["value"] is None and "which nobody wrote" in _hm["note"], _hm
+    _orgm = _vm._build_repo_files(_m)["ORGANISATION.md"].split("## Board")[0]
+    assert "content pending the owned model —" not in _orgm and "founder's" not in _orgm, _orgm
+    assert _vm._entity_appdata(_m)["organisation"]["ceo"] == {} and _vm._entity_appdata(_m)["organisation"]["ceo_kind"] == "pending"
+
+    # -- 3. the plan record, set by this test: a pending concept and three sections listed as pending
+    _ent = _vm._load_vsb(_vid)
+    _ent["body_pending"] = {"concept": True, "design": True, "commercialisation": True, "operations": True}
+    _vm._save_vsb(_ent)
+    _bpm._save({**_bpm._fresh(_vid), "executive_summary": "A summary.", "vision": "A vision.", "mission": "A mission.",
+                "strategy": "A strategy.",
+                "concept": "content pending the owned model — this enterprise has not yet composed its own concept",
+                "provenance": {"body_pending": ["concept", "design", "commercialisation"],
+                               "field_sources": {"concept": "establish_template"}, "templated_fields": ["concept"]}})
+    _concept = "One shared handover record per ward, written at the bedside and read aloud at the change of shift."
+    _c = client.post(f"/api/v1/vsb/{_vid}/concept", json={"concept": _concept})
+    assert _c.status_code == 200, _c.text[:300]
+    assert _c.json()["plan_record"]["updated"] is True, _c.json()["plan_record"]
+    _plan = _bpm._load(_vid)
+    assert _plan["concept"] == _concept and _plan["owner_edits"].get("concept"), "the plan record still holds the pending marker"
+    assert _plan["provenance"]["body_pending"] == ["design", "commercialisation"], _plan["provenance"]["body_pending"]
+    assert _plan["provenance"]["field_sources"]["concept"] == "owner_supplied"
+    # with no commercialisation yet, the concept is what the CEO is handed (Genesis's own rule)
+    _e1 = _vm._load_vsb(_vid)
+    assert _e1["ceo_specification"] == _concept and _e1["ceo_specification_source"] == "founder_input", _e1.get("ceo_specification_source")
+    assert _vm._ceo_handed(_e1)["kind"] == "founder_concept"
+
+    # -- 4. the founder writes the commercialisation: the field, the file, the app data and the plan all follow
+    _com = "Sold per ward per month to care-home groups; the first three wards run free for one quarter."
+    _b = client.post(f"/api/v1/vsb/{_vid}/body/commercialisation", json={"text": _com})
+    assert _b.status_code == 200, _b.text[:300]
+    assert _b.json()["plan_record"]["updated"] is True, _b.json()["plan_record"]
+    _e2 = _vm._load_vsb(_vid)
+    assert _e2["ceo_specification"] == _com and _e2["ceo_specification_source"] == "founder_input"
+    _org2 = _vm._build_repo_files(_e2)["ORGANISATION.md"]
+    assert "the founder's own commercialisation text" in _org2 and _com in _org2, _org2[:600]
+    _ad = _vm._entity_appdata(_e2)["organisation"]
+    assert _ad["ceo"] == _com and _ad["ceo_kind"] == "founder_commercialisation" and "founder's own commercialisation" in _ad["ceo_basis"]
+    assert _bpm._load(_vid)["provenance"]["body_pending"] == ["design"], _bpm._load(_vid)["provenance"]["body_pending"]
+    # an entity whose field was never updated (written before this fix) is still read correctly
+    _stale = dict(_e2, ceo_specification=_MARK, ceo_specification_source="founder_input")
+    assert _vm._ceo_handed(_stale)["value"] == _com, "the reader does not derive from the founder's current text"
+
+    # -- 5. what is NEVER overwritten: a concept the plan already has, and a specification a model composed
+    _c2 = client.post(f"/api/v1/vsb/{_vid}/concept", json={"concept": "A second wording of the concept, recorded later on."})
+    assert _c2.status_code == 200 and _bpm._load(_vid)["concept"] == _concept, "a plan concept already there was replaced"
+    _model = dict(_e2, ceo_specification="Two depots, 400 households by Q3", ceo_specification_source="model:ollama:t1")
+    _vm.founder_wrote_section(_model, "commercialisation", _com)
+    assert _model["ceo_specification"] == "Two depots, 400 households by Q3" and _model["ceo_specification_source"] == "model:ollama:t1"
+    assert _vm._ceo_handed(_model)["kind"] == "specification"
+    # -- 6. the generated app prints the sentence beside the text
+    assert """<p class="muted" id="ceo-basis">' + esc((d.organisation || {}).ceo_basis || '') + '</p><pre>""" in _vm._WEBAPP_APP_JS
+
+
+def test_t1_r22_the_generated_apps_footer_prints_the_entitys_status_not_living(client):
+    """Ledger v17 R2.2 - the generated web app and phone app footers called every entity a "Living VSB IDBO web
+    app", beside a record saying it is not yet operating (and the phone app called itself a web app).
+
+    THE PROPERTIES: the footer is the entity's derived status as it stood when the app was generated, driven
+    through two different statuses; the template's own fallback names neither "Living" nor a kind of app; and
+    the served data file and both served scripts carry it."""
+    import uuid
+    from agentic_core.api import vsb as _vm
+
+    _g = client.post("/api/v1/genesis/establish", json={
+        "problem": "Allotment holders cannot see who has the shared rotavator",
+        "name": f"T1 R22 Probe {uuid.uuid4().hex[:5]}", "owner_id": "pytest", "ship_output": False})
+    assert _g.status_code == 200, _g.text[:300]
+    _vid = _g.json()["vsb_id"]
+    _e = _vm._load_vsb(_vid)
+    assert _e.get("status") != "operating", ("precondition: a newly established entity is not operating", _e.get("status"))
+
+    _d = _vm._entity_appdata(_e)
+    assert _d["entity_status"] == _vm._autonomy_phrase(_e) and _d["entity_status"] in _d["footer_note"], _d["footer_note"]
+    assert "Living" not in _d["footer_note"] and "web app" not in _d["footer_note"], _d["footer_note"]
+    #  driven: the footer follows the status, it is not a second constant
+    _op = _vm._entity_appdata(dict(_e, status="operating"))["footer_note"]
+    _bp = _vm._entity_appdata(dict(_e, status="body pending"))["footer_note"]
+    assert "operating: the organism runs its economic cycles" in _op and "body pending" in _bp and _op != _bp
+
+    _js = _vm._WEBAPP_APP_JS
+    _foot = _js[_js.index("<footer>"):_js.index("</footer>")]
+    assert "esc(d.footer_note ||" in _foot, _foot
+    assert "Living" not in _foot and "web app" not in _foot, ("the template still states a status or a kind of app", _foot)
+
+    # served: the data file carries the note, and the web and phone scripts both read it
+    for _surface in ("webapp", "mobile"):
+        _p = client.post(f"/api/v1/vsb/{_vid}/{_surface}")
+        assert _p.status_code == 200, (_surface, _p.text[:300])
+        _dj = client.get(f"/api/v1/vsb/{_vid}/{_surface}/page/data.json").json()
+        assert _dj["footer_note"].startswith("Entity status when this app was generated") and "Living" not in _dj["footer_note"], _dj.get("footer_note")
+        _served = client.get(f"/api/v1/vsb/{_vid}/{_surface}/page/app.js").text
+        assert "d.footer_note" in _served and "Living VSB IDBO web app" not in _served, _surface
+
+
+def test_t1_r30_a_withheld_automatic_approval_leaves_no_decision_on_the_record(client, monkeypatch):
+    """Ledger v17 R3.0 - a LOW change whose automatic approval the method gate withheld was still recorded and
+    shown as auto-approved (decision, decided-by, reviewed-at, "Auto-approved: LOW impact ..." and an audit event).
+
+    THE PROPERTIES: a withheld change carries NO decision; what was proposed and withheld is kept under its own
+    name; no "auto-approved" signal is fired for it; and - the other way - a complete LOW record still IS
+    auto-approved and says so in the same fields. Health is driven healthy, so the method gate is the only thing
+    that can withhold. The designed behaviour is kept: the change stands as submitted with its reason."""
+    import pathlib
+    import uuid
+    from agentic_core.api import change_control as _cc
+    _w464_healthy(monkeypatch, _cc)
+    _fired = []
+    _real = _cc.biobus.fire_signal
+
+    def _spy(*a, **k):
+        _fired.append(a[1] if len(a) > 1 else k.get("name"))
+        return _real(*a, **k)
+    monkeypatch.setattr(_cc.biobus, "fire_signal", _spy)
+    _tag = uuid.uuid4().hex[:6]
+
+    _thin = client.post("/api/v1/cca/submit", json={
+        "title": f"T1 R30 thin {_tag}", "change_type": "config_minor", "description": "a low-tier change"}).json()
+    assert _thin["status"] == "submitted" and _thin.get("auto_approval_withheld"), (
+        "precondition: the method gate withholds this incomplete LOW record's automatic approval", _thin)
+    _rec = _cc._load_change(_thin["cca_id"])
+    assert _rec["decision"] is None and _rec["reviewed_at"] is None and _rec["review_result"] is None, (
+        "a change nobody approved still carries an approval", {k: _rec.get(k) for k in ("decision", "reviewed_at", "review_result")})
+    assert "decision_source" not in _rec, _rec.get("decision_source")
+    _w = _rec["withheld_auto_approval"]
+    assert _w["decision"] == "auto_approved" and _w["decision_source"] == "low_tier_auto_approval", _w
+    assert str(_w["review_result"]).startswith("Auto-approved") and "none of this is a decision" in _w["basis"], _w
+    _events = [e["event"] for e in _rec["audit_trail"]]
+    assert "auto_approved" not in _events, ("the trail still says the change was auto-approved", _events)
+    assert "auto_approval_proposed" in _events and "auto_approval_withheld_by_method_gate" in _events, _events
+    assert "cca.auto_approve" not in _fired, "an auto-approved signal was fired for a withheld approval"
+    assert _cc.approval_source(_rec) is None, "the record still names a mechanism that decided it"
+    _row = next(r for r in _cc._list_changes() if r["cca_id"] == _thin["cca_id"])
+    assert _row.get("decision") != "auto_approved", ("the queue row the page draws its AUTO chip from", _row.get("decision"))
+    _mc = _rec["method_check"]
+    assert _mc["may_auto_approve"] is False, "the re-run check lost the reason the approval was withheld"
+
+    # THE OTHER WAY: a complete LOW record is auto-approved, in the same fields
+    _fired.clear()
+    _full = client.post("/api/v1/cca/submit", json={
+        "title": f"T1 R30 full {_tag}", "change_type": "config_minor", "description": "a complete low-tier change",
+        "rationale": "a complete record, so the method gate withholds nothing", "affected_systems": ["change_control"],
+        "rollback_plan": "revert the setting"}).json()
+    assert _full["status"] == "approved" and not _full.get("auto_approval_withheld"), (
+        "precondition: a complete LOW change auto-approves when health is good", _full)
+    _frec = _cc._load_change(_full["cca_id"])
+    assert _frec["decision"] == "auto_approved" and _frec["decision_source"] == "low_tier_auto_approval", _frec.get("decision")
+    assert "withheld_auto_approval" not in _frec and "auto_approved" in [e["event"] for e in _frec["audit_trail"]]
+    assert "cca.auto_approve" in _fired, "a real automatic approval no longer fires its signal"
+
+    # the page draws each of the three statements from the fields that are now empty on a withheld change
+    _pg = (pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages"
+           / "enterprise" / "ChangeControlAgency.tsx").read_text(encoding="utf-8")
+    assert "{entry.decision === 'auto_approved' && (" in _pg and "{detail?.review_result && (" in _pg
+    assert "{detail?.decision_source && (" in _pg and "{entry.auto_approval_withheld && (" in _pg
+
+
+def test_t1_r31_curation_publishes_only_an_item_the_cascade_proposed(client, monkeypatch):
+    """Ledger v17 R3.1 - any typed string was published as an offering "Curated from cascade <id>", from a
+    floor-served cascade whose row says its bullets are NOT filed as offerings, and the row became "curated".
+
+    THE PROPERTIES: an item the cascade did not propose is refused and nothing is published or changed; an item
+    it did propose is curated as before; and with the constant turned the other way a typed item is published
+    as the curator's own, never as curated from the cascade. The two proposal rows are this test's own; the
+    listing call is stood in for, so nothing reaches the marketplace."""
+    import uuid
+    from agentic_core.api import marketplace as _mk
+    from agentic_core.api import swarm as _sw
+    from agentic_core.config import atomic_write_json, data_path, read_json_strict
+    _store = data_path("proposed_catalogue.json")
+    _tag = uuid.uuid4().hex[:6]
+    _floor_id, _prop_id = f"t1r31-floor-{_tag}", f"t1r31-prop-{_tag}"
+    _basis = "the deterministic floor served the catalogue tier, so its bullets are generic steps and are NOT filed as offerings"
+    _rows = read_json_strict(_store, list, expect=list)
+    _rows += [{"run_id": _floor_id, "mission": "t1 r31", "domain": "enterprise", "status": "not_proposed_floor_served",
+               "items": [], "items_basis": _basis, "raw": ""},
+              {"run_id": _prop_id, "mission": "t1 r31", "domain": "enterprise", "status": "proposed",
+               "items": ["Ward Handover Board"], "items_basis": "item names parsed from the served model's catalogue", "raw": ""}]
+    atomic_write_json(_store, _rows)
+    _listed = []
+
+    async def _fake_listing(req):
+        _listed.append(req)
+        return {"id": f"listing-{len(_listed)}", "vsb_id": req.vsb_id, "description": req.description}
+    monkeypatch.setattr(_mk, "create_listing", _fake_listing)
+
+    def _row(rid):
+        return next(p for p in read_json_strict(_store, list, expect=list) if p.get("run_id") == rid)
+
+    def _curate(rid, item, **kw):
+        return client.post(f"/api/v1/swarm/catalogue/proposed/{rid}/curate", json={"item": item, "price_wst": 5, **kw})
+    try:
+        assert _sw.CURATE_ONLY_PROPOSED_ITEMS is True
+        # a floor-served cascade proposed nothing: a typed string is refused, and nothing changes
+        _a = _curate(_floor_id, "Community Rota Planner")
+        assert _a.status_code == 409 and _a.json()["detail"]["error"] == "item_not_proposed_by_this_cascade", _a.text[:300]
+        assert "proposed nothing" in _a.json()["detail"]["note"] and "Nothing was published" in _a.json()["detail"]["note"]
+        assert _listed == [] and _row(_floor_id)["status"] == "not_proposed_floor_served" and "curated" not in _row(_floor_id)
+        # a cascade that proposed something: another item is refused, the proposed one is curated
+        _b = _curate(_prop_id, "Community Rota Planner")
+        assert _b.status_code == 409 and _b.json()["detail"]["proposed_items"] == ["Ward Handover Board"] and _listed == []
+        _c = _curate(_prop_id, "ward handover board")
+        assert _c.status_code == 200 and _c.json()["proposed_by_cascade"] is True, _c.text[:300]
+        assert len(_listed) == 1 and _listed[0].description == f"Curated from cascade {_prop_id}"
+        assert _row(_prop_id)["status"] == "curated" and len(_row(_prop_id)["curated"]) == 1
+        # THE OTHER SETTING: published as the curator's own, and the row is never called curated
+        monkeypatch.setattr(_sw, "CURATE_ONLY_PROPOSED_ITEMS", False)
+        _d = _curate(_floor_id, "Community Rota Planner")
+        assert _d.status_code == 200 and _d.json()["proposed_by_cascade"] is False, _d.text[:300]
+        assert "Curated from cascade" not in _listed[-1].description and "did not propose it" in _listed[-1].description
+        assert "curator's own" in _d.json()["note"]
+        _fr = _row(_floor_id)
+        assert _fr["status"] == "not_proposed_floor_served" and "curated" not in _fr and len(_fr["owner_authored"]) == 1, _fr
+    finally:
+        atomic_write_json(_store, [p for p in read_json_strict(_store, list, expect=list)
+                                   if p.get("run_id") not in (_floor_id, _prop_id)])
+
+
+def test_t1_r32_the_entrepreneur_plan_route_says_not_generated_when_it_generated_nothing(client, monkeypatch):
+    """Ledger v17 R3.2 and R5.3 (one defect, found by two regions) - POST /api/v310/entrepreneur/generate-plan
+    answered status "plan_synthesized" in the body that said generated: false.
+
+    THE PROPERTY, driven both ways with the model's answer stood in for: the status is "not_generated" when no
+    plan object came back (unparseable, or parseable and not an object), and "plan_synthesized" only when one did."""
+    from agentic_core.api.v310 import business as _b
+
+    class _Gateway:
+        def __init__(self, out):
+            self.out = out
+
+        async def query_meta(self, *a, **k):
+            return {"output": self.out, "served_by": "t1-r32-model", "is_external": False}
+
+    def _ask(out):
+        monkeypatch.setattr(_b, "gateway", _Gateway(out))
+        _r = client.post("/api/v310/entrepreneur/generate-plan", json={
+            "creation_id": "t1-r32", "target_market": "care homes", "funding_goal": 1000})
+        assert _r.status_code == 200, _r.text[:300]
+        return _r
+
+    for _out in ("the model wrote a paragraph, not a plan", "[1, 2, 3]", ""):
+        _r = _ask(_out)
+        _j = _r.json()
+        assert _j["generated"] is False and _j["status"] == "not_generated", (_out, _j)
+        assert "plan_synthesized" not in _r.text and _j["generated_at"] is None and "No projections" in _j["detail"], _j
+    _ok = _ask('{"market_analysis": "a real answer", "financial_projections": []}').json()
+    assert _ok["generated"] is True and _ok["status"] == "plan_synthesized" and _ok["market_analysis"] == "a real answer", _ok
+    assert _ok["served_by"] == "t1-r32-model" and isinstance(_ok["generated_at"], float)
+
+
+def test_t1_r40_the_evolution_generator_stores_nothing_when_no_proposal_parses(client, monkeypatch, tmp_path):
+    """Ledger v17 R4.0 and R6.1 (one defect, found by two regions) - when no PROPOSAL_ line parsed, the v191
+    evolution generator filed a canned proposal with a type, an impact and a rationale nothing produced, counted
+    it as generated: 1, and approving it opened a real Change Control request.
+
+    THE PROPERTIES: nothing parsed -> nothing proposed and NOTHING STORED, said with its basis; a parsed proposal
+    is stored with what served it; and a canned row already in a store is refused at approve, before any Change
+    Control request is filed. The store is this test's own and the model and the filing are stood in for."""
+    from agentic_core.api import change_control as _cc
+    from agentic_core.api.v191 import evolution as _ev
+    monkeypatch.setattr(_ev, "_STORE", tmp_path / "evolution_proposals.json")
+
+    class _Gateway:
+        def __init__(self, out):
+            self.out = out
+
+        async def query_meta(self, *a, **k):
+            return {"output": self.out, "served_by": "t1-r40-model", "is_external": False}
+    _filed = []
+
+    async def _submit(req):
+        _filed.append(req)
+        return {"status": "submitted", "cca_id": f"cca-t1r40-{len(_filed)}", "impact_tier": "LOW"}
+    monkeypatch.setattr(_cc, "submit_change", _submit)
+
+    # nothing parses: nothing is invented, counted or stored
+    monkeypatch.setattr(_ev, "gateway", _Gateway("Native structured engine: a frame over the request, no proposals."))
+    _r = client.post("/api/v191/evolution/proposals/generate", json={"context": "t1 r40"})
+    assert _r.status_code == 200, _r.text[:300]
+    _j = _r.json()
+    assert _j["generated"] == 0 and _j["proposals"] == [] and _j["served_by"] == "t1-r40-model", _j
+    assert "nothing was proposed and nothing was stored" in _j["basis"] and _j["raw"].startswith("Native structured"), _j
+    assert _ev._REMOVED_DEFAULT[0] not in _r.text and _ev._REMOVED_DEFAULT[1] not in _r.text, "the canned proposal is back"
+    assert _ev._load() == [], ("a row was stored for a reply that proposed nothing", _ev._load())
+
+    # one line parses: it is the model's, stored with what served it
+    monkeypatch.setattr(_ev, "gateway", _Gateway(
+        "PROPOSAL_1 | PERFORMANCE | Cache the roster read | Cache it for one beat. | Low | Roster reads repeat each beat."))
+    _g = client.post("/api/v191/evolution/proposals/generate", json={"context": "t1 r40"}).json()
+    assert _g["generated"] == 1 and _g["proposals"][0]["title"] == "Cache the roster read", _g
+    assert _g["proposals"][0]["served_by"] == "t1-r40-model" and len(_ev._load()) == 1
+    _real_id = _g["proposals"][0]["id"]
+
+    # a canned row left in a store by the old code cannot be approved into Change Control
+    _ev._save(_ev._load() + [{"id": "ep-t1r40old", "type": "PERFORMANCE", "title": _ev._REMOVED_DEFAULT[0],
+                              "description": "a frame", "impact": "Medium", "rationale": _ev._REMOVED_DEFAULT[1],
+                              "status": "pending"}])
+    _old = client.post("/api/v191/evolution/proposals/ep-t1r40old/approve")
+    assert _old.status_code == 409 and isinstance(_old.json()["detail"], str) and "written by nothing" in _old.json()["detail"], _old.text[:300]
+    assert _filed == [], "a Change Control request was filed for a proposal nothing generated"
+    # ... and a proposal a model did write still goes to Change Control, once
+    _ok = client.post(f"/api/v191/evolution/proposals/{_real_id}/approve").json()
+    assert _ok["status"] == "under_change_control" and _ok["cca_id"] == "cca-t1r40-1" and len(_filed) == 1, _ok
+    assert _filed[0].rationale == "Roster reads repeat each beat."
+
+
+def test_t1_r41_a_stored_run_row_says_what_served_the_resource_and_whether_it_encoded(client, monkeypatch):
+    """Ledger v17 R4.1 - the stored composition-run row for a genome that encoded nothing read "ran its engine
+    and produced this output", and the record pointed readers to provenance "on that resource's row" which the
+    row did not hold.
+
+    THE PROPERTIES, with the engine's answer stood in for both ways: the stored row carries encoded / served_by /
+    is_external; an unencoded run's phrase says it encoded nothing (the outcome WORD is unchanged - the engine
+    did run); an encoded run keeps the plain phrase; `any_external` is read from the rows as well as the trace;
+    and the history chip on the page is amber for a run that returned defaults."""
+    import pathlib
+    import uuid
+    from agentic_core.organism import genome as _gm
+
+    def _engine(encoded, external=False):
+        async def _fake(req):
+            return {"genome_id": f"genome-t1r41{'e' if encoded else 'd'}",
+                    "traits": {a: (0.9 if encoded and a == _gm._TRAIT_AXES[0] else 0.5) for a in _gm._TRAIT_AXES},
+                    "fitness_score": 0.7 if encoded else 0.5, "fitness_provenance": "T1 declared" if encoded else "T1 default",
+                    "encoded": encoded, "served_by": "t1-r41-model" if encoded else "native",
+                    "is_external": external, "expression": "",
+                    **({} if encoded else {"encoding_note": "T1 nothing was encoded"})}
+        return _fake
+
+    def _stored(encoded, external=False):
+        monkeypatch.setattr(_gm, "encode_genome", _engine(encoded, external))
+        _name = f"T1 R41 genome {uuid.uuid4().hex[:6]}"
+        _c = client.post("/api/v1/resources/compose", json={
+            "name": _name, "usage_area": "synthesis", "resource_ids": ["genome"],
+            "config": {"genome": {"entity_name": "T1 R41 Probe"}}})
+        assert _c.status_code in (200, 201), _c.text[:300]
+        _r = client.post(f"/api/v1/resources/compositions/{_c.json()['id']}/run",
+                         json={"objective": "a hive-health monitor for smallholders"})
+        assert _r.status_code == 200, _r.text[:300]
+        _rec = next(h for h in client.get("/api/v1/resources/compositions/runs", params={"limit": 10}).json()["runs"]
+                    if h.get("name") == _name)
+        return _rec, next(x for x in _rec["real_resources"] if x["resource"] == "genome")
+
+    _rec, _d = _stored(False)
+    assert _d["outcome"] == "produced", ("the outcome word changed - W672 decided the engine did run", _d)
+    assert _d["encoded"] is False and _d["served_by"] == "native" and _d["is_external"] is False, (
+        "the stored row does not hold what its record's own basis says it holds", _d)
+    assert _d["encoding_note"] == "T1 nothing was encoded" and _d["fitness_provenance"] == "T1 default"
+    assert "encoded nothing" in _d["outcome_phrase"] and "produced this output" not in _d["outcome_phrase"], _d["outcome_phrase"]
+    assert "on that resource's row in real_resources" in _rec["served_by_basis"] and _rec["any_external"] is False
+
+    _rec2, _e = _stored(True)
+    assert _e["encoded"] is True and _e["served_by"] == "t1-r41-model" and _e.get("encoding_note") is None, _e
+    assert _e["outcome_phrase"] == "ran its engine and produced this output", _e["outcome_phrase"]
+
+    _rec3, _x = _stored(True, external=True)
+    assert _x["is_external"] is True and _rec3["any_external"] is True, (
+        "a real resource served externally is stored as an in-house run", _rec3.get("any_external"))
+    assert _rec3["any_external_basis"]
+    monkeypatch.undo()
+
+    _pg = (pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages"
+           / "synthesis" / "ResourceFabric.tsx").read_text(encoding="utf-8")
+    assert "rr.outcome === 'produced' && rr.encoded === false ? 'bg-amber-500/15 text-amber-300'" in _pg
+    assert _pg.index("rr.outcome === 'produced' && rr.encoded === false ? 'bg-amber-500/15") < _pg.index("rr.outcome === 'produced' ? 'bg-aura/10 text-aura'"), (
+        "the plain success colour is tested before the not-encoded case, so the amber branch can never be reached")
+    assert ": rr.outcome === 'produced' && rr.encoded === false ? ' (ran · defaults, not encoded)'" in _pg
+
+
+def test_t1_r42_the_fabric_says_it_runs_an_engine_only_for_a_facility_run(client, monkeypatch):
+    """Ledger v17 R4.2 - the registry flagged the Digital Twin (and every state read) `fabric_runs_engine: true`
+    because a handler branch exists, and the Instrument Cell counted them "available" under the words "the
+    fabric can run the resource's engine", while the same fabric says no engine runs for the twin.
+
+    THE PROPERTY, computed for EVERY registered resource and driven: `runs_engine` is true exactly when the
+    resource has a handler AND that handler is a facility run; the list, the count's basis and the page say
+    the same. `state` keeps its meaning (a handler exists)."""
+    import pathlib
+    from agentic_core.api import instrument_cell as _cell
+    from agentic_core.api import resource_fabric as _fab
+
+    _tw = _cell.availability("digital_twin", client.app)
+    assert _tw["state"] == "available", ("precondition: the twin has a handler branch", _tw["state"])
+    assert _tw["handler_kind"] == "narrative" and _tw["runs_engine"] is False, _tw
+    assert "runs no engine" in _tw["runs_engine_basis"] and "no simulator or engine ran" in _tw["runs_engine_basis"], _tw["runs_engine_basis"]
+    _gn = _cell.availability("genome", client.app)
+    assert _gn["state"] == "available" and _gn["handler_kind"] == "facility_run" and _gn["runs_engine"] is True, _gn
+
+    _want = {}
+    for _r in _fab._REGISTRY:
+        _a = _cell.availability(_r["id"], client.app)
+        _want[_r["id"]] = ((_fab._resource_kind(_r["id"]) == "facility_run") if _a["state"] == "available"
+                           else False if _a["state"] == "prompt_stage_only" else None)
+        assert _a["runs_engine"] is _want[_r["id"]], (_r["id"], _a["state"], _a["handler_kind"], _a["runs_engine"])
+    _no_engine = sorted(i for i, a in ((r["id"], _cell.availability(r["id"], client.app)) for r in _fab._REGISTRY)
+                        if a["state"] == "available" and a["runs_engine"] is False)
+    assert "digital_twin" in _no_engine and "metabolic" in _no_engine and "genome" not in _no_engine, _no_engine
+
+    _list = {r["id"]: r for r in client.get("/api/v1/resources").json()["resources"]}
+    for _id, _w in _want.items():
+        assert _list[_id]["fabric_runs_engine"] is _w and _list[_id]["fabric_runs_basis"], (_id, _list[_id].get("fabric_runs_engine"))
+    assert _list["digital_twin"]["fabric_handler_kind"] == "narrative" and _list["metabolic"]["fabric_handler_kind"] == "status_read"
+
+    _av = client.get("/api/v1/resources/cell/availability").json()
+    assert _av["available_without_engine"] == _no_engine, (_av.get("available_without_engine"), _no_engine)
+    assert "can run the resource's engine" not in _av["basis"] and "does NOT mean an engine runs" in _av["basis"], _av["basis"]
+    assert f"{len(_no_engine)} of the available resource(s) run no engine" in _av["basis"], _av["basis"]
+    assert _av["counts"].get("available", 0) >= len(_no_engine) + 1, "`state` no longer means a handler exists"
+
+    #  DRIVEN: a resource moved into the narrative class stops being reported as an engine run
+    monkeypatch.setattr(_fab, "_NARRATIVE_RESOURCES", frozenset(_fab._NARRATIVE_RESOURCES | {"genome"}))
+    assert _cell.availability("genome", client.app)["runs_engine"] is False
+    assert next(r for r in client.get("/api/v1/resources").json()["resources"] if r["id"] == "genome")["fabric_runs_engine"] is False
+    monkeypatch.undo()
+
+    _src = pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+    _pg = (_src / "pages" / "synthesis" / "ResourceFabric.tsx").read_text(encoding="utf-8")
+    _tag = _pg[_pg.index('data-testid="resource-not-run"'):_pg.index('data-testid="resource-run-unchecked"')]
+    assert "r.fabric_handler_kind === 'narrative' ? 'narrative only" in _tag and "r.fabric_handler_kind === 'status_read' ? 'reads state" in _tag, _tag
+    assert "{r.fabric_runs_engine === false && (" in _pg
+    _icp = (_src / "components" / "InstrumentCellPanel.tsx").read_text(encoding="utf-8")
+    assert "{Array.isArray(avail.available_without_engine) && avail.available_without_engine.length > 0 && (" in _icp
+    assert 'data-testid="cell-available-without-engine"' in _icp
+
+
+def test_t1_r50_the_solutions_button_runs_a_readiness_check_and_claims_no_launch():
+    """Ledger v17 R5.0 - the Solutions page's button read "Launching Mission..." then "Mission Live" after two
+    reachability reads that launched nothing, beside a test / staging / PRODUCTION selector that reached no backend.
+
+    THE PROPERTIES, read from the page for the exact text AND the condition that prints it: the three states of
+    the button name a readiness check and say nothing was launched; the mode selector and its state are gone;
+    and the handler still does only the two reads - if it ever does more, this guard asks for the label to be
+    read again."""
+    import pathlib
+    _raw = (pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages"
+            / "SolutionsPlatform.tsx").read_text(encoding="utf-8")
+    _sp = _code_only(_raw)
+    for _gone in ("Mission Live", "Launching Mission", "execMode", "setExecMode", "Execution Mode", "PRODUCTION", "Ready to Launch"):
+        assert _gone not in _sp, ("the page still shows or uses", _gone)
+    _btn = _raw[_raw.index("onClick={handleLaunch}"):_raw.index("New Mission")]
+    assert "disabled={launching || !missionName.trim() || status.launch === 'done'}" in _btn
+    _norm = " ".join(_btn.split())
+    assert ("{launching ? <><Loader2 size={14} className=\"animate-spin\" /> Running readiness check...</> "
+            ": status.launch === 'done' ? <><CheckCircle2 size={14} /> Readiness check complete \u2014 nothing launched</> "
+            ": <><Rocket size={14} /> Run readiness check</> }") in _norm, _norm[-700:]
+    assert "Plan summary \u2014 nothing is launched from this page" in _raw
+    _fn = _raw[_raw.index("const handleLaunch = async () => {"):_raw.index("setStatus(s => ({ ...s, launch: 'done' }));")]
+    assert _fn.count("apiJson") == 2 and "'/api/v1/native-ai/status'" in _fn and "'/api/v1/gaas/ueg/verify'" in _fn, (
+        "the handler no longer does exactly the two reads the button's words describe - read the label again")
+    assert "axios.post" not in _fn and "method: 'POST'" not in _fn
+    assert "That is reachability, not readiness" in _fn
+
+
+def test_t1_r51_an_avatar_reply_that_was_not_cleared_is_marked_as_not_cleared(client):
+    """Ledger v17 R5.1 - Settings tells the person an unapproved avatar answer "is shown and marked as not
+    cleared"; the chat marked nothing, because the hook dropped `cleared` and `clearance_reason`.
+
+    THE PROPERTIES: the route sends both for an unapproved learner (driven: every active approval is withdrawn
+    first); the hook carries both onto the message; and the panel prints the server's reason, as text, under
+    every assistant reply that is not cleared - the condition is asserted, not only the words."""
+    import pathlib
+    for _old in (client.get("/api/v1/avatar/ratifications").json().get("ratifications") or []):
+        if not _old.get("revoked_at"):
+            client.post(f"/api/v1/avatar/ratifications/{_old['id']}/revoke")
+    _c = client.post("/api/v1/avatar/chat", json={"message": "Help me plan a revision week"}).json()
+    assert _c["cleared"] is None and isinstance(_c["clearance_reason"], str) and _c["clearance_reason"].strip(), (
+        "precondition: the route says an unapproved reply was not cleared, in a sentence", _c.get("clearance_reason"))
+
+    _src = pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+    _hook = (_src / "hooks" / "useAvatarSession.ts").read_text(encoding="utf-8")
+    assert "cleared: resp.data.cleared ?? null," in _hook, "the hook drops whether the reply was cleared"
+    assert "clearanceReason: typeof resp.data.clearance_reason === 'string' ? resp.data.clearance_reason : null," in _hook
+    assert "cleared?: boolean | null;" in _hook and "clearanceReason?: string | null;" in _hook
+    _panel = (_src / "components" / "avatar" / "ConversationPanel.tsx").read_text(encoding="utf-8")
+    _i = _panel.index('data-testid="avatar-not-cleared"')
+    _gate = _panel[_panel.rindex("{m.role === 'assistant'", 0, _i):_i]
+    assert _gate.startswith("{m.role === 'assistant' && m.cleared !== true && !!m.clearanceReason && ("), _gate
+    assert "not cleared: {String(m.clearanceReason)}" in _panel[_i:_i + 300], "the reason is not printed as text"
+    _settings = (_src / "components" / "AvatarClearancePanel.tsx").read_text(encoding="utf-8")
+    assert "marked as not cleared" in _settings, "Settings no longer makes the statement this mark keeps true"
+
+
+def test_t1_r52_the_legacy_assistant_returns_no_invented_confidence_or_links(client, monkeypatch):
+    """Ledger v17 R5.2 - POST /api/civilization/assistant/query returned a fixed confidence figure and two links
+    to pages that are not routes of this application, for every query.
+
+    THE PROPERTIES, with the model's answer stood in for: the answer is returned with what served it; the
+    confidence is None with the reason; no page is suggested; and neither link is anywhere in the body."""
+    from agentic_core.api.v260 import intelligence as _in
+
+    class _Gateway:
+        async def query_meta(self, *a, **k):
+            return {"output": "T1 R52 the answer", "served_by": "t1-r52-model", "is_external": False}
+    monkeypatch.setattr(_in, "gateway", _Gateway())
+    _r = client.post("/api/civilization/assistant/query", params={"query": "what should I read first?"})
+    assert _r.status_code == 200, _r.text[:300]
+    _j = _r.json()
+    assert _j["response"] == "T1 R52 the answer" and _j["served_by"] == "t1-r52-model" and _j["is_external"] is False, _j
+    assert _j["confidence"] is None and _j["confidence_basis"].startswith("not measured"), _j
+    assert _j["actions"] == [] and _j["actions_basis"], _j
+    assert "0.99" not in _r.text and "fed-portal" not in _r.text and "evolution-dashboard" not in _r.text, _r.text[:300]
+
+
+def test_t1_r516_the_centres_page_lists_no_centre_that_does_not_exist():
+    """Ledger v17 R5.16 (raised to tier 1 by the refuter: the page IS in the sidebar) - with no insights the
+    Centres of Excellence page listed four hard-coded "standing centres", and with insights it headed portfolio
+    rows as centres "derived from live portfolio intelligence".
+
+    THE PROPERTIES, read from the page: no hard-coded centre is listed; with nothing to show the page says no
+    centre exists (the condition is asserted); the heading's sentence says what a card is; a card is named an
+    insight, not a CoE; and the page is still reached from the sidebar, which is why this is not a tier-3 row."""
+    import pathlib
+    _src = pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+    _raw = (_src / "pages" / "coe" / "KnowledgeHub.tsx").read_text(encoding="utf-8")
+    _kh = _code_only(_raw)
+    for _gone in ("name: 'AI Ethics'", "name: 'Data Science'", "name: 'Security'", "name: 'Global Affairs'",
+                  "Federated knowledge hubs derived from live portfolio intelligence", "} CoE`"):
+        assert _gone not in _kh, ("the page still lists or claims", _gone)
+    assert ": ([] as ReturnType<typeof coeFromInsight>[]);" in _kh, "the fallback is not an empty list"
+    _i = _raw.index('data-testid="coe-none"')
+    assert "{!isLoading && coes.length === 0 && (" in _raw[_i - 120:_i], _raw[_i - 120:_i]
+    assert "no centre exists" in " ".join(_raw[_i:_i + 400].split())
+    assert 'data-testid="coe-what-this-is"' in _raw and "No standing centre of excellence exists on this platform yet." in _raw
+    assert "} insight`," in _kh
+    assert 'data-testid="coe-score"' in _raw and 'data-testid="coe-no-score"' in _raw      # the older pins still hold
+    assert "id: 'coe'" in (_src / "components" / "layout" / "Sidebar.tsx").read_text(encoding="utf-8"), (
+        "the sidebar no longer links this page: its reach changed, re-read the ledger row")
+
+
+def test_t1_r60_a_beat_step_that_caught_its_own_failure_is_in_steps_failed(monkeypatch):
+    """Ledger v17 R6.0 - a beat whose health read raised returned steps_failed {} beside the sentence "an EMPTY
+    steps_failed means no step raised": the four homeostatic responders catch their own errors, and the beat
+    never read them. Reading for the fix found six more steps that record a failure only in a field of their own.
+
+    THE PROPERTIES: DRIVEN - a responder that caught an error is in steps_failed under its step name and is not
+    reported as an action (the health read is failed for real, through the sensor; the other three answer an
+    error); a clean beat carries none of them. COMPUTED - every `except` in beat() records a step failure, bar
+    the one that skips a single unreadable ship record, so the sentence's universal is checked against the code
+    and not asserted."""
+    import ast
+    import asyncio
+    import inspect
+    import textwrap
+    from agentic_core.organism import immune as _imm
+    from agentic_core.organism.heartbeat import OrganismHeartbeat
+
+    def _boom(*a, **k):
+        raise RuntimeError("t1 r60 the health sensor could not be read")
+
+    _h = OrganismHeartbeat()
+    monkeypatch.setattr(_imm.immune, "status", _boom)
+    monkeypatch.setattr(_h, "respond_to_energy", lambda: {"read": False, "recovered": False, "error": "RuntimeError: t1 r60 energy"})
+    monkeypatch.setattr(_h, "respond_to_circuits", lambda: {"probed": False, "error": "RuntimeError: t1 r60 circuits"})
+    monkeypatch.setattr(_h, "respond_to_threat", lambda: {"engaged": False, "error": "RuntimeError: t1 r60 threat"})
+    _direct = OrganismHeartbeat.respond_to_health(_h)
+    assert _direct["read"] is False and "t1 r60 the health sensor" in _direct["error"], ("precondition: the responder catches its own error", _direct)
+    _rec = asyncio.run(_h.beat())
+    monkeypatch.undo()
+    _sf = _rec["steps_failed"]
+    assert "t1 r60 the health sensor" in _sf.get("homeostasis", ""), ("the health read failed and the beat did not say so", _sf)
+    assert _sf.get("self_recovery") == "RuntimeError: t1 r60 energy" and _sf.get("self_heal") == "RuntimeError: t1 r60 circuits", _sf
+    assert _sf.get("immune_defence") == "RuntimeError: t1 r60 threat", _sf
+    assert not ({"homeostasis", "self_recovery", "self_heal", "immune_defence"} & set(_rec["actions"])), _rec["actions"]
+    assert _rec["health"] is None
+    assert "EMPTY steps_failed means no step raised" in _rec["steps_failed_basis"] and "CAUGHT its own error" in _rec["steps_failed_basis"]
+
+    _clean = asyncio.run(OrganismHeartbeat().beat())
+    assert not ({"homeostasis", "self_recovery", "self_heal", "immune_defence"} & set(_clean["steps_failed"])), (
+        "a responder that did not fail is reported as failed", _clean["steps_failed"])
+
+    #  COMPUTED: the universal in the basis sentence, read from beat() itself
+    _tree = ast.parse(textwrap.dedent(inspect.getsource(OrganismHeartbeat.beat)))
+    _silent = []
+    for _hd in [n for n in ast.walk(_tree) if isinstance(n, ast.ExceptHandler)]:
+        _records = any(isinstance(c, ast.Call) and isinstance(c.func, ast.Attribute)
+                       and c.func.attr in ("_step_failed", "_step_error") for b in _hd.body for c in ast.walk(b))
+        _skips_one = len(_hd.body) == 1 and isinstance(_hd.body[0], ast.Continue)
+        if not _records and not _skips_one:
+            _silent.append(_hd.lineno)
+    assert _silent == [], ("beat() has an except that records no step failure (line within the function)", _silent)
+    assert sum(1 for n in ast.walk(_tree) if isinstance(n, ast.ExceptHandler)) >= 20, "the scan read too little of beat()"
+    _src = inspect.getsource(OrganismHeartbeat.beat)
+    for _name in ("_h", "_en", "_circ", "_thr"):
+        assert f'if {_name}.get("error"):' in _src, ("a responder's caught error is not read by the beat", _name)
+
+
+def test_w676_a_returned_finding_cannot_pass_unread(tmp_path, monkeypatch, capsys):
+    """W676 (the quality item, clause 1) - A CORRECTION IS EFFECTIVE WHEN THE NEXT LOOK DOES NOT FIND IT AGAIN.
+    One tier-1 finding of edition 17 was edition 16's finding come back, and nothing compared them. The check
+    lists candidates (same file named AND similar title words) and fails while any is undecided. Driven on a
+    record MADE to hold a return, on the real edition, and on nothing."""
+    import importlib.util
+    import json as _json
+    import pathlib as _pl
+    _root = _pl.Path(__file__).resolve().parents[1]
+    _spec = importlib.util.spec_from_file_location("audit_returns_w676", _root / "scripts" / "audit_returns.py")
+    _ar = importlib.util.module_from_spec(_spec)
+    _spec.loader.exec_module(_ar)
+
+    def _finding(title, file, tier=1):
+        return {"section": title, "observed": "seen in " + file, "evidence": file, "smallest_honest_fix": "", "tier": tier}
+
+    def _edition(n, findings):
+        p = tmp_path / f"ledger_v{n}_T_abc.json"
+        p.write_text(_json.dumps([{"region": "R1", "findings": findings, "verdicts": []}]), encoding="utf-8")
+        return p
+    monkeypatch.setattr(_ar, "RUNS", tmp_path)
+    #    how the renderer counts is not this guard's subject: every made finding stands at its own tier
+    class _R:
+        @staticmethod
+        def standing(f, v=None):
+            return "STANDING"
+        @staticmethod
+        def standing_tier(f, v=None):
+            return f.get("tier")
+    monkeypatch.setattr(_ar, "_renderer", lambda: _R)
+    _edition(90, [_finding("The gate certifies filler under declared headings", "agentic_core/vbs/quality.py")])
+    _now = _edition(91, [_finding("The gate certifies filler under its own headings", "agentic_core/vbs/quality.py"),
+                         _finding("A wholly different statement about payouts", "agentic_core/vbs/quality.py"),
+                         _finding("The gate certifies filler under declared headings", "agentic_core/api/other.py")])
+    # 1. a made return: one candidate (same file AND similar words), and the check FAILS while it is undecided
+    assert _ar.main([str(_now), "--check"]) == 1
+    _out = capsys.readouterr().out
+    assert "examined 3 standing" in _out and "1 have a candidate; 1 undecided" in _out, _out
+    assert "R1.0" in _out and "R1.1" not in _out.split("CANDIDATES")[0].replace("R1.0", ""), _out
+    assert "not the same defect" in _out, "a candidate is printed as if it were a verdict"
+    # 2. decided by a person, either way: the check passes and prints the decision
+    (tmp_path / "returns_v91.json").write_text(_json.dumps({"R1.0": {"returned": True, "of": "v90.R1.0", "because": "made"}}), encoding="utf-8")
+    assert _ar.main([str(_now), "--check"]) == 0
+    assert "RETURNED" in capsys.readouterr().out
+    # 3. a decision for ANOTHER finding does not decide this one
+    (tmp_path / "returns_v91.json").write_text(_json.dumps({"R1.2": {"returned": False}}), encoding="utf-8")
+    assert _ar.main([str(_now), "--check"]) == 1
+    capsys.readouterr()
+    # 4. nothing examined is not a pass: no earlier edition, and an edition with nothing standing
+    _alone = _edition(50, [_finding("Something", "agentic_core/x.py")])
+    assert _ar.main([str(_alone), "--check"]) == 2 and "EXAMINED NOTHING" in capsys.readouterr().out
+    # 5. the real edition, with the decisions this round read: every candidate is decided, and three are returns
+    monkeypatch.undo()
+    _spec.loader.exec_module(_ar)
+    _real = sorted((_root / "docs" / "fidelity_runs").glob("ledger_v17_*.json"))[-1]
+    assert _ar.main([str(_real), "--check", "--json"]) == 0
+    _j = _json.loads(capsys.readouterr().out)
+    assert _j["summary"]["standing_examined"] >= 50 and _j["summary"]["earlier_editions"], _j["summary"]
+    assert _j["summary"]["undecided"] == [] and _j["summary"]["candidates"] >= 4, _j["summary"]
+    _dec = _j["decided"]
+    assert sum(1 for k, v in _dec.items() if v.get("returned") is True) == 3 and all(v.get("because") for v in _dec.values()), _dec
+
+
+def test_w676_the_emergency_line_is_the_first_line_of_the_safeguarding_text(client, monkeypatch):
+    """W676 - driven: a concern that someone was being hit NOW came back as the floor's frame with the emergency
+    number nowhere in the text; it was only in a field after it. The line is typed, comes first, and is the same
+    whether the floor or a model composed the rest - including when the composer returns nothing."""
+    import agentic_core.api.care as _care
+    _concern = "w676: a resident says her son is hitting her right now and she is locked in her room"
+    # 1. as this machine serves it (the floor)
+    _j = client.post("/api/v1/care/safeguarding", json={"concern": _concern}).json()
+    _first = _j["guidance"].splitlines()[0]
+    assert _j["guidance"].startswith(_care.IMMEDIATE_DANGER_FIRST), _j["guidance"][:200]
+    assert "999" in _first and "immediate danger" in _first and "before" in _first, _first
+    assert _j["guidance"].index("999") < 80, "the number is not at the top of the text"
+    # 2. a model in the composer's place, and a composer that returns nothing: the line is still first
+    for _text in ("## Immediate Safety\nw676 model text with no number in it", "", None):
+        async def _composer(prompt, agent, _t=_text, **kw):
+            return _t, {"served_by": "w676-capture"}
+        monkeypatch.setattr(_care, "ai_text", _composer)
+        _g = client.post("/api/v1/care/safeguarding", json={"concern": _concern}).json()["guidance"]
+        assert _g.startswith(_care.IMMEDIATE_DANGER_FIRST), (_text, _g[:120])
+        if _text:
+            assert _g.endswith(_text), "the composed text was dropped"
+    # 3. the line is not composed: no prompt asks for it to be the only place the number appears
+    assert "999" in _care.IMMEDIATE_DANGER_FIRST and "generated" not in _care.IMMEDIATE_DANGER_FIRST.lower()
+
+
+def test_w676_no_page_draws_a_structure_pass_as_a_good_result():
+    """W676 - found in the BROWSER after the chip helper was made neutral: the Deliverables list dot coloured a
+    pass green by its own ternary. A structure pass is drawn in a neutral colour (Owner 2026-10-12), and the
+    colour is decided where the verdict is read - so every place that reads the verdict is read here."""
+    import pathlib as _pl
+    import re as _re
+    _src = _pl.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+    _sites = []
+    for _f in sorted(_src.rglob("*.tsx")) + sorted(_src.rglob("*.ts")):
+        for _i, _line in enumerate(_f.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
+            if _re.search(r"verdict\s*===\s*'pass'", _line):
+                _sites.append((_f.name, _i, _line.strip()))
+    assert _sites, "no page reads the verdict, so this guard examined nothing"
+    for _name, _i, _line in _sites:
+        _after = _line.split("'pass'", 1)[1].split(":", 1)[0]              # what a pass selects on this line
+        assert "emerald" not in _after and "green" not in _after, (_name, _i, _after)
+    _dot = [l for n, i, l in _sites if n == "Deliverables.tsx" and "QMS structure" in l]
+    assert len(_dot) == 1 and "'pass' ? 'text-slate-200'" in _dot[0] and "'fail' ? 'text-vital'" in _dot[0], _dot

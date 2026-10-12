@@ -39,7 +39,7 @@ interface Resource {
   capabilities: string[]; reconfigurable_params: Record<string, string>; endpoint: string;
   methods: string[]; reusable: boolean; rerunnable: boolean; biomimetic: boolean; usable_in: string[];
   // W641 (FU-674) — whether composing this resource runs its engine; null = the server could not check
-  fabric_runs_engine?: boolean | null; fabric_runs_basis?: string;
+  fabric_runs_engine?: boolean | null; fabric_runs_basis?: string; fabric_handler_kind?: string | null;
 }
 interface Composition {
   id: string; name: string; usage_area: string;
@@ -58,6 +58,7 @@ interface HistoryRun {
   // run and an attempt that raised looked the same on the only surface that reads the persisted record.
   real_resources?: { resource: string; endpoint?: string; kind?: string;
                      outcome?: string; outcome_phrase?: string; error?: string | null;
+                     encoded?: boolean | null; served_by?: string | null; is_external?: boolean;
                      // P3.31 (round 9) - a stand-in's row names what it stood in for; the failed row says what was tried
                      alternative_for?: string; stand_in_label?: string;
                      alternative?: { tried: string | null; attempts: number; outcome?: string; basis: string };
@@ -446,7 +447,11 @@ export const ResourceFabric: React.FC = () => {
                   {r.fabric_runs_engine === false && (
                     <span data-testid="resource-not-run" title={r.fabric_runs_basis}
                       className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300">
-                      prompt stage only — engine not run
+                      {r.fabric_handler_kind === 'narrative' ? 'narrative only — no engine run'
+                        : r.fabric_handler_kind === 'status_read' ? 'reads state — no engine run'
+                        : r.fabric_handler_kind === 'query' ? 'queries records — no engine run'
+                        : r.fabric_handler_kind === 'blueprint' ? 'blueprint only — nothing provisioned'
+                        : 'prompt stage only — engine not run'}
                     </span>
                   )}
                   {r.fabric_runs_engine === null && (
@@ -648,7 +653,8 @@ export const ResourceFabric: React.FC = () => {
                           title={rr.outcome_phrase || rr.error || (rr.outcome ? `outcome: ${rr.outcome}` : 'what this resource did was not recorded on this run')}
                           data-testid={`history-outcome-${rr.resource}`}
                           className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${
-                            rr.outcome === 'produced' ? 'bg-aura/10 text-aura'
+                            rr.outcome === 'produced' && rr.encoded === false ? 'bg-amber-500/15 text-amber-300'
+                            : rr.outcome === 'produced' ? 'bg-aura/10 text-aura'
                             : rr.outcome === 'raised' || rr.outcome === 'no_calls_ran' ? 'bg-vital/15 text-vital'
                             : rr.outcome ? 'bg-slate-800 text-slate-400'
                             : 'bg-slate-900 text-slate-500'}`}>
@@ -657,6 +663,7 @@ export const ResourceFabric: React.FC = () => {
                         : rr.outcome === 'read' || rr.outcome === 'assessed' ? ' (read)'
                         : rr.outcome === 'specified' ? ' (blueprint)'
                         : rr.outcome === 'narrated' ? ' (narrative, no engine)'
+                        : rr.outcome === 'produced' && rr.encoded === false ? ' (ran · defaults, not encoded)'
                         : rr.outcome ? '' : ' (?)'}
                       {rr.alternative ? (rr.alternative.tried ? ` · ${rr.alternative.tried} tried once in its place` : ' · nothing tried in its place') : ''}
                     </span>

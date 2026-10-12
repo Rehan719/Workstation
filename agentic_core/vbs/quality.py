@@ -157,6 +157,17 @@ def describe_served(served_by: Any) -> str:
     return str(served_by)
 
 
+#  OWNER RULING 2026-10-12 (ledger v17 R1.0) - THE GATE REPORTS WHAT IT MEASURED, UNDER A NAME THAT SAYS SO.
+#  It reads headings and stub markers. Pangram filler under the declared headings was recorded "specifically
+#  designed: met" and "verified: met", and shown as a green pass. These are the names of its two measurements;
+#  every surface that prints the gate's verdict prints it as a STRUCTURE gate.
+DECLARED_SECTIONS_PRESENT = "declared sections present"
+NO_STUB_MARKER_FOUND = "no stub marker found"
+GATE_MEASURES = ("structure only: whether every declared section heading is present, and whether a stub marker "
+                 "(or too little text) was found. The content was not read, so a pass here is not a finding "
+                 "that the delivery is specifically designed or verified")
+
+
 def gate_word(verdict: Optional[bool]) -> str:
     """The three honest words for a gate verdict — a renderer must never collapse None to 'fail'."""
     return "pass" if verdict is True else "fail" if verdict is False else "not assessable"
@@ -212,18 +223,39 @@ def _measure_bar(coverage: float, stub: bool, qms_passed: Optional[bool], min_co
         crit[name] = {"met": None, "basis": not_assessable_basis or NOT_ASSESSABLE_BASIS, "measured": False,
                       "attested": False, "source": "none"}
 
+    #  OWNER RULING 2026-10-12 (ledger v17 R1.0). Neither criterion is set from heading coverage any longer:
+    #  both are met None, source "none", and carry the two figures the gate DID compute as supporting evidence.
+    #  `gate_measurements` holds those figures under their own names. Nothing the gate computes is dropped.
+    gate_measurements: Dict[str, Dict[str, Any]] = {}
     if floor_served:
         not_assessable("specifically designed")
         not_assessable("verified")
     else:
-        measured("specifically designed",
-                 None if coverage is None else (coverage >= min_coverage and not stub),
-                 f"delivery coverage {coverage} against the declared structure (min {min_coverage}), "
-                 f"stub_found={stub}")
-        if qms_passed is not None:
-            measured("verified", bool(qms_passed), "QMS gate on real coverage/stub metrics")
-        else:
-            unmeasured("verified")
+        gate_measurements = {
+            DECLARED_SECTIONS_PRESENT: {
+                "met": None if coverage is None else bool(coverage >= min_coverage),
+                "figure": coverage, "minimum": min_coverage, "measured": coverage is not None,
+                "basis": (f"the share of the declared section names found in the text is {coverage} "
+                          f"(minimum {min_coverage}); a name is found when it appears anywhere in the text"
+                          if coverage is not None else
+                          "NOT MEASURED - this delivery declared no required sections, so there was nothing "
+                          "to look for")},
+            NO_STUB_MARKER_FOUND: {
+                "met": not stub, "figure": not stub, "measured": True,
+                "basis": ("no stub marker (TODO, TBD, FIXME, lorem ipsum, placeholder, coming soon, as an AI) "
+                          "matched and the text is not under the minimum length" if not stub else
+                          "a stub marker matched, or the text is under the minimum length")}}
+        _ev_words = "; ".join(
+            f"{k}: {'yes' if v['met'] is True else 'no' if v['met'] is False else 'not measured'}"
+            for k, v in gate_measurements.items())
+        for _name in ("specifically designed", "verified"):
+            crit[_name] = {
+                "met": None, "measured": False, "attested": False, "source": "none",
+                "basis": (f"NOT MEASURED - this gate reads headings and stub markers, never content, so it "
+                          f"cannot establish that a delivery is {_name}. What it measured is supporting "
+                          f"evidence only: {_ev_words}"),
+                "supporting_evidence": {k: {"met": v["met"], "figure": v["figure"]}
+                                        for k, v in gate_measurements.items()}}
     # §10 (W483, ledger v5 R1.1 / R3.3) — 'compliant' and 'safe' were recorded met=True, measured=True,
     # source=gate whenever no §11 row said 'fail'. The inputs are keyword screens that describe
     # themselves as "not an EHS assessment" and "not a certification", and a run where every framework
@@ -294,6 +326,14 @@ def _measure_bar(coverage: float, stub: bool, qms_passed: Optional[bool], min_co
                         + (f"{len(_s)} screen-only · " if _s else "")
                         + f"{len(_n)} not measured (of {len(crit)})"),
             "total": len(crit),
+            #  R1.0 - NOT bar criteria: what the gate measured of the structure, each under its own name
+            "gate_measurements": gate_measurements,
+            "gate_measurements_summary": (
+                ("; ".join(f"{k}: {'yes' if v['met'] is True else 'no' if v['met'] is False else 'not measured'}"
+                           for k, v in gate_measurements.items())
+                 + " - headings and stub markers only; the content was not read") if gate_measurements else
+                "none - the gate did not run on this output (see the criteria's basis)"),
+            "gate_measurements_basis": GATE_MEASURES,
             "measured_criteria": sorted(k for k, c in crit.items() if c["source"] == "gate"),
             "attested_criteria": sorted(k for k, c in crit.items() if c["source"] == "caller")}
 
@@ -464,8 +504,12 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
             quality["qms_gate_passed"] = bool(await qms.run_quality_gates(
                 {"coverage": coverage, "stubs_found": stub}, label=label, owner_id=owner_id,
                 delivery_ref=_ref))
-            quality["qms_basis"] = (f"QMS gate on real coverage/stub metrics "
-                                    f"(served_by={_served_label})")
+            quality["qms_basis"] = (
+                f"structure gate - {DECLARED_SECTIONS_PRESENT}: {coverage} of the "
+                f"{len(required_sections or [])} declared (minimum {qms.min_coverage}); "
+                f"{NO_STUB_MARKER_FOUND}: {'yes' if not stub else 'no'}. Headings and stub markers only: the "
+                f"content was not read (served_by={_served_label})")
+            quality["qms_gate_measures"] = GATE_MEASURES
         quality["qms_min_coverage"] = qms.min_coverage
         quality["qms_non_conformance_rate"] = qms.get_non_conformance_rate()
         quality["qms_defects"] = qms.defect_summary()
@@ -606,7 +650,7 @@ async def assure_delivery(content: str, required_sections: Optional[List[str]] =
         biomimetic["layers"].append("Immune")   # the only layer that contributes a measured value
         # The organism senses every quality outcome (homeostatic feedback).
         biobus.fire_signal("cognitive", f"qms.{label}",
-                           f"QMS gate {gate_word(quality.get('qms_gate_passed')).upper()} (cov={coverage})", 0.6)
+                           f"QMS structure gate {gate_word(quality.get('qms_gate_passed')).upper()} (cov={coverage})", 0.6)
     except Exception as exc:
         biomimetic["error"] = str(exc)
 

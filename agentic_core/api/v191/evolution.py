@@ -170,22 +170,28 @@ async def generate_proposals(req: GenerateRequest):
         except Exception:
             continue
 
+    _served = _er.get("served_by")
     if not new_proposals:
-        fallback = {
-            "id": f"ep-{uuid.uuid4().hex[:8]}",
-            "type": "PERFORMANCE",
-            "title": "Review AI provider failover strategy",
-            "description": (raw[:200] if raw else "No parseable proposals generated."),
-            "impact": "Medium",
-            "rationale": "System observation triggered this review.",
-            "status": "pending",
-            "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        }
-        proposals.append(fallback)
-        new_proposals.append(fallback)
-
+        #  ledger v17 R4.0 / R6.1 - a canned proposal used to be filed here, with a type, an impact and a
+        #  rationale nothing produced, counted as `generated: 1` and approvable into Change Control. Nothing
+        #  parsed, so nothing is proposed and NOTHING IS STORED; the answer says so and shows what came back.
+        return {"generated": 0, "proposals": [], "served_by": _served,
+                "basis": ("the serving resource returned no line in the PROPOSAL_ format this route parses, so "
+                          "nothing was proposed and nothing was stored"),
+                "raw": raw[:200]}
+    for _p in new_proposals:
+        _p["served_by"] = _served                  # which resource wrote this proposal, on the row itself
     _save(proposals)
-    return {"generated": len(new_proposals), "proposals": new_proposals}
+    return {"generated": len(new_proposals), "proposals": new_proposals, "served_by": _served}
+
+
+#  ledger v17 R4.0 / R6.1 - the default this module filed until that round, kept ONLY so a row of it that is
+#  already in a store can be recognised: such a row is not a proposal anything generated.
+_REMOVED_DEFAULT = ("Review AI provider failover strategy", "System observation triggered this review.")
+
+
+def _is_removed_default(p: dict) -> bool:
+    return (p.get("title"), p.get("rationale")) == _REMOVED_DEFAULT and not p.get("served_by")
 
 
 @router.post("/proposals/{proposal_id}/approve")
@@ -203,6 +209,11 @@ async def approve_proposal(proposal_id: str):
             if p.get("status") in ("approved", "rejected"):
                 return {"status": p["status"], "proposal_id": proposal_id, "cca_id": p.get("cca_id"),
                         "note": "Already resolved — no duplicate Change Control request filed."}
+            if _is_removed_default(p):
+                raise HTTPException(status_code=409, detail=(
+                    f"Proposal {proposal_id} is the default this route used to file when no proposal parsed: "
+                    f"its title, type, impact and rationale were written by nothing. It is not filed with "
+                    f"Change Control. Reject it, or generate again."))
             from agentic_core.api.change_control import submit_change, SubmitChangeRequest
             impact = str(p.get("impact", "Medium")).lower()
             change_type = {"high": "platform_upgrade", "medium": "capability_add",

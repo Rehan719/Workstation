@@ -349,7 +349,21 @@ def availability(rid: str, app=None) -> Dict[str, Any]:
     else:
         checked = "unavailable" if state == "prompt_stage_only" else "not_checked"
         checked_basis = reason
+    #  ledger v17 R4.2 - A HANDLER BRANCH IS NOT AN ENGINE RUN. The Digital Twin's branch sends one persona
+    #  prompt, and eight others only read state; all were reported as "the fabric runs its engine" because a
+    #  branch exists. The kind is the fabric's own classification of what each handler does.
+    if state == "available":
+        handler_kind = _fab._resource_kind(rid)
+        runs_engine = handler_kind == "facility_run"
+        runs_engine_basis = (reason if runs_engine else
+                             f"the fabric has a handler for it, and composing it runs no engine: its handler "
+                             f"is a {handler_kind.replace('_', ' ')} - {_fab._KIND_PHRASE[handler_kind]}")
+    else:
+        handler_kind = None
+        runs_engine = False if state == "prompt_stage_only" else None
+        runs_engine_basis = reason
     return {"id": rid, "state": state, "reason": reason,
+            "handler_kind": handler_kind, "runs_engine": runs_engine, "runs_engine_basis": runs_engine_basis,
             "needs_declared": need["declared"], "needs_state": need["state"], "needs": need["needs"],
             "needs_per_run": need["per_run"], "needs_basis": need["basis"],
             "needs_narrowed": need["narrowed"], "needs_declared_none": need["declared_none"],
@@ -698,9 +712,16 @@ async def cell_availability(request: Request):
             "declaration_defects": [{"id": x["id"], "endpoint_state": x["endpoint_state"],
                                      "basis": x["endpoint_basis"]}
                                     for x in rows if x["endpoint_state"] in ("not_served", "method_mismatch")],
+            #  ledger v17 R4.2 - the count's basis said "available" means the fabric can run the engine
+            "available_without_engine": sorted(x["id"] for x in rows
+                                               if x["state"] == "available" and x["runs_engine"] is False),
             "basis": ("read at this call from the fabric's handler and the application's route table. "
-                      "'available' means the fabric can run the resource's engine; it does not mean the engine "
-                      "will succeed")}
+                      "'available' means the fabric has a handler for the resource. It does NOT mean an engine "
+                      "runs: "
+                      + str(sum(1 for x in rows if x["state"] == "available" and x["runs_engine"] is False))
+                      + " of the available resource(s) run no engine when composed (they read state, query "
+                        "records, draft a blueprint or write a narrative) and are named in "
+                        "available_without_engine. Nor does it mean an engine that runs will succeed")}
 
 
 @router.get("/contract/{resource_id}")

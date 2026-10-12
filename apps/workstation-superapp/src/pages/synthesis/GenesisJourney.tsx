@@ -59,7 +59,7 @@ interface JourneyResult {
     quality?: { qms_gate_passed?: boolean | null; qms_basis?: string; delivery_coverage?: number; bar?: string[];
       // §10 (W419/W436) — the bar's real shape: measured by the gate vs merely attested by a caller.
       bar_measured?: { measured: number; attested: number; not_measured: number; summary?: string;
-        measured_criteria?: string[]; attested_criteria?: string[] };
+        measured_criteria?: string[]; attested_criteria?: string[]; gate_measurements_summary?: string };
       quality_record_hash?: string; document_controlled?: boolean;
       compliance?: { overall?: string; compliant?: boolean; verdicts?: { framework: string; status: string }[] };
       compliance_error?: string };
@@ -1010,7 +1010,8 @@ export const GenesisJourney: React.FC = () => {
                   <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${c.cls}`}
                     title={`${c.title}
 §10 Solution-Quality Bar — ${result.quality_assurance.quality.bar_measured?.summary ?? 'per-criterion breakdown unavailable'}
-MEASURED by this gate: ${(result.quality_assurance.quality.bar_measured?.measured_criteria || []).join(' · ') || 'none'}
+MEASURED by this gate, of the bar's sixteen: ${(result.quality_assurance.quality.bar_measured?.measured_criteria || []).join(' · ') || 'none'}
+STRUCTURE EVIDENCE (not a bar criterion): ${result.quality_assurance.quality.bar_measured?.gate_measurements_summary ?? 'not recorded on this run'}
 ATTESTED by the journey (a claim about a run, not a measurement): ${(result.quality_assurance.quality.bar_measured?.attested_criteria || []).join(' · ') || 'none'}
 The full 16: ${(result.quality_assurance.quality.bar || []).join(' · ')}${result.quality_assurance.quality.quality_record_hash ? `
 Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.quality.quality_record_hash.slice(0, 16)}…` : ''}`}>

@@ -36,11 +36,33 @@ def _matter() -> Dict[str, Any]:
         return {}
 
 
+#  the names by which a process says it is not the Owner's own running platform
+_NOT_THE_OWNERS = ("PYTEST_CURRENT_TEST", "PYTEST_XDIST_WORKER", "WORKSTATION_AUDIT_BACKEND", "WORKSTATION_DRIVE")
+
+
+def _not_the_owners_process() -> str:
+    """The first marker present, or ''. Also true when pytest is loaded in this interpreter."""
+    for k in _NOT_THE_OWNERS:
+        if os.environ.get(k):
+            return k
+    import sys as _sys
+    return "pytest is loaded" if "pytest" in _sys.modules else ""
+
+
 def resolve_bundle_dir() -> Dict[str, Any]:
     """Which folder, in which state, and why. Never creates the folder and never guesses one."""
     env = os.environ.get(ENV_VAR, "").strip()
-    named = env or str(_matter().get("bundle_dir") or "").strip()
+    #  W676 - THE FLOOR. A test, audit or drive process is never handed the folder the committed file names:
+    #  what such a process reads ends up in a test log or an agent's transcript, and nothing about the matter
+    #  leaves this machine. Such a process reads a folder only when the variable names one.
+    held_back = not env and _not_the_owners_process()
+    named = env or ("" if held_back else str(_matter().get("bundle_dir") or "").strip())
     source = (f"the {ENV_VAR} environment variable" if env else "agentic_core/legal/matter.json")
+    if held_back:
+        return {"state": UNSET, "path": None, "source": None, "held_back": True,
+                "basis": (f"this is a test, audit or drive process ({_not_the_owners_process()}), so the folder "
+                          f"named by agentic_core/legal/matter.json is NOT opened; such a process reads a folder "
+                          f"only when {ENV_VAR} names one")}
     if not named:
         return {"state": UNSET, "path": None, "source": None,
                 "basis": "no folder is named, so no document can be read - which is the safe default"}

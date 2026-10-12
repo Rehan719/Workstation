@@ -166,14 +166,29 @@ async def xai_explanations(ease_factor: float = Query(default=2.5, ge=1.3, le=3.
         _rep_why = "one repetition: the engine schedules a flat 6 days; compounding starts after this."
     else:
         _rep_why = f"from the second repetition the interval compounds by ease ({repetition} recorded)."
+    #  ledger v17 R1.2 - the interval row was the one rationale left as a fixed string: "the prior interval ...
+    #  anchors the next spacing step" under RESET -> 1 day, where the engine discarded it. It branches as its
+    #  neighbours do, and `_used` says per input whether the engine's branch read it at all.
+    if _reset:
+        _int_why = (f"the prior interval of {interval_days} day(s) was discarded: a quality below 3 resets the "
+                    f"schedule to 1 day whatever the interval was.")
+    elif not _compounds:
+        _int_why = (f"at {repetition} prior repetition(s) the engine schedules a flat "
+                    f"{1 if repetition == 0 else 6} days, so the prior interval of {interval_days} day(s) is "
+                    f"not used.")
+    elif interval_days <= 0:
+        _int_why = "no prior interval to anchor the next step."
+    else:
+        _int_why = f"the prior interval of {interval_days} day(s) anchors the next spacing step."
+    _used = {"ease_factor": _compounds, "interval_days": _compounds,
+             "repetition": not _reset, "last_quality": True}
     contributions = [
         {"feature": "ease_factor", "value": ease_factor,
          "contribution": round(model["ease_weight"] * (ease_factor / 2.5), 3),
          "rationale": _ease_why},
         {"feature": "interval_days", "value": interval_days,
          "contribution": round(model["interval_weight"] * (interval_days / 6), 3),
-         "rationale": ("no prior interval to anchor the next step." if interval_days <= 0 else
-                       f"the prior interval of {interval_days} day(s) anchors the next spacing step.")},
+         "rationale": _int_why},
         {"feature": "repetition", "value": repetition,
          "contribution": round(0.1 * repetition, 3),
          "rationale": _rep_why},
@@ -183,6 +198,13 @@ async def xai_explanations(ease_factor: float = Query(default=2.5, ge=1.3, le=3.
                        if last_quality < 3 else
                        f"recall quality {last_quality} is 3 or above, so the engine ADVANCES the schedule.")},
     ]
+    #  R1.2 - an input the engine's branch did not read carries no display weight: the figure that was shown
+    #  is kept under its own name, and `used_by_engine` is what the page prints from.
+    for _c in contributions:
+        _c["used_by_engine"] = bool(_used[_c["feature"]])
+        if not _c["used_by_engine"]:
+            _c["display_weight_if_used"] = _c["contribution"]
+            _c["contribution"] = 0.0
     return {
         "decision": decision,
         "next_interval_days": real_interval,
