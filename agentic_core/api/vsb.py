@@ -290,9 +290,9 @@ def _build_repo_files(vsb: dict) -> dict:
                             f"Excellence → Build-to-Order.\n\n## AI CEO\n"
                             #  W635 (FU-579) - the field holds the commercialisation text the founder gave, not a
                             #  CEO charter; it is labelled as what it is
-                            f"_AI CEO charter pending the owned model. Recorded instead: the founder's "
-                            f"commercialisation text, which the AI CEO is handed._\n```json\n"
-                            f"{json.dumps(vsb.get('ceo_specification') or {}, indent=2)[:2000]}\n```\n\n"
+                            #  ledger v17 R2.1 - the label and the text are derived together, from now
+                            f"{_ceo_handed(vsb)['note']}\n```json\n"
+                            f"{json.dumps(_ceo_handed(vsb)['value'] or {}, indent=2)[:2000]}\n```\n\n"
                             f"## Board\n```json\n{json.dumps(vsb.get('board') or {}, indent=2)[:2000]}\n```\n")
     f["resources/cascades.json"] = json.dumps({"native_swarm": vsb.get("native_swarm"),
                                                "swarm_config": vsb.get("swarm_config")}, indent=2)[:6000]
@@ -382,7 +382,7 @@ def _version_control_commit(root, vsb_id: str, surface: str, qa: Dict[str, Any] 
     compliance overall · DCS seal). Fail-soft to a SHA3-512 hash-CHAIN entry in versions.json when
     git is unavailable — whichever mechanism actually ran is recorded honestly."""
     q = ((qa or {}).get("quality") or {})
-    msg = (f"{surface}: QMS {gate_word(q.get('qms_gate_passed'))} · "
+    msg = (f"{surface}: QMS structure gate {gate_word(q.get('qms_gate_passed'))} · "
            f"compliance {((q.get('compliance') or {}).get('overall'))} · "
            f"seal {str(q.get('quality_record_hash'))[:12]}")
     try:
@@ -490,7 +490,8 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
         f"Generated {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())} — the SEALED record of this "
         f"generation (§10 QMS + §11 federated screen), document-controlled via the owned DCMS.\n\n"
         f"## §10 Quality\n"
-        f"- QMS gate: {gate_word(_q.get('qms_gate_passed')).upper()}\n"
+        f"- QMS structure gate (declared sections present, no stub marker found; the content was not "
+        f"read): {gate_word(_q.get('qms_gate_passed')).upper()}\n"
         f"- Basis: {_q.get('qms_basis')}\n"
         f"- Delivery coverage: {_q.get('delivery_coverage')}\n"
         # W489 (refutation) — this line is SEALED as §10 evidence for THIS generation, so it must not
@@ -1153,12 +1154,12 @@ _WEBAPP_APP_JS = r"""(async function () {
   function section(id) {
     if (id === 'overview') return '<p class="muted" id="template-note">' + esc(d.template_note || '') + '</p><h2>' + esc(d.name) + '</h2><p class="muted">' + esc(d.domain) + ' · ' + esc(d.realm || '') + '</p><p>' + esc(d.challenge) + '</p><p>' + esc(d.concept || '') + '</p>';
     if (id === 'plan') { const bp = d.business_plan || {}; return '<h2>Business Plan</h2>' + ['executive_summary', 'concept', 'problem_statement', 'vision', 'mission', 'strategy'].map((k) => bp[k] ? '<h3>' + title(k) + '</h3><p>' + esc(bp[k]) + '</p>' : '').join(''); }
-    if (id === 'org') return '<h2>Organisation</h2><p>Chief → Board → AI CEO → C-Suite → Centres of Excellence → Build-to-Order</p><h3>AI CEO</h3><pre>' + esc(JSON.stringify((d.organisation || {}).ceo || {}, null, 2)) + '</pre>';
+    if (id === 'org') return '<h2>Organisation</h2><p>Chief → Board → AI CEO → C-Suite → Centres of Excellence → Build-to-Order</p><h3>AI CEO</h3><p class="muted" id="ceo-basis">' + esc((d.organisation || {}).ceo_basis || '') + '</p><pre>' + esc(JSON.stringify((d.organisation || {}).ceo || {}, null, 2)) + '</pre>';
     if (id === 'resources') { const list = (d.resources || []).filter((r) => String(r).toLowerCase().includes(filter.toLowerCase())); return '<h2>Resources</h2><input id="rfilter" placeholder="Filter resources…" value="' + esc(filter) + '"><ul>' + (list.map((r) => '<li>' + esc(r) + '</li>').join('') || '<li class="muted">No resources.</li>') + '</ul>'; }
     return '';
   }
   function render() {
-    app.innerHTML = '<header><h1>' + esc(d.name) + '</h1><nav>' + tabs.map((t) => '<button data-tab="' + t.id + '" class="' + (t.id === active ? 'active' : '') + '">' + t.label + '</button>').join('') + '</nav></header><div class="content">' + section(active) + '</div><footer>Living VSB IDBO web app · generated in-house · quality record and compliance screen in the entity repository.</footer>';
+    app.innerHTML = '<header><h1>' + esc(d.name) + '</h1><nav>' + tabs.map((t) => '<button data-tab="' + t.id + '" class="' + (t.id === active ? 'active' : '') + '">' + t.label + '</button>').join('') + '</nav></header><div class="content">' + section(active) + '</div><footer>' + esc(d.footer_note || 'Standard app template, generated in-house · quality record and compliance screen in the entity repository.') + '</footer>';
     app.querySelectorAll('nav button').forEach((b) => b.onclick = () => { active = b.dataset.tab; render(); });
     const rf = document.getElementById('rfilter');
     if (rf) rf.oninput = () => { filter = rf.value; const pos = rf.selectionStart; render(); const nf = document.getElementById('rfilter'); if (nf) { nf.focus(); nf.setSelectionRange(pos, pos); } };
@@ -1231,7 +1232,9 @@ def _entity_appdata(vsb: dict) -> dict:
         "business_plan": {"executive_summary": (concept or challenge)[:600], "concept": concept[:800],
                           "problem_statement": challenge,
                           **{k: _public_prose(v)[:300] for k, v in _owner_written(vsb).items() if not k.startswith("_")}},
-        "organisation": {"ceo": vsb.get("ceo_specification") or {}, "board": vsb.get("board") or {}},
+        #  ledger v17 R2.1 - what the CEO is handed NOW, with the sentence saying what it is (never the marker)
+        "organisation": {"ceo": _ceo_handed(vsb)["value"] or {}, "ceo_kind": _ceo_handed(vsb)["kind"],
+                         "ceo_basis": _ceo_handed(vsb)["note"].strip("_"), "board": vsb.get("board") or {}},
         "resources": roles[:24],
         #  W618 (FU-484, M2 v8 R2.4) — the web and phone apps are ONE fixed template, byte-identical across
         #  entities apart from this data file, and they display the entity's own plan record; none of the
@@ -1239,6 +1242,13 @@ def _entity_appdata(vsb: dict) -> dict:
         "template_note": ("This app is the platform's standard template: it displays this entity's plan record "
                           "(overview, plan, organisation, resources) and is the same app for every entity. It "
                           "does not deliver the solution itself."),
+        #  ledger v17 R2.2 - the footer called every entity a "Living VSB IDBO web app" (on the phone app too),
+        #  beside a record saying it is not yet operating. The entity's DERIVED status is printed instead, as it
+        #  stood when this file was generated, and the footer names no kind of app.
+        "entity_status": _autonomy_phrase(vsb),
+        "footer_note": (f"Entity status when this app was generated — {_autonomy_phrase(vsb)}. Standard app "
+                        f"template, generated in-house · quality record and compliance screen in the entity "
+                        f"repository."),
     }
 
 
@@ -1538,6 +1548,86 @@ def _refuse_empty_blueprint(vsb: dict, bp: dict) -> None:
         raise HTTPException(status_code=409, detail=_no_concept_reason(vsb))
 
 
+_CEO_FOUNDER_SOURCES = ("founder_input", "pending", "absent")
+
+
+def _ceo_handed(vsb: dict) -> dict:
+    """ledger v17 R2.1 - WHAT THE AI CEO IS HANDED, DERIVED WHEN READ. {kind, value, note}.
+
+    `ceo_specification` is written once, at establishment, as the commercialisation (or concept) text of the
+    request - on a floor-served journey that is the platform's own pending marker. ORGANISATION.md and the
+    generated apps then printed the marker under the words "the founder's commercialisation text", and went on
+    doing so after the founder wrote one. The label is decided here from the entity as it stands now:
+      founder_commercialisation / founder_concept   the founder's own current text
+      pending                                       the field holds the pending marker and no founder text exists
+      absent                                        nothing was recorded at all
+      specification                                 a specification a model composed (the spawn door)"""
+    from agentic_core.api.business_plan import _is_unset as _unset
+    spec = vsb.get("ceo_specification")
+    src = vsb.get("ceo_specification_source")
+    if isinstance(spec, dict) and spec:
+        return {"kind": "specification", "value": spec,
+                "note": f"_The AI CEO specification recorded on this entity (source: {src or 'not recorded'})._"}
+    text = spec if isinstance(spec, str) else ""
+    bp = _blueprint(vsb)
+    founder = next(((k, bp[k]) for k in ("commercialisation", "concept") if not _unset(bp[k])), None)
+    if _unset(text) or src in _CEO_FOUNDER_SOURCES or (
+            founder and text.strip() in (bp["commercialisation"].strip()[:2000], bp["concept"].strip()[:2000])):
+        if founder:
+            return {"kind": f"founder_{founder[0]}", "value": founder[1][:2000],
+                    "note": (f"_AI CEO charter pending the owned model. Recorded instead: the founder's own "
+                             f"{founder[0]} text, which the AI CEO is handed._")}
+        if text.strip():
+            return {"kind": "pending", "value": None,
+                    "note": ("_AI CEO charter pending the owned model. Nothing is recorded in its place yet: the "
+                             "field holds the platform's pending marker, which nobody wrote, and no "
+                             "commercialisation or concept text has been recorded for this entity._")}
+        return {"kind": "absent", "value": None,
+                "note": ("_AI CEO charter pending the owned model. Nothing is recorded in its place: no "
+                         "commercialisation or concept text was given at establishment or since._")}
+    return {"kind": "specification", "value": text,
+            "note": f"_The AI CEO specification recorded on this entity (source: {src or 'not recorded'})._"}
+
+
+def _tell_plan_founder_wrote(vsb: dict, section: str, text: str) -> dict:
+    """ledger v17 R2.1 - THE ENTITY'S PLAN RECORD IS TOLD. W644 made a concept written on the PLAN reach the
+    entity; nothing went the other way, so the plan kept "content pending the owned model" as its concept and
+    listed every section as pending after the founder had written them on the entity. A concept the plan has
+    NOT got is taken (never over one already there), and a section the founder has written leaves the plan's
+    pending list. Best-effort and SAID: the answer states what was done or why it was not."""
+    try:
+        from agentic_core.api import business_plan as _bpm
+        _scope = vsb.get("business_plan_scope") or vsb.get("vsb_id")
+        if not _scope or not _bpm._path(_scope).exists():
+            return {"updated": False, "basis": "this entity has no business plan record, so there was nothing to tell"}
+        plan = _bpm._load(_scope)
+        _did = []
+        prov = plan.get("provenance") if isinstance(plan.get("provenance"), dict) else None
+        if section == "concept" and _bpm._is_unset(plan.get("concept")):
+            _ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            plan["concept"] = text[:2000]
+            plan.setdefault("owner_edits", {})["concept"] = _ts
+            plan.setdefault("owner_edits_by", {})["concept"] = vsb.get("owner_id") or plan.get("owner")
+            if prov is not None:
+                prov["field_sources"] = dict(prov.get("field_sources") or {}, concept="owner_supplied")
+                _bpm._note_opening(prov)
+            _did.append("the plan's concept was unset and now holds the founder's concept")
+        if prov is not None:
+            _ent_pending = vsb.get("body_pending") if isinstance(vsb.get("body_pending"), dict) else {}
+            _before = [f for f in (prov.get("body_pending") or []) if isinstance(f, str)]
+            _after = [f for f in _bpm._pending_fields(plan) if _ent_pending.get(f) is not False]
+            if _after != _before:
+                prov["body_pending"] = _after
+                _did.append(f"the plan's pending list is now {_after or 'empty'}")
+        if not _did:
+            return {"updated": False, "basis": "the plan record already agreed with the entity on this section"}
+        _bpm._save(plan)
+        return {"updated": True, "basis": "; ".join(_did)}
+    except Exception as _exc:                      # noqa: BLE001 - said, never swallowed
+        return {"updated": False, "error": f"{_exc.__class__.__name__}: {_exc}",
+                "basis": "the plan record could NOT be updated; it may still show this section as pending"}
+
+
 def founder_wrote_section(vsb: dict, section: str, text: str) -> dict:
     """W644 (FU-628, ledger v14 R2) - EVERY WRITER OF A BODY SECTION UPDATES WHAT THE ENTITY SAYS ABOUT IT.
 
@@ -1561,6 +1651,15 @@ def founder_wrote_section(vsb: dict, section: str, text: str) -> dict:
     sources = vsb.setdefault("body_sources", {})
     if isinstance(sources, dict):
         sources[section] = "founder"
+    #  ledger v17 R2.1 - the field Genesis filled once with "(commercialisation or concept)" follows the
+    #  founder's text. A specification a model composed (any other source) is never overwritten.
+    if section in ("commercialisation", "concept") and (
+            vsb.get("ceo_specification_source") in _CEO_FOUNDER_SOURCES
+            or not str(vsb.get("ceo_specification") or "").strip()):
+        _handed = _ceo_handed(dict(vsb, ceo_specification="", ceo_specification_source="absent"))
+        if _handed["kind"].startswith("founder_"):
+            vsb["ceo_specification"] = _handed["value"]
+            vsb["ceo_specification_source"] = "founder_input"
     return _rederive(vsb)
 
 
@@ -1585,9 +1684,11 @@ async def record_vsb_concept(vsb_id: str, req: ConceptRequest, user: dict | None
     _save_vsb(vsb)
     #  a shipped body now disagrees with the record; it is marked stale with the reason, never left to pass
     mark_repo_stale(vsb_id, "the founder recorded the concept after this body was shipped")
+    _plan_note = _tell_plan_founder_wrote(vsb, "concept", concept)        # ledger v17 R2.1
     return {"vsb_id": vsb_id, "concept": concept, "concept_source": "founder", "blueprint": _blueprint(vsb),
             "status": vsb.get("status"), "status_basis": vsb.get("status_basis"),
-            "stage": vsb.get("stage"), "stage_basis": vsb.get("stage_basis")}
+            "stage": vsb.get("stage"), "stage_basis": vsb.get("stage_basis"),
+            "plan_record": _plan_note}
 
 
 class BodySectionRequest(BaseModel):
@@ -1621,10 +1722,12 @@ async def record_vsb_body_section(vsb_id: str, section: str, req: BodySectionReq
     founder_wrote_section(vsb, section, text)
     _save_vsb(vsb)
     mark_repo_stale(vsb_id, f"the founder recorded the {section} after this body was shipped")
+    _plan_note = _tell_plan_founder_wrote(vsb, section, text)             # ledger v17 R2.1
     return {"vsb_id": vsb_id, "section": section, "text": text, "source": "founder",
             "body_pending": vsb.get("body_pending"), "body_absent": vsb.get("body_absent"),
             "status": vsb.get("status"), "status_basis": vsb.get("status_basis"),
-            "stage": vsb.get("stage"), "stage_basis": vsb.get("stage_basis")}
+            "stage": vsb.get("stage"), "stage_basis": vsb.get("stage_basis"),
+            "plan_record": _plan_note}
 
 
 def _pack_content_hash(layers: dict, economy: dict, narrative: str, name: str = "") -> str:
@@ -2069,6 +2172,15 @@ def _rederive(vsb: dict) -> dict:
     A status derived from facts is only as current as the last time it was derived, so every writer of those
     facts (the gate configuration, a gate decision, the ship) derives it again. Mutates and returns `vsb`.
     """
+    #  ledger v17 R2.1 - Genesis stamps `ceo_specification_source: founder_input` on whatever its request
+    #  carried, the platform's pending marker and an empty string included. The source is derived here, with
+    #  the status, in the two words the spawn door already uses for the same facts.
+    if vsb.get("ceo_specification_source") == "founder_input":
+        _spec21 = vsb.get("ceo_specification")
+        if not str(_spec21 or "").strip():
+            vsb["ceo_specification_source"] = "absent"
+        elif isinstance(_spec21, str) and _spec21.strip().startswith("content pending the owned model"):
+            vsb["ceo_specification_source"] = "pending"
     _st, _st_basis = _derived_status(vsb)
     _sg, _sg_basis = _derived_stage(vsb)
     vsb.update(status=_st, status_basis=_st_basis, stage=_sg, stage_basis=_sg_basis,

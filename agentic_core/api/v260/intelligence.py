@@ -28,8 +28,13 @@ async def assistant_query(query: str):
     # recall never reads - so it is unattributed on purpose and says so, rather than silently.
     _ar = await gateway.query_meta(query, agent="v260_assistant", augment=False, user_text=query)
     ai_response = _ar.get("output", "")
+    #  ledger v17 R5.2 - a fixed confidence figure and two fixed links were returned for every query. Nothing
+    #  here scores an answer, and neither link is a page of this application.
     return {
         "response": ai_response,
-        "confidence": 0.99,
-        "actions": ["/fed-portal", "/evolution-dashboard"]
+        "served_by": _ar.get("served_by"), "is_external": bool(_ar.get("is_external")),
+        "confidence": None,
+        "confidence_basis": "not measured: nothing on this route scores an answer",
+        "actions": [],
+        "actions_basis": "none: this route suggests no page",
     }

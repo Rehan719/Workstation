@@ -17,7 +17,7 @@ interface QualityAssurance {
     // gate computed; `attested` counts what a caller asserted and nothing verified. Rendering one
     // conflated number is what let 4 real measurements vouch for 12 nobody evaluated.
     bar_measured?: { measured: number; attested: number; not_measured: number; summary?: string;
-      measured_criteria?: string[]; attested_criteria?: string[] };
+      measured_criteria?: string[]; attested_criteria?: string[]; gate_measurements_summary?: string };
     qms_non_conformance_rate?: number; quality_record_hash?: string; document_controlled?: boolean;
     compliance?: { overall?: string; compliant?: boolean; verdicts?: { framework: string; status: string }[] } };
   biomimetic?: { immune?: { health?: number }; circadian?: string; layers?: string[]; self?: string };
@@ -216,7 +216,7 @@ export const Deliverables: React.FC = () => {
                   {(() => { const b = provenanceBadge(d.served_by, d.is_external);
                     return <span className={`px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
                   {(() => { const c = qmsChip({ qms_gate_passed: d.qms_gate_passed }); return c && (
-                    <span className={c.verdict === 'pass' ? 'text-emerald-400' : c.verdict === 'fail' ? 'text-vital' : 'text-slate-500'} title={`Living-QMS gate: ${c.verdict}`}>● QMS</span>
+                    <span className={c.verdict === 'pass' ? 'text-slate-200' : c.verdict === 'fail' ? 'text-vital' : 'text-slate-500'} title={`Living-QMS structure gate: ${c.verdict} — ${c.title}`}>● QMS structure</span>
                   ); })()}
                   {d.compliance_overall === 'fail' && <span className="px-1.5 py-0.5 rounded bg-vital/15 text-vital" title="§11 compliance FAIL — routed to Change Control; every export carries the verdict on page one">compliance FAIL</span>}
                 </p>
@@ -244,7 +244,8 @@ export const Deliverables: React.FC = () => {
                     <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`}
                       title={`${c.title}
 §10 Solution-Quality Bar — ${selected.quality_assurance.quality.bar_measured?.summary ?? 'per-criterion breakdown unavailable'}
-MEASURED by this gate: ${(selected.quality_assurance.quality.bar_measured?.measured_criteria || []).join(' · ') || 'none'}
+MEASURED by this gate, of the bar's sixteen: ${(selected.quality_assurance.quality.bar_measured?.measured_criteria || []).join(' · ') || 'none'}
+STRUCTURE EVIDENCE (not a bar criterion): ${selected.quality_assurance.quality.bar_measured?.gate_measurements_summary ?? 'not recorded on this delivery'}
 ATTESTED by a caller (a claim about a run, not a measurement): ${(selected.quality_assurance.quality.bar_measured?.attested_criteria || []).join(' · ') || 'none'}
 The full 16: ${(selected.quality_assurance.quality.bar || []).join(' · ')}${selected.quality_assurance.quality.quality_record_hash ? `
 Document-controlled under the QMS (DCMS) · record ${selected.quality_assurance.quality.quality_record_hash.slice(0, 16)}…` : ''}`}>

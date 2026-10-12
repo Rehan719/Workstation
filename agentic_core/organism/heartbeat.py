@@ -298,14 +298,21 @@ class OrganismHeartbeat:
         health = _h.get("health")     # read ONCE and carried to the beat record below
         if _h.get("read"):
             actions.append("homeostasis")
-        if self.respond_to_energy().get("recovered"):
+        if _h.get("error"):           # ledger v17 R6.0 - the responder caught it; the beat says so
+            self._step_error("homeostasis", _h["error"])
+        _en = self.respond_to_energy()
+        if _en.get("recovered"):
             actions.append("self_recovery")
+        if _en.get("error"):
+            self._step_error("self_recovery", _en["error"])
 
         # 2c. Self-healing reflex (immune → self-healing on the beat): read the circuit-breaker health and,
         #     when circuits are OPEN past their recovery window, the organism ACTIVELY probes them for
         #     recovery (proactive self-healing, not just passive timeout) — §3 "defends and heals itself".
         # W506 (P2.7(2)) — same extraction: a registered arc drives this between beats.
         _circ = self.respond_to_circuits()
+        if _circ.get("error"):        # ledger v17 R6.0
+            self._step_error("self_heal", _circ["error"])
         if _circ.get("probed"):
             actions.append("self_heal")
         if _circ.get("quarantine_hold"):
@@ -315,6 +322,8 @@ class OrganismHeartbeat:
         # §8 (W506, P2.7(3)) — the organism ENGAGES its own immune defence at ≥HIGH. The CCA route that
         # does this was built and had no caller, so a HIGH threat waited for an admin to press a button.
         _thr = self.respond_to_threat()
+        if _thr.get("error"):         # ledger v17 R6.0
+            self._step_error("immune_defence", _thr["error"])
         if _thr.get("engaged"):
             actions.append("immune_defence")
         if _thr.get("stood_down"):
@@ -378,6 +387,7 @@ class OrganismHeartbeat:
                                     f"REGULARLY, not exactly every {len(_entries)} beats, because a roster "
                                     f"that changes size shifts the rotation")
             except Exception as _roster_err:              # noqa: BLE001 — an unreadable roster is SAID
+                self._step_failed("cadence_roster", _roster_err)             # ledger v17 R6.0
                 _roster_note = (f"the apex only: the living roster could not be read "
                                 f"({_roster_err.__class__.__name__}), so no entity took its turn this beat "
                                 f"- which is not the same as there being none")
@@ -386,6 +396,7 @@ class OrganismHeartbeat:
                     try:
                         _res = _cad.refresh(_scope, _layer)
                     except Exception as _layer_err:      # noqa: BLE001 — recorded, not swallowed
+                        self._step_failed(f"cadence_refresh:{_scope}:{_layer}", _layer_err)   # ledger v17 R6.0
                         _cad_failed.append({"scope": _scope, "layer": _layer,
                                             "could_not_run": f"{_layer_err.__class__.__name__}: "
                                                              f"{_layer_err}"})
@@ -430,6 +441,7 @@ class OrganismHeartbeat:
             #  cadence that has silently stopped firing is the failure that matters most, and it was the
             #  one this handler hid. `actions` is still not appended to - claiming an action for a failure
             #  would be the opposite defect - so the three states are told apart by this record instead.
+            self._step_failed("cadence_refresh", _cad_err)                   # ledger v17 R6.0
             self.last_cadence = {
                 "refreshed": [],
                 "could_not_run": f"{_cad_err.__class__.__name__}: {_cad_err}",
@@ -528,6 +540,7 @@ class OrganismHeartbeat:
                     if rep.get("reconciled"):
                         actions.append("transfer_reconcile")
                 except Exception as err:
+                    self._step_failed("transfer_reconcile", err)             # ledger v17 R6.0
                     self.last_transfer_reconcile = {"beat": self.beats,
                                                     "error": f"{type(err).__name__}: {str(err)[:160]}"}
                     logger.warning("stranded-transfer reconciliation failed on beat %s: %s", self.beats, err)
@@ -539,6 +552,7 @@ class OrganismHeartbeat:
                     if irep.get("given_back"):
                         actions.append("intake_reconcile")
                 except Exception as err:
+                    self._step_failed("intake_reconcile", err)               # ledger v17 R6.0
                     self.last_intake_reconcile = {"beat": self.beats, "error": f"{type(err).__name__}: {str(err)[:160]}"}
                     logger.warning("stranded-intake reconciliation failed on beat %s: %s", self.beats, err)
 
@@ -626,6 +640,7 @@ class OrganismHeartbeat:
                 }
                 actions.append("metabolic_cycle_withheld" if _withheld else "metabolic_cycle")
             except Exception as exc:                  # noqa: BLE001 — recorded, never silently skipped
+                self._step_failed("metabolic_cycle", exc)                    # ledger v17 R6.0
                 self.last_metabolic = {
                     "at": self.last_beat,
                     "stages_measured": 0,
@@ -859,7 +874,11 @@ class OrganismHeartbeat:
                       "steps attempted on this beat that raised, by name, cleared at the start of every "
                       "beat so a failure never outlives the beat that had it. They are deliberately NOT in "
                       "`actions`: an action is something the beat performed. Since W611 (FU-461) EVERY beat "
-                      "step's failure is recorded here, so an EMPTY steps_failed means no step raised."),
+                      "step's failure is recorded here, so an EMPTY steps_failed means no step raised. "
+                      "That includes a step that CAUGHT its own error and reports it in a field of its own "
+                      "(the four homeostatic responders, the cadence, the two reconciliations and the "
+                      "metabolic cycle): each is recorded here as well. One thing is not a step failure and "
+                      "is not here: a single unreadable ship record skipped while looking for stale bodies."),
                   }
         self._log.append(record)
         self._log = self._log[-100:]
@@ -1131,6 +1150,12 @@ class OrganismHeartbeat:
 
     def stop(self) -> None:
         self.running = False
+
+    def _step_error(self, step: str, text: Any) -> None:
+        """ledger v17 R6.0 - a step that CAUGHT ITS OWN failure and reports it as text (the four responders
+        return {"error": ...} rather than raising). Recorded exactly as a raised failure is, and never as an
+        action."""
+        self.last_step_failures[step] = str(text)
 
     def _step_failed(self, step: str, err: BaseException) -> None:
         """Record a beat step that was ATTEMPTED AND FAILED. It NEVER appends to `actions`.

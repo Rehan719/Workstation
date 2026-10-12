@@ -520,9 +520,10 @@ async def list_resources(resource_class: Optional[str] = None, usable_in: Option
         try:
             from agentic_core.api.instrument_cell import availability as _availability
             _a = _availability(rid)
-            return {"fabric_runs_engine": (True if _a["state"] == "available" else
-                                           False if _a["state"] == "prompt_stage_only" else None),
-                    "fabric_runs_basis": _a["reason"]}
+            #  ledger v17 R4.2 - read from what the handler DOES, not from a branch existing
+            return {"fabric_runs_engine": _a["runs_engine"],
+                    "fabric_runs_basis": _a["runs_engine_basis"],
+                    "fabric_handler_kind": _a["handler_kind"]}
         except Exception as _exc:
             return {"fabric_runs_engine": None,
                     "fabric_runs_basis": f"NOT CHECKED - the availability check could not run ({_exc.__class__.__name__})"}
@@ -1358,6 +1359,11 @@ _OUTCOME_FOR_KIND = {"status_read": "read", "query": "assessed", "blueprint": "s
                      "facility_run": "produced"}
 
 
+#  ledger v17 R4.1 - what a real resource reports about its own calls, copied onto its stored run row
+_RUN_ROW_PROVENANCE = ("served_by", "served_by_map", "is_external", "calls", "failed_calls", "floor_calls",
+                       "encoded", "encoding_note", "fitness_provenance")
+
+
 def _resource_outcome(rid: str, r: Dict[str, Any]) -> str:
     """W491 (refutation) — `kind` says what a resource IS; it cannot say what HAPPENED. Every counter
     built on `kind` alone therefore reported a resource that RAISED as a read or as a run: the handler
@@ -1387,6 +1393,11 @@ async def _run_real_resource(rid: str, config: dict, objective: str, domain: str
     r["kind"] = kind
     r["outcome"] = outcome
     r["outcome_phrase"] = _OUTCOME_PHRASE[outcome]
+    #  ledger v17 R4.1 - an engine that RAN AND ENCODED NOTHING did not "produce this output": the stored row
+    #  said so for a genome of ten defaults. The outcome word is unchanged (W672: the engine did run).
+    if outcome == "produced" and r.get("encoded") is False:
+        r["outcome_phrase"] = ("ran its engine, which encoded nothing: every value it returned is a default, "
+                               "not an analysis of this objective")
     # kind_phrase describes the resource; on a failed attempt it must not describe an output
     r["kind_phrase"] = _OUTCOME_PHRASE[outcome] if outcome in ("raised", "no_calls_ran") else _KIND_PHRASE[kind]
     r["invocation"] = "in_process"
@@ -2025,6 +2036,10 @@ async def run_composition(cid: str, req: RunCompositionRequest,
                                 "outcome": x.get("outcome") or _resource_outcome(x["resource"], x),
                                 "outcome_phrase": x.get("outcome_phrase"),
                                 "error": x.get("error"),
+                                #  ledger v17 R4.1 - `served_by_basis` below says each real resource's calls
+                                #  "are on that resource's row"; the row held none of them. Kept when the
+                                #  resource reported them, absent when it did not (never defaulted).
+                                **{k: x[k] for k in _RUN_ROW_PROVENANCE if k in x},
                                 #  W640 - a stand-in is filed AS a stand-in, and the failure it stood in for
                                 #  carries what was tried: the history can never read one as the other
                                 **({"alternative": x["alternative"]} if x.get("alternative") else {}),
@@ -2032,7 +2047,10 @@ async def run_composition(cid: str, req: RunCompositionRequest,
                                 **({"stand_in_label": x["stand_in_label"]} if x.get("stand_in_label") else {}),
                                 "duration_ms": x.get("duration_ms")} for x in real_runs],
             "org_cascade_run_id": (org_cascade or {}).get("run_id"),
-            "served_by": _served, "any_external": bool(res.get("any_external")),
+            "served_by": _served,
+            #  ledger v17 R4.1 - read from the prompt trace AND from each real resource's own row
+            "any_external": bool(res.get("any_external")) or any(bool(x.get("is_external")) for x in real_runs),
+            "any_external_basis": "true when the prompt trace or any real resource's row reports an external call",
             "served_by_basis": ("counts the stages of this composition's own prompt trace, by what served each. "
                                 "The calls each REAL resource made are NOT in this figure: they are on that "
                                 "resource's row in real_resources"),

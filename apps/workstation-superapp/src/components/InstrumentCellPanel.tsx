@@ -15,7 +15,7 @@ interface Avail {
   checked?: string; checked_basis?: string;
 }
 interface AvailReply {
-  resources: Avail[]; counts: Record<string, number>; total: number; basis: string;
+  resources: Avail[]; counts: Record<string, number>; total: number; basis: string; available_without_engine?: string[];
   needs_counts?: Record<string, number>; checked_counts?: Record<string, number>; needs_declared?: number; needs_basis?: string;
   declaration_defects: { id: string; endpoint_state: string; basis: string }[];
 }
@@ -262,6 +262,11 @@ export function InstrumentCellPanel() {
             {Object.entries(avail.counts).map(([k, v]) => `${v} ${STATE_WORD[k] ?? k}`).join(' · ')} — of {avail.total} registered.
           </p>
           <p className="text-[10px] text-slate-500">{avail.basis}</p>
+          {Array.isArray(avail.available_without_engine) && avail.available_without_engine.length > 0 && (
+            <p data-testid="cell-available-without-engine" className="text-[10px] text-amber-300/90">
+              {avail.available_without_engine.length} of the available run no engine when composed: {avail.available_without_engine.join(', ')}.
+            </p>
+          )}
           {avail.checked_counts && (
             <p data-testid="cell-checked" className="text-[11px] text-slate-300">
               Checked against what each declares it needs: {Object.entries(avail.checked_counts).map(([k, v]) => `${v} ${CHECKED_WORD[k] ?? k}`).join(' · ')}.

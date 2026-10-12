@@ -56,7 +56,7 @@ function coeFromInsight(insight: InsightItem, idx: number) {
   const meta = DOMAIN_META[domainKey];
   const label = domainLabel || domainKey;
   return {
-    name: title && title.length <= 30 ? title : `${label.charAt(0).toUpperCase()}${label.slice(1)} CoE`,
+    name: title && title.length <= 30 ? title : `${label.charAt(0).toUpperCase()}${label.slice(1)} insight`,
     description: insight.summary ?? insight.detail ?? '',
     icon: meta.icon,
     color: meta.color,
@@ -90,14 +90,9 @@ export const KnowledgeHub: React.FC = () => {
 
   const coes = data?.insights?.length
     ? data.insights.map(coeFromInsight)
-    : [
-        // W489 — the standing centres, shown when no insight has been computed yet. They carry NO
-        // score, because none has been computed for them; the card says so rather than showing a 0.
-        { name: 'AI Ethics', description: 'Alignment and constitutional safety protocols.', icon: Brain, color: 'text-aura', score: null, scoreBasis: null, domain: 'ai' },
-        { name: 'Data Science', description: 'Neural synthesis and graph analytics.', icon: Activity, color: 'text-blue-400', score: null, scoreBasis: null, domain: 'science' },
-        { name: 'Security', description: 'Post-quantum cryptography and node defense.', icon: Shield, color: 'text-red-400', score: null, scoreBasis: null, domain: 'security' },
-        { name: 'Global Affairs', description: 'Cross-domain synthesis and interfaith dialogue.', icon: Globe, color: 'text-yellow-400', score: null, scoreBasis: null, domain: 'global' },
-      ];
+    // ledger v17 R5.16 - four hard-coded "standing centres" were listed here when no insight existed. No such
+    // centre exists on this platform, so none is listed: the page says so below.
+    : ([] as ReturnType<typeof coeFromInsight>[]);
 
   const filtered = coes.filter(c => (c.name ?? '').toLowerCase().includes(search.toLowerCase()));
 
@@ -106,7 +101,7 @@ export const KnowledgeHub: React.FC = () => {
       <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6">
         <div>
           <h1 className="text-4xl @[680px]:text-5xl font-black mb-3 tracking-tight neon-text">Centers of Excellence</h1>
-          <p className="text-slate-500 font-bold">Federated knowledge hubs derived from live portfolio intelligence.</p>
+          <p className="text-slate-500 font-bold" data-testid="coe-what-this-is">No standing centre of excellence exists on this platform yet. Each card below is one insight computed from your own projects — not a centre, a team or a knowledge base.</p>
         </div>
         <Button onClick={() => navigate('/synthesis')} className="bg-aura text-sovereign shrink-0">
           <Sparkles size={16} /> Generate Insight
@@ -128,6 +123,13 @@ export const KnowledgeHub: React.FC = () => {
         <div className="flex items-center gap-3 text-slate-500">
           <Loader2 className="animate-spin" size={18} /> Deriving CoEs from live portfolio…
         </div>
+      )}
+
+      {!isLoading && coes.length === 0 && (
+        <p data-testid="coe-none" className="text-sm font-bold text-slate-500 max-w-3xl">
+          Nothing is listed: no centre exists, and no portfolio insight has been computed. A card appears here
+          when an insight is computed from your projects.
+        </p>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 @[440px]:grid-cols-4 gap-8">

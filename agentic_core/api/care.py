@@ -43,6 +43,12 @@ async def list_tools():
     return {"tools": _TOOLS, "total": len(_TOOLS)}
 
 
+#  W676 - typed, never generated: the first thing a person reporting a safeguarding concern reads.
+IMMEDIATE_DANGER_FIRST = ("**If anyone is in immediate danger, call 999 now - before reading on and before "
+                          "recording anything.** Nothing below replaces that call. What follows is general "
+                          "process guidance, not a decision about this concern.")
+
+
 class CarePlanRequest(BaseModel):
     patient_profile: dict = {}
     care_needs: list[str] = []
@@ -221,6 +227,10 @@ async def safeguarding_triage(req: SafeguardingRequest):
 
     guidance, provenance = await ai_text(prompt, "care_safeguarding", realm=req.realm,
         user_text=person_said(req.concern))
+    #  W676 - THE EMERGENCY LINE COMES FIRST, IN THE TEXT, AND IS NOT COMPOSED. It was only in the `disclaimer`
+    #  field after the text; on the floor the text's "Immediate Safety" heading held the concern's own words
+    #  and the number appeared nowhere in what a person reads, copies or saves.
+    guidance = IMMEDIATE_DANGER_FIRST + "\n\n" + (guidance or "")
 
     return {
         "triage_id": uuid.uuid4().hex[:10],

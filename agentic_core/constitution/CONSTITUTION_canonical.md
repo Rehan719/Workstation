@@ -148,9 +148,8 @@ Quranic text comes only from quran.com, alquran.cloud or tanzil.net, with proven
 
 ## 21 — A RELIGIOUS RULING IS REFERRED TO A QUALIFIED HUMAN SCHOLAR
 The platform does not issue one, and does not claim scientific proof over a theological truth.
-*Verified:* the P2.12 guardrails, attached to the `gaas.v5` interceptor. Currently **NOT BUILT** — Horizon is
-spec-only (`docs/HORIZON_INTEGRATION.md`); this article states the standing rule and its own absence.
-*Status:* UNMET — the Horizon guardrails are specification only; no code implements them
+*Verified:* two phrase gates in `agentic_core/gaas/v5/horizon_guardrails.py` (religious ruling, theological proof): every `gaas.v5` interception reports their verdicts, and five routes refuse the request (HTTP 409) when one fires on a faith question — deliverable produce, swarm delegate, swarm cascade, synthesis generate and synthesis stream. A phrase screen can refuse; it cannot clear.
+*Status:* UNMET — in part: the gates are built and refuse at the five routes named; other routes that compose text do not call them yet (FU-932)
 
 ## 22 — ON A DISTRESS SIGNAL THE PLATFORM WITHHOLDS AI COUNSEL AND NAMES A HUMAN ROUTE
 It says plainly that it is not a person. Where the route list is unsupplied it renders NOT SUPPLIED — never a

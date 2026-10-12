@@ -112,7 +112,8 @@ export const SolutionsPlatform: React.FC = () => {
 
   // Launch state
   const [missionName, setMissionName] = useState('');
-  const [execMode, setExecMode] = useState<'test' | 'staging' | 'production'>('test');
+  // ledger v17 R5.0 - the Execution Mode selector (test / staging / PRODUCTION) is removed with its state:
+  // it reached no backend and only restyled a button that launches nothing.
   const [launching, setLaunching] = useState(false);
 
   useEffect(() => {
@@ -724,7 +725,7 @@ Respond with a structured spec covering: overview, architecture layers, AI integ
 
                   {/* Summary */}
                   <div className="space-y-2 p-4 rounded-2xl bg-slate-950 border border-slate-800">
-                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Ready to Launch</p>
+                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Plan summary — nothing is launched from this page</p>
                     <div className="grid grid-cols-2 gap-2 text-[10px]">
                       <div>
                         <span className="text-slate-600">Solution:</span>
@@ -764,25 +765,8 @@ Respond with a structured spec covering: overview, architecture layers, AI integ
                     />
                   </div>
 
-                  <div>
-                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-2">Execution Mode</label>
-                    <div className="flex gap-2">
-                      {(['test', 'staging', 'production'] as const).map(m => (
-                        <button
-                          key={m}
-                          type="button"
-                          onClick={() => setExecMode(m)}
-                          className={`flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border ${
-                            execMode === m
-                              ? m === 'production' ? 'bg-red-500/20 border-red-500 text-red-400'
-                              : m === 'staging' ? 'bg-amber-500/20 border-amber-500 text-amber-400'
-                              : 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
-                              : 'bg-slate-900 border-slate-800 text-slate-600 hover:border-slate-700'
-                          }`}
-                        >{m}</button>
-                      ))}
-                    </div>
-                  </div>
+                  {/* ledger v17 R5.0 - an Execution Mode selector (test / staging / production) stood here. It
+                      reached no backend, so it is gone: nothing on this page executes in any mode. */}
 
                   <button
                     type="button"
@@ -790,17 +774,15 @@ Respond with a structured spec covering: overview, architecture layers, AI integ
                     disabled={launching || !missionName.trim() || status.launch === 'done'}
                     className={`flex items-center justify-center gap-2 w-full py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${
                       !launching && missionName.trim() && status.launch !== 'done'
-                        ? execMode === 'production'
-                          ? 'bg-red-500 text-white hover:bg-red-400 hover:scale-[1.01] shadow-lg shadow-red-500/20'
-                          : 'bg-emerald-500 text-sovereign hover:bg-emerald-400 hover:scale-[1.01] shadow-lg shadow-emerald-500/20'
+                        ? 'bg-emerald-500 text-sovereign hover:bg-emerald-400 hover:scale-[1.01] shadow-lg shadow-emerald-500/20'
                         : 'bg-slate-800 text-slate-600 cursor-not-allowed'
                     }`}
                   >
                     {launching
-                      ? <><Loader2 size={14} className="animate-spin" /> Launching Mission...</>
+                      ? <><Loader2 size={14} className="animate-spin" /> Running readiness check...</>
                       : status.launch === 'done'
-                      ? <><CheckCircle2 size={14} /> Mission Live</>
-                      : <><Rocket size={14} /> Launch {execMode === 'production' ? '🔴 PRODUCTION' : execMode}</>
+                      ? <><CheckCircle2 size={14} /> Readiness check complete — nothing launched</>
+                      : <><Rocket size={14} /> Run readiness check</>
                     }
                   </button>
 

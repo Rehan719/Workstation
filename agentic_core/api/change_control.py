@@ -985,7 +985,8 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
             f"{float(_measured):.0%} (over {float(ctx.get('composite_health_measured_weight') or 0):.0%} "
             f"of the composite's weight, the part that is measured), immune threat {threat}.")
         change["audit_trail"].append({"event": "auto_approved", "ts": now, "by": "biobus", "immune_threat": threat})
-        biobus.fire_signal("motor", "cca.auto_approve", f"Auto-approved: {req.title}", 0.3)
+        #  ledger v17 R3.0 - the "auto-approved" signal is fired BELOW, after the method gate has had its say:
+        #  it used to fire here, for an approval the gate then withheld.
     else:
         if tier == "LOW" and threat in ("HIGH", "CRITICAL"):
             change["review_result"] = (f"Held for review: immune threat {threat} — auto-approval paused "
@@ -1032,11 +1033,38 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
     if change["status"] == "approved" and change["method_check"].get("may_auto_approve") is False:
         change["status"] = "submitted"
         change["auto_approval_withheld"] = change["method_check"].get("why_not_approvable")
+        #  ledger v17 R3.0 - ONLY THE STATUS WAS RESET. The record went on saying decision "auto_approved",
+        #  decided by the LOW-tier rule, reviewed at this moment, "Auto-approved: LOW impact ..." - and the page
+        #  drew its AUTO chip and its "Review - auto approved" panel from those fields for a change nobody had
+        #  approved. The decision that was proposed and withheld is kept under its own name; the decision
+        #  fields say what is true, which is that there is none yet.
+        change["withheld_auto_approval"] = {
+            "decision": change.get("decision"), "decision_source": change.get("decision_source"),
+            "review_result": change.get("review_result"), "proposed_at": change.get("reviewed_at"),
+            "basis": ("the LOW-tier rule would have approved this change automatically; the method gate "
+                      "withheld that approval before it took effect, so none of this is a decision")}
+        change["decision"] = None
+        change["reviewed_at"] = None
+        change["review_result"] = None
+        change.pop("decision_source", None)
+        for _ev in change["audit_trail"]:
+            if _ev.get("event") == "auto_approved":
+                _ev["event"] = "auto_approval_proposed"
+                _ev["note"] = "proposed by the LOW-tier rule and withheld by the method gate; it never took effect"
+        #  the check ran on a record that still said "auto_approved"; it is run again on the record as it stands
+        try:
+            change["method_check"] = _method_check(change)
+        except Exception:                          # noqa: BLE001 - the first check's verdict stands
+            pass
         change["audit_trail"].append({
             "event": "auto_approval_withheld_by_method_gate", "ts": now, "by": "method_gate",
             "why": change["method_check"].get("why_not_approvable"),
             "note": ("the change stands as submitted and may still be approved by review; only the AUTOMATIC "
                      "approval is withheld, and only for a requirement the platform could actually check")})
+        biobus.fire_signal("sensory", "cca.submit",
+                           f"Change submitted: {req.title} [{tier}] (automatic approval withheld)", 0.5)
+    elif change.get("decision") == "auto_approved":
+        biobus.fire_signal("motor", "cca.auto_approve", f"Auto-approved: {req.title}", 0.3)
 
     # ── THE APPRAISAL CELL (W510) — the change against its SCOPE's real state ────────────────────────────
     # A reviewer sees the change against what is actually finished, blocked and moved-under in the scope it

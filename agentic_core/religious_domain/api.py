@@ -697,6 +697,38 @@ async def hifz_schedule(req: HifzScheduleRequest):
     }
 
 
+#  ledger v17 R1.1 - THE COUNT IS WHAT ITS BASIS SAYS. It was `repetitions >= 1`, recomputed only on a success:
+#  a failed review zeroed the repetitions and left the old figure standing, and the NEXT success dropped an
+#  ayah that has a successful review on record. One function counts, on every review and on every read.
+_HIFZ_SESSIONS_KEPT = 200
+_MEMORISED_BASIS = ("ayaat with at least one successful (quality>=3) review — a review "
+                    "count, not a hifz certification")
+
+
+def _hifz_memorised(hifz: dict) -> dict:
+    """{count, not_known, basis}. An ayah is counted when its card says it was ever reviewed successfully, or
+    still has a repetition, or a kept session shows a success. A card written before the flag existed, with no
+    repetition now and a session history that has been cut, cannot be counted either way: it is reported as
+    not known and never guessed."""
+    cards = hifz.get("cards") or {}
+    sessions = hifz.get("sessions") or []
+    seen_ok = {s.get("ayah_ref") for s in sessions if isinstance(s, dict) and (s.get("quality") or 0) >= 3}
+    history_whole = len(sessions) < _HIFZ_SESSIONS_KEPT
+    counted = unknown = 0
+    for ref, c in cards.items():
+        if not isinstance(c, dict):
+            continue
+        if c.get("ever_successful") is True or (c.get("repetitions") or 0) >= 1 or ref in seen_ok:
+            counted += 1
+        elif "ever_successful" not in c and c.get("last_reviewed") and not history_whole:
+            unknown += 1
+    return {"count": counted, "not_known": unknown,
+            "basis": _MEMORISED_BASIS + (
+                f". {unknown} more ayah/ayaat were reviewed before a success was recorded on the card and their "
+                f"older sessions are no longer kept (the last {_HIFZ_SESSIONS_KEPT} are), so they are not counted "
+                f"and not ruled out" if unknown else "")}
+
+
 class HifzReviewRequest(BaseModel):
     uid: str
     ayah_ref: str      # "2:255"
@@ -733,6 +765,13 @@ async def hifz_review(req: HifzReviewRequest):
         )
 
         # Update card
+        #  R1.1 - whether this ayah has EVER been reviewed successfully, kept on the card: read BEFORE the
+        #  repetitions are zeroed by a failure. Never written False over a card whose history is not known.
+        _ever = card.get("ever_successful") is True or card.get("repetitions", 0) >= 1 or req.quality >= 3
+        if _ever:
+            card["ever_successful"] = True
+        elif req.ayah_ref not in hifz["cards"] or "ever_successful" in card:
+            card["ever_successful"] = False
         card["repetitions"] = card["repetitions"] + 1 if req.quality >= 3 else 0
         card["interval"] = new_interval
         card["efactor"] = round(new_efactor, 3)
@@ -749,12 +788,10 @@ async def hifz_review(req: HifzReviewRequest):
             "reviewed_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "next_review_date": next_date,
         })
-        hifz["sessions"] = hifz["sessions"][-200:]  # keep last 200
+        hifz["sessions"] = hifz["sessions"][-_HIFZ_SESSIONS_KEPT:]  # keep last 200
 
-        if req.quality >= 3:
-            hifz["total_ayaat_memorised"] = len([
-                r for r, c in hifz["cards"].items() if c.get("repetitions", 0) >= 1
-            ])
+        #  R1.1 - recomputed on EVERY review, a failure included, by the function that states the basis
+        hifz["total_ayaat_memorised"] = _hifz_memorised(hifz)["count"]
 
         _save_hifz(req.uid, hifz)
 
@@ -772,8 +809,8 @@ async def hifz_review(req: HifzReviewRequest):
         "new_efactor": round(new_efactor, 3),
         "next_review_date": next_date,
         "total_ayaat_memorised": hifz["total_ayaat_memorised"],
-        "memorised_basis": ("ayaat with at least one successful (quality>=3) review — a review "
-                            "count, not a hifz certification"),
+        "memorised_basis": _hifz_memorised(hifz)["basis"],
+        "memorised_not_known": _hifz_memorised(hifz)["not_known"],
         "xp_awarded": 5 if gami else 0,
         "gamification": gami,
     }
@@ -789,9 +826,9 @@ async def hifz_progress(uid: str):
     return {
         "uid": uid,
         "total_ayaat_in_schedule": len(hifz["cards"]),
-        "total_ayaat_memorised": hifz.get("total_ayaat_memorised", 0),
-        "memorised_basis": ("ayaat with at least one successful (quality>=3) review — a review "
-                            "count, not a hifz certification"),
+        "total_ayaat_memorised": _hifz_memorised(hifz)["count"],      # R1.1 - derived when read
+        "memorised_basis": _hifz_memorised(hifz)["basis"],
+        "memorised_not_known": _hifz_memorised(hifz)["not_known"],
         "due_today": len(due_today),
         "due_refs": due_today[:20],
         "due_refs_capped_at": 20,   # due_today is the FULL count; this list shows the first 20

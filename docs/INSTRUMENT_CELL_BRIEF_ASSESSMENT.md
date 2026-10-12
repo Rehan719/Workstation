@@ -894,3 +894,426 @@ resources that reaches ONE, and only in part: the genome can now be declared to 
 it is REQUIRED (so that it reads unavailable here) is the Owner's to rule. The other two need a check that calls
 the feature or reads the page table; they are filed. None of this reaches the seven that are not resources, and
 this section is the reason nobody should say it does.
+
+## 22. Addendum (W676): eight external documents on a quality-management, R&D and production capability, assessed
+
+**What was received (Owner, 2026-10-12).** Eight files: two editions of a "biomimetic QMS blueprint" (v2, v3), two
+of a directive for it, two of a directive to "execute P2.37", a "live repository audit", and a longer research
+blueprint that restates the others with a finance chapter. All are dated 12 October 2026 and all describe `main`
+at `d90ca2d4` (the W674 merge).
+
+**How they were read.** Seven were read whole; the eighth (the longest) by its headings and every line that names
+a path, a round or a plan item. Each statement about this tree was checked against the code on the day, and the
+three ISO statements against ISO's own pages in a browser (the pages refuse an automated fetch). Like the finance
+documents of section 20, these mostly instruct rather than claim, and their own cautions are accurate.
+
+### 22.1 What was checked
+
+| # | Statement | Finding |
+|---|---|---|
+| 1 | `main` was `d90ca2d4`, W674, with five green checks and a README reporting 730 passing, 15 skipped | **TRUE** of that commit |
+| 2 | The generated queue named P2.37 next: "every row closed, which is NOT the same as the item being done" | **TRUE of W674. STALE the same day.** W675 ran the mid-way audit; the item closed on its ACCEPT, which was that re-run |
+| 3 | 84 of 104 items done; 130 open rows; the last six rounds closed 12.83 rows a round and found 19.0 | **TRUE** of the generated block at W674 |
+| 4 | The standards catalogue names ISO 9001:2015 and ISO 14001:2015; the QMS and EMS prompts ask for a 2015-aligned system; the answer's `standard` field says the same | **TRUE** (`api/management_systems.py:57-58, :92, :116, :310, :336`) |
+| 5 | ISO 9001:2026 is published, Edition 6 | **CONFIRMED** on iso.org, read 2026-10-12 ("Published (Edition 6, 2026)"); the day of the month the documents give was not on the part of the page read |
+| 6 | ISO 14001:2026 is published, Edition 4, April 2026 | **CONFIRMED** on iso.org, read 2026-10-12 |
+| 7 | ISO 19011:2026 is published, Edition 4, May 2026 | **CONFIRMED** on iso.org, read 2026-10-12 |
+| 8 | The nonconformance route signals the immune system, asks for a corrective-action text and returns an id; nothing durable is written | **TRUE** (`api/management_systems.py:350-396`): the id is eight random characters returned once and stored nowhere, and the answer says "Recorded as ..." |
+| 9 | An unrecognised severity falls to the minor path instead of being refused | **TRUE** (`:357-361, :367`): severity is a free string |
+| 10 | "A durable nonconformance and corrective-action lifecycle is not demonstrated" | **PARTLY. A durable loop EXISTS and the documents did not find it:** defects opened by the delivery gate are stored, listed, corrected and re-verified, owner-scoped (`api/vbs_systems.py:66-130`, `vbs/qms.py`). The nonconformance route is a SECOND door that does not reach it. So the gap is a join, not a missing system |
+| 11 | The Instrument Cell proposes and verifies and does not run, promote or save a proposal | **STALE in one part:** since W673 a proposal a person chooses to keep IS saved, versioned and can be run again |
+| 12 | The delivery gate marks floor output not assessable | **TRUE**, and incomplete: the mid-way audit found the gate marks "specifically designed" and "verified" MET for filler under declared headings (ledger v17 R1.0; ruled on 2026-10-12) |
+| 13 | `products/capital_fund/` was archived on the Owner's ruling because nothing live imported it | **TRUE** (W673) |
+| 14 | P5.9 is chartered with six clauses and eleven rulings, virtual only | **TRUE** |
+| 15 | The v16 audit hit its cap in every region; nine of its 51 findings are availability findings | **TRUE** (sections 21 and the ledger) |
+
+### 22.2 What is sound, and already the rule here
+
+One plan, one register, one registry, one runner, one result vocabulary; a check that did not run cannot pass; an
+unreadable store is refused, never read as empty; a proposal is not an action and a completed action is not an
+effective one; a model that proposes may not approve; a quality verdict is not a permission; no certification or
+compliance is claimed; a capped audit cannot satisfy a zero-findings rule; standards text is not copied or fed
+to a model. Each is a ruling or a clause in force, and the documents largely say so.
+
+### 22.3 What is declined, and why
+
+| Asked | Decision |
+|---|---|
+| "Execute P2.37 first" | **Overtaken.** The item's ACCEPT was the re-run, done in W675; the audit's new findings are items P2.40 and P2.41, and the Owner ruled on 2026-10-12 that tier-1 is fixed before the fifth phase |
+| Operating modes, risk classes R0-R4, a ten-state control loop, a "decision envelope" | **Vocabulary not adopted** (ruling of 2026-10-09). Change Control's tiers and the gates' own states stand |
+| A requirement-to-evidence record for every artefact, experiment records, release records, supplier records, a metrics scorecard | **Not built as a model.** Each is a paper record with no reader today; what a reader meets is in 22.4 |
+| Clause mappings to ISO 9001, 42001, 25010, 29119, 27001; NIST crosswalks | **Declined.** The standards' text is licensed; a mapping written without it is a model's guess presented as conformity |
+| A separate platform QMS and entity QMS with inheritance | **Not built.** There is one quality store, shared by every entity (it says so on its own rate); isolating it per entity is authentication-readiness work |
+| Heartbeat-driven reminders, drift monitors and statistical control charts | **Not scheduled.** No measured series exists to chart; the beat's own failures are being made visible first (ledger v17 R6.0) |
+
+### 22.4 What it adds
+
+1. **The catalogue names two withdrawn editions and one prompt asks for them by year.** A person reading a generated
+   framework is told it is aligned to an edition that no longer stands.
+2. **The nonconformance route says "recorded" and records nothing**, and takes any word as a severity.
+3. **Two doors, one loop.** The durable defect loop and the nonconformance route do not meet.
+4. **No route follows one quality record from its opening to a verified effect.** The loop closes a defect on a
+   re-verification; nothing asks, later, whether the same defect came back.
+5. **Whether any of ledger v17's findings is an earlier finding returned was not checked** by the audit round. The
+   documents' point - that closed rows are not a met bar - is right, and that comparison is the test of it.
+
+### 22.5 What the Owner ruled (2026-10-12)
+
+The documents were read twice more at the Owner's request, the second and third time as lenses on this
+repository's own records rather than as claims to check. What that measured is in the plan item chartered from
+it. The Owner then ruled, the same day:
+
+1. Every audit carries an effectiveness check: a new finding is compared with closed rows, and a return reopens
+   the row and puts a guard at the mechanism.
+2. A fix reviews the whole answer its function returns; its guard asserts the property over the whole payload.
+3. One structural round on the two files most named across editions: one source for each stated fact.
+4. A commit-time screen for typed outcome words and figures, with a reasoned allow-list.
+5. The audit is calibrated before the uncapped run: planted defects and false findings; two assessors on one slice.
+6. A short list of pages is checked in a rendered state, carried by the one-journey instrument.
+7. Nothing earns on a structure pass: a delivery's revenue waits on a person's acceptance.
+8. A tier-3 row is batched by file or dropped with its reason.
+9. One checklist of what must be true before a model is switched on, with the untrusted-text boundary on it.
+
+The stale standards catalogue, the nonconformance route's "Recorded", its free-text severity and the join of
+the two doors are register rows, fixed with the tier-2 rounds; a generated framework will name the current
+edition with the date it was read and the sentence that it is an outline and not a conformity assessment.
+
+## 23. Addendum (W676): three external documents on an advice service for the Law domain, read against the tree
+
+The Owner supplied three documents on 2026-10-12, each a prompt asking for a public-advice capability in the
+Law domain with the breadth of a national advice charity: benefits, work, debt, consumer, housing, family, law
+and courts, immigration and health, with triage, legal research, deadlines, casework, documents and referrals.
+They overlap heavily and are assessed as one. Their own instruction to "begin now" is a statement in a
+document; nothing here was built on it.
+
+### 23.1 What the documents get right
+
+- **Scope is separated from delivery.** A catalogue of what a service should cover is not evidence that any of
+  it works, and a row marked implemented must point to a driven journey. That is this plan's own rule.
+- **Deadlines are arithmetic, not prose.** A date must come from a rule with its source, its version and its
+  effective period, and uncertainty must never hide a possible deadline.
+- **A referral has states.** Suggested, prepared, sent, acknowledged and accepted are different facts.
+- **A disclaimer is not a boundary.** Some advice is regulated whatever the page says about itself.
+- **An uploaded document is data.** Text inside it is never an instruction.
+
+### 23.2 What was checked outside the repository (read 2026-10-12, in a browser, at the publisher's own page)
+
+| Claim in the documents | Found |
+|---|---|
+| Employment tribunal time limits changed on 1 October 2026 | TRUE. The conciliation service's page, last updated 2026-10-01: before that date, 3 months minus 1 day for most claims (6 months minus 1 day for a named few); on or after it, 6 months minus 1 day for most. THE DOCUMENTS OMIT: breach of contract claims in Scotland do not change until 9 November 2026; interim relief has a 7-day limit; conciliation pauses the limit only when notified inside it |
+| A solicitors' regulator published a warning notice on misuse of AI on 17 August 2026 | TRUE, and it is addressed to regulated solicitors and firms, which this platform is not. Its two named concerns - invented citations in documents, and confidentiality - apply to this code regardless |
+| The advice charity's subjects and channels | Its "what we do" page states online, phone and in-person advice, a consumer helpline, a witness service, and a statutory watchdog role for energy and post. It operates in England, Wales and the Channel Islands; its home page says "This advice applies to England" with a switch for the other nations. Two of its own pages state different volunteer counts - a typed figure decays even at its source |
+| The government's page on finding legal advice | TRUE as cited |
+| Private renting law in England changed in 2026 | The Act received Royal Assent on 2025-10-27; the commencement dates were NOT read in this pass and are not asserted here |
+| A 2026 edition of a security list for language-model applications | NOT CHECKED. One document says a 2026 edition exists and another links to the 2025 one |
+| "The next plan item is P2.37", and an audit workflow named as version 3 | STALE. Both are overtaken; the documents were written from an old copy of the plan |
+
+Nothing regulatory was read at its source in this pass. That immigration advice, debt counselling and claims
+management are regulated activities is stated from general knowledge and must be read at the regulator's page
+in the round that builds each boundary.
+
+### 23.3 What the tree holds (measured and driven on 2026-10-12, isolated store, no model)
+
+- The Law domain is ONE router of 331 lines with seven routes, and one page with three forms: research, draft,
+  analyse. A second panel assembles a document for the Owner's one matter.
+- **On this machine none of the three forms answers a legal question.** No model is installed, so each returns
+  the floor's frame. Asked "I was dismissed on 2 October 2026 - how long do I have?", the answer's "Relevant
+  Law" heading holds the question's own most frequent words, correctly labelled as such. Asked "I have nowhere
+  to go tonight", the same. No deadline is flagged and no route to a person is offered.
+- There is no deadline rule anywhere in the tree, no directory of services, no source registry, no matter
+  store for anyone but the Owner, and no topic outside ten contract-and-employment templates.
+- The corpus the clerk resolves authorities against names FOUR provisions of ONE statute.
+- The Employment domain is job-seeking (a CV, a cover letter, interview preparation). It holds nothing on
+  rights at work. The Care domain holds a safeguarding triage under one named Act.
+- Of the documents' thirteen service areas, the number with a journey a person can complete here is NONE.
+
+### 23.4 What the documents were useful for: five things found in this tree by reading it their way
+
+1. **THE OWNER'S MATTER FOLDER IS REACHED BY TEST, AUDIT AND DRIVE RUNS.** The folder is named by an absolute
+   path in a committed file. One environment variable redirects it, and no runner sets it: not the suite's
+   configuration, not the suite recipe, not the audit backend. The audit of edition 16 says so in its own
+   committed record - "the matter folder is the Owner's real one; I searched it once for two words and nothing
+   was located" - and nothing was filed. On 2026-10-12 a drive written for this section called the clerk with
+   one search word against that folder, which now holds seven documents; the part of the answer that would
+   carry a located line was not displayed and was not kept. The Owner's rule is that nothing about the matter
+   leaves the machine. An agent's transcript is off the machine. This is fixed first, at the floor: every
+   runner names a scratch folder, and a guard fails if a test process can resolve the real one.
+2. **A FILING-SHAPED DOCUMENT HAS TWO DOORS.** The clerk fills a tribunal claim only from located lines, leaves
+   blanks, refuses unknown authorities and holds the result as a draft for the Owner's approval. The draft
+   form's generator accepts the same template with none of that: driven, it answers 200 with a document and no
+   draft state. Its prompt asks a model for "a compelling particulars of claim section" with the grounds
+   already chosen. With no model it emits a frame; with one, it writes a claim from nothing.
+3. **THE THREE PROMPTS ARE THE BEHAVIOUR THE REGULATOR'S NOTICE DESCRIBES.** Each opens "You are a senior
+   solicitor", asks the model to "name real statutes" and to give "the most likely position, with a confidence
+   level". The Owner ruled for the matter that no outcome or probability is produced; the public form asks for
+   one. Nothing checks a named authority before it is shown. This is invisible while only the floor serves.
+4. **TYPED LAW DECAYS, AND SOME IS TYPED.** The prompts carry a statutory holiday figure, a default term of
+   years, an Act by its year, and the word "GDPR-compliant" as a property of the output. The time-limit change
+   of 1 October is the live example: a rule typed on 30 September would be wrong today for a new event and
+   right for an old one, for the next several months.
+5. **THE FLOOR CAN GIVE REAL HELP WITHOUT A MODEL, AND TODAY IT GIVES NONE.** A deadline is arithmetic on a
+   dated rule. A route to a person is a row in a directory with the date it was checked. An evidence checklist
+   is a list. None of these needs generation, all of them are what a person under pressure needs first, and
+   every one can be verified line by line. The documents assume a model throughout; the honest first build
+   here is the part that needs none.
+
+### 23.5 What is not adopted
+
+- **The charity's name as an identity or a measure.** It is named only as a place a person can go.
+- **"Equivalent" or "comprehensive".** The register counts journeys driven; today that count is zero.
+- **A matter store for other people before authentication is on.** The stores are shared by every caller until
+  then. What can be built first stores nothing about a person.
+- **Model classification of a person's problem as the entry.** The person chooses the subject; a deterministic
+  screen may add an urgent route and may never remove one.
+- **Loss, remedy or settlement figures presented as a likely outcome.** Arithmetic on figures the person
+  supplies is arithmetic; a forecast is refused, as it already is for the matter.
+- **Scheduled reading of outside pages.** A source is read by a person or in a round, with the date; a row
+  past its review date is shown as stale. Nothing fetches on a timer.
+- **The documents' nine status words, four autonomy levels and biological vocabulary.** The plan's own states
+  and the existing approval classes are used.
+
+### 23.6 What the Owner ruled (2026-10-12)
+
+Ten questions were put with a recommendation each, and the Owner accepted all ten the same day:
+
+1. The capability is chartered as its own plan item, inside the Law domain. Care keeps care; Employment stays
+   job-seeking.
+2. What stores nothing about a person may be built before authentication is on; a person's own matter waits.
+3. Immigration, debt solutions, family safety and children, criminal matters and anything clinical are
+   information and a route to an authorised person, never advice.
+4. A filing-shaped document has one door: the generator refuses it and names the clerk.
+5. No professional's role is claimed and no outcome, probability or confidence is asked for anywhere in the
+   domain. Arithmetic on figures a person supplies is allowed and labelled.
+6. The charity is named only as a place a person can go.
+7. England first; every rule and place states its nation; another nation's question gets a route, not a rule.
+8. A rule is read at its publisher's page in a round and stored with the page, the date and who read it; it is
+   shown as not recently checked after ninety days. Nothing fetches on a timer.
+9. Where the source does not settle a date, the earlier date is shown with that sentence.
+10. A qualified person's view before any public release is the Owner's to arrange.
+
+## 24. Addendum (W676): three external documents on an Education domain, read against the tree
+
+The Owner supplied three documents on 2026-10-12, each a prompt asking for one integrated Education domain:
+research the whole education and training landscape, reduce it to six service families, and build it on the
+existing platform. They overlap almost entirely and are assessed as one. Their instruction to "start now" is a
+statement in a document; nothing here was built on it.
+
+### 24.1 What the documents get right
+
+- **They read this repository's Education router before writing**, and describe it accurately: five routes, a
+  list of eight framework names, and marking sections withheld when only the floor serves.
+- **Research first, then reduce.** One capability with configuration, not one engine per course type.
+- **Assess what was actually supplied.** A grade is a claim about a piece of work that was read.
+- **Rules have a nation, a year and a start date.** A funding rule typed once is wrong by the next update.
+- **The Qur'an platform stays in the Religion domain** with every one of its rulings, stated correctly.
+
+### 24.2 What was checked outside the repository (read 2026-10-12, in a browser, at the publisher's own page)
+
+| Claim in the documents | Found |
+|---|---|
+| Applications for the Lifelong Learning Entitlement open at the end of October 2026 for courses from 1 January 2027 | TRUE as stated on the government's "when to apply" page; for courses from 1 August 2027 applications open in spring 2027. Whether they have opened is a fact of a later date than this reading |
+| Keeping Children Safe in Education 2026, in force 1 September 2026 | The page is statutory guidance for schools and colleges, last updated 2026-09-01, and APPLIES TO ENGLAND. It binds schools and colleges; this platform is neither |
+| The post-16 pathways plan was updated on 17 September 2026 | TRUE: published 2026-05-20, updated 2026-09-17, applies to England, and it is a plan for reforms not yet in force |
+| The register of regulated qualifications covers England and Northern Ireland | TRUE; Wales and Scotland have their own, named on the same page |
+| A "UK National Curriculum" | THERE IS NONE. The government's page describes the national curriculum of England's maintained schools; academies and private schools need not follow it. It also says the basic curriculum includes religious education |
+| Adult Skills Fund rules, apprenticeship funding rules, the inspection framework, the standard for educational organisations and its audit guidance, the research summaries on feedback and metacognition, the design guidelines and the competency frameworks | NOT READ in this pass. Nothing here rests on them |
+| "The delivery prompt's next item is unclear" | STALE: written from an old copy of the plan |
+
+### 24.3 What the tree holds (read, then driven on 2026-10-12 on an isolated store)
+
+- ONE router of 312 lines and ONE page with four forms: curriculum, assessment, marking feedback, lesson plan.
+  Nothing is stored by the router; no learner, course, resource, progress or credential exists as a record.
+- **With no model installed, none of the four forms produces teaching content.** Each returns the floor's
+  frame. The page says above each form that the platform's own AI "builds a structured, framework-aligned
+  curriculum", "marks it against the task and any rubric" and "produces a classroom-ready plan".
+- The framework list is eight NAMES with a region word. No content of any framework is held, so nothing can be
+  aligned to one. One entry is named "UK National Curriculum" with region "England".
+- The religious-subject screen refuses on all four routes, as ruled.
+
+### 24.4 What the documents were useful for: defects found in this tree by reading it their way
+
+Each was DRIVEN, the last four by capturing the prompt as it would be sent to a model.
+
+1. **AN ESSAY IS CUT AT 6,000 CHARACTERS AND STILL GRADED, AND NOBODY IS TOLD.** 8,250 characters were sent;
+   6,000 reached the prompt; the answer carried a grade and no word that a quarter of the work was unread. The
+   floor's withholding - the safeguard the documents praise - covers only the floor. The moment a model is
+   installed, the route grades work it did not finish reading.
+2. **BLANK WORK IS GRADED.** Empty or whitespace work answers 200, and on the model path a grade comes back.
+3. **A NAMED CHILD'S NEEDS GO INTO THE PROMPT.** The lesson form has a free field for special educational
+   needs; what is typed there, name included, is sent whole. Nothing on the form says not to name a pupil.
+4. **AN ANSWER KEY IS ASKED FOR AND RETURNED WITH NO WORD THAT NOBODY CHECKED IT.** The lesson and assessment
+   answers carry no disclaimer of any kind, and no note that the subject was not cleared by the religion
+   screen - the curriculum answer carries both.
+5. **A FRAMEWORK THAT DOES NOT EXIST IS ACCEPTED AND PRINTED BACK AS THE CURRICULUM'S FRAMEWORK**, and the
+   prompt tells the model it has "expertise in" it. 500 weeks becomes 52 and minus three objectives becomes
+   three, silently. An assessment type of "an official GCSE certificate" is accepted and echoed.
+6. **THE PAGE PROMISES WHAT THIS MACHINE DOES NOT DO.** The same was found on the Law page (section 23).
+
+### 24.5 The deeper finding: this is one class across six domains, and it has one floor
+
+Measured across the served code (sites, not yet classified one by one): the six domain pages hold 25 forms of
+this kind; 83 prompt lines open by claiming a professional's role; about 46 places cut a person's text to a
+fixed length inside a prompt; and in the four domain routers read so far, none says anything was cut.
+
+Every one of these forms passes through ONE helper, and that helper takes ONE string: the instruction, the
+role and the person's material are joined before it sees them. That is why a cut cannot be reported, why
+attached text cannot be marked as data and not instruction (filed as a hypothesis in section 22), and why
+each domain has had to rediscover the same defects one finding at a time over ten audit editions.
+
+The fix belongs at that helper: the person's material is handed over as its own argument; the helper cuts it,
+records how much was read of how much, marks it as data, and the answer carries that figure. Then the
+question "did the model see the whole essay" has one answer in one place for every domain.
+
+### 24.6 What is not adopted
+
+- **A learner record, progress, mastery, a learner model or adaptation before authentication is on.** The
+  stores are shared by every caller. And no measuring of a person: an estimate of a piece of work is not a
+  measure of a learner, and nothing here grades a person.
+- **A certificate, badge or completion record.** None exists and none is built.
+- **Children as users.** Nothing establishes who is using the platform. Until that is ruled and built, the
+  Education tools are for a teacher or an adult learner, and say so.
+- **Funding, eligibility, admissions and provider data as held facts.** They change within a year. A route to
+  the official page with the date it was read, never a figure.
+- **Six new service families as code.** They are a way to sort a coverage register, not six engines.
+- **"Evidence-informed" as a property of an output.** No research summary was read in this pass.
+- **Religious education as a school subject.** It is refused here by ruling, and the register says so.
+
+### 24.7 What the Owner ruled (2026-10-12)
+
+Eleven questions were put with a recommendation each, and the Owner accepted all eleven the same day:
+
+1. Education is chartered as its own plan item; the six families sort a register and are not engines.
+2. The shared helper is fixed first, as its own round: a person's material is its own argument and every
+   answer says how much was read of how much.
+3. Work not read whole: the criterion and grade sections are withheld with the reason, on a model as on the
+   floor. Blank work is refused.
+4. The tools are for teachers and adult learners, said on the page, until the Owner rules on children.
+5. No learner record, progress, mastery or adaptation before authentication, and never a measure of a person.
+6. No certificate, badge or completion record.
+7. Funding, eligibility, admissions and providers are routes with the date read, never a figure.
+8. Each framework row states its nation and that only its name is held; unknown frameworks and assessment
+   types are refused.
+9. No prompt in any domain claims a professional's role.
+10. Religious education as a school subject stays refused, recorded as excluded by ruling.
+11. The needs field says not to name a pupil; nothing pretends to detect a name.
+
+## 25. Addendum (W676): three external documents on a Care domain, read against the tree
+
+The Owner supplied three documents on 2026-10-12, each a prompt asking for one integrated Care domain: care
+navigation, health information, care planning, social care, carers, safeguarding, professional tools and
+provider operations, sorted into six or seven service families. They overlap almost entirely and are assessed
+as one. Their instruction to "begin" is a statement in a document; one thing was built on what driving found
+(25.4, item 1), because the route's own docstring already required it.
+
+### 25.1 What the documents get right
+
+- **They read this repository's Care code before writing** and describe it accurately: five routes, eight
+  catalogue entries, three computed tables and a labelled factor count.
+- **A score is arithmetic on a published table and a model never recomputes it.** That is what the tree does.
+- **Every state is its own fact**: a draft handover is not a received one, a recorded concern is not a referral.
+- **Intended purpose decides what a function is**, and a disclaimer does not change it.
+- **No professional's role is claimed.** They name the two prompts that claim one.
+
+They disagree with each other on two points: whether a liberty code was "published in June 2026" or a
+judgment was given on 2 June with guidance updated in September; and whether the falls entry is a defect or
+correct as it stands. Both were checked below.
+
+### 25.2 What was checked outside the repository (read 2026-10-12, in a browser, at the publisher's own page)
+
+| Claim in the documents | Found |
+|---|---|
+| The falls guideline the catalogue names has been replaced | TRUE. Its publisher's page reads, in full: "This guideline has been updated and replaced by NICE guideline NG249." The replacement is dated 29 April 2025 |
+| The replacement says not to use falls-risk prediction tools | TRUE, recommendation 1.1.1, in those words. Its 1.1.2 is "ask people about the details of any falls" and its 1.1.3 offers a comprehensive assessment to people who have fallen in the last year AND meet a listed criterion - not the rule this tree applies |
+| The early warning score is the 2017 edition | TRUE: its publisher's page shows it as active, dated 19 December 2017, and describes six parameters and an uplift of 2 for supplemental oxygen. The page's licensing terms were NOT reached |
+| A Supreme Court judgment of 2 June 2026 on deprivation of liberty, and guidance updated in September | NOT FOUND in this pass: the government site's search did not surface it and no page was read. Nothing here rests on it |
+| The care regulator's scope of registration (August 2026), the clinical-safety standards under review, the device regulator's software guidance, the personalised-care model, the children's safeguarding guidance, the medicines guideline | NOT READ |
+| Reuse terms of the three scoring instruments | NOT READ. Whether each may be embedded in a product offered commercially is unknown here |
+
+### 25.3 What the tree holds (read, then driven on 2026-10-12 on an isolated store)
+
+- ONE router of 278 lines, ONE scoring module of 413 lines and ONE page with four forms. Nothing is stored: no
+  person, plan, concern or handover exists as a record after the answer is returned.
+- **THE SCORER IS SOUND WHERE IT WAS TESTED.** 47 boundary cases of the early warning score, written from the
+  published chart as known and not read at its publisher today, all matched: every threshold of every
+  parameter, the single-parameter rule, the bands. A reading outside the plausible range is treated as missing
+  and said so; a total with observations missing is a lower bound with no band; one extreme reading with the
+  rest missing is reported as urgent now. A Fahrenheit temperature is converted and the conversion stated.
+- With no model installed the three other forms return the floor's frame.
+
+### 25.4 What the documents were useful for: defects found in this tree by reading it their way
+
+Each was DRIVEN.
+
+1. **A PERSON REPORTING THAT SOMEONE IS BEING HIT RIGHT NOW WAS SHOWN NO EMERGENCY NUMBER IN THE TEXT.** The
+   answer was 2,705 characters of the floor's frame. Its "Immediate Safety" heading held the concern's own
+   words. "999" appeared nowhere in it; the sentence sat in a disclaimer field after the text, and the one
+   existing test asserted the number in that field. FIXED IN W676: a typed line is the first line of the
+   text, whoever composed the rest, including when the composer returns nothing.
+2. **THE FALLS ENTRY IMPLEMENTS A WITHDRAWN GUIDELINE AND CITES A PARAGRAPH THAT NOW SAYS SOMETHING ELSE.** The
+   catalogue calls it a risk score under the old guideline; the answer says "offer a multifactorial falls
+   risk assessment (1.1.2)" on a rule (a history, or two factors) that is not the replacement's; and with one
+   factor recorded and six unread it says "no trigger recorded - reassess on change". The replacement was
+   published eighteen months ago. Ten audit editions passed over it.
+3. **A CHILD'S SAFEGUARDING CONCERN IS ANSWERED UNDER THE ADULT FRAMEWORK, AND ANY JURISDICTION IS ACCEPTED.**
+   A six-year-old's bruises with jurisdiction "Narnia" answers 200, echoes "Narnia", and nothing says that a
+   child's concern follows a different route. The prompt asks a model for "placeholder" contacts.
+4. **THE CATALOGUE STATES SOURCES THAT ARE NOT SOURCES, AND TWO STATEMENTS OF ONE FACT.** "UK Clinical" and
+   "NHS Standard" name nothing; the early warning score is "NHSI 2017" in the catalogue and its college's 2017
+   edition in the scorer; safeguarding and falls are typed "risk_score" and neither has a score.
+5. **A TOOL THAT DOES NOT EXIST IS ACCEPTED AND GIVEN A TITLE.** "sepsis_six_made_up" answers 200 as
+   "Sepsis Six Made Up", and a model would be asked to interpret an assessment under that name.
+6. **THE CLINICAL HANDOVER CARRIES NO DISCLAIMER AT ALL**, and two prompts open "You are a ... registered
+   nurse" and "You are an experienced clinician".
+7. **THE CARE PLAN SENDS A NAMED PATIENT AND THEIR MEDICINES IN THE PROMPT AND ASKS FOR A MEDICATION SECTION.**
+   With a capture in the model's place returning "Increase the dose.", that sentence came back inside the
+   plan with one disclaimer at the end. Nothing marks the section as unreviewed where it is read.
+8. **THE SECOND OXYGEN SCALE IS CHOSEN BY THE CALLER WITH NO WORD ABOUT WHEN IT APPLIES.** A saturation of 90
+   on air scores 0 under it. The block records which scale was used and nothing about who may choose it.
+
+### 25.5 The deeper finding: nothing here knows whether its sources still stand
+
+Three domains have now been read this way and each held the same thing: a source typed into the code as a
+name, with no page, no date read and no status. In Law it was a statute by its year; in Education a
+curriculum that does not exist; in Care a guideline replaced eighteen months ago, still driving a rule and
+still cited by paragraph. The audits compare what the platform says with what it does. None has ever compared
+what it cites with what its publisher says today, because there is nothing to compare: no list of sources.
+
+The Owner ruled for Law that a rule enters as data with its page, the date read and who read it, and is shown
+as not recently checked after ninety days. That rule belongs to every domain, as ONE register of sources:
+each catalogue entry, rule and prompt that names an authority points at a row; a check fails on a name with no
+row, and a row marked replaced fails every reader that still uses it. The falls entry would have failed that
+check on 29 April 2025.
+
+The same holds for the emergency line. Law's item already lists urgent situations whose route is shown first.
+Care is the domain where that list matters most, and it is the same list.
+
+### 25.6 What is not adopted
+
+- **A care record of any person before authentication is on**, and never as a store shared by every caller.
+- **New clinical instruments.** No scoring table is added by a round; each needs its source read, its reuse
+  terms read, and a qualified person's review.
+- **Health information about conditions, symptoms, medicines or treatment composed by a model.** Routes to
+  the health service's own pages with the date read; never a composed explanation, a dose or a triage.
+- **Mental-health risk assessment, capacity, consent, eligibility and liberty as outputs.** Routes only.
+- **Children as subjects of the safeguarding form** until the children's route is read at its source.
+- **The documents' families as code**, and the words compliant, safe, validated or person-centred as
+  properties of an output.
+
+### 25.7 What the Owner ruled (2026-10-12)
+
+Eleven questions were put with a recommendation each, and the Owner accepted all eleven the same day:
+
+1. Care is chartered as its own plan item.
+2. The falls count is retired: the entry says its guideline was replaced and gives the route to the
+   replacement. It is not rebuilt without a qualified person's review.
+3. One register of sources for every domain, and one typed list of urgent routes read by Law and Care.
+4. The safeguarding form is the adult route for England; another jurisdiction is refused with where to ask;
+   a child's concern is given the children's route and nothing is composed; no model is asked for contacts.
+5. Medication, capacity, consent, crisis and risk management leave the care-plan prompt.
+6. No health information is composed; routes to the health service's own pages with the date read.
+7. No clinical instrument is added by a round.
+8. The reuse terms of the three scoring instruments are read at their owners' pages; an instrument whose
+   terms do not allow this use is withdrawn. Whether to seek a licence is the Owner's.
+9. No care record of any person before authentication.
+10. No prompt claims to be a nurse, a clinician or a safeguarding lead.
+11. A qualified clinical reviewer before any care tool is offered to the public is the Owner's to arrange.

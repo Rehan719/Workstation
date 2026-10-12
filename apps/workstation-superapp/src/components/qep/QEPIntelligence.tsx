@@ -126,7 +126,9 @@ const QEPIntelligence: React.FC = () => {
                 <div key={c.feature} className="flex items-center justify-between gap-2 text-[10px]">
                   <span className="font-mono text-slate-400">{c.feature} = {c.value}</span>
                   <span className="text-slate-500 flex-1 px-2 truncate" title={c.rationale}>{c.rationale}</span>
-                  <span className="font-mono text-slate-300">+{c.contribution}</span>
+                  <span className="font-mono text-slate-300" data-testid={`xai-weight-${c.feature}`}>
+                    {c.used_by_engine === false ? 'not used' : `+${c.contribution}`}
+                  </span>
                 </div>
               ))}
             </div>

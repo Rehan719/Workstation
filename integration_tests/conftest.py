@@ -75,6 +75,8 @@ os.environ.setdefault("DATA_DIR", _TEST_STORE)
 os.environ.setdefault("WORKSTATION_DATA_DIR", _TEST_STORE)
 os.environ.setdefault("WORKSTATION_UEG_PATH", os.path.join(_TEST_STORE, "ueg.jsonl"))
 os.environ.setdefault("LISTINGS_DIR", os.path.join(_TEST_STORE, "marketplace"))
+#  W676 - the suite never opens the Owner's matter folder. A guard that needs a folder names its own.
+os.environ["LEGAL_BUNDLE_DIR"] = os.path.join(_TEST_STORE, "legal_bundle_of_no_one")
 
 # AN EXPLICIT ROOT IS SUBDIVIDED, NOT SHARED. `setdefault` above means an explicit DATA_DIR wins, and the
 # isolated-run recipe used for every verification run sets one — so without this, `-n 8` with that recipe

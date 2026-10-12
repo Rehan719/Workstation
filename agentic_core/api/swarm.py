@@ -27,6 +27,10 @@ from agentic_core.ai.gateway import gateway
 from agentic_core.organism.biobus import biobus
 from agentic_core.vbs.quality import assure_delivery, gate_word
 
+#  W676 - whether a quality-gate pass alone records a delivery's simulated tariff as revenue. False by the
+#  Owner's ruling of 2026-10-12; the recording code below is kept, and True restores it exactly.
+DELIVERY_EARNS_ON_GATE_PASS = False
+
 router = APIRouter(prefix="/api/v1/swarm", tags=["agent-swarm"])
 
 _RUNS_STORE = data_path("swarm_runs.json")
@@ -265,6 +269,12 @@ class CascadeRequest(BaseModel):
     objective_id: str | None = None
 
 
+#  ledger v17 R3.1 - True: an item the cascade did not propose is refused at curation (the marketplace's own
+#  listing route is the door for an owner-authored offering). False: it is published, labelled as authored by
+#  the curator and never as curated from the cascade. The Owner's to choose; True is the conservative one.
+CURATE_ONLY_PROPOSED_ITEMS = True
+
+
 class CurateProposalRequest(BaseModel):
     item: str                       # the proposed item name to commercialise
     description: str = ""
@@ -307,16 +317,33 @@ async def curate_proposed_item(run_id: str, req: CurateProposalRequest):
                      "a §11 word list matched a severe-harm or extractive term; it cannot read the "
                      "term's object, so this is held for a person to judge, not refused as a violation"),
             "verdicts": screen["verdicts"]})
+    #  ledger v17 R3.1 - THE ITEM MUST BE ONE THE CASCADE PROPOSED. The handler checked that the run existed and
+    #  nothing else, so any typed string was published as "Curated from cascade <id>" - from a floor-served
+    #  cascade whose row says its bullets "are NOT filed as offerings" - and the row was flipped to "curated".
+    _proposed = [str(i).strip() for i in (prop.get("items") or []) if str(i).strip()]
+    _is_proposed = req.item.strip().lower() in {i.lower() for i in _proposed}
+    if not _is_proposed and CURATE_ONLY_PROPOSED_ITEMS:
+        raise HTTPException(status_code=409, detail={
+            "error": "item_not_proposed_by_this_cascade",
+            "proposal_status": prop.get("status"), "proposed_items": _proposed,
+            "note": (f"cascade {run_id} "
+                     + ("proposed nothing: " + str(prop.get("items_basis") or "its row holds no items")
+                        if not _proposed else f"proposed {len(_proposed)} item(s) and this is not one of them")
+                     + ". Nothing was published. An offering of your own is listed at POST "
+                       "/api/v1/marketplace/listings, where it is not described as curated from a cascade")})
     from agentic_core.api.marketplace import CreateListingRequest, create_listing
     listing = await create_listing(CreateListingRequest(
-        name=req.item[:80], description=req.description or f"Curated from cascade {run_id}",
+        name=req.item[:80], description=req.description or (
+            f"Curated from cascade {run_id}" if _is_proposed else
+            f"Authored by the curator; cascade {run_id} did not propose it"),
         author=req.curator, category="Product", price_wst=max(0.0, float(req.price_wst)),
         creator_id=req.curator, vsb_id=req.vsb_id))
-    prop.setdefault("curated", []).append({
+    prop.setdefault("curated" if _is_proposed else "owner_authored", []).append({
         "item": req.item, "listing_id": listing.get("id"),
         "compliance_overall": screen["overall"],
         "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
-    prop["status"] = "curated"
+    if _is_proposed:                       # a row whose cascade proposed nothing is never called curated
+        prop["status"] = "curated"
     _awj(store, rows)
     try:
         from agentic_core.gaas.v5 import UEGLogger
@@ -326,7 +353,9 @@ async def curate_proposed_item(run_id: str, req: CurateProposalRequest):
     except Exception:
         pass
     return {"run_id": run_id, "listing": listing, "compliance": screen["overall"],
-            "note": "Curated by a deliberate act — the cascade proposes, never auto-publishes."}
+            "proposed_by_cascade": _is_proposed,
+            "note": ("Curated by a deliberate act — the cascade proposes, never auto-publishes." if _is_proposed else
+                     "Published as the curator's own offering: this cascade did not propose it.")}
 
 
 @router.get("/catalogue/proposed")
@@ -872,7 +901,8 @@ async def cascade_orchestration(req: CascadeRequest,
         pass
     measured_block = (
         "Measured outcomes for THIS run (judge against these — do not merely restate the text):\n"
-        f"- QMS gate: {gate_word(quality.get('qms_gate_passed'))}\n"
+        f"- QMS structure gate (declared sections present, no stub marker found; the content was not "
+        f"read): {gate_word(quality.get('qms_gate_passed'))}\n"
         f"- Delivery coverage: {quality.get('delivery_coverage')}\n"
         # W489 (sweep S9.4, C3) — this line sits under "Measured outcomes for THIS run" and is neither
         # this run's nor this entity's: one QMS store serves every entity and tenant on the platform.
@@ -1130,7 +1160,17 @@ async def cascade_orchestration(req: CascadeRequest,
     # estimate is recorded as the run's cost side — the delivery org's real work now funds the
     # economic organism (virtual WST; honest simulation constants, never real money). Best-effort.
     economic_event = None
-    if req.scope != "workstation" and quality.get("qms_gate_passed") is True:   # W449 — never on None
+    #  W676 (OWNER RULING 2026-10-12) - NOTHING EARNS ON A STRUCTURE PASS. The gate checks that declared sections
+    #  are present and that no stub marker was found; it does not read the content. Recording a tariff as the
+    #  entity's revenue on that verdict let headings earn. A delivery earns when a PERSON ACCEPTS it, and no
+    #  acceptance route exists yet - so nothing is recorded, and the answer says that rather than staying silent.
+    if req.scope != "workstation" and quality.get("qms_gate_passed") is True and not DELIVERY_EARNS_ON_GATE_PASS:
+        economic_event = {"revenue_recorded": False, "revenue_wst": None, "cost_wst": None,
+                          "earns_on": "a person's acceptance of this delivery",
+                          "basis": ("no revenue or cost was recorded for this delivery: the quality gate passed on "
+                                    "structure (declared sections present, no stub marker), and a delivery earns "
+                                    "only when a person accepts it. No acceptance route exists yet. Virtual WST only.")}
+    if req.scope != "workstation" and quality.get("qms_gate_passed") is True and DELIVERY_EARNS_ON_GATE_PASS:   # W449 — never on None
         _rev, _cost = None, None
         try:
             from agentic_core.economy.revenue import SIM_DELIVERY_TARIFF_WST, record_event

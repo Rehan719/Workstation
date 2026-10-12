@@ -123,7 +123,7 @@ function qualityText(q: unknown): string | null {
 
   const parts: string[] = [];
   const chip = qmsChip(o as QmsQuality);
-  if (chip) parts.push(chip.verdict === 'pass' ? 'QMS pass' : chip.verdict === 'fail' ? 'QMS FAIL' : 'QMS not assessable');
+  if (chip) parts.push(chip.verdict === 'pass' ? 'QMS structure pass' : chip.verdict === 'fail' ? 'QMS structure FAIL' : 'QMS not assessable');
   if (typeof o.delivery_coverage === 'number') parts.push(`coverage ${Math.round(o.delivery_coverage * 100)}%`);
   const d = o.qms_defects as Record<string, any> | undefined;
   if (d && typeof d.defects_total === 'number' && typeof d.gates_run === 'number') {

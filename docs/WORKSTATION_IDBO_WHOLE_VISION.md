@@ -529,14 +529,17 @@ technology, operational and commercial capability; **cost-effective and efficien
 >
 > **STATUS AS BUILT, corrected W654 on the Owner's ruling of 2026-10-10 (both halves are stated: what is
 > measured and what is only attested).** The two lists above do not match the code, so the code's are given:
-> **Measured by the gate (4):** specifically designed · verified · compliant · safe. The first two are
-> computed from the delivery's coverage against its declared structure and are recorded NOT ASSESSABLE when
-> the floor served the output. The last two come from the §11 screens, which are word lists: a failed row is
-> reported, and "met" needs every row to pass and to have been able to assess — otherwise "not established".
+> **Measured by the gate (2):** compliant · safe. Both come from the §11 screens, which are word lists: a
+> failed row is reported, and "met" needs every row to pass and to have been able to assess — otherwise "not
+> established".
+> **What the gate measures of structure, under its own names (Owner ruling 2026-10-12):** *declared sections
+> present* and *no stub marker found*. It reads headings and stub markers, never content, so the two figures
+> are recorded as supporting evidence and neither "specifically designed" nor "verified" is marked met from
+> them; on output the floor served, the gate does not run and both are recorded NOT ASSESSABLE.
 > **Attested by the journey, never measured (7):** modelled · simulated · ranked · optimised · categorised ·
 > tested · validated. An attestation is the journey's own statement about its run; each is WITHHELD with its
 > reason on a tie, on identical candidates, or on a default nobody chose.
-> **Established by nothing (5):** best-in-class · innovative · effective · efficient · commercially viable.
+> **Established by nothing (7):** specifically designed · verified · best-in-class · innovative · effective · efficient · commercially viable.
 > These are never reported as met.
 
 ## 11. Compliance, Safety & Ethics (continuously live)

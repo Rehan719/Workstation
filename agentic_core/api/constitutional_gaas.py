@@ -90,9 +90,14 @@ async def gaas_intercept(req: InterceptRequest):
     }
 
     async def _action() -> str:
+        #  ledger v17 R1.4 - this returned a sentence saying the action had been executed. No action exists
+        #  here to execute: the gate judges an intent and, when the caller supplies one, screens the proposed
+        #  output. With none supplied there is nothing to screen, and nothing is invented in its place.
+        #  NOT an empty text: the Horizon screen withholds a text it cannot read, which blocked every intent
+        #  that proposed no output. The gate is handed a true sentence; the answer's `output` is still None.
         if req.proposed_output is not None:
             return req.proposed_output
-        return f"Action '{req.action_type}' executed under constitutional supervision."
+        return f"Intent '{req.action_type}' was gated. This route runs no action, and no output was proposed."
 
     result = await _INTERCEPTOR.intercept(context, _action)
 
@@ -104,7 +109,21 @@ async def gaas_intercept(req: InterceptRequest):
     except Exception:
         pass
 
-    return result.to_dict()
+    out = result.to_dict()
+    #  R1.4 - ADDED beside the interceptor's own fields (status keeps its four values for its readers)
+    out["executed"] = False
+    out["executed_basis"] = ("this route gates an intent and screens a proposed output when the caller supplies "
+                             "one; it runs no action, so nothing was executed whatever the status says")
+    if req.proposed_output is None:
+        out["output"] = None
+        out["output_basis"] = "no proposed_output was supplied, so there was no output to screen or to return"
+    if out.get("status") == "halted":
+        out["evaluated"] = False
+        out["halted_basis"] = (
+            f"NOT EVALUATED - the breaker on node '{out.get('node')}' was already open when this action "
+            f"arrived, so this action was not judged. The reason shown is the reason of the EARLIER trip "
+            f"({out.get('reason') or 'not recorded'}); it is not a finding about '{req.action_type}'")
+    return out
 
 
 @router.get("/ueg/events")
