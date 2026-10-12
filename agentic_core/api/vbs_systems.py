@@ -44,6 +44,12 @@ async def qms_gate(req: QMSGate, user: dict | None = Depends(get_current_user)):
     a platform-level defect THEY COULD NEVER SEE — while the summary counted it. The defect now
     belongs to the tenant that ran the gate."""
     _u = user if isinstance(user, dict) else None
+    #  W678 (OWNER RULING 2026-10-12) - NO FIGURE, NO GATE. An empty body ran the rule at this route's defaults
+    #  (coverage 0.0) and opened a what-if defect for figures nobody typed. Refused BEFORE anything is recorded.
+    if not (getattr(req, "model_fields_set", None) or set()):
+        raise HTTPException(status_code=422, detail=(
+            "No figure was supplied, so no what-if gate was run and nothing was recorded. Send 'coverage' "
+            "(0 to 1), 'stubs_found' (true or false), or both."))
     # W489 (sweep S9.4, C3) — this gate runs on metrics the CALLER TYPES (the panel defaults to 0.97,
     # which passes), so it is a what-if, not a delivery. It used to count into the platform-wide
     # non-conformance rate that the cockpit then labelled "a real rate".

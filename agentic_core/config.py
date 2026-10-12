@@ -16,17 +16,19 @@ from dataclasses import dataclass, field
 
 @dataclass(frozen=True)
 class Settings:
+    #  A SECRET FIELD IS NEVER PRINTED (repr=False). A failing assertion printed this object, keys included, into a
+    #  test log; a field whose name says it is a secret is left out of the printed form, and a guard computes that.
     # AI providers — at least one should be set in production
-    anthropic_api_key: str = field(default_factory=lambda: os.getenv("ANTHROPIC_API_KEY", ""))
-    openai_api_key: str = field(default_factory=lambda: os.getenv("OPENAI_API_KEY", ""))
+    anthropic_api_key: str = field(default_factory=lambda: os.getenv("ANTHROPIC_API_KEY", ""), repr=False)
+    openai_api_key: str = field(default_factory=lambda: os.getenv("OPENAI_API_KEY", ""), repr=False)
     ollama_base_url: str = field(default_factory=lambda: os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"))
 
     # Auth
     auth_enabled: bool = field(default_factory=lambda: os.getenv("AUTH_ENABLED", "false").lower() == "true")
-    jwt_secret: str = field(default_factory=lambda: os.getenv("JWT_SECRET", ""))
+    jwt_secret: str = field(default_factory=lambda: os.getenv("JWT_SECRET", ""), repr=False)
     # SECURITY: no hardcoded default — empty means "unset"; the auth bootstrap generates a random
     # admin password and self-heals from this env var once set (agentic_core/auth/core.py).
-    admin_password: str = field(default_factory=lambda: os.getenv("ADMIN_PASSWORD", ""))
+    admin_password: str = field(default_factory=lambda: os.getenv("ADMIN_PASSWORD", ""), repr=False)
 
     # CORS — comma-separated allowed origins; "*" allows all (dev only)
     cors_origins: list[str] = field(default_factory=lambda: [

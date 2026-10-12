@@ -35,6 +35,8 @@ interface Project {
   id: string;
   title: string;
   description: string;
+  first_description?: string | null;
+  first_description_at?: number | null;
   realm: string;
   domain: string;
   stage: Stage;
@@ -376,6 +378,16 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
         <div className="min-w-0">
           <h2 className="text-sm font-black text-white truncate">{project.title}</h2>
           <p className="text-[10px] text-slate-500 mt-0.5 leading-relaxed line-clamp-2">{project.description}</p>
+          {typeof project.first_description === 'string' && project.first_description !== project.description && (
+            <p data-testid="project-first-words" className="text-[10px] text-slate-400 mt-1 leading-relaxed">
+              What you first wrote{typeof project.first_description_at === 'number' ? ` (${new Date(project.first_description_at * 1000).toLocaleDateString()})` : ''}: {project.first_description}
+            </p>
+          )}
+          {project.first_description == null && (
+            <p data-testid="project-first-words-not-kept" className="text-[10px] text-slate-500 mt-1 leading-relaxed">
+              The words this project was first described in were not kept: it was made before they were recorded.
+            </p>
+          )}
           <div className="flex items-center gap-2 mt-2">
             {/* W628 (FU-537) — a project's `realm` field holds the taxonomy DOMAIN and `domain` a sub-area; labelled as what they are */}
             <span className="text-[9px] font-bold text-slate-600 uppercase" title="domain · area (the project record stores the domain in its 'realm' field)">{project.realm} · {project.domain}</span>

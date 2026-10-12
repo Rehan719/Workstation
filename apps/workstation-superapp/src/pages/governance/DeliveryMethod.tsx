@@ -290,6 +290,14 @@ export const DeliveryMethod: React.FC = () => {
             <p className="text-[10px] text-amber-400/90 mt-3 leading-relaxed" data-testid="learning-limit">
               {loop.what_this_cannot_see}
             </p>
+            {loop.currency && (
+              <p className="text-[10px] text-slate-300 mt-2 leading-relaxed" data-testid="learning-currency">
+                {typeof loop.currency.rounds_since_the_method_last_learned === 'number'
+                  ? `The latest round a lesson cites is W${loop.currency.latest_round_a_lesson_cites}; the latest round in the history is W${loop.currency.latest_round_the_history_declares} (${loop.currency.rounds_since_the_method_last_learned} round ids later). `
+                  : 'How current the method is could not be read here. '}
+                {String(loop.currency.basis || '')}
+              </p>
+            )}
           </>
         )}
       </Card>

@@ -1046,6 +1046,29 @@ async def record_a_breach(req: BreachRequest, user: dict | None = Depends(get_cu
                                req.row_id, req.submit_to_change_control)
 
 
+def _method_currency(method: Dict[str, Any]) -> Dict[str, Any]:
+    """How far the method's data trails the work it describes: the latest round any lesson cites, against the
+    latest round the history declares. A count of ROUND IDS, never of lessons owed."""
+    cited = [int(n) for l in method.get("lessons", [])
+             for n in re.findall(r"\bW(\d{3,4})\b", f"{l.get('defect', '')} {l.get('rule', '')}")]
+    log = _git("log", "-400", "--pretty=%s")
+    done = [r for r in (_round_of(s) for s in (log or "").splitlines()) if r is not None]
+    if not cited or not done:
+        return {"state": NOT_ASSESSABLE,
+                "basis": ("no lesson cites a round" if not cited else
+                          "the history could not be read, or the commits read declare no round - a shallow "
+                          "clone reads this way, and it is not the same as being current")}
+    behind = max(0, max(done) - max(cited))
+    return {"state": MET if behind == 0 else UNMET,
+            "latest_round_a_lesson_cites": max(cited),
+            "latest_round_the_history_declares": max(done),
+            "rounds_since_the_method_last_learned": behind,
+            "basis": ("round ids compared, read now. It says that no lesson cites a later round - not how many "
+                      "lessons are owed: a stretch of rounds may teach nothing new. A lesson kept anywhere "
+                      "else (an assistant's notes, a commit message) is not in the method until it is derived "
+                      "here and ratified.")}
+
+
 @router.get("/learning")
 async def learning_state(user: dict | None = Depends(get_current_user)):
     """The loop's own state: which of this method's rules are failing, and what the platform did about it."""
@@ -1064,6 +1087,7 @@ async def learning_state(user: dict | None = Depends(get_current_user)):
                  "later breach is recorded (POST /breach), and the third breach of a lesson nothing enforces "
                  "raises a change to give it one"),
         "enforcement": _enforcement_summary(method["lessons"]),
+        "currency": _method_currency(method),
         "breached": breached,
         "escalated": [b["lesson_id"] for b in breached if b["at_or_over_threshold"]],
         "escalate_at": ESCALATE_AT,
