@@ -292,6 +292,10 @@ app.include_router(career_api.router)
 from agentic_core.api import law as law_api
 app.include_router(law_api.router)
 
+#  the registers a reader can check: the sources this platform names, and what a person can do here
+from agentic_core.api import registers as registers_api
+app.include_router(registers_api.router)
+
 # 24. Science domain (research synthesis, hypothesis generation, literature review)
 from agentic_core.api import science as science_api
 app.include_router(science_api.router)

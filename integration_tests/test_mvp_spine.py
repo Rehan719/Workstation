@@ -62036,3 +62036,86 @@ def test_w680_a_persons_material_travels_as_marked_data_through_two_untouched_lo
     _wrapped, _rec = _ap.wrap_material("The tenant shall indemnify the landlord.", "DOCUMENT")
     assert _eng._block("Analyse.\n\n" + _wrapped + "\n\n## Summary", "DOCUMENT") == "The tenant shall indemnify the landlord."
     assert _eng._block("DOCUMENT:\nOld form still read.\n\nAnalyse it.", "DOCUMENT") == "Old form still read."
+
+
+def test_registers_a_named_source_has_a_row_and_a_claimed_journey_names_its_test(client, monkeypatch, tmp_path):
+    """OWNER RULINGS 2026-10-12. Three domains each named a source with no page, no date and no status - one
+    replaced eighteen months earlier and still driving a rule - and no audit compared a citation with its
+    publisher. And "what can a person do here" had no answer but a page's own sentences. Two registers, each
+    with a check that is DRIVEN on a register made wrong in every way it can be, and on nothing."""
+    import datetime as _dt
+    import importlib.util
+    import json as _json
+    import pathlib as _pl
+    _root = _pl.Path(__file__).resolve().parents[1]
+
+    def _mod(name):
+        _s = importlib.util.spec_from_file_location("w_reg_" + name, _root / "scripts" / (name + ".py"))
+        _m = importlib.util.module_from_spec(_s)
+        _s.loader.exec_module(_m)
+        return _m
+    # ---- SOURCES, on a made tree ---------------------------------------------------------------------------
+    _sc = _mod("sources_check")
+    _tree = tmp_path / "tree"
+    (_tree / "code").mkdir(parents=True)
+    (_tree / "code" / "a.py").write_text('X = "per NICE CG999"\nY = "see NICE NG111 and the Made Up Act 2020"\n', encoding="utf-8")
+    (_tree / "code" / "b.py").write_text('Z = "NICE CG999 was replaced"\n', encoding="utf-8")
+    _reg = {"review_days": 90, "scan": [{"dir": "code", "ext": [".py"]}], "patterns": ["NICE (?:CG|NG)\\d+", "(?:[A-Z][A-Za-z]+ )+Act (?:19|20)\\d{2}"],
+            "rows": [{"id": "old", "names": ["NICE CG999"], "status": "replaced", "replaced_by": "new", "page": "https://example.org/old",
+                      "read_on": "2026-10-12", "read_by": "w-reg", "named_as_replaced_in": ["code/b.py"]},
+                     {"id": "new", "names": ["NICE NG111"], "status": "current", "page": "https://example.org/new", "read_on": "2026-10-12", "read_by": "w-reg"}]}
+    _r = _sc.check(_reg, root=_tree, today=_dt.date(2026, 10, 13))
+    assert _r["files_examined"] == 2 and _r["names_found"] == 4, _r
+    assert [(f, n) for f, _, n in _r["names_with_no_row"]] == [("code/a.py", "Made Up Act 2020")], _r["names_with_no_row"]
+    #    the replaced source: its reader in a.py is found; b.py, which SAYS it was replaced, is not
+    assert [(f, i) for f, _, _, i in _r["readers_of_a_replaced_source"]] == [("code/a.py", "old")], _r["readers_of_a_replaced_source"]
+    assert _r["not_recently_checked"] == []
+    #    by date alone: ninety days on it is still current, ninety-one it is not
+    assert _sc.check(_reg, root=_tree, today=_dt.date(2027, 1, 10))["not_recently_checked"] == []
+    assert _sc.check(_reg, root=_tree, today=_dt.date(2027, 1, 11))["not_recently_checked"] == [("new", 91)]
+    #    a row with no page, no date, a replaced row that names no successor, a status that is not one
+    _badrows = {**_reg, "rows": [{"id": "x", "names": ["A"], "status": "current"}, {"id": "y", "names": ["B"], "status": "replaced", "page": "https://e.org", "read_on": "2026-10-12", "read_by": "w"},
+                                 {"id": "z", "names": ["C"], "status": "fine"}, {"id": "n", "names": ["D"], "status": "named_not_read", "page": "https://e.org"}]}
+    _p = " | ".join(_sc.row_problems(_badrows))
+    for _need in ("x: no publisher's page", "x: read_on is not a date", "y: is replaced and does not say by what", "z: status 'fine'", "n: says it was not read and carries"):
+        assert _need in _p, (_need, _p)
+    # ---- COVERAGE, on a made register ----------------------------------------------------------------------
+    _cr = _mod("coverage_register")
+    _tests = {"test_real_one"}
+    _good = {"rows": [{"id": "a", "domain": "D", "subject": "s", "nation": "England", "today": "t", "state": "journey", "driven_by": "test_real_one"},
+                      {"id": "b", "domain": "D", "subject": "s", "nation": "England", "today": "t", "state": "frame"},
+                      {"id": "c", "domain": "D", "subject": "s", "nation": "England", "today": "t", "state": "excluded", "excluded_by": "a ruling"}]}
+    _g = _cr.check(_good, _tests)
+    assert _g["problems"] == [] and _g["a_person_can_do"] == {"D": 1} and _g["by_domain"]["D"]["frame"] == 1, _g
+    assert "not counted as coverage" in _g["basis"]
+    _wrong = _json.loads(_json.dumps(_good))
+    _wrong["rows"][0]["driven_by"] = "test_that_is_not_there"
+    _wrong["rows"][1].update(state="journey")
+    _wrong["rows"][2].pop("excluded_by")
+    _wrong["rows"].append({"id": "d", "domain": "D", "subject": "s", "nation": "England", "today": "t", "state": "covered"})
+    _wrong["rows"].append({"id": "e", "domain": "D", "subject": "s", "nation": "England", "today": "t", "state": "frame", "driven_by": "test_real_one"})
+    _w = " | ".join(_cr.check(_wrong, _tests)["problems"])
+    for _need in ("a: names test_that_is_not_there", "b: says a person can do this (journey) and names no test", "c: is excluded and names no ruling",
+                  "d: state 'covered'", "e: is 'frame' and names a test"):
+        assert _need in _w, (_need, _w)
+    # ---- THE REAL REGISTERS, as the suite and the routes read them ------------------------------------------
+    _real = _sc.check(_sc.load())
+    assert _real["files_examined"] > 20 and _real["rows"] > 5 and _real["row_problems"] == [], _real["row_problems"]
+    assert _real["names_with_no_row"] == [], ("a named authority has no row", _real["names_with_no_row"][:5])
+    assert _real["readers_of_a_replaced_source"] == [], ("the code still relies on a replaced source", _real["readers_of_a_replaced_source"][:5])
+    _cov = _cr.check(_cr.load())
+    assert _cov["problems"] == [] and _cov["rows"] > 30 and {"Law", "Education", "Care"} <= set(_cov["by_domain"]), _cov["problems"]
+    _s = client.get("/api/v1/registers/sources")
+    assert _s.status_code == 200 and _s.json()["generated"] is False and len(_s.json()["rows"]) == _real["rows"]
+    assert all(("recently_checked" in r) for r in _s.json()["rows"]) and _s.json()["check"]["files_examined"] == _real["files_examined"]
+    _c = client.get("/api/v1/registers/coverage", params={"domain": "law"}).json()
+    assert _c["rows"] and {r["domain"] for r in _c["rows"]} == {"Law"} and _c["a_person_can_do"]["Law"] == _cov["a_person_can_do"]["Law"]
+    # ---- A REGISTER THAT CANNOT BE READ is a 503 that says so - never an empty list --------------------------
+    import agentic_core.api.registers as _regs
+
+    def _broken(name):
+        raise OSError("w-reg: made unreadable")
+    monkeypatch.setattr(_regs, "_script", _broken)
+    for _path in ("/api/v1/registers/sources", "/api/v1/registers/coverage"):
+        _x = client.get(_path)
+        assert _x.status_code == 503 and "could not be read" in _x.json()["detail"], (_path, _x.text[:200])

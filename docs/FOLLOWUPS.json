@@ -20004,11 +20004,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.10",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W681",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W681: one register of sources (34 rows, each with its publisher's page, date read, reader, status and what was not read) and a check that fails on a name with no row, on a reader of a replaced source, and marks a row not recently checked after 90 days. 12 blinds driven red."
     },
     {
       "id": "FU-1031",
@@ -20555,6 +20558,25 @@
       "closed_by": null,
       "note": "",
       "slot_source": "the quality item's clause on a person's text as data; found by classifying every caller in W680",
+      "tier": 2
+    },
+    {
+      "id": "FU-1060",
+      "title": "The sources check reads five kinds of file and four name patterns, and the domain pages still type their own sentences",
+      "why": "W681 landed the register and its check. Still to do, each a count to classify and not a verdict: widen the check to the new kinds of row and to page sources; the typed list of urgent routes; the domain pages reading what their forms do from the registers; five rows are named and not yet read.",
+      "source": "W681 (the register of sources)",
+      "found": "2026-10-12",
+      "files": [
+        "scripts/sources_check.py",
+        "docs/SOURCES.json"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.10",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "what the register round left, found in W681",
       "tier": 2
     }
   ],
