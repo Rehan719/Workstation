@@ -1563,3 +1563,169 @@ The proposal as it was put, with nine clauses. It adds no store, no registry and
 
 Filed now as facts on existing items: the method's currency, the lost first words, and the silent edit. The
 questions that are the Owner's are in the round's report.
+
+## 28. Deeper re-reading (W678): what the strategy, commercialisation and finance documents show on this machine's own record
+
+Sections 12 to 14, 16 to 18 and 20 assessed those documents against the tree. This section reads them against the Owner's own store
+(`C:\tmp\w640t\journey\commercial_record.py`, read-only; contents counted, never printed). Every figure is a
+count of records on this machine on 2026-10-12.
+
+### 28.1 What the store records of commercial life
+
+| Record | Count | What it shows |
+|---|---|---|
+| Projects | 4, all at the stage "concept"; one has outputs | No project on this machine has ever advanced a stage. The journey from concept to commerce that every strategy document plans around has not once been walked in the project record. |
+| Deliverables | 300; none carries any field for a person's acceptance | See 28.2. |
+| Revenue events | 4 (two revenue, two cost), all written by a cascade delivery | No event records a person paying or accepting. All virtual. |
+| Change records | 1,119: 840 approved, 270 implemented, 9 submitted | Submitted by: the transformation orchestrator 603, the immune system 269, **the test suite 226**, the method's loop 6, the compliance screen 5. **None by a person.** 1,111 carry no source for their decision. |
+| Business-plan files | 1,746 | 1,734 were written in June 2026; 336 are named for a test; **1,710 name no entity on the roster of 36** and 36 name one. |
+| Digital-twin files | 604 | 602 were written in June 2026; none names an entity on the roster. |
+| Operation rows | 2,000 (the store's cap) | 1,349 model calls, 346 attempts, 83 swarm runs, 83 transformations, 79 composition runs, 56 deliverables. |
+| Owner-payment records | 103 | The test-era books of section 26 and the opening-state proposal. |
+
+### 28.2 Findings after a second, dated pass (`journey\interrogate.py`, read-only, 2026-10-12)
+
+The first pass counted; the second read each record's date, writer and links, and it CORRECTS the first.
+
+1. **The store is mostly June's residue, and the test leak stopped in June.** 1,100 of 1,119 change records,
+   294 of 300 deliverables, 1,734 of 1,746 plan files and 602 of 604 twins were written in June 2026. The test
+   suite's 226 change records run from 2026-06-19 to 2026-06-30 and none is later: the suite no longer writes
+   into the Owner's store. There is no live writer to find. (The first pass proposed finding one; withdrawn.)
+2. **Nine change records have been waiting on a person for six weeks or more, and nothing shows them.** Five
+   compliance FAILs on an entity's deliveries (2026-09-01), a material distribution on the apex (2026-08-30),
+   the Vision 8.0 strategy record (2026-09-29), one from the evolution office (2026-06-20) - and **the record of
+   the Owner's own twelve rulings of 2026-09-30, filed HIGH and still "submitted"**. This is the measured case
+   for the list of what waits on a person (the item on working with a person, clause 4).
+3. **1,102 approved or implemented change records name no decision source and no approver.** 603 are the
+   orchestrator's LOW records and 269 the immune system's, 134 of those MEDIUM. One record filed CRITICAL by a
+   probe on 2026-08-30 reads approved.
+4. **Acceptance is absent and the product already says so.** The delivery answer states "No acceptance route
+   exists yet" (`swarm.py:1167`). This is a capability to build, not a false statement. The only revenue ever
+   recorded is two events of 250 WST on 2026-08-31, on a structure pass under the old rule, for an entity that
+   is no longer on the roster; neither was consumed.
+5. **Of 300 deliverables, about 270 are a test's** (137 titled as a test's, 133 identical opportunity briefs).
+   Nine carry the Owner's own subject. Of 4 projects, two are tests and one is the Owner's (made 2026-08-15,
+   one output, still at "concept").
+6. **Plan files:** 337 are named for a test; 1,335 name an entity id that nothing else names (no roster entry,
+   no record, no books, not in the folder moved aside on 2026-10-09); 31 name an entity with a record or books
+   that is not on the roster; 36 name a rostered entity. **Twins:** 601 of 604 are the same system, the
+   platform itself, modelled over and over in June.
+
+### 28.3 What this changes about the strategy documents
+
+They are plans for a market; the record shows the stage before a market - **the first complete walk by one
+person**. Outside June's residue the Owner's own commercial record is small and specific: one project, nine
+deliverables on one subject, two registered entities with books, and nine records waiting for a decision. The
+most valuable commercial act available is one real endeavour taken through every stage with a person accepting
+each delivery, and the record of where it stops.
+
+### 28.4 Recommendations, re-stated after the second pass
+
+1. **Acceptance as a recorded act** (who, when, which version), the only thing that lets a delivery earn.
+   Scope it to an entity on the roster; the answer keeps its present sentence until the route exists.
+2. **The nine waiting records are put to the Owner as a list**, each with what differs and what it costs to
+   undo - starting with the record of the Owner's own rulings, which only needs marking as what it is.
+3. **June's residue is listed for one further reversible move**, by class and count: 226 + 1 + 3 test and
+   probe change records; about 270 test deliverables; 337 test plans and 1,335 plans naming no entity; 601
+   repeated twins; two test projects. Nothing moves on a count alone - the list and the reversing command are
+   shown first, as with the books. The 31 plans of entities with a record are NOT in it.
+4. **Records with no decision source are labelled, not rewritten**: the list and the record page say "decided
+   before the source was recorded" (the read-time label that exists for one route is applied to the lists).
+5. **ONE WALK** of the Owner's own endeavour through every stage, on the Owner's machine with the model on,
+   after the books are moved and before the final audit.
+
+### 28.5 What was done the same day, on the Owner's word
+
+- **The old books were moved aside by the Owner**, at their own terminal: eight book files and two folders into
+  `data/_moved_books_20261012-155706`, every size and digest checked. The app's permission layer had refused the
+  act to the round twice; the Owner was then given the command, the list and the reversing command.
+- **June's residue was moved aside** in three reversible steps (2,505 files, then 74 plan and twin files left
+  without an entity by the books move), and the 270 test rows were taken out of the deliverables file with the
+  whole original kept beside them. The counts in 28.1 are therefore the store BEFORE these moves.
+- **The nine waiting records were decided** through the change-control route as the Owner's explicit decisions,
+  each with its reason: the record of the Owner's rulings and the Vision 8.0 record approved; the held
+  distribution rejected, its books having moved; the five compliance findings rejected as superseded; the June
+  record rejected as stale. The queue then read empty.
+- **A correction to the five compliance findings:** they concern one entity, Atmospheric Harvest Solutions - the
+  subject of the Owner's own project of 2026-08-15, recorded under the single-user label "default" and so
+  sorted with the test-era entities. The finding (an ACAS-code breach, for a water-harvesting venture) was
+  never read by a person and the store kept no reason for it. The screen is to be driven on that text.
+- **On the real store, started for the first time after the moves,** the fund read 10,000,000 available and
+  nothing allocated, as rehearsed on a copy. The app recreated an empty ledger folder as it started.
+
+### 28.6 What the Owner ruled (2026-10-12), all four as recommended
+
+1. THE WALK: the meal service first, since it has a plan in the Owner's own words; the atmospheric harvesting
+   venture second, which also tests the compliance screen that failed it unread. Each is registered fresh
+   when walked; nothing is restored from the moved folders.
+2. ACCEPTANCE records who accepted, when, and which version. It earns only the amount stated in an accepted
+   contract for that delivery; with no contract it earns nothing and says so. A constant never earns.
+3. SINGLE-USER RECORDS: new ones are stamped as the Owner's, once the creating routes have been driven; old
+   records are not rewritten.
+4. THE MOVED FOLDERS stay until the walks and the final audit are done, and are then the Owner's to empty.
+
+The Owner also asked that the four standing questions - children and the Education tools, a qualified person
+for Law, a clinical reviewer for Care, and the avatar's unchecked constraints, with real money beside them - be
+researched against the best examples and recombined into a design of this platform's own. That research is
+reported in its own section when its sources have been read at their publishers' pages.
+
+## 29. The four standing gates (W678): what the best examples do, and what was read at the publishers' pages
+
+On 2026-10-12 the Owner asked that the four standing questions - children and the Education tools, a qualified
+person for Law, a clinical reviewer for Care, and the avatar's unchecked constraints with real money beside them
+- be researched against the best examples and recombined into a design of this platform's own. An agent
+gathered leads (`C:\tmp\w640t\research\four_gates.md`, 353 lines, each source marked read, search-summary or
+not read). Its report is a set of hypotheses. This section holds ONLY what was then read at the publisher's own
+page on 2026-10-12, and says what was not.
+
+### 29.1 Read at the publisher
+
+| Claim | Publisher's page | What it says |
+|---|---|---|
+| Giving legal advice is not a reserved activity | legislation.gov.uk, Legal Services Act 2007, section 12 | Six reserved activities: rights of audience, conduct of litigation, reserved instrument activities, probate, notarial activities, administration of oaths. "Legal advice or assistance" is a legal activity and is not among the six. |
+| A chatbot may be outside the Online Safety Act | Ofcom, "AI chatbots and online regulation - what you need to know", published 18 December 2025 | Not covered if it only lets a person interact with the chatbot and no other users, does not search multiple websites or databases, and cannot generate pornographic content. Ofcom adds that any change is for government and Parliament. |
+| The children's code offers an alternative to establishing age | ICO, children's code, standard 3 | "Either establish age with a level of certainty that is appropriate to the risks ... or apply the standards in this code to all your users instead." |
+| The education department's product standards | gov.uk, "Generative AI: product safety standards", updated 19 January 2026, applies to England | Thirteen headings from filtering to manipulation. Products are expected "not to provide final answers, full solutions, or complete worked examples by default" and to disclose progressively. Whether the page calls itself non-statutory was NOT found in the text read. |
+| The malnutrition tool's terms | BAPEN, "The 'MUST' Toolkit" | Free for non-commercial purposes. Adapting it needs copyright permission. For commercial purposes "permission must be sought, a licence agreement signed & a licence fee paid". |
+| The early-warning score's terms | Royal College of Physicians, NEWS2 page | No copyright restriction, on conditions: a stated acknowledgement, the material "must not be modified/amended in any way", and the charts reproduced in colour. |
+| Whether the clinical-safety standards apply | NHS England Digital, applicability of DCB 0129 and DCB 0160, step-by-step (last edited 4 August 2022) | Step 1 asks whether any development or deployment is publicly funded for use in England; step 3 whether the product influences the real-time or near-real-time direct care of patients or service users. Wellbeing and lifestyle capabilities are not health or care services. |
+
+**Corrected against the agent:** it could not open the Law Society's page and doubted its date. That page was
+read in section 27: updated 30 June 2026.
+
+**Not read, so not relied on:** the pressure-ulcer tool's terms (its owner's site answered only with a
+redirect, twice now); the financial regulator's perimeter pages; the payment provider's pages; the medicines
+regulator's appendix on calculators; the school safeguarding guidance; anything for Wales, Scotland or Northern
+Ireland; and every fee except what the agent reported.
+
+### 29.2 What this changes in the tree today
+
+1. **The malnutrition score computes under terms that are free only for non-commercial use.** The catalogue
+   credits "BAPEN" and states no terms. The Owner ruled (section 25) that an instrument whose terms do not allow
+   this use is withdrawn, the licence being the Owner's question. Put to the Owner with a recommendation.
+2. **The early-warning score is credited without the acknowledgement its owner requires**, and the catalogue
+   does not say the material is unmodified. The 47 boundary cases (W677) are the evidence that the scoring is
+   the chart's; the wording is a small build.
+3. **The pressure-ulcer score's terms are still unread** and the catalogue says so. Unchanged.
+
+### 29.3 The recombined designs - PROPOSED, each the Owner's to rule
+
+- **Children and Education.** Not child sign-up. School-provisioned accounts only, in closed tasks; the
+  children's code applied to ALL users (the regulator's own alternative to establishing age), which this
+  platform is close to already since it keeps no learner record; no final answers by default, which the
+  education department expects and which the tools do not yet do. First step: a table of that department's
+  thirteen headings against the tools, each marked met, partly or not met - no code.
+- **Law.** The tools may exist as information; the fences already ruled (immigration, debt solutions, family
+  safety, crime) match what the research found to be the regulated lines. Review by a qualified person becomes
+  a REGISTER the product prints: each tool's scope, the reviewer's name, the date and when it lapses - and
+  until someone has reviewed it, every answer says UNREVIEWED. First step: that register with every row marked
+  unreviewed, honestly.
+- **Care.** The licence is a nearer gate than a reviewer. A hazard log kept in the open, one entry per hazard,
+  in the form the best published example uses (to be read before it is cited). A clinical safety officer is
+  needed by the standard only once the product is publicly funded for use in England and touches direct care.
+- **The avatar's constraints.** No product was found that shows a person, per reply, which of its own rules
+  were checked. A register generated from the code with four states - enforced, checked, sampled, declared -
+  and a receipt on each reply would put this platform ahead of the examples. First step: the register alone.
+- **Real money.** Stays off. The shape the research points to - selling the platform's own service through a
+  regulated processor, the virtual unit never convertible - is recorded as a lead only: none of its sources was
+  read here, and a solicitor, a scholar and an accountant are each needed before any step.

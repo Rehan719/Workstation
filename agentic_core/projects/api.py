@@ -33,7 +33,7 @@ from typing import AsyncIterator, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from agentic_core.auth.core import get_current_user, request_owner_id, user_can_access
 
@@ -148,6 +148,11 @@ class Project(BaseModel):
     created_at: float = Field(default_factory=time.time)
     updated_at: float = Field(default_factory=time.time)
     outputs: list[ProjectOutput] = Field(default_factory=list)
+    #  THE WORDS A PERSON FIRST WROTE, kept once at creation with the time. No edit writes these two fields.
+    #  A project made before they existed carries neither, and is never back-filled from its current
+    #  description: that would present an edited text as the first one.
+    first_description: Optional[str] = None
+    first_description_at: Optional[float] = None
 
 
 class CreateProjectRequest(BaseModel):
@@ -163,6 +168,9 @@ class CreateProjectRequest(BaseModel):
 
 
 class UpdateProjectRequest(BaseModel):
+    #  A field this record does not hold is REFUSED with its name. It was accepted and dropped, so an edit of
+    #  "status" answered 200 and changed nothing.
+    model_config = ConfigDict(extra="forbid")
     title: Optional[str] = None
     description: Optional[str] = None
 
@@ -252,6 +260,14 @@ class Proposal(BaseModel):
     votes_for: int = 0
     votes_against: int = 0
     created_at: float = Field(default_factory=time.time)
+    #  W678 (OWNER RULING 2026-10-12) - when the project this proposal is about was DELETED while it was pending.
+    #  It stayed "pending" for ever with nothing to say why it could never be approved.
+    project_deleted_at: Optional[float] = None
+
+
+#  W678 (OWNER RULING 2026-10-12) - A GOVERNANCE PROPOSAL IS THE ONLY DOOR THAT MOVES A STAGE. The direct route
+#  answers 410 and names the door; its code is kept below this switch, not removed.
+DIRECT_ADVANCE_RETIRED = True
 
 
 def _save_proposal(p: Proposal) -> None:
@@ -372,6 +388,8 @@ async def create_project(req: CreateProjectRequest,
         owner_id=request_owner_id(user),   # W364 — server-stamped; a client cannot claim an owner
         title=req.title,
         description=req.description,
+        first_description=req.description,
+        first_description_at=time.time(),
         # W505 (P2.5) — validated against the taxonomy, and the row says which axis the value is from.
         # When `realm` IS a canonical realm (the picker's path), it also seeds `taxonomy_realm`, so a
         # picker-created project carries the realm the user chose rather than the field's default.
@@ -415,6 +433,12 @@ async def delete_project(project_id: str, user: dict | None = Depends(get_curren
     # permanently delete another user's project. Scoped now (404 when not the caller's).
     _load_scoped(project_id, user)
     _path(project_id).unlink()
+    #  W678 - a proposal still pending for this project is told so, with the time. Nothing else about it changes:
+    #  approving it already refuses (the project is gone), and now the record says why.
+    for _p in _all_proposals():
+        if _p.project_id == project_id and _p.status == "pending" and _p.project_deleted_at is None:
+            _p.project_deleted_at = time.time()
+            _save_proposal(_p)
 
 
 # ── AI Run endpoint (SSE streaming) ──────────────────────────────────────────
@@ -523,6 +547,11 @@ async def advance_stage(project_id: str,
     Guard: at least one output must exist at the current stage before advancing.
     """
     project = _load_scoped(project_id, user)
+    if DIRECT_ADVANCE_RETIRED:
+        raise HTTPException(status_code=410, detail=(
+            f"Advancing a stage directly is retired, so '{project.title}' was NOT advanced. A stage moves only "
+            f"when a governance proposal is approved: raise one with POST /api/v1/projects/{project.id}/propose-advance "
+            f"and decide it in the Governance Hub."))
     current_idx = STAGE_ORDER.index(project.stage)
 
     if current_idx >= len(STAGE_ORDER) - 1:

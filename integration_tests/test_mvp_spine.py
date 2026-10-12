@@ -60741,8 +60741,9 @@ def test_t2_the_what_if_gate_does_not_answer_real(client):
     the re-verify route defines a gate on typed figures as real: false.
 
     THE PROPERTIES, over the whole answer: the flag is false with the reason beside it; the answer says WHICH
-    figures were typed and which were this route's defaults (an empty body typed none); and the rule itself
-    still answers both ways. The QMS state is put back: an empty body opens a what-if defect."""
+    figures were typed and which were this route's defaults; an empty body is refused and records nothing
+    (W678, the Owner's ruling of 2026-10-12); and the rule itself still answers both ways. The QMS state is put
+    back, since a what-if on typed figures opens a what-if defect."""
     import copy
     import json
     from agentic_core.vbs.registry import qms as _qms
@@ -60761,10 +60762,15 @@ def test_t2_the_what_if_gate_does_not_answer_real(client):
         _f = client.post("/api/v1/vbs/qms/gate", json={"coverage": 0.2, "stubs_found": True}).json()
         assert _f["passed"] is False and _f["real"] is False and _f["figures_defaulted"] == [], _f
         assert "defaults" not in _f["figures_basis"], _f["figures_basis"]
-        # an EMPTY body typed nothing, and the answer says so
-        _e = client.post("/api/v1/vbs/qms/gate", json={}).json()
-        assert _e["figures_supplied"] == [] and _e["figures_defaulted"] == ["coverage", "stubs_found"], _e
-        assert "the caller typed NO figure" in _e["figures_basis"] and _e["real"] is False, _e
+        # W678 (OWNER RULING 2026-10-12) - an EMPTY body is REFUSED, names both fields, and records nothing
+        _snap = json.dumps(_qms._load_state(), sort_keys=True, default=str)
+        _e = client.post("/api/v1/vbs/qms/gate", json={})
+        assert _e.status_code == 422 and "coverage" in _e.json()["detail"] and "stubs_found" in _e.json()["detail"], _e.text[:300]
+        assert "nothing was recorded" in _e.json()["detail"]
+        assert json.dumps(_qms._load_state(), sort_keys=True, default=str) == _snap, "a refused what-if still wrote to the quality state"
+        # ...while ONE figure is still a what-if that says which one was defaulted
+        _one = client.post("/api/v1/vbs/qms/gate", json={"stubs_found": True}).json()
+        assert _one["figures_supplied"] == ["stubs_found"] and _one["figures_defaulted"] == ["coverage"] and _one["real"] is False, _one
     finally:
         _qms._state = _before
         _qms._save_state()
@@ -60960,23 +60966,35 @@ def test_t2_a_stage_is_not_advanced_directly_while_its_proposal_is_pending(clien
         _prop = client.post(f"/api/v1/projects/{_a}/propose-advance")
         assert _prop.status_code == 201 and _prop.json()["status"] == "pending", _prop.text[:300]
         _pid = _prop.json()["id"]
-        _adv = client.post(f"/api/v1/projects/{_a}/advance")
-        assert _adv.status_code == 409, ("the stage was advanced past a pending proposal", _adv.status_code, _adv.text[:300])
-        _detail = _adv.json()["detail"]
-        assert isinstance(_detail, str) and _pid in _detail and "NOT advanced" in _detail, _detail
-        assert _pa._load(_a).stage == _first, "the refusal still moved the stage"
-        assert _pa._load_proposal(_pid).status == "pending"
-        # ANOTHER project, with no proposal of its own, still advances while that one is pending: the 409
-        # above was this project's proposal's doing, and nobody else's
-        _ok = client.post(f"/api/v1/projects/{_b}/advance")
-        assert _ok.status_code == 200 and _ok.json()["stage"] != _first, (_ok.status_code, _ok.text[:300])
+        #  W678 (OWNER RULING 2026-10-12) - THE DIRECT ROUTE IS RETIRED: it refuses for a project WITH a pending
+        #  proposal and for one WITHOUT, names the door that does move a stage, and moves nothing.
+        for _x in (_a, _b):
+            _adv = client.post(f"/api/v1/projects/{_x}/advance")
+            assert _adv.status_code == 410, ("the retired route still answered as a door", _adv.status_code, _adv.text[:300])
+            _detail = _adv.json()["detail"]
+            assert isinstance(_detail, str) and "NOT advanced" in _detail and f"/api/v1/projects/{_x}/propose-advance" in _detail, _detail
+            assert _pa._load(_x).stage == _first, "the refusal still moved the stage"
+        assert _pa._load_proposal(_pid).status == "pending" and _pa._load_proposal(_pid).project_deleted_at is None
+        #  ...the kept code still holds its own refusal: with the switch off, a pending proposal blocks the route
+        monkeypatch.setattr(_pa, "DIRECT_ADVANCE_RETIRED", False)
+        _kept = client.post(f"/api/v1/projects/{_a}/advance")
+        assert _kept.status_code == 409 and _pid in _kept.json()["detail"], (_kept.status_code, _kept.text[:300])
+        monkeypatch.setattr(_pa, "DIRECT_ADVANCE_RETIRED", True)
+        #  ...and a proposal whose project is deleted while it is pending says so, with the time
+        _pb = client.post(f"/api/v1/projects/{_b}/propose-advance")
+        assert _pb.status_code == 201, _pb.text[:300]
+        assert client.delete(f"/api/v1/projects/{_b}").status_code == 204
+        _orphan = _pa._load_proposal(_pb.json()["id"])
+        assert _orphan.status == "pending" and isinstance(_orphan.project_deleted_at, float), _orphan
+        _listed = [p for p in client.get("/api/v1/projects/governance/proposals").json() if p["id"] == _orphan.id]
+        assert _listed and isinstance(_listed[0]["project_deleted_at"], float), "the list does not carry when the project was deleted"
+        assert client.post(f"/api/v1/projects/governance/proposals/{_orphan.id}/vote", params={"approve": True}).status_code == 404
         # the proposal is what moves the first one
         _v = client.post(f"/api/v1/projects/governance/proposals/{_pid}/vote", params={"approve": True})
         assert _v.status_code == 200 and _v.json()["status"] == "approved", _v.text[:300]
         assert _pa._load(_a).stage == _prop.json()["to_stage"] != _first
     finally:
-        for _x in (_a, _b):
-            client.delete(f"/api/v1/projects/{_x}")
+        client.delete(f"/api/v1/projects/{_a}")
 
 
 def test_t2_a_retired_door_is_reported_retired_beside_served(client, monkeypatch):
@@ -61718,3 +61736,89 @@ def test_t2_the_simulation_notice_does_not_depend_on_having_just_run_a_cycle(cli
     _cond = _page[_i - 700:_i]
     assert "const _sim = simBasis" in _cond and "bp?.registration === 'UNREGISTERED'" in _cond and "pay?.simulated === true" in _cond, _cond[-400:]
     assert "return _sim ? (" in _cond and "SIMULATION — {_sim}" in _page[_i:_i + 400]
+
+
+def test_w678_the_method_says_how_far_it_trails_the_work(client, monkeypatch):
+    """The method's data last cited W515 while the history ran on for over a hundred and fifty round ids, and no
+    answer said so. The measure is driven here in BOTH states and when the history cannot be read."""
+    from agentic_core.api import method as _m
+    _lessons = {"lessons": [{"id": "M-X-01", "rule": "r", "defect": "W515: something measured"},
+                            {"id": "M-X-02", "rule": "r", "defect": "W480: something earlier"}]}
+    monkeypatch.setattr(_m, "_git", lambda *a: "feat(W520): a later round\nW518: another\nMerge pull request\n")
+    c = _m._method_currency(_lessons)
+    assert c["latest_round_a_lesson_cites"] == 515 and c["latest_round_the_history_declares"] == 520, c
+    assert c["rounds_since_the_method_last_learned"] == 5 and c["state"] == _m.UNMET, c
+    monkeypatch.setattr(_m, "_git", lambda *a: "feat(W515): the round the lesson cites\n")
+    c = _m._method_currency(_lessons)
+    assert c["rounds_since_the_method_last_learned"] == 0 and c["state"] == _m.MET, c
+    # a history that cannot be read is NOT "current"
+    monkeypatch.setattr(_m, "_git", lambda *a: None)
+    c = _m._method_currency(_lessons)
+    assert c["state"] == _m.NOT_ASSESSABLE and "rounds_since_the_method_last_learned" not in c, c
+    monkeypatch.setattr(_m, "_git", lambda *a: "Merge pull request #1 from a/b\n")
+    assert _m._method_currency(_lessons)["state"] == _m.NOT_ASSESSABLE
+    # the route carries it, whatever this checkout's history is
+    monkeypatch.setattr(_m, "_git", lambda *a: "feat(W999): far ahead\n")
+    loop = client.get("/api/v1/method/learning").json()
+    assert loop["currency"]["latest_round_the_history_declares"] == 999, loop.get("currency")
+    assert loop["currency"]["rounds_since_the_method_last_learned"] > 0 and "not how many" in loop["currency"]["basis"]
+    # the page prints the measure and its basis
+    import pathlib as _pl
+    _page = (_pl.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages" / "governance" / "DeliveryMethod.tsx").read_text(encoding="utf-8")
+    _i = _page.index('data-testid="learning-currency"')
+    #  each figure is read where it is PRINTED (its own interpolation), not merely named somewhere in the block: the
+    #  name also appears in the typeof test above the sentence, so a presence check passed a sentence printing 0
+    _blk = _page[_i:_i + 900]
+    for _fig in ("W${loop.currency.latest_round_a_lesson_cites}", "W${loop.currency.latest_round_the_history_declares}",
+                 "(${loop.currency.rounds_since_the_method_last_learned} round ids later)", "{String(loop.currency.basis || '')}"):
+        assert _fig in _blk, ("the method page does not print this figure", _fig)
+    assert "{loop.currency && (" in [ln.strip() for ln in _page[:_i].splitlines()][-2:], "the measure's gate line is not whole"
+
+
+def test_p514_a_project_keeps_the_words_a_person_first_wrote(client):
+    """Driven 2026-10-12: after one edit the first description was nowhere in the record and nowhere on disk, and
+    an edit naming a field the record does not hold answered 200 and changed nothing."""
+    import json as _json
+    _first = "A meal service for elderly neighbours who cannot cook, delivered by volunteers."
+    p = client.post("/api/v1/projects/", json={"title": "Meals", "description": _first}).json()
+    assert p["first_description"] == _first and isinstance(p["first_description_at"], float), p
+    r = client.patch(f"/api/v1/projects/{p['id']}", json={"description": "A premium subscription meal brand."})
+    assert r.status_code == 200, r.text
+    g = client.get(f"/api/v1/projects/{p['id']}").json()
+    assert g["description"] == "A premium subscription meal brand." and g["first_description"] == _first, g
+    assert g["first_description_at"] == p["first_description_at"], "an edit moved the time the first words were written"
+    # no edit can write the first words, and an unknown field is refused BY NAME
+    for body, field in (({"first_description": "rewritten"}, "first_description"), ({"status": "waiting_on_person"}, "status")):
+        r = client.patch(f"/api/v1/projects/{p['id']}", json=body)
+        assert r.status_code == 422 and field in _json.dumps(r.json()), (r.status_code, r.text[:200])
+    assert client.get(f"/api/v1/projects/{p['id']}").json()["first_description"] == _first
+    # a project made before the fields existed says nothing rather than something false
+    from agentic_core.projects import api as _pa
+    old = _pa.Project(title="older", description="edited since")
+    assert old.first_description is None and old.first_description_at is None
+    # the page: the first words are printed when they differ, and their absence is SAID - each on its whole gate line
+    import pathlib as _pl
+    _page = (_pl.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages" / "projects" / "ProjectsHub.tsx").read_text(encoding="utf-8")
+    _lines = [ln.strip() for ln in _page.splitlines()]
+    assert "{typeof project.first_description === 'string' && project.first_description !== project.description && (" in _lines
+    assert "{project.first_description == null && (" in _lines
+    _i = _page.index('data-testid="project-first-words"')
+    assert "{project.first_description}" in _page[_i:_i + 400]
+
+
+def test_w678_the_settings_object_never_prints_a_secret():
+    """A failing assertion printed the settings object into a test log, and its fields include keys. Driven with
+    planted values: none appears in the printed form; and which fields are secret is computed from their names."""
+    import dataclasses
+    from agentic_core.config import Settings
+    _secret = [f for f in dataclasses.fields(Settings)
+               if any(w in f.name.lower() for w in ("key", "secret", "password", "token"))]
+    assert len(_secret) >= 4, [f.name for f in _secret]
+    assert [f.name for f in _secret if f.repr] == [], "a field named as a secret is part of the printed form"
+    _planted = {f.name: f"PLANTED-{i}-DO-NOT-PRINT" for i, f in enumerate(_secret) if f.type in ("str", str)}
+    assert len(_planted) >= 4, _planted
+    _s = Settings(**_planted)
+    for _shown in (repr(_s), str(_s), f"{_s}", "%s" % (_s,)):
+        assert "DO-NOT-PRINT" not in _shown, "a planted secret is in the settings object's printed form"
+    #  ...and the values are still there for the code that needs them
+    assert all(getattr(_s, k) == v for k, v in _planted.items())

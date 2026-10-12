@@ -18150,11 +18150,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W678",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W678 with a guard that drives the state; its blinds were driven red (20 of 20 across the round, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-937",
@@ -18733,11 +18736,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W678",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W678 with a guard that drives the state; its blinds were driven red (20 of 20 across the round, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-966",
@@ -20212,11 +20218,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.14",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W678",
       "note": "",
       "slot_source": "the Owner chartered this item on 2026-10-12 and these rows are its clauses 1, 3, 4 and 5",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W678 with a guard that drives the state; its blinds were driven red (20 of 20 across the round, one re-driven after its guard was tightened)."
     },
     {
       "id": "FU-1043",
@@ -20267,10 +20276,141 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
+      "status": "done",
+      "closed_by": "W678",
+      "note": "",
+      "slot_source": "found by W677's own full suite; the config area has no routed owner",
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W678 with a guard that drives the state; its blinds were driven red (20 of 20 across the round, one re-driven after its guard was tightened)."
+    },
+    {
+      "id": "FU-1046",
+      "title": "A compliance finding on an entity's deliveries waited six weeks unread and the store kept no reason for it",
+      "why": "Five change records of 2026-09-01 recorded a section-11 FAIL (an ACAS-code breach) on the deliveries of Atmospheric Harvest Solutions - a water-harvesting venture - and the compliance history holds only 'fail'. Drive the screen on that entity's text (kept in data/_moved_books_20261012-155706) and find why it failed; a finding must keep its reason.",
+      "source": "W678 (the store's commercial record read against the strategy documents; assessment section 28)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/change_control.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.41",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "found by W677's own full suite; the config area has no routed owner",
+      "slot_source": "found by a dated read of the Owner's store in W678; the area has no routed owner",
+      "tier": 2
+    },
+    {
+      "id": "FU-1047",
+      "title": "Lists of change records show an approval with no word that its decision source was never recorded",
+      "why": "1,102 approved or implemented records carried no decision source and no approver; the single-record route labels this at read time (decision_source_inferred) and the list routes do not. Ruled 2026-10-12: label, never rewrite.",
+      "source": "W678 (the store's commercial record read against the strategy documents; assessment section 28)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/change_control.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.41",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found by a dated read of the Owner's store in W678; the area has no routed owner",
+      "tier": 2
+    },
+    {
+      "id": "FU-1048",
+      "title": "In single-user mode the Owner's own entities are recorded under the label 'default' (a hypothesis read from the store)",
+      "why": "Seven entities on the Owner's own subjects carried owner 'default' and were sorted with test-era entities by an owner-name read. To drive: which creating route stamps what, with auth off. Recommended to the Owner: stamp new records as the Owner's; never rewrite old ones.",
+      "source": "W678 (the store's commercial record read against the strategy documents; assessment section 28)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/vsb.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.41",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found by a dated read of the Owner's store in W678; the area has no routed owner",
+      "tier": 2
+    },
+    {
+      "id": "FU-1049",
+      "title": "No act records a person accepting a delivery, which is the only thing a delivery may earn on",
+      "why": "Ruled in W676: nothing earns on a structure pass, and the answer says no acceptance route exists yet. To build once the Owner rules what acceptance earns: who accepted, when, which version; recommended that only an accepted contract's amount is earned and a constant never is.",
+      "source": "W678 (the store's commercial record read against the strategy documents; assessment section 28)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/swarm.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.9",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "what a delivery earns is the finance item's; the Owner's question on it is section 28.6",
+      "tier": 2
+    },
+    {
+      "id": "FU-1050",
+      "title": "Four questions from the store's commercial record: the first walk, what acceptance earns, the single-user label, the moved folders",
+      "why": "Assessment section 28.6 puts four questions with a recommendation each; each is the Owner's.",
+      "source": "W678 (the store's commercial record read against the strategy documents; assessment section 28)",
+      "found": "2026-10-12",
+      "files": [
+        "docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md"
+      ],
+      "severity": "medium",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "done",
+      "closed_by": "W678",
+      "note": "",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "RULED by the Owner on 2026-10-12, all four as recommended; recorded in assessment section 28.6 and in the plan's Owner paragraph."
+    },
+    {
+      "id": "FU-1051",
+      "title": "The malnutrition score computes under terms that are free only for non-commercial use, and the catalogue states no terms",
+      "why": "Read at BAPEN's own page on 2026-10-12: free for non-commercial purposes; for commercial purposes permission, a signed licence agreement and a fee. Ruled in section 25: an instrument whose terms do not allow this use is withdrawn; the licence is the Owner's question. Put to the Owner in W678.",
+      "source": "W678 (the four standing gates, read at their publishers; assessment section 29)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/care.py",
+        "agentic_core/care/scoring.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.13",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Care item's clause on reuse terms",
+      "tier": 2
+    },
+    {
+      "id": "FU-1052",
+      "title": "The early-warning score is credited without the acknowledgement its owner requires",
+      "why": "Read at the Royal College of Physicians' page on 2026-10-12: no copyright restriction on condition of a stated acknowledgement, no modification, and charts in colour. The catalogue says only the college's name and a date.",
+      "source": "W678 (the four standing gates, read at their publishers; assessment section 29)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/care.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.13",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Care item's clause on reuse terms",
       "tier": 2
     }
   ],
