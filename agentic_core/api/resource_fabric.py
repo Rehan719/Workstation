@@ -55,16 +55,22 @@ _STORE = data_path("resource_compositions.json")
 
 
 #  P3.31 clause 1 (round 10) - WHAT A RESOURCE NEEDS BEFORE THE FABRIC CAN START IT, in the registry's own
-#  shape. A need is one of four kinds, each checked NOW by agentic_core.api.instrument_cell.needs_check:
+#  shape. A need is one of six kinds, each checked NOW by agentic_core.api.instrument_cell.needs_check:
 #    module      the engine's entry point - the very import the fabric's handler makes - imports
 #    completion  an OWNED completion tier answers (the deterministic floor counts, and the check says when
 #                it is the floor that satisfies it)
 #    config      a parameter without which the handler runs nothing; checked against a configuration
 #    package     a third-party package; always OPTIONAL here (its absence narrows what the resource does)
+#    model       a served model ABOVE the deterministic floor. `completion` cannot say this: the floor meets
+#                it. OPTIONAL unless declared otherwise - the resource still starts on the floor, and what it
+#                cannot do there is the need's `why`, which travels to the proposal and the page
+#    none        the registration states that nothing is needed, with what was read to conclude it
 #  SCOPE, said once: these are what the fabric needs to START the resource - read from the handler's own
 #  branch. What the engine needs once started is the engine's, and is not declared here.
 #  A registration WITHOUT `needs` declares nothing: it reads "not declared", never "needs nothing". An empty
 #  list IS a statement (it needs nothing beyond this process), exactly as an empty parameter table is.
+#  EVERY REGISTRATION DECLARES (P3.31 clause 2): one without `needs` is a registry defect, and the Instrument
+#  Cell refuses the registry at import, naming it. `_R` itself does not default the field.
 def _need_module(module: str, attr: str, why: str) -> Dict[str, Any]:
     return {"kind": "module", "module": module, "attr": attr, "why": why}
 
@@ -79,6 +85,14 @@ def _need_config(param: str, why: str) -> Dict[str, Any]:
 
 def _need_package(package: str, why: str) -> Dict[str, Any]:
     return {"kind": "package", "package": package, "optional": True, "why": why}
+
+
+def _need_model(why: str, optional: bool = True) -> Dict[str, Any]:
+    return {"kind": "model", "optional": bool(optional), "why": why}
+
+
+def _need_none(read: str) -> Dict[str, Any]:
+    return {"kind": "none", "read": read, "why": "nothing is needed to start it: " + read}
 
 
 def _R(rid, name, cls, rtype, desc, caps, params, endpoint, usable_in,
@@ -99,52 +113,71 @@ _REGISTRY: List[Dict[str, Any]] = [
        "8-stage business intelligence: market → value prop → model → GTM → financials → risk.",
        ["market analysis", "business model", "go-to-market", "financial model", "risk"],
        {"challenge": "str", "domain": "str"}, "/api/v1/intelligence/bdp",
-       ["synthesis", "design", "commercialisation", "build_to_order", "forge"]),
+       ["synthesis", "design", "commercialisation", "build_to_order", "forge"],
+       needs=[_need_module("agentic_core.api.intelligence", "run_intelligence_collected", "the handler collects the engine's staged stream through it"),
+              _need_completion("each stage is one completion; on the floor a stage is a scaffold composed from the request")]),
     _R("spi", "Scientific Process Intelligence", "process_intelligence", "engine",
        "8-stage research intelligence: problem → literature → hypothesis → methodology → validation.",
        ["hypothesis generation", "literature synthesis", "methodology", "validation"],
        {"challenge": "str", "domain": "str"}, "/api/v1/intelligence/spi",
-       ["synthesis", "design", "development", "forge"]),
+       ["synthesis", "design", "development", "forge"],
+       needs=[_need_module("agentic_core.api.intelligence", "run_intelligence_collected", "the handler collects the engine's staged stream through it"),
+              _need_completion("each stage is one completion; on the floor a stage is a scaffold composed from the request")]),
     _R("apie", "Scholarship & Authorship Intelligence", "process_intelligence", "engine",
        "9-stage authorship: source discovery → argument → draft → evidence → peer review → publication.",
        ["research reports", "papers", "reviews", "citations", "integrity audit"],
        {"topic": "str", "genre": "str", "citation_style": "str", "word_count": "str"},
-       "/api/v1/intelligence/authorship", ["synthesis", "design", "development", "forge"]),
+       "/api/v1/intelligence/authorship", ["synthesis", "design", "development", "forge"],
+       needs=[_need_module("agentic_core.api.intelligence", "run_intelligence_collected", "the handler collects the engine's staged stream through it"),
+              _need_completion("each stage is one completion; on the floor a stage is a scaffold composed from the request")]),
     _R("ddpie", "Design & Development Intelligence", "process_intelligence", "engine",
        "9-stage engineering: requirements → architecture → API → security → blueprint → tests → devops.",
        ["architecture", "api contract", "security", "test strategy", "devops"],
        {"system": "str", "tech_stack": "str", "scale": "str", "deployment_target": "str"},
-       "/api/v1/intelligence/design-dev", ["design", "development", "delivery", "forge", "build_to_order"]),
+       "/api/v1/intelligence/design-dev", ["design", "development", "delivery", "forge", "build_to_order"],
+       needs=[_need_module("agentic_core.api.intelligence", "run_intelligence_collected", "the handler collects the engine's staged stream through it"),
+              _need_completion("each stage is one completion; on the floor a stage is a scaffold composed from the request")]),
     _R("cognitive_cascade", "Cognitive Lenses + MJM", "process_intelligence", "engine",
        "One prompt headed by 6 cognitive lenses (Inkashaf/Samajh/Soch/Aqal/Hoshiyari/Iman), then MJM, then a synthesis.",
        ["pattern discovery", "comprehension", "reasoning", "anomaly detection", "values alignment"],
        {"problem": "str", "domain": "str"}, "/api/v1/intelligence/solve",
-       ["synthesis", "design", "development", "delivery", "governance"], biomimetic=True),
+       ["synthesis", "design", "development", "delivery", "governance"], biomimetic=True,
+       needs=[_need_module("agentic_core.api.intelligence", "solve_with_cognitive_stack", "the handler calls it"),
+              _need_completion("three completions: the lenses as one prompt, the judgement, the synthesis")]),
     _R("mjm", "MJM Meta-Judgement", "process_intelligence", "engine",
        "The MJM Orchestrator (Mushahida → Jaiza → Muaina) — the meta-judgement system operating ABOVE the "
        "cognitive engines: witnessed observation → deep assessment → verified action directives. Reusable "
        "standalone: judges over supplied context, or auto-primes the cognitive cascade first.",
        ["meta-judgement", "witnessed observation", "deep assessment", "verified action directives"],
        {"problem": "str", "domain": "str", "prime": "bool (auto cognitive prime)", "engines": "list (priming engines)"},
-       "/api/v1/intelligence/mjm", ["synthesis", "governance", "delivery", "design", "development"], biomimetic=True),
+       "/api/v1/intelligence/mjm", ["synthesis", "governance", "delivery", "design", "development"], biomimetic=True,
+       needs=[_need_module("agentic_core.api.intelligence", "mjm_assess", "the handler calls it"),
+              _need_completion("one completion primes the judgement and one makes it")]),
     _R("nexus", "Synthesis Nexus", "process_intelligence", "orchestrator",
        "4-layer chain: the cognitive lenses (one prompt) → MJM (one prompt) → a primary engine (chosen by a "
        "model's reply, else BDP as a stated default) → a synthesis over what ran.",
        ["engine routing (model-decided, else a stated default)", "cross-engine synthesis", "chaining"],
        {"challenge": "str", "domain": "str", "activity": "str"}, "/api/v1/intelligence/nexus",
-       ["synthesis", "design", "development", "delivery"], biomimetic=True),
+       ["synthesis", "design", "development", "delivery"], biomimetic=True,
+       needs=[_need_module("agentic_core.api.intelligence", "run_intelligence_collected", "the handler collects the engine's staged stream through it"),
+              _need_completion("each layer of the chain is a completion"),
+              _need_model("only a model's reply chooses the primary engine; on the floor it is BDP by a stated default")]),
     _R("genesis", "Genesis Sovereign Journey", "process_intelligence", "orchestrator",
        "End-to-end Concept → Design → Commercialisation, ending in a living VSB blueprint.",
        ["conceptualisation", "design", "commercialisation", "vsb blueprint"],
        {"problem": "str", "domain": "str", "realm": "str"}, "/api/v1/genesis/journey",
-       ["synthesis", "design", "development", "delivery", "commercialisation"], biomimetic=True),
+       ["synthesis", "design", "development", "delivery", "commercialisation"], biomimetic=True,
+       needs=[_need_module("agentic_core.api.genesis", "genesis_journey", "the handler runs the journey through it, establishing no entity"),
+              _need_completion("each phase of the journey is a completion")]),
 
     # Digital resources (reconfigurable / rerunnable / reusable)
     _R("synthesis_studio", "Synthesis Lab", "digital_resource", "laboratory",
        "Autonomously generates varied content types (reports, decks, sites, apps, models) from instructions + data.",
        ["multi-format content generation", "9-stage BTO cascade", "vsb spawn"],
        {"brief": "str", "output_types": "list", "domain": "str"}, "/api/v1/studio/synthesise",
-       ["synthesis", "design", "development", "forge"]),
+       ["synthesis", "design", "development", "forge"],
+       needs=[_need_module("agentic_core.api.synthesis_studio", "run_lab_cascade", "the handler calls it"),
+              _need_completion("each cascade stage is a completion")]),
     _R("reactor", "Reactor · Incubate + Experiment + Studio", "digital_resource", "reactor",
        "The §7 composite Reactor (vision definition): Incubator (parameterised Temperature/Mutation/"
        "Iteration evolution) + Experimentation (what-if scenarios) + Studio (2D analytics & insight over "
@@ -152,12 +185,17 @@ _REGISTRY: List[Dict[str, Any]] = [
        ["evolution (temperature/mutation/iteration)", "what-if scenarios", "visual analytics & insight"],
        {"subject": "str", "variants": "int 2-5", "temperature": "float 0-1 (diversity)",
         "mutation": "float 0-1", "iterations": "int 1-4", "scenarios": "list (one what-if per line)"},
-       "/api/v1/reactor/composite", ["synthesis", "design", "development", "forge", "evolution"]),
+       "/api/v1/reactor/composite", ["synthesis", "design", "development", "forge", "evolution"],
+       needs=[_need_module("agentic_core.api.products", "run_reactor_composite", "the handler calls it"),
+              _need_completion("the tournament, the scenarios and the comparison are completions"),
+              _need_model("on the floor no variant is scored, so there is no winner and no chart")]),
     _R("factory", "Production Factory", "digital_resource", "factory",
        "Generates production-grade artefacts (business model, spec, marketing plan, pitch, report).",
        ["artefact production", "production-grade output"],
        {"product_type": "str", "brief": "str"}, "/api/v1/factory/produce",
-       ["delivery", "build_to_order", "forge", "commercialisation"]),
+       ["delivery", "build_to_order", "forge", "commercialisation"],
+       needs=[_need_module("agentic_core.api.products", "run_factory_produce", "the handler calls it"),
+              _need_completion("one completion writes the artefact")]),
     _R("incubator", "Evolution Incubator", "digital_resource", "incubator",
        "The §7 Reactor's generation/evolution loop: each generation produces N variations at a diversity "
        "Temperature, scores + ranks them, and across Iterations the winner is Mutation-evolved into the "
@@ -165,20 +203,29 @@ _REGISTRY: List[Dict[str, Any]] = [
        ["variation generation", "scoring", "ranking", "parameterised evolution (temperature/mutation/iteration)"],
        {"base_prompt": "str", "variants": "int (2-5)", "temperature": "float 0-1 (diversity)",
         "mutation": "float 0-1 (per-generation change)", "iterations": "int 1-4 (generations)"},
-       "/api/v1/incubator/evolve", ["development", "forge", "evolution"]),
+       "/api/v1/incubator/evolve", ["development", "forge", "evolution"],
+       needs=[_need_module("agentic_core.api.products", "incubator_evolve", "the handler calls it"),
+              _need_completion("each generation is two completions and the summary is one more"),
+              _need_model("on the floor the scorer returns no score lines, so no variant is scored and no winner is named")]),
     _R("petri_dish", "Petri Dish", "digital_resource", "petri_dish",
        "The §7 smallest CONTAINED experiment: culture one specimen (idea/hypothesis) in isolation under a "
        "chosen medium over a few passages on the native fabric, then assess viability — QMS-gated. Distinct "
        "from the Reactor (multi-scenario what-ifs) and the Incubator (evolutionary tournament).",
        ["contained culture", "isolation experiment", "viability assessment", "idea incubation"],
        {"specimen": "str", "medium": "str (conditions)", "iterations": "int 1-3 (passages)", "domain": "str"},
-       "/api/v1/petri/culture", ["synthesis", "design", "development", "forge", "evolution"]),
+       "/api/v1/petri/culture", ["synthesis", "design", "development", "forge", "evolution"],
+       needs=[_need_module("agentic_core.api.products", "petri_culture", "the handler calls it"),
+              _need_completion("each passage is a completion"),
+              _need_model("on the floor viability is not assessable: the floor does not judge it")]),
     _R("experimentation", "Reactor · Experimentation", "digital_resource", "experimentation",
        "The §7 Reactor's what-if engine: projects + compares the outcomes of user-defined scenarios, "
        "ranked against fitness criteria — on the native fabric (in-house), QMS-gated.",
        ["what-if scenarios", "outcome projection", "scenario comparison", "ranking"],
        {"subject": "str", "scenarios": "list (one what-if per line)", "domain": "str"},
-       "/api/v1/reactor/experiment", ["synthesis", "design", "development", "forge", "evolution"]),
+       "/api/v1/reactor/experiment", ["synthesis", "design", "development", "forge", "evolution"],
+       needs=[_need_module("agentic_core.api.products", "reactor_experiment", "the handler calls it"),
+              _need_completion("each scenario and the comparison are completions"),
+              _need_model("on the floor the scenarios are not ranked: the comparison comes back as a generic frame")]),
     _R("studio", "Reactor · Studio", "digital_resource", "studio",
        "The §7 Reactor's Studio: 2D/3D visual analytics & insight over a REAL data series — computes "
        "deterministic stats (count/total/mean/min/max/range) and an in-house insight narrative; renders "
@@ -196,7 +243,9 @@ _REGISTRY: List[Dict[str, Any]] = [
        ["code generation", "schema generation", "config/content generation", "format control"],
        {"artefact_type": "str (code|schema|config|content|model_spec)", "spec": "str",
         "format": "str (python|json|yaml|markdown|…)"},
-       "/api/v1/generator/produce", ["development", "forge", "delivery", "build_to_order"]),
+       "/api/v1/generator/produce", ["development", "forge", "delivery", "build_to_order"],
+       needs=[_need_module("agentic_core.api.products", "run_generator", "the handler calls it"),
+              _need_completion("one completion writes the artefact")]),
     _R("digital_twin", "Digital Twin & Simulator", "digital_resource", "simulator",
        #  W656 (ledger v15 R4.0) - what a composed stage of this resource DOES: it said "Forward-simulates"
        "Writes a scenario narrative for a system from a simulator-persona prompt on the native swarm (state "
@@ -212,55 +261,69 @@ _REGISTRY: List[Dict[str, Any]] = [
        "v16-Omega constitutional interceptor + self-tuning breaker + SHA3-512 UEG audit log.",
        ["pre/post gate", "self-tuning circuit breaker", "tamper-evident audit"],
        {"action_type": "str", "payload": "dict"}, "/api/v1/gaas/intercept",
-       ["governance", "delivery", "evolution"], biomimetic=True),
+       ["governance", "delivery", "evolution"], biomimetic=True,
+       needs=[_need_module("agentic_core.api.constitutional_gaas", "gaas_intercept", "the handler routes the objective through it")]),
     _R("sovereign_evolution", "Sovereign Evolution Office", "organism_system", "evolution_engine",
        "Autonomous self-improvement curated by the VSB org (CEO→C-Suite→CoE→BTO), routes to Change Control.",
        ["introspection", "org-curated proposals", "transformation roadmap", "governance hand-off"],
        {"focus": "str", "submit_to_change_control": "bool"}, "/api/v1/sovereign-evolution/cycle",
-       ["evolution", "governance"], biomimetic=True),
+       ["evolution", "governance"], biomimetic=True,
+       needs=[_need_module("agentic_core.api.sovereign_evolution", "office_status", "the handler reads the office state through it; no cycle is run")]),
     _R("nervous_system", "Nervous System", "organism_system", "biomimetic",
        "Signal routing, reflex arcs, arousal state — the organism's live event field. When composed, "
        "fires a real cognitive signal for the objective + reads the live arousal.",
        ["signal routing", "reflex arcs", "arousal state"], {},
        "/api/v1/organism/nervous/status", ["governance", "evolution"], biomimetic=True,
-       methods=("GET",)),   # W640 — it declared POST by default; the application serves this path on GET
+       methods=("GET",),
+       needs=[_need_module("agentic_core.organism.nervous", "nervous", "the handler fires a signal on it"),
+              _need_module("agentic_core.organism.biobus", "biobus", "the handler reads the arousal state from it")]),   # W640 — it declared POST by default; the application serves this path on GET
     _R("immune", "Immune System", "organism_system", "biomimetic",
        "Error-rate ring buffer → live health score + threat level — the organism's defence. When "
        "composed, contributes the genuine current immune reading.",
        ["health score", "threat level", "anomaly detection"], {},
-       "/api/v1/organism/self-healing/status", ["governance", "evolution", "delivery"], biomimetic=True, methods=("GET",)),   # W324 — the immune reading's REAL live route
+       "/api/v1/organism/self-healing/status", ["governance", "evolution", "delivery"], biomimetic=True, methods=("GET",),
+       needs=[_need_module("agentic_core.organism.immune", "immune", "the handler reads its status")]),   # W324 — the immune reading's REAL live route
     _R("self_healing", "Self-Healing Reflex", "organism_system", "biomimetic",
        "Per-provider circuit breakers (CLOSED/OPEN/HALF_OPEN) + healing log — automatic recovery. When "
        "composed, contributes the live breaker/health reading.",
        ["circuit breakers", "auto-recovery", "healing log"], {},
-       "/api/v1/organism/self-healing/status", ["governance", "evolution", "delivery"], biomimetic=True, methods=("GET",)),
+       "/api/v1/organism/self-healing/status", ["governance", "evolution", "delivery"], biomimetic=True, methods=("GET",),
+       needs=[_need_module("agentic_core.organism.self_healing", "self_healer", "the handler reads its status")]),
     _R("metabolic", "Metabolic / ATP", "organism_system", "biomimetic",
        "The ATP energy model + composite-health mode (FULL_POWER/NOMINAL/DEGRADED/EMERGENCY) — the "
        "organism's metabolism. When composed, reads the live ATP + operating mode.",
        ["atp energy model", "composite health", "operating mode"],
-       {"metabolic_load": "float 0-1"}, "/api/v1/organism/status", ["governance", "evolution"], biomimetic=True, methods=("GET",)),
+       {"metabolic_load": "float 0-1"}, "/api/v1/organism/status", ["governance", "evolution"], biomimetic=True, methods=("GET",),
+       needs=[_need_module("agentic_core.organism.biobus", "biobus", "the handler reads the organism context from it")]),
     _R("circadian", "Circadian Heartbeat", "organism_system", "biomimetic",
        "Time-of-day cycle (ACTIVE_FOCUS/ACTIVE_REST/REST/MAINTENANCE) modulating cognition + metabolism. "
        "When composed, reads the live circadian phase.",
        ["circadian cycle", "peak-focus window", "rhythm modulation"], {},
-       "/api/v1/organism/status", ["governance", "evolution"], biomimetic=True, methods=("GET",)),
+       "/api/v1/organism/status", ["governance", "evolution"], biomimetic=True, methods=("GET",),
+       needs=[_need_module("agentic_core.organism.biobus", "biobus", "the handler reads the organism context from it")]),
     _R("genome", "Genome Registry", "organism_system", "biomimetic",
        "3-layer epigenetic memory encoding VSB DNA and acquired traits.",
        ["DNA encoding", "epigenetic memory", "trait inheritance"], {"trait": "str"},
        "/api/v1/organism/genome", ["design", "delivery", "evolution"], biomimetic=True,
-       methods=("GET",)),   # W324 — the genome's REAL route · W640 — and its real method (it declared POST)
+       methods=("GET",),
+       needs=[_need_module("agentic_core.organism.genome", "encode_genome", "the handler calls it"),
+              _need_completion("one completion is asked for the trait lines"),
+              _need_model("the floor declares no trait values, so on the floor nothing is encoded: every axis holds the default and so does the fitness",
+                          optional=False)]),   # OWNER RULING 2026-10-12: REQUIRED for the genome alone - with no model served it reads unavailable and is never proposed   # W324 — the genome's REAL route · W640 — and its real method (it declared POST)
 
     # Enterprise / org layer
     _R("vsb_spawn", "VSB Spawn Pipeline", "enterprise_org", "spawner",
        "Spawns a living VSB IDBO entity via cascade → MJM → GaaS → genome → swarm (SSE).",
        ["vsb instantiation", "genome encoding", "swarm config"],
        {"challenge": "str", "domain": "str", "scope": "str"}, "/api/v1/vsb/spawn",
-       ["delivery", "commercialisation", "build_to_order"]),
+       ["delivery", "commercialisation", "build_to_order"],
+       needs=[_need_none("the fabric's real-resource handler has no branch for this id, so composing it starts no engine")]),
     _R("genesis_establish", "Establish Enterprise IDBO", "enterprise_org", "spawner",
        "Turns a Genesis blueprint into a real, persisted, governed, operational VSB IDBO entity.",
        ["living entity generation", "blueprint → enterprise"],
        {"problem": "str", "domain": "str", "concept": "str", "commercialisation": "str"},
-       "/api/v1/genesis/establish", ["delivery", "commercialisation"]),
+       "/api/v1/genesis/establish", ["delivery", "commercialisation"],
+       needs=[_need_none("the fabric's real-resource handler has no branch for this id, so composing it starts no engine")]),
     _R("vsb_org_swarm", "AI CEO → C-Suite → CoE", "enterprise_org", "org_swarm",
        "The §5 living-organisation cascade: the AI CEO directs a USER-DESIGNED C-Suite, each officer drives "
        "its Centre of Excellence, and the Business Transformation Office build-to-orders the delivery. "
@@ -269,17 +332,24 @@ _REGISTRY: List[Dict[str, Any]] = [
        {"mission": "str", "domain": "str",
         "csuite_roles": "e.g. CSO,CFO,CTO,COO,CLO,Forecasting,Policy", "coe_specialisms": "e.g. Pricing,Compliance"},
        "/api/v1/swarm/cascade",
-       ["delivery", "build_to_order", "commercialisation", "governance"]),
+       ["delivery", "build_to_order", "commercialisation", "governance"],
+       needs=[_need_module("agentic_core.api.swarm", "cascade_orchestration", "the composition runner calls it for this resource"),
+              _need_completion("each officer and each centre of the cascade is a completion")]),
     _R("change_control", "Change Control Agency", "enterprise_org", "governance",
        "Arms-length governance: LOW auto-approved when healthy; MEDIUM/HIGH reviewed (a model marker, else the organism-health rule — said so, and with auth on applied only for an admin requester); CRITICAL held for an explicit admin decision.",
        ["change submission", "tiered review", "governed implementation"],
        {"title": "str", "change_type": "str", "description": "str"}, "/api/v1/cca/submit",
-       ["governance", "evolution", "delivery"]),
+       ["governance", "evolution", "delivery"],
+       needs=[_need_module("agentic_core.api.change_control", "_determine_tier", "the handler classifies the objective with it"),
+              _need_module("agentic_core.organism.immune", "immune", "the handler reads the threat level from it"),
+              _need_module("agentic_core.organism.biobus", "biobus", "the handler reads the measured organism health from it")]),
     _R("capital_fund", "Capital Fund", "enterprise_org", "treasury",
        "Virtual capital allocation + marketplace for the VSB ecosystem (virtual WST only — real-money "
        "rails gated). When composed, reads the live treasury (available/allocated/utilisation/health).",
        ["capital allocation", "portfolio", "marketplace"], {"amount": "float", "recipient": "str"},
-       "/api/v1/fund/allocate", ["delivery", "commercialisation"]),
+       "/api/v1/fund/allocate", ["delivery", "commercialisation"],
+       needs=[_need_module("agentic_core.api.capital_fund", "fund_status", "the handler reads the virtual treasury through it"),
+              _need_module("agentic_core.api.capital_fund", "fund_portfolio", "the handler reads the allocations through it")]),
     _R("products_catalogue", "Products Catalogue", "enterprise_org", "catalogue",
        "The real product catalogue (the owned SDK/product set). When composed, returns the genuine "
        "catalogue ranked by relevance to the objective (deterministic token match — never fabricated).",
@@ -291,12 +361,15 @@ _REGISTRY: List[Dict[str, Any]] = [
        "platform components (entity/organism/VSB/C-Suite). When composed, builds the genuine blueprint.",
        ["bespoke assembly", "product integration", "blueprint"],
        {"entity_name": "str", "product_resources": "list (catalog slugs)", "components": "list (vsb,csuite,…)"},
-       "/api/v1/bto/configure", ["build_to_order", "delivery", "commercialisation"]),
+       "/api/v1/bto/configure", ["build_to_order", "delivery", "commercialisation"],
+       needs=[_need_module("agentic_core.catalog.bto", "configure_bto", "the handler assembles the blueprint with it"),
+              _need_module("agentic_core.catalog.api", "served_products", "the handler takes its default products from it")]),
     _R("compliance", "Unified Compliance Engine", "process_intelligence", "engine",
        "Sharia/Halal · UK Legal (London) · Regulatory · EHS · Ethical · Constitutional — one federated check.",
        ["halal/sharia", "uk legal", "regulatory", "ehs", "ethical", "constitutional"],
        {"subject": "str", "domain": "str", "jurisdiction": "str"}, "/api/v1/compliance/check",
-       ["synthesis", "design", "development", "delivery", "commercialisation", "governance", "forge", "build_to_order"]),
+       ["synthesis", "design", "development", "delivery", "commercialisation", "governance", "forge", "build_to_order"],
+       needs=[_need_module("agentic_core.api.compliance", "check", "the handler calls it")]),
 
     # Native AI fabric — Workstation's OWN AI resources (in-house-first, no external dependency)
     _R("native_orchestrator", "Native AI Orchestrator", "ai_native", "orchestrator",
@@ -361,7 +434,8 @@ _REGISTRY: List[Dict[str, Any]] = [
        "instances. Single-node deployments report simulated peers (honestly flagged).",
        ["peer discovery", "BFT consensus", "reputation/health", "treaty negotiation"],
        {}, "/api/v1/mesh/status", ["governance", "delivery", "evolution"],
-       biomimetic=True, methods=("GET",)),
+       biomimetic=True, methods=("GET",),
+       needs=[_need_module("agentic_core.api.mesh", "mesh_status", "the handler reads the mesh posture through it")]),
 
     # Workstation's OWN mega-project synthesis — redone honestly on the native fabric (the original
     # returned fabricated figures); surfaced so the swarm/delivery can produce investor-grade
@@ -372,7 +446,9 @@ _REGISTRY: List[Dict[str, Any]] = [
        "valuations/ROI framed as to-be-modelled).",
        ["business plan", "feasibility", "capital plan", "roadmap", "risk"],
        {"concept": "str", "domain": "str"}, "/api/v1/mega-project/synthesise",
-       ["synthesis", "commercialisation", "delivery", "forge"]),
+       ["synthesis", "commercialisation", "delivery", "forge"],
+       needs=[_need_module("agentic_core.api.mega_project", "synthesise", "the handler calls it"),
+              _need_completion("one completion writes the deliverables")]),
 
     # Workstation's OWN adaptive resource optimiser — surfaced so the swarm/delivery can verify,
     # schedule, assemble and allocate resources (agentic_core.optimizer). Single-node simulated capacity.
@@ -381,7 +457,9 @@ _REGISTRY: List[Dict[str, Any]] = [
        "tiered-fair allocate. Real engine logic; capacity is a simulated single-node baseline.",
        ["resource verification", "scheduling", "dynamic assembly", "tiered allocation"],
        {"domain": "str", "requirements": "dict", "tier": "str"}, "/api/v1/optimizer/allocate",
-       ["delivery", "forge", "governance", "evolution"]),
+       ["delivery", "forge", "governance", "evolution"],
+       needs=[_need_module("agentic_core.api.optimizer", "allocate", "the handler calls it"),
+              _need_module("agentic_core.optimizer.engine", "AdaptiveResourceOptimizer", "the allocation builds the engine from it")]),
 
     # Workstation's OWN collective-intelligence truth consensus — surfaced so the swarm/mesh can
     # agree on ground truth (agentic_core.collective). Operates only on submitted claims.
@@ -1172,6 +1250,13 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
                 stages = [s if isinstance(s, dict) else {"role": "stage", "instruction": str(s)} for s in raw]
             else:
                 stages = [{"role": "synthesist", "instruction": f"Advance the objective: {objective}"}]
+            #  W674 (P3.31 clause 6) - the ceiling on a composed swarm's OWN stages: a single composition
+            #  stage could carry any number of them. Not run, and said so - an `error`, as a refused gate is.
+            from agentic_core.api.instrument_cell import MAX_STAGES as _cap673, MAX_STAGES_BASIS as _capb673
+            if len(stages) > _cap673:
+                return {"resource": "native_swarm",
+                        "error": (f"stage ceiling: this swarm is configured with {len(stages)} stages and a run "
+                                  f"attempts at most {_cap673} ({_capb673}); nothing was run")}
             _agent651 = str(cfg.get("agent") or "fabric-swarm")
             _halt651 = _stage_pre_gate("native_swarm", _agent651)      # W651 (FU-683)
             if _halt651:
@@ -1216,6 +1301,24 @@ _NARRATIVE_RESOURCES = frozenset({"digital_twin"})
 _READ_SIDE_EFFECTS = {
     "metabolic": "reading the organism context advances the ATP simulator (the read is not free)",
     "circadian": "reading the organism context advances the ATP simulator (the read is not free)",
+}
+#  P3.31 clause 2 - WHAT A FACILITY RUN PERSISTS, declared only where the engine's own function was read. The
+#  word is the contract's: "records" (it writes a record), "side_effect" (it changes live state and writes no
+#  store), "nothing". A facility run that is NOT in this table reads "not_declared" in its contract: nobody has
+#  read what its engine writes, and that is said rather than defaulted to "nothing".
+_ENGINE_WRITES_NO_STORE = ("its engine function writes no store of its own; what the completion layer keeps "
+                           "about each call is not declared here")
+_NOTHING_STARTS = "the fabric has no handler for it, so composing it starts no engine and nothing is written"
+_FACILITY_PERSISTS = {
+    "genome": ("records", "it saves a genome record on every run, including a run that encoded nothing"),
+    "gaas_v5": ("records", "the gate writes each interception to the UEG audit log, as its own route states"),
+    "nervous_system": ("side_effect", "it fires a nervous signal into the live event field and reads the organism "
+                                      "context, which advances the ATP simulator; this handler writes no store"),
+    "factory": ("nothing", _ENGINE_WRITES_NO_STORE),
+    "generator": ("nothing", _ENGINE_WRITES_NO_STORE),
+    "incubator": ("nothing", _ENGINE_WRITES_NO_STORE),
+    "vsb_spawn": ("nothing", _NOTHING_STARTS),
+    "genesis_establish": ("nothing", _NOTHING_STARTS),
 }
 
 _KIND_PHRASE = {

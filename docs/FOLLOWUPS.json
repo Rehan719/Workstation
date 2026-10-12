@@ -12933,11 +12933,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.31",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W674",
       "note": "",
       "tier": 2,
-      "slot_source": "a finding of the Instrument Cell brief assessment; it is that item's own work (docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md)"
+      "slot_source": "a finding of the Instrument Cell brief assessment; it is that item's own work (docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md)",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Counted in W674 and landed as assessment section 21, with its date, edition, method and limits: of ledger v16's 51 tier-1 and tier-2 findings, nine (and one mixed) are a surface offering what cannot run here. The cell's check as it stood would have caught none of them - which is why this round's need kinds were added. A count by one reader, eleven of them uncertain, and said so."
     },
     {
       "id": "FU-670",
@@ -12972,11 +12975,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.31",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W674",
       "note": "",
       "tier": 3,
-      "slot_source": "a finding of the Instrument Cell brief assessment; it is that item's own work (docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md)"
+      "slot_source": "a finding of the Instrument Cell brief assessment; it is that item's own work (docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md)",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W674 for eight scripts: each pass line says what was examined and how many, and a run that examined nothing exits non-zero saying so. Held by test_fu671_a_check_that_examined_nothing_refuses_and_a_pass_says_how_much, driven red. Five that were not changed are filed as their own rows with the reason."
     },
     {
       "id": "FU-672",
@@ -17379,11 +17385,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.31",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W674",
       "note": "",
       "slot_source": "found in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W674: the swarm console refuses a run above the ceiling before anything is asked; a composed swarm's own stages are refused, never cut down; the tree's planner stops under the ceiling by construction and the guard holds that relation. Held by test_w673b_the_stage_ceiling_holds_on_every_way_of_running_stages, driven red."
     },
     {
       "id": "FU-896",
@@ -17396,11 +17405,11 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "P3.31",
+      "slot": "P3.30",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "found in this round and not done in it",
+      "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
       "tier": 3
     },
     {
@@ -17414,11 +17423,11 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "P3.31",
+      "slot": "P3.30",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "found in this round and not done in it",
+      "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
       "tier": 3
     },
     {
@@ -17432,11 +17441,11 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "P3.31",
+      "slot": "P3.30",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "found in this round and not done in it",
+      "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
       "tier": 3
     },
     {
@@ -17450,11 +17459,11 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "P3.31",
+      "slot": "P3.30",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "found in this round and not done in it",
+      "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
       "tier": 3
     },
     {
@@ -17468,11 +17477,11 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "P3.31",
+      "slot": "P3.30",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "found in this round and not done in it",
+      "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
       "tier": 3
     },
     {
@@ -17486,11 +17495,11 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "P3.31",
+      "slot": "P3.30",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "found in this round and not done in it",
+      "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
       "tier": 3
     },
     {
@@ -17504,11 +17513,11 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "P3.31",
+      "slot": "P3.30",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "found in this round and not done in it",
+      "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
       "tier": 3
     },
     {
@@ -17522,11 +17531,11 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "P3.31",
+      "slot": "P3.30",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "found in this round and not done in it",
+      "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
       "tier": 3
     },
     {
@@ -17540,11 +17549,11 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "P3.31",
+      "slot": "P3.30",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "found in this round and not done in it",
+      "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
       "tier": 3
     },
     {
@@ -17635,6 +17644,315 @@
       "closed_by": null,
       "note": "",
       "slot_source": "found in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-910",
+      "title": "Twenty-one facility runs do not say what their engine persists",
+      "why": "What a run persists is declared for the eight whose engine function was read; the other twenty-one read not declared. Read each engine and declare it, or the field stays an honest blank.",
+      "source": "W674 (declaring every resource's need, the checks that say what they examined, and the count of availability findings)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/resource_fabric.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
+      "tier": 3
+    },
+    {
+      "id": "FU-911",
+      "title": "Five registrations declare an endpoint the fabric does not run when it composes them",
+      "why": "For example one declares a write route and its handler only reads status; another declares a read and its handler encodes and saves. The declared endpoint and the handler's act should be the same thing, or the registration should say which is run.",
+      "source": "W674 (declaring every resource's need, the checks that say what they examined, and the count of availability findings)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/resource_fabric.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
+      "tier": 3
+    },
+    {
+      "id": "FU-912",
+      "title": "HYPOTHESIS: two more handlers advance the energy simulator by reading the organism context, and are not listed as having that side effect",
+      "why": "The list of reads with a side effect names two. Two further branches call the same context read. Read, not driven.",
+      "source": "W674 (declaring every resource's need, the checks that say what they examined, and the count of availability findings)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/resource_fabric.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
+      "tier": 3
+    },
+    {
+      "id": "FU-913",
+      "title": "HYPOTHESIS: the composed Genesis journey is called without a caller and receives the route's dependency marker instead",
+      "why": "The handler calls the journey function directly; that function's caller parameter defaults to the framework's dependency marker, so in-process the caller is that object and not nobody. Drive it and pass the caller explicitly.",
+      "source": "W674 (declaring every resource's need, the checks that say what they examined, and the count of availability findings)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/resource_fabric.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
+      "tier": 3
+    },
+    {
+      "id": "FU-914",
+      "title": "A catalogue feature whose endpoint answers not implemented still reads available",
+      "why": "No declared need can say this: the check would have to call the feature. A test that walks the catalogue's endpoints and reads their answers would.",
+      "source": "W674 (declaring every resource's need, the checks that say what they examined, and the count of availability findings)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/catalog/bto.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
+      "tier": 3
+    },
+    {
+      "id": "FU-915",
+      "title": "The smallest set of resources is proven only up to three",
+      "why": "The selection says so itself on its greedy path, while the plan clause says the smallest. Prove it for this registry's size or reword the clause.",
+      "source": "W674 (declaring every resource's need, the checks that say what they examined, and the count of availability findings)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/instrument_cell.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.31",
+      "status": "done",
+      "closed_by": "W674",
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W674, the round that filed it: above three resources the selection now searches every subset of the coverable requirements (up to sixteen) and says the answer is exact; above that bound it stays greedy and says it is not proven. Held by test_w673b_the_smallest_set_is_found_and_not_guessed against brute force and against a case where greedy is wrong; seven blinds red."
+    },
+    {
+      "id": "FU-916",
+      "title": "A refusal returned by a completion route carries the route's evidence level",
+      "why": "Four routes return a constitutional refusal as a normal answer, which then reads as behaviour: one reply. A refusal is not evidence about a model.",
+      "source": "W674 (declaring every resource's need, the checks that say what they examined, and the count of availability findings)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/native_ai.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.32",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-917",
+      "title": "The evaluate and baseline records type their evidence level instead of reading the table",
+      "why": "Three literals are held equal to the table by a guard and are not read from it.",
+      "source": "W674 (declaring every resource's need, the checks that say what they examined, and the count of availability findings)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/native_ai.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.32",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-918",
+      "title": "HYPOTHESIS: the evidence block on the Native AI page is not drawn when the lifecycle read fails",
+      "why": "It sits inside the model-lifecycle section. Inferred from where it was placed; view the page with that read failing.",
+      "source": "W674 (declaring every resource's need, the checks that say what they examined, and the count of availability findings)",
+      "found": "2026-10-12",
+      "files": [
+        "apps/workstation-superapp/src/pages/developers/NativeAI.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.32",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-919",
+      "title": "Routes outside the native-AI router that describe a model state no evidence level",
+      "why": "At least the infrastructure metrics route, the integration surface's provider list and every field saying what served an answer. The plan clause says every surface; count them per router first. Whether the clause means every router is with the Owner.",
+      "source": "W674 (declaring every resource's need, the checks that say what they examined, and the count of availability findings)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/csuite.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.32",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-920",
+      "title": "The browser smoke check passes when it swept no routes",
+      "why": "One line would refuse it, and nothing in the suite can drive a browser script, so the change would ship with a guard that only reads source. Drive it in its own CI job.",
+      "source": "W674 (declaring every resource's need, the checks that say what they examined, and the count of availability findings)",
+      "found": "2026-10-12",
+      "files": [
+        "scripts/browser_smoke.mjs"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
+      "tier": 3
+    },
+    {
+      "id": "FU-921",
+      "title": "The diff self-check exits 0 when it had nothing to compare",
+      "why": "It says no check ran. Its exit code is not a verdict, and a guard asserts 0 on the empty case; changing it means retargeting that guard.",
+      "source": "W674 (declaring every resource's need, the checks that say what they examined, and the count of availability findings)",
+      "found": "2026-10-12",
+      "files": [
+        "scripts/selfcheck_diff.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
+      "tier": 3
+    },
+    {
+      "id": "FU-922",
+      "title": "The method instruments count an endpoint as checked when the application could not be built",
+      "why": "The count is incremented before the skip, so the printed total includes endpoints nothing verified.",
+      "source": "W674 (declaring every resource's need, the checks that say what they examined, and the count of availability findings)",
+      "found": "2026-10-12",
+      "files": [
+        "scripts/method_instruments.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
+      "tier": 3
+    },
+    {
+      "id": "FU-923",
+      "title": "Three report scripts print a zero that reads as clean when their input is missing",
+      "why": "The entity scan, the recovery audit and the reach audit always exit 0 and print counts; with a missing folder the count is nought and nothing says nothing was read.",
+      "source": "W674 (declaring every resource's need, the checks that say what they examined, and the count of availability findings)",
+      "found": "2026-10-12",
+      "files": [
+        "scripts/entity_coverage_scan.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
+      "tier": 3
+    },
+    {
+      "id": "FU-924",
+      "title": "Forty-six one-round browser probes sit beside the instruments and are not marked as history",
+      "why": "Not read one by one. Decide whether each is still an instrument; archive the rest or state on each what it was for.",
+      "source": "W674 (declaring every resource's need, the checks that say what they examined, and the count of availability findings)",
+      "found": "2026-10-12",
+      "files": [
+        "scripts/_button_sweep.mjs"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
+      "tier": 3
+    },
+    {
+      "id": "FU-925",
+      "title": "The audit does not record a defect class for each finding",
+      "why": "The count of availability findings in ledger v16 was made by one reader, by hand. If the refuter stated a class per finding in the run record, the renderer could count it at each edition.",
+      "source": "W674 (declaring every resource's need, the checks that say what they examined, and the count of availability findings)",
+      "found": "2026-10-12",
+      "files": [
+        "scripts/render_fidelity_ledger.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
+      "tier": 3
+    },
+    {
+      "id": "FU-926",
+      "title": "Three statements of which tier serves, or whether a package is installed, are typed where a probe exists",
+      "why": "One probe, three readers. Found by the same count.",
+      "source": "W674 (declaring every resource's need, the checks that say what they examined, and the count of availability findings)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/native_ai.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
       "tier": 3
     }
   ],

@@ -40,8 +40,39 @@ MAX_STAGES_BASIS = ("declared policy: a ceiling against a runaway composition. I
 #  each resource is attempted once per run; nothing in the fabric retries
 ATTEMPTS_PER_RESOURCE = 1
 _EXACT_UP_TO = 3            # the size up to which the smallest cover is found by exhaustive search
-#  P3.31 clause 1 (round 10) - the kinds of need a registration may declare (resource_fabric._need_*)
-_NEED_KINDS = ("module", "completion", "config", "package")
+_EXACT_REQUIREMENTS = 16    # W674 - above three: an exact search over subsets of the requirements, up to this many
+
+
+def _smallest_cover(coverable: List[str], covers: Dict[str, Dict[str, str]], weight) -> Optional[tuple]:
+    """W674 (P3.31 clause 4) - THE SMALLEST SET, FOUND AND NOT GUESSED. For each subset of the coverable
+    requirements, the best set of resources that covers at least that subset: fewest resources first, then the
+    fewest declared capabilities, then by id - the same order the exhaustive step uses. Every subset is
+    reached from a smaller one by adding one resource, so the full set's entry is a smallest cover. None when
+    there are more requirements than this search is bounded to."""
+    if len(coverable) > _EXACT_REQUIREMENTS:
+        return None
+    bit = {q: 1 << k for k, q in enumerate(coverable)}
+    masks = {i: sum(bit[q] for q in h if q in bit) for i, h in covers.items()}
+    full = (1 << len(coverable)) - 1
+    best: Dict[int, tuple] = {0: ()}
+
+    def _rank(combo):
+        return (len(combo), sum(weight(i) for i in combo), combo)
+    for mask in range(full + 1):                       # ascending: a superset mask is always the larger number
+        have = best.get(mask)
+        if have is None:
+            continue
+        for i, m in masks.items():
+            if not m & ~mask:
+                continue                               # this resource adds no requirement the set lacks
+            nxt = mask | m
+            cand = tuple(sorted(have + (i,)))
+            if nxt not in best or _rank(cand) < _rank(best[nxt]):
+                best[nxt] = cand
+    return best.get(full)
+#  P3.31 clause 1 - the kinds of need a registration may declare (resource_fabric._need_*). `model` is a
+#  served model above the floor (the completion kind counts the floor as met); `none` is a stated "nothing".
+_NEED_KINDS = ("module", "completion", "config", "package", "model", "none")
 
 
 # ── the registry is validated where it is read ────────────────────────────────────────────────────
@@ -65,12 +96,16 @@ def registry_defects(registry: List[Dict[str, Any]]) -> List[str]:
             out.append(f"{rid}: declares no endpoint")
         if not r.get("methods"):
             out.append(f"{rid}: declares no method for its endpoint")
-        #  P3.31 clause 1 (round 10) - a declaration that is PRESENT must be one the check can read. An absent
-        #  one is not a defect yet: 33 of 41 registrations declare nothing, and they read "not declared".
+        #  P3.31 clauses 1 and 2 - EVERY REGISTRATION DECLARES WHAT IT NEEDS. An ABSENT declaration is a
+        #  defect, so the registry is refused at import with the resource named. An empty list and a `none`
+        #  need are statements; a missing `needs` is not one. A present declaration must be one the check reads.
         needs = r.get("needs")
-        if needs is not None and not isinstance(needs, list):
+        if needs is None:
+            out.append(f"{rid}: declares no needs (an empty declaration or a 'none' need is a statement; "
+                       f"a missing one is not)")
+        elif not isinstance(needs, list):
             out.append(f"{rid}: declares needs that are not a list")
-        elif needs is not None:
+        else:
             for n in needs:
                 kind = n.get("kind") if isinstance(n, dict) else None
                 if kind not in _NEED_KINDS:
@@ -82,6 +117,10 @@ def registry_defects(registry: List[Dict[str, Any]]) -> List[str]:
                 elif kind == "config" and n.get("param") not in (r.get("reconfigurable_params") or {}):
                     out.append(f"{rid}: declares that it requires the parameter {n.get('param')!r}, "
                                f"which its own parameter table does not hold")
+                elif kind == "none" and not str(n.get("read") or "").strip():
+                    out.append(f"{rid}: declares that it needs nothing without saying what was read to conclude it")
+                elif kind == "none" and len(needs) != 1:
+                    out.append(f"{rid}: declares that it needs nothing beside {len(needs) - 1} other need(s)")
     return out
 
 
@@ -164,6 +203,7 @@ def needs_check(rid: str, config: Optional[Dict[str, Any]] = None) -> Dict[str, 
     declared = base.get("needs")
     if declared is None:
         return {"declared": False, "state": "not_declared", "needs": [], "per_run": [],
+                "narrowed": [], "declared_none": False,
                 "basis": ("this registration declares no needs, so nothing was checked beyond whether the "
                           "fabric has a handler for it. NOT DECLARED is not the same as needing nothing")}
     placeholders = base.get("reconfigurable_params") or {}
@@ -202,6 +242,26 @@ def needs_check(rid: str, config: Optional[Dict[str, Any]] = None) -> Dict[str, 
                 row.update(met=present, basis="installed" if present else "not installed")
             except Exception as exc:                      # noqa: BLE001
                 row.update(met=None, basis=f"could not be looked for ({type(exc).__name__})")
+        elif kind == "model":
+            #  A MODEL, NOT THE FLOOR. Read from the same selection order the completion need reads; any tier
+            #  in it other than the deterministic floor is a model, and an external one is named as external.
+            row["needs"] = "a served model above the deterministic floor"
+            try:
+                order = _completion_order()
+                models = [x for x in order if x != "native"]
+                row.update(met=bool(models), served_first=(order[0] if order else None),
+                           basis=((f"{models[0]} is in the selection order read at this call"
+                                   + (" (an external provider)" if models[0] in ("anthropic", "openai") else ""))
+                                  if models else
+                                  ("no model is served: only the deterministic floor is in the selection order "
+                                   "read at this call") if order else
+                                  "nothing is in the selection order read at this call"))
+            except Exception as exc:                      # noqa: BLE001
+                row.update(met=None, served_first=None,
+                           basis=f"the selection order could not be read ({type(exc).__name__})")
+        elif kind == "none":
+            row["needs"] = "nothing"
+            row.update(met=True, basis=f"declared, from what was read: {n.get('read')}")
         elif kind == "config":
             param = n.get("param")
             row["needs"] = f"the parameter '{param}' set to a value"
@@ -228,12 +288,20 @@ def needs_check(rid: str, config: Optional[Dict[str, Any]] = None) -> Dict[str, 
     elif unread:
         state = "not_checked"
         basis = "; ".join(f"{r['needs']}: {r['basis']}" for r in unread)
+    elif rows and all(r["kind"] == "none" for r in rows):
+        state = "met"
+        basis = f"declares that it needs nothing - {rows[0]['basis']}"
     else:
         state = "met"
         basis = (f"{len(must) - len(per_run)} declared need(s) checked at this call and met"
                  + (f"; {', '.join(per_run)} must be set in a configuration and was not checked here" if per_run else "")
                  + (f"; optional and absent: {', '.join(r['needs'] for r in absent)}" if absent else ""))
-    return {"declared": True, "state": state, "needs": rows, "per_run": per_run, "basis": basis}
+    #  WHAT AN ABSENT OPTIONAL NEED COSTS, in the registration's own words. The resource is still available;
+    #  what it cannot do HERE goes with it to the proposal and the page instead of staying in the registry.
+    narrowed = [{"needs": r["needs"], "kind": r["kind"], "why": r["why"], "basis": r["basis"]} for r in absent]
+    return {"declared": True, "state": state, "needs": rows, "per_run": per_run, "basis": basis,
+            "narrowed": narrowed,
+            "declared_none": bool(rows) and all(r["kind"] == "none" for r in rows)}
 
 
 _CHECKED_WORD = {"met": "available", "unmet": "unavailable", "not_declared": "not_checked",
@@ -284,6 +352,7 @@ def availability(rid: str, app=None) -> Dict[str, Any]:
     return {"id": rid, "state": state, "reason": reason,
             "needs_declared": need["declared"], "needs_state": need["state"], "needs": need["needs"],
             "needs_per_run": need["per_run"], "needs_basis": need["basis"],
+            "needs_narrowed": need["narrowed"], "needs_declared_none": need["declared_none"],
             "checked": checked, "checked_basis": checked_basis,
             "endpoint_state": endpoint_state, "endpoint_basis": endpoint_basis,
             "not_checked": ("whether its engine succeeds on a real input - that is known only by running it, "
@@ -321,6 +390,10 @@ def contract(rid: str) -> Dict[str, Any]:
         persists, persists_basis = "side_effect", side
     elif kind in ("status_read", "query", "blueprint", "narrative"):
         persists, persists_basis = "nothing", _WHEN_RUN[kind]
+    elif rid in _fab._FACILITY_PERSISTS:
+        #  P3.31 clause 2 - declared where the engine was READ. A facility run that is not in the fabric's
+        #  table still reads "not_declared" below: nobody has read what its engine writes
+        persists, persists_basis = _fab._FACILITY_PERSISTS[rid]
     else:
         persists = "not_declared"
         persists_basis = ("this resource runs an engine, and the registry does not record what the engine "
@@ -435,6 +508,13 @@ def select(requirements: List[str], app=None, usage_area: Optional[str] = None) 
                           f"was taken")
                 break
         if found is None:
+            exact = _smallest_cover(coverable, covers, lambda i: len(_fab._BY_ID[i]["capabilities"]))
+            if exact is not None:
+                found = exact
+                method = (f"exact: every subset of the {len(coverable)} coverable requirement(s) was searched; no "
+                          f"set of fewer than {len(exact)} available resource(s) covers them, and among sets of "
+                          f"{len(exact)} the one declaring the fewest capabilities was taken")
+        if found is None:
             left, greedy = set(coverable), []
             while left:
                 best = max(pool, key=lambda i: (len(left & set(covers[i])), -len(_fab._BY_ID[i]["capabilities"]), i))
@@ -444,8 +524,10 @@ def select(requirements: List[str], app=None, usage_area: Optional[str] = None) 
                 greedy.append(best)
                 left -= gain
             found = tuple(greedy)
-            method = (f"greedy: no set of {_EXACT_UP_TO} or fewer covers the requirements, so resources were "
-                      f"added by how many uncovered requirements each takes. NOT proven to be the smallest set")
+            method = (f"greedy: there are {len(coverable)} coverable requirements, more than the "
+                      f"{_EXACT_REQUIREMENTS} an exact search is bounded to, and no set of {_EXACT_UP_TO} or fewer "
+                      f"covers them, so resources were added by how many uncovered requirements each takes. "
+                      f"NOT proven to be the smallest set")
         chosen = list(found)
     return {"requirements": reqs, "selected": [
                 {"id": i, "name": _fab._BY_ID[i]["name"], "covers": sorted(covers[i]),
@@ -599,13 +681,20 @@ async def cell_availability(request: Request):
         needs_counts[x["needs_state"]] = needs_counts.get(x["needs_state"], 0) + 1
         checked_counts[x["checked"]] = checked_counts.get(x["checked"], 0) + 1
     _declared = sum(1 for x in rows if x["needs_declared"])
+    _narrowed = sum(1 for x in rows if x["needs_narrowed"])
     return {"resources": rows, "counts": counts, "total": len(rows),
             #  P3.31 clause 1 (round 10) - beside `counts`, which keeps its meaning (handler branches)
             "needs_counts": needs_counts, "checked_counts": checked_counts, "needs_declared": _declared,
             "needs_basis": (f"{_declared} of {len(rows)} registration(s) declare what they need, and each "
-                            f"declared need was checked at this call. The other {len(rows) - _declared} "
-                            f"declare nothing: for those only the handler was looked for, and they are "
-                            f"counted 'not_checked', never 'available'"),
+                            f"declared need was checked at this call. "
+                            + ((f"The other {len(rows) - _declared} declare nothing: for those only the handler "
+                                f"was looked for, and they are counted 'not_checked', never 'available'")
+                               if _declared != len(rows) else
+                               ("None is without a declaration: a registration that declares nothing is refused "
+                                "when the registry is read at import"))
+                            + ((f". {_narrowed} start here with less than they declare: an optional need is "
+                                f"absent, and each says what that costs") if _narrowed else "")),
+            "needs_narrowed_count": _narrowed,
             "declaration_defects": [{"id": x["id"], "endpoint_state": x["endpoint_state"],
                                      "basis": x["endpoint_basis"]}
                                     for x in rows if x["endpoint_state"] in ("not_served", "method_mismatch")],

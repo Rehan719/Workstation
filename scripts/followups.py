@@ -358,7 +358,12 @@ def main() -> int:
             problems = fu.check(reg, prompt, living)
             for p in problems:
                 print("PROBLEM", p)
-            print("ok" if not problems else f"{len(problems)} problem(s)")
+            #  FU-671 - THE PASS LINE SAYS WHAT WAS EXAMINED AND HOW MUCH. It still BEGINS "ok". It cannot be
+            #  reached having examined nothing: a plan with no item is itself a problem (plan_followups.check).
+            #  An empty register is a true state, so it passes - and the line says "0 register row(s)".
+            _n_rows, _n_items = len(fu.raw_items(reg)), len(fu.plan_items(prompt))
+            print((f"ok - examined {_n_rows} register row(s) and {_n_items} plan item(s)"
+                   if not problems else f"{len(problems)} problem(s)"))
             return 1 if problems else 0
         if args.cmd == "list":
             for r in fu.raw_items(reg):

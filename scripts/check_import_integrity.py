@@ -42,6 +42,10 @@ FIRST_PARTY = ("agentic_core", "products", "src", "scripts", "config", "integrat
 # Directories that are their own import root (run with themselves on sys.path).
 SELF_ROOTED = [ROOT / "products" / "mjm-intelligence-engine"]
 
+# FU-671 - what the last scan looked at, so the pass line can say it. Reset by dangling_imports(), whose
+# return value is unchanged (its readers take a dict of findings).
+EXAMINED = {"parsed": 0, "skipped": []}
+
 
 def _resolves(mod: str, base: pathlib.Path) -> bool:
     rel = mod.replace(".", "/")
@@ -59,6 +63,7 @@ def resolves_anywhere(mod: str, origin: pathlib.Path) -> bool:
 
 def dangling_imports() -> dict[str, list[str]]:
     out: dict[str, list[str]] = {}
+    EXAMINED["parsed"], EXAMINED["skipped"] = 0, []
     for path in ROOT.rglob("*.py"):
         rel = path.relative_to(ROOT)
         if any(part in SKIP_DIRS for part in rel.parts):
@@ -66,7 +71,9 @@ def dangling_imports() -> dict[str, list[str]]:
         try:
             tree = ast.parse(path.read_text(encoding="utf-8", errors="replace"))
         except (SyntaxError, OSError):
+            EXAMINED["skipped"].append(rel.as_posix())      # said on the pass line, never silently dropped
             continue
+        EXAMINED["parsed"] += 1
         guarded = {id(stmt) for node in ast.walk(tree) if isinstance(node, ast.Try)
                    for stmt in ast.walk(node) if isinstance(stmt, (ast.Import, ast.ImportFrom))}
         bad: list[str] = []
@@ -94,6 +101,10 @@ def load_baseline() -> set[str]:
 
 def main() -> int:
     found = dangling_imports()
+    if not EXAMINED["parsed"]:
+        print(f"REFUSING: examined nothing - no Python file under {ROOT} could be parsed "
+              f"({len(EXAMINED['skipped'])} skipped). A pass from a check that looked at nothing cannot be scored.")
+        return 1
     baseline = load_baseline()
     new = {f: m for f, m in found.items() if f not in baseline}
 
@@ -124,7 +135,9 @@ def main() -> int:
 
     if not new:
         print(f"import integrity OK — no new dangling first-party imports "
-              f"({len(found)} baselined).")
+              f"({len(found)} baselined). Examined {EXAMINED['parsed']} Python file(s); "
+              f"{len(EXAMINED['skipped'])} could not be parsed and were not checked"
+              + (": " + ", ".join(EXAMINED["skipped"][:5]) if EXAMINED["skipped"] else "") + ".")
         return 0
 
     print(f"IMPORT INTEGRITY FAILED — {len(new)} file(s) import first-party modules that do not exist:")

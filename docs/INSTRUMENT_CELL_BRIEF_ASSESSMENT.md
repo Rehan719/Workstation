@@ -829,3 +829,68 @@ The questions this reading raised were put to the Owner with a recommendation ea
 
 Unchanged by any of this: no real currency is posted, no tax is computed, nothing is filed, no bank is
 connected, no payment is made, and nothing is called compliant.
+
+## 21. Addendum (W674): the count section 6 said had not been made
+
+Section 6 suspected that availability — a surface offering a capability that cannot run here — is a defect class
+the audits find one surface at a time, and said it had not been counted. It has now been counted, against ledger
+v16 (2026-10-11), over every finding standing at tier 1 or tier 2: 21 and 30, 51 in all.
+
+| class | tier 1 | tier 2 | all |
+|---|---|---|---|
+| A — a capability whose required resource is not available here | 4 | 5 | 9 |
+| mixed — one half A, one half another false statement | 1 | 0 | 1 |
+| B — a statement false for another reason | 16 | 14 | 30 |
+| C — a missing control | 0 | 7 | 7 |
+| D — other (a true surface that leaves out a fact not about availability) | 0 | 4 | 4 |
+
+The ten with an availability half, and whether the Instrument Cell's check reaches them:
+
+| finding | the unavailable resource | reached by the check |
+|---|---|---|
+| R3.2 (tier 1) | the local model tier, named as the provider while the floor served | no — not a registered resource |
+| R5.1 (tier 1) | a catalogue feature whose endpoint answers "not implemented" | registered; needs a kind of need the check lacks |
+| R5.17 (tier 1) | the heartbeat's levers ("self-running", said unconditionally; true when audited) | no — not a registered resource |
+| R6.2 (tier 1) | a lever's consumer, which can never fire | no — not a registered resource |
+| R4.2 (tier 1, mixed) | the POT package, stated installed and not installed | no — not a registered resource |
+| R3.7 | running agents, behind sixteen role definitions labelled "live" | no — not a registered resource |
+| R4.3 | a model above the floor (the genome's defaults shown as a run) | registered; the completion need counts the floor as met |
+| R4.4 | a consumer for a switch nothing reads | no — not a registered resource |
+| R5.2 | two pages a blueprint launches that do not exist | registered; the backend cannot read the page table |
+| R5.3 | a model above the floor (the realm, said to shape every result) | no — not a registered resource |
+
+What it shows:
+
+- Availability is a real class and a minority one: 9 of 51 (10 with the mixed finding), 4 of the 21 at tier 1.
+- The check built for clause 1 would have prevented none of the ten. Seven are on surfaces the registry does not
+  hold. Three are on registered resources and need a kind of need the check does not have — above all "a model,
+  not the floor", which the completion need cannot say: it counts the floor as meeting it.
+- So section 6's sentence, that a declared and checked availability per resource "would close the class at the
+  registry instead of per page", does not hold as written. The rule carries (read it now, where the statement is
+  made); the registry does not reach most of the places the statement is made. Clause 1 is new capability for
+  the fabric. Finishing its remaining declarations will not move the tier-1 count.
+- The larger class is the other false statement: 30 of 51. Its repeating shapes are a literal status word, a
+  caller's claim printed as the platform's, a stored copy read as the present, and a figure whose name says more
+  than its arithmetic.
+
+What it does not show:
+
+- It is a classification by reading, by one reader, of each finding's own text in the ledger. Nothing was
+  reproduced and the refuters' paragraphs were not read. Eleven of the 51 classes are uncertain; read strictly
+  the availability count is 5, read widely 14.
+- Five further findings arise only because the floor served, and are not counted: the surface knows the floor
+  served and derives a figure or a mark as if it had not.
+- Every region of v16 reached its cap, so 51 is the share among the most consequential findings listed. Tier 3,
+  where a disclosed unavailable capability sits, was not classified.
+- The count is of v16 and is not carried to another edition. Class by finding — B: R1.0, R1.1, R2.0, R2.1, R2.2,
+  R2.3, R2.4, R3.1, R4.0, R4.1, R4.10, R5.0, R6.0, R6.1, R6.3, R6.4, R1.2, R1.3, R1.6, R2.6, R2.7, R3.0, R3.5,
+  R4.6, R4.8, R4.9, R5.4, R6.6, R6.7, R6.8. C: R1.4, R2.5, R3.4, R3.6, R4.7, R6.5, R6.9. D: R1.5, R2.8, R3.3,
+  R4.5. A and mixed: the table above.
+
+**Built in the round that landed this section (W674):** a need kind that says "a served model, not the
+floor" and one that says "nothing is needed, and this was read to conclude it"; all 41 registered resources
+now declare, and one that does not is refused when the registry is built. Of the three findings on registered
+resources that reaches ONE, and only in part: the genome can now be declared to need a served model, and whether
+it is REQUIRED (so that it reads unavailable here) is the Owner's to rule. The other two need a check that calls
+the feature or reads the page table; they are filed. None of this reaches the seven that are not resources, and
+this section is the reason nobody should say it does.

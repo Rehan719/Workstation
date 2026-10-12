@@ -60,6 +60,12 @@ def verdict(progress_path: str) -> Dict[str, Any]:
         return {"verdict": NOT_KNOWN, "collected": collected, "reported": reported,
                 "basis": ("the progress file names no collected count, so completeness cannot be decided. "
                           "Collection may not have finished, which is itself not a pass")}
+    if collected == 0:
+        #  FU-671 - A RUN THAT COLLECTED NOTHING EXAMINED NOTHING. `0 >= 0` read as COMPLETE, so a selection
+        #  that matched no test came back as a finished run whose pass/fail set "covers everything".
+        return {"verdict": NOT_KNOWN, "collected": 0, "reported": reported,
+                "basis": ("examined nothing: the run collected 0 tests, so there is no pass/fail set to call "
+                          "complete. A selection that matched no test is not a pass")}
     if reported >= collected:
         return {"verdict": COMPLETE, "collected": collected, "reported": reported, "unreported": 0,
                 "basis": (f"all {collected} collected test(s) reported a terminal outcome, so the run's "

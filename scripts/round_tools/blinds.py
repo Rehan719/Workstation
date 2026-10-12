@@ -26,6 +26,10 @@ def main(argv):
     if len(argv) < 4 or argv[2] != "-k":
         sys.exit(__doc__)
     blinds = runpy.run_path(argv[1])["BLINDS"]
+    if not blinds:
+        #  FU-671 - an empty BLINDS drove nothing and ended "bad: 0", which reads as every guard having seen its blind
+        sys.exit(f"REFUSING: examined nothing - {argv[1]} defines no blind, so no guard was driven. "
+                 f"That is not a pass.")
     sel = argv[3]
     bad = 0
     for name, rel, old, new in blinds:
@@ -53,7 +57,7 @@ def main(argv):
         tail = r.stdout.strip().splitlines()[-1] if r.stdout.strip() else r.stderr[-200:]
         print(("BLIND(red)" if r.returncode != 0 else "VACUOUS   ") + f"  {name}  ->  {tail}")
         bad += r.returncode == 0
-    print("bad:", bad)
+    print("bad:", bad, "of", len(blinds), "blind(s) driven")
     return bad
 
 

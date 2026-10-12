@@ -20,7 +20,49 @@ from agentic_core.ai.native.model_resource import external_allowed
 router = APIRouter(prefix="/api/v1/native-ai", tags=["native-ai-fabric"])
 
 
+# -- P3.32 clause 3 - EACH SURFACE THAT DESCRIBES A MODEL STATES ITS OWN LEVEL, IN ITS OWN ANSWER ------------
+#  The level and what it rests on are read from ONE place - `_EVIDENCE_SURFACES`, further down - at the moment
+#  the route answers. Nothing is typed beside a route. A route marked here and missing from that table answers
+#  "NOT PLACED" instead of borrowing a level. The level is the SURFACE's (the kind of statement the route
+#  makes); it is not a judgement of the particular answer.
+_LEVEL_STATED: set = set()
+
+
+def _level_statement(path: str) -> Dict[str, Any]:
+    placed = _EVIDENCE_SURFACES.get(path)
+    if placed is None:
+        return {"evidence_level": None, "evidence_level_number": None,
+                "evidence_basis": (f"NOT PLACED: {router.prefix}{path} is in no evidence table, so no level is "
+                                   f"stated for it")}
+    level, rests_on = placed
+    return {"evidence_level": level, "evidence_level_number": (1 if level == "behaviour" else None),
+            "evidence_basis": (f"{rests_on}. "
+                               + ("Level 1 - inputs and outputs only; the highest level anything here reaches"
+                                  if level == "behaviour" else
+                                  "Configuration - what is configured, declared or reachable; below level 1 and "
+                                  "not a statement about behaviour"))}
+
+
+def _states_level(path: str):
+    """Mark a route of this router so its answer carries its own evidence level. A dict answer gains the three
+    fields (a field the handler set itself is kept); any other answer is returned as it is."""
+    import functools
+    _LEVEL_STATED.add(path)
+
+    def _mark(fn):
+        @functools.wraps(fn)
+        async def _answer(*args, **kwargs):
+            res = await fn(*args, **kwargs)
+            if isinstance(res, dict):
+                return {**_level_statement(path), **res}
+            return res
+        _answer._states_level = path
+        return _answer
+    return _mark
+
+
 @router.get("/status")
+@_states_level("/status")
 async def native_status():
     resources = registry.available()
     owned = [r for r in resources if not r["is_external"] and r["available"]]
@@ -99,11 +141,13 @@ async def native_homeostasis():
 
 
 @router.get("/resources")
+@_states_level("/resources")
 async def native_resources():
     return {"resources": registry.available(), "selection_order": registry.select()}
 
 
 @router.get("/inventory")
+@_states_level("/inventory")
 async def native_inventory():
     """FU-618 — WHAT RESOURCES EXIST AND WHAT STATE EACH IS IN, in one read-only answer.
 
@@ -160,6 +204,7 @@ async def native_inventory():
 
 
 @router.get("/tiers")
+@_states_level("/tiers")
 async def native_tiers():
     """The five declared tiers, each with whether it is RUNNABLE HERE and the MEASURED reason (P3.20).
 
@@ -174,6 +219,7 @@ async def native_tiers():
 
 
 @router.get("/route")
+@_states_level("/route")
 async def native_route(domain: str = "", risk: str = "normal"):
     """Which tier would serve this, and WHY — including every tier rejected on the way down.
 
@@ -187,6 +233,7 @@ async def native_route(domain: str = "", risk: str = "normal"):
 
 
 @router.get("/models")
+@_states_level("/models")
 async def native_models():
     """The OWNED model resources, with the local models actually discovered on the Ollama server — each
     selectable by name (model='ollama:<name>'). The native deterministic floor is always available."""
@@ -260,6 +307,7 @@ def _serving_basis(effective, promoted, configured, estate) -> str:
 
 
 @router.get("/lifecycle")
+@_states_level("/lifecycle")
 async def model_lifecycle():
     """§6 (W276) — the owned-model estate's lifecycle state: the promoted serving default, retired
     models, the active estate default orchestration draws on, and recent evaluations."""
@@ -762,7 +810,18 @@ async def list_baselines(tier: str | None = None, limit: int = 20):
     tiers = []
     for t in known:
         mine = [r for r in rows if r.get("tier") == t]
+        _tried = [r for r in mine if isinstance(r.get("reproduction"), dict)]
+        _same = [r for r in _tried if r["reproduction"].get("reproduced") is True]
         tiers.append({"tier": t, "serves_now": t in owned, "runs": len(mine),
+                      "reproduction_attempts": len(_tried), "reproduced_runs": len(_same),
+                      "reproducibility": (
+                          (f"SHOWN {len(_same)} time(s) for this tier: a re-run from the recorded versions gave "
+                           f"byte-identical replies"
+                           + (f"; {len(_tried) - len(_same)} other re-run(s) did not" if len(_tried) > len(_same) else ""))
+                          if _same else
+                          (f"NOT SHOWN for this tier: {len(_tried)} re-run(s) were made and none gave "
+                           f"byte-identical replies") if _tried else
+                          "NOT SHOWN for this tier: no baseline of it has been run again"),
                       "latest_run_id": mine[-1].get("run_id") if mine else None,
                       "basis": ((f"{len(mine)} baseline run(s) recorded; the latest is "
                                  f"{mine[-1].get('run_id')} at {mine[-1].get('at')}") if mine else
@@ -770,6 +829,7 @@ async def list_baselines(tier: str | None = None, limit: int = 20):
                                + ("" if t in owned else ". This tier is not discovered now")})
     shown = [r for r in rows if tier is None or r.get("tier") == tier]
     held = _load_heldout()
+    _rep_for = [t["tier"] for t in tiers if t["reproduced_runs"]]
     return {"runs": list(reversed(shown[-max(1, min(int(limit), 100)):])), "total": len(shown), "tiers": tiers,
             "store_incomplete": _why, "listing_is_incomplete": bool(_why),
             "listing_basis": ("the baseline store could not be read whole, so runs may be MISSING from this "
@@ -777,6 +837,16 @@ async def list_baselines(tier: str | None = None, limit: int = 20):
             "case_sets_now": {"public": _probe_set_state(),
                               "heldout": {k: held.get(k) for k in ("ok", "version", "digest", "why")}},
             "trigger": "on demand only: POST /api/v1/native-ai/baseline/run. Nothing schedules a baseline.",
+            #  P3.32 ACCEPT - WHERE REPRODUCIBILITY HAS BEEN SHOWN, read from the stored re-runs at this call
+            "reproducibility_shown_for": _rep_for,
+            "reproducibility_basis": (
+                ((f"reproducibility has been shown for {', '.join(_rep_for)} and for no other tier"
+                  + (" - that is the deterministic floor only; no model's baseline has been reproduced here"
+                     if _rep_for == ["native"] else ""))
+                 if _rep_for else
+                 "reproducibility has been shown for no tier: no stored re-run gave byte-identical replies")
+                + ". A baseline record supports a re-run; only a stored re-run shows one"
+                + ("; the store could not be read whole, so re-runs may be missing from this count" if _why else "")),
             "evidence_level": "behaviour", "basis": _BASELINE_BASIS}
 
 
@@ -885,6 +955,14 @@ _NOT_A_MODEL_STATEMENT = {
     "/decide": "maximin arithmetic over caller-supplied utilities",
     "/evidence-levels": "this inventory",
 }
+#  P3.32 clause 3 - these five answer with a RECORD (just made, or stored) that carries its own level
+_LEVEL_IN_RECORD = frozenset({"/lifecycle/evaluate", "/baseline/run", "/baseline", "/baseline/{run_id}",
+                              "/baseline/{run_id}/reproduce"})
+
+
+def _surfaces_not_stating() -> List[str]:
+    """Model-describing routes whose OWN ANSWER does not carry its evidence level. Empty means none."""
+    return sorted(p for p in _EVIDENCE_SURFACES if p not in _LEVEL_STATED and p not in _LEVEL_IN_RECORD)
 
 
 def _unclassified_routes(paths=None) -> List[str]:
@@ -899,18 +977,28 @@ async def evidence_levels():
     """Which level of evidence each surface of this router rests on. Read-only."""
     return {"levels": {"configuration": "what is configured, declared or reachable; not a statement about behaviour",
                        "behaviour": "what came back for an input (level 1). The highest level anything here reaches"},
-            "surfaces": [{"path": router.prefix + p, "level": lv, "rests_on": why}
+            "surfaces": [{"path": router.prefix + p, "level": lv, "rests_on": why,
+                          "stated_in_its_own_answer": p in _LEVEL_STATED or p in _LEVEL_IN_RECORD}
                          for p, (lv, why) in sorted(_EVIDENCE_SURFACES.items())],
+            "not_stating_their_level": [router.prefix + p for p in _surfaces_not_stating()],
             "not_model_statements": [{"path": router.prefix + p, "why": why}
                                      for p, why in sorted(_NOT_A_MODEL_STATEMENT.items())],
             "unclassified": _unclassified_routes(),
             "highest_level": "behaviour",
+            #  THE WORDING CHECK, AND WHAT ITS TWO RESULTS MEAN. A phrase list has no third result.
+            "claims_check": {"result_words": ["flagged", "nothing matched"],
+                             "where": ("a phrase scan the test suite runs over the API, the AI modules and the "
+                                       "web app's source. This route does not run it"),
+                             "basis": ("a phrase list can FLAG a sentence shaped like a claim about a model's "
+                                       "insides. When it flags none the result is 'nothing matched' in the "
+                                       "files examined, which does not establish that no surface over-claims")},
             "boundary": ("Level 1 only. The study of a model's insides is not built and not scheduled "
                          "(Owner, 2026-10-10); no route here does it."),
             "scope": "the routes of /api/v1/native-ai. Other routers that mention a model are not inventoried here."}
 
 
 @router.post("/lifecycle/promote")
+@_states_level("/lifecycle/promote")
 async def promote_model(req: LifecycleModelRequest):
     """§6 (W276) — promote a DISCOVERED local model to the persisted serving default (the 'ollama'
     resource + gateway serve with it; env OLLAMA_MODEL becomes the fallback). Honest: promoting an
@@ -929,6 +1017,7 @@ async def promote_model(req: LifecycleModelRequest):
 
 
 @router.post("/lifecycle/retire")
+@_states_level("/lifecycle/retire")
 async def retire_model(req: LifecycleModelRequest):
     """§6 (W276) — retire a local model from the ACTIVE estate: default orchestration (ensemble,
     'ollama' default routing) stops drawing on it; explicit ollama:<name> routing remains the
@@ -945,6 +1034,7 @@ async def retire_model(req: LifecycleModelRequest):
 
 
 @router.post("/lifecycle/reinstate")
+@_states_level("/lifecycle/reinstate")
 async def reinstate_model(req: LifecycleModelRequest):
     """§6 (W276) — return a retired model to the active estate."""
     from agentic_core.ai.native.model_resource import lifecycle_state, save_lifecycle
@@ -1010,6 +1100,7 @@ _CAPABILITIES = [
 
 
 @router.get("/capabilities")
+@_states_level("/capabilities")
 async def native_capabilities():
     """Catalogue of Workstation's OWN AI capabilities — each backed by a REAL, integrated agentic_core
     module (no external dependency). The fabric's breadth, discoverable."""
@@ -1020,6 +1111,7 @@ async def native_capabilities():
 
 
 @router.get("/selfcheck")
+@_states_level("/selfcheck")
 async def native_selfcheck():
     """Fabric integrity check: actually IMPORT each integrated capability's source module and report
     which are live. Guards the whole integration arc — if any owned capability's backing module breaks,
@@ -1054,6 +1146,7 @@ class EnsembleRequest(BaseModel):
 
 
 @router.post("/ensemble")
+@_states_level("/ensemble")
 async def native_ensemble(req: EnsembleRequest):
     """§6 — run a prompt across MULTIPLE owned models in parallel, then synthesise a consensus. Owned
     orchestration as a composable resource; every member reports which owned resource served it."""
@@ -1085,6 +1178,7 @@ async def native_ensemble(req: EnsembleRequest):
 
 
 @router.post("/complete")
+@_states_level("/complete")
 async def native_complete(req: CompleteRequest):
     # W619 (FU-496) — the console reaches the orchestrator directly, so it gets the gateway's gates here
     from agentic_core.ai.gateway import console_pre_gate, console_post_gate
@@ -1113,8 +1207,18 @@ class SwarmRequest(BaseModel):
 
 
 @router.post("/swarm")
+@_states_level("/swarm")
 async def native_swarm(req: SwarmRequest):
     stages: List[Dict[str, str]] = [{"role": s.role, "instruction": s.instruction} for s in req.stages]
+    #  W674 (P3.31 clause 6) - THE STAGE CEILING APPLIES HERE TOO. It was enforced where a composition or a
+    #  saved cascade runs and not on this console, which runs whatever list it is sent. Refused before the
+    #  gate and before any model is asked; nothing is truncated.
+    from agentic_core.api.instrument_cell import MAX_STAGES as _max_stages, MAX_STAGES_BASIS as _max_basis
+    if len(stages) > _max_stages:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=422, detail=(
+            f"this run names {len(stages)} stages and a run attempts at most {_max_stages} ({_max_basis}). "
+            f"Nothing was run."))
     if not stages:
         stages = [
             {"role": "analyst", "instruction": "Analyse the objective and key factors."},
@@ -1464,6 +1568,7 @@ async def native_decide(req: DecideRequest):
 
 
 @router.post("/tree")
+@_states_level("/tree")
 async def native_tree(req: TreeRequest):
     """Autonomous workflow-TREE orchestration: the native swarm decomposes the goal into a dependency
     tree and runs it in-house-first with PARALLEL branches — the living-organism cascade (immune-throttled

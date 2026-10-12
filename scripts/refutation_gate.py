@@ -193,6 +193,12 @@ def after(result: Any, findings_by_lens: Dict[str, int] | None = None) -> Dict[s
                           f"completeness cannot be decided. W490's run returned a normal-looking finding "
                           f"list while 27 of 45 agents were dead; without either source that is exactly "
                           f"as invisible as it was then")}
+    if not launched:
+        #  FU-671 - NO AGENT LAUNCHED IS NOTHING EXAMINED. "0 done of 0 launched" satisfied every test below
+        #  and read "all 0 agent(s) finished ... the finding list covers every agent that was launched".
+        return {"complete": None, "launched": launched, "done": done,
+                "basis": ("examined nothing: the result names 0 agents launched and holds no per-agent record, "
+                          "so there is no refutation to call complete. This is not a pass")}
     problems = []
     if errored:
         problems.append(f"{errored} agent(s) ERRORED")

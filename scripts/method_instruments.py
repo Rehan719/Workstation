@@ -100,6 +100,11 @@ def main() -> int:
 
     lessons, mechs = len(d.get("lessons", [])), len(d.get("mechanisms", []))
     print(f"{checked} named instrument(s) checked across {lessons} lesson(s) and {mechs} mechanism(s)")
+    if not checked:
+        #  FU-671 - with nothing named, "every named path, guard and function resolves" was true of nothing
+        print("REFUSING: examined nothing - docs/DELIVERY_METHOD.json names no instrument in any enforced_by "
+              "or entry_points, so nothing was resolved. That is not a pass.")
+        return 1
     if bad:
         print("UNRESOLVED — each of these reads as enforced and may catch nothing:")
         for rid, kind, tok in bad:
