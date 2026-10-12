@@ -757,7 +757,14 @@ async def cascade_orchestration(req: CascadeRequest,
                  if f.get("outcome") in ("read", "assessed", "specified")]
         _failed = [f for f in fabric_requisitions
                    if f.get("outcome") in ("raised", "no_calls_ran") or f.get("error")]
+        _declined = [f for f in fabric_requisitions if f.get("outcome") in ("refused", "withheld")]
         _lines: list = []
+        if _declined:
+            #  a form that refused, or whose answer was withheld, gave NOTHING to assemble - and the plan must
+            #  not write what the form declined to
+            _lines.append("Forms that REFUSED or WITHHELD their answer - there is nothing from them to assemble, "
+                          "and you must not write what they declined to: "
+                          + "; ".join(f"{f.get('resource')} ({f.get('outcome')})" for f in _declined))
         if _ran:
             _lines.append("Facilities that RAN for this mission — real outputs, assemble your plan FROM "
                           "them and cite them:")
@@ -1302,6 +1309,8 @@ async def cascade_orchestration(req: CascadeRequest,
             "blueprints_drafted": sum(1 for f in fabric_requisitions if f.get("outcome") == "specified"),
             "failed": sum(1 for f in fabric_requisitions
                           if f.get("outcome") in ("raised", "no_calls_ran")),
+            "refused": sum(1 for f in fabric_requisitions if f.get("outcome") == "refused"),
+            "withheld": sum(1 for f in fabric_requisitions if f.get("outcome") == "withheld"),
             "outcome_not_recorded": sum(1 for f in fabric_requisitions if not f.get("outcome")),
             "basis": ("counted by what each resource DID on this run, over every resource this cascade "
                       "selected and invoked — an attempt that raised is neither a run nor a read. Every "

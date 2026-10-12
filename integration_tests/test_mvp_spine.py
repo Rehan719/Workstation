@@ -62119,3 +62119,47 @@ def test_registers_a_named_source_has_a_row_and_a_claimed_journey_names_its_test
     for _path in ("/api/v1/registers/sources", "/api/v1/registers/coverage"):
         _x = client.get(_path)
         assert _x.status_code == 503 and "could not be read" in _x.json()["detail"], (_path, _x.text[:200])
+
+
+def test_forms_a_composition_calls_a_domain_form_through_its_own_door(client, monkeypatch):
+    """OWNER RULINGS 2026-10-12. The 25 forms on the domain pages are registered resources the autonomous runner
+    may call - through each form's own handler, so a cascade meets every refusal a person meets. The property is
+    driven over the registry, so a form added later is covered without an edit."""
+    import asyncio
+    import pathlib as _pl
+    import re as _re
+    from agentic_core.api import resource_fabric as _fab, instrument_cell as _cell
+    run = lambda rid, cfg: asyncio.new_event_loop().run_until_complete(_fab._run_real_resource_handler(rid, cfg, "objective", "general"))
+    forms = [r for r in _fab._REGISTRY if r["type"] == "form"]
+    assert len(forms) == len(_fab._FORMS) >= 25
+    # BOTH WAYS: every form on a domain page is registered, and every registered form is on a page
+    _pages = _pl.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages" / "domains"
+    _on_pages = set()
+    for p in _pages.glob("*.tsx"):
+        _on_pages.update(_re.findall(r'endpoint="(/api/v1/[a-z_/-]+)"', p.read_text(encoding="utf-8")))
+    assert _on_pages == {f["endpoint"] for f in _fab._FORMS}, (
+        "a form on a page is not registered, or a registered form is on no page",
+        sorted(_on_pages ^ {f["endpoint"] for f in _fab._FORMS}))
+    # every form has the one handler branch, and the cell reads it
+    assert {f["id"] for f in _fab._FORMS} <= (_cell._read_handler_ids() or set())
+    # A PERSON'S MATERIAL IS NEVER WRITTEN BY A COMPOSITION: a form whose required field is material refuses without it
+    for f in _fab._FORMS:
+        need = [k for k in f["required"] if k in f["material"]]
+        if need:
+            r = run(f["id"], {})
+            assert r["refused"] is True and r["status"] == 422 and need[0] in r["detail"] and "does not write one" in r["detail"], (f["id"], r)
+    # THE SAME DOOR, THE SAME ANSWER: three fences driven through the runner and through the page
+    _g = run("form_law_generate", {"template_id": "et1_claim", "details": {}})
+    _p = client.post("/api/v1/law/generate", json={"template_id": "et1_claim", "details": {}})
+    assert _g["refused"] is True and _g["status"] == _p.status_code == 409 and _g["detail"] == _p.json()["detail"]
+    _c = run("form_care_risk_assess", {"tool": "must", "patient_data": {"bmi": 17}})
+    assert _c["refused"] is True and _c["status"] == 409 and "WITHHELD" in _c["detail"]
+    _b = run("form_edu_feedback", {"student_work": "   "})
+    assert _b["refused"] is True and _b["status"] == 422 and "nothing to mark" in _b["detail"]
+    # a refusal is never reported as a result
+    assert all(x["output"] is None for x in (_g, _c, _b))
+    # ...and THROUGH THE CHOKE POINT a refused form is not said to have "produced this output"
+    _stamped = asyncio.new_event_loop().run_until_complete(
+        _fab._run_real_resource("form_law_generate", {"template_id": "et1_claim", "details": {}}, "objective", "general"))
+    assert _stamped["outcome"] == "refused" and "nothing was produced" in _stamped["outcome_phrase"], _stamped
+    assert "produced this output" not in _stamped["kind_phrase"], _stamped["kind_phrase"]

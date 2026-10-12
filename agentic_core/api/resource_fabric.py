@@ -474,6 +474,614 @@ _REGISTRY: List[Dict[str, Any]] = [
                                      "contributes a prompt stage only")]),
 ]
 
+# ── THE DOMAIN FORMS (OWNER RULINGS 2026-10-12) ──────────────────────────────────────────────────────────────
+#  Each form on a domain page is a registered resource, and the autonomous runner may call it - THROUGH THE
+#  FORM'S OWN ROUTE HANDLER, with the form's own request model. There is no second path: whatever the handler
+#  refuses, withholds or gates for a person it refuses, withholds or gates for a composition.
+#  `material` names the fields that are a PERSON'S OWN (a document, a piece of work, observations): a stage may
+#  carry them only from the parameters the person gave the run. Nothing here composes one.
+_FORMS: List[Dict[str, Any]] = [
+    {
+        "id": "form_law_analyse",
+        "name": "Legal document analysis",
+        "domain": "law",
+        "module": "agentic_core.api.law",
+        "handler": "analyse_document",
+        "model": "AnalyseRequest",
+        "endpoint": "/api/v1/law/analyse",
+        "fields": {
+            "document_text": "str",
+            "document_type": "str (default 'contract')",
+            "jurisdiction": "str (default 'England & Wales')",
+            "analysis_focus": "str (default 'general')",
+            "realm": "str (default '')"
+        },
+        "required": [
+            "document_text"
+        ],
+        "material": [
+            "document_text"
+        ]
+    },
+    {
+        "id": "form_law_research",
+        "name": "Legal research outline",
+        "domain": "law",
+        "module": "agentic_core.api.law",
+        "handler": "legal_research",
+        "model": "ResearchRequest",
+        "endpoint": "/api/v1/law/research",
+        "fields": {
+            "question": "str",
+            "jurisdiction": "str (default 'England & Wales')",
+            "area_of_law": "str (default 'general')",
+            "context": "str (default '')",
+            "realm": "str (default '')"
+        },
+        "required": [
+            "question"
+        ],
+        "material": [
+            "question",
+            "context"
+        ]
+    },
+    {
+        "id": "form_law_generate",
+        "name": "Legal document draft",
+        "domain": "law",
+        "module": "agentic_core.api.law",
+        "handler": "generate_document",
+        "model": "GenerateRequest",
+        "endpoint": "/api/v1/law/generate",
+        "fields": {
+            "template_id": "str",
+            "parties": "dict (default {})",
+            "custom_instructions": "str (default '')",
+            "jurisdiction": "str (default 'England & Wales')",
+            "realm": "str (default '')"
+        },
+        "required": [
+            "template_id"
+        ],
+        "material": []
+    },
+    {
+        "id": "form_edu_curriculum",
+        "name": "Curriculum outline",
+        "domain": "education",
+        "module": "agentic_core.api.education",
+        "handler": "design_curriculum",
+        "model": "CurriculumRequest",
+        "endpoint": "/api/v1/education/curriculum",
+        "fields": {
+            "subject": "str",
+            "level": "str",
+            "duration_weeks": "int (default 12)",
+            "framework": "str (default 'bloom')",
+            "learning_objectives_count": "int (default 6)",
+            "realm": "str (default '')"
+        },
+        "required": [
+            "subject",
+            "level"
+        ],
+        "material": []
+    },
+    {
+        "id": "form_edu_lesson_plan",
+        "name": "Lesson plan",
+        "domain": "education",
+        "module": "agentic_core.api.education",
+        "handler": "generate_lesson_plan",
+        "model": "LessonPlanRequest",
+        "endpoint": "/api/v1/education/lesson-plan",
+        "fields": {
+            "subject": "str",
+            "topic": "str",
+            "level": "str",
+            "duration_minutes": "int (default 60)",
+            "class_size": "int (default 30)",
+            "special_needs": "str (default '')",
+            "prior_knowledge": "str (default '')",
+            "realm": "str (default '')"
+        },
+        "required": [
+            "subject",
+            "topic",
+            "level"
+        ],
+        "material": [
+            "special_needs",
+            "prior_knowledge"
+        ]
+    },
+    {
+        "id": "form_edu_feedback",
+        "name": "Feedback on a piece of work",
+        "domain": "education",
+        "module": "agentic_core.api.education",
+        "handler": "marking_feedback",
+        "model": "FeedbackRequest",
+        "endpoint": "/api/v1/education/feedback",
+        "fields": {
+            "student_work": "str",
+            "task": "str (default '')",
+            "level": "str (default '')",
+            "rubric": "str (default '')",
+            "subject": "str (default 'general')",
+            "tone": "str (default 'constructive')",
+            "realm": "str (default '')"
+        },
+        "required": [
+            "student_work"
+        ],
+        "material": [
+            "student_work"
+        ]
+    },
+    {
+        "id": "form_edu_assessment",
+        "name": "Assessment",
+        "domain": "education",
+        "module": "agentic_core.api.education",
+        "handler": "create_assessment",
+        "model": "AssessmentRequest",
+        "endpoint": "/api/v1/education/assessment",
+        "fields": {
+            "subject": "str",
+            "topic": "str",
+            "level": "str",
+            "assessment_type": "str (default 'quiz')",
+            "learning_objectives": "list (default [])",
+            "realm": "str (default '')"
+        },
+        "required": [
+            "subject",
+            "topic",
+            "level"
+        ],
+        "material": []
+    },
+    {
+        "id": "form_care_plan",
+        "name": "Care plan organiser",
+        "domain": "care",
+        "module": "agentic_core.api.care",
+        "handler": "generate_care_plan",
+        "model": "CarePlanRequest",
+        "endpoint": "/api/v1/care/care-plan",
+        "fields": {
+            "patient_profile": "dict (default {})",
+            "care_needs": "list (default [])",
+            "setting": "str (default 'community')",
+            "duration_weeks": "int (default 4)",
+            "care_model": "str (default 'person_centred')",
+            "realm": "str (default '')"
+        },
+        "required": [],
+        "material": [
+            "patient_profile"
+        ]
+    },
+    {
+        "id": "form_care_risk_assess",
+        "name": "Risk assessment",
+        "domain": "care",
+        "module": "agentic_core.api.care",
+        "handler": "risk_assessment",
+        "model": "RiskAssessRequest",
+        "endpoint": "/api/v1/care/risk-assess",
+        "fields": {
+            "tool": "str (default 'news2')",
+            "patient_data": "dict (default {})",
+            "clinical_context": "str (default '')",
+            "realm": "str (default '')"
+        },
+        "required": [],
+        "material": [
+            "patient_data",
+            "clinical_context"
+        ]
+    },
+    {
+        "id": "form_care_safeguarding",
+        "name": "Safeguarding process guidance",
+        "domain": "care",
+        "module": "agentic_core.api.care",
+        "handler": "safeguarding_triage",
+        "model": "SafeguardingRequest",
+        "endpoint": "/api/v1/care/safeguarding",
+        "fields": {
+            "concern": "str",
+            "setting": "str (default 'community')",
+            "person_context": "str (default '')",
+            "jurisdiction": "str (default 'England (Care Act 2014)')",
+            "realm": "str (default '')"
+        },
+        "required": [
+            "concern"
+        ],
+        "material": [
+            "concern",
+            "person_context"
+        ]
+    },
+    {
+        "id": "form_care_handover",
+        "name": "Handover",
+        "domain": "care",
+        "module": "agentic_core.api.care",
+        "handler": "generate_handover",
+        "model": "HandoverRequest",
+        "endpoint": "/api/v1/care/handover",
+        "fields": {
+            "patient_summary": "str",
+            "current_situation": "str",
+            "background": "str (default '')",
+            "assessment": "str (default '')",
+            "recommendation": "str (default '')",
+            "handover_type": "str (default 'sbar')",
+            "realm": "str (default '')"
+        },
+        "required": [
+            "patient_summary",
+            "current_situation"
+        ],
+        "material": [
+            "patient_summary",
+            "background"
+        ]
+    },
+    {
+        "id": "form_sci_synthesise",
+        "name": "Research synthesis outline",
+        "domain": "science",
+        "module": "agentic_core.api.science",
+        "handler": "synthesise_research",
+        "model": "SynthesiseRequest",
+        "endpoint": "/api/v1/science/synthesise",
+        "fields": {
+            "research_question": "str",
+            "domain": "str (default 'general')",
+            "methodology": "str (default 'systematic_review')",
+            "depth": "str (default 'standard')",
+            "realm": "str (default '')"
+        },
+        "required": [
+            "research_question"
+        ],
+        "material": []
+    },
+    {
+        "id": "form_sci_hypothesis",
+        "name": "Hypotheses",
+        "domain": "science",
+        "module": "agentic_core.api.science",
+        "handler": "generate_hypotheses",
+        "model": "HypothesisRequest",
+        "endpoint": "/api/v1/science/hypothesis",
+        "fields": {
+            "research_question": "str",
+            "domain": "str (default 'general')",
+            "background_context": "str (default '')",
+            "num_hypotheses": "int (default 3)",
+            "realm": "str (default '')"
+        },
+        "required": [
+            "research_question"
+        ],
+        "material": [
+            "background_context"
+        ]
+    },
+    {
+        "id": "form_sci_experiment",
+        "name": "Experiment design",
+        "domain": "science",
+        "module": "agentic_core.api.science",
+        "handler": "experiment_design",
+        "model": "ExperimentDesignRequest",
+        "endpoint": "/api/v1/science/experiment-design",
+        "fields": {
+            "hypothesis": "str",
+            "domain": "str (default 'general')",
+            "methodology": "str (default 'experimental')",
+            "constraints": "str (default '')",
+            "sample_size_hint": "str (default '')",
+            "realm": "str (default '')"
+        },
+        "required": [
+            "hypothesis"
+        ],
+        "material": []
+    },
+    {
+        "id": "form_sci_literature",
+        "name": "Literature review outline",
+        "domain": "science",
+        "module": "agentic_core.api.science",
+        "handler": "literature_review_outline",
+        "model": "LiteratureRequest",
+        "endpoint": "/api/v1/science/literature",
+        "fields": {
+            "research_question": "str",
+            "domain": "str (default 'general')",
+            "scope_years": "int (default 10)",
+            "include_grey_literature": "bool (default False)",
+            "realm": "str (default '')"
+        },
+        "required": [
+            "research_question"
+        ],
+        "material": []
+    },
+    {
+        "id": "form_emp_cv",
+        "name": "CV",
+        "domain": "employment",
+        "module": "agentic_core.api.employment",
+        "handler": "tailor_cv",
+        "model": "CVRequest",
+        "endpoint": "/api/v1/employment/cv",
+        "fields": {
+            "target_role": "str",
+            "experience": "str",
+            "skills": "List (default [])",
+            "seniority": "str (default 'mid')",
+            "realm": "str (default '')"
+        },
+        "required": [
+            "target_role",
+            "experience"
+        ],
+        "material": [
+            "experience"
+        ]
+    },
+    {
+        "id": "form_emp_cover_letter",
+        "name": "Cover letter",
+        "domain": "employment",
+        "module": "agentic_core.api.employment",
+        "handler": "cover_letter",
+        "model": "CoverLetterRequest",
+        "endpoint": "/api/v1/employment/cover-letter",
+        "fields": {
+            "target_role": "str",
+            "company": "str (default '')",
+            "highlights": "str (default '')",
+            "tone": "str (default 'professional')",
+            "realm": "str (default '')"
+        },
+        "required": [
+            "target_role"
+        ],
+        "material": []
+    },
+    {
+        "id": "form_emp_interview",
+        "name": "Interview preparation",
+        "domain": "employment",
+        "module": "agentic_core.api.employment",
+        "handler": "interview_prep",
+        "model": "InterviewPrepRequest",
+        "endpoint": "/api/v1/employment/interview-prep",
+        "fields": {
+            "target_role": "str",
+            "seniority": "str (default 'mid')",
+            "competencies": "List (default [])",
+            "realm": "str (default '')"
+        },
+        "required": [
+            "target_role"
+        ],
+        "material": []
+    },
+    {
+        "id": "form_emp_career_path",
+        "name": "Career path",
+        "domain": "employment",
+        "module": "agentic_core.api.employment",
+        "handler": "career_path",
+        "model": "CareerPathRequest",
+        "endpoint": "/api/v1/employment/career-path",
+        "fields": {
+            "current_role": "str",
+            "target_role": "str",
+            "experience_years": "int (default 3)",
+            "constraints": "str (default '')",
+            "realm": "str (default '')"
+        },
+        "required": [
+            "current_role",
+            "target_role"
+        ],
+        "material": []
+    },
+    {
+        "id": "form_emp_salary",
+        "name": "Salary negotiation",
+        "domain": "employment",
+        "module": "agentic_core.api.employment",
+        "handler": "salary_negotiation",
+        "model": "SalaryNegotiationRequest",
+        "endpoint": "/api/v1/employment/salary-negotiation",
+        "fields": {
+            "target_role": "str",
+            "location": "str (default '')",
+            "seniority": "str (default 'mid')",
+            "experience_years": "int (default 3)",
+            "current_salary": "str (default '')",
+            "offered_salary": "str (default '')",
+            "leverage": "str (default '')",
+            "realm": "str (default '')"
+        },
+        "required": [
+            "target_role"
+        ],
+        "material": []
+    },
+    {
+        "id": "form_emp_application",
+        "name": "Application support",
+        "domain": "employment",
+        "module": "agentic_core.api.employment",
+        "handler": "application_support",
+        "model": "ApplicationRequest",
+        "endpoint": "/api/v1/employment/application",
+        "fields": {
+            "target_role": "str",
+            "person_spec": "str (default '')",
+            "experience": "str (default '')",
+            "questions": "List (default [])",
+            "word_limit": "int (default 0)",
+            "organisation": "str (default '')",
+            "realm": "str (default '')"
+        },
+        "required": [
+            "target_role"
+        ],
+        "material": [
+            "experience"
+        ]
+    },
+    {
+        "id": "form_rel_fiqh_research",
+        "name": "Jurisprudence research",
+        "domain": "religion",
+        "module": "agentic_core.api.religion",
+        "handler": "fatwa_research",
+        "model": "FatwaResearchRequest",
+        "endpoint": "/api/v1/religion/fatwa-research",
+        "fields": {
+            "question": "str",
+            "madhab": "str (default 'hanafi')",
+            "context": "str (default '')",
+            "language": "str (default 'english')",
+            "realm": "str (default '')"
+        },
+        "required": [
+            "question"
+        ],
+        "material": [
+            "question",
+            "context"
+        ]
+    },
+    {
+        "id": "form_rel_hadith",
+        "name": "Hadith study",
+        "domain": "religion",
+        "module": "agentic_core.api.religion",
+        "handler": "hadith_study",
+        "model": "HadithStudyRequest",
+        "endpoint": "/api/v1/religion/hadith-study",
+        "fields": {
+            "hadith": "str",
+            "focus": "str (default 'authentication')",
+            "madhab": "str (default '')",
+            "realm": "str (default '')"
+        },
+        "required": [
+            "hadith"
+        ],
+        "material": []
+    },
+    {
+        "id": "form_rel_halal",
+        "name": "Halal pre-assessment",
+        "domain": "religion",
+        "module": "agentic_core.api.religion",
+        "handler": "halal_pre_assessment",
+        "model": "HalalReviewRequest",
+        "endpoint": "/api/v1/religion/halal-review",
+        "fields": {
+            "product_name": "str",
+            "product_description": "str",
+            "ingredients": "list (default [])",
+            "manufacturing_process": "str (default '')",
+            "target_markets": "list (default [])",
+            "realm": "str (default '')"
+        },
+        "required": [
+            "product_name",
+            "product_description"
+        ],
+        "material": [
+            "product_description"
+        ]
+    },
+    {
+        "id": "form_rel_tafsir",
+        "name": "Tafsir of retrieved verses",
+        "domain": "religion",
+        "module": "agentic_core.api.religion",
+        "handler": "quran_tafsir",
+        "model": "QuranTafsirRequest",
+        "endpoint": "/api/v1/religion/quran-tafsir",
+        "fields": {
+            "surah": "int",
+            "ayah_start": "int",
+            "ayah_end": "int (default 0)",
+            "tafsir_approach": "str (default 'classical')",
+            "realm": "str (default '')"
+        },
+        "required": [
+            "surah",
+            "ayah_start"
+        ],
+        "material": []
+    }
+]
+_FORM_BY_ID = {f["id"]: f for f in _FORMS}
+_REGISTRY.extend(
+    _R(f["id"], f["name"], "domain_form", "form",
+       f"The {f['domain']} form at {f['endpoint']}, called through its own handler.",
+       [f["name"].lower(), f"{f['domain']} form"], dict(f["fields"]), f["endpoint"], ["domain_working", "composition"],
+       needs=[_need_module(f["module"], f["handler"], "the form's own route handler - a composition calls the same "
+                                                      "function the form's page does"),
+              _need_completion("one completion composes the answer; on the floor it is a frame over the request, "
+                               "and the answer says so")])
+    for f in _FORMS)
+
+
+async def _run_form(form: Dict[str, Any], cfg: Dict[str, Any]) -> Dict[str, Any]:
+    """Call a form's own handler with its own request model. A refusal is returned AS a refusal."""
+    import importlib
+    from fastapi import HTTPException as _HE
+    from pydantic import ValidationError as _VE
+    mod = importlib.import_module(form["module"])
+    model, handler = getattr(mod, form["model"]), getattr(mod, form["handler"])
+    given = {k: v for k, v in (cfg or {}).items() if k in form["fields"]}
+    missing = [k for k in form["required"] if given.get(k) in (None, "")]
+    if missing:
+        return {"resource": form["id"], "ran": form["endpoint"], "refused": True, "status": 422,
+                "detail": ("NOT RUN: this form needs " + ", ".join(missing) + " from the person who started the run"
+                           + (" - " + ", ".join(m for m in missing if m in form["material"]) + " is a person's own material, "
+                              "and a composition does not write one" if any(m in form["material"] for m in missing) else "")
+                           + "."),
+                "output": None}
+    try:
+        req = model(**given)
+    except _VE as e:
+        return {"resource": form["id"], "ran": form["endpoint"], "refused": True, "status": 422,
+                "detail": "NOT RUN: the form's own request model refused these parameters: " + str(e)[:300], "output": None}
+    try:
+        out = await handler(req)
+    except _HE as e:
+        return {"resource": form["id"], "ran": form["endpoint"], "refused": True, "status": e.status_code,
+                "detail": e.detail if isinstance(e.detail, str) else json.dumps(e.detail)[:400], "output": None}
+    out = out if isinstance(out, dict) else {}
+    prov = out.get("ai_provenance") or {}
+    text = next((out[k] for k in out if isinstance(out.get(k), str) and len(out[k]) > 80
+                 and k not in ("disclaimer", "basis", "review_note")), "")
+    return {"resource": form["id"], "ran": form["endpoint"], "refused": False,
+            "withheld": list(out.get("sections_withheld") or []),
+            "review_note": out.get("review_note"), "disclaimer": out.get("disclaimer"),
+            **_intel_served(prov), "material": prov.get("material"), "output": (text or "")[:600]}
+
+
 _BY_ID = {r["id"]: r for r in _REGISTRY}
 
 
@@ -732,6 +1340,8 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
     _declared = (_BY_ID.get(rid) or {}).get("reconfigurable_params") or {}
     cfg = {k: v for k, v in (config or {}).items() if v != _declared.get(k)}
     try:
+        if rid in _FORM_BY_ID:            # a domain form: its own handler, its own request model, its own refusals
+            return await _run_form(_FORM_BY_ID[rid], cfg)
         if rid == "petri_dish":
             from agentic_core.api.products import petri_culture, PetriRequest
             r = await petri_culture(PetriRequest(specimen=str(cfg.get("specimen") or objective), domain=domain,
@@ -1358,6 +1968,8 @@ _OUTCOME_PHRASE = {
     "assessed": "assessed against records and live state already there — nothing was produced or persisted",
     "raised": "attempted, then raised before producing anything — it neither ran nor read",
     "no_calls_ran": "attempted, and every call it makes failed — it produced nothing",
+    "refused": "refused by the form's own rules — nothing was produced; the form's reason is in `detail`",
+    "withheld": "ran, and everything it composed was withheld — nothing is offered as its output",
     "specified": "composed a design blueprint from the catalogue — nothing was provisioned or activated",
     "narrated": "wrote a scenario narrative from a persona prompt — no simulator or engine ran, nothing was computed",
 }
@@ -1378,6 +1990,10 @@ def _resource_outcome(rid: str, r: Dict[str, Any]) -> str:
     produced | read | assessed | raised | no_calls_ran."""
     if r.get("error"):
         return "raised"
+    if r.get("refused"):
+        return "refused"
+    if rid in _FORM_BY_ID and not str(r.get("output") or "").strip():
+        return "withheld"
     calls, failed = r.get("calls") or 0, r.get("failed_calls") or 0
     if calls and failed >= calls:
         return "no_calls_ran"
@@ -1405,7 +2021,8 @@ async def _run_real_resource(rid: str, config: dict, objective: str, domain: str
         r["outcome_phrase"] = ("ran its engine, which encoded nothing: every value it returned is a default, "
                                "not an analysis of this objective")
     # kind_phrase describes the resource; on a failed attempt it must not describe an output
-    r["kind_phrase"] = _OUTCOME_PHRASE[outcome] if outcome in ("raised", "no_calls_ran") else _KIND_PHRASE[kind]
+    r["kind_phrase"] = (_OUTCOME_PHRASE[outcome] if outcome in ("raised", "no_calls_ran", "refused", "withheld")
+                        else _KIND_PHRASE[kind])
     r["invocation"] = "in_process"
     if rid in _READ_SIDE_EFFECTS:
         r["side_effect"] = _READ_SIDE_EFFECTS[rid]
