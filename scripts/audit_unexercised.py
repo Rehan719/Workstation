@@ -37,6 +37,12 @@ def main(argv) -> int:
         print("the run record is not a list of regions", file=sys.stderr)
         return 1
     cov = _renderer().coverage(regions, census)
+    if not cov["routes_total"] and not cov["pages_total"]:
+        #  FU-671 - an empty census gives an empty "not exercised" list, which reads as full coverage
+        print("REFUSING: examined nothing - the census names no route and no page, so an empty list here would "
+              "mean nothing was looked at, not that nothing is left. A count from a run that does not say what "
+              "it looked at cannot be scored.", file=sys.stderr)
+        return 1
     out = {
         "from_record": record_path.name,
         "from_census": census_path.name,

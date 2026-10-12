@@ -327,6 +327,12 @@ def main() -> int:
               "Run with --recover first." % marker)
         return 1
     blinds = json.loads(io.open(a.blinds, encoding="utf-8").read())
+    if not isinstance(blinds, list) or not blinds:
+        #  FU-671 - AN EMPTY BLIND LIST IS NOTHING EXAMINED. It swept nothing, printed "0 of 0 blind(s) were
+        #  SEEN by their guard" and exited 0, which reads as a sweep that found no vacuous guard.
+        print("REFUSING: examined nothing - %s holds no blind, so no guard would be driven. A sweep that "
+              "drove nothing is not a pass." % a.blinds)
+        return 1
     #  W572 — EVERY ANCHOR IS CHECKED BEFORE ANY OF THEM RUNS. A blind whose `old` does not match its
     #  file exactly once is not applied, so it reaches a verdict of BAD BLIND and says NOTHING about
     #  any guard — and that is only discovered at the end, after the whole sweep has been paid for.

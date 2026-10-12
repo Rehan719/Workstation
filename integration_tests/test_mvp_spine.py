@@ -48381,7 +48381,13 @@ def test_w640_the_resource_inventory_is_composed_and_says_what_kind_of_statement
     assert "SIMULATED" in _j["optimizer_baseline"]["basis"] and "not a measurement" in _j["optimizer_baseline"]["basis"]
     #  ONE PRODUCER PER FIGURE: the models block IS what /resources returns, compared as data
     _res = client.get("/api/v1/native-ai/resources").json()
-    assert _j["models"]["data"] == _res, "the inventory recomputes the model list instead of calling its producer"
+    #  W674 - the ROUTE now also states its own evidence level (three `evidence_` fields added at answer
+    #  time, plan item P3.32). The inventory holds the producer's data, which carries no such statement about
+    #  itself, so the comparison is of the data: everything the route answers except what it says of itself.
+    _added = sorted(k for k in _res if k.startswith("evidence_"))
+    assert len(_added) == 3 and not any(k.startswith("evidence_") for k in _j["models"]["data"]), (_added, sorted(_j["models"]["data"]))
+    assert _j["models"]["data"] == {k: v for k, v in _res.items() if not k.startswith("evidence_")}, (
+        "the inventory recomputes the model list instead of calling its producer")
     #  the fabric count is the Resource Fabric's own
     from agentic_core.api import resource_fabric as _rf640
     assert _j["fabric"]["data"]["total"] == len(_rf640._REGISTRY), _j["fabric"]["data"]
@@ -48417,7 +48423,10 @@ def test_w640_the_resource_inventory_is_composed_and_says_what_kind_of_statement
     assert not (_called & {"atomic_write_json", "write_text", "write_bytes", "save_lifecycle", "_save"}), (
         "the read-only inventory calls a writer", sorted(_called))
     #  and the route is bound to its own handler (a helper between a decorator and its handler rebinds it)
-    assert [_ast640.unparse(d) for d in _fn.decorator_list] == ["router.get('/inventory')"], _fn.decorator_list
+    #  W674 - the handler now also carries the marker that makes it state its own evidence level. The
+    #  property is unchanged: the route decorator is on THIS handler, outermost, and nothing else is.
+    assert [_ast640.unparse(d) for d in _fn.decorator_list] == [
+        "router.get('/inventory')", "_states_level('/inventory')"], _fn.decorator_list
 
 
 def test_w639_a_utc_stamp_is_parsed_as_utc_and_a_layer_that_holds_content_is_counted(client):
@@ -48783,6 +48792,10 @@ def test_w640_the_instrument_cell_proposes_checks_and_verifies_and_runs_nothing(
             assert _past not in __import__("json").dumps(_c), ("a contract states an outcome", _r["id"], _past)
         if _r["id"] in _fab._READ_SIDE_EFFECTS:
             assert _c["persists"] == "side_effect", _r["id"]
+        #  P3.31 clause 2 (dec) - a facility run whose engine was read says what it persists, from the fabric's
+        #  table; every OTHER engine run must still read "not_declared" (the leg's original purpose)
+        elif _r["id"] in _fab._FACILITY_PERSISTS:
+            assert (_c["persists"], _c["persists_basis"]) == tuple(_fab._FACILITY_PERSISTS[_r["id"]]), _r["id"]
         elif _kind == "facility_run":
             assert _c["persists"] == "not_declared", ("an engine run was declared to persist nothing", _r["id"])
         else:
@@ -58674,3 +58687,718 @@ def test_w673_a_seeded_listing_takes_the_catalogues_current_name(client, monkeyp
     import pathlib
     _src = pathlib.Path(_mk.__file__).read_text(encoding="utf-8")
     assert _src.index("\n_rename_seeds_to_the_catalogue()\n") < _src.index("\n_seed_from_catalog()\n")
+
+
+def test_dec_p331_every_registration_declares_and_an_unavailable_resource_is_never_proposed(client, monkeypatch):
+    """Plan item P3.31, clauses 1 and 2 (the last slice).
+
+    THE PROPERTIES: every registration declares what it needs, and one that declares nothing is refused when
+    the Instrument Cell reads the registry at import, by name; every KIND of need has a resource whose need is
+    met and the same resource with the need driven unmet; a served model is a different need from a
+    completion (the floor meets one and not the other), an absent OPTIONAL one is said with what it costs, a
+    REQUIRED one makes the resource unavailable; "needs nothing" is a declaration and is not "not declared";
+    a resource with an unmet need is never proposed and the proposal says which need; and a facility run says
+    what it persists only where the fabric's table declares it.
+
+    Every unmet state is DRIVEN through the seam the check reads. Nothing is stored and no model is asked."""
+    import pathlib
+    import agentic_core.api.instrument_cell as _cell
+    import agentic_core.api.resource_fabric as _fab
+
+    _real = _cell._handler_ids()
+    assert _real, "the handler's branches could not be read, so nothing below can be driven"
+    _real_import = _cell._import_attr
+    _floor = lambda: ["native"]                                              # noqa: E731
+
+    def _row(rid, kind):
+        return next(n for n in _cell.needs_check(rid)["needs"] if n["kind"] == kind)
+
+    def _built(rid, tag, **kw):
+        return _fab._R(rid, "Dec probe", "digital_resource", "probe", "a probe", [tag], {}, f"/api/v1/{rid}",
+                       ["synthesis"], **kw)
+
+    # == 1. EVERY REGISTRATION DECLARES; AN ABSENT DECLARATION IS REFUSED AT IMPORT, BY NAME =============
+    assert [r["id"] for r in _fab._REGISTRY if not isinstance(r.get("needs"), list)] == [], (
+        "a registration declares no needs")
+    assert _cell.registry_defects(_fab._REGISTRY) == []
+    _silent = _built("dec-silent", "dec silent zeta")
+    assert "needs" not in _silent, "the builder gave a registration a declaration it did not make"
+    _d = _cell.registry_defects([_silent])
+    assert len(_d) == 1 and _d[0].startswith("dec-silent: declares no needs"), _d
+    for _bad in ([{"kind": "none"}], [{"kind": "none", "read": "  "}],
+                 [_fab._need_none("read it"), _fab._need_completion("and yet")]):
+        _d = _cell.registry_defects([{**_silent, "needs": _bad}])
+        assert len(_d) == 1 and _d[0].startswith("dec-silent: declares that it needs nothing"), (_bad, _d)
+    assert _cell.registry_defects([{**_silent, "needs": [_fab._need_none("read it")]}]) == []
+    #    THE IMPORT ITSELF: the module's own opening statements (everything up to the first thing after the
+    #    refusal), executed first against the registry as it is and then against one holding a registration
+    #    that declares nothing. Not a reload: the loaded module and its router are untouched.
+    _src = pathlib.Path(_cell.__file__).read_text(encoding="utf-8")
+    assert _src.count("\n_RUNNER_OWNED = {") == 1, "the cut point for the import leg moved"
+    _head = _src.split("\n_RUNNER_OWNED = {", 1)[0]
+    assert "raise RuntimeError(" in _head and "registry_defects(_fab._REGISTRY)" in _head, (
+        "the refusal is no longer among the module's opening statements")
+    _as_is = {"__name__": "dec_probe_cell"}
+    exec(compile(_head, "dec_probe_cell", "exec"), _as_is)
+    assert _as_is["_DEFECTS"] == [], ("precondition: the registry as it is imports", _as_is["_DEFECTS"])
+    monkeypatch.setattr(_fab, "_REGISTRY", list(_fab._REGISTRY) + [_silent])
+    with pytest.raises(RuntimeError) as _refused:
+        exec(compile(_head, "dec_probe_cell", "exec"), {"__name__": "dec_probe_cell"})
+    assert "dec-silent: declares no needs" in str(_refused.value), str(_refused.value)[:300]
+    monkeypatch.undo()
+
+    # == 2. EACH KIND OF NEED: met, and the same resource with the need DRIVEN unmet ======================
+    monkeypatch.setattr(_cell, "_completion_order", _floor)
+    monkeypatch.setattr(_cell, "_package_present", lambda name: True)
+    _avail = {r["id"] for r in _fab._REGISTRY if _cell.availability(r["id"], client.app)["state"] == "available"}
+    _by_kind = {}
+    for _r in _fab._REGISTRY:
+        for _n in _r["needs"]:
+            if _r["id"] in _avail or _n["kind"] == "none":
+                _by_kind.setdefault(_n["kind"], _r["id"])
+    assert set(_by_kind) == set(_cell._NEED_KINDS), (
+        "a kind of need has no registration to drive it on, or a registration declares an unknown kind",
+        sorted(set(_cell._NEED_KINDS) ^ set(_by_kind)))
+    _drove = set()
+
+    #    module
+    _m = _by_kind["module"]
+    _mod = next(n for n in _fab._BY_ID[_m]["needs"] if n["kind"] == "module")
+    assert _cell.availability(_m, client.app)["checked"] == "available", "precondition: its needs are met"
+
+    def _gone(module, attr, _which=_mod["module"]):
+        if module == _which:
+            raise ImportError("dec: driven away")
+        return _real_import(module, attr)
+    monkeypatch.setattr(_cell, "_import_attr", _gone)
+    _u = _cell.availability(_m, client.app)
+    assert _u["needs_state"] == "unmet" and _u["checked"] == "unavailable" and "dec: driven away" in _u["needs_basis"], _u
+    monkeypatch.setattr(_cell, "_import_attr", _real_import)
+    _drove.add("module")
+
+    #    completion - the floor MEETS it; nothing owned does not
+    _c = _by_kind["completion"]
+    assert _row(_c, "completion")["met"] is True and "WITHOUT a model" in _row(_c, "completion")["basis"]
+    monkeypatch.setattr(_cell, "_completion_order", lambda: [])
+    assert _cell.availability(_c, client.app)["checked"] == "unavailable"
+    monkeypatch.setattr(_cell, "_completion_order", _floor)
+    _drove.add("completion")
+
+    #    package - optional: absent, the resource is still available and SAYS what it costs
+    _pk = _by_kind["package"]
+    assert _cell.needs_check(_pk)["narrowed"] == []
+    monkeypatch.setattr(_cell, "_package_present", lambda name: False)
+    _k = _cell.needs_check(_pk)
+    assert _k["state"] == "met" and _k["narrowed"] and {n["kind"] for n in _k["narrowed"]} == {"package"}, _k
+    assert all(n["why"] for n in _k["narrowed"])
+    monkeypatch.setattr(_cell, "_package_present", lambda name: True)
+    _drove.add("package")
+
+    #    config
+    _g = _by_kind["config"]
+    _param = next(n["param"] for n in _fab._BY_ID[_g]["needs"] if n["kind"] == "config")
+    assert _cell.needs_check(_g, {})["state"] == "unmet"
+    assert _cell.needs_check(_g, {_param: [{"label": "a", "value": 1, "claim": "c", "confidence": 0.9,
+                                             "reputation": 0.9}]})["state"] == "met"
+    _drove.add("config")
+
+    #    model - NOT the completion need: on the floor the completion row is met and the model row is not
+    _mo = _by_kind["model"]
+    _why = next(n["why"] for n in _fab._BY_ID[_mo]["needs"] if n["kind"] == "model")
+    _on_floor = _cell.availability(_mo, client.app)
+    assert _row(_mo, "model")["met"] is False and "only the deterministic floor" in _row(_mo, "model")["basis"]
+    if any(n["kind"] == "completion" for n in _fab._BY_ID[_mo]["needs"]):
+        assert _row(_mo, "completion")["met"] is True, "the floor no longer meets a completion need"
+    if next(n for n in _fab._BY_ID[_mo]["needs"] if n["kind"] == "model")["optional"]:
+        assert _on_floor["checked"] == "available" and _on_floor["needs_state"] == "met", _on_floor
+        assert [n["why"] for n in _on_floor["needs_narrowed"]] == [_why], (
+            "what the resource cannot do on the floor does not travel with it", _on_floor["needs_narrowed"])
+    else:
+        assert _on_floor["checked"] == "unavailable" and _on_floor["needs_narrowed"] == [], _on_floor
+    monkeypatch.setattr(_cell, "_completion_order", lambda: ["ollama", "native"])
+    _on_model = _cell.availability(_mo, client.app)
+    assert _row(_mo, "model")["met"] is True and _on_model["needs_narrowed"] == [] and _on_model["checked"] == "available", _on_model
+    monkeypatch.setattr(_cell, "_completion_order", lambda: ["native", "anthropic"])
+    assert _row(_mo, "model")["met"] is True and "external provider" in _row(_mo, "model")["basis"], (
+        "an external model is not named as external")
+
+    def _unreadable():
+        raise RuntimeError("dec: driven")
+    #    a REQUIRED model need, on a registration built here: unmet on the floor, never proposed, and says why
+    _req = _built("dec-model", "dec model zeta", needs=[_fab._need_model("dec: its whole output is a model's", optional=False)])
+    assert _cell.registry_defects([_req]) == []
+    monkeypatch.setitem(_fab._BY_ID, "dec-model", _req)
+    monkeypatch.setattr(_fab, "_REGISTRY", list(_fab._REGISTRY) + [_req])
+    monkeypatch.setattr(_cell, "_handler_ids", lambda: set(_real) | {"dec-model"})
+    monkeypatch.setattr(_cell, "_completion_order", _unreadable)
+    assert _cell.availability("dec-model", client.app)["checked"] == "not_checked", (
+        "a model need that could not be read was answered as met or as unmet")
+    monkeypatch.setattr(_cell, "_completion_order", _floor)
+    _un = _cell.availability("dec-model", client.app)
+    assert _un["state"] == "available" and _un["needs_state"] == "unmet" and _un["checked"] == "unavailable", _un
+    _p = _cell.select(["dec model zeta"], client.app)
+    assert _p["selected"] == [] and _p["uncovered"] == ["dec model zeta"], ("an unavailable resource was proposed", _p["selected"])
+    _ex = next(e for e in _p["excluded"] if e["id"] == "dec-model")
+    assert _ex["because"].startswith("unavailable: a declared need is not met"), _ex
+    assert "a served model above the deterministic floor" in _ex["because"] and "only the deterministic floor" in _ex["because"], _ex
+    _api = client.post("/api/v1/resources/cell/propose", json={"objective": "x", "required_capabilities": ["dec model zeta"]}).json()["selection"]
+    assert "dec-model" in [e["id"] for e in _api["excluded"]] and "dec-model" not in [s["id"] for s in _api["selected"]], _api
+    monkeypatch.setattr(_cell, "_completion_order", lambda: ["ollama", "native"])
+    assert [s["id"] for s in _cell.select(["dec model zeta"], client.app)["selected"]] == ["dec-model"], (
+        "with a model served the resource is still not proposed")
+    monkeypatch.undo()
+    _drove.add("model")
+
+    #    none - a statement, with what was read; and NOT the same thing as declaring nothing
+    _nn = _by_kind["none"]
+    _nc = _cell.needs_check(_nn)
+    assert _nc["declared"] is True and _nc["declared_none"] is True and _nc["state"] == "met", _nc
+    assert _nc["basis"].startswith("declares that it needs nothing") and _fab._BY_ID[_nn]["needs"][0]["read"] in _nc["basis"], _nc["basis"]
+    monkeypatch.setitem(_fab._BY_ID, "dec-silent", _silent)
+    _sc = _cell.needs_check("dec-silent")
+    assert _sc["declared"] is False and _sc["state"] == "not_declared" and _sc["declared_none"] is False, _sc
+    assert "NOT DECLARED is not the same as needing nothing" in _sc["basis"]
+    assert _cell.availability("dec-silent", client.app)["needs_declared_none"] is False
+    assert _cell.availability(_nn, client.app)["needs_declared_none"] is True
+    #    and needing nothing does not make a resource the fabric cannot start available
+    if _nn not in _real and _nn not in _cell._RUNNER_OWNED:
+        assert _cell.availability(_nn, client.app)["checked"] == "unavailable"
+    monkeypatch.undo()
+    _drove.add("none")
+    assert _drove == set(_cell._NEED_KINDS), ("a kind of need was not driven", sorted(set(_cell._NEED_KINDS) - _drove))
+
+    # == 3. AN UNAVAILABLE RESOURCE IS NEVER PROPOSED, AND SAYS WHY - on every registration it can be shown on
+    monkeypatch.setattr(_cell, "_completion_order", _floor)
+    monkeypatch.setattr(_cell, "_package_present", lambda name: True)
+    _candidates = _shown = 0
+    for _r in list(_fab._REGISTRY):
+        _rid = _r["id"]
+        _mods = [n for n in _r["needs"] if n["kind"] == "module"]
+        _tag = next((t for t in _r["capabilities"]
+                     if not any(_cell._covers(t, o) for o in _fab._REGISTRY if o["id"] != _rid)), None)
+        #  a resource that REQUIRES a served model is unavailable on the floor this loop pins, so its
+        #  precondition ("it is proposed") cannot hold here; it has its own leg below (3b)
+        if any(n["kind"] == "model" and n.get("optional") is False for n in _r["needs"]):
+            continue
+        if _rid not in _avail or not _mods or not _tag:
+            continue
+        _candidates += 1
+        assert [s["id"] for s in _cell.select([_tag], client.app)["selected"]] == [_rid], ("precondition: it is proposed", _rid)
+
+        def _gone_one(module, attr, _which=_mods[0]["module"]):
+            if module == _which:
+                raise ImportError("dec: driven away")
+            return _real_import(module, attr)
+        monkeypatch.setattr(_cell, "_import_attr", _gone_one)
+        _p = _cell.select([_tag], client.app)
+        assert _rid not in [s["id"] for s in _p["selected"]] and _p["uncovered"] == [_cell._norm(_tag)], (
+            "a resource with an unmet declared need was proposed", _rid)
+        _ex = next(e for e in _p["excluded"] if e["id"] == _rid)
+        assert _ex["because"].startswith("unavailable: a declared need is not met") and _mods[0]["module"] in _ex["because"], _ex
+        monkeypatch.setattr(_cell, "_import_attr", _real_import)
+        _shown += 1
+    assert _candidates and _shown == _candidates, "no registration could be driven unavailable through its own need"
+
+    # == 3b. OWNER RULING 2026-10-12: A SERVED MODEL IS REQUIRED FOR THE GENOME ALONE ======================
+    #    With no model served it is unavailable and never proposed, and the reason is the model; with one
+    #    served it is proposed. Driven both ways through the selection order the check reads.
+    _required = [r["id"] for r in _fab._REGISTRY
+                 if any(n["kind"] == "model" and n.get("optional") is False for n in r["needs"])]
+    assert _required == ["genome"], ("the ruling names the genome alone as requiring a served model", _required)
+    _gtag = next((t for t in _fab._BY_ID["genome"]["capabilities"]
+                  if not any(_cell._covers(t, o) for o in _fab._REGISTRY if o["id"] != "genome")), None)
+    assert _gtag, "the genome declares no capability of its own, so its proposal cannot be isolated"
+    monkeypatch.setattr(_cell, "_completion_order", _floor)
+    _gf = _cell.select([_gtag], client.app)
+    assert "genome" not in [s["id"] for s in _gf["selected"]] and _gf["uncovered"] == [_cell._norm(_gtag)], (
+        "the genome was proposed with only the floor serving", _gf["selected"])
+    _gx = next(e for e in _gf["excluded"] if e["id"] == "genome")
+    assert _gx["because"].startswith("unavailable: a declared need is not met") and "model" in _gx["because"], _gx
+    assert _cell.availability("genome", client.app)["needs_state"] == "unmet"
+    monkeypatch.setattr(_cell, "_completion_order", lambda: ["local", "native"])
+    assert [s["id"] for s in _cell.select([_gtag], client.app)["selected"]] == ["genome"], (
+        "with a model served the genome is still not proposed")
+    monkeypatch.setattr(_cell, "_completion_order", _floor)
+
+    # == 4. THE ROUTE: none without a declaration; what is narrowed on the floor is counted and said =======
+    _av = client.get("/api/v1/resources/cell/availability").json()
+    assert _av["needs_declared"] == _av["total"] == len(_fab._REGISTRY) and "not_declared" not in _av["needs_counts"], _av["needs_counts"]
+    assert "None is without a declaration" in _av["needs_basis"], _av["needs_basis"]
+    _optional_model = sorted(r["id"] for r in _fab._REGISTRY
+                             if any(n["kind"] == "model" and n["optional"] for n in r["needs"]))
+    _rows = {r["id"]: r for r in _av["resources"]}
+    assert sorted(i for i, r in _rows.items() if r["needs_narrowed"]) == _optional_model, (
+        "the resources narrowed on the floor are not the ones that declare an optional model need")
+    assert _av["needs_narrowed_count"] == len(_optional_model)
+    assert ("start here with less than they declare" in _av["needs_basis"]) == bool(_optional_model)
+    for _i in _optional_model:
+        assert _rows[_i]["needs_narrowed"][0]["why"] == next(n["why"] for n in _fab._BY_ID[_i]["needs"] if n["kind"] == "model")
+    monkeypatch.setattr(_cell, "_completion_order", lambda: ["ollama", "native"])
+    _av2 = client.get("/api/v1/resources/cell/availability").json()
+    assert _av2["needs_narrowed_count"] == 0 and "start here with less" not in _av2["needs_basis"], _av2["needs_basis"]
+    #    DRIVEN the other way: one registration that declares nothing is counted and named as such
+    monkeypatch.setitem(_fab._BY_ID, "dec-silent", _silent)
+    monkeypatch.setattr(_fab, "_REGISTRY", list(_fab._REGISTRY) + [_silent])
+    _av3 = client.get("/api/v1/resources/cell/availability").json()
+    assert _av3["needs_counts"].get("not_declared") == 1 and "The other 1 declare nothing" in _av3["needs_basis"], _av3["needs_basis"]
+    monkeypatch.undo()
+
+    # == 5. WHAT A FACILITY RUN PERSISTS: said from the fabric's table, and not declared outside it ========
+    assert _fab._FACILITY_PERSISTS, "nothing declares what it persists, so this leg would be vacuous"
+    for _rid, (_word, _basis) in _fab._FACILITY_PERSISTS.items():
+        assert _fab._resource_kind(_rid) == "facility_run" and _word in ("records", "side_effect", "nothing") and _basis, _rid
+        _ct = _cell.contract(_rid)
+        assert (_ct["persists"], _ct["persists_basis"]) == (_word, _basis), _rid
+    _fac = _built("dec-facility", "dec facility zeta", needs=[])
+    monkeypatch.setitem(_fab._BY_ID, "dec-facility", _fac)
+    assert _fab._resource_kind("dec-facility") == "facility_run"
+    assert _cell.contract("dec-facility")["persists"] == "not_declared", (
+        "an engine run nobody read is declared to persist something, or nothing")
+    monkeypatch.setitem(_fab._FACILITY_PERSISTS, "dec-facility", ("records", "dec: it writes a record"))
+    assert (_cell.contract("dec-facility")["persists"], _cell.contract("dec-facility")["persists_basis"]) == (
+        "records", "dec: it writes a record")
+    monkeypatch.undo()
+
+    # == 6. THE PAGE (SOURCE LEGS - nothing here renders a page) =======================================
+    _icp = _code_only((pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+                       / "components" / "InstrumentCellPanel.tsx").read_text(encoding="utf-8"))
+    for _need in ('data-testid="cell-needs-narrowed"', 'data-testid="cell-listed-narrowed"',
+                  "{(s.availability.needs_narrowed ?? []).map(n => (", "{(r.needs_narrowed ?? []).map(n => (",
+                  "Here, without {n.needs}: {n.why}"):
+        assert _need in _icp, ("what a resource cannot do here does not reach the page", _need)
+
+
+def test_dec_p332_each_surface_states_its_level_and_reproducibility_says_where_it_was_shown(client, monkeypatch, tmp_path):
+    """Plan item P3.32, clause 3 and the ACCEPT's reproducibility.
+
+    THE PROPERTIES: every route of the native-AI router that describes a model answers with its own evidence
+    level, read from the one table when it answers (move the table and the answer moves; take the entry away
+    and the answer says NOT PLACED); none is above behaviour; the inventory names any route that does not
+    state its level; the wording check is said to report "flagged" or "nothing matched" and nothing stronger;
+    reproducibility is read per tier from the STORED re-runs, so it says "the floor only" exactly when that is
+    what the store shows; and the plan no longer lists a scheduled baseline as open.
+
+    No model is asked: the one completion below is sent to the deterministic floor. The baseline store read
+    here is a file in the test's own temporary directory."""
+    import asyncio
+    import json as _j
+    import pathlib
+    import re
+    import agentic_core.api.native_ai as _na
+    import agentic_core.ai.native.model_resource as _mr
+
+    _pre = _na.router.prefix
+    _table = dict(_na._EVIDENCE_SURFACES)
+
+    # == 1. EVERY MODEL-DESCRIBING ROUTE IS MARKED, OR ANSWERS WITH A RECORD THAT CARRIES ITS LEVEL =======
+    _marked = {}
+    for _rt in _na.router.routes:
+        _p = _rt.path[len(_pre):]
+        if _p in _table:
+            _marked[_p] = getattr(_rt.endpoint, "_states_level", None)
+    assert set(_marked) == set(_table), ("a placed surface is not a route of the router", sorted(set(_table) - set(_marked)))
+    for _p in _table:
+        assert (_marked[_p] == _p) != (_p in _na._LEVEL_IN_RECORD), (
+            "a surface neither states its level nor answers with a record that does - or is marked for another path", _p, _marked[_p])
+        assert _table[_p][0] in ("configuration", "behaviour"), ("a surface claims a level above behaviour", _p)
+    for _p in _na._LEVEL_IN_RECORD:
+        assert _table[_p][0] == "behaviour", _p
+    assert _na._surfaces_not_stating() == []
+
+    # == 2. THE ANSWER CARRIES IT, AND IT IS THE TABLE'S - driven by moving the table ====================
+    for _p in ("/status", "/resources", "/models", "/capabilities", "/lifecycle", "/route"):
+        _a = client.get(_pre + _p)
+        assert _a.status_code == 200, (_p, _a.status_code, _a.text[:200])
+        _a = _a.json()
+        assert _a["evidence_level"] == _table[_p][0] and _table[_p][1] in _a["evidence_basis"], (_p, _a.get("evidence_level"), _a.get("evidence_basis"))
+        assert _a["evidence_level_number"] == (1 if _table[_p][0] == "behaviour" else None), _p
+        assert ("below level 1" in _a["evidence_basis"]) == (_table[_p][0] == "configuration"), _a["evidence_basis"]
+    _done = client.post(_pre + "/complete", json={"prompt": "dec p332: say what this rests on", "model": "native"})
+    assert _done.status_code == 200, (_done.status_code, _done.text[:200])
+    _done = _done.json()
+    assert _done["evidence_level"] == "behaviour" == _table["/complete"][0] and _done["evidence_level_number"] == 1, _done.get("evidence_level")
+    assert "the highest level anything here reaches" in _done["evidence_basis"]
+    monkeypatch.setitem(_na._EVIDENCE_SURFACES, "/resources", ("behaviour", "dec: moved in the table"))
+    _moved = client.get(_pre + "/resources").json()
+    assert _moved["evidence_level"] == "behaviour" and "dec: moved in the table" in _moved["evidence_basis"], (
+        "the level a route states is not read from the table when it answers", _moved.get("evidence_basis"))
+    monkeypatch.delitem(_na._EVIDENCE_SURFACES, "/resources")
+    _unplaced = client.get(_pre + "/resources").json()
+    assert _unplaced["evidence_level"] is None and _unplaced["evidence_basis"].startswith("NOT PLACED"), (
+        "a route in no table borrowed a level", _unplaced.get("evidence_level"))
+    assert "/resources" in _na._unclassified_routes()
+    monkeypatch.undo()
+    #    the marker itself: a level the handler set is kept, and an answer that is not a mapping is left alone
+
+    @_na._states_level("/complete")
+    async def _own():
+        return {"evidence_level": "dec: the handler's own", "x": 1}
+
+    @_na._states_level("/complete")
+    async def _text():
+        return "plain"
+    _o = asyncio.run(_own())
+    assert _o["evidence_level"] == "dec: the handler's own" and _o["x"] == 1 and _o["evidence_basis"], _o
+    assert asyncio.run(_text()) == "plain"
+
+    # == 3. THE INVENTORY NAMES A ROUTE THAT DOES NOT STATE ITS LEVEL - driven =============================
+    _lv = client.get(_pre + "/evidence-levels").json()
+    assert _lv["not_stating_their_level"] == [] and all(s["stated_in_its_own_answer"] is True for s in _lv["surfaces"]), _lv["not_stating_their_level"]
+    monkeypatch.setattr(_na, "_LEVEL_STATED", set(_na._LEVEL_STATED) - {"/status"})
+    assert _na._surfaces_not_stating() == ["/status"]
+    _lv2 = client.get(_pre + "/evidence-levels").json()
+    assert _lv2["not_stating_their_level"] == [_pre + "/status"], _lv2["not_stating_their_level"]
+    assert next(s for s in _lv2["surfaces"] if s["path"] == _pre + "/status")["stated_in_its_own_answer"] is False
+    monkeypatch.undo()
+
+    # == 4. THE WORDING CHECK: two results, and neither of them a clearance ===============================
+    _cc = _lv["claims_check"]
+    assert _cc["result_words"] == ["flagged", "nothing matched"], _cc["result_words"]
+    assert "does not establish that no surface over-claims" in _cc["basis"] and "does not run it" in _cc["where"], _cc
+    _banned = "cle" + "ar"                                    # the word a phrase list may never report
+    assert _banned not in _j.dumps(_cc).lower(), ("the wording check is described as able to do more than flag", _cc)
+    assert _banned not in _lv["boundary"].lower()
+
+    # == 5. REPRODUCIBILITY IS READ FROM THE STORED RE-RUNS, per tier - four states, each driven ===========
+    _store = tmp_path / "dec_model_baselines.json"
+    monkeypatch.setattr(_na, "_baseline_store", lambda: _store)
+    monkeypatch.setattr(_mr, "local_models", lambda: [])
+
+    def _listed(rows):
+        _store.write_text(_j.dumps(rows), encoding="utf-8")
+        _l = client.get(_pre + "/baseline").json()
+        return _l, {t["tier"]: t for t in _l["tiers"]}
+
+    _first = {"run_id": "bl-dec-1", "tier": "native", "at": "t1"}
+    _again = {"run_id": "bl-dec-2", "tier": "native", "at": "t2", "reproduction_of": "bl-dec-1",
+              "reproduction": {"reproduced": True, "basis": "dec"}}
+    _loc = {"run_id": "bl-dec-3", "tier": "ollama:dec", "at": "t3"}
+    _loc_again = {"run_id": "bl-dec-4", "tier": "ollama:dec", "at": "t4", "reproduction_of": "bl-dec-3",
+                  "reproduction": {"reproduced": False, "basis": "dec"}}
+    _l, _t = _listed([])
+    assert _l["reproducibility_shown_for"] == [] and "shown for no tier" in _l["reproducibility_basis"], _l["reproducibility_basis"]
+    assert _t["native"]["reproducibility"].startswith("NOT SHOWN") and "has been run again" in _t["native"]["reproducibility"]
+    assert _l["evidence_level"] == _table["/baseline"][0]
+    _l, _t = _listed([_first])
+    assert _l["reproducibility_shown_for"] == [], "a baseline that was never run again is counted as reproduced"
+    _l, _t = _listed([_first, _again, _loc, _loc_again])
+    assert _l["reproducibility_shown_for"] == ["native"], _l["reproducibility_shown_for"]
+    assert "the deterministic floor only" in _l["reproducibility_basis"] and "only a stored re-run shows one" in _l["reproducibility_basis"], _l["reproducibility_basis"]
+    assert _t["native"]["reproducibility"].startswith("SHOWN 1 time(s)") and _t["native"]["reproduced_runs"] == 1, _t["native"]
+    assert _t["ollama:dec"]["reproducibility"].startswith("NOT SHOWN for this tier: 1 re-run(s) were made"), _t["ollama:dec"]
+    assert _t["ollama:dec"]["reproduction_attempts"] == 1 and _t["ollama:dec"]["reproduced_runs"] == 0
+    _l, _t = _listed([_first, _again, _loc, {**_loc_again, "reproduction": {"reproduced": True, "basis": "dec"}}])
+    assert _l["reproducibility_shown_for"] == ["native", "ollama:dec"], _l["reproducibility_shown_for"]
+    assert "floor only" not in _l["reproducibility_basis"], (
+        "reproducibility is said to be the floor's alone while a stored re-run shows it for a model", _l["reproducibility_basis"])
+    _l, _t = _listed([_loc, {**_loc_again, "reproduction": {"reproduced": True, "basis": "dec"}}])
+    assert _l["reproducibility_shown_for"] == ["ollama:dec"] and "floor only" not in _l["reproducibility_basis"]
+    assert _t["native"]["reproducibility"].startswith("NOT SHOWN")
+    monkeypatch.undo()
+
+    # == 6. THE PLAN: a scheduled baseline is not listed as open, the ruling is there, no row id is named ==
+    _repo = pathlib.Path(__file__).resolve().parents[1]
+    _plan = (_repo / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    assert _plan.count("\n P3.32 [") == 1 and "\n MILESTONE M3" in _plan.split("\n P3.32 [", 1)[1]
+    _item = " ".join(_plan.split("\n P3.32 [", 1)[1].split("\n MILESTONE M3", 1)[0].split())
+    assert "baseline run on " + "a schedule" not in _item, "the plan still lists a scheduled baseline as open work"
+    assert "ON DEMAND and never on the heartbeat" in _item and "OWNER RULING 2026-10-11" in _item
+    assert re.search(r"\bFU-\d+", _item) is None, "an item's text names a register row"
+
+    # == 7. THE PAGE (SOURCE LEGS - nothing here renders a page) =======================================
+    _page = _code_only((_repo / "apps/workstation-superapp/src/pages/developers/NativeAI.tsx").read_text(encoding="utf-8"))
+    for _need in ('data-testid="evidence-levels"', "'/api/v1/native-ai/evidence-levels'", "setEvErr(errorMessage(e))",
+                  "{evErr && <p role=\"alert\"", "{evLevels.boundary}", "{s.level}: {s.rests_on}",
+                  "{evLevels.claims_check.basis}", "{evLevels.claims_check.result_words.join(' or ')}",
+                  "{baselines.reproducibility_basis}", "Reproducibility: {t.reproducibility}"):
+        assert _need in _page, ("the evidence level or the scope of reproducibility does not reach the page", _need)
+
+
+def test_fu671_a_check_that_examined_nothing_refuses_and_a_pass_says_how_much(tmp_path, monkeypatch, capsys):
+    """FU-671 (P3.31) - A VERIFICATION SCRIPT THAT EXAMINED NOTHING DOES NOT PASS, AND A PASS SAYS HOW MUCH IT
+    EXAMINED. W638 gave the fidelity audit this rule; eight more scripts carry it. Each is DRIVEN here on the
+    empty case (non-zero, and the words "examined nothing") and, where it can run without spawning the suite,
+    on a small real case (zero, and a positive count on the pass line)."""
+    import importlib.util as _ilu
+    import json as _json
+    import os as _os
+    import pathlib as _pl
+    import re as _re
+    import subprocess as _sp
+    import sys as _sys
+
+    import pytest as _pytest
+
+    _root = _pl.Path(__file__).resolve().parents[1]
+    _NOTHING = "examined nothing"
+
+    def _load(name, rel):
+        _spec = _ilu.spec_from_file_location(name, _root / rel)
+        _mod = _ilu.module_from_spec(_spec)
+        _spec.loader.exec_module(_mod)
+        return _mod
+
+    def _run(*argv, **kw):
+        return _sp.run([_sys.executable, *[str(a) for a in argv]], capture_output=True, text=True,
+                       encoding="utf-8", errors="replace", cwd=str(_root), timeout=300,
+                       env=dict(_os.environ, PYTHONIOENCODING="utf-8", **kw))
+
+    # -- 1. the import check CI runs: an empty tree refuses; a tree of two files says 1 parsed, 1 skipped -----
+    _ci = _load("_fu671_ci", "scripts/check_import_integrity.py")
+    monkeypatch.setattr(_sys, "argv", ["check_import_integrity.py"])
+    _empty = tmp_path / "empty_tree"
+    _empty.mkdir()
+    monkeypatch.setattr(_ci, "ROOT", _empty)
+    capsys.readouterr()
+    assert _ci.main() == 1, "the import check passed over a tree with no Python file in it"
+    _o = capsys.readouterr().out
+    assert "REFUSING" in _o and _NOTHING in _o, _o
+    assert "import integrity OK" not in _o, "a refusal that also prints the pass line is read as a pass"
+    _two = tmp_path / "two_files"
+    _two.mkdir()
+    (_two / "good.py").write_text("import os\n", encoding="utf-8")
+    (_two / "broken.py").write_text("def (:\n", encoding="utf-8")
+    monkeypatch.setattr(_ci, "ROOT", _two)
+    assert _ci.main() == 0
+    _o = capsys.readouterr().out
+    assert "import integrity OK" in _o, _o                       # the old text is still the prefix
+    assert "Examined 1 Python file(s)" in _o, ("the pass line does not say how many files it read", _o)
+    assert "1 could not be parsed" in _o and "broken.py" in _o, (
+        "a file the check could not read was dropped without a word", _o)
+    assert _ci.EXAMINED["parsed"] == 1 and _ci.EXAMINED["skipped"] == ["broken.py"], _ci.EXAMINED
+
+    # -- 2. run_verdict: a run that collected nothing is NOT KNOWN; twelve of twelve is COMPLETE --------------
+    _rv = _load("_fu671_rv", "scripts/run_verdict.py")
+    _zero = tmp_path / "zero.json"
+    _zero.write_text(_json.dumps({"collected": 0, "reported": 0}), encoding="utf-8")
+    _v0 = _rv.verdict(str(_zero))
+    assert _v0["verdict"] == _rv.NOT_KNOWN and _NOTHING in _v0["basis"], (
+        "a run that collected no test reads as a finished run", _v0)
+    monkeypatch.setattr(_sys, "argv", ["run_verdict.py", str(_zero)])
+    assert _rv.main() == 1
+    assert _NOTHING in capsys.readouterr().out
+    _twelve = tmp_path / "twelve.json"
+    _twelve.write_text(_json.dumps({"collected": 12, "reported": 12}), encoding="utf-8")
+    monkeypatch.setattr(_sys, "argv", ["run_verdict.py", str(_twelve)])
+    assert _rv.main() == 0
+    _o = capsys.readouterr().out
+    assert _o.startswith("COMPLETE") and "all 12 collected" in _o, _o
+
+    # -- 3. refutation_gate after: no agent launched is NOT KNOWN; three of three is COMPLETE -----------------
+    _rg = _load("_fu671_rg", "scripts/refutation_gate.py")
+    _none = {"agentCount": 0, "agents_done": 0, "agents_error": 0}
+    _z = _rg.after(_none)
+    assert _z["complete"] is None and _NOTHING in _z["basis"], (
+        "a refutation that launched no agent reads as complete", _z)
+    _nf = tmp_path / "no_agents.json"
+    _nf.write_text(_json.dumps(_none), encoding="utf-8")
+    monkeypatch.setattr(_sys, "argv", ["refutation_gate.py", "after", "--result", str(_nf)])
+    assert _rg.main() == 1
+    _o = capsys.readouterr().out
+    assert _o.startswith("NOT KNOWN") and _NOTHING in _o, _o
+    _three = _rg.after({"agentCount": 3, "agents_done": 3, "agents_error": 0})
+    assert _three["complete"] is True and "all 3 agent(s) finished" in _three["basis"], _three
+
+    # -- 4. blind_sweep: an empty blind list is refused before anything is spawned ----------------------------
+    _bs = _load("_fu671_bs", "scripts/blind_sweep.py")
+    _nb = tmp_path / "no_blinds.json"
+    _nb.write_text("[]", encoding="utf-8")
+    monkeypatch.setattr(_sys, "argv", ["blind_sweep.py", "--blinds", str(_nb), "--store", str(tmp_path / "bs")])
+    assert _bs.main() == 1, "a sweep of no blinds exited zero"
+    _o = capsys.readouterr().out
+    assert "REFUSING" in _o and _NOTHING in _o, _o
+    assert "were SEEN by their guard" not in _o, "the sweep reported a result for a list it did not drive"
+
+    # -- 5. round_tools/blinds.py: an empty BLINDS is refused -------------------------------------------------
+    _rb = _load("_fu671_rb", "scripts/round_tools/blinds.py")
+    _nbp = tmp_path / "no_blinds.py"
+    _nbp.write_text("BLINDS = []\n", encoding="utf-8")
+    with _pytest.raises(SystemExit) as _ex:
+        _rb.main(["blinds.py", str(_nbp), "-k", "nothing_at_all"])
+    assert isinstance(_ex.value.code, str) and _NOTHING in _ex.value.code, (
+        "the driver ended with a count of zero bad blinds having driven none", _ex.value.code)
+    assert "bad:" not in capsys.readouterr().out
+
+    # -- 6. audit_unexercised: an empty census is refused; a census of one route is read ----------------------
+    _rec = tmp_path / "record.json"
+    _rec.write_text(_json.dumps([{"region": "R1", "surfaces_exercised": {"routes": [], "files": []}}]),
+                    encoding="utf-8")
+    _c0 = tmp_path / "census_empty.json"
+    _c0.write_text(_json.dumps({"routes": [], "pages": []}), encoding="utf-8")
+    _c1 = tmp_path / "census_one.json"
+    _c1.write_text(_json.dumps({"routes": ["GET /api/v1/fu671"], "pages": []}), encoding="utf-8")
+    _au = _root / "scripts" / "audit_unexercised.py"
+    _r0 = _run(_au, _rec, _c0)
+    assert _r0.returncode == 1 and _NOTHING in _r0.stderr, (
+        "an empty census produced an empty not-exercised list, which reads as full coverage",
+        _r0.returncode, _r0.stdout[-200:], _r0.stderr[-300:])
+    assert not _r0.stdout.strip(), "a refused run still printed a direction"
+    _r1 = _run(_au, _rec, _c1)
+    assert _r1.returncode == 0, (_r1.returncode, _r1.stderr[-300:])
+    _d1 = _json.loads(_r1.stdout)
+    assert _d1["counts"]["routes_in_census"] == 1 and _d1["routes"] == ["GET /api/v1/fu671"], _d1
+
+    # -- 7. the register's check says how much it read, here and on an empty register -------------------------
+    _fu_cli = _root / "scripts" / "followups.py"
+    _line = r"^ok - examined (\d+) register row\(s\) and (\d+) plan item\(s\)"
+    _real = _run(_fu_cli, "check")
+    assert _real.returncode == 0, ("the register does not pass its own check", _real.stdout[-600:])
+    _m = _re.search(_line, _real.stdout, _re.M)
+    assert _m and int(_m.group(1)) > 0 and int(_m.group(2)) > 0, (
+        "the register's pass line does not say how many rows and plan items it examined", _real.stdout[-300:])
+    #    An EMPTY register is a true state and passes - the plan was still examined - and the line says 0 rows.
+    from agentic_core import plan_followups as _fu671
+    _prompt, _living = _fu671.read_doc(_fu671.PROMPT), _fu671.read_doc(_fu671.LIVING)
+    _scratch = tmp_path / "root"
+    (_scratch / "docs").mkdir(parents=True)
+    (_scratch / "agentic_core" / "api").mkdir(parents=True)
+    (_scratch / "agentic_core" / "api" / "living_plan.py").write_bytes(b"# stand-in\n")
+    _none_reg = {"items": []}
+    (_scratch / "docs" / "FABLE_DELIVERY_PROMPT.md").write_bytes(
+        _fu671.splice_all(_prompt, _none_reg, _prompt).encode("utf-8"))
+    (_scratch / "docs" / "WORKSTATION_IDBO_LIVING_PLAN.md").write_bytes(
+        _fu671.splice_all(_living, _none_reg, _prompt).encode("utf-8"))
+    (_scratch / "docs" / "FOLLOWUPS.json").write_bytes(b'{"items": []}\n')
+    _es = _run(_fu_cli, "check", WORKSTATION_FOLLOWUPS_ROOT=str(_scratch))
+    assert _es.returncode == 0, (_es.stdout[-400:], _es.stderr[-400:])
+    _m0 = _re.search(_line, _es.stdout, _re.M)
+    assert _m0 and int(_m0.group(1)) == 0 and int(_m0.group(2)) > 0, (
+        "an empty register's pass line does not say it read no row", _es.stdout[-300:])
+
+    # -- 8. the method's named instruments: none named is refused; one named is counted -----------------------
+    #    LAST, because the script reads docs/DELIVERY_METHOD.json relative to the working directory.
+    _mi = _load("_fu671_mi", "scripts/method_instruments.py")
+    for _dir, _doc in (("m0", {"lessons": [], "mechanisms": []}),
+                       ("m1", {"lessons": [{"id": "L-FU671", "enforced_by": "docs/DELIVERY_METHOD.json"}],
+                               "mechanisms": []})):
+        (tmp_path / _dir / "docs").mkdir(parents=True)
+        (tmp_path / _dir / "docs" / "DELIVERY_METHOD.json").write_text(_json.dumps(_doc), encoding="utf-8")
+    capsys.readouterr()
+    monkeypatch.chdir(tmp_path / "m0")
+    assert _mi.main() == 1, "a method that names no instrument was reported as every instrument resolving"
+    _o = capsys.readouterr().out
+    assert "REFUSING" in _o and _NOTHING in _o and "every named path" not in _o, _o
+    monkeypatch.chdir(tmp_path / "m1")
+    assert _mi.main() == 0
+    _o = capsys.readouterr().out
+    assert "1 named instrument(s) checked across 1 lesson(s) and 0 mechanism(s)" in _o, _o
+    monkeypatch.undo()
+
+
+def test_w673b_the_stage_ceiling_holds_on_every_way_of_running_stages(client, monkeypatch):
+    """W674 - plan item P3.31 clause 6: a run attempts at most the declared ceiling of stages. It held where
+    a composition or a saved cascade runs; it now holds on the swarm console, on a composed swarm's own
+    stages, and - by construction, held here - on the tree."""
+    import asyncio
+    import pathlib
+    import agentic_core.api.instrument_cell as _ic
+    import agentic_core.api.native_ai as _na
+    import agentic_core.api.resource_fabric as _rf
+    _cap = _ic.MAX_STAGES
+    _asked = []
+
+    async def _swarm(agent, stages, **kw):
+        _asked.append(len(stages))
+        return {"agent": agent, "stages": len(stages), "trace": [], "final": "ran", "any_external": False}
+    monkeypatch.setattr(_na.orchestrator, "swarm", _swarm)
+    _st = lambda n: [{"role": f"r{i}", "instruction": "do"} for i in range(n)]
+    # -- 1. the console: at the ceiling it runs, one above it is refused before anything is asked ---------
+    r = client.post("/api/v1/native-ai/swarm", json={"context": "w673b", "stages": _st(_cap)})
+    assert r.status_code == 200 and _asked == [_cap], (r.status_code, r.text[:200], _asked)
+    r = client.post("/api/v1/native-ai/swarm", json={"context": "w673b", "stages": _st(_cap + 1)})
+    assert r.status_code == 422 and f"at most {_cap}" in r.text and "Nothing was run" in r.text, r.text[:300]
+    assert _asked == [_cap], ("a run above the ceiling reached the orchestrator", _asked)
+    # -- 2. a composed swarm's own stages -----------------------------------------------------------------
+    _asked.clear()
+    _ok = asyncio.run(_rf._run_real_resource_handler("native_swarm", {"stages": _st(_cap)}, "an objective", "general"))
+    assert isinstance(_ok, dict) and "error" not in _ok and _asked == [_cap], (_ok, _asked)
+    _no = asyncio.run(_rf._run_real_resource_handler("native_swarm", {"stages": _st(_cap + 1)}, "an objective", "general"))
+    assert isinstance(_no, dict) and "stage ceiling" in str(_no.get("error")) and "nothing was run" in _no["error"], _no
+    assert _asked == [_cap], ("a composed swarm above the ceiling was run, or was cut down and run", _asked)
+    #    lines of text are stages too
+    _asked.clear()
+    _no2 = asyncio.run(_rf._run_real_resource_handler(
+        "native_swarm", {"stages": "\n".join(f"step {i}" for i in range(_cap + 3))}, "an objective", "general"))
+    assert "stage ceiling" in str(_no2.get("error")) and _asked == [], (_no2, _asked)
+    # -- 3. the tree: its planner cannot exceed the ceiling ----------------------------------------------
+    import importlib
+    _om = importlib.import_module("agentic_core.ai.native.orchestrator")    # the MODULE: the package exports an object of this name
+    _src = pathlib.Path(_om.__file__).read_text(encoding="utf-8")
+    import re
+    _m = re.search(r"if len\(nodes\) >= (\d+):\s+break", _src)
+    assert _m, "the tree planner no longer stops at a stated number of nodes"
+    assert int(_m.group(1)) <= _cap, ("the tree planner may plan more nodes than a run may attempt", _m.group(1), _cap)
+    _tmpl = _om.orchestrator._plan_tree("an objective") if hasattr(_om, "orchestrator") else _na.orchestrator._plan_tree("an objective")
+    assert 0 < len(_tmpl) <= _cap, ("the fixed tree template exceeds the ceiling", len(_tmpl))
+
+
+def test_w673b_the_smallest_set_is_found_and_not_guessed():
+    """W674 - plan item P3.31 clause 4: "the smallest available set covering the stated requirements". Above
+    three resources the selection took a greedy set and said it was not proven smallest. The search is exact
+    up to sixteen requirements, and this drives it against a brute-force answer and against the case where
+    greedy is WRONG."""
+    import itertools
+    import random
+    import agentic_core.api.instrument_cell as _ic
+
+    def _brute(coverable, covers):
+        ids = sorted(covers)
+        for size in range(1, len(ids) + 1):
+            fits = [c for c in itertools.combinations(ids, size) if set(coverable) <= {q for i in c for q in covers[i]}]
+            if fits:
+                return size
+        return None
+    _w = lambda i: 1
+    # -- 1. the textbook case where greedy takes one more than is needed ----------------------------------
+    #       a big middle resource attracts greedy; two others cover everything between them
+    _reqs = [f"q{k}" for k in range(1, 7)]
+    _cov = {"left":  {q: "t" for q in ("q1", "q2", "q3")},
+            "right": {q: "t" for q in ("q4", "q5", "q6")},
+            "middle": {q: "t" for q in ("q2", "q3", "q4", "q5")}}
+    _left, _greedy = set(_reqs), []
+    while _left:
+        _b = max(sorted(_cov), key=lambda i: len(_left & set(_cov[i])))
+        _greedy.append(_b)
+        _left -= set(_cov[_b])
+    assert len(_greedy) == 3, ("this case no longer misleads a greedy choice, so it proves nothing", _greedy)
+    assert _ic._smallest_cover(_reqs, _cov, _w) == ("left", "right"), _ic._smallest_cover(_reqs, _cov, _w)
+    # -- 2. against brute force on many small random instances -------------------------------------------
+    _rng = random.Random(673)
+    for _ in range(60):
+        _n = _rng.randint(4, 9)
+        _rq = [f"r{k}" for k in range(_n)]
+        _cv = {f"s{j}": {q: "t" for q in _rng.sample(_rq, _rng.randint(1, max(1, _n // 2)))} for j in range(_rng.randint(4, 8))}
+        _coverable = sorted({q for h in _cv.values() for q in h})
+        _got = _ic._smallest_cover(_coverable, _cv, _w)
+        assert _got is not None and set(_coverable) <= {q for i in _got for q in _cv[i]}, ("not a cover", _got)
+        assert len(_got) == _brute(_coverable, _cv), ("not the smallest cover", _got, _brute(_coverable, _cv), _cv)
+    # -- 3. the tie is broken as the exhaustive step breaks it: fewest declared capabilities, then id -----
+    _tie = {"a": {"x": "t", "y": "t"}, "b": {"x": "t", "y": "t"}}
+    assert _ic._smallest_cover(["x", "y"], _tie, lambda i: {"a": 9, "b": 2}[i]) == ("b",)
+    assert _ic._smallest_cover(["x", "y"], _tie, _w) == ("a",)
+    # -- 4. the bound is stated and kept: above it the search declines and the selection says greedy -----
+    _many = [f"m{k}" for k in range(_ic._EXACT_REQUIREMENTS + 1)]
+    assert _ic._smallest_cover(_many, {"one": {q: "t" for q in _many}}, _w) is None
+    assert _ic._smallest_cover(_many[:-1], {"one": {q: "t" for q in _many[:-1]}}, _w) == ("one",)
+    # -- 5. through select(): four resources are needed, and the answer says the search was exact -------
+    _fake = [{"id": f"w673b-{k}", "name": f"probe {k}", "capabilities": [f"w673bcap{k}"], "usable_in": ["general"]}
+             for k in range(4)]
+    import agentic_core.api.resource_fabric as _rf
+    _saved_reg, _saved_by = list(_rf._REGISTRY), dict(_rf._BY_ID)
+    try:
+        _rf._REGISTRY.extend(_fake)
+        _rf._BY_ID.update({f["id"]: f for f in _fake})
+        _orig_av = _ic.availability
+        _ic.availability = lambda rid, app=None: ({"state": "available", "reason": "probe", "needs_state": "met",
+                                                    "needs_basis": "probe"} if rid.startswith("w673b-") else _orig_av(rid, app))
+        _orig_contract = _ic.contract
+        _ic.contract = lambda rid: ({"probe": True} if rid.startswith("w673b-") else _orig_contract(rid))
+        _sel = _ic.select([f"w673bcap{k}" for k in range(4)])
+        assert [s["id"] for s in _sel["selected"]] == [f"w673b-{k}" for k in range(4)], _sel["selected"]
+        assert _sel["method"].startswith("exact: every subset of the 4 coverable requirement(s) was searched"), _sel["method"]
+        assert "NOT proven" not in _sel["method"]
+    finally:
+        _ic.availability, _ic.contract = _orig_av, _orig_contract
+        _rf._REGISTRY[:] = _saved_reg
+        _rf._BY_ID.clear()
+        _rf._BY_ID.update(_saved_by)

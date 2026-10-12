@@ -11,6 +11,7 @@ interface Avail {
   id: string; name: string; state: string; reason: string; endpoint_state: string; endpoint_basis: string; not_checked: string;
   // P3.31 clause 1 (round 10) - what the registration declares it needs, checked by the server at the call
   needs_declared?: boolean; needs_state?: string; needs_basis?: string; needs_per_run?: string[];
+  needs_narrowed?: { needs: string; why: string }[];
   checked?: string; checked_basis?: string;
 }
 interface AvailReply {
@@ -22,7 +23,8 @@ interface Selected {
   id: string; name: string; covers: string[];
   contract: { when_run: string; persists: string; persists_basis: string; equivalents: string[] };
   availability: { state: string; endpoint_state?: string; endpoint_basis?: string;
-                  needs_state?: string; needs_basis?: string; needs_per_run?: string[] };
+                  needs_state?: string; needs_basis?: string; needs_per_run?: string[];
+                  needs_narrowed?: { needs: string; why: string }[] };
 }
 interface Proposal {
   what_this_is: string; saved: boolean; ran: boolean; requirements_confirmed: boolean;
@@ -302,6 +304,9 @@ export function InstrumentCellPanel() {
                 <li key={r.id} className={`text-[10px] px-2 py-1 rounded-lg border ${STATE_STYLE[r.state] ?? STATE_STYLE.not_checked}`}>
                   {r.name} — {STATE_WORD[r.state] ?? r.state}
                   {r.needs_state ? ` · ${NEED_WORD[r.needs_state] ?? r.needs_state}` : ''}
+                  {(r.needs_narrowed ?? []).map(n => (
+                    <span key={n.needs} data-testid="cell-listed-narrowed" className="block text-amber-300">Here, without {n.needs}: {n.why}</span>
+                  ))}
                 </li>
               ))}
             </ul>
@@ -362,6 +367,11 @@ export function InstrumentCellPanel() {
                         Runs nothing unless configured: {(s.availability.needs_per_run ?? []).join(', ')}.
                       </span>
                     )}
+                    {(s.availability.needs_narrowed ?? []).map(n => (
+                      <span key={n.needs} data-testid="cell-needs-narrowed" className="block text-[10px] text-amber-300">
+                        Here, without {n.needs}: {n.why}
+                      </span>
+                    ))}
                     {(s.availability.endpoint_state === 'not_served' || s.availability.endpoint_state === 'method_mismatch') && (
                       <span data-testid="cell-endpoint-defect" className="block text-[10px] text-rose-300">
                         Its declaration is wrong: {s.availability.endpoint_basis}. The fabric runs this resource in-process and does not call that address, so it can still run.

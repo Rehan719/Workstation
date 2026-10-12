@@ -55,8 +55,15 @@ interface BaselineRun {
   reproduction?: { reproduced: boolean; basis: string } | null;
 }
 interface BaselineList {
-  runs: BaselineRun[]; tiers: { tier: string; latest_run_id: string | null; basis: string }[];
+  runs: BaselineRun[]; tiers: { tier: string; latest_run_id: string | null; basis: string; reproducibility?: string }[];
   listing_is_incomplete?: boolean; listing_basis?: string; basis: string; trigger?: string;
+  reproducibility_basis?: string;
+}
+// P3.32 clause 3 - what each model-describing route rests on, in the server's words (GET /evidence-levels)
+interface EvidenceLevels {
+  surfaces: { path: string; level: string; rests_on: string; stated_in_its_own_answer?: boolean }[];
+  boundary: string; scope?: string;
+  claims_check?: { result_words: string[]; where: string; basis: string };
 }
 interface TreeRun {
   goal: string; posture: string; tree: TreeNodeDef[]; levels: string[][];
@@ -483,6 +490,8 @@ export const NativeAI: React.FC = () => {
   const [blErr, setBlErr] = useState('');
   const [blBusy, setBlBusy] = useState('');
   const [blOpen, setBlOpen] = useState<string | null>(null);
+  const [evLevels, setEvLevels] = useState<EvidenceLevels | null>(null);
+  const [evErr, setEvErr] = useState('');
   const loadBaselines = () =>
     apiJson<BaselineList>('/api/v1/native-ai/baseline?limit=6').then(d => { setBaselines(d); })
       .catch(e => { setBaselines(null); setBlErr(errorMessage(e)); });
@@ -513,6 +522,7 @@ export const NativeAI: React.FC = () => {
     fetch('/api/v1/native-ai/capabilities').then(r => r.json()).then(d => setCapabilities(d.capabilities || [])).catch(() => {});
     fetch('/api/v1/native-ai/homeostasis').then(r => r.json()).then(setHomeo).catch(() => {});
     fetch('/api/v1/native-ai/selfcheck').then(r => r.json()).then(setSelfcheck).catch(() => {});
+    apiJson<EvidenceLevels>('/api/v1/native-ai/evidence-levels').then(setEvLevels).catch(e => setEvErr(errorMessage(e)));
     fetch('/api/v1/native-ai/resources').then(r => r.json()).then(setFabricRes).catch(() => {});
     fetch('/api/v1/native-ai/inventory').then(r => r.json()).then(setInventory).catch(() => {});
     fetch('/api/v1/native-ai/models').then(r => r.json())
@@ -993,15 +1003,32 @@ export const NativeAI: React.FC = () => {
                   </div>
                 ))}
               </div>
+              <div data-testid="evidence-levels" className="mt-3 space-y-1 border-t border-slate-900 pt-2">
+                <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">What each statement about a model on this page rests on</p>
+                {evErr && <p role="alert" data-testid="evidence-levels-error" className="text-[9px] font-bold text-vital">{evErr}</p>}
+                {evLevels && <p className="text-[9px] text-slate-500">{evLevels.boundary}</p>}
+                {(evLevels?.surfaces ?? []).map(s => (
+                  <p key={s.path} data-testid="evidence-surface" className="text-[9px] text-slate-400">
+                    <span className="font-mono text-slate-300">{s.path}</span> — {s.level}: {s.rests_on}{s.stated_in_its_own_answer === false ? ' (its own answer does not say so)' : ''}
+                  </p>
+                ))}
+                {evLevels?.claims_check && (
+                  <p data-testid="evidence-claims-check" className="text-[9px] text-slate-500">
+                    Wording check — it reports {evLevels.claims_check.result_words.join(' or ')}: {evLevels.claims_check.basis}. {evLevels.claims_check.where}.
+                  </p>
+                )}
+              </div>
               <div data-testid="behaviour-baseline" className="mt-3 space-y-1 border-t border-slate-900 pt-2">
                 <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">Behaviour baseline, per serving tier — run when you ask, never on a schedule</p>
                 {blErr && <p role="alert" data-testid="baseline-error" className="text-[9px] font-bold text-vital">{blErr}</p>}
                 {baselines && <p className="text-[9px] text-slate-500">{baselines.basis}</p>}
+                {baselines?.reproducibility_basis && <p data-testid="baseline-reproducibility-scope" className="text-[9px] text-slate-400">{baselines.reproducibility_basis}</p>}
                 {baselines?.listing_is_incomplete && <p className="text-[9px] font-bold text-amber-400">{baselines.listing_basis}</p>}
                 {(baselines?.tiers ?? []).map(t => (
                   <div key={t.tier} className="flex flex-wrap items-center gap-2">
                     <span className="text-[10px] font-mono text-slate-300">{t.tier}</span>
                     <span data-testid={`baseline-tier-${t.tier}`} className="text-[9px] text-slate-500">{t.basis}</span>
+                    {t.reproducibility && <span data-testid={`baseline-reproducibility-${t.tier}`} className="text-[9px] text-slate-500">Reproducibility: {t.reproducibility}</span>}
                     <button type="button" data-testid={`baseline-run-${t.tier}`} onClick={() => runBaseline(t.tier)} disabled={!!blBusy}
                       className="text-[9px] font-black uppercase px-2 py-0.5 rounded border border-slate-800 text-slate-400 hover:text-aura disabled:opacity-40">
                       {blBusy === t.tier ? 'running…' : 'run the baseline'}
