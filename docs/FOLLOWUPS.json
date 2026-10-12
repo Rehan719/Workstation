@@ -19818,11 +19818,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.10",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W680",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W680: the shared helper takes a person's material as its own argument, marks it as data, cuts it in one place and records how much was read; the gate is handed the instruction's sections alone. Two callers are moved (marking a student's work, analysing a legal document); the rest are a new row. 14 blinds driven red, one after its guard was strengthened to drive each of two overlapping defences alone."
     },
     {
       "id": "FU-1022",
@@ -20531,6 +20534,27 @@
       "closed_by": null,
       "note": "",
       "slot_source": "the Owner's rulings of 2026-10-12 chartered this item",
+      "tier": 2
+    },
+    {
+      "id": "FU-1059",
+      "title": "Eighteen callers of the shared helper still paste a person's text into the instruction, three of them cutting it with nothing said",
+      "why": "Classified in W680 (C:/tmp/w640t/CALLERS_TO_MOVE.md; sites, each to be read before it is moved): of 34 tools that compose text 2 are moved; 3 cut a person's text at a fixed length silently (the career classifier at 2,000, the career generator at 600 characters a file - while saying it assembles only what the candidate recorded - and the job search at 300); 15 paste free text uncut. Prepared for the generator: C:/tmp/w640t/car_edits.py. Until a caller is moved, a heading in its pasted text is still read as a section.",
+      "source": "W680 (the shared helper round)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/career.py",
+        "agentic_core/api/employment.py",
+        "agentic_core/api/science.py",
+        "agentic_core/api/care.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.10",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the quality item's clause on a person's text as data; found by classifying every caller in W680",
       "tier": 2
     }
   ],
