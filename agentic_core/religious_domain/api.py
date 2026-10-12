@@ -852,6 +852,145 @@ async def hifz_progress(uid: str):
     }
 
 
+# ── Memorisation practice (W684; the plan item for the four areas, first clause) ──────────────────────────
+#  OWNER RULINGS 2026-10-12: a portion plan in three tracks SET by the learner or a teacher, with no default
+#  portions until a named source on the method has been read and entered; hidden-verse practice; the next word
+#  when the learner asks; similar verses computed from the sourced text by exact shared wording. Everything
+#  here is arithmetic over text FETCHED from the named source. Nothing is composed, nothing about a learner's
+#  recall is judged, and no answer carries a score, a count of mistakes or a rank.
+from agentic_core.religious_domain.memorization import practice as _practice
+
+_NO_DEFAULTS = ("the platform proposes no portion: no source on the memorisation method has yet been read and "
+                "entered in the register of sources, so a portion is whatever the learner or their teacher sets")
+
+
+def _check_ref(surah_number: int, ayah_number: int) -> None:
+    if not 1 <= surah_number <= 114:
+        raise HTTPException(status_code=400, detail="Surah number must be 1-114.")
+    if not 1 <= ayah_number <= _AYAH_COUNTS[surah_number]:
+        raise HTTPException(status_code=422,
+                            detail=f"surah {surah_number} has {_AYAH_COUNTS[surah_number]} ayaat — "
+                                   f"ayah {ayah_number} does not exist")
+
+
+async def _practice_text(surah_number: int, ayah_number: int) -> str:
+    _check_ref(surah_number, ayah_number)
+    fetched = await fetch_ayah_arabic(surah_number, ayah_number)
+    if not fetched:
+        #  refused where the caller receives it: practice against a verse this code could not source is not
+        #  offered, and nothing is put in its place
+        raise HTTPException(status_code=503, detail=(
+            f"The text of {surah_number}:{ayah_number} could not be fetched from the named source and is not "
+            "cached, so there is nothing to practise against. Nothing was generated in its place."))
+    return fetched
+
+
+@router.get("/hifz/practice/{surah_number}/{ayah_number}")
+async def hifz_practice(surah_number: int, ayah_number: int, shown_words: int = 1, reveal: bool = False):
+    """Hidden-verse practice. By default only the first word(s) are sent; `reveal=true` sends the whole verse.
+    The learner compares for themselves - this route is never told what they recalled."""
+    fetched = await _practice_text(surah_number, ayah_number)
+    view = _practice.hidden_view(fetched, shown_words)
+    out = {"ref": f"{surah_number}:{ayah_number}", **view, "revealed": bool(reveal),
+           **_corpus_provenance("quran-uthmani"),
+           "judged": False,
+           "judged_basis": "nothing about the learner's recall is received or assessed by this route"}
+    if reveal:
+        out["text"] = fetched
+    return out
+
+
+@router.get("/hifz/practice/{surah_number}/{ayah_number}/next")
+async def hifz_practice_next(surah_number: int, ayah_number: int, after_words: int = 0):
+    """The one word after the first `after_words` words - what a learner taps for when they pause."""
+    fetched = await _practice_text(surah_number, ayah_number)
+    return {"ref": f"{surah_number}:{ayah_number}", **_practice.next_word(fetched, after_words),
+            **_corpus_provenance("quran-uthmani"),
+            "basis": ("a position in the verse as fetched from the named source. It says nothing about what the "
+                      "learner recited: nothing was listened to")}
+
+
+_SIMILAR_MAX_SURAHS = 3
+
+
+@router.get("/hifz/similar")
+async def hifz_similar(surahs: str, min_shared_words: int = _practice.MIN_SHARED_WORDS, limit: int = 50):
+    """Verses that share a run of identical words, within and between up to three named surahs."""
+    try:
+        wanted = sorted({int(s) for s in str(surahs).split(",") if s.strip()})
+    except ValueError:
+        raise HTTPException(status_code=422, detail="surahs is a comma-separated list of numbers, e.g. 55 or 2,3")
+    if not wanted or len(wanted) > _SIMILAR_MAX_SURAHS or any(not 1 <= s <= 114 for s in wanted):
+        raise HTTPException(status_code=422, detail=(
+            f"name 1 to {_SIMILAR_MAX_SURAHS} surahs, each 1-114. The whole text is not compared in one call: "
+            "each verse is fetched from the named source, and a list over part of the text says which part."))
+    verses, missing = [], []
+    for s in wanted:
+        for a in range(1, _AYAH_COUNTS[s] + 1):
+            fetched = await fetch_ayah_arabic(s, a)
+            if fetched:
+                verses.append({"ref": f"{s}:{a}", "text": fetched})
+            else:
+                missing.append(f"{s}:{a}")
+    found = _practice.similar_pairs(verses, min_shared_words=min_shared_words, limit=max(1, min(int(limit), 200)))
+    return {**found, "surahs": wanted, "verses_not_available": len(missing),
+            "verses_not_available_refs": missing[:20],
+            "complete_for_these_surahs": not missing,
+            **_corpus_provenance("quran-uthmani"),
+            "scholar_reviewed": False,
+            "scholar_reviewed_basis": ("this is a count of shared wording computed by this platform. It is not "
+                                       "a scholar's list of similar verses and has not been reviewed by one")}
+
+
+class PortionRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+    uid: str
+    track: str                    # new_lesson | recent_revision | old_revision
+    unit: str                     # ayah_range | page | juz
+    start: int | str
+    end: int | str
+    set_by: str = "learner"       # learner | teacher - who SET it, as the caller states; not verified
+
+
+@router.post("/hifz/portion", dependencies=_ASKS)
+async def hifz_set_portion(req: PortionRequest):
+    """Set one track's portion. The platform sets nothing of its own."""
+    if req.set_by not in ("learner", "teacher"):
+        raise HTTPException(status_code=422, detail="set_by is 'learner' or 'teacher'")
+    checked = _practice.validate_portion(req.track, req.unit, req.start, req.end)
+    if not checked["ok"]:
+        raise HTTPException(status_code=422, detail="; ".join(checked["problems"]))
+    if req.unit == "ayah_range":
+        for end_ref in (str(req.start), str(req.end)):
+            s, a = (int(x) for x in end_ref.split(":"))
+            _check_ref(s, a)
+    entry = {"unit": req.unit, "start": req.start, "end": req.end, "set_by": req.set_by,
+             "set_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+    with store_lock(_hifz_path(req.uid)):
+        hifz = _load_hifz(req.uid)
+        portions = hifz.setdefault("portions", {})
+        if isinstance(portions.get(req.track), dict):
+            hifz.setdefault("portion_history", []).append({"track": req.track, **portions[req.track]})
+            hifz["portion_history"] = hifz["portion_history"][-200:]
+        portions[req.track] = entry
+        _save_hifz(req.uid, hifz)
+    return {"uid": req.uid, "track": req.track, "portion": entry, "proposed_by_platform": False,
+            "defaults_basis": _NO_DEFAULTS, "identity_verified": False,
+            "set_by_basis": "who set this is what the caller stated; no identity is checked on these routes"}
+
+
+@router.get("/hifz/portions/{uid}", dependencies=_ASKS)
+async def hifz_portions(uid: str):
+    hifz = _load_hifz(uid)
+    portions = hifz.get("portions") if isinstance(hifz.get("portions"), dict) else {}
+    return {"uid": uid, "tracks": list(_practice.TRACKS),
+            "portions": {t: portions.get(t) for t in _practice.TRACKS},
+            "tracks_set": sum(1 for t in _practice.TRACKS if portions.get(t)),
+            "proposed_by_platform": False, "defaults_basis": _NO_DEFAULTS,
+            "earlier_portions_kept": len(hifz.get("portion_history") or []),
+            "identity_verified": False}
+
+
 # ── Tajweed ───────────────────────────────────────────────────────────────────
 
 class WrittenRecallRequest(BaseModel):

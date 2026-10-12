@@ -62398,3 +62398,155 @@ def test_w683_an_issued_key_is_the_person_it_was_issued_to_through_a_real_reques
     assert client.get("/api/v1/auth/me", headers=by_key).status_code == 401
     kept = [k for k in auth_core._load_users()["amina-key"]["api_keys"] if k["key_id"] == kid]
     assert kept and kept[0]["revoked"] is True and kept[0].get("revoked_at")
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W684 - MEMORISATION PRACTICE on the Quran platform (the four areas, first clause; OWNER RULINGS 2026-10-12).
+#  The text in these guards is PLACEHOLDER TOKENS in the fetch's place: scripture is never typed into a test.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def _w684_plant(monkeypatch, table):
+    import agentic_core.religious_domain.api as _q
+
+    async def _fetch(surah, ayah):
+        return table.get((surah, ayah))
+    monkeypatch.setattr(_q, "fetch_ayah_arabic", _fetch)
+    return _q
+
+
+def test_w684_hidden_verse_practice_sends_only_what_is_shown_and_judges_nothing(client, monkeypatch):
+    _w684_plant(monkeypatch, {(1, 2): "tok1 tok2 tok3 tok4", (1, 3): None})
+    r = client.get("/api/v1/qep/hifz/practice/1/2").json()
+    assert r["shown"] == "tok1" and r["hidden_words"] == 3 and r["total_words"] == 4 and r["revealed"] is False
+    #  the hidden part is NOT in the answer at all - a page cannot leak what it was never sent
+    assert "tok2" not in json.dumps(r) and "text" not in r
+    assert r["judged"] is False and r["source"] == "alquran.cloud"
+    for forbidden in ("score", "accuracy", "mistakes", "rank", "correct"):
+        assert forbidden not in r, forbidden
+    two = client.get("/api/v1/qep/hifz/practice/1/2?shown_words=2").json()
+    assert two["shown"] == "tok1 tok2" and two["hidden_words"] == 2
+    full = client.get("/api/v1/qep/hifz/practice/1/2?reveal=true").json()
+    assert full["text"] == "tok1 tok2 tok3 tok4" and full["revealed"] is True
+    #  the next word, on request: a position in the fetched text and nothing about the learner
+    nxt = client.get("/api/v1/qep/hifz/practice/1/2/next?after_words=1").json()
+    assert nxt["word"] == "tok2" and nxt["position"] == 2 and nxt["end_of_verse"] is False
+    assert "nothing was listened to" in nxt["basis"]
+    last = client.get("/api/v1/qep/hifz/practice/1/2/next?after_words=4").json()
+    assert last["word"] is None and last["end_of_verse"] is True
+    #  a verse that could not be sourced is refused, and nothing is put in its place
+    gone = client.get("/api/v1/qep/hifz/practice/1/3")
+    assert gone.status_code == 503 and "Nothing was generated" in gone.json()["detail"]
+    #  a verse that does not exist is refused by the source's own count
+    assert client.get("/api/v1/qep/hifz/practice/1/8").status_code == 422
+    assert client.get("/api/v1/qep/hifz/practice/115/1").status_code == 400
+
+
+def test_w684_similar_verses_are_counted_from_the_fetched_text_and_say_what_they_cover(client, monkeypatch):
+    import agentic_core.religious_domain.api as _q
+    table = {(108, 1): "aa bb cc dd", (108, 2): "zz bb cc dd ee", (108, 3): "qq rr",
+             (112, 1): "aa bb cc dd", (112, 2): "mm nn", (112, 3): None, (112, 4): "bb cc xx"}
+    _w684_plant(monkeypatch, table)
+    r = client.get("/api/v1/qep/hifz/similar?surahs=108,112").json()
+    got = {(p["a"], p["b"]): p for p in r["pairs"]}
+    assert set(got) == {("108:1", "108:2"), ("108:1", "112:1"), ("108:2", "112:1")}, sorted(got)
+    assert got[("108:1", "112:1")]["whole_verse_identical"] is True
+    one = got[("108:1", "108:2")]
+    assert one["shared"] == "bb cc dd" and one["shared_words"] == 3
+    assert one["a_continues"] is None and one["b_continues"] == "ee"
+    #  it says what it examined: one verse could not be fetched, so the list is NOT complete for these surahs
+    assert r["verses_examined"] == 6 and r["verses_not_available"] == 1 and r["verses_not_available_refs"] == ["112:3"]
+    assert r["complete_for_these_surahs"] is False and "6 verse(s)" in r["basis"]
+    assert r["scholar_reviewed"] is False and "not a scholar's list" in r["scholar_reviewed_basis"]
+    #  a shorter run pairs more, and never fewer than two words
+    two = client.get("/api/v1/qep/hifz/similar?surahs=108,112&min_shared_words=2").json()
+    assert ("108:1", "112:4") in {(p["a"], p["b"]) for p in two["pairs"]} and two["min_shared_words"] == 2
+    assert client.get("/api/v1/qep/hifz/similar?surahs=108,112&min_shared_words=0").json()["min_shared_words"] == 2
+    #  bounded, and refused in words
+    assert client.get("/api/v1/qep/hifz/similar?surahs=1,2,3,4").status_code == 422
+    assert client.get("/api/v1/qep/hifz/similar?surahs=x").status_code == 422
+    assert client.get("/api/v1/qep/hifz/similar?surahs=115").status_code == 422
+    #  the module's own floor is what the route uses
+    assert _q._practice.MIN_SHARED_WORDS == 3
+
+
+def test_w684_a_portion_is_set_by_a_person_in_three_tracks_and_the_platform_proposes_none(client):
+    import uuid as _uuid
+    uid = f"w684-{_uuid.uuid4().hex[:8]}"
+    empty = client.get(f"/api/v1/qep/hifz/portions/{uid}").json()
+    assert empty["tracks"] == ["new_lesson", "recent_revision", "old_revision"]
+    assert empty["portions"] == {"new_lesson": None, "recent_revision": None, "old_revision": None}
+    assert empty["tracks_set"] == 0 and empty["proposed_by_platform"] is False
+    assert "proposes no portion" in empty["defaults_basis"]
+    ok = client.post("/api/v1/qep/hifz/portion", json={"uid": uid, "track": "new_lesson", "unit": "page",
+                                                      "start": 2, "end": 2, "set_by": "teacher"})
+    assert ok.status_code == 200, ok.text
+    assert ok.json()["portion"]["set_by"] == "teacher" and ok.json()["proposed_by_platform"] is False
+    assert client.post("/api/v1/qep/hifz/portion", json={"uid": uid, "track": "old_revision", "unit": "juz",
+                                                        "start": 30, "end": 30}).status_code == 200
+    assert client.post("/api/v1/qep/hifz/portion", json={"uid": uid, "track": "recent_revision",
+                                                        "unit": "ayah_range", "start": "1:1", "end": "1:7"}).status_code == 200
+    got = client.get(f"/api/v1/qep/hifz/portions/{uid}").json()
+    assert got["tracks_set"] == 3 and got["portions"]["new_lesson"]["start"] == 2
+    #  a change keeps the earlier portion
+    client.post("/api/v1/qep/hifz/portion", json={"uid": uid, "track": "new_lesson", "unit": "page", "start": 3, "end": 4})
+    again = client.get(f"/api/v1/qep/hifz/portions/{uid}").json()
+    assert again["portions"]["new_lesson"]["start"] == 3 and again["earlier_portions_kept"] == 1
+    #  refusals, each before anything is written
+    for bad in ({"track": "daily", "unit": "page", "start": 1, "end": 1},
+                {"track": "new_lesson", "unit": "page", "start": 0, "end": 1},
+                {"track": "new_lesson", "unit": "page", "start": 5, "end": 4},
+                {"track": "new_lesson", "unit": "page", "start": 1, "end": 605},
+                {"track": "new_lesson", "unit": "juz", "start": 1, "end": 31},
+                {"track": "new_lesson", "unit": "ayah_range", "start": "1:1", "end": "1:8"},
+                {"track": "new_lesson", "unit": "ayah_range", "start": "2:5", "end": "2:1"},
+                {"track": "new_lesson", "unit": "lines", "start": 1, "end": 2},
+                {"track": "new_lesson", "unit": "page", "start": 1, "end": 1, "set_by": "platform"},
+                {"track": "new_lesson", "unit": "page", "start": 1, "end": 1, "score": 5}):
+        r = client.post("/api/v1/qep/hifz/portion", json={"uid": uid, **bad})
+        assert r.status_code == 422, (bad, r.status_code, r.text[:200])
+    assert client.get(f"/api/v1/qep/hifz/portions/{uid}").json() == again
+    #  the practice record did not disturb the review record beside it
+    prog = client.get(f"/api/v1/qep/hifz/progress/{uid}").json()
+    assert prog["total_ayaat_in_schedule"] == 0
+
+
+def test_w684_the_practice_functions_only_cut_the_text_they_are_given():
+    from agentic_core.religious_domain.memorization import practice as p
+    given = "w1 w2 w3 w4 w5"
+    assert " ".join(p.words(given)) == given
+    h = p.hidden_view(given, 2)
+    assert given.startswith(h["shown"]) and h["shown_words"] + h["hidden_words"] == h["total_words"] == 5
+    assert p.hidden_view(given, 99)["hidden_words"] == 0 and p.hidden_view(given, -1)["shown"] == ""
+    r = p.similar_pairs([{"ref": "a", "text": "w1 w2 w3 w4"}, {"ref": "b", "text": "w9 w2 w3 w4"},
+                         {"ref": "c", "text": "w2 w3 k1"}])
+    assert [(x["a"], x["b"]) for x in r["pairs"]] == [("a", "b")] and r["pairs"][0]["shared"] in "w1 w2 w3 w4"
+    #  a mark's difference inside the run is NOT a match, and the basis says so
+    r2 = p.similar_pairs([{"ref": "a", "text": "w1 w2 w3"}, {"ref": "b", "text": "w1 w2' w3"}])
+    assert r2["pairs"] == [] and "NOT paired" in r2["basis"]
+    #  the cap is stated, never silent
+    many = [{"ref": f"v{i}", "text": "s1 s2 s3"} for i in range(6)]
+    capped = p.similar_pairs(many, limit=4)
+    assert capped["pairs_found"] == 15 and capped["pairs_returned"] == 4 and len(capped["pairs"]) == 4
+
+
+def test_w684_the_practice_panel_is_on_the_quran_page_and_says_only_what_the_server_said():
+    #  REACH: the panel is mounted on the page a learner opens, and every sentence about what the practice IS is
+    #  a field of the server's answer - none is typed into the page.
+    _root = __import__("pathlib").Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "components"
+    page = (_root / "QEPStudio.tsx").read_text(encoding="utf-8")
+    panel = (_root / "HifzPractice.tsx").read_text(encoding="utf-8")
+    assert "import { HifzPractice } from './HifzPractice';" in page and "<HifzPractice uid={UID} />" in page
+    for field in ("{plan.defaults_basis}", "{hidden.judged_basis}", "{similar.basis}", "{similar.scholar_reviewed_basis}"):
+        assert panel.count(field) == 1, field
+    #  the hidden words are never held by the page before they are asked for: the text shown is what was SEEN
+    assert "hidden.revealed && hidden.text ? hidden.text : seen.join(' ')" in panel
+    #  an incomplete list says so on its own line, gated on the server's own flag
+    assert "{!similar.complete_for_these_surahs && (" in panel
+    #  nothing on the panel words a judgement of the learner (read with comments removed, so a comment that
+    #  records the rule cannot satisfy or break it)
+    import re as _re
+    shown = _re.sub(r"//[^\n]*|\{/\*.*?\*/\}", "", panel, flags=_re.S).lower()
+    for word in ("score", "streak", "mistake", "accuracy", "leaderboard", "rank", "correct", "well done", "wrong"):
+        assert word not in shown, f"the practice panel says {word!r}"
+    #  the three routes it calls are the three this round built
+    for call in ("/api/v1/qep/hifz/portions/", "/api/v1/qep/hifz/portion'", "/api/v1/qep/hifz/practice/", "/api/v1/qep/hifz/similar?surahs="):
+        assert call in panel, call

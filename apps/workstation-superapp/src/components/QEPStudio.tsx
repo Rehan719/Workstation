@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { BookOpen, Brain, Loader2, Sparkles, Trophy, Languages, CheckCircle2 } from 'lucide-react';
 import { apiJson, errorMessage } from '../lib/api';
+import { HifzPractice } from './HifzPractice';
 
 // W439 — the REAL Quran Education Platform surface (Owner directive: QEP lives in the Religion
 // domain). Every capability here is a wired backend route that was AUDITED before wiring:
@@ -485,6 +486,9 @@ export const QEPStudio: React.FC = () => {
           )}
         </Card>
       </div>
+
+      {/* W684 — memorisation practice: the plan in three tracks, the hidden verse, similar verses side by side */}
+      <HifzPractice uid={UID} />
 
       <p className="text-[9px] text-slate-600 flex items-center gap-2">
         <Trophy size={11} className="text-slate-700" />
