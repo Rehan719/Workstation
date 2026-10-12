@@ -29,6 +29,13 @@ const scholarReviewLines = (r: any) => (
   </>
 );
 
+// T2B (row 6) — the four tool blurbs described the floor's rule only. Since REL a MODEL-served answer is
+// withheld as well, until a named scholar approves that exact text (the response says so in `review_note`
+// and `scholar_review`, printed by scholarReviewLines above). One sentence, used by all four tabs.
+const MODEL_ANSWER_RULE = 'When a model serves instead, everything it composes is withheld until a named scholar on the roster has approved that exact text: the result says so on a line headed Scholar review, and once the text is approved that line names who approved it.';
+// ...and the tafsir blurb said nothing of the floor, which writes no study notes at all.
+const TAFSIR_FLOOR_RULE = 'When only the deterministic floor is serving, no study notes are written: the notes, a translation and a transliteration are withheld, and the result names them.';
+
 export const ReligionHub: React.FC = () => {
   const T = toolsFor('/religion');   // W470 — the one tool registry the front doors count from
   const navigate = useNavigate();
@@ -159,7 +166,7 @@ export const ReligionHub: React.FC = () => {
                       description={<>Pose a question of Islamic jurisprudence. Workstation's <span className="text-aura">own</span> AI
                         drafts a structured research frame within your chosen madhab — in-house, and never a fatwa. When only the
                         deterministic floor is serving, the primary sources, the school's position and the legal reasoning are
-                        WITHHELD rather than framed: the run says so on its face.</>}
+                        WITHHELD rather than framed: the run says so on its face. {MODEL_ANSWER_RULE}</>}
                       endpoint="/api/v1/religion/fatwa-research"
                       resultKey="research"
                       submitLabel="Research question"
@@ -192,7 +199,7 @@ export const ReligionHub: React.FC = () => {
                       description={<>Study an ayah. The Arabic is RETRIEVED from an authorised source and never generated;
                         Workstation's <span className="text-aura">own</span> AI then writes structured study notes
                         (classical, thematic, contemporary or linguistic) to be read <em>against</em> the classical tafasir —
-                        not drawn from them, and never a substitute for a teacher.</>}
+                        not drawn from them, and never a substitute for a teacher. {TAFSIR_FLOOR_RULE} {MODEL_ANSWER_RULE}</>}
                       endpoint="/api/v1/religion/quran-tafsir"
                       resultKey="tafsir"
                       submitLabel="Generate tafsir"
@@ -238,7 +245,7 @@ export const ReligionHub: React.FC = () => {
                          piece of work the endpoint does, the ingredient screen, was in the response
                          and never rendered, because the tool prints only `assessment`. So the page
                          promised what it withheld and hid what it had. */
-                      description={<>Describe a product and this screens your declared ingredients against the terms that commonly require verification — in-house, deterministic. It <span className="text-aura">flags</span>; it never clears, and it is not certification. Where the owned model is unavailable some sections are withheld rather than guessed, and the result says which.</>}
+                      description={<>Describe a product and this screens your declared ingredients against the terms that commonly require verification — in-house, deterministic. It <span className="text-aura">flags</span>; it never clears, and it is not certification. Where the owned model is unavailable some sections are withheld rather than guessed, and the result says which. {MODEL_ANSWER_RULE}</>}
                       endpoint="/api/v1/religion/halal-review"
                       resultKey="assessment"
                       submitLabel="Screen ingredients"
@@ -271,7 +278,7 @@ export const ReligionHub: React.FC = () => {
                             {!!withheld.length && (
                               <div data-testid="halal-withheld" className="p-4 rounded-2xl bg-slate-950 border border-slate-800">
                                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
-                                  Withheld on this deployment — {withheld.length} section{withheld.length === 1 ? '' : 's'}
+                                  {r?.floor_note ? 'Withheld on this deployment' : (typeof r?.review_note === 'string' && r.review_note !== '' ? 'Withheld until a named scholar approves' : 'Withheld')} — {withheld.length} section{withheld.length === 1 ? '' : 's'}
                                 </p>
                                 <p className="text-xs text-slate-500 font-semibold leading-relaxed">{withheld.join(' · ')}</p>
                                 {r?.floor_note && <p className="text-[10px] text-slate-600 leading-relaxed mt-2">{r.floor_note}</p>}
@@ -298,7 +305,7 @@ export const ReligionHub: React.FC = () => {
                         drafts a study frame — research only, never a ruling. When only the deterministic floor is serving,
                         the identification, matn, isnad, GRADING and sharh are WITHHELD: a grade nothing verified is the one
                         error this tool must never make. Any grading must be confirmed against an authenticated collection
-                        and a qualified scholar.</>}
+                        and a qualified scholar. {MODEL_ANSWER_RULE}</>}
                       endpoint="/api/v1/religion/hadith-study"
                       resultKey="study"
                       submitLabel="Study hadith"

@@ -191,8 +191,14 @@ def published_body(content_key: str, body: str) -> Tuple[Optional[str], str, str
     """
     if roster_is_empty():
         return (None, "withheld", (
-            "This is not shown because no scholar has reviewed it. §11 requires a qualified human to "
-            "approve religious teaching content before a learner sees it, and no reviewer is engaged yet. "
+            #  T2B (row 7) - this spoke of teaching content and a learner only, and it is also the reason
+            #  given on the five research tools and on the refine route (religion._scholar_gated passes it
+            #  through). Both rules are named, each with its own reader; "no reviewer is engaged" is said
+            #  as the fact this branch tests - the roster is empty.
+            "This is not shown because no scholar has reviewed it. A named scholar must approve religious "
+            "content composed here before a learner sees it (§11 and A.12.3, for teaching content) and "
+            "before it is shown to a person using a research tool or asking for a rewrite (Owner ruling "
+            "2026-10-11), and no scholar is on the roster yet. "
             "A disclaimer is not a review, so nothing is shown in its place."))
     rec = _load(_review_path()).get(content_key)
     if not rec:

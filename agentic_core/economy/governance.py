@@ -28,6 +28,14 @@ from typing import Any, Dict, List, Optional, Tuple
 MATERIALITY_WST = float(os.getenv("ECONOMY_MATERIALITY_WST", "250000"))
 
 _HOLD_TITLE_PREFIX = "[economy] material distribution — "
+#  FU-794 (Owner ruling 2026-10-11) - THE SOVEREIGN CAPITAL FUND'S ALLOCATION IS A GOVERNED ACTION. It is one
+#  more class of this gate rather than a second mechanism: the fund is the actor (FUND_ENTITY_ID stands where a
+#  VSB id stands for a cycle or a transfer), the recipient is the counterparty, and the source names the
+#  recipient so the hold's TITLE does - the Owner deciding it in the Sovereign Sanctum reads the title.
+#  The class has NO THRESHOLD: every allocation is held, whatever its amount (see _materiality_gate).
+FUND_ENTITY_ID = "sovereign-capital-fund"
+FUND_SOURCE_PREFIX = "fund:"
+FUND_HOLD_TITLE_PREFIX = "[economy] capital fund allocation — "
 
 
 def _now() -> str:
@@ -145,6 +153,9 @@ def _hold_title(vsb_id: str, source: str) -> str:
     if str(source or "").startswith(CONTRACT_SOURCE_PREFIX):
         cid = str(source).split(":", 1)[1].strip() or "unnamed"
         return f"{CONTRACT_HOLD_TITLE_PREFIX}{vsb_id} · contract {cid}"
+    if str(source or "").startswith(FUND_SOURCE_PREFIX):
+        # FU-794 - one hold per recipient, and the title says who the recipient is
+        return FUND_HOLD_TITLE_PREFIX + (str(source).split(":", 1)[1].strip() or "unnamed")
     return (("[economy] material transfer — " + vsb_id) if source == "transfer"
             else _HOLD_TITLE_PREFIX + vsb_id)
 
@@ -425,11 +436,28 @@ def unreleasable_reason(c: Dict[str, Any]) -> Optional[str]:
     counterparty = c.get("counterparty")
     if source == "transfer" and not counterparty:
         return "a transfer hold filed before W463 names no receiver, so no transfer can match it"
+    if source == "fund":
+        #  FU-794 - a fund allocation's title names its recipient, so the identity a live request would present
+        #  is rebuilt from the recipient (the class alone cannot rebuild it)
+        if not counterparty:
+            return "a capital fund allocation hold that names no recipient can match no allocation"
+        source = FUND_SOURCE_PREFIX + str(counterparty)
     if not _is_economy_hold(c, vsb_id, _hold_title(vsb_id, source), source, counterparty):
         return "no economy action presents this record's identity"
     if c.get("status") == "approved" and not _owner_decided(c):
         # W464 (FU-014) — the gate never spends it (see _owner_decided), so it can be retired
         return _not_owner_reason(c)
+    if _source_class(source) == "fund":
+        #  FU-794 - the allocation route refuses a recipient that does not exist, so a hold for one that has
+        #  since gone can never be released. "Could not be read" is never read as "gone".
+        try:
+            from agentic_core.api.capital_fund import recipient_known as _recipient_known
+            _still = _recipient_known(str(counterparty)).get("known")
+        except Exception:
+            _still = None
+        if _still is False:
+            return (f"its recipient {counterparty} is no longer a registered entity or a project, so the "
+                    f"allocation cannot run")
     if source in ("transfer", "heartbeat"):
         try:
             from agentic_core.economy.living_vsbs import _STORE as _ROSTER, _load as _living
@@ -476,6 +504,8 @@ def _source_class(source: str) -> str:
     source = str(source or "")
     if source.startswith(CONTRACT_SOURCE_PREFIX):
         return "contract"
+    if source.startswith(FUND_SOURCE_PREFIX):
+        return "fund"                                   # FU-794 - its own class: no cycle or transfer hold matches it
     return "transfer" if source == "transfer" else ("heartbeat" if source == "heartbeat" else "api")
 
 
@@ -610,6 +640,14 @@ def _describe(vsb_id: str, source: str, est: float, counterparty: Optional[str],
         after = (f" FOLLOWS A REJECTION: {follows.get('cca_id')} (for {follows.get('est_distributable_wst')} WST) was "
                  "rejected" + (f"; {len(again)} of its recognised events are included again here" if again else "")
                  + ". Only an explicit decision can approve this.")
+    if _source_class(source) == "fund":
+        #  FU-794 - its own sentence: the general one below states a threshold this class does not have
+        return (f"Virtual allocation from the Sovereign Capital Fund to {counterparty}: {est} WST. Every "
+                "allocation from the fund is held for the Owner's explicit decision whatever its amount (Owner "
+                "ruling 2026-10-11) - no threshold lets one pass. Held until approved (virtual WST only — no real "
+                "funds). An approval releases ONE allocation to this recipient of at most this amount, applied "
+                "when the allocation is requested again; approving moves nothing by itself. While submitted, "
+                "the amount is kept current." + after)
     return (f"{what}: estimated {est} WST ≥ materiality threshold {MATERIALITY_WST} WST. Held until approved "
             "(virtual WST only — no real funds). An approval releases ONE action on the intake recorded on this "
             "record" + (" to this counterparty" if counterparty else "") + " — at most this amount; intake that "
@@ -734,7 +772,9 @@ def _materiality_gate(vsb_id: str, est_distributable: float, source: str,
     `intake` describes what the action would take: {revenue_wst, costs_wst, returns_wst, transfers_wst}
     plus reserve_rate for an API cycle; the same plus event_ids and event_items (the per-event amounts a release
     re-estimates from) for a heartbeat cycle; None for a transfer (its amount is the estimate)."""
-    if est_distributable < MATERIALITY_WST:
+    #  FU-794 (Owner ruling 2026-10-11) - the capital fund's class has no threshold: an allocation of any
+    #  amount is held. Every other class keeps the threshold exactly as it was.
+    if est_distributable < MATERIALITY_WST and _source_class(source) != "fund":
         return None, None
     try:
         # W463 — the scan and the filing are not atomic: concurrent first requests for the same action each

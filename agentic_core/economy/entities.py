@@ -101,6 +101,11 @@ ENTITY_TEMPLATES: Dict[str, Dict[str, Any]] = {
 
 DEFAULT_ENTITY = "waqf_ltd_hybrid"
 
+#  P3.30 r5 (Owner ruling 2026-10-11) - THE WAQF FORMS, as data. An entity in one of these keeps at least its
+#  template's charity share whatever waterfall its Owner sets (metabolism.waterfall_bound_violations). Kept
+#  as a set beside the templates rather than as a key on three of them, so every template keeps one shape.
+WAQF_FORMS = frozenset({"waqf", "waqf_ltd_hybrid", "qep_waqf_trust"})
+
 
 def get_template(entity_type: str) -> Dict[str, Any]:
     return ENTITY_TEMPLATES.get(entity_type, ENTITY_TEMPLATES[DEFAULT_ENTITY])

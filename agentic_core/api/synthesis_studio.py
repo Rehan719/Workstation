@@ -18,7 +18,8 @@ This is the flagship BTO (Business Transformation Office) workflow:
   → Delivers complete VSB entity package as a spawned project
 
   POST /api/v1/studio/synthesise      — full cascade (SSE streaming)
-  POST /api/v1/studio/vsb/spawn       — spawn a VSB entity from a project
+  POST /api/v1/studio/vsb/spawn       — RETIRED (Owner ruling 2026-10-11): answers 410 and creates nothing.
+                                        Genesis is the one door that establishes an enterprise. The code is kept.
   GET  /api/v1/studio/vsb/{entity_id} — retrieve spawned VSB entity
   GET  /api/v1/studio/vsb             — list all VSB entities
 """
@@ -261,6 +262,18 @@ class SynthesiseRequest(BaseModel):
     context: str = ""
 
 
+#  W672 (OWNER RULING 2026-10-11) - THIS ROUTE IS RETIRED WITH THE STUDIO SPAWN. It composed nine stages and
+#  then saved an entity: a second door to an enterprise, called by no page. The refusal is raised in the
+#  handler, BEFORE the stream is opened - inside the generator the status would already be 200 and the
+#  refusal could not be received. The code below is kept; False restores the door exactly as it was. The
+#  fabric's laboratory cascade is `run_lab_cascade`, a function that saves no entity, and is not retired.
+STUDIO_SYNTHESISE_RETIRED = True
+STUDIO_SYNTHESISE_RETIRED_REASON = (
+    "This door is retired (Owner ruling 2026-10-11): one door establishes an enterprise, and it is Genesis. "
+    "Nothing was composed and nothing was created. Establish through the Genesis page (/genesis), or POST "
+    "/api/v1/genesis/establish. This route's code is kept and the retirement is reversible.")
+
+
 @router.post("/synthesise")
 async def synthesise(req: SynthesiseRequest,
                      user: dict | None = Depends(get_current_user)) -> StreamingResponse:
@@ -268,6 +281,9 @@ async def synthesise(req: SynthesiseRequest,
     Full concept-to-commercialisation synthesis cascade (SSE streaming).
     Runs 9 AI stages, streaming results as they complete.
     """
+    if STUDIO_SYNTHESISE_RETIRED:      # read at call time; refused before anything is composed or stored
+        from fastapi import HTTPException
+        raise HTTPException(status_code=410, detail=STUDIO_SYNTHESISE_RETIRED_REASON)
     solution_name = req.solution_name or f"{req.domain.title()} Solution"
     # W505 (P2.6) — the run is recorded against the PRINCIPAL where there is one, as /vsb/spawn already
     # does. This route had no dependency at all, so nothing tied a synthesis to whoever asked for it.
@@ -386,6 +402,20 @@ async def synthesise(req: SynthesiseRequest,
 
 # ── VSB Entity management ─────────────────────────────────────────────────────
 
+#  P3.30 r5 (Owner ruling 2026-10-11) - ONE DOOR ESTABLISHES AN ENTERPRISE, AND IT IS GENESIS.
+#  This route was a second door no page called: it registered a living entity with a board, an economy and a
+#  plan from one model call, with none of the journey's evidence, gates or naming. It is RETIRED AS A
+#  REVERSIBLE MOVE. A single route cannot be moved to _archive/ without taking its module, and this module
+#  still serves the cascade and the entity reads, so the retirement is one constant: while it is True the
+#  route answers 410 before anything is composed or stored, and every line of the handler below is kept.
+#  Setting it to False restores the door exactly as it was; the tests that guard the kept code do that.
+STUDIO_SPAWN_RETIRED = True
+STUDIO_SPAWN_RETIRED_REASON = (
+    "This door is retired (Owner ruling 2026-10-11): one door establishes an enterprise, and it is Genesis. "
+    "Nothing was created. Establish through the Genesis page (/genesis), or POST /api/v1/genesis/establish. "
+    "This route's code is kept and the retirement is reversible.")
+
+
 class SpawnRequest(BaseModel):
     project_id: str
     parent_vsb: str = ""     # P3.26 cl.(1) — a parent VSB, distinct from project_id which is a PROJECT
@@ -401,6 +431,9 @@ async def spawn_vsb_entity(req: SpawnRequest, user: dict | None = Depends(get_cu
     Spawn a VSB entity from an existing project.
     Generates a compact VSB structure without the full cascade.
     """
+    if STUDIO_SPAWN_RETIRED:           # P3.30 r5 - read at call time; refused before anything is composed
+        from fastapi import HTTPException
+        raise HTTPException(status_code=410, detail=STUDIO_SPAWN_RETIRED_REASON)
     entity_id = f"vsb-{uuid.uuid4().hex[:8]}"
 
     prompt = (

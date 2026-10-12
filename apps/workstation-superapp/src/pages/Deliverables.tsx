@@ -64,7 +64,7 @@ export const Deliverables: React.FC = () => {
   const [dlFormat, setDlFormat] = useState('md');   // §4.9 — selectable in-house export format
   // The live export formats are fetched from the backend so the selector reflects REAL capability
   // (e.g. PDF appears only when the in-house renderer is available). Falls back to the always-on set.
-  const [formats, setFormats] = useState<{ id: string; label: string }[]>([
+  const [formats, setFormats] = useState<{ id: string; label: string; basis?: string }[]>([
     { id: 'md', label: 'Markdown (.md)' }, { id: 'html', label: 'HTML document (.html)' },
     { id: 'slides', label: 'Presentation (.html)' }, { id: 'txt', label: 'Plain text (.txt)' },
     { id: 'json', label: 'JSON (.json)' },
@@ -83,7 +83,7 @@ export const Deliverables: React.FC = () => {
   useEffect(() => {
     fetch('/api/v1/deliverables/types').then(r => r.json()).then(d => setTypes(d.types || [])).catch(() => setError('Failed to load types'));
     fetch('/api/v1/deliverables/output-formats').then(r => r.json())
-      .then(d => { if (Array.isArray(d.live) && d.live.length) setFormats(d.live.map((f: any) => ({ id: f.id, label: f.label }))); })
+      .then(d => { if (Array.isArray(d.live) && d.live.length) setFormats(d.live.map((f: any) => ({ id: f.id, label: f.label, basis: typeof f.basis === 'string' ? f.basis : undefined }))); })
       .catch(() => {});
     loadList().finally(() => setLoading(false));
   }, []);
@@ -347,6 +347,10 @@ Document-controlled under the QMS (DCMS) · record ${selected.quality_assurance.
                   <Download size={12} /> {selected.quality_assurance?.quality?.compliance?.overall === 'fail' ? 'Download (carries FAIL verdict)' : 'Download'}
                 </button>
               </div>
+              {/* P3.30 r6 (ledger v16 R2.15) - what the chosen format IS, in the server's words, as text */}
+              {formats.find(f => f.id === dlFormat)?.basis && (
+                <p className="text-[10px] text-amber-400/90 mt-1 leading-relaxed" data-testid="export-format-basis">{formats.find(f => f.id === dlFormat)?.basis}</p>
+              )}
               {/* §3A (W308) — DEVELOP: the refined result persists as the next version */}
               <div className="mt-2 flex items-end gap-2">
                 <input value={refineInstr} onChange={e => setRefineInstr(e.target.value)}

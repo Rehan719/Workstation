@@ -5,7 +5,8 @@ Design:
   - Single-user mode (default): no auth required — all endpoints open.
     This preserves backwards compatibility; existing integrations keep working.
   - Multi-user mode (AUTH_ENABLED=true): JWT Bearer tokens required on
-    protected endpoints. API keys are also accepted as Bearer tokens.
+    protected endpoints. An API key can be ISSUED and is NOT YET ACCEPTED as a Bearer token:
+    nothing verifies a stored key (W672; to be built in the authentication-readiness round).
 
 JWT flow:
   POST /api/v1/auth/token       — username + password → access_token + refresh_token
@@ -440,6 +441,9 @@ async def generate_api_key(current_user: dict | None = Depends(get_current_user)
         "api_key": raw_key,
         "key_id": key_record["key_id"],
         "note": "Store this key securely — it will not be shown again.",
+        "accepted": False,
+        "accepted_basis": ("this key is stored and is NOT YET ACCEPTED by any route: a request must still carry "
+                           "a signed token. Accepting keys is planned work, not present behaviour."),
     }
 
 

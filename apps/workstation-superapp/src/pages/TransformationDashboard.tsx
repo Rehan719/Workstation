@@ -332,6 +332,12 @@ export const TransformationDashboard: React.FC = () => {
                       </span>
                     ))}
                   </div>
+                  {/* P3.30 r6 (ledger v16 R6.10) - a check that is NOT met prints its own basis as text. It was
+                      in the tooltip only, so "X of Y API modules" stood beside a grey dot with the sentence
+                      that says there is no global gate out of sight. */}
+                  {p.evidence.filter(e => e.met === false && e.basis).map((e, i) => (
+                    <p key={i} className="text-[10px] text-amber-400/90 font-bold leading-relaxed mt-1" data-testid="pillar-evidence-basis">{e.basis}</p>
+                  ))}
                 </Card>
               ))}
             </div>

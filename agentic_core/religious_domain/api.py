@@ -1145,6 +1145,15 @@ async def qep_curriculum(req: QepCurriculumRequest):
     }
 
 
+#  T2B (row 5) - WHY RECITATION IS NOT SCORED, IN THE ORDER THAT IS TRUE. The status gave the absence of a
+#  phonetic model as the reason, which reads as "scored once a model arrives". The reason is the ruling
+#  (vision A.9.1, a ratified boundary under section 11); the model's absence is a fact beside it. Two
+#  constants, so the component line, the constraint and the added `recitation` field say one thing.
+_RECITATION_RULING = "recitation is never scored, by ruling (vision A.9.1)"
+_RECITATION_MODEL_FACT = ("no phonetic model is provisioned either, and providing one would not change the "
+                          "ruling: only an Owner ruling after scholar review could")
+
+
 @router.get("/status")
 async def qep_status():
     """Platform status — component lines say what each ACTUALLY is (W439: they were constants —
@@ -1159,7 +1168,7 @@ async def qep_status():
             #  W656 (ledger v15 R1.3) - outlines are composed and WITHHELD (A.12.3); this said they were a live tool
             "tajweed": ("text tools only — written-recall comparison is live; lesson outlines are composed "
                         "and withheld until a named scholar approves them; "
-                        "NO recitation assessment (no phonetic model is provisioned)"),
+                        "NO recitation assessment: " + _RECITATION_RULING + "; " + _RECITATION_MODEL_FACT),
             "gamification": f"active — persisted award store; {learners} learner record(s)",
             "quran_text": ("external source (alquran.cloud, constitutional) — fetched on demand, "
                            "returns 503 honestly when unreachable; never AI-generated"),
@@ -1167,8 +1176,12 @@ async def qep_status():
         "constraints": [
             "Quran text sourced from alquran.cloud only — never AI-generated",
             "AI content labelled AI-assisted with serving provenance — not authoritative",
-            "Recitation is never scored — no phonetic model exists to score it",
+            _RECITATION_RULING[:1].upper() + _RECITATION_RULING[1:] + " — " + _RECITATION_MODEL_FACT,
         ],
+        #  T2B (row 5) - the same two statements as fields (added at the top level: the page prints every
+        #  value under `components` as text, so an object must not be put there)
+        "recitation": {"scored": False, "reason": "ruling", "ruling": _RECITATION_RULING,
+                       "model_fact": _RECITATION_MODEL_FACT},
     }
 
 

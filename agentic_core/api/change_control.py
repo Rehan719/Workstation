@@ -178,6 +178,25 @@ def _verified(user: Any) -> bool:
     return bool(auth_enabled() and _principal(user))
 
 
+def _decider_and_submitter(c: dict, principal: Any, verified: bool) -> dict:
+    """W672 (OWNER RULING 2026-10-11) - WHETHER THE PERSON DECIDING A CHANGE IS THE PERSON WHO SUBMITTED IT,
+    recorded on the decision. It is a fact about two CHECKED names, so it is stated only when both were
+    checked by the auth layer; otherwise it is None and the basis says why. Nothing is refused on it here:
+    the rule that they must differ applies once a second administrator exists, and is not built yet."""
+    _sub = c.get("submitted_by")
+    if verified and c.get("submitted_by_verified") and _sub:
+        _same = str(principal) == str(_sub)
+        return {"decider_is_submitter": _same,
+                "decider_is_submitter_basis": (
+                    f"both names were checked by the auth layer: decided by {principal}, submitted by {_sub}")}
+    return {"decider_is_submitter": None,
+            "decider_is_submitter_basis": (
+                "not established: " + ("authentication is off, so neither name was checked"
+                                       if not auth_enabled() else
+                                       "the submitter or the decider was not a checked account "
+                                       f"(submitted by {_sub or 'nobody recorded'})"))}
+
+
 @contextmanager
 def _change_mutation(cca_id: str):
     """W459 — the per-record critical section. Every load→modify→write on one change now runs
@@ -227,6 +246,28 @@ def _economy_releasable(c: dict) -> bool:
         return True   # unknown: never retire on a guess (implement stays refused)
 
 
+def _decision_account(record: dict, decision: str, decision_source: str, review_why: str):
+    """P3.30 r5 (Owner ruling 2026-10-11) - BOTH FACTS, ON THE RECORD, IN WORDS.
+
+    The method gate withholds only the AUTOMATIC approval of a change whose record leaves a checkable
+    requirement unmet; the change stands as submitted and a review may still decide it. That is designed and
+    tested. What the record did not do was say so in one place: a reader saw "automatic approval withheld" in
+    the audit trail and "approved" as the status, and had to infer how one became the other. This returns the
+    two sentences for a change that carries a withheld automatic approval and has now been DECIDED at review,
+    and None for every other change (nothing is claimed about a change the method gate never withheld).
+    It decides nothing and is called after the decision is already made."""
+    withheld = record.get("auto_approval_withheld")
+    if not withheld or decision not in ("approved", "rejected"):
+        return None
+    return {
+        "method_gate": f"the method gate withheld automatic approval because {withheld}",
+        "review": f"{decision} at review by {review_why}",
+        "decided_by": decision_source,
+        "basis": ("two separate facts about one change: the method gate withholds only the AUTOMATIC approval, "
+                  "and a review then decided the change. Neither overrides the other."),
+    }
+
+
 def _list_changes(status_filter: str | None = None) -> list[dict]:
     result = []
     # W459 — stat() ran outside the try, so a record removed mid-scan raised out of GET /queue; and
@@ -256,6 +297,11 @@ def _list_changes(status_filter: str | None = None) -> list[dict]:
                 # W463 — a held record (awaiting an explicit decision) and an economy hold's current amount
                 "hold_reason": c.get("hold_reason"),
                 "est_distributable_wst": c.get("est_distributable_wst"),
+                #  P3.30 r5 - the method gate's withheld approval and the account of how the change was then
+                #  decided reach the LIST, which is what the Agency page's cards are drawn from. The card has
+                #  rendered `auto_approval_withheld` since W509 and this row never carried it.
+                "auto_approval_withheld": c.get("auto_approval_withheld"),
+                "decision_account": c.get("decision_account"),
                 # W581 (FU-313) — the promise and the variance reach the QUEUE, which is the list the
                 # growing tip reads. A commitment held only on the individual record is a promise nobody
                 # sees while the work is in flight, which is the whole point of recording one.
@@ -747,7 +793,9 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
     # hole this check exists to close.
     if req.change_type == "economy_material" or _title.startswith(("[economy] material distribution",
                                                                     "[economy] material transfer",
-                                                                    "[economy] material contract settlement")):
+                                                                    "[economy] material contract settlement",
+                                                                    # FU-794 - the fund's hold title, reserved too
+                                                                    "[economy] capital fund allocation")):
         raise HTTPException(status_code=422, detail=(
             "change_type 'economy_material' and the '[economy] material distribution/transfer/contract "
             "settlement' titles are "
@@ -1737,6 +1785,15 @@ async def review_change(cca_id: str, req: ReviewDecision,
                 f"written by {_writer} and had NO bearing on the decision."
                 + model_out)
 
+    #  P3.30 r5 (Owner ruling 2026-10-11) - WHY the review decided as it did, in the words the branch above
+    #  already computed. Each name is read only on the branch that bound it (an override binds none of them).
+    _review_why_r5 = (
+        "a person's explicit decision (an override), not by a rule" if decision_source == "admin_override" else
+        f"the serving resource's decision marker: {_writer} returned [DECISION: {str(decision).upper()}]"
+        if decision_source == "model_decision_marker" else
+        f"the health rule because {rule_clause}" if decision_source == "health_threshold_rule" else
+        "nothing - the change is held for an explicit decision")
+
     # §17.5 — an APPROVED major change (HIGH/CRITICAL) is pre-validated at approval time so
     # /implement can enforce "pre-validation before major change" without a second round-trip.
     # The await stays OUTSIDE the lock.
@@ -1780,7 +1837,12 @@ async def review_change(cca_id: str, req: ReviewDecision,
         fresh.pop("recommendation", None)   # superseded by the decision; the held audit entry keeps it
         fresh["status"] = decision
         fresh["decision"] = decision
+        #  P3.30 r5 - written AFTER the decision, from it; a change the method gate never withheld gets none
+        _acct_r5 = _decision_account(fresh, decision, decision_source, _review_why_r5)
+        if _acct_r5:
+            fresh["decision_account"] = _acct_r5
         trail.append({"event": decision, "ts": now, "by": principal, "by_verified": _verified(user),
+                      **_decider_and_submitter(fresh, principal, _verified(user)),
                       "via": "admin_override" if req.override_decision else "review_request",
                       "decided_by": ("admin_override" if decision_source == "admin_override"
                                      else "cca_ai_model_marker" if decision_source == "model_decision_marker"
@@ -1838,6 +1900,7 @@ async def review_change(cca_id: str, req: ReviewDecision,
         "status": c["status"],
         "impact_tier": tier,
         "awaiting_board_ratification": awaiting,
+        **({"decision_account": c["decision_account"]} if c.get("decision_account") else {}),   # P3.30 r5
         **({"ueg_logged": ueg_logged} if ueg_logged is not None else {}),
     }
 
@@ -2097,6 +2160,7 @@ def ratify_change(cca_id: str, decision: str, notes: str, principal: str, verifi
         fresh["board_ratification"] = {
             "decision": "ratified" if decision == "ratify" else "refused", "at": now, "by": principal,
             "by_verified": verified, "on_owner_direction": True, "notes": (notes or "")[:500],
+            **_decider_and_submitter(fresh, principal, verified),
             "approval_decision_source": approval_source(fresh)}
         trail = fresh.setdefault("audit_trail", [])
         if decision == "ratify":

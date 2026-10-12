@@ -40,7 +40,11 @@ class CausalSovereigntyLayer:
             proof = sim_res["csl_attestation"]["identifiability_proof"]
             attestation_hash = sim_res["csl_attestation"]["scm_hash"]
 
-            return f"Pearl-do-Proof: {proof} | SCM-Link: {attestation_hash[:16]}"
+            #  W672 - the string was headed as a proof. It is the textbook adjustment formula and a hash of
+            #  random draws; no causal check of THIS action ran. The effector that requires a non-empty
+            #  string here is on the held avatar path and its behaviour is unchanged: it records this text.
+            return (f"NOT ASSESSED - no causal check of this action ran. Formula recorded: {proof} "
+                    f"| draw-hash: {attestation_hash[:16]}")
 
         except Exception as e:
             logger.error(f"CSL: Validation failed: {e}")

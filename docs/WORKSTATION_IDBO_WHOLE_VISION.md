@@ -239,6 +239,16 @@ simulated** for continual improvement, advancement and optimisation — an autom
 the founder *and* the enterprise**, with all roles, responsibilities, compliance and optimisations
 AI-mediated.
 
+> **STATUS AS BUILT, corrected W672.** The organisation is not modelled or simulated. Its "twin" is a
+> structural template: `_generate_vsb_twin` in `agentic_core/api/transformation_orchestration.py` writes one
+> fixed list of components for every enterprise, records `model_type` "organisational_template" and `trained`
+> false, and adds one arithmetic projection that it labels as not a simulation. User design control of the
+> organisation reaches one thing: which specialist C-Suite officers a swarm run engages (`agent_ids` in
+> `agentic_core/api/swarm.py`, at most `_MAX_AGENTS_PER_RUN` of them, chosen on the swarm panel). The
+> delegation chain itself is the same template for every enterprise and no page changes it. The Chief is
+> instructed through the instruction box (`POST /api/v1/board/chief/instruct`); no avatar and no navigation
+> path calls that route.
+
 ## 6. ★ THE CRITICAL MANDATE — Workstation's OWN AI Swarm · Models · Orchestration (native resources)
 
 > This is the decisive direction the Owner has now made explicit, and it reshapes the architecture.
@@ -319,6 +329,14 @@ Across **Synthesis Lab · Build-to-Order · Forge**, users **access, select, rec
 **User design control:** users reconfigure the **VSB organisation structure** and the **digital
 resources / swarm cascades** — composing, combining, re-running, and re-using them to build-to-order
 the enterprise they need, with the platform modelling and simulating the configuration before commit.
+
+> **STATUS AS BUILT, corrected W672.** Nothing optimises a cascade, and "modelling and simulating the
+> configuration before commit" runs nothing. `POST /api/v1/resources/compose/simulate` (`simulate_composition`
+> in `agentic_core/api/resource_fabric.py`) returns a static reading of the selection and a quality gate over a
+> one-sentence description of it, and its answer says so ("NOTHING WAS RUN"). No candidate cascade is run
+> against acceptance criteria, and none is ranked or kept as a measured best. The Digital Twin's model,
+> simulate and optimise routes return written narrative and record `computed` false on each
+> (`_composition` in `agentic_core/api/digital_twin.py`).
 
 **Recorded W446 — the Owner's integration rule for owned capability (W12, W12-c, W59–W77):** existing
 `agentic_core` modules are **integrated into the native swarm / fabric — federated, never duplicated,
@@ -529,6 +547,19 @@ Solutions are **ethically evaluated for human and environmental well-being, safe
 Compliance engines (Halal/Sharia · UK-Legal/London · Regulatory · EHS · Ethical · Constitutional/gaas)
 are integrated into every synthesis/generative/operational workflow, not bolted on.
 
+> **STATUS AS BUILT, corrected W672 (the paragraph above is the vision; this is what the tree does).** The six
+> are six SCREENS (`_FRAMEWORKS` in `agentic_core/api/compliance.py`): word lists and patterns that can refuse
+> a subject or escalate it for a person, and never clear one - matching nothing is reported as "not
+> assessed", and a halal verdict comes from a certifying body, not from here. They are not in every workflow.
+> `screen_compliance` is called from the Genesis journey (`api/genesis.py`), marketplace listings
+> (`api/marketplace.py`), the swarm (`api/swarm.py`), the AI CEO (`api/v138/ceo.py`), charity grants
+> (`economy/charity.py`), adaptive profiles (`governance/adaptive_profiles.py`), the heartbeat's re-screen of
+> living entities (`organism/heartbeat.py`) and the delivery quality gate (`vbs/quality.py`), and from
+> nowhere else. The Forge pipeline (`api/forge.py`) does not call it, and the Synthesis studio
+> (`api/synthesis_studio.py`) screens none of its stage outputs - the entity its cascade registers is screened
+> once, at birth, by the shared enrichment. "Continuously" is the heartbeat's re-screen, which runs only while
+> its `auto_compliance` lever is on; the lever is off unless the Owner turns it on.
+
 **The faith-content constitution (Owner-established, delivered W439 — immovable):** where the
 platform touches sacred text, honesty constraints bind harder than anywhere else.
 1. **Qur'an Arabic text is NEVER AI-generated** — only fetched from the authoritative source
@@ -692,6 +723,8 @@ than trusted once this date is old; a long-running dev process serves the code i
 - **P1.4 delivered (W452, 2026-09-12):** Mode 3 review gates GATE — every lifecycle mover (ship, evolve,
   cascades, orchestration, the birth-ship, the heartbeat's autonomous moves) refuses with a 409 that names
   the gate while any gated stage is pending or rejected; gates can be set at birth.
+  *(Status corrected W672 on the Owner's ruling of 2026-10-11: "every lifecycle mover" is wider than the
+  code and than the ruling - the economy cycle is not held. See the status note under §17.4 Mode 3.)*
 - **P1.5 delivered (W453, 2026-09-12):** every provenance badge routes through one helper (strings) or
   its map twin (count maps) — the deterministic floor is amber everywhere, never an emerald "in-house";
   a source-grep guard fails on the old shape.
@@ -877,6 +910,14 @@ sections in a preamble the handler wrote itself. The §17.5 "≤5-min staleness"
 read-time derivation of the roadmap and pack, not by a refresh cadence. Delivery plan: P1.14 (pack
 honesty), P3.3 (the cadence generators).*
 
+> **STATUS AS BUILT, corrected W672 (the W446 status above is kept as history).** The Strategic and
+> Action-Plan layers are no longer missing. `agentic_core/organism/cadence.py` refreshes each when it is due -
+> quarterly and weekly, decided by `due()` - on the heartbeat's cadence step, and its history keeps both what
+> a refresh wrote and what it replaced. What a refresh writes by default is not strategy from an AI CEO or an
+> action plan from the BTO: it is composed by code from the plan's own state, and its provenance says
+> `served_by` "deterministic-floor". Nothing on this platform observes a market signal or a KPI trigger; a
+> signal fires a refresh only when someone supplies one to the refresh route (`SIGNALS_OBSERVED_BY`, same file).
+
 **17.4 The 3 Human–AI integration modes.**
 - **Mode 1** — Owner sets mission/values/ethical bounds → the IDBO executes everything else autonomously.
 - **Mode 2** — Expert → **Digital-Twin human node** (24/7 expertise without the expert present). *This is
@@ -888,6 +929,17 @@ honesty), P3.3 (the cadence generators).*
   construction. *Prior status (W446, ledger R3.8/R3.4), kept as history: no expert twin node existed and
   the Chief was a constant values sentence plus the last five stored instructions, invoked only by click.*
 - **Mode 3** — optional human review gates at any Concept→Commercialisation stage (set in the VSB genome). — ◐ RECORDS DELIVERED (W126); **GATING DELIVERED W452** (every lifecycle mover — orchestrate, cascade, evolve, ship, the birth-ship, the heartbeat — consults `blocks_progress` and refuses with 409 while a gated stage is pending or rejected; gates can be set at birth). Still ◐: the journey runs every stage in one request before the entity exists, so a gate pauses the SHIP, not a stage mid-journey. The W126 delivery: per-VSB `review_gates` config (`GET/POST /api/v1/vsb/{id}/review-gates`, per-stage status + `blocks_progress`, human `…/{stage}/decision` approve|reject), each config + decision append-only DCS-audited (§17.5); a **Human review gates (Mode 3)** panel on the Genesis page.
+
+> **STATUS AS BUILT, corrected W672 on the Owner's ruling of 2026-10-11 (a review gate holds the ship, the
+> board pack and the public surfaces - not the economy cycle).** "Every lifecycle mover" above says more than
+> the code does. While a gated stage is pending or rejected, `_refuse_gated` in `agentic_core/api/vsb.py`
+> refuses with a 409 that names the gate: the ship, the board pack, and each public surface - the repository,
+> the website, the web app and the phone app. The same refusal also stands, as built, in front of evolve and
+> evolution apply, the repository cascade, orchestration, a swarm run, a cascade and a contract delivery, and
+> the heartbeat skips a gated entity's evolution (`agentic_core/organism/heartbeat.py`). **The economy cycle is
+> not held:** `operate_vsb` in `agentic_core/economy/living_vsbs.py` reads the entity's lifecycle state and its
+> compliance hold and never its review gates, so a gated entity's first cycle runs at establishment and the
+> heartbeat goes on operating its virtual economy. The Owner ruled that this is the intended reach of a gate.
 
 **17.5 The 10 architecture invariants (absolute).** User isolation (scoped to user_id) · mandatory GaaS
 gate on every output · append-only DCS audit · **Arms-Length Agency** (AI CEO cannot instruct the
@@ -907,6 +959,18 @@ auth dependency (P2.6); GaaS gate on every output: true for 8 of 57 API modules 
 passes only a three-regex keyword filter (P2.6). **Not held** — torch optionality: the app fails to
 import without torch via `avatars → uci_interceptor → mjm/hd_omni_learner` (P2.7); KPI gate before
 customer delivery: nothing gates any delivery on KPIs (OWNER RULING P3.0 — build or amend).
+
+> **STATUS AS BUILT, corrected W672 (three lines of the W446 status above have moved; the others are not
+> re-measured by this note).** *GaaS gate on every output* is still not held, and "8 of 57" is no longer the
+> count: `GET /api/v1/transformation/realisation` counts it on every read (`_gaas_coverage` in
+> `agentic_core/api/transformation.py`) and reports the invariant as not met. There is no global gate - the
+> HTTP middleware observes and does not gate. *Twin pre-validation before major change* holds as a refusal
+> (nothing HIGH or CRITICAL is implemented without a recorded pass) and not as a simulation: with no twin
+> model the verdict is the organism-health gate, recorded as `health_gate_default`, and the proposed change is
+> not simulated (`_twin_prevalidate` in `agentic_core/api/change_control.py`). *KPI gate before customer
+> delivery* was built, narrowly, on the Owner's ruling of 2026-10-05: `kpi_release_gate` in
+> `agentic_core/api/business_plan.py`, read by `agentic_core/api/marketplace.py` before an entity's listing is
+> released. Composing a deliverable is not gated.
 
 **16.1 Reconciliation addendum — Rounds 3–7 (W241–W331), reconciled 2026-08-23.**
 The W331 fidelity walk verified ~34 §16–§18 claims accurate and corrected 25; the load-bearing

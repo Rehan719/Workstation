@@ -166,9 +166,39 @@ REVIEW_FLAG_TYPES = frozenset({"compliance_escalation"})
 # Singleton — imported by gateway and middleware
 #  W637 — WHAT THE HEALTH FIGURE IS, said once. W635 typed this sentence in four places; every reader of
 #  `health` that prints a basis imports this one, so the description cannot drift from the computation above.
-HEALTH_SCOPE = ("the immune system's health: AI-call failures and compliance regressions only - compliance "
-                "review flags are reported beside it and do not lower it, and route 5xx failures are not "
-                "tracked, so this is not the health of the whole platform")
+#  T2B (row 8) - THE SENTENCE NAMED TWO KINDS AND SAID "ONLY". status() lowers health on EVERY recorded event
+#  that is not a review flag (failures = total - review flags), and the callers that exist record more than
+#  two kinds: a compliance FAIL, the three quality non-conformance severities, and any operation reported as
+#  failed, under the operation's own name. The sentence is now built from this table and from
+#  REVIEW_FLAG_TYPES, the set status() itself reads, so moving a kind in or out of that set moves the sentence.
+#  The table is the module docstring's list of callers as data; a guard compares it with the call sites.
+RECORDED_KINDS = (
+    ("AI gateway and model-tier calls that failed or timed out", ("ai_failure", "timeout")),
+    ("compliance fails and regressions", ("compliance_fail", "compliance_regression")),
+    ("compliance review flags", ("compliance_escalation",)),
+    ("quality non-conformances", ("quality_minor", "quality_major", "quality_critical")),
+)
+#  one open kind: biobus.record_operation(success=False) records under the operation's own name
+OPEN_KIND = "any operation reported as failed"
+
+
+def health_scope(review_flag_types=None) -> str:
+    """The scope sentence for a set of review-flag kinds; by default the set status() reads when called."""
+    _flags = REVIEW_FLAG_TYPES if review_flag_types is None else frozenset(review_flag_types)
+    #  a row is described by ONE label, so it must be wholly a review flag or wholly not
+    assert all(set(_k) <= _flags or not (set(_k) & _flags) for _l, _k in RECORDED_KINDS), (
+        "a row of RECORDED_KINDS mixes review flags with failures, so one label cannot describe it")
+    _lowers = tuple(_l for _l, _k in RECORDED_KINDS if not set(_k) <= _flags)
+    _beside = tuple(_l for _l, _k in RECORDED_KINDS if set(_k) <= _flags)
+    return ("the immune system's health: lowered by every recorded event that is not a review flag - "
+            + "; ".join(_lowers + (OPEN_KIND,)) + " - while "
+            + ((" and ".join(_beside) + " are reported beside it and do not lower it") if _beside else
+               "nothing is reported beside it")
+            + ", and route 5xx failures are not "
+            "tracked, so this is not the health of the whole platform")
+
+
+HEALTH_SCOPE = health_scope()
 
 immune = ImmuneSystem()
 

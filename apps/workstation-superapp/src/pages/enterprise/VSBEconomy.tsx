@@ -34,6 +34,8 @@ interface Cycle {
 
 interface WaterfallState {
   waterfall: Record<string, number>; source: string; template_default: Record<string, number>;
+  // P3.30 r5 - the Owner's bound, and each rule a STORED waterfall breaks (reported, never rewritten)
+  bound_rule?: string; out_of_bound?: string[]; out_of_bound_basis?: string | null;
   stages: string[]; constraints: { distributes_profit: boolean; capital_preserved: boolean };
   // W488 — the API says which form it USED, where that came from, and whether this page's pick was ignored
   entity_type?: string; entity_type_source?: string; claimed_entity_type?: string | null;
@@ -197,7 +199,7 @@ export const VSBEconomy: React.FC = () => {
         body: JSON.stringify({ vsb_id: vsbId, entity_type: entity, proportions }),
       });
       const d = await r.json();
-      if (!r.ok) { setWfErr((d?.detail?.violations) || [`HTTP ${r.status}`]); setWfSaving(false); return; }
+      if (!r.ok) { setWfErr((d?.detail?.violations) || (typeof d?.detail === 'string' ? [d.detail] : [`HTTP ${r.status}`])); setWfSaving(false); return; }
       setWf(prev => prev ? { ...prev, waterfall: d.waterfall, source: d.source } : prev);
       setWfDraft(Object.fromEntries(Object.entries(d.waterfall as Record<string, number>).map(([k, v]) => [k, Math.round(v * 100)])));
       setWfMsg('Saved — effective from the next cycle (virtual; logged to the UEG).');
@@ -401,6 +403,12 @@ export const VSBEconomy: React.FC = () => {
               {wfSaving ? 'Saving…' : 'Save proportions'}
             </Button>
           </div>
+          {(wf?.out_of_bound ?? []).length > 0 && (
+            <div className="mt-2 space-y-0.5" data-testid="waterfall-out-of-bound">
+              <p className="text-amber-400 text-[10px] font-bold">This waterfall is out of bound. {wf?.out_of_bound_basis}</p>
+              {(wf?.out_of_bound ?? []).map((v, i) => <p key={i} className="text-amber-400/90 text-[10px] font-bold">{v}</p>)}
+            </div>
+          )}
           {wfMsg && <p className="text-emerald-400 text-[10px] font-bold mt-2 flex items-center gap-1.5"><ShieldCheck size={12} /> {wfMsg}</p>}
           {wfErr.length > 0 && (
             <div className="mt-2 space-y-1">

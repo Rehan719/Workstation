@@ -54,6 +54,8 @@ interface CCARow {
   // withheld, and `method_check` carries the three-state verdict per requirement. Both were produced by the
   // backend and read by nothing, so the platform withheld approvals silently.
   auto_approval_withheld?: string | null;
+  // P3.30 r5 - both facts about a change the method gate withheld and a review then decided
+  decision_account?: { method_gate?: string; review?: string; decided_by?: string; basis?: string } | null;
   method_check?: {
     method_available?: boolean;
     may_auto_approve?: boolean | null;
@@ -211,6 +213,13 @@ function CCACard({ entry, onReview, onImplement, refreshing, actionError }: {
                   )}
                 </p>
               )}
+              {/* P3.30 r5 (Owner ruling 2026-10-11) - the record states BOTH facts: what the method gate
+                  withheld and why, and what then decided the change at review and why. */}
+              {entry.decision_account && (
+                <p className="text-[11px] text-slate-300 mt-2 leading-relaxed" data-testid="cca-decision-account">
+                  {entry.decision_account.method_gate}. Then: {entry.decision_account.review}.
+                </p>
+              )}
               {entry.decision === 'auto_approved' && (
                 <span className="text-xs px-2 py-0.5 rounded border text-green-400 bg-green-500/10 border-green-500/20">AUTO</span>
               )}
@@ -347,6 +356,11 @@ function CCACard({ entry, onReview, onImplement, refreshing, actionError }: {
                   <span className={detail.twin_prevalidation.source === 'twin_marker' ? 'text-white/40' : 'text-amber-400/80'}>
                     ({detail.twin_prevalidation.source_label ?? detail.twin_prevalidation.source})
                   </span>
+                  {/* P3.30 r6 (ledger v16 R6.11) - HOW the verdict was reached, as text, whenever it was not a
+                      twin's: the record's own `method`, which was in the tooltip only */}
+                  {detail.twin_prevalidation.source !== 'twin_marker' && detail.twin_prevalidation.method && (
+                    <span className="block text-amber-400/80 mt-1" data-testid="cca-twin-method">{detail.twin_prevalidation.method}</span>
+                  )}
                 </p>
               )}
 

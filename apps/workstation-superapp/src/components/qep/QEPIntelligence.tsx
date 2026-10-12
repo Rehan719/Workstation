@@ -139,6 +139,11 @@ const QEPIntelligence: React.FC = () => {
       <Card className="p-5">
         <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2 mb-1"><Scale size={13} /> Recommendation model weights</h3>
         <p className="text-[9px] text-slate-600 mb-3">The persisted display-attribution weights. They must sum to ~1.0 — the compliance audit grades exactly this contract.</p>
+        {/* P3.30 r6 (ledger v16 R1.13) - the heading says "model"; this says what is held, counted from it */}
+        <p className="text-[9px] text-amber-400/80 mb-3" data-testid="qep-recommendation-model-basis">
+          What is called the model here is {Object.keys(weights ?? {}).length} stored number(s). Nothing is trained on them and
+          nothing is recommended from them: they weight how an explanation is displayed.
+        </p>
         <div className="flex flex-wrap items-end gap-2">
           {(['ease_weight', 'interval_weight', 'quality_weight'] as const).map(k => (
             <div key={k}>
