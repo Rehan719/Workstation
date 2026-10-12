@@ -1,0 +1,23 @@
+{
+ "about": "Every mounted route either asks who is calling or is listed here with a decision and a reason. `public` = reachable with no caller ON PURPOSE. `must_ask` / `retire` = declared and not yet done (owed). scripts/auth_perimeter.py reads the MOUNTED application against this list and fails on any route that is neither. A route added later must be decided when it is added. Nothing here turns authentication on.",
+ "decided": "2026-10-12 (W683), by the delivery assistant under the Owner's ruling that brought the readiness round forward. The Owner may move any line.",
+ "what_this_does_not_say": "That a route which asks also checks the record belongs to the caller; that the pages send a token; behaviour with authentication on beyond what the guard drives.",
+ "routes": [
+  {"method": "GET", "path": "/", "decision": "public", "only_when": "the pages are built", "why": "the built front page; it holds no data"},
+  {"method": "GET", "path": "/{full_path:path}", "decision": "public", "only_when": "the pages are built", "why": "the built pages and their assets; every data call they make goes to a route that asks"},
+  {"method": "GET", "path": "/health", "decision": "public", "why": "a liveness check for the host; it reports that the process answers and nothing else"},
+  {"method": "GET", "path": "/api/v1/health", "decision": "public", "why": "the same liveness check under the API prefix"},
+  {"method": "POST", "path": "/api/v1/auth/token", "decision": "public", "why": "signing in is how a caller comes to have a token"},
+  {"method": "POST", "path": "/api/v1/auth/refresh", "decision": "public", "why": "it accepts only a signed refresh token and returns a new access token"},
+  {"method": "POST", "path": "/api/v1/auth/signup", "decision": "public", "why": "it is refused by its own handler unless the Owner has opened self-serve signup"},
+  {"method": "GET", "path": "/api/v1/auth/config", "decision": "public", "why": "the sign-in page must learn whether authentication and signup are on before anyone has a token"},
+  {"method": "GET", "path": "/api/v1/auth/status", "decision": "public", "why": "the mode and whether the sign-in parts are installed; it also gives a COUNT of accounts, which is to be removed before a deploy others can reach"},
+  {"method": "GET", "path": "/api/v1/qep/suwar", "decision": "public", "why": "the list of chapters: public reference from a named source"},
+  {"method": "GET", "path": "/api/v1/qep/surah/{number}", "decision": "public", "why": "sourced Quran text with its provenance: public reference, free for everyone by ruling"},
+  {"method": "GET", "path": "/api/v1/qep/ayah/{surah_number}/{ayah_number}", "decision": "public", "why": "sourced Quran text with its provenance: public reference, free for everyone by ruling"},
+  {"method": "GET", "path": "/api/v1/qep/translation/editions", "decision": "public", "why": "the list of named translation editions: public reference"},
+  {"method": "GET", "path": "/api/v1/qep/translation/{surah_number}/{ayah_number}", "decision": "public", "why": "a named published translation with its provenance: public reference"},
+  {"method": "GET", "path": "/api/v1/registers/sources", "decision": "public", "why": "the register of sources is published so anyone can check what was read, where and when"},
+  {"method": "GET", "path": "/api/v1/registers/coverage", "decision": "public", "why": "the register of what a person can actually complete is published as it stands"}
+ ]
+}

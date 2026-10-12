@@ -56626,7 +56626,7 @@ def test_t2b_eight_statements_say_what_the_code_beside_them_does(client, monkeyp
     assert "self.record_error(source, error_type=operation)" in _bb, "a failed operation is no longer recorded under its own name"
 
 
-def test_w672_a_decision_says_who_decided_a_key_says_it_is_not_accepted_and_no_causal_check_is_claimed(client, monkeypatch):
+def test_w672_a_decision_says_who_decided_an_issued_key_is_admitted_on_its_hash_and_no_causal_check_is_claimed(client, monkeypatch):
     """W672 - OWNER RULINGS 2026-10-11 on the external people-and-organisation brief. (1) A decision on a
     change records whether the decider was also the submitter - stated only when both names were checked.
     (2) An issued API key says it is not yet accepted. (3) The causal simulator returns no typed fidelity and
@@ -56657,14 +56657,37 @@ def test_w672_a_decision_says_who_decided_a_key_says_it_is_not_accepted_and_no_c
     # -- 2. the key route's own answer, read from the handler the app mounts -----------------------------
     import agentic_core.auth.core as _au
     _doc = _au.__doc__ or ""
-    assert "NOT YET ACCEPTED" in _doc and "also accepted" not in _doc, "the module still says a key is accepted"
+    assert "admitted only when its stored hash verifies" in _doc, "the module no longer says how a key is admitted"
     monkeypatch.setattr(_au, "auth_enabled", lambda: True)
     _users = {"amina": {"username": "amina", "api_keys": []}}
     monkeypatch.setattr(_au, "_load_users", lambda: _users)
     monkeypatch.setattr(_au, "_save_users", lambda u: None)
     _res = asyncio.new_event_loop().run_until_complete(_au.generate_api_key({"username": "amina"}))
-    assert _res["api_key"].startswith("wstn_") and _res["accepted"] is False, _res
-    assert "NOT YET ACCEPTED" in _res["accepted_basis"], _res["accepted_basis"]
+    assert _res["api_key"].startswith("wstn_") and _res["accepted"] is True, _res
+    assert "does not expire" in _res["accepted_basis"] and "Revoke it" in _res["accepted_basis"], _res["accepted_basis"]
+    #    and the answer is TRUE: the key it just issued resolves to the person it was issued to, and the same
+    #    key with one character changed resolves to nobody (the prefix finds, the hash admits)
+    _saved = {}
+    monkeypatch.setattr(_au, "auth_enabled", lambda: True)
+    monkeypatch.setattr(_au, "_load_users", lambda: _saved or _users)
+    monkeypatch.setattr(_au, "_save_users", lambda u: _saved.update(u))
+    _res2 = asyncio.new_event_loop().run_until_complete(_au.generate_api_key({"username": "amina"}))
+    _key = _res2["api_key"]
+    assert (_au._user_for_api_key(_key) or {}).get("username") == "amina"
+    _wrong = _key[:-1] + ("0" if _key[-1] != "0" else "1")
+    assert _wrong[:_au.API_KEY_PREFIX_LEN] == _key[:_au.API_KEY_PREFIX_LEN] and _au._user_for_api_key(_wrong) is None
+    assert asyncio.new_event_loop().run_until_complete(_au.get_current_user(_key))["username"] == "amina"
+    #    revoked by its owner, the same key admits nobody; another person's key id is simply not found
+    _kid = _res2["key_id"]
+    import fastapi as _fa683
+    try:
+        asyncio.new_event_loop().run_until_complete(_au.revoke_api_key(_kid, {"username": "someone-else"}))
+        raise AssertionError("another person revoked a key that is not theirs")
+    except _fa683.HTTPException as _e683:
+        assert _e683.status_code == 404
+    assert (_au._user_for_api_key(_key) or {}).get("username") == "amina"
+    _rv = asyncio.new_event_loop().run_until_complete(_au.revoke_api_key(_kid, {"username": "amina"}))
+    assert _rv["revoked"] is True and _au._user_for_api_key(_key) is None
     monkeypatch.undo()
 
     # -- 3. the simulator and the string built on it -----------------------------------------------------
@@ -62163,3 +62186,215 @@ def test_forms_a_composition_calls_a_domain_form_through_its_own_door(client, mo
         _fab._run_real_resource("form_law_generate", {"template_id": "et1_claim", "details": {}}, "objective", "general"))
     assert _stamped["outcome"] == "refused" and "nothing was produced" in _stamped["outcome_phrase"], _stamped
     assert "produced this output" not in _stamped["kind_phrase"], _stamped["kind_phrase"]
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W683 - THE AUTHENTICATION-READINESS ROUND (OWNER RULINGS 2026-10-11 and 2026-10-12; it turns nothing on).
+#  Every mounted route either asks who is calling or is declared public with a reason; an issued key
+#  authenticates and its owner can revoke it. Authentication is switched on ONLY inside these test processes.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def _w683_perimeter():
+    import importlib.util as _ilu
+    _spec = _ilu.spec_from_file_location("auth_perimeter_w683", str(__import__("pathlib").Path(__file__).resolve().parents[1] / "scripts" / "auth_perimeter.py"))
+    _mod = _ilu.module_from_spec(_spec)
+    _spec.loader.exec_module(_mod)
+    return _mod
+
+
+def test_w683_the_perimeter_instrument_reads_resolved_dependencies_and_each_state_is_made_to_happen(tmp_path):
+    #  Nothing here is read from the ambient tree: every state is made to happen on a small application.
+    import json as _json
+    from fastapi import APIRouter, Depends, FastAPI
+    from agentic_core.auth.core import get_current_user, require_admin
+    ap = _w683_perimeter()
+    small = FastAPI()
+
+    @small.get("/asks-direct")
+    async def _a(user=Depends(get_current_user)):
+        return {}
+
+    @small.post("/asks-through-admin")
+    async def _b(admin=Depends(require_admin)):
+        return {}
+
+    inner = APIRouter()
+
+    @inner.post("/write")
+    async def _c():
+        return {}
+    #  asked at the INCLUDE, where a search of signatures sees nothing
+    small.include_router(inner, prefix="/asks-at-include", dependencies=[Depends(get_current_user)])
+
+    async def _scoped(user=Depends(get_current_user)):
+        return user
+
+    @small.get("/asks-nested")
+    async def _n(who=Depends(_scoped)):
+        return {}
+
+    @small.get("/health")
+    async def _d():
+        return {}
+
+    @small.post("/keeps-something")
+    async def _e():
+        return {}
+
+    @small.post("/nobody-decided")
+    async def _f():
+        return {}
+
+    #  a parameter NAMED like the caller dependency is not the caller dependency
+    @small.get("/named-only")
+    async def _g(get_current_user: str = ""):
+        return {}
+
+    listed = tmp_path / "PUBLIC_ROUTES.json"
+
+    def state(path, method):
+        rows, _names, has = ap.measure(app=small, declared_path=listed)
+        return next(r for r in rows if r["path"] == path and r["method"] == method), rows, has
+
+    #  1. no list yet: it reports, and fails nothing
+    row, rows, has = state("/nobody-decided", "POST")
+    assert has is False and row["state"] == "UNDECIDED" and row["writes"] is True
+    assert ap.verdict(rows, has) == 0
+    assert state("/asks-direct", "GET")[0]["state"] == "asks"
+    assert state("/asks-through-admin", "POST")[0]["state"] == "asks"
+    assert state("/asks-at-include/write", "POST")[0]["state"] == "asks"
+    assert state("/asks-nested", "GET")[0]["state"] == "asks"
+    assert state("/named-only", "GET")[0]["state"] == "UNDECIDED"
+
+    #  2. the list exists and one route is undecided: the check fails
+    doc = {"routes": [
+        {"method": "GET", "path": "/health", "decision": "public", "why": "a health check keeps nothing"},
+        {"method": "GET", "path": "/named-only", "decision": "public", "why": "reads nothing of anyone's"},
+        {"method": "POST", "path": "/keeps-something", "decision": "must_ask", "why": "it writes a person's record"}]}
+    listed.write_text(_json.dumps(doc), encoding="utf-8")
+    row, rows, has = state("/nobody-decided", "POST")
+    assert has is True and row["state"] == "UNDECIDED" and ap.verdict(rows, has) == 1
+    assert state("/health", "GET")[0]["state"] == "public"
+    assert state("/keeps-something", "POST")[0]["state"] == "OWED"
+
+    #  3. every route decided: the everyday check passes; the check to pass BEFORE the switch does not
+    doc["routes"].append({"method": "POST", "path": "/nobody-decided", "decision": "retire", "why": "nothing calls it"})
+    listed.write_text(_json.dumps(doc), encoding="utf-8")
+    _row, rows, has = state("/health", "GET")
+    assert ap.verdict(rows, has) == 0 and ap.verdict(rows, has, strict=True) == 1
+
+    #  4. a declaration with no reason decides nothing
+    doc["routes"][0]["why"] = "  "
+    listed.write_text(_json.dumps(doc), encoding="utf-8")
+    row, rows, has = state("/health", "GET")
+    assert row["state"] == "UNDECIDED" and ap.verdict(rows, has) == 1
+    doc["routes"][0]["why"] = "a health check keeps nothing"
+
+    #  5. a route declared public that DOES ask: the list is stale, and that fails
+    doc["routes"].append({"method": "GET", "path": "/asks-direct", "decision": "public", "why": "said so once"})
+    listed.write_text(_json.dumps(doc), encoding="utf-8")
+    row, rows, has = state("/asks-direct", "GET")
+    assert row["state"] == "asks" and row["stale_declaration"] is True and ap.verdict(rows, has) == 1
+
+
+def test_w683_every_mounted_route_asks_or_is_declared_public_and_the_strict_check_passes():
+    #  THE TREE'S OWN STATE, by the instrument's own rule - never a hand count.
+    ap = _w683_perimeter()
+    rows, _names, has = ap.measure()
+    assert has, "docs/PUBLIC_ROUTES.json is gone: no route is declared public on purpose"
+    loose = [f"{r['method']} {r['path']}" for r in rows if r["state"] == "UNDECIDED"]
+    assert not loose, f"mounted with no caller and declared nowhere - decide each in docs/PUBLIC_ROUTES.json: {loose}"
+    stale = [f"{r['method']} {r['path']}" for r in rows if r["stale_declaration"]]
+    assert not stale, f"declared public and yet asks - the list is stale: {stale}"
+    assert ap.verdict(rows, has, strict=True) == 0, [r for r in rows if r["state"] == "OWED"]
+    #  a public route that WRITES is one of the three by which a caller comes to have a token, and nothing else
+    public_writes = sorted(r["path"] for r in rows if r["state"] == "public" and r["writes"])
+    assert public_writes == ["/api/v1/auth/refresh", "/api/v1/auth/signup", "/api/v1/auth/token"], public_writes
+    #  every declared line names a route that is really mounted (a line for a route that is gone is dead weight)
+    import json as _json
+    #  (the two page routes are mounted only where the pages have been built - not on the build server, and not
+    #  in a fresh copy - so a line may say `only_when`, and such a line is not required to be mounted)
+    _lines = _json.loads((__import__("pathlib").Path(__file__).resolve().parents[1] / "docs" / "PUBLIC_ROUTES.json").read_text(encoding="utf-8"))["routes"]
+    declared = {(d["method"], d["path"]) for d in _lines if not d.get("only_when")}
+    mounted = {(r["method"], r["path"]) for r in rows}
+    assert declared <= mounted, f"declared and not mounted: {sorted(declared - mounted)}"
+    assert sorted(d["path"] for d in _lines if d.get("only_when")) == ["/", "/{full_path:path}"], "only the two page routes may be conditional"
+
+
+def test_w683_with_authentication_on_every_asking_route_refuses_an_anonymous_call(client, monkeypatch):
+    #  DRIVEN, not read: authentication is on in THIS process only, and every route the instrument says asks is
+    #  called with no token. The instrument reads dependencies; this is what a caller actually meets.
+    import re as _re
+    ap = _w683_perimeter()
+    rows, _names, _has = ap.measure()
+    asking = [r for r in rows if r["state"] == "asks"]
+    public = [r for r in rows if r["state"] == "public"]
+    assert len(asking) > 400 and len(public) >= 10, (len(asking), len(public))
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    let_through = []
+    for r in asking:
+        path = _re.sub(r"\{[^}]+\}", "x", r["path"])
+        got = client.request(r["method"], path)
+        if got.status_code != 401:
+            let_through.append(f"{r['method']} {r['path']} -> {got.status_code}")
+    assert not let_through, f"asks who is calling and did NOT refuse an anonymous call: {let_through[:25]}"
+    #  ... and a route declared public is not refused for want of a caller
+    refused = []
+    for r in public:
+        if r["path"] == "/{full_path:path}":
+            continue
+        path = _re.sub(r"\{[^}]+\}", "1", r["path"])
+        got = client.request(r["method"], path)
+        if got.status_code == 401 and r["path"] not in ("/api/v1/auth/token", "/api/v1/auth/refresh"):
+            refused.append(f"{r['method']} {r['path']} -> 401")
+    assert not refused, f"declared public and refused for want of a token: {refused}"
+    monkeypatch.undo()
+    #  with authentication off - the configuration that runs today - the same asking route is served
+    assert client.get("/api/v1/plan/state").status_code == 200
+
+
+def test_w683_an_issued_key_is_the_person_it_was_issued_to_through_a_real_request(client, monkeypatch):
+    from agentic_core.auth import core as auth_core
+    if not auth_core._AUTH_DEPS_OK:
+        import pytest as _pytest
+        _pytest.skip("auth crypto deps not installed")
+    users = auth_core._load_users()
+    for uname, pw in (("amina-key", "pw-amina"), ("bilal-key", "pw-bilal")):
+        users[uname] = {"user_id": uname, "username": uname, "hashed_password": auth_core._pwd_ctx.hash(pw),
+                        "role": "user", "created_at": "2026-01-01T00:00:00Z", "api_keys": []}
+    auth_core._save_users(users)
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+
+    def _token(u, p):
+        r = client.post("/api/v1/auth/token", data={"username": u, "password": p})
+        assert r.status_code == 200, r.text
+        return {"Authorization": f"Bearer {r.json()['access_token']}"}
+    amina, bilal = _token("amina-key", "pw-amina"), _token("bilal-key", "pw-bilal")
+    issued = client.post("/api/v1/auth/api-key", headers=amina).json()
+    key, kid = issued["api_key"], issued["key_id"]
+    assert issued["accepted"] is True
+    by_key = {"Authorization": f"Bearer {key}"}
+    assert client.get("/api/v1/auth/me", headers=by_key).json()["username"] == "amina-key"
+    #  the same prefix with a different tail admits nobody: the prefix finds, the hash admits
+    wrong = key[:-1] + ("0" if key[-1] != "0" else "1")
+    assert client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {wrong}"}).status_code == 401
+    #  a signed token still works, and a value that is neither is refused
+    assert client.get("/api/v1/auth/me", headers=amina).json()["username"] == "amina-key"
+    assert client.get("/api/v1/auth/me", headers={"Authorization": "Bearer not-a-token"}).status_code == 401
+    #  the request layer resolves a key to the SAME person, so a key-holder's own profile is the one applied
+    from agentic_core.api import _ai_provenance as _prov683
+    _seen683 = []
+    monkeypatch.setattr(_prov683, "set_request_user", lambda u: _seen683.append(u))
+    client.get("/api/v1/auth/me", headers=by_key)
+    assert "amina-key" in _seen683, _seen683
+    _seen683.clear()
+    client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {wrong}"})
+    assert [u for u in _seen683 if u] == [], _seen683
+    #  another person cannot revoke it, and is told only that no such key exists
+    assert client.delete(f"/api/v1/auth/api-key/{kid}", headers=bilal).status_code == 404
+    assert client.get("/api/v1/auth/me", headers=by_key).status_code == 200
+    #  its owner can; from then the key admits nobody, and the stored record is kept, marked
+    done = client.delete(f"/api/v1/auth/api-key/{kid}", headers=amina)
+    assert done.status_code == 200 and done.json()["revoked"] is True
+    assert client.get("/api/v1/auth/me", headers=by_key).status_code == 401
+    kept = [k for k in auth_core._load_users()["amina-key"]["api_keys"] if k["key_id"] == kid]
+    assert kept and kept[0]["revoked"] is True and kept[0].get("revoked_at")

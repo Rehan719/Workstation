@@ -31,7 +31,14 @@ from agentic_core.config import data_path
 from typing import Optional
 
 import httpx
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from agentic_core.auth.core import get_current_user
+
+#  W683 - THE ROUTER IS MOUNTED OPEN because the sourced text and its translations are public reference. Every
+#  route that keeps or reads something about a learner, takes a contribution or runs a composition asks who is
+#  calling HERE. With authentication off this returns nobody and changes nothing. It does NOT yet tie a typed
+#  learner id to the caller - that is the Quran platform round's, after sign-in.
+_ASKS = [Depends(get_current_user)]
 from pydantic import BaseModel, Field
 
 from agentic_core.config import atomic_write_json, store_lock
@@ -648,7 +655,7 @@ class HifzScheduleRequest(BaseModel):
     ayaat_range: list[int]  # [start, end] — ayah numbers to memorise
 
 
-@router.post("/hifz/schedule")
+@router.post("/hifz/schedule", dependencies=_ASKS)
 async def hifz_schedule(req: HifzScheduleRequest):
     """Generate SM-2 memorisation schedule for a range of ayaat."""
     if not 1 <= req.surah_number <= 114:
@@ -735,7 +742,7 @@ class HifzReviewRequest(BaseModel):
     quality: int       # 0-5 (SM-2 quality: 0=total blackout, 5=perfect)
 
 
-@router.post("/hifz/review")
+@router.post("/hifz/review", dependencies=_ASKS)
 async def hifz_review(req: HifzReviewRequest):
     """Record a review session. Updates SM-2 interval for the ayah."""
     if not 0 <= req.quality <= 5:
@@ -816,7 +823,7 @@ async def hifz_review(req: HifzReviewRequest):
     }
 
 
-@router.get("/hifz/progress/{uid}")
+@router.get("/hifz/progress/{uid}", dependencies=_ASKS)
 async def hifz_progress(uid: str):
     """Get full memorisation progress for a user."""
     hifz = _load_hifz(uid)
@@ -860,7 +867,7 @@ class WrittenRecallRequest(BaseModel):
     recited_text: str = Field(max_length=1500)  # the learner's TYPED Arabic recollection
 
 
-@router.post("/tajweed/analyse")
+@router.post("/tajweed/analyse", dependencies=_ASKS)
 async def tajweed_analyse(req: WrittenRecallRequest):
     """Written-recall check — compares the learner's TYPED Arabic against the authoritative text.
 
@@ -917,7 +924,7 @@ class TajweedLessonRequest(BaseModel):
     level: str = "beginner"  # beginner | intermediate | advanced
 
 
-@router.post("/tajweed/lesson")
+@router.post("/tajweed/lesson", dependencies=_ASKS)
 async def tajweed_lesson(req: TajweedLessonRequest):
     """
     Generate a tajweed lesson plan. Clearly labelled as AI-assisted educational content.
@@ -997,7 +1004,7 @@ async def tajweed_lesson(req: TajweedLessonRequest):
 
 # ── Gamification ──────────────────────────────────────────────────────────────
 
-@router.get("/gamification/{uid}")
+@router.get("/gamification/{uid}", dependencies=_ASKS)
 async def get_gamification(uid: str):
     """Learner gamification state — REAL recorded awards only.
 
@@ -1018,7 +1025,7 @@ class AwardRequest(BaseModel):
     xp: int = Field(default=10, ge=1, le=100)
 
 
-@router.post("/gamification/award")
+@router.post("/gamification/award", dependencies=_ASKS)
 async def award_xp(req: AwardRequest):
     """Award XP for a learning achievement — persisted, then reported.
 
@@ -1038,7 +1045,7 @@ async def award_xp(req: AwardRequest):
             **state}
 
 
-@router.get("/leaderboard")
+@router.get("/leaderboard", dependencies=_ASKS)
 async def qep_leaderboard(limit: int = 20):
     """P3.9 — rank learners by the XP actually RECORDED for them, and say what that means.
 
@@ -1127,7 +1134,7 @@ class QepCurriculumRequest(BaseModel):
     duration_weeks: int = 12
 
 
-@router.post("/curriculum")
+@router.post("/curriculum", dependencies=_ASKS)
 async def qep_curriculum(req: QepCurriculumRequest):
     """P3.10 — religious curriculum BEHIND the R7 gate: composed, submitted, and served only if approved.
 
@@ -1191,7 +1198,7 @@ _RECITATION_MODEL_FACT = ("no phonetic model is provisioned either, and providin
                           "ruling: only an Owner ruling after scholar review could")
 
 
-@router.get("/status")
+@router.get("/status", dependencies=_ASKS)
 async def qep_status():
     """Platform status — component lines say what each ACTUALLY is (W439: they were constants —
     gamification claimed "active — GamifiedLearning" while every award vanished, and quran_text
@@ -1347,7 +1354,7 @@ def _record_contribution(vsb_id: str, amount_wst: float, channel: str, donor_ref
     }
 
 
-@router.post("/contribute/zakat")
+@router.post("/contribute/zakat", dependencies=_ASKS)
 async def contribute_zakat(req: ContributionRequest):
     """A Zakat-eligible contribution to a QEP entity. THIS PLATFORM RULES ON NOTHING.
 
@@ -1365,7 +1372,7 @@ async def contribute_zakat(req: ContributionRequest):
     return out
 
 
-@router.post("/contribute/sponsor-a-student")
+@router.post("/contribute/sponsor-a-student", dependencies=_ASKS)
 async def contribute_sponsor_a_student(req: ContributionRequest):
     """Sponsor-a-Student (A.8). NO LEARNER IS NAMED, because nothing here matches one.
 
@@ -1384,7 +1391,7 @@ async def contribute_sponsor_a_student(req: ContributionRequest):
     return out
 
 
-@router.get("/contribute/statement/{vsb_id}")
+@router.get("/contribute/statement/{vsb_id}", dependencies=_ASKS)
 async def contribution_statement(vsb_id: str):
     """A.8's transparent donor view: what came in by channel, and how the waterfall allocates it.
 

@@ -5,8 +5,9 @@ Design:
   - Single-user mode (default): no auth required — all endpoints open.
     This preserves backwards compatibility; existing integrations keep working.
   - Multi-user mode (AUTH_ENABLED=true): JWT Bearer tokens required on
-    protected endpoints. An API key can be ISSUED and is NOT YET ACCEPTED as a Bearer token:
-    nothing verifies a stored key (W672; to be built in the authentication-readiness round).
+    protected endpoints. An issued API key is accepted as the Bearer value: it is found by its
+    stored prefix and admitted only when its stored hash verifies (W683). A key does not expire; its owner
+    can revoke it, and a revoked key admits nobody.
 
 JWT flow:
   POST /api/v1/auth/token       — username + password → access_token + refresh_token
@@ -203,6 +204,27 @@ def _decode_token(token: str) -> dict:
 
 # ── Dependency: current user ──────────────────────────────────────────────────
 
+API_KEY_MARK = "wstn_"
+API_KEY_PREFIX_LEN = 12          # what `generate_api_key` stores as `key_prefix`
+
+
+def _user_for_api_key(raw_key: str) -> dict | None:
+    """The user an issued key belongs to, or None. The stored prefix only FINDS candidates; the stored hash is
+    what admits. Every candidate is verified, so two keys sharing a prefix cannot admit the wrong person."""
+    _require_auth_deps()
+    prefix = raw_key[:API_KEY_PREFIX_LEN]
+    for user in _load_users().values():
+        for rec in (user.get("api_keys") or []):
+            if not isinstance(rec, dict) or rec.get("key_prefix") != prefix or rec.get("revoked"):
+                continue
+            try:
+                if _pwd_ctx.verify(raw_key, rec.get("hashed_key") or ""):
+                    return user
+            except Exception:          # noqa: BLE001 - an unreadable stored hash admits nobody
+                continue
+    return None
+
+
 async def get_current_user(token: Optional[str] = Depends(_oauth2_scheme)) -> dict | None:
     """
     Returns the current user dict, or None if auth is disabled.
@@ -218,9 +240,17 @@ async def get_current_user(token: Optional[str] = Depends(_oauth2_scheme)) -> di
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    #  AN ISSUED KEY AUTHENTICATES (the Owner's ruling for the readiness round). It has its own shape, so a
+    #  signed token never reaches this branch and a key never reaches the token decoder.
+    if token.startswith(API_KEY_MARK):
+        user = _user_for_api_key(token)
+        if not user:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="API key not recognised.",
+                                headers={"WWW-Authenticate": "Bearer"})
+        return user
+
     payload = _decode_token(token)
 
-    # Could be a JWT or a long-lived API key (stored as plain hex string)
     sub = payload.get("sub")
     if not sub:
         raise HTTPException(status_code=401, detail="Token missing subject.")
@@ -420,7 +450,7 @@ async def generate_api_key(current_user: dict | None = Depends(get_current_user)
     if not auth_enabled():
         return {"message": "Auth disabled — API keys not required in single-user mode."}
 
-    raw_key = f"wstn_{secrets.token_hex(24)}"
+    raw_key = f"{API_KEY_MARK}{secrets.token_hex(24)}"
     with _users_mutation():                      # W369
         users = _load_users()
         user = users.get(current_user["username"])
@@ -429,7 +459,7 @@ async def generate_api_key(current_user: dict | None = Depends(get_current_user)
 
         key_record = {
             "key_id": uuid.uuid4().hex[:8],
-            "key_prefix": raw_key[:12],
+            "key_prefix": raw_key[:API_KEY_PREFIX_LEN],
             "hashed_key": _pwd_ctx.hash(raw_key),
             "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         }
@@ -441,10 +471,32 @@ async def generate_api_key(current_user: dict | None = Depends(get_current_user)
         "api_key": raw_key,
         "key_id": key_record["key_id"],
         "note": "Store this key securely — it will not be shown again.",
-        "accepted": False,
-        "accepted_basis": ("this key is stored and is NOT YET ACCEPTED by any route: a request must still carry "
-                           "a signed token. Accepting keys is planned work, not present behaviour."),
+        "accepted": True,
+        "accepted_basis": ("send it as the bearer value. It is accepted wherever a signed token is, as the same "
+                           "person with the same role; it does not expire. Revoke it with DELETE /api/v1/auth/api-key/{key_id}."),
     }
+
+
+@router.delete("/api-key/{key_id}")
+async def revoke_api_key(key_id: str, current_user: dict | None = Depends(get_current_user)):
+    """Revoke one of the caller's OWN keys. The record is kept and marked, so the key's history stays readable;
+    a revoked key admits nobody from that moment."""
+    if not auth_enabled():
+        return {"message": "Auth disabled — API keys not required in single-user mode."}
+    with _users_mutation():
+        users = _load_users()
+        user = users.get(current_user["username"])
+        rec = next((r for r in ((user or {}).get("api_keys") or [])
+                    if isinstance(r, dict) and r.get("key_id") == key_id), None)
+        if rec is None:
+            #  another person's key id is answered exactly as one that does not exist
+            raise HTTPException(status_code=404, detail="No such key.")
+        if not rec.get("revoked"):
+            rec["revoked"] = True
+            rec["revoked_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            users[current_user["username"]] = user
+            _save_users(users)
+    return {"key_id": key_id, "revoked": True, "revoked_at": rec.get("revoked_at")}
 
 
 @router.get("/users")
