@@ -50,12 +50,13 @@ _TEMPLATE_PROMPTS: dict[str, str] = {
     "nda": (
         "Draft a legally sound Non-Disclosure Agreement (NDA) under English law. "
         "Include: parties, recitals, definition of confidential information, obligations, "
-        "permitted disclosures, duration (3 years), remedies, governing law (England & Wales), "
+        "permitted disclosures, duration (a field the parties fill), remedies, governing law (England & Wales), "
         "and signature blocks. Mark all customisable fields with [SQUARE BRACKETS]."
     ),
     "employment_contract": (
-        "Draft a compliant employment contract under English law (Employment Rights Act 1996). "
-        "Include: job title, remuneration, hours, holiday entitlement (28 days statutory), "
+        "Draft an employment contract under English law. "
+        "Include: job title, remuneration, hours, holiday entitlement (leave the figure as a field and say "
+        "the current statutory minimum must be checked at the official source), "
         "notice periods, IP ownership, restrictive covenants, disciplinary procedure reference, "
         "and governing law. Mark all customisable fields with [SQUARE BRACKETS]."
     ),
@@ -66,18 +67,15 @@ _TEMPLATE_PROMPTS: dict[str, str] = {
         "and dispute resolution. Mark customisable fields with [SQUARE BRACKETS]."
     ),
     "privacy_policy": (
-        "Draft a GDPR-compliant Privacy Policy for a UK-based digital service. "
+        "Draft a Privacy Policy for a UK-based digital service that addresses the UK GDPR's notice "
+        "requirements; do not describe the draft as compliant. "
         "Include: data controller details, legal basis for processing, data categories collected, "
         "retention periods, data subject rights (access, erasure, portability), "
         "third-party sharing, cookies, and ICO contact details. "
         "Mark customisable fields with [SQUARE BRACKETS]."
     ),
-    "et1_claim": (
-        "Draft a detailed Employment Tribunal ET1 claim form. "
-        "Include: claimant and respondent details, grounds of claim (unfair dismissal / discrimination), "
-        "timeline of events, remedy sought (reinstatement / compensation), "
-        "and a compelling particulars of claim section. Mark with [SQUARE BRACKETS] where user input needed."
-    ),
+    #  the tribunal claim's prompt stood here. It chose the grounds and asked for a persuasive particulars
+    #  section from nothing; the template is assembled by the clerk and refused by this generator.
 }
 
 
@@ -186,8 +184,8 @@ async def analyse_document(req: AnalyseRequest):
     }.get(req.analysis_focus, "Provide a comprehensive analysis covering all key aspects.")
 
     prompt = (
-        f"You are a senior {req.jurisdiction} solicitor specialising in {req.document_type} law. "
-        f"Analyse the following legal document.\n\n"
+        f"Analyse the following {req.document_type} document as it reads under {req.jurisdiction} law. "
+        f"Claim no professional role. Give no probability, forecast or confidence figure.\n\n"
         f"Document type: {req.document_type}\n"
         f"Jurisdiction: {req.jurisdiction}\n"
         f"Analysis focus: {req.analysis_focus}\n\n"
@@ -236,20 +234,23 @@ async def legal_research(req: ResearchRequest):
     Conclusion) with practical considerations, risks, and next steps. AI-generated informational guidance —
     NOT legal advice."""
     prompt = (
-        f"You are a senior {req.jurisdiction} solicitor specialising in {req.area_of_law} law. "
-        f"Research and analyse the following legal question using the IRAC method.\n\n"
+        f"Set out the following {req.area_of_law} question under {req.jurisdiction} law using the IRAC "
+        f"method. Claim no professional role.\n\n"
         f"Question: {req.question}\nJurisdiction: {req.jurisdiction}\nArea of law: {req.area_of_law}\n"
         + (f"Context: {req.context}\n" if req.context else "")
         + "\nStructure your analysis with these sections:\n"
         "## Issue (the precise legal question(s) at stake)\n"
         "## Relevant Law (the statutes, regulations, and established legal principles that apply — name them specifically)\n"
         "## Application (apply the law to the facts; reason through both sides)\n"
-        "## Conclusion (the most likely position, with a confidence level)\n"
+        "## Conclusion (what the sources named above support and what they do not settle; give no "
+        "probability, forecast or confidence figure, and do not say what a court or tribunal would decide)\n"
         "## Practical Considerations (steps to take, evidence needed, any time limits / limitation periods)\n"
         "## Risks & Caveats\n"
         "## Recommended Next Steps\n\n"
-        "Name real statutes / legal principles where applicable. Use plain English. Where the law is uncertain "
-        "or fact-dependent, say so honestly rather than overstating certainty."
+        "Name a statute or case ONLY if you can give its exact title; if you are not certain it exists and "
+        "is in force, say that it must be checked and do not name it. Use plain English. Where the law is "
+        "uncertain or fact-dependent, say so. Where a time limit may apply, say that one may and that it "
+        "must be checked today at the official source - never state a period from memory."
     )
 
     analysis, provenance = await ai_text(prompt, "law_researcher", realm=req.realm,
@@ -285,6 +286,16 @@ async def generate_document(req: GenerateRequest):
     Generate a legal document from a template using AI.
     Returns the full document text in Markdown format.
     """
+    #  OWNER RULING 2026-10-12 - A FILING-SHAPED DOCUMENT HAS ONE DOOR. The clerk fills such a document only
+    #  from located lines, refuses an authority it does not hold and keeps the result a draft until the Owner
+    #  approves it. This generator had none of that and wrote one from a prompt. It refuses, and names the door.
+    from agentic_core.legal.specialist import FILING_SHAPED as _filing_shaped
+    if req.template_id in _filing_shaped:
+        raise HTTPException(status_code=409, detail=(
+            f"'{req.template_id}' is a filing-shaped document and is not generated here. It is assembled by "
+            f"the clerk at POST /api/v1/law/matter/assemble: every particular comes from a located line of a "
+            f"document or is left blank, every authority is resolved or refused, and the result is a draft "
+            f"until it is approved. Nothing here is legal advice."))
     base_prompt = _TEMPLATE_PROMPTS.get(
         req.template_id,
         f"Draft a comprehensive {req.template_id.replace('_', ' ')} agreement under {req.jurisdiction} law. "

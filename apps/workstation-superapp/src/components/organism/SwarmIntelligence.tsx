@@ -483,7 +483,7 @@ const SwarmIntelligence: React.FC = () => {
               The run list could not be read ({runsErr}) — whether any run exists is unknown.
             </p>
           ) : runs.length === 0 ? (
-            <p className="text-[10px] text-[#444]" data-testid="swarm-runs-panel-empty">No delegate run is recorded yet. Delegate a mission above.</p>
+            <p className="text-[10px] text-[#444]" data-testid="swarm-runs-panel-empty">No delegate run is recorded yet. This panel lists runs of POST /swarm/delegate. The control above does not make one: it runs an org cascade, which is recorded under Org Cascade History.</p>
           ) : (
             <div className="max-h-60 overflow-y-auto">
               {runs.slice(0, 8).map(r => <RunCard key={r.run_id} run={r} />)}

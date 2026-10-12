@@ -37,7 +37,8 @@ class QMSGate(BaseModel):
 
 @router.post("/qms/gate")
 async def qms_gate(req: QMSGate, user: dict | None = Depends(get_current_user)):
-    """Run a real ISO-9001-aligned quality gate (>= min coverage AND zero stubs).
+    """Run the quality gate's RULE (>= min coverage AND zero stubs) as a what-if over figures the caller types.
+    Nothing is measured here: no delivery is read.
 
     W440 refuter catch: this route stamped no owner, so under auth a tenant's failed gate opened
     a platform-level defect THEY COULD NEVER SEE — while the summary counted it. The defect now
@@ -49,7 +50,16 @@ async def qms_gate(req: QMSGate, user: dict | None = Depends(get_current_user)):
     passed = await qms.run_quality_gates(
         {"coverage": req.coverage, "stubs_found": req.stubs_found},
         label="cockpit-what-if", owner_id=(_u or {}).get("username"), count_in_rate=False)
+    #  ledger v17 (FU-936) - which of the two figures the caller actually sent. An empty body ran the rule at
+    #  the model's defaults and the answer still spoke of "the figures you supplied".
+    _sent936 = sorted(getattr(req, "model_fields_set", None) or [])
+    _defaulted936 = sorted({"coverage", "stubs_found"} - set(_sent936))
     return {"passed": passed, "min_coverage": qms.min_coverage,
+            "figures_supplied": _sent936, "figures_defaulted": _defaulted936,
+            "figures_basis": (
+                (f"typed by the caller: {', '.join(_sent936)}" if _sent936 else "the caller typed NO figure")
+                + (f"; taken from this route's defaults, not from any delivery: {', '.join(_defaulted936)} "
+                   f"(coverage {req.coverage}, stubs_found {req.stubs_found})" if _defaulted936 else "")),
             "counted_in_rate": False,
             "basis": ("a what-if gate over the coverage and stub figures you supplied — it is recorded "
                       "separately and does not move the platform non-conformance rate"),
@@ -58,7 +68,12 @@ async def qms_gate(req: QMSGate, user: dict | None = Depends(get_current_user)):
             # returns a bare float and a float cannot carry a reason, which is why this reads the summary's.
             **({k: qms.defect_summary()[k] for k in ("store_incomplete", "counts_are_incomplete")}
                if "store_incomplete" in qms.defect_summary() else {}),
-            "real": True}
+            #  ledger v17 (FU-936) - this flag answered the opposite of what the re-verify route below defines:
+            #  there, a gate run on typed figures is NOT real and NOT measured. One definition, both routes.
+            "real": False, "measured": False,
+            "real_basis": ("NOT measured here: the gate's rule was run on a coverage figure and a stub flag "
+                           "that were typed into the request (or defaulted), not read from a delivery. It is a "
+                           "what-if and is not counted in the non-conformance rate")}
 
 
 # ── §10 (W307) — the defect → correction → re-verify loop (ISO 9001 §8.7 / §10.2) ──

@@ -172,6 +172,32 @@ def _attestation_posture() -> dict:
     }
 
 
+def _article_parts(body: str) -> Dict[str, Any]:
+    """ledger v17 (FU-935) - {content, verified} of ONE article, read line by line.
+
+    The route returned `content: ""` for every article and only the FIRST PHYSICAL LINE of the Verified
+    paragraph, cut again at 400 characters, with nothing saying either was partial. The rule's own text is
+    everything from the heading to the Verified line; the mechanism is the Verified line and every line after
+    it up to a blank line or the Status line. Neither is shortened here, so neither needs a marker."""
+    import re as _re
+    rule: List[str] = []
+    verified: List[str] = []
+    in_verified = seen_verified = False
+    for line in (body or "").split("\n"):
+        s = line.strip()
+        if _re.match(r"(?i)^\*?Verified:\*?", s):
+            in_verified = seen_verified = True
+            verified.append(_re.sub(r"(?i)^\*?Verified:\*?\s*", "", s))
+        elif _re.match(r"(?i)^\*?Status:\*?", s) or (in_verified and not s):
+            in_verified = False
+        elif in_verified:
+            verified.append(s)
+        elif not seen_verified:
+            rule.append(line.rstrip())
+    _v = " ".join(v for v in verified if v).strip()
+    return {"content": "\n".join(rule).strip(), "verified": _v or None}
+
+
 @router.get("/api/v154/constitution/articles")
 async def v154_constitution_articles():
     """Parse the canonical constitution markdown into article records."""
@@ -193,15 +219,20 @@ async def v154_constitution_articles():
             _matches = list(_heading.finditer(text))
             for _i, m in enumerate(_matches):
                 _body = text[m.end():(_matches[_i + 1].start() if _i + 1 < len(_matches) else len(text))]
-                _v = re.search(r"(?im)^\*?Verified:\*?\s*(.+?)\s*$", _body)
+                _parts935 = _article_parts(_body)
+                _v = _parts935["verified"]
                 articles.append({
                     "id": m.group(1),
                     "title": m.group(2).strip()[:120],
                     "category": "CORE",
-                    "content": "",
+                    "content": _parts935["content"],
+                    "content_basis": ("the article's own text in the canon, from its heading to its Verified "
+                                      "line, whole" if _parts935["content"] else
+                                      "this article has no text between its heading and its Verified line"),
                     # None, not "", when the document states no mechanism: an article whose verification is
                     # unstated must not read as one that is verified by nothing in particular.
-                    "verified": (_v.group(1).strip()[:400] if _v else None),
+                    "verified": _v,
+                    "verified_whole": True if _v else None,       # the whole paragraph, never a first line
                     "verified_basis": ("named in the article" if _v else
                                        "THIS ARTICLE NAMES NO VERIFICATION MECHANISM - it is a statement, not "
                                        "a checkable rule, and should be given one or removed"),

@@ -304,6 +304,38 @@ def needs_check(rid: str, config: Optional[Dict[str, Any]] = None) -> Dict[str, 
             "declared_none": bool(rows) and all(r["kind"] == "none" for r in rows)}
 
 
+#  ledger v17 (FU-957) - A ROUTE IN THE TABLE IS NOT A DOOR THAT ANSWERS. The Synthesis Lab's registration
+#  declares a path whose handler was retired (Owner ruling 2026-10-11) and now only refuses with 410; the
+#  availability row said "served" and nothing else. Each retired door keeps its own switch and reason; they
+#  are read here, at the call, through the same seam the declared needs use.
+_RETIRED_DOORS = {
+    "/api/v1/studio/synthesise": ("agentic_core.api.synthesis_studio",
+                                  "STUDIO_SYNTHESISE_RETIRED", "STUDIO_SYNTHESISE_RETIRED_REASON"),
+    "/api/v1/studio/vsb/spawn": ("agentic_core.api.synthesis_studio",
+                                 "STUDIO_SPAWN_RETIRED", "STUDIO_SPAWN_RETIRED_REASON"),
+}
+
+
+def endpoint_retirement(path: str) -> Dict[str, Any]:
+    """{retired: True | False | None, basis}. None when the switch could not be read - never guessed."""
+    door = _RETIRED_DOORS.get(path)
+    if door is None:
+        return {"retired": False,
+                "basis": ("no retirement switch is recorded for this path; whether its handler answers a real "
+                          "request is known only by calling it")}
+    try:
+        _on = bool(_import_attr(door[0], door[1]))
+        _why = str(_import_attr(door[0], door[2]))
+    except Exception as _exc:                          # noqa: BLE001 - said, never assumed either way
+        return {"retired": None,
+                "basis": f"NOT CHECKED - the retirement switch of {path} could not be read ({_exc.__class__.__name__})"}
+    if _on:
+        return {"retired": True,
+                "basis": f"the door at {path} is RETIRED: it is in the route table and answers 410 to every "
+                         f"request. Its own reason: {_why}"}
+    return {"retired": False, "basis": f"the retirement switch of {path} is off, so the door is open"}
+
+
 _CHECKED_WORD = {"met": "available", "unmet": "unavailable", "not_declared": "not_checked",
                  "not_checked": "not_checked"}
 
@@ -327,6 +359,10 @@ def availability(rid: str, app=None) -> Dict[str, Any]:
                               f"application serves {sorted(m for m in on_path if m not in ('HEAD', 'OPTIONS'))}")
         else:
             endpoint_state, endpoint_basis = "served", "the declared endpoint and method are in the route table"
+    _retired957 = endpoint_retirement(base["endpoint"])
+    if _retired957["retired"] and endpoint_state == "served":
+        endpoint_basis += (". That door is retired and answers 410, so nothing is served by calling it; the "
+                           "fabric runs this resource in-process and does not call the address")
     if handlers is None:
         state, reason = "not_checked", "the handler's source could not be read, so no branch could be looked for"
     elif rid in handlers:
@@ -369,6 +405,7 @@ def availability(rid: str, app=None) -> Dict[str, Any]:
             "needs_narrowed": need["narrowed"], "needs_declared_none": need["declared_none"],
             "checked": checked, "checked_basis": checked_basis,
             "endpoint_state": endpoint_state, "endpoint_basis": endpoint_basis,
+            "endpoint_retired": _retired957["retired"], "endpoint_retired_basis": _retired957["basis"],
             "not_checked": ("whether its engine succeeds on a real input - that is known only by running it, "
                             "and a run records it as its outcome")}
 
@@ -709,6 +746,9 @@ async def cell_availability(request: Request):
                             + ((f". {_narrowed} start here with less than they declare: an optional need is "
                                 f"absent, and each says what that costs") if _narrowed else "")),
             "needs_narrowed_count": _narrowed,
+            "retired_endpoints": [{"id": x["id"], "endpoint": _fab._BY_ID[x["id"]]["endpoint"],
+                                   "basis": x["endpoint_retired_basis"]}
+                                  for x in rows if x["endpoint_retired"]],
             "declaration_defects": [{"id": x["id"], "endpoint_state": x["endpoint_state"],
                                      "basis": x["endpoint_basis"]}
                                     for x in rows if x["endpoint_state"] in ("not_served", "method_mismatch")],

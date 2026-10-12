@@ -97,6 +97,10 @@ interface CCAStats {
   approved: number;
   rejected: number;
   implemented: number;
+  // ledger v17 (FU-953) — what the implemented ones did, counted from the same rows as the number above
+  implementedApplied: number;
+  implementedRecordedOnly: number;
+  implementedEffectNotRecorded: number;
 }
 
 // W464 — what decided a record, in words (a raw token is never shown as the reason)
@@ -655,7 +659,8 @@ type FilterTab = 'all' | 'pending' | 'awaiting' | 'approved' | 'rejected' | 'imp
 export const ChangeControlAgency: React.FC = () => {
   const [entries, setEntries] = useState<CCARow[]>([]);
   const [filter, setFilter] = useState<FilterTab>('all');
-  const [stats, setStats] = useState<CCAStats>({ total: 0, pending: 0, awaiting: 0, approved: 0, rejected: 0, implemented: 0 });
+  const [stats, setStats] = useState<CCAStats>({ total: 0, pending: 0, awaiting: 0, approved: 0, rejected: 0, implemented: 0,
+    implementedApplied: 0, implementedRecordedOnly: 0, implementedEffectNotRecorded: 0 });
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
@@ -675,7 +680,11 @@ export const ChangeControlAgency: React.FC = () => {
       const approved = all.filter(e => e.status === 'approved' && !e.awaiting_board_ratification).length;
       const rejected = all.filter(e => e.status === 'rejected').length;
       const implemented = all.filter(e => e.status === 'implemented').length;
-      setStats({ total: all.length, pending, awaiting, approved, rejected, implemented });
+      const implementedApplied = all.filter(e => e.status === 'implemented' && (e as CCADetail).implementation_effect === 'applied').length;
+      const implementedRecordedOnly = all.filter(e => e.status === 'implemented' && (e as CCADetail).implementation_effect === 'recorded_only').length;
+      setStats({ total: all.length, pending, awaiting, approved, rejected, implemented,
+        implementedApplied, implementedRecordedOnly,
+        implementedEffectNotRecorded: implemented - implementedApplied - implementedRecordedOnly });
     } catch {
       setLoadError('Could not load the change queue — backend unreachable.');
     } finally { setLoading(false); }
@@ -750,11 +759,14 @@ export const ChangeControlAgency: React.FC = () => {
           { label: 'Awaiting Board', value: stats.awaiting, color: 'text-orange-300' },
           { label: 'Approved', value: stats.approved, color: 'text-green-400' },
           { label: 'Rejected', value: stats.rejected, color: 'text-red-400' },
-          { label: 'Implemented', value: stats.implemented, color: 'text-blue-400' },
+          { label: 'Implemented', value: stats.implemented, color: 'text-blue-400',
+            sub: `${stats.implementedApplied} applied · ${stats.implementedRecordedOnly} recorded only — nothing applied`
+              + (stats.implementedEffectNotRecorded ? ` · ${stats.implementedEffectNotRecorded} effect not recorded` : '') },
         ].map(s => (
           <div key={s.label} className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
             <p className={`text-2xl font-black ${s.color}`}>{s.value}</p>
             <p className="text-xs text-white/40 mt-1">{s.label}</p>
+            {s.sub && <p className="text-[10px] text-white/40 mt-1" data-testid="cca-implemented-effect">{s.sub}</p>}
           </div>
         ))}
       </div>

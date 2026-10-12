@@ -56,7 +56,8 @@ def submit(record_id: str, kind: str, body: str) -> Dict[str, Any]:
     return {"ok": True, "record": recs[record_id], "reason": "submitted", "detail": "awaiting QA sign-off"}
 
 
-def sign(record_id: str, signatory_id: str, approve: bool, note: str = "") -> Dict[str, Any]:
+def sign(record_id: str, signatory_id: str, approve: bool, note: str = "",
+         requested_by: Optional[str] = None) -> Dict[str, Any]:
     roster = _load("roster")
     if not roster:
         return {"ok": False, "record": None, "reason": "no_qa_engaged",
@@ -70,7 +71,11 @@ def sign(record_id: str, signatory_id: str, approve: bool, note: str = "") -> Di
     if not rec:
         return {"ok": False, "record": None, "reason": "not_submitted", "detail": f"No GMP record {record_id!r} was submitted"}
     rec.update(state=SIGNED if approve else REJECTED, signatory_id=signatory_id, signed_body_hash=rec["body_hash"],
-               signed_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), note=note or None)
+               signed_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), note=note or None,
+               #  ledger v17 (FU-963) - kept ON THE RECORD: the signatory id is a field of the request, checked
+               #  for being on the roster. Nothing binds it to the account that sent the request, so the record
+               #  does not establish who signed. `sign_requested_by` is that account, None when there was none.
+               signer_identity_verified=False, sign_requested_by=requested_by)
     _save("records", recs)
     return {"ok": True, "record": rec, "reason": "signed" if approve else "rejected", "detail": f"recorded by {signatory_id}"}
 

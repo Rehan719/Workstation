@@ -40,7 +40,10 @@ interface OrganismStatus {
     // W495 (FU-129, S8.2) - the count is of STORED genomes; encoded_genomes says how many were
     // actually encoded by a model (zero on the deterministic floor, which cannot declare traits)
     genome:        { total_genomes: number; encoded_genomes?: number; encoded_basis?: string };
-    reconfiguration: { features_active: number; domains_enabled: number; rpm_limit: number; preferred_provider: string };
+    reconfiguration: { features_active: number; domains_enabled: number; rpm_limit: number; preferred_provider: string;
+      // ledger v17 (FU-979) — how many of those switches anything reads
+      features_wired?: number | null; domains_wired?: number | null; preferred_provider_wired?: boolean | null;
+      rpm_limit_wired?: boolean | null; wiring_basis?: string };
   };
   operations: {
     lifecycle:     { total_projects: number; by_stage: Record<string,number>; running: number; commercialisation_rate: number; pipeline_health: string };
@@ -269,7 +272,7 @@ export const OrganismDashboard: React.FC = () => {
           </div>
           <p className="text-[11px] text-white/45 leading-relaxed">
             {/* W633 (FU-570) — said from the model's own flags: on the current model ATP cannot fall */}
-            The organism is governing how much AI cognition the swarm admits. {cognition.atp_can_fall === false
+            The organism is governing how much AI cognition the swarm admits. {cognition.organism?.atp_can_fall === false
               ? 'ATP here is a SIMULATION that cannot fall (production always exceeds consumption), so it does not limit runs.'
               : 'Each run expends simulated ATP.'} Max parallel agents now: <span className="text-violet-300 font-bold">{cognition.max_parallel}</span>
             {cognition.organism.should_throttle && <span className="text-amber-400"> · throttling</span>}.
@@ -353,7 +356,7 @@ export const OrganismDashboard: React.FC = () => {
             temp: {recommended.temperature}
           </span>
           <span className="px-2 py-0.5 rounded text-xs font-mono bg-white/5 text-white/50 border border-white/10">
-            {systems.reconfiguration.preferred_provider} provider
+            {systems.reconfiguration.preferred_provider} provider{systems.reconfiguration.preferred_provider_wired === false ? ' · stored only' : ''}
           </span>
           <span className="px-2 py-0.5 rounded text-xs font-mono bg-white/5 text-white/50 border border-white/10">
             {systems.reconfiguration.rpm_limit} RPM
@@ -433,7 +436,7 @@ export const OrganismDashboard: React.FC = () => {
               <span className="text-2xl font-black text-white">{Math.round(systems.metabolic.atp_ratio * 100)}%</span>
             </div>
             <HealthBar value={systems.metabolic.atp_ratio} />
-            <div className="text-xs font-mono text-white/30">ATP ratio · simulated{cognition?.atp_can_fall === false ? ' — cannot fall' : ''}</div>
+            <div className="text-xs font-mono text-white/30">ATP ratio · simulated{cognition?.organism?.atp_can_fall === false ? ' — cannot fall' : ''}</div>
           </SystemCard>
 
           {/* Circadian */}
@@ -479,6 +482,11 @@ export const OrganismDashboard: React.FC = () => {
                 <span className="text-white/40">RPM limit</span>
                 <span className="text-white">{systems.reconfiguration.rpm_limit}</span>
               </div>
+              {systems.reconfiguration.wiring_basis && (
+                <p data-testid="reconfig-wiring-basis" className="text-[10px] text-amber-300/80 leading-snug pt-1">
+                  {systems.reconfiguration.wiring_basis}
+                </p>
+              )}
             </div>
           </SystemCard>
 

@@ -2554,7 +2554,8 @@ def test_mgmt_ems_generate(client):
     assert r.status_code == 200
     body = r.json()
     assert "framework" in body
-    assert body["standard"] == "ISO 14001:2015"
+    #  W677 - no edition is typed (its publisher replaced the one that stood here); the standard is named alone
+    assert body["standard"] == "ISO 14001" and "not a conformity assessment" in body["standard_note"]
     assert len(body["framework"]) > 200
 
 
@@ -10242,8 +10243,10 @@ def test_w457_care_scoring_computes_both_ways(client, monkeypatch):
     assert "2005" not in score_waterlow({})["table"] or "not the 2005" in score_waterlow({})["table"]
     wl2 = score_waterlow({"build": "average", "skin": "shiny"})
     assert "skin" in wl2["missing"] and not wl2["complete"]
+    #  W677 (Owner ruling 2026-10-12) - the falls count is RETIRED: whatever is sent, nothing is counted
     f = score_falls({"falls_history": "yes", "age": 70, "visual_impairment": "no"})
-    assert f["total"] == 2 and "multifactorial assessment warranted" in f["band"] and "not a score" in f["note"]
+    assert f["retired"] is True and f["total"] is None and f["band"] is None and f["assessed"] is False, f
+    assert f["keys_not_read"] == ["age", "falls_history", "visual_impairment"] and compute_score("falls_risk", {})["available"] is False
     assert compute_score("dementia_care", {})["available"] is False
 
     # the route: the score block is first-class, the prompt carries it and forbids recomputation
@@ -10263,8 +10266,10 @@ def test_w457_care_scoring_computes_both_ways(client, monkeypatch):
     assert score_summary(r["score"]).startswith("NEWS2 6 · medium")
     r2 = client.post("/api/v1/care/risk-assess", json={"tool": "mental_health", "patient_data": {"mood": "low"}}).json()
     assert r2["score"]["available"] is False and "no published arithmetic" in r2["score"]["note"]
-    r3 = client.post("/api/v1/care/risk-assess", json={"tool": "falls_risk", "patient_data": {"falls_history": "yes", "age": 70}}).json()
-    assert "COMPUTED FACTOR COUNT" in seen["prompt"] and "COMPUTED SCORE" not in seen["prompt"] and r3["score_summary"].startswith("FALLS RISK factor count 2")
+    #  W677 - the retired entry is refused before anything is composed, and the prompt never calls a count a score
+    _n_seen = dict(seen)
+    r3 = client.post("/api/v1/care/risk-assess", json={"tool": "falls_risk", "patient_data": {"falls_history": "yes", "age": 70}})
+    assert r3.status_code == 410 and "retired" in r3.json()["detail"] and seen == _n_seen, (r3.status_code, r3.text[:200])
     # the page renders the block first and the copy says what is computed
     hub = Path("apps/workstation-superapp/src/pages/domains/CareHub.tsx").read_text(encoding="utf-8")
     assert "data-testid=\"care-score\"" in hub and "r.score.total" in hub and "computed in-house from the published table" in hub
@@ -22199,17 +22204,16 @@ def test_w496_a_default_is_not_a_decision(client, monkeypatch, tmp_path):
     # ── FU-113: an instrument that read nothing does not report an absence as a finding ─────────────
     _fa = client.post("/api/v1/care/risk-assess",
                       json={"tool": "falls_risk", "patient_data": {"fallen twice this year": "yes"}})
-    assert _fa.status_code == 200, _fa.text
-    _sc = _fa.json()["score"]
-    assert _sc["assessed"] is False, _sc
-    assert _sc["band"] == "not assessed - no factor recorded", _sc["band"]
-    assert "NOTHING WAS READ" in _sc["response"], _sc["response"]
-    assert _sc["keys_not_read"] == ["fallen twice this year"], _sc["keys_not_read"]
-    # a real recording still assesses
-    _fb = client.post("/api/v1/care/risk-assess",
-                      json={"tool": "falls_risk", "patient_data": {"falls_history": "yes"}})
-    _sb = _fb.json()["score"]
-    assert _sb["assessed"] is True and _sb["band"] == "multifactorial assessment warranted", _sb
+    #  W677 (Owner ruling 2026-10-12) - the instrument this leg drove is RETIRED, so the route refuses it. The
+    #  property is kept where it now lives: the retired record names back every key it was sent, reads none
+    #  as a factor, and reports no absence as a finding - with a real recording as with an unknown one.
+    assert _fa.status_code == 410 and "retired" in _fa.json()["detail"], _fa.text
+    from agentic_core.care.scoring import compute_score as _cs113
+    for _sent113 in ({"fallen twice this year": "yes"}, {"falls_history": "yes"}):
+        _sc = _cs113("falls_risk", _sent113)
+        assert _sc["assessed"] is False and _sc["band"] is None and _sc["total"] is None, _sc
+        assert _sc["keys_not_read"] == sorted(_sent113) and "nothing was assessed" in _sc["response"], _sc
+        assert "no trigger" not in _sc["response"] and "reassess" not in _sc["response"], _sc["response"]
     _ch_page = (app / "pages/domains/CareHub.tsx").read_text(encoding="utf-8")
     assert "care-not-assessed" in _ch_page and "care-keys-not-read" in _ch_page
     assert "not assessed|no trigger recorded|no band" in _ch_page   # the green fallthrough is closed
@@ -47472,7 +47476,10 @@ def test_w633_p228_the_four_v11_tier1_statements_are_true(client):
 
     # FU-570: the dashboard says ATP is a simulation that cannot fall, from the model's own flag
     _od = _fe("pages/organism/OrganismDashboard.tsx")
-    assert "recovers on the circadian cycle" not in _od and "cognition.atp_can_fall === false" in _od
+    #  ledger v17 (FU-976) retarget - the flag is under `organism` in the API's answer; this pinned the path
+    #  that is always undefined, so the sentence it guards could never print
+    assert "recovers on the circadian cycle" not in _od and "cognition.organism?.atp_can_fall === false" in _od
+    assert "cognition.atp_can_fall" not in _od and "cognition?.atp_can_fall" not in _od
     assert "ATP ratio · simulated" in _od
 
     # FU-571: an Owner-excluded priority is unfunded BECAUSE of the exclusion; defaults are not 'Owner-named'
@@ -50670,7 +50677,11 @@ def test_w656_what_an_entitys_records_and_pages_say_is_what_happened(client):
     _care = _code_only((_src / "pages/domains/CareHub.tsx").read_text(encoding="utf-8"))
     _lbl = re.search(r"label: 'Tool \(([a-z0-9_, ]+?) and ([a-z0-9_]+) compute a score", _care)
     assert _lbl, "the Care tool's field does not say which instruments compute a score"
-    assert sorted([x.strip() for x in _lbl.group(1).split(",")] + [_lbl.group(2)]) == sorted(_sc656._SCORERS), (
+    #  W677 - the falls entry is RETIRED: its scorer stays in the table and answers with a retirement record, so
+    #  the instruments that COMPUTE are the ones whose answer is not one. Computed, so retiring another needs no edit.
+    _live656 = sorted(k for k, f in _sc656._SCORERS.items() if not f({}).get("retired"))
+    assert len(_live656) < len(_sc656._SCORERS), "no scorer answers as retired - this leg no longer separates anything"
+    assert sorted([x.strip() for x in _lbl.group(1).split(",")] + [_lbl.group(2)]) == _live656, (
         "the instruments the page says compute a score are not the ones the module scores", _lbl.groups())
 
     #  ...and THE ROSTER ROW carries the entity's own status beside its word 'living' (read, not typed)
@@ -51154,8 +51165,11 @@ def test_w658_a_simulations_funds_enter_nothing_real(client):
            / "apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx").read_text(encoding="utf-8")
     _i = _pg.find('data-testid="economy-simulation-notice"')
     assert _i > 0, "the Economy page has no simulation notice"
-    assert "{simBasis && (" in _pg[_i - 160:_i], "the notice is not gated on the cycle's own statement"
-    assert "{simBasis}" in _pg[_i:_i + 420], "the notice does not print the cycle's own statement"
+    #  W677 - the gate now also reads the loaded pack and the payments, so a reload shows the notice too. It is
+    #  still gated on a statement the platform made (the cycle's comes first) and is never shown unconditionally.
+    _gate658 = _pg[_i - 700:_i]
+    assert "const _sim = simBasis" in _gate658 and "return _sim ? (" in _gate658[-80:], "the notice is not gated on the platform's own statement"
+    assert "{_sim}" in _pg[_i:_i + 420], "the notice does not print the platform's own statement"   # W677: cycle, pack or payments
     assert "d.registration === 'UNREGISTERED'" in _pg, "the page never reads the cycle's registration"
     assert _pg.count("setSimBasis('')") >= 2, "a stale notice survives a new load or a failed run"
     _tr = client.post("/api/v1/economy/transfer", json={"from_vsb": _reg_a, "to_vsb": _reg_b, "amount": 1})
@@ -60543,3 +60557,1164 @@ def test_w676_no_page_draws_a_structure_pass_as_a_good_result():
         assert "emerald" not in _after and "green" not in _after, (_name, _i, _after)
     _dot = [l for n, i, l in _sites if n == "Deliverables.tsx" and "QMS structure" in l]
     assert len(_dot) == 1 and "'pass' ? 'text-slate-200'" in _dot[0] and "'fail' ? 'text-vital'" in _dot[0], _dot
+
+
+def test_law_a_filing_shaped_document_has_one_door_and_no_prompt_claims_a_role_or_a_forecast(client, monkeypatch):
+    """OWNER RULINGS 2026-10-12 (the advice item, clauses 5 and 6). The generator wrote a tribunal claim from a
+    prompt with none of the clerk's gates, and three prompts claimed a solicitor's role and asked for a likely
+    position with a confidence level. Driven: every filing-shaped template is refused by the generator and the
+    refusal names the clerk; an ordinary template is still generated; and each prompt AS SENT is read."""
+    import agentic_core.api.law as _law
+    from agentic_core.legal import specialist as _sp
+    assert len(_sp.FILING_SHAPED) >= 2, "nothing is filing-shaped, so the refusal would be idle"
+    _sent = []
+
+    async def _capture(prompt, agent, **kw):
+        _sent.append((agent, prompt))
+        return "w-law captured", {"served_by": "native", "floor_note": "w-law: captured, nothing composed"}
+    monkeypatch.setattr(_law, "ai_text", _capture)
+    # 1. ONE DOOR - each filing-shaped id is refused before anything is composed, and the refusal names the clerk
+    for _tid in _sp.FILING_SHAPED:
+        _n = len(_sent)
+        _r = client.post("/api/v1/law/generate", json={"template_id": _tid, "parties": {"a": "A Person"}})
+        assert _r.status_code == 409, (_tid, _r.status_code, _r.text[:200])
+        _d = _r.json()["detail"]
+        assert isinstance(_d, str) and "/api/v1/law/matter/assemble" in _d and "not generated here" in _d, _d
+        assert len(_sent) == _n, f"{_tid}: a prompt was sent before the refusal"
+    #    the clerk's door still opens for the same template, and an ordinary template is still generated
+    assert client.post("/api/v1/law/matter/assemble", json={"template_id": _sp.FILING_SHAPED[0]}).status_code == 200
+    for _tid in [t["id"] for t in _law._TEMPLATES if t["id"] not in _sp.FILING_SHAPED]:
+        _r = client.post("/api/v1/law/generate", json={"template_id": _tid})
+        assert _r.status_code == 200 and _r.json()["document"] == "w-law captured", (_tid, _r.text[:200])
+    client.post("/api/v1/law/research", json={"question": "w-law probe: how long do I have?", "area_of_law": "employment"})
+    client.post("/api/v1/law/analyse", json={"document_text": "1. The Supplier shall deliver.", "analysis_focus": "risk"})
+    _agents = {a for a, _ in _sent}
+    assert {"law_generator", "law_researcher", "law_analyst"} <= _agents, _agents
+    # 2. EVERY PROMPT AS SENT - no role, no forecast asked for, no typed law, no property claimed for the output
+    for _agent, _p in _sent:
+        _low = _p.lower()
+        for _banned in ("you are a", "solicitor", "barrister", "with a confidence level", "most likely position",
+                        "28 days", "(3 years)", "gdpr-compliant", "compelling", "rights act 1996"):
+            assert _banned not in _low, (_agent, _banned, _p[:200])
+    _research = [p for a, p in _sent if a == "law_researcher"][0]
+    assert "no probability, forecast or confidence figure" in _research and "never state a period from memory" in _research
+    assert "Claim no professional role" in _research
+    _analyse = [p for a, p in _sent if a == "law_analyst"][0]
+    assert "Claim no professional role" in _analyse and "no probability, forecast or confidence figure" in _analyse.replace("Give no", "no")
+
+
+def test_education_work_not_read_whole_is_not_graded_and_every_answer_says_what_was_not_checked(client, monkeypatch):
+    """OWNER RULINGS 2026-10-12 (the Education item, clauses 2, 3, 4, 6; no role in any prompt). An essay was cut
+    at a fixed length and graded with nothing said; blank work was graded; lesson and assessment answers carried
+    no word of what nobody checked; a framework that does not exist was printed back. Each is driven with a
+    capture in the composer's place, at the limit and one character over it."""
+    import agentic_core.api.education as _edu
+    _sent = []
+    _MARKED = "## Overall Impression\nw-edu fine\n\n## Criterion-by-Criterion\nw-edu met\n\n## Indicative Level / Grade\nGrade 7-8\n"
+
+    async def _capture(prompt, agent, **kw):
+        _sent.append((agent, prompt))
+        return (_MARKED if agent == "education_feedback" else "w-edu captured body"), {"served_by": "w-edu-capture"}
+    monkeypatch.setattr(_edu, "ai_text", _capture)
+    _L = _edu.WORK_LIMIT
+
+    def _mark(work):
+        return client.post("/api/v1/education/feedback", json={"student_work": work, "task": "w-edu explain", "subject": "History"})
+    # 1. AT the limit: read whole, graded, and it says so
+    _at = _mark("a" * _L).json()
+    assert _at["work_read"] == {"chars": _L, "read_chars": _L, "read_whole": True} and _at["sections_withheld"] == [], _at["work_read"]
+    assert "Grade 7-8" in _at["feedback"] and "ONLY PART" not in _at["feedback"]
+    # 2. ONE character over: not graded, the two sections named, the figure in the TEXT, the cut work in the prompt
+    _over = _mark("a" * _L + "Z").json()
+    assert _over["work_read"] == {"chars": _L + 1, "read_chars": _L, "read_whole": False}, _over["work_read"]
+    assert "Grade 7-8" not in _over["feedback"] and "w-edu met" not in _over["feedback"], _over["feedback"]
+    assert _over["sections_withheld"] == ["Criterion-by-Criterion", "Indicative Level / Grade"], _over["sections_withheld"]
+    assert f"the first {_L:,} of {_L + 1:,} characters" in _over["feedback"] and "w-edu fine" in _over["feedback"], _over["feedback"][-400:]
+    assert "Z\n\nProduce:" not in _sent[-1][1] and ("a" * _L + "\n\n") in _sent[-1][1], "the prompt did not carry exactly the cut work"
+    # 3. BLANK work is refused before anything is composed
+    _n = len(_sent)
+    for _blank in ("", "   ", "\n\t "):
+        _b = _mark(_blank)
+        assert _b.status_code == 422 and "nothing to mark" in _b.json()["detail"], (_blank, _b.text[:160])
+    assert len(_sent) == _n, "a prompt was sent for blank work"
+    # 4. LESSON and ASSESSMENT say what nobody checked - in the TEXT and in fields - and who they are for
+    _ls = client.post("/api/v1/education/lesson-plan", json={"subject": "Biology", "topic": "Photosynthesis", "level": "KS3"}).json()
+    assert _ls["lesson_plan"].startswith("w-edu captured body") and "checked against a curriculum or by a person" in _ls["lesson_plan"], _ls["lesson_plan"]
+    assert _ls["screen_note"] == _edu.SCREEN_NOT_CLEARED and _edu.FOR_WHOM in _ls["disclaimer"] and "do not name a pupil" not in _ls["lesson_plan"]
+    _ln = client.post("/api/v1/education/lesson-plan", json={"subject": "Biology", "topic": "Photosynthesis", "level": "KS3",
+                                                             "special_needs": "one pupil reads large print"}).json()
+    assert "do not name a pupil" in _ln["lesson_plan"] and "exactly as typed" in _ln["lesson_plan"], _ln["lesson_plan"][-300:]
+    _as = client.post("/api/v1/education/assessment", json={"subject": "Maths", "topic": "Fractions", "level": "KS2"}).json()
+    assert "checked by nobody" in _as["assessment"] and "checked by nobody" in _as["disclaimer"] and _as["screen_note"] == _edu.SCREEN_NOT_CLEARED
+    assert "Not an official paper" in _as["assessment"]
+    # 5. FRAMEWORKS: only names are held; the one that did not exist is renamed; unknown ones and types are refused
+    _fw = client.get("/api/v1/education/frameworks").json()
+    assert all(f["held"] == "name only" for f in _fw["frameworks"]) and "NAME is held" in _fw["held_basis"]
+    _uk = [f for f in _fw["frameworks"] if f["id"] == "uk_national"][0]
+    assert _uk["name"] == "National Curriculum (England)" and _uk["page"].startswith("https://www.gov.uk/") and _uk["read_on"]
+    assert not [f for f in _fw["frameworks"] if f["name"].startswith("UK National")]
+    _n = len(_sent)
+    _bad = client.post("/api/v1/education/curriculum", json={"subject": "Maths", "level": "GCSE", "framework": "w-edu no such framework"})
+    assert _bad.status_code == 422 and "uk_national" in _bad.json()["detail"], _bad.text[:200]
+    _badt = client.post("/api/v1/education/assessment", json={"subject": "Maths", "topic": "x", "level": "KS2", "assessment_type": "an official certificate"})
+    assert _badt.status_code == 422 and "quiz" in _badt.json()["detail"], _badt.text[:200]
+    assert len(_sent) == _n
+    #    and no page or front-door card says a curriculum is aligned to a framework
+    import pathlib as _pl_edu
+    _src_edu = _pl_edu.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+    for _rel in ("lib/toolRegistry.ts", "pages/domains/EducationHub.tsx"):
+        assert "framework-aligned" not in (_src_edu / _rel).read_text(encoding="utf-8"), _rel
+    # 6. A CLAMP is said; an unclamped request says nothing was adjusted
+    _cu = client.post("/api/v1/education/curriculum", json={"subject": "Maths", "level": "GCSE", "framework": "uk_national",
+                                                            "duration_weeks": 500, "learning_objectives_count": -3}).json()
+    assert _cu["duration_weeks"] == 52 and len(_cu["adjusted"]) == 2 and "500 weeks was asked for and 52 was used" in _cu["adjusted"][0], _cu["adjusted"]
+    assert "500 weeks was asked for" in _cu["curriculum"] and "NAME is held" in _cu["curriculum"] and _cu["framework_basis"] == _edu.FRAMEWORK_HELD
+    _c2 = client.post("/api/v1/education/curriculum", json={"subject": "Maths", "level": "GCSE"}).json()
+    assert _c2["adjusted"] == [] and "Adjusted:" not in _c2["curriculum"]
+    # 7. EVERY EDUCATION PROMPT AS SENT claims no role
+    assert {"education_feedback", "education_lesson_plan", "education_assessment", "education_curriculum"} <= {a for a, _ in _sent}
+    for _agent, _p in _sent:
+        for _banned in ("you are a", "you are an", "examiner", "master curriculum designer", "outstanding teacher", "expert assessment designer"):
+            assert _banned not in _p.lower(), (_agent, _banned, _p[:140])
+        assert "Claim no professional role" in _p, (_agent, _p[:140])
+    # 8. THE FLOOR still withholds, and still says it is the floor that did
+    monkeypatch.undo()
+    _fl = client.post("/api/v1/education/feedback", json={"student_work": "w-edu the water cycle goes up and down", "task": "Explain", "subject": "science"}).json()
+    assert _fl["work_read"]["read_whole"] is True and "ONLY PART" not in _fl["feedback"]
+    if (_fl["ai_provenance"] or {}).get("floor_note"):
+        assert "Withheld on the native floor" in _fl["feedback"], _fl["feedback"][-300:]
+
+
+def test_mgmt_no_replaced_edition_is_named_and_a_nonconformance_is_not_said_to_be_kept(client, monkeypatch):
+    """OWNER RULINGS 2026-10-12 (the quality reassessment). The standards list, two prompts, two answers and two
+    page sentences named editions their publisher has replaced and called an outline aligned to them; a
+    nonconformance was answered "Recorded" and stored nowhere; any word was accepted as a severity. Each is
+    driven, the prompts AS SENT, and the whole answer is read - not one field."""
+    import json as _json
+    import pathlib as _pl
+    import re as _re
+    import agentic_core.api.management_systems as _ms
+    _sent = []
+
+    async def _compose(prompt, agent, **kw):
+        _sent.append((agent, prompt))
+        return "## 1. Policy\nw-ms captured", {"served_by": "w-ms-capture"}
+    monkeypatch.setattr(_ms, "_compose", _compose)
+    _EDITION = _re.compile(r"(?:ISO|IEC)[ /A-Z]*\d{4,5}:\d{4}")
+    # 1. THE LIST names no edition and no level or grade of attainment, and says what an outline is
+    _st = client.get("/api/v1/mgmt/standards").json()
+    assert _st["standards"] and not _EDITION.search(_json.dumps(_st["standards"])), [s["name"] for s in _st["standards"]]
+    assert not [s["name"] for s in _st["standards"] if _re.search(r"Level \d|\bPlus\b", s["name"])], [s["name"] for s in _st["standards"]]
+    assert "not a conformity assessment" in _st["note"] and _st["editions"]["read_on"] and _st["editions"]["read_by"]
+    # 2. BOTH GENERATORS: the whole answer names no edition and claims nothing; the prompt as sent asks for neither
+    for _path, _body in (("/api/v1/mgmt/qms/generate", {"organisation_name": "w-ms Org", "domain": "general"}),
+                         ("/api/v1/mgmt/ems/generate", {"organisation_name": "w-ms Org", "domain": "general", "sector": "services"})):
+        _r = client.post(_path, json=_body)
+        assert _r.status_code == 200, (_path, _r.text[:200])
+        _j = _r.json()
+        _all = _json.dumps(_j)
+        assert not _EDITION.search(_all), (_path, _EDITION.search(_all).group(0))
+        assert "aligned" not in _all.lower().replace("not a statement that anything is aligned", ""), _path
+        assert _j["standard_note"] == _ms.STANDARD_NOTE and _j["framework"].startswith("## 1. Policy") and _ms.STANDARD_NOTE in _j["framework"], _path
+    assert len(_sent) == 2
+    for _agent, _p in _sent:
+        assert not _EDITION.search(_p) and "-aligned" not in _p and "name no edition" in _p, (_agent, _p[:200])
+    # 3. A NONCONFORMANCE is not said to be kept, and a severity that is not one is refused before any signal
+    _nc = client.post("/api/v1/mgmt/nonconformance", json={"organisation_name": "w-ms Org", "description": "w-ms a label was wrong", "severity": "major"})
+    assert _nc.status_code == 200, _nc.text[:200]
+    _n = _nc.json()
+    assert _n["stored"] is False and "NOT STORED" in _n["stored_basis"] and "cannot be looked up" in _n["stored_basis"], _n
+    assert "recorded" not in _json.dumps({k: v for k, v in _n.items() if k != "capa"}).lower(), "the answer still says it was recorded"
+    assert "signalled as quality_major" in _n["immune_response"]
+    _before = len(_sent)
+    for _sev in ("catastrophic", "", "MAJOR"):
+        _b = client.post("/api/v1/mgmt/nonconformance", json={"organisation_name": "w-ms Org", "description": "w-ms x", "severity": _sev})
+        assert _b.status_code == 422 and isinstance(_b.json()["detail"], str) and "Nothing was signalled" in _b.json()["detail"], (_sev, _b.text[:160])
+    assert len(_sent) == _before, "a refused severity still composed"
+    # 4. THE PAGE names no edition either
+    _page = (_pl.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages" / "enterprise" / "ManagementSystemsHub.tsx").read_text(encoding="utf-8")
+    assert not _EDITION.search(_page) and "-aligned" not in _page, _EDITION.search(_page)
+
+
+def test_t2_the_what_if_gate_does_not_answer_real(client):
+    """Ledger v17 FU-936 - POST /api/v1/vbs/qms/gate answered "real": true for figures the caller typed, while
+    the re-verify route defines a gate on typed figures as real: false.
+
+    THE PROPERTIES, over the whole answer: the flag is false with the reason beside it; the answer says WHICH
+    figures were typed and which were this route's defaults (an empty body typed none); and the rule itself
+    still answers both ways. The QMS state is put back: an empty body opens a what-if defect."""
+    import copy
+    import json
+    from agentic_core.vbs.registry import qms as _qms
+    _before = copy.deepcopy(_qms._load_state())
+    try:
+        _r = client.post("/api/v1/vbs/qms/gate", json={"coverage": 0.99})
+        assert _r.status_code == 200, _r.text[:300]
+        _j = _r.json()
+        assert _j["passed"] is True and _j["counted_in_rate"] is False, ("precondition: the rule passes 0.99 as a what-if", _j)
+        assert _j["real"] is False and _j["measured"] is False, ("a gate on typed figures still answers real", _j)
+        assert _j["real_basis"].startswith("NOT measured here") and "typed" in _j["real_basis"], _j["real_basis"]
+        assert '"real":true' not in json.dumps(_j).replace(" ", ""), "some part of the answer still says real"
+        assert _j["figures_supplied"] == ["coverage"] and _j["figures_defaulted"] == ["stubs_found"], _j
+        assert "typed by the caller: coverage" in _j["figures_basis"] and "defaults" in _j["figures_basis"], _j["figures_basis"]
+        # both figures typed: nothing is said to be defaulted, and the rule fails when it should
+        _f = client.post("/api/v1/vbs/qms/gate", json={"coverage": 0.2, "stubs_found": True}).json()
+        assert _f["passed"] is False and _f["real"] is False and _f["figures_defaulted"] == [], _f
+        assert "defaults" not in _f["figures_basis"], _f["figures_basis"]
+        # an EMPTY body typed nothing, and the answer says so
+        _e = client.post("/api/v1/vbs/qms/gate", json={}).json()
+        assert _e["figures_supplied"] == [] and _e["figures_defaulted"] == ["coverage", "stubs_found"], _e
+        assert "the caller typed NO figure" in _e["figures_basis"] and _e["real"] is False, _e
+    finally:
+        _qms._state = _before
+        _qms._save_state()
+
+
+def test_t2_a_constitution_article_carries_its_text_and_its_whole_verified_paragraph(client, monkeypatch, tmp_path):
+    """Ledger v17 FU-935 - every article came back with content "" and only the first physical line of its
+    Verified paragraph, cut at 400 characters, with nothing saying either was partial.
+
+    THE PROPERTIES: against the canon as it stands, each article's `verified` equals its whole Verified
+    paragraph and its `content` equals the text above it (computed here by a different route through the file);
+    then against a canon THIS TEST WRITES: a three-line mechanism, a mechanism longer than the old cap, an
+    article whose heading is its whole rule, and trailing prose that belongs to no article."""
+    import pathlib
+    import re
+    _canon = (pathlib.Path(__file__).resolve().parents[1] / "agentic_core" / "constitution"
+              / "CONSTITUTION_canonical.md").read_text(encoding="utf-8")
+    _d = client.get("/api/v154/constitution/articles").json()
+    assert _d["canon_present"] is True and _d["articles"], _d.get("canon_basis")
+    _heads = list(re.finditer(r"(?im)^#{1,4}\s*(?:Article\s*)?(\d+[\w.]*)\s*[:\-—]?\s*(.+)$", _canon))
+    _bodies = {m.group(1): _canon[m.end():(_heads[i + 1].start() if i + 1 < len(_heads) else len(_canon))]
+               for i, m in enumerate(_heads)}
+
+    def _sq(s):
+        return " ".join((s or "").split())
+    _multi = 0
+    for _a in _d["articles"]:
+        _body = _bodies[_a["id"]]
+        _at = _body.index("*Verified:*")
+        _para = re.split(r"\n\*Status:\*", _body[_at:].split("\n\n")[0])[0]
+        assert _sq(_a["verified"]) == _sq(_para.replace("*Verified:*", "", 1)), (
+            "an article's Verified text is not its whole paragraph", _a["id"], _a["verified"][-80:])
+        assert _sq(_a["content"]) == _sq(_body[:_at]), ("an article's own text is not carried", _a["id"])
+        assert _a["verified_whole"] is True and _a["content_basis"], _a["id"]
+        assert (_a["content"] == "") == ("no text between" in _a["content_basis"]), (_a["id"], _a["content_basis"])
+        _multi += int("\n" in _para.strip())
+    assert _multi >= 1, "precondition: the canon has a Verified paragraph of more than one line, or this leg proves nothing"
+    assert any(_a["content"] for _a in _d["articles"]), "every article still comes back without its text"
+
+    # a canon this test writes (the route reads the path relative to the working directory)
+    _long = "a mechanism described at length " * 20
+    assert len(_long) > 400
+    (tmp_path / "agentic_core" / "constitution").mkdir(parents=True)
+    (tmp_path / "agentic_core" / "constitution" / "CONSTITUTION_canonical.md").write_text(
+        "# A canon written by a guard\n\npreamble that is no article\n\n"
+        "## 1 — FIRST RULE\nThe rule's first line\nand its second line.\n"
+        "*Verified:* mechanism line one, which ends mid-clause and\ncontinues on a second line\nand a third.\n"
+        "*Status:* UNMET — still open\n\n"
+        "## 2 — A HEADING THAT IS THE WHOLE RULE\n*Verified:* " + _long.strip() + "\n\n"
+        "trailing prose that belongs to no article\n", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    _t = client.get("/api/v154/constitution/articles").json()
+    _by = {a["id"]: a for a in _t["articles"]}
+    assert sorted(_by) == ["1", "2"], sorted(_by)
+    assert _by["1"]["content"] == "The rule's first line\nand its second line.", _by["1"]["content"]
+    assert _by["1"]["verified"] == ("mechanism line one, which ends mid-clause and continues on a second line "
+                                     "and a third."), _by["1"]["verified"]
+    assert _by["1"]["unmet"] is True and "UNMET" not in _by["1"]["verified"] and "still open" not in _by["1"]["verified"]
+    assert _by["2"]["content"] == "" and "no text between" in _by["2"]["content_basis"], _by["2"]
+    assert _by["2"]["verified"] == _long.strip() and len(_by["2"]["verified"]) > 400, (
+        "a long mechanism is cut again", len(_by["2"]["verified"] or ""))
+    assert "trailing prose" not in (_by["2"]["verified"] + _by["2"]["content"])
+
+
+def test_t2_a_run_states_no_constant_as_a_finding_and_the_chief_is_told_coverage_is_coverage(client, monkeypatch):
+    """Ledger v17 FU-949 - every orchestration run carried two literals beside `responsive`, true whatever the
+    run did; and the Chief's plan-drafting prompt was handed the API surface coverage figure under a name
+    saying the vision was that far delivered.
+
+    THE PROPERTIES: a run's answer holds neither literal anywhere, and the module writes neither key (read
+    from the syntax tree, never from prose); the prompt line is driven with a coverage this test sets, names
+    it as coverage and as NOT delivery, and is absent when the coverage cannot be read."""
+    import ast as _ast
+    import json
+    import pathlib
+    import uuid
+    from agentic_core.api import business_plan as _bp
+    from agentic_core.api import transformation as _tx
+
+    _r = client.post("/api/v1/transformation/orchestrate",
+                     json={"objective": "t2 fu949 probe", "scope": "workstation", "owner_id": "pytest"})
+    assert _r.status_code == 200, _r.text[:300]
+    _run = _r.json()
+    assert isinstance(_run["responsive"], bool) and "validation" in _run, sorted(_run)
+
+    def _keys(o):
+        if isinstance(o, dict):
+            for k, v in o.items():
+                yield k
+                yield from _keys(v)
+        elif isinstance(o, list):
+            for v in o:
+                yield from _keys(v)
+    assert not ({"adaptive", "dynamic"} & set(_keys(_run))), "a run still states a constant as a finding"
+    _tree = _ast.parse((pathlib.Path(__file__).resolve().parents[1] / "agentic_core" / "api"
+                        / "transformation_orchestration.py").read_text(encoding="utf-8"))
+    _written = {k.value for n in _ast.walk(_tree) if isinstance(n, _ast.Dict)
+                for k in n.keys if isinstance(k, _ast.Constant) and isinstance(k.value, str)}
+    assert "responsive" in _written and not ({"adaptive", "dynamic"} & _written), sorted(_written & {"adaptive", "dynamic"})
+
+    # the prompt the Chief's model is handed, captured; the coverage is this test's own figure
+    _seen = []
+
+    async def _capture(prompt, **_kw):
+        _seen.append(prompt)
+        return {"output": "", "served_by": "native", "is_external": False}
+    monkeypatch.setattr(_bp.gateway, "query_meta", _capture)
+    monkeypatch.setattr(_tx, "_realise", lambda: {"overall_realisation": 0.42})
+    _scope = f"t2-fu949-{uuid.uuid4().hex[:6]}"
+    _g = client.post("/api/v1/business-plan/generate", json={"scope": _scope, "context": "x"})
+    assert _g.status_code == 200 and len(_seen) == 1, (_g.status_code, _g.text[:200], len(_seen))
+    _line = [ln for ln in _seen[0].split("\n") if "42%" in ln]
+    assert len(_line) == 1, ("the figure this test set is not in the prompt exactly once", _line)
+    assert _line[0].startswith("API surface coverage") and "NOT delivery" in _line[0], _line[0]
+    assert "vision realisation" not in _seen[0], "the prompt still names the coverage figure as the vision realised"
+
+    def _boom():
+        raise RuntimeError("t2 fu949: coverage unreadable")
+    monkeypatch.setattr(_tx, "_realise", _boom)
+    client.post("/api/v1/business-plan/generate", json={"scope": _scope, "context": "y"})
+    assert len(_seen) == 2 and "API surface coverage" not in _seen[1], (
+        "a coverage line is printed when the coverage could not be read", len(_seen))
+
+
+def test_t2_a_gmp_sign_off_says_the_signers_identity_was_not_verified(client, monkeypatch, tmp_path):
+    """Ledger v17 FU-963 - a GMP record read "Signed off by <id>" on an identity that was a field of the
+    request, and nothing on the record said the signer was not verified.
+
+    THE PROPERTIES: the sign answer, the stored record and the read all say identity_verified False with the
+    reason; an unsigned record says there is no signer (None, never False); the account that sent the request
+    is recorded when there is one and its absence is said when there is not. Both stores are this test's own."""
+    import json
+    from agentic_core.api import science as _sci
+    from agentic_core.science import gmp_signoff as _gmp
+    monkeypatch.setattr(_gmp, "_p", lambda name: tmp_path / f"gmp_{name}.json")
+
+    assert client.post("/api/v1/science/gmp/roster", json={"signatory_id": "t2-qa", "name": "T2 QA"}).status_code == 200
+    assert client.post("/api/v1/science/gmp/records", json={"record_id": "t2-rec", "body": "Batch 7: mixed 4 kg"}).status_code == 200
+    # unsigned: no signer to verify - None, with the reason
+    _pend = client.get("/api/v1/science/gmp/records/t2-rec").json()
+    assert _pend["state"] == "withheld" and _pend["identity_verified"] is None, _pend
+    assert "no sign-off is recorded" in _pend["identity_basis"], _pend["identity_basis"]
+
+    _s = client.post("/api/v1/science/gmp/records/t2-rec/sign", json={"signatory_id": "t2-qa"})
+    assert _s.status_code == 200, _s.text[:300]
+    _sj = _s.json()
+    assert _sj["ok"] is True and _sj["identity_verified"] is False, _sj
+    assert _sj["identity_basis"].startswith("NOT VERIFIED") and "'t2-qa'" in _sj["identity_basis"], _sj["identity_basis"]
+    _rec = _gmp._load("records")["t2-rec"]
+    assert _rec["signer_identity_verified"] is False and "sign_requested_by" in _rec, (
+        "the stored record does not say the signer was not verified", sorted(_rec))
+    assert ("no account is recorded" in _sj["identity_basis"]) == (_rec["sign_requested_by"] is None), (
+        _rec["sign_requested_by"], _sj["identity_basis"])
+
+    _rel = client.get("/api/v1/science/gmp/records/t2-rec").json()
+    assert _rel["state"] == "signed" and _rel["basis"].startswith("Signed off by t2-qa"), ("precondition: the record is signed", _rel)
+    assert _rel["identity_verified"] is False and "does not establish who signed" in _rel["identity_basis"], (
+        "the read names a signatory and does not say the identity was not verified", _rel)
+    assert '"identity_verified":true' not in json.dumps(_rel).replace(" ", "")
+
+    # an account sent the request: it is recorded, named, and STILL not a verification of the signatory
+    assert _gmp.submit("t2-rec-b", "batch_record", "Batch 8")["ok"] is True
+    _b = _gmp.sign("t2-rec-b", "t2-qa", True, "", requested_by="t2-account")
+    assert _b["ok"] is True and _b["record"]["sign_requested_by"] == "t2-account", _b
+    _ib = _sci._gmp_signer_identity(_b["record"])
+    assert _ib["identity_verified"] is False and "sent by the account 't2-account'" in _ib["identity_basis"], _ib
+
+
+def test_t2_a_stage_is_not_advanced_directly_while_its_proposal_is_pending(client, monkeypatch, tmp_path):
+    """Ledger v17 FU-965 - with a governance proposal pending, POST /advance moved the project's stage and the
+    proposal stayed pending; propose-advance's own contract says the stage does not move until approval.
+
+    THE PROPERTIES: while a proposal for the project is pending, /advance refuses (409, a string that names the
+    proposal) and the stage does not move; approving the proposal is what moves it; and a project with NO
+    pending proposal still advances, so the refusal is caused by the proposal and by nothing else.
+    The proposal store is this test's own; both projects are removed."""
+    import time
+    from agentic_core.projects import api as _pa
+    (tmp_path / "proposals").mkdir()
+    monkeypatch.setattr(_pa, "_PROPOSALS_DIR", tmp_path / "proposals")
+
+    def _project(title):
+        _c = client.post("/api/v1/projects/", json={"title": title, "description": "t2 fu965"})
+        assert _c.status_code == 201, _c.text[:300]
+        _p = _pa._load(_c.json()["id"])
+        _p.outputs.append(_pa.ProjectOutput(output_id=f"t2-{_p.id[:8]}", stage=_p.stage, created_at=time.time(),
+                                            download_url="/t2", preview="t2", served_by="native"))
+        _pa._save(_p)
+        return _p.id
+    _a, _b = _project("T2 FU965 with a proposal"), _project("T2 FU965 without one")
+    try:
+        _first = _pa._load(_a).stage
+        _prop = client.post(f"/api/v1/projects/{_a}/propose-advance")
+        assert _prop.status_code == 201 and _prop.json()["status"] == "pending", _prop.text[:300]
+        _pid = _prop.json()["id"]
+        _adv = client.post(f"/api/v1/projects/{_a}/advance")
+        assert _adv.status_code == 409, ("the stage was advanced past a pending proposal", _adv.status_code, _adv.text[:300])
+        _detail = _adv.json()["detail"]
+        assert isinstance(_detail, str) and _pid in _detail and "NOT advanced" in _detail, _detail
+        assert _pa._load(_a).stage == _first, "the refusal still moved the stage"
+        assert _pa._load_proposal(_pid).status == "pending"
+        # ANOTHER project, with no proposal of its own, still advances while that one is pending: the 409
+        # above was this project's proposal's doing, and nobody else's
+        _ok = client.post(f"/api/v1/projects/{_b}/advance")
+        assert _ok.status_code == 200 and _ok.json()["stage"] != _first, (_ok.status_code, _ok.text[:300])
+        # the proposal is what moves the first one
+        _v = client.post(f"/api/v1/projects/governance/proposals/{_pid}/vote", params={"approve": True})
+        assert _v.status_code == 200 and _v.json()["status"] == "approved", _v.text[:300]
+        assert _pa._load(_a).stage == _prop.json()["to_stage"] != _first
+    finally:
+        for _x in (_a, _b):
+            client.delete(f"/api/v1/projects/{_x}")
+
+
+def test_t2_a_retired_door_is_reported_retired_beside_served(client, monkeypatch):
+    """Ledger v17 FU-957 - the Synthesis Lab's registration declares a path whose door is retired and answers
+    410; the availability row said endpoint_state "served" and nothing else.
+
+    THE PROPERTIES: `endpoint_state` keeps its meaning (in the route table); the row, the summary and the
+    registry listing say the door is retired, with the door's own reason; the door is CALLED here to show the
+    row is true; and the statement follows the switch - off, it says open; unreadable, it says NOT CHECKED."""
+    from agentic_core.api import instrument_cell as _cell
+    from agentic_core.api import resource_fabric as _fab
+    from agentic_core.api import synthesis_studio as _ss
+    _rid = "synthesis_studio"
+    _path = _fab._BY_ID[_rid]["endpoint"]
+    assert _path in _cell._RETIRED_DOORS and _ss.STUDIO_SYNTHESISE_RETIRED is True, "precondition: the door is retired"
+    _door = client.post(_path, json={"challenge": "t2 fu957 probe"})
+    assert _door.status_code == 410, ("precondition: the declared door answers 410", _door.status_code)
+
+    _av = client.get("/api/v1/resources/cell/availability").json()
+    _row = next(r for r in _av["resources"] if r["id"] == _rid)
+    assert _row["endpoint_state"] == "served", ("the field's meaning moved: it is whether the route is in the table", _row["endpoint_state"])
+    assert _row["endpoint_retired"] is True and "410" in _row["endpoint_retired_basis"], _row
+    assert _ss.STUDIO_SYNTHESISE_RETIRED_REASON in _row["endpoint_retired_basis"], "the door's own reason does not travel"
+    assert "retired" in _row["endpoint_basis"], ("the sentence beside 'served' does not say the door is retired", _row["endpoint_basis"])
+    assert _rid in {x["id"] for x in _av["retired_endpoints"]}
+    assert {x["id"] for x in _av["retired_endpoints"]} == {r["id"] for r in _av["resources"] if r["endpoint_retired"]}
+    _others = [r for r in _av["resources"] if _fab._BY_ID[r["id"]]["endpoint"] not in _cell._RETIRED_DOORS]
+    assert _others and all(r["endpoint_retired"] is False and "retired" not in r["endpoint_basis"] for r in _others), (
+        "a resource with no retirement switch is reported retired")
+    # the registry listing prints `endpoint`, and says the same on the same row
+    _reg = next(r for r in client.get("/api/v1/resources").json()["resources"] if r["id"] == _rid)
+    assert _reg["endpoint"] == _path and _reg["endpoint_retired"] is True and "410" in _reg["endpoint_retired_basis"], _reg
+
+    # DRIVEN: the statement follows the door's switch (the door is not called while it is open)
+    monkeypatch.setattr(_ss, "STUDIO_SYNTHESISE_RETIRED", False)
+    _open = _cell.availability(_rid, client.app)
+    assert _open["endpoint_retired"] is False and "retired" not in _open["endpoint_basis"], _open
+    assert "is off" in _open["endpoint_retired_basis"]
+    monkeypatch.setattr(_ss, "STUDIO_SYNTHESISE_RETIRED", True)
+    monkeypatch.setattr(_cell, "_RETIRED_DOORS", {_path: ("agentic_core.api.synthesis_studio", "NO_SUCH_SWITCH", "NO_SUCH_REASON")})
+    _unread = _cell.availability(_rid, client.app)
+    assert _unread["endpoint_retired"] is None and _unread["endpoint_retired_basis"].startswith("NOT CHECKED"), _unread
+
+
+def test_t2_the_implemented_count_says_how_many_implementations_applied_anything(client, monkeypatch):
+    """Ledger v17 FU-953 - the Change Control "Implemented" tile counted changes whose implementation applied
+    nothing, and the list row the tile is counted from did not carry the effect at all.
+
+    THE PROPERTIES: a change implemented with nothing to apply reaches the LIST as recorded_only with its
+    basis, and moves the recorded-only count by one; the split always sums to the implemented count; the split
+    is driven three ways on rows this test supplies; and the page counts from the row's effect and prints the
+    split under the number."""
+    import pathlib
+    from agentic_core.api import change_control as _cc
+    _l0 = client.get("/api/v1/cca").json()
+    assert sum(_l0["implemented_by_effect"].values()) == _l0["by_status"].get("implemented", 0), _l0["implemented_by_effect"]
+
+    _cid = client.post("/api/v1/cca/submit", json={
+        "title": "t2 fu953 guard: nothing to apply", "change_type": "config_minor",
+        "description": "documentation only", "rationale": "x", "affected_systems": ["docs"],
+        "rollback_plan": "revert"}).json()["cca_id"]
+    if _cc._load_change(_cid)["status"] != "approved":
+        client.post(f"/api/v1/cca/{_cid}/review", json={"override_decision": "approved", "owner_decision_acknowledged": True})
+    assert _cc._load_change(_cid)["status"] == "approved", ("precondition: the change is approved", _cc._load_change(_cid)["status"])
+    _imp = client.post(f"/api/v1/cca/{_cid}/implement")
+    assert _imp.status_code == 200 and _imp.json()["implementation_effect"] == "recorded_only", _imp.text[:300]
+
+    _l1 = client.get("/api/v1/cca").json()
+    _row = next(c for c in _l1["changes"] if c["cca_id"] == _cid)
+    assert _row["status"] == "implemented" and _row["implementation_effect"] == "recorded_only", (
+        "the list row the tile is counted from does not say what implementing it did", _row)
+    assert "no platform behaviour changed" in _row["implementation_effect_basis"], _row["implementation_effect_basis"]
+    assert _l1["implemented_by_effect"]["recorded_only"] == _l0["implemented_by_effect"]["recorded_only"] + 1
+    assert _l1["implemented_by_effect"]["applied"] == _l0["implemented_by_effect"]["applied"]
+    assert sum(_l1["implemented_by_effect"].values()) == _l1["by_status"]["implemented"]
+    assert "applied nothing" in _l1["implemented_by_effect_basis"]
+
+    # DRIVEN on rows this test supplies: each of the three kinds is counted under its own name
+    monkeypatch.setattr(_cc, "_list_changes", lambda *a, **k: [
+        {"cca_id": "a", "status": "implemented", "implementation_effect": "applied"},
+        {"cca_id": "b", "status": "implemented", "implementation_effect": "recorded_only"},
+        {"cca_id": "c", "status": "implemented", "implementation_effect": "recorded_only"},
+        {"cca_id": "d", "status": "implemented", "implementation_effect": None},
+        {"cca_id": "e", "status": "approved", "implementation_effect": None}])
+    _d = client.get("/api/v1/cca").json()
+    assert _d["implemented_by_effect"] == {"applied": 1, "recorded_only": 2, "effect_not_recorded": 1}, _d["implemented_by_effect"]
+    assert _d["implemented_by_effect_basis"].startswith("of 4 implemented record(s): 1 applied"), _d["implemented_by_effect_basis"]
+
+    _pg = (pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages"
+           / "enterprise" / "ChangeControlAgency.tsx").read_text(encoding="utf-8")
+    assert "e.status === 'implemented' && (e as CCADetail).implementation_effect === 'applied').length" in _pg
+    assert "e.status === 'implemented' && (e as CCADetail).implementation_effect === 'recorded_only').length" in _pg
+    assert "implementedEffectNotRecorded: implemented - implementedApplied - implementedRecordedOnly" in _pg
+    assert "sub: `${stats.implementedApplied} applied · ${stats.implementedRecordedOnly} recorded only — nothing applied`" in _pg
+    assert '{s.sub && <p className="text-[10px] text-white/40 mt-1" data-testid="cca-implemented-effect">{s.sub}</p>}' in _pg
+
+
+def test_t2_a_beat_record_carries_what_its_health_figure_rests_on(client, monkeypatch):
+    """Ledger v17 FU-975 - a beat wrote health 1.0 into its record and into the append-only audit event when
+    the immune sensor had observed no call at all.
+
+    THE PROPERTIES, driven three ways through a real beat: with NOTHING observed the record and the audit
+    event both say the figure is not a measurement (the figure itself is carried unchanged for its readers);
+    with calls observed they say how many; with the health unread they say that. The audit logger is a
+    stand-in that keeps what it is handed; the beat log and counter are put back."""
+    from agentic_core.organism.heartbeat import heartbeat as _hb
+
+    class _Kept:
+        def __init__(self):
+            self.events = []
+
+        def log(self, event):
+            self.events.append(event)
+    _kept = _Kept()
+    _saved = (list(_hb._log), _hb.beats)
+    monkeypatch.setattr(_hb, "_ueg", _kept)
+
+    def _beat(reading):
+        monkeypatch.setattr(_hb, "respond_to_health", lambda: dict(reading))
+        _rec = _ensure_loop().run_until_complete(_hb.beat())
+        _evt = [e for e in _kept.events if e.get("type") == "heartbeat"][-1]
+        assert _evt["beat"] == _rec["beat"], "the audit event is not this beat's"
+        for _k in ("health", "health_observations", "health_measured", "health_basis"):
+            assert _evt[_k] == _rec[_k], ("the audit event and the beat record disagree", _k, _evt.get(_k), _rec.get(_k))
+        return _rec
+    try:
+        _none = _beat({"read": True, "health": 1.0, "alerted": False, "observations_in_window": 0})
+        assert _none["health"] == 1.0, "the figure's own field changed for its readers"
+        assert _none["health_observations"] == 0 and _none["health_measured"] is False, _none
+        assert _none["health_basis"].startswith("NOT A MEASUREMENT") and "absence of failures" in _none["health_basis"], _none["health_basis"]
+        _some = _beat({"read": True, "health": 0.8, "alerted": False, "observations_in_window": 7})
+        assert _some["health"] == 0.8 and _some["health_observations"] == 7 and _some["health_measured"] is True, _some
+        assert "7 call(s) observed" in _some["health_basis"] and "NOT A MEASUREMENT" not in _some["health_basis"]
+        _unread = _beat({"read": False, "health": None, "alerted": False})
+        assert _unread["health"] is None and _unread["health_measured"] is False and "was not read" in _unread["health_basis"], _unread
+        _unsaid = _beat({"read": True, "health": 0.9, "alerted": False})
+        assert _unsaid["health_measured"] is False and "carried without it" in _unsaid["health_basis"], _unsaid
+        assert _hb._log[-1]["health_observations"] is None and _hb._log[-4]["health_observations"] == 0
+    finally:
+        monkeypatch.undo()
+        _hb._log, _hb.beats = _saved[0], _saved[1]
+
+
+def test_t2_the_quarantine_record_says_what_it_contained_when_engaged(client, monkeypatch):
+    """Ledger v17 FU-974 - the CRITICAL defence was recorded as quarantining the things that were failing, on a
+    beat where no circuit was open and the threat came from events that open none.
+
+    THE PROPERTIES, each on circuit counts this test sets: with none open the record, the answer and the
+    heartbeat's sentence say it contained NOTHING and list the immune events by type; with two open they say
+    those are contained; unreadable is said, never read as zero; a defence that is not the quarantine carries
+    no containment record. The lever and the heartbeat's own state are put back."""
+    import json
+    import agentic_core.api.change_control as _cc
+    from agentic_core.organism.heartbeat import heartbeat as _hb
+    from agentic_core.organism.immune import immune as _im
+    from agentic_core.organism.reconfiguration import _load_config, apply_config_change as _apply
+    from agentic_core.organism.self_healing import self_healer as _sh
+    _real_sh, _real_im = _sh.status, _im.status
+    _saved = (_hb.last_immune_defence, _hb._last_defence_beat)
+    _engaged = []
+
+    def _lever():
+        return bool((_load_config().get("organism") or {}).get("immune_quarantine"))
+
+    def _engage(open_circuits):
+        if isinstance(open_circuits, int):
+            monkeypatch.setattr(_sh, "status", lambda: {**_real_sh(), "open_circuits": open_circuits, "tracked_endpoints": 3})
+        else:
+            def _boom():
+                raise RuntimeError("t2 fu974: circuits unreadable")
+            monkeypatch.setattr(_sh, "status", _boom)
+        _res = _cc.engage_immune_defence("CRITICAL", requested_by="guard.t2", threat_source="supplied by the guard")
+        monkeypatch.setattr(_sh, "status", _real_sh)
+        _engaged.append(_res["cca_id"])
+        assert _res["reconfiguration"]["key"] == "immune_quarantine" and _lever() is True, ("precondition: the lever was set", _res)
+        return _res, _cc._load_change(_res["cca_id"])
+    _apply("organism", "immune_quarantine", False, reason="t2 fu974 precondition", updated_by="guard.t2")
+    monkeypatch.setattr(_im, "status", lambda: {**_real_im(), "by_type": {"compliance_fail": 9},
+                                                "hot_endpoint": "compliance:vsb_website"})
+    try:
+        # -- NONE open: nothing was contained, and every place says so
+        _res, _rec = _engage(0)
+        _c = _res["containment_at_engagement"]
+        assert _c["open_circuits_contained"] == 0 and _c["tracked_endpoints"] == 3 and _c["immune_events_by_type"] == {"compliance_fail": 9}, _c
+        assert "0 of 3 tracked circuit(s) were open, so it contained NOTHING" in _res["reason"], _res["reason"]
+        assert "compliance_fail: 9" in _res["reason"] and "opened no circuit" in _res["reason"]
+        assert _rec["description"] == _res["reason"] == _res["reconfiguration"]["why"], "the record and the answer are worded apart"
+        assert _rec["containment_at_engagement"] == _c
+        assert "quarantine failing" not in json.dumps([_res, _rec]), "the fixed sentence is still written somewhere"
+        _hb.last_immune_defence = {"cca_id": _res["cca_id"], "containment_at_engagement": _c}
+        _q = _hb._quarantine_state()
+        assert _q["engaged"] is True and _q["open_circuits_at_engagement"] == 0, _q
+        assert "0 circuit(s) were open - it contained nothing then" in _q["basis"] and "HELD" in _q["basis"], _q["basis"]
+        _cc.revert_immune_defence(_res["cca_id"], reason="t2 fu974")
+        _apply("organism", "immune_quarantine", False, reason="t2 fu974 between states", updated_by="guard.t2")
+        # -- TWO open: those are contained
+        _res2, _rec2 = _engage(2)
+        assert "2 of 3 tracked circuit(s) were open, and those are contained" in _rec2["description"], _rec2["description"]
+        assert "NOTHING" not in _rec2["description"] and _res2["containment_at_engagement"]["open_circuits_contained"] == 2
+        _hb.last_immune_defence = {"cca_id": _res2["cca_id"], "containment_at_engagement": _res2["containment_at_engagement"]}
+        assert "2 circuit(s) were open)" in _hb._quarantine_state()["basis"] and "nothing then" not in _hb._quarantine_state()["basis"]
+        _apply("organism", "immune_quarantine", False, reason="t2 fu974 between states", updated_by="guard.t2")
+        # -- UNREADABLE: said, never zero
+        _res3, _rec3 = _engage(None)
+        assert _res3["containment_at_engagement"]["open_circuits_contained"] is None, _res3["containment_at_engagement"]
+        assert "could not be read" in _rec3["description"] and "contained NOTHING" not in _rec3["description"], _rec3["description"]
+        assert "circuits_error" in _res3["containment_at_engagement"]
+        _hb.last_immune_defence = {"cca_id": _res3["cca_id"], "containment_at_engagement": _res3["containment_at_engagement"]}
+        assert _hb._quarantine_state()["open_circuits_at_engagement"] is None and "were open" not in _hb._quarantine_state()["basis"]
+        _apply("organism", "immune_quarantine", False, reason="t2 fu974 between states", updated_by="guard.t2")
+        # -- nothing engaged: the sibling answer carries the key, as None
+        _nom = _cc.engage_immune_defence("NOMINAL", requested_by="guard.t2", threat_source="supplied by the guard")
+        assert _nom["action"] == "none" and _nom["containment_at_engagement"] is None, _nom
+    finally:
+        monkeypatch.undo()
+        _apply("organism", "immune_quarantine", False, reason="t2 fu974 cleanup", updated_by="guard.t2")
+        _hb.last_immune_defence, _hb._last_defence_beat = _saved
+    assert _lever() is False
+
+
+def test_t2_system_info_says_what_its_config_echoes_are(client):
+    """Ledger v17 FU-968 - GET /api/v1/system/info echoed an external model as "default_model" and
+    has_ai_provider true with nothing saying that nothing routes there; and the config warned that the AI
+    features are unavailable without an external key, which is untrue (the floor always answers).
+
+    THE PROPERTIES: both echoes keep their values and each carries what it is; the answer says whether
+    external use is permitted (read here the same way, never set) and where the serving mode is reported, and
+    that address answers; the warning, driven with and without a key, no longer says the features stop."""
+    import copy
+    import os
+    #  W677 - THE INSTANCE THE ROUTE READS, not whichever one the config module holds now: another test's reload
+    #  rebinds the module's object while the app keeps the one it was built with (the W503 class), and this leg
+    #  went red in a full run on that difference alone. The values are bound to plain names first, so a failure
+    #  prints two booleans and never the settings object, whose fields include keys.
+    from agentic_core import app_mvp as _app968
+    _settings = _app968.settings
+    _r = client.get("/api/v1/system/info")
+    assert _r.status_code == 200, _r.text[:300]
+    _j = _r.json()
+    _want_model, _want_has = str(_settings.default_model), bool(_settings.has_ai_provider)
+    assert _j["default_model"] == _want_model and _j["has_ai_provider"] is _want_has, (_j["default_model"], _j["has_ai_provider"], _want_has)
+    assert "NOT what serves" in _j["default_model_basis"] and "floor" in _j["default_model_basis"], _j["default_model_basis"]
+    assert "Presence only" in _j["has_ai_provider_basis"] and "not permission" in _j["has_ai_provider_basis"]
+    assert _j["external_use_permitted"] is (os.getenv("AI_ALLOW_EXTERNAL", "false").lower() == "true")
+    _mode = client.get(_j["effective_serving_mode_at"])
+    assert _mode.status_code == 200 and _mode.json()["effective_serving_mode"], (
+        "system info points at an address that does not report the serving mode", _j["effective_serving_mode_at"])
+    assert _mode.json()["external_use_permitted"] is _j["external_use_permitted"], "the two routes disagree on the same flag"
+
+    # the config warning, driven both ways on a copy (the real settings are not touched)
+    _none = copy.copy(_settings)
+    object.__setattr__(_none, "anthropic_api_key", "")
+    object.__setattr__(_none, "openai_api_key", "")
+    assert _none.has_ai_provider is False, "precondition: the copy has no external key"
+    _w = [x for x in _none.validate() if "ANTHROPIC_API_KEY" in x]
+    assert len(_w) == 1 and "unavailable" not in _w[0], ("the warning still says the AI features stop", _w)
+    assert "native floor are unaffected" in _w[0] and "external" in _w[0], _w[0]
+    _key = copy.copy(_settings)
+    object.__setattr__(_key, "openai_api_key", "t2-not-a-real-key")
+    assert _key.has_ai_provider is True and not [x for x in _key.validate() if "ANTHROPIC_API_KEY" in x]
+
+
+def test_t2_a_stub_finding_stands_when_the_coverage_gate_cannot_run(client):
+    """Ledger v17 FU-933 - a supplied text holding a stub marker, with no declared sections, was recorded "not
+    assessable" and shown as a grey dash: the stub screen's finding was in the record and on no surface.
+
+    THE PROPERTIES: where the coverage gate cannot run the verdict stays None (nothing is passed or failed),
+    and the screen's finding is carried under its own names - marker and length apart - with a sentence, on
+    the record AND on the list row; each part is driven on its own text; and the chip a person reads prints
+    the finding from those fields, on the detail and on the row."""
+    import pathlib
+    from agentic_core.vbs import quality as _q
+
+    def _gate(text):
+        return _ensure_loop().run_until_complete(
+            _q.assure_delivery(text, None, label="t2-fu933", served_by="ollama:t2-probe"))["quality"]
+    # the audit's own request, through the route
+    _r = client.post("/api/v1/deliverables/produce", json={
+        "type": "brief", "brief": "t2 fu933 stub probe",
+        "content": "## Objective\nTODO: write this later. Lorem ipsum placeholder."})
+    assert _r.status_code == 200, _r.text[:300]
+    _rq = _r.json()["quality_assurance"]["quality"]
+    assert _rq["qms_gate_passed"] is None, ("precondition: the coverage gate cannot run on this text", _rq.get("qms_basis"))
+    assert _rq["stub_found"] is True and _rq["stub_marker_found"] is True and _rq["substantive_length"] is False, _rq
+    assert "a stub marker matched" in _rq["stub_screen_basis"] and "under the minimum" in _rq["stub_screen_basis"], _rq["stub_screen_basis"]
+    _row = next(d for d in client.get("/api/v1/deliverables").json()["deliverables"] if d["id"] == _r.json()["id"])
+    assert _row["qms_gate_passed"] is None and _row["stub_marker_found"] is True and _row["substantive_length"] is False, (
+        "the list row does not carry the stub screen's finding", _row)
+
+    # each part on its own text (no sections declared, so the verdict is None in all three)
+    _long = "A delivery paragraph with real sentences about a rota. " * 6
+    _clean, _marked, _short = _gate(_long), _gate(_long + " TODO finish"), _gate("A short note.")
+    assert [x["qms_gate_passed"] for x in (_clean, _marked, _short)] == [None, None, None]
+    assert _clean["stub_found"] is False and _clean["stub_marker_found"] is False and "no stub marker matched" in _clean["stub_screen_basis"]
+    assert _marked["stub_marker_found"] is True and _marked["substantive_length"] is True, _marked
+    assert "a stub marker matched" in _marked["stub_screen_basis"] and "under the minimum" not in _marked["stub_screen_basis"]
+    assert _short["stub_marker_found"] is False and _short["substantive_length"] is False and _short["stub_found"] is True, _short
+    assert "under the minimum" in _short["stub_screen_basis"] and "a stub marker matched" not in _short["stub_screen_basis"]
+
+    # the chip: the flag is computed from the record's fields, and printed only under the None verdict
+    _src = pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+    _api = (_src / "lib" / "api.ts").read_text(encoding="utf-8")
+    _flag = _api[_api.index("export const qmsStubFlag"):_api.index("export const QMS_GATE_MEASURES")]
+    assert "const marker = q.stub_marker_found ?? (q.stub_found === true && q.substantive_length !== false);" in _flag
+    assert "if (marker === true) return 'stub marker found';" in _flag
+    assert "if (q.substantive_length === false) return 'too short to assess';" in _flag
+    _chip = _api[_api.index("export const qmsChip"):_api.index("\n};", _api.index("export const qmsChip"))]
+    _null = _chip[_chip.index("if (v === null) {"):_chip.index("const said =")]
+    assert "const flag = qmsStubFlag(q);" in _null
+    assert "label: flag ? `${prefix} — ${flag}` : `${prefix} —`," in _null, _null
+    assert "title: flag ? `The length and stub screen found: ${flag}." in _null
+    assert "verdict: 'not assessable' as const" in _null, "the verdict's three values moved"
+    _dv = (_src / "pages" / "Deliverables.tsx").read_text(encoding="utf-8")
+    assert "stub_marker_found: d.stub_marker_found, substantive_length: d.substantive_length };" in _dv
+    assert "const f933 = c && c.verdict === 'not assessable' ? qmsStubFlag(q933) : '';" in _dv
+    assert '{f933 && <span className="text-amber-300" data-testid="deliv-row-stub-flag">{f933}</span>}' in _dv
+    assert "qmsChip({ qms_gate_passed: d.qms_gate_passed })" not in _dv, "the row's chip is still fed the verdict alone"
+
+
+def test_t2_the_memorization_card_names_what_is_not_built(client):
+    """Ledger v17 FU-937 - the roadmap card marked the Memorization Suite LIVE without saying that the
+    flashcards, heatmaps and audio looping its feature names are not built (its neighbour does say so).
+
+    THE PROPERTIES: the sentence is on the memorization entry itself, which is still the `live` kind; and the
+    sentence is TRUE - the studio that entry points at holds none of the three. If one is built, this fails
+    and the card is to be re-read."""
+    import pathlib
+    import re
+    _src = pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "components"
+    _cards = (_src / "QEPFlagshipFeatures.tsx").read_text(encoding="utf-8")
+    _entry = [ln for ln in _cards.splitlines() if "id: 'memorization'" in ln]
+    assert len(_entry) == 1, _entry
+    assert "kind: 'live'" in _entry[0] and "real SM-2 scheduling" in _entry[0], _entry[0]
+    assert "Flashcards, progress heatmaps and audio looping are not built." in _entry[0], (
+        "the live card does not say what of its feature is not built", _entry[0])
+    _studio = (_src / "QEPStudio.tsx").read_text(encoding="utf-8")
+    assert not re.search(r"(?i)flashcard|heatmap|audio", _studio), (
+        "the studio now mentions a flashcard, a heatmap or audio: re-read the card's sentence")
+    assert re.search(r"(?i)hifz/review|hifz/schedule", _studio), "precondition: the studio holds the SM-2 review the card calls live"
+
+
+def test_t2_the_swarm_run_panel_does_not_point_at_a_control_that_cannot_fill_it(client):
+    """Ledger v17 FU-952 - the run panel's empty state said "Delegate a mission above", and the control above
+    runs an org cascade, which that panel never lists.
+
+    THE PROPERTIES, each read from the page's own code: the panel's list is /swarm/runs; the control posts
+    /swarm/cascade and reaches /swarm/delegate only when that route answers 404 or 405; so the empty state
+    says what the panel lists and that the control does not make one - and no longer gives the instruction.
+    And the two stores ARE separate: both listings answer."""
+    import pathlib
+    _pg = (pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "components"
+           / "organism" / "SwarmIntelligence.tsx").read_text(encoding="utf-8")
+    assert "axios.get('/api/v1/swarm/runs')" in _pg and "axios.get('/api/v1/swarm/cascade/runs')" in _pg
+    _submit = _pg[_pg.index("await fetch('/api/v1/swarm/cascade', {"):_pg.index("axios.post('/api/v1/swarm/delegate', { task })")]
+    assert "} else if (response.status === 404 || response.status === 405) {" in _submit, (
+        "the control now reaches the delegate route some other way: re-read the panel's sentence")
+    assert _pg.count("axios.post('/api/v1/swarm/delegate'") == 1, "a second caller of the delegate route exists"
+    _empty = [ln for ln in _pg.splitlines() if 'data-testid="swarm-runs-panel-empty"' in ln]
+    assert len(_empty) == 1 and ") : runs.length === 0 ? (" in _pg, _empty
+    assert "Delegate a mission above" not in _pg, "the panel still tells the user to use a control that cannot fill it"
+    assert "This panel lists runs of POST /swarm/delegate. The control above does not make one: it runs an org cascade" in _empty[0], _empty[0]
+    assert "Org Cascade History" in _empty[0] and "Org Cascade History (persisted)" in _pg
+    assert client.get("/api/v1/swarm/runs").status_code == 200 and client.get("/api/v1/swarm/cascade/runs").status_code == 200
+
+
+def test_t2_the_profile_notice_needs_a_profile_the_floor_could_not_use(client):
+    """Ledger v17 FU-964 - under every floor-served avatar reply a user with NO saved profile was told the floor
+    "does not read your profile" and to set up a model and ask again.
+
+    THE PROPERTIES: the server's two states are driven - no profile written, and a profile the floor could not
+    use - and both have profile_applied false, which is why that field cannot key the notice; the page prints
+    the notice only on the second state, and its other two profile lines keep their own conditions.
+    The profile store is put back as it was."""
+    import json
+    import pathlib
+    from agentic_core.ai.gateway import ModelGateway as _MG
+    from agentic_core.ai.user_context import profile_owner as _powner
+    from agentic_core.api import user_workspace as _uw
+    assert _MG._is_floor("native"), "this environment is not floor-served, so the floor states cannot be driven"
+    _wpath = _uw._path_for(_powner(None) or "default")
+    _had = _wpath.read_bytes() if _wpath.exists() else None
+    try:
+        _doc = json.loads(_had.decode("utf-8")) if _had else {}
+        _doc["profile"] = {}
+        _wpath.parent.mkdir(parents=True, exist_ok=True)
+        _wpath.write_text(json.dumps(_doc), encoding="utf-8")
+        _n = client.post("/api/v1/avatar/chat", json={"message": "what should I measure first?", "context": "general",
+                                                       "session_id": "t2-fu964-none"}).json()
+        assert _n["served_by"] == "native", ("precondition: the floor served", _n.get("served_by"))
+        assert _n["profile_applied"] is False and _n["profile_state"] == "none_written", (
+            "precondition: no profile is written", _n.get("profile_state"))
+        assert client.put("/api/v1/user/profile", json={
+            "about_you": "a ward pharmacist", "goals": "reduce medication waste", "context": "a teaching hospital",
+            "constraints": "", "success_criteria": "measurable waste reduction"}).status_code in (200, 201)
+        _p = client.post("/api/v1/avatar/chat", json={"message": "what should I measure first?", "context": "general",
+                                                       "session_id": "t2-fu964-prof"}).json()
+        assert _p["profile_applied"] is False and _p["profile_state"] == "not_usable_by_floor", (
+            "precondition: a written profile the floor could not use", _p.get("profile_state"))
+    finally:
+        if _had is None:
+            _wpath.unlink()
+        else:
+            _wpath.write_bytes(_had)
+
+    _src = pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+    _panel = (_src / "components" / "avatar" / "ConversationPanel.tsx").read_text(encoding="utf-8")
+    _i = _panel.index('data-testid="profile-not-usable"')
+    _cond = _panel[_panel.rindex("{m.role === 'assistant'", 0, _i):_i]
+    assert _cond.startswith("{m.role === 'assistant' && m.profileApplied === false && m.servedBy === 'native' "
+                            "&& m.profileState === 'not_usable_by_floor' && ("), _cond[:200]
+    assert "!==" not in _cond, ("the notice is still keyed on what the state is NOT, so a reply with no profile prints it", _cond[:200])
+    assert "profile: not usable by the floor" in _panel[_i:_i + 220], "the notice's own sentence moved"
+    assert "{m.role === 'assistant' && (m.profileState === 'unreadable' || m.profileState === 'error') && (" in _panel
+    assert "{m.role === 'assistant' && m.profileApplied === true && (" in _panel
+    _hook = (_src / "hooks" / "useAvatarSession.ts").read_text(encoding="utf-8")
+    assert "profileState: resp.data.profile_state ?? null," in _hook, "the hook no longer carries the state the notice is keyed on"
+
+
+def test_t2_the_overview_reads_the_cannot_fall_flag_where_the_api_puts_it(client):
+    """Ledger v17 FU-976 - the Organism overview tested `atp_can_fall` at the top of the homeostasis answer; the
+    API puts it under `organism`, so the test was always undefined and the page printed "Each run expends
+    simulated ATP" where it meant to say the simulation cannot fall.
+
+    THE PROPERTIES: the answer is read here - the flag is NOT at the top level and IS a boolean under
+    `organism`; the page keeps the whole answer and reads the flag at that path in both places, and at the
+    top-level path in neither."""
+    import pathlib
+    _r = client.get("/api/v1/native-ai/homeostasis")
+    assert _r.status_code == 200, _r.text[:300]
+    _j = _r.json()
+    assert "atp_can_fall" not in _j, "the API now answers the flag at the top level: re-read the page's two reads"
+    assert isinstance(_j["organism"]["atp_can_fall"], bool), sorted(_j["organism"])
+    _pg = (pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages"
+           / "organism" / "OrganismDashboard.tsx").read_text(encoding="utf-8")
+    assert "if (cogRes.status === 200 && cogRes.data?.organism) setCognition(cogRes.data);" in _pg, (
+        "the page no longer keeps the whole answer, so the path below may be wrong")
+    assert "{cognition.organism?.atp_can_fall === false\n" in _pg
+    assert "? 'ATP here is a SIMULATION that cannot fall (production always exceeds consumption), so it does not limit runs.'" in _pg
+    assert "simulated{cognition?.organism?.atp_can_fall === false ? ' — cannot fall' : ''}" in _pg
+    assert _pg.count("atp_can_fall") == _pg.count("organism?.atp_can_fall") == 2, (
+        "a read of the flag is not under `organism`", _pg.count("atp_can_fall"), _pg.count("organism?.atp_can_fall"))
+
+
+def test_t2_the_capital_fund_page_prints_the_seed_split_and_the_health_basis(client):
+    """Ledger v17 FU-977 - the Capital Fund page showed the pool as "the real capital fund" and HEALTHY, and
+    dropped the API's own statements that most of the pool is an unfunded seed and that the health word is a
+    ratio against it.
+
+    THE PROPERTIES: the API states both (read here, so the page has something true to print); the page
+    declares the four fields and prints each under a condition on that field; and the caption no longer calls
+    the pool the real capital fund."""
+    import pathlib
+    _s = client.get("/api/v1/fund/status").json()
+    assert isinstance(_s["capital_basis"], str) and _s["capital_basis"], _s
+    assert isinstance(_s["fund_health_basis"], str) and _s["fund_health_basis"].startswith("allocations are "), _s["fund_health_basis"]
+    assert isinstance(_s["contributed_wst"], (int, float)) and "seed_capital_wst" in _s
+    _pg = (pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages"
+           / "enterprise" / "CapitalDashboard.tsx").read_text(encoding="utf-8")
+    _iface = _pg[_pg.index("interface FundStatus {"):_pg.index("interface CcaChange")]
+    for _f in ("seed_capital_wst?: number | null;", "contributed_wst?: number | null;",
+               "capital_basis?: string | null;", "fund_health_basis?: string | null;"):
+        assert _f in _iface, ("the page's type drops a field the API states", _f)
+
+    def _block(testid):
+        _i = _pg.index(f'data-testid="{testid}"')
+        return _pg[_pg.rindex("{fund", 0, _i):_pg.index("</p>", _i)]
+    _cb = _block("fund-capital-basis")
+    assert _cb.startswith("{fund?.capital_basis && (") and "{fund.capital_basis}" in _cb, _cb
+    _hb = _block("fund-health-basis")
+    assert _hb.startswith("{fund?.fund_health_basis && (") and "{fund.fund_health}: {fund.fund_health_basis}" in _hb, _hb
+    _ct = _block("fund-contributed")
+    assert _ct.startswith("{fund && typeof fund.contributed_wst === 'number' && (") and "{fund.contributed_wst.toLocaleString()} WST" in _ct, _ct
+    #  the split is printed in the Fund Capital card, before the Available card begins
+    assert _pg.index("Fund Capital</p>") < _pg.index('data-testid="fund-capital-basis"') < _pg.index("Available</p>")
+    assert "the real capital fund from" not in _pg, "the caption still calls a mostly-seeded pool the real capital fund"
+    assert "an Owner-set virtual endowment" in _pg
+
+
+def test_t2_the_overview_says_which_of_its_switches_are_stored_only(client, monkeypatch):
+    """Ledger v17 FU-979 - the Organism overview showed "Features active", "Domains on" and a provider chip as
+    live state, while the wiring table says those keys are stored only.
+
+    THE PROPERTIES: the status answer says, beside the counts, how many of those flags anything reads -
+    counted here independently from the consumer map; the figure is DRIVEN (give one feature flag a consumer
+    and the count and the sentence follow); and the page prints the server's sentence in the Reconfig card and
+    marks the provider chip from the server's own flag."""
+    import pathlib
+    from agentic_core.organism import reconfiguration as _rc
+    _cfg = _rc._load_config()
+    _feat, _dom = list(_cfg.get("features") or {}), list(_cfg.get("domains") or {})
+    assert _feat and _dom, "precondition: the config has feature and domain flags"
+
+    def _reconf():
+        _r = client.get("/api/v1/organism/status")
+        assert _r.status_code == 200, _r.text[:300]
+        return _r.json()["systems"]["reconfiguration"]
+    _a = _reconf()
+    assert _a["features_wired"] == sum(1 for k in _feat if ("features", k) in _rc._CONSUMERS), _a
+    assert _a["domains_wired"] == sum(1 for k in _dom if ("domains", k) in _rc._CONSUMERS), _a
+    assert _a["features_total"] == len(_feat) and _a["domains_total"] == len(_dom)
+    assert _a["preferred_provider_wired"] is (("gateway", "preferred_provider") in _rc._CONSUMERS)
+    assert _a["rpm_limit_wired"] is (("gateway", "rpm_limit") in _rc._CONSUMERS)
+    assert f"{_a['features_wired']} of {len(_feat)} feature flag(s) and {_a['domains_wired']} of {len(_dom)} domain flag(s)" in _a["wiring_basis"], _a["wiring_basis"]
+    assert ("stored only - nothing reads it" in _a["wiring_basis"]) == (not (_a["preferred_provider_wired"] and _a["rpm_limit_wired"]))
+    assert isinstance(_a["features_active"], int) and isinstance(_a["domains_enabled"], int), "the counts' own fields moved"
+
+    # DRIVEN: one feature flag gains a consumer, and the count and the sentence follow
+    monkeypatch.setattr(_rc, "_CONSUMERS", {**_rc._CONSUMERS, ("features", _feat[0]): "t2 fu979 stand-in consumer",
+                                            ("gateway", "preferred_provider"): "t2 fu979 stand-in reader"})
+    _b = _reconf()
+    assert _b["features_wired"] == _a["features_wired"] + 1, (_a["features_wired"], _b["features_wired"])
+    assert _b["preferred_provider_wired"] is True and "read by: t2 fu979 stand-in reader" in _b["wiring_basis"], _b["wiring_basis"]
+    assert f"{_b['features_wired']} of {len(_feat)} feature flag(s)" in _b["wiring_basis"]
+    monkeypatch.undo()
+
+    _pg = (pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages"
+           / "organism" / "OrganismDashboard.tsx").read_text(encoding="utf-8")
+    _i = _pg.index('data-testid="reconfig-wiring-basis"')
+    assert _pg[_pg.rindex("{systems.reconfiguration", 0, _i):_i].startswith("{systems.reconfiguration.wiring_basis && ("), _pg[_i - 120:_i]
+    assert "{systems.reconfiguration.wiring_basis}" in _pg[_i:_i + 260]
+    assert _pg.index('title="Reconfig"') < _i < _pg.index('title="Signal Types"'), "the sentence is not in the Reconfig card"
+    assert "{systems.reconfiguration.preferred_provider} provider{systems.reconfiguration.preferred_provider_wired === false ? ' · stored only' : ''}" in _pg
+
+
+def test_care_the_early_warning_score_matches_its_chart_at_every_boundary():
+    """The Care item's ACCEPT (Owner rulings 2026-10-12). TO BE READ ONCE AGAINST THE PUBLISHER'S CHART: these
+    cases were written from the 2017 chart as known, not from the chart opened at its publisher. Every threshold
+    of every parameter is driven on both sides, with the other six readings normal so the total IS the
+    parameter's points; then the bands, the single-parameter rule, and what is said of readings that are
+    missing, implausible, in other units, or on the second oxygen scale."""
+    from agentic_core.care.scoring import score_news2
+    _N = {"respiratory_rate": 16, "spo2": 98, "supplemental_oxygen": "no", "systolic_bp": 120, "pulse": 70,
+          "consciousness": "alert", "temperature": 37.0}
+    assert score_news2(_N)["total"] == 0 and score_news2(_N)["complete"] is True, "the normal case is not zero"
+    _CASES = {
+        "respiratory_rate": ((8, 3), (9, 1), (11, 1), (12, 0), (20, 0), (21, 2), (24, 2), (25, 3)),
+        "spo2": ((91, 3), (92, 2), (93, 2), (94, 1), (95, 1), (96, 0)),
+        "systolic_bp": ((90, 3), (91, 2), (100, 2), (101, 1), (110, 1), (111, 0), (219, 0), (220, 3)),
+        "pulse": ((40, 3), (41, 1), (50, 1), (51, 0), (90, 0), (91, 1), (110, 1), (111, 2), (130, 2), (131, 3)),
+        "temperature": ((35.0, 3), (35.1, 1), (36.0, 1), (36.1, 0), (38.0, 0), (38.1, 1), (39.0, 1), (39.1, 2)),
+        "consciousness": (("alert", 0), ("confusion", 3), ("voice", 3), ("pain", 3), ("unresponsive", 3)),
+        "supplemental_oxygen": (("no", 0), ("yes", 2)),
+    }
+    _n = 0
+    for _param, _pairs in _CASES.items():
+        for _value, _points in _pairs:
+            _r = score_news2({**_N, _param: _value})
+            assert _r["total"] == _points and _r["complete"] is True, (_param, _value, _points, _r["total"], _r["components"])
+            _n += 1
+    assert _n == 47, _n
+    # the bands, and the rule that one parameter scoring 3 is urgent whatever the total
+    assert score_news2({**_N, "respiratory_rate": 21, "pulse": 91, "temperature": 38.5})["band"] == "low"          # total 4
+    _one = score_news2({**_N, "respiratory_rate": 25})                                                             # total 3, one red
+    assert _one["band"] == "low-medium" and _one["single_parameter_3"] is True and "urgent" in _one["response"]
+    assert score_news2({**_N, "respiratory_rate": 21, "pulse": 111, "temperature": 38.5})["band"] == "medium"      # total 5
+    _hi = score_news2({**_N, "respiratory_rate": 25, "pulse": 111, "supplemental_oxygen": "yes"})                  # total 7
+    assert _hi["band"] == "high" and "emergency" in _hi["response"]
+    # one extreme reading with the rest missing: urgent NOW, a lower bound, and no band is claimed
+    _part = score_news2({"respiratory_rate": 30})
+    assert _part["total"] == 3 and _part["band"] is None and _part["complete"] is False and _part["single_parameter_3"] is True
+    assert "applies now" in _part["response"] and "lower bound" in _part["response"] and len(_part["missing"]) == 6
+    # nothing recorded is not a score of zero
+    _none = score_news2({})
+    assert _none["total"] is None and _none["band"] is None and len(_none["missing"]) == 7
+    # an implausible reading is MISSING, and is said to be; it is never scored and never guessed
+    _wild = score_news2({**_N, "respiratory_rate": 300})
+    assert _wild["complete"] is False and _wild["band"] is None and "resp_rate" in _wild["missing"] and "outside the plausible range" in _wild["warnings"][0]
+    # another unit is converted and the conversion is stated
+    _f = score_news2({**_N, "temperature": "101.5 F"})
+    assert _f["total"] == 1 and "converted to 38.6" in _f["warnings"][0]
+    # the second oxygen scale: recorded as used, and scored by its own table
+    assert score_news2({**_N, "spo2": 90, "spo2_scale": 2})["spo2_scale"] == 2
+    assert score_news2({**_N, "spo2": 90, "spo2_scale": 2})["total"] == 0 and score_news2({**_N, "spo2": 90})["total"] == 3
+    assert score_news2({**_N, "spo2": 97, "spo2_scale": 2, "supplemental_oxygen": "yes"})["total"] == 5
+
+
+def test_care_the_falls_count_is_retired_and_the_safeguarding_form_is_the_adult_route_for_england(client, monkeypatch):
+    """OWNER RULINGS 2026-10-12 (the Care item, clauses 2, 4, 6, 7; no role in any prompt). Driven: every
+    combination of the old factors returns no count; the route refuses the retired entry and an id it does not
+    hold before anything is composed; the safeguarding form refuses another jurisdiction and carries two typed
+    lines first; the handover carries its disclaimer; and each prompt AS SENT claims no role."""
+    import itertools
+    import agentic_core.api.care as _care
+    from agentic_core.care import scoring as _sc
+    # 1. THE COUNT IS GONE for every combination of the factors it used to count
+    _old = ("falls_history", "fear_of_falling", "osteoporosis_risk", "age")
+    for _n in range(len(_old) + 1):
+        for _combo in itertools.combinations(_old, _n):
+            _r = _sc.compute_score("falls_risk", {k: ("80" if k == "age" else "yes") for k in _combo})
+            assert _r["retired"] is True and _r["available"] is False and _r["total"] is None and _r["band"] is None, (_combo, _r)
+            assert _r["assessed"] is False and _r["components"] == {} and sorted(_combo) == _r["keys_not_read"], (_combo, _r)
+            for _gone in ("no trigger", "warranted", "reassess", "factor count"):
+                assert _gone not in (_r["response"] + _sc.score_summary(_r)).lower(), (_gone, _combo)
+    assert "replaced" in _sc.score_summary(_sc.compute_score("falls_risk", {}))
+    assert _sc.FALLS_RETIRED["page"].startswith("https://") and _sc.FALLS_RETIRED["read_on"]
+    #    the three live tables still compute
+    assert _sc.compute_score("news2", {"respiratory_rate": 25})["available"] is True
+    _sent = []
+
+    async def _capture(prompt, agent, **kw):
+        _sent.append((agent, prompt))
+        return "w-care captured", {"served_by": "w-care-capture"}
+    monkeypatch.setattr(_care, "ai_text", _capture)
+    # 2. THE ROUTE: retired -> 410 naming the replacement; unknown -> 422 naming the tools; neither composes
+    _g = client.post("/api/v1/care/risk-assess", json={"tool": "falls_risk", "patient_data": {"falls_history": "yes"}})
+    assert _g.status_code == 410 and isinstance(_g.json()["detail"], str), _g.text[:200]
+    assert "NG249" in _g.json()["detail"] and "retired" in _g.json()["detail"] and "nice.org.uk" in _g.json()["detail"]
+    _u = client.post("/api/v1/care/risk-assess", json={"tool": "w_care_made_up", "patient_data": {"x": 1}})
+    assert _u.status_code == 422 and "news2" in _u.json()["detail"] and "falls_risk" not in _u.json()["detail"], _u.text[:200]
+    assert _sent == [], "something was composed for a retired or unknown tool"
+    _cat = {t["id"]: t for t in client.get("/api/v1/care/tools").json()["tools"]}
+    assert _cat["falls_risk"]["type"] == "retired" and all(t.get("does") for t in _cat.values()), _cat
+    assert [i for i, t in _cat.items() if t["does"] == "computes"] == ["news2", "must", "waterlow"]
+    assert not [t for t in _cat.values() if t["standard"] in ("UK Clinical", "NHS Standard", "NHSI 2017")]
+    assert client.post("/api/v1/care/risk-assess", json={"tool": "news2", "patient_data": {"respiratory_rate": 25}}).status_code == 200
+    # 3. SAFEGUARDING: another jurisdiction is refused before composing; the adult route carries two typed lines
+    _n = len(_sent)
+    _j = client.post("/api/v1/care/safeguarding", json={"concern": "w-care probe", "jurisdiction": "Narnia"})
+    assert _j.status_code == 422 and "England only" in _j.json()["detail"] and "999" in _j.json()["detail"], _j.text[:200]
+    assert len(_sent) == _n
+    _ok = client.post("/api/v1/care/safeguarding", json={"concern": "w-care probe: a resident has bruises"}).json()
+    _lines = [l for l in _ok["guidance"].split("\n\n")]
+    assert _lines[0] == _care.IMMEDIATE_DANGER_FIRST and _lines[1] == _care.ADULT_ROUTE_ONLY, _lines[:2]
+    assert "ADULT" in _lines[1] and "child" in _lines[1].lower() and "__" not in _lines[1] and "read at http" in _lines[1], _lines[1]
+    # 4. THE HANDOVER carries its disclaimer, in a field AND says draft
+    _h = client.post("/api/v1/care/handover", json={"patient_summary": "w-care 84F", "current_situation": "fell at 0300"}).json()
+    assert "DRAFT" in _h["disclaimer"] and "not been reviewed" in _h["disclaimer"] and "not been sent" in _h["disclaimer"], _h.get("disclaimer")
+    client.post("/api/v1/care/care-plan", json={"care_needs": ["w-care mobility"]})
+    # 5. EVERY CARE PROMPT AS SENT claims no role and asks for no contacts
+    client.post("/api/v1/care/risk-assess", json={"tool": "news2", "patient_data": {"respiratory_rate": 25}})
+    assert {"care_safeguarding", "care_handover", "care_planner", "care_risk_assess"} <= {a for a, _ in _sent}, {a for a, _ in _sent}
+    for _agent, _p in _sent:
+        for _banned in ("you are a", "registered nurse", "experienced clinician", "experienced adult safeguarding lead", "specialist supporting", "placeholders"):
+            assert _banned not in _p.lower(), (_agent, _banned, _p[:160])
+        assert "Claim no professional role" in _p, (_agent, _p[:160])
+
+
+def test_care_a_plan_asks_for_nothing_only_a_clinician_may_write_and_the_oxygen_scale_is_said(client, monkeypatch):
+    """OWNER RULING 2026-10-12 (the Care item, clauses 5 and 8). The care-plan prompt asked a model for medication,
+    risk, crisis and capacity sections about a named person, and "Increase the dose." came back inside a plan.
+    Driven: the prompt AS SENT asks for none of them; a composer that writes one anyway has it cut and named;
+    the whole answer says it is a draft organiser; and a score on the second oxygen scale says who may choose it."""
+    import json as _json
+    import agentic_core.api.care as _care
+    from agentic_core.care.scoring import score_news2
+    _sent = []
+    _BODY = ("## My Goals\nw-care3 to walk to the shop\n\n## Medication Management\nIncrease the dose.\n\n"
+             "## Crisis Plan\nw-care3 call the ward\n\n## Review Schedule\nNOT SUPPLIED\n")
+
+    async def _composer(prompt, agent, **kw):
+        _sent.append(prompt)
+        return _BODY, {"served_by": "w-care3-capture"}
+    monkeypatch.setattr(_care, "ai_text", _composer)
+    _j = client.post("/api/v1/care/care-plan", json={"patient_profile": {"age": 84, "medication": "w-care3 a medicine"},
+                                                     "care_needs": ["w-care3 getting to the shop"]}).json()
+    # 1. THE PROMPT AS SENT asks for none of the four, names no guideline, and says to invent nothing
+    _p = _sent[-1]
+    _asked = [l for l in _p.splitlines() if l.startswith("## ")]
+    for _banned in ("medication management", "risk management plan", "crisis plan", "consent and capacity considerations", "nice guideline"):
+        assert _banned not in _p.lower(), (_banned, _asked)
+    assert len(_asked) >= 4 and any("Questions for a Professional" in l for l in _asked), _asked
+    assert "invent nothing" in _p and "NOT SUPPLIED" in _p and "as questions" in _p
+    # 2. WHAT THE COMPOSER WROTE ANYWAY IS CUT AND NAMED - in the text, and in a field
+    assert "Increase the dose" not in _json.dumps(_j) and "call the ward" not in _json.dumps(_j), "a clinician-only section was returned"
+    assert _j["sections_withheld"] == ["Medication Management", "Crisis Plan"], _j["sections_withheld"]
+    assert "to walk to the shop" in _j["care_plan"] and "Removed from this draft" in _j["care_plan"] and "Medication Management" in _j["care_plan"].split("Removed from this draft")[1]
+    # 3. THE WHOLE ANSWER says what it is
+    assert _j["draft"] is True and "DRAFT ORGANISER" in _j["care_plan"] and "reviewed by nobody" in _j["care_plan"]
+    assert set(_j["not_written_here"]) == set(_care.CLINICIAN_ONLY_SUBJECTS) and len(_j["not_written_here"]) == 4
+    # 4. a composer that returns NOTHING still yields the note, and nothing is said to have been removed
+    async def _empty(prompt, agent, **kw):
+        return "", {"served_by": "w-care3-capture"}
+    monkeypatch.setattr(_care, "ai_text", _empty)
+    _e = client.post("/api/v1/care/care-plan", json={"care_needs": ["w-care3 x"]}).json()
+    assert _e["sections_withheld"] == [] and "DRAFT ORGANISER" in _e["care_plan"] and "Removed from this draft" not in _e["care_plan"]
+    # 5. THE SECOND OXYGEN SCALE: said when used, silent when not, and the first scale scores the same reading higher
+    _N = {"respiratory_rate": 16, "systolic_bp": 120, "pulse": 70, "consciousness": "alert", "temperature": 37.0, "supplemental_oxygen": "no", "spo2": 90}
+    _two, _one = score_news2({**_N, "spo2_scale": 2}), score_news2(_N)
+    assert _two["total"] == 0 and _one["total"] == 3
+    assert any("SECOND oxygen scale" in w and "clinician has prescribed" in w and "cannot know" in w for w in _two["warnings"]), _two["warnings"]
+    assert not any("oxygen scale" in w for w in _one["warnings"]), _one["warnings"]
+
+
+def test_t2_the_creator_canvas_says_when_its_nodes_are_a_template(client, monkeypatch):
+    """Ledger v17 (the Creator Studio row). With no pipeline section in the composed document the route made four
+    boxes from the intent's first words and the page drew them as the blueprint's pipeline under a tick. Each
+    node already said where it came from; nothing read it. Driven both ways with the composer's place taken."""
+    import json as _json
+    import pathlib as _pl
+    import agentic_core.api.v290.ceo_generate as _cg
+    #  the route composes through the gateway object it imports: its place is taken for this test
+    async def _composer(prompt, **kw):
+        return {"output": "## Summary\nw-951 a plan with no pipeline section at all.\n", "served_by": "w-951-capture", "is_external": False}
+    monkeypatch.setattr(_cg.gateway, "query_meta", _composer)
+    _t = client.post("/api/v290/ceo/generate-blueprint", json={"intent": "w951 tea shop", "stage": "concept"})
+    assert _t.status_code == 200, _t.text[:300]
+    _j = _t.json()
+    assert {n["source"] for n in _j["nodes"]} == {"template_fallback"}, "precondition: the document has no pipeline section"
+    assert _j["nodes_source"] == "template_fallback" and "A TEMPLATE" in _j["nodes_basis"] and "Nothing was extracted" in _j["nodes_basis"], _j.get("nodes_basis")
+    # the page: the notice is printed on that condition, and the nodes are drawn as placeholders on the same one
+    _page = (_pl.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages" / "create" / "CreatorStudio.tsx").read_text(encoding="utf-8")
+    _i = _page.index('data-testid="creator-nodes-template"')
+    #  the WHOLE gate line is read: a presence check passes a gate that something has switched off in front of it
+    _gate = [ln.strip() for ln in _page[:_i].splitlines() if "nodes_source === 'template_fallback' && (" in ln][-1]
+    assert _gate == "{blueprint && !error && blueprint.nodes_source === 'template_fallback' && (", _gate
+    assert "{blueprint.nodes_basis}" in _page[_i:_i + 200]
+    assert "n.source === 'template_fallback' ? `${n.label} (template)` : n.label" in _page and "1px dashed" in _page
+
+
+def test_t2_the_simulation_notice_does_not_depend_on_having_just_run_a_cycle(client, monkeypatch):
+    """Ledger v17 (the Economy-page row). A cycle on an unregistered id says it is a SIMULATION; the status and
+    board-pack answers for that id said nothing, and the page showed the notice only from the cycle it had just
+    run. Driven for an id that is not on the roster, one that is, and a roster that cannot be read."""
+    import pathlib as _pl
+    import agentic_core.economy.living_vsbs as _lv
+    _un = "w-t2-973-" + __import__("uuid").uuid4().hex[:6]
+    for _path in ("/api/v1/economy/status", "/api/v1/economy/board-pack"):
+        _r = client.get(_path, params={"vsb_id": _un})
+        assert _r.status_code == 200, (_path, _r.text[:200])
+        _j = _r.json()
+        assert _j["registration"] == "UNREGISTERED" and "SIMULATION" in _j["registration_basis"] and _un in _j["registration_basis"], (_path, _j.get("registration_basis"))
+    #    an id that IS on the roster reads REGISTERED, and its basis does not call anything a simulation
+    _real = _lv._load
+    monkeypatch.setattr(_lv, "_load", lambda: {**_real(), _un: {"vsb_id": _un, "owner": "w-t2", "name": "w-t2 entity"}})
+    for _path in ("/api/v1/economy/status", "/api/v1/economy/board-pack"):
+        _j = client.get(_path, params={"vsb_id": _un}).json()
+        assert _j["registration"] == "REGISTERED" and "SIMULATION" not in _j["registration_basis"], (_path, _j.get("registration_basis"))
+    #    a roster that cannot be read is NOT KNOWN - never read as registered, never as a simulation
+    def _broken():
+        raise OSError("w-t2: roster made unreadable")
+    monkeypatch.setattr(_lv, "_load", _broken)
+    import agentic_core.api.economy as _eco
+    _nk = _eco._registration(_un)
+    assert _nk["registration"] == "NOT KNOWN" and "could not be read" in _nk["registration_basis"], _nk
+    monkeypatch.undo()
+    #    the page: the notice is printed from the pack and from the payments, not only from the cycle in memory
+    _page = (_pl.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages" / "enterprise" / "VSBEconomy.tsx").read_text(encoding="utf-8")
+    _i = _page.index('data-testid="economy-simulation-notice"')
+    _cond = _page[_i - 700:_i]
+    assert "const _sim = simBasis" in _cond and "bp?.registration === 'UNREGISTERED'" in _cond and "pay?.simulated === true" in _cond, _cond[-400:]
+    assert "return _sim ? (" in _cond and "SIMULATION — {_sim}" in _page[_i:_i + 400]

@@ -56,7 +56,10 @@ class Settings:
         """Return a list of validation warnings (not errors — degraded mode is acceptable)."""
         issues = []
         if not self.has_ai_provider:
-            issues.append("No AI provider configured (ANTHROPIC_API_KEY / OPENAI_API_KEY). AI features will be unavailable.")
+            #  ledger v17 (FU-968) - this said the AI features stop without an external key. They do not: an
+            #  owned local model serves when reachable, and the native floor always answers.
+            issues.append("No external AI key is configured (ANTHROPIC_API_KEY / OPENAI_API_KEY), so external "
+                          "accelerants cannot be used. The owned local model and the native floor are unaffected.")
         if self.is_production and "*" in self.cors_origins:
             issues.append("CORS is set to '*' in production. Set CORS_ORIGINS to specific frontend domains.")
         if self.is_production and not self.auth_enabled:

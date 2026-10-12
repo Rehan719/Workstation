@@ -19,7 +19,7 @@ from __future__ import annotations
 import time
 import uuid
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from agentic_core.api._ai_provenance import ai_text, person_said
@@ -53,22 +53,31 @@ async def _compose(prompt: str, agent: str, said: str | None = None):
 
 router = APIRouter(prefix="/api/v1/mgmt", tags=["management-systems"])
 
+#  OWNER RULING 2026-10-12 - A STANDARD IS NAMED WITHOUT AN EDITION. The list named editions typed years ago;
+#  two of them their publisher has since replaced. An edition is a fact with a date: it belongs to the register
+#  of sources, read at the publisher's page, and is never typed here. A level or a grade of attainment is not
+#  a standard's name: the list named a maturity level and a certification grade as if either were held.
+STANDARD_NOTE = ("A generated outline to complete and review - not a conformity assessment, and not a statement "
+                 "that anything is aligned to, compliant with or certified against a standard. This platform holds "
+                 "no standard's text; check the current edition at its publisher.")
+EDITIONS_READ = {"read_on": "2026-10-12", "read_by": "round W676, in a browser at the publisher's pages",
+                 "says": "the publisher lists 2026 editions of its quality and environmental management standards as current"}
 _STANDARDS = [
-    {"id": "iso9001", "name": "ISO 9001:2015", "type": "QMS", "description": "Quality Management Systems"},
-    {"id": "iso14001", "name": "ISO 14001:2015", "type": "EMS", "description": "Environmental Management Systems"},
-    {"id": "iso27001", "name": "ISO 27001:2022", "type": "ISMS", "description": "Information Security Management"},
-    {"id": "iso45001", "name": "ISO 45001:2018", "type": "OH&S", "description": "Occupational Health and Safety"},
+    {"id": "iso9001", "name": "ISO 9001", "type": "QMS", "description": "Quality Management Systems"},
+    {"id": "iso14001", "name": "ISO 14001", "type": "EMS", "description": "Environmental Management Systems"},
+    {"id": "iso27001", "name": "ISO/IEC 27001", "type": "ISMS", "description": "Information Security Management"},
+    {"id": "iso45001", "name": "ISO 45001", "type": "OH&S", "description": "Occupational Health and Safety"},
     {"id": "bsc", "name": "Balanced Scorecard", "type": "BMS", "description": "Strategic performance management"},
     {"id": "okr", "name": "OKRs", "type": "BMS", "description": "Objectives and Key Results framework"},
-    {"id": "cmmi", "name": "CMMI Level 3", "type": "Process", "description": "Capability Maturity Model Integration"},
+    {"id": "cmmi", "name": "CMMI", "type": "Process", "description": "Capability Maturity Model Integration"},
     {"id": "gdpr", "name": "UK GDPR / GDPR", "type": "Compliance", "description": "Data protection compliance framework"},
-    {"id": "cyber_essentials", "name": "Cyber Essentials Plus", "type": "Security", "description": "UK government cybersecurity certification"},
+    {"id": "cyber_essentials", "name": "Cyber Essentials", "type": "Security", "description": "UK government cybersecurity scheme"},
 ]
 
 
 @router.get("/standards")
 async def list_standards():
-    return {"standards": _STANDARDS, "total": len(_STANDARDS)}
+    return {"standards": _STANDARDS, "total": len(_STANDARDS), "note": STANDARD_NOTE, "editions": EDITIONS_READ}
 
 
 class QMSRequest(BaseModel):
@@ -89,7 +98,8 @@ async def generate_qms(req: QMSRequest):
         f"Size: {req.size}\n"
         + (f"Products/Services: {req.products_services}\n" if req.products_services else "")
         + (f"Existing certifications: {', '.join(req.existing_certifications)}\n" if req.existing_certifications else "")
-        + "\nGenerate a complete ISO 9001:2015-aligned QMS comprising:\n"
+        + "\nDraft an outline of a quality management system under these headings (name no edition of any "
+          "standard and claim no alignment, compliance or certification):\n"
         "## 1. Quality Policy Statement\n"
         "## 2. Quality Objectives (5 SMART objectives with KPIs)\n"
         "## 3. Process Map (key processes with SIPOC for top 3)\n"
@@ -113,8 +123,10 @@ async def generate_qms(req: QMSRequest):
         "ai_provenance": _prov,
         "doc_id": uuid.uuid4().hex[:10],
         "organisation_name": req.organisation_name,
-        "standard": "ISO 9001:2015",
-        "framework": framework,
+        "standard": "ISO 9001",
+        "standard_note": STANDARD_NOTE,
+        "editions": EDITIONS_READ,
+        "framework": (framework or "") + "\n\n_" + STANDARD_NOTE + "_",
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
 
@@ -307,7 +319,8 @@ async def generate_ems(req: EMSRequest):
         f"Organisation: {req.organisation_name}\n"
         f"Domain: {req.domain}\nSector: {req.sector}\n"
         + (f"Scope: {req.scope}\n" if req.scope else "")
-        + "\nGenerate a complete ISO 14001:2015-aligned EMS comprising:\n"
+        + "\nDraft an outline of an environmental management system under these headings (name no edition of "
+          "any standard and claim no alignment, compliance or certification):\n"
         "## 1. Environmental Policy Statement\n"
         "## 2. Environmental Aspects and Impacts Register\n"
         "   (List top 10 aspects: activity | aspect | impact | significance)\n"
@@ -333,9 +346,11 @@ async def generate_ems(req: EMSRequest):
         "ai_provenance": _prov,
         "doc_id": uuid.uuid4().hex[:10],
         "organisation_name": req.organisation_name,
-        "standard": "ISO 14001:2015",
+        "standard": "ISO 14001",
+        "standard_note": STANDARD_NOTE,
+        "editions": EDITIONS_READ,
         "framework_type": "EMS",
-        "framework": framework,
+        "framework": (framework or "") + "\n\n_" + STANDARD_NOTE + "_",
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
 
@@ -353,6 +368,10 @@ async def record_nonconformance(req: NonConformanceRequest):
     Record a quality non-conformance — feeds directly into the immune system.
     Major/critical non-conformances elevate immune threat level.
     """
+    #  OWNER RULING 2026-10-12 - a severity that is not one of the three was treated as minor. Refused.
+    if req.severity not in ("minor", "major", "critical"):
+        raise HTTPException(status_code=422, detail=(
+            f"'{req.severity}' is not a severity. Use minor, major or critical. Nothing was signalled."))
     # Feed into immune system — non-conformances are organism errors
     error_type = {
         "minor": "quality_minor",
@@ -391,7 +410,13 @@ async def record_nonconformance(req: NonConformanceRequest):
         "nc_id": uuid.uuid4().hex[:8],
         "severity": req.severity,
         "description": req.description,
-        "immune_response": f"Recorded as {error_type} — immune monitoring elevated",
+        #  the sentence that stood here said the nonconformance was kept. Nothing keeps it: the id above is
+        #  made for this answer and stored nowhere. What happened is a signal, and that is what is said.
+        "immune_response": f"signalled as {error_type} to the immune sensor",
+        "stored": False,
+        "stored_basis": ("NOT STORED: this route keeps no record of a nonconformance, and the id in this answer "
+                         "cannot be looked up later. A defect that is stored, corrected and re-verified is opened "
+                         "through the quality system's defects route, not here."),
         "capa": capa,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }

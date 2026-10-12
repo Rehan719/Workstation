@@ -296,6 +296,20 @@ class OrganismHeartbeat:
         # would drift from the arc's copy the first time either changed.
         _h = self.respond_to_health()
         health = _h.get("health")     # read ONCE and carried to the beat record below
+        #  ledger v17 (FU-975) - the responder already reads how many calls the figure rests on; the beat
+        #  copied the figure alone, so a beat with NOTHING observed wrote 1.0 into its record and into the
+        #  append-only audit chain. The count and what it makes of the figure travel with it.
+        _obs975 = _h.get("observations_in_window")
+        _health_said975 = {
+            "health_observations": _obs975,
+            "health_measured": bool(health is not None and isinstance(_obs975, int) and _obs975 > 0),
+            "health_basis": (
+                "the immune health was not read on this beat" if health is None else
+                f"NOT A MEASUREMENT - no call was observed in the immune window, so {health} is the absence "
+                f"of failures and not a reading of anything" if _obs975 == 0 else
+                f"how many calls the figure rests on was not reported, so {health} is carried without it"
+                if not isinstance(_obs975, int) else
+                f"read over {_obs975} call(s) observed in the immune window")}
         if _h.get("read"):
             actions.append("homeostasis")
         if _h.get("error"):           # ledger v17 R6.0 - the responder caught it; the beat says so
@@ -855,13 +869,13 @@ class OrganismHeartbeat:
         if ueg:
             try:
                 ueg.log({"type": "heartbeat", "beat": self.beats, "phase": phase,
-                         "realisation": self.last_realisation, "health": health,
+                         "realisation": self.last_realisation, "health": health, **_health_said975,
                          "self_healing": self.last_self_healing, "actions": actions})
             except Exception as _swallowed:   # FU-461 (W611) — recorded, never swallowed
                 self._step_failed("heartbeat_ueg_log", _swallowed)
 
         record = {"beat": self.beats, "phase": phase, "intensity": intensity,
-                  "realisation": self.last_realisation, "health": health,
+                  "realisation": self.last_realisation, "health": health, **_health_said975,
                   "self_recovery": self.last_recovery if "self_recovery" in actions else None,
                   "actions": actions, "at": self.last_beat,
                   #  FU-461 — the steps that were ATTEMPTED AND FAILED on THIS beat, by name. ADDED beside
@@ -1047,6 +1061,8 @@ class OrganismHeartbeat:
                 # carried so a reader can undo it without first fetching the record — the reversal being
                 # available is the difference between a defence and a one-way switch
                 "reversible": res.get("reversible"), "revert_with": res.get("revert_with"),
+                #  ledger v17 (FU-974) - what the lever could reach when it was engaged
+                "containment_at_engagement": res.get("containment_at_engagement"),
             }
             out["engaged"], out["result"] = True, self.last_immune_defence
         except Exception as exc:
@@ -1085,17 +1101,25 @@ class OrganismHeartbeat:
             from agentic_core.organism.reconfiguration import _load_config
             on = bool(((_load_config() or {}).get("organism") or {}).get("immune_quarantine"))
         except Exception as exc:                                   # noqa: BLE001 - an unread lever is SAID
-            return {"engaged": None, "engaged_by": None, "revert_with": None,
+            return {"engaged": None, "engaged_by": None, "revert_with": None, "open_circuits_at_engagement": None,
                     "basis": f"the lever could not be read ({exc.__class__.__name__})"}
         d = self.last_immune_defence if isinstance(self.last_immune_defence, dict) else {}
         mine = bool(on and d.get("cca_id") and not d.get("reverted_at"))
-        return {"engaged": on,
+        #  ledger v17 (FU-974) - the page prints `basis`; how many circuits were open when THIS heartbeat
+        #  engaged the hold is said in it. Not known for a hold somebody else engaged, and then not said.
+        _c974 = d.get("containment_at_engagement") if mine and isinstance(d.get("containment_at_engagement"), dict) else {}
+        _n974 = _c974.get("open_circuits_contained")
+        _reach974 = ("" if _n974 is None else
+                     f" (when it was engaged {_n974} circuit(s) were open"
+                     + (" - it contained nothing then)" if _n974 == 0 else ")"))
+        return {"engaged": on, "open_circuits_at_engagement": _n974,
                 "engaged_by": ("this heartbeat" if mine else "not this heartbeat (an admin, or before a restart)"
                                if on else None),
                 "revert_with": d.get("revert_with") if mine else (
                     "POST /api/v1/cca/immune-reconfigure/<cca_id>/revert, with the id of the change that "
                     "engaged it" if on else None),
                 "basis": ("ENGAGED - self-healing is HELD: open circuits are contained and not probed"
+                          + _reach974
                           + (f"; it lifts {self._STAND_DOWN_BEATS} beats after the threat falls below "
                              f"{self.DEFEND_AT}" if mine else "; nothing lifts it automatically")
                           if on else "not engaged - self-healing probes open circuits")}

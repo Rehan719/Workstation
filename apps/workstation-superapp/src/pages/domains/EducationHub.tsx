@@ -75,7 +75,7 @@ export const EducationHub: React.FC = () => {
             {activeTab === 'curriculum' ? (
               <DomainTool
                 title={T['curriculum'].title}
-                description={<>Design a full course — Workstation's <span className="text-highlight">own</span> AI builds a structured, framework-aligned curriculum (week-by-week plan, objectives, assessment), in-house.{frameworksNote && <span className="block mt-1 text-amber-400" data-testid="education-frameworks-note">{frameworksNote}</span>}</>}
+                description={<>Design a full course — Workstation's <span className="text-highlight">own</span> AI drafts a structured curriculum outline (week-by-week plan, objectives, assessment), in-house. Only a framework's NAME is held, so nothing is checked against one. For a teacher or an adult learner.{frameworksNote && <span className="block mt-1 text-amber-400" data-testid="education-frameworks-note">{frameworksNote}</span>}</>}
                 endpoint="/api/v1/education/curriculum"
                 resultKey="curriculum"
                 submitLabel="Design curriculum"

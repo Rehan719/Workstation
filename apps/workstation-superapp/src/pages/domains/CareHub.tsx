@@ -72,7 +72,7 @@ export const CareHub: React.FC = () => {
             ) : activeTab === 'risk' ? (
               <DomainTool
                 title={T['risk'].title}
-                description={<>Pick a tool and enter the observations — the score is <span className="text-vital">computed in-house from the published table</span> (NEWS2 · MUST · Waterlow; NICE CG161 as a factor count) and shown first; Workstation's own AI interprets it. A decision aid — clinical judgement by a qualified professional is required.</>}
+                description={<>Pick a tool and enter the observations — the score is <span className="text-vital">computed in-house from the published table</span> (NEWS2 · MUST · Waterlow) and shown first; Workstation's own AI interprets it. A decision aid — clinical judgement by a qualified professional is required.</>}
                 endpoint="/api/v1/care/risk-assess"
                 resultKey="assessment"
                 submitLabel="Assess risk"
@@ -112,7 +112,7 @@ export const CareHub: React.FC = () => {
                   </div>
                 )}
                 fields={[
-                  { name: 'tool', label: 'Tool (news2, must, waterlow and falls_risk compute a score; the other four are narrative only)', type: 'select', options: ['news2', 'must', 'waterlow', 'falls_risk', 'dementia_care', 'mental_health', 'discharge', 'safeguarding'], default: 'news2' },
+                  { name: 'tool', label: 'Tool (news2, must and waterlow compute a score; the other four are narrative only; the falls count is retired)', type: 'select', options: ['news2', 'must', 'waterlow', 'dementia_care', 'mental_health', 'discharge', 'safeguarding'], default: 'news2' },
                   { name: 'patient_data', label: 'Observations / data (key: value per line)', type: 'keyvalue', default: 'resp_rate: \nspo2: \noxygen: air\nsystolic_bp: \npulse: \ntemp: \nconsciousness: alert' },
                   { name: 'clinical_context', label: 'Clinical context (optional)', type: 'textarea', placeholder: 'e.g. 72yo post-op day 2, query chest infection' },
                 ]}

@@ -308,6 +308,12 @@ def _list_changes(status_filter: str | None = None) -> list[dict]:
                 "commitment": c.get("commitment"),
                 "variance": c.get("variance"),
                 "variance_basis": c.get("variance_basis"),
+                #  ledger v17 (FU-953) - WHAT IMPLEMENTING IT DID reaches the LIST. The Implemented tile and tab
+                #  are counted from these rows, and only the detail said whether anything was applied. None on
+                #  a record that is not implemented, and on one implemented without the effect being recorded
+                #  (the immune reflex's own records, and records older than W505).
+                "implementation_effect": c.get("implementation_effect"),
+                "implementation_effect_basis": c.get("implementation_effect_basis"),
                 # W463 (third refutation) — a hold filed after a rejection needs an explicit decision from the moment
                 # it is filed (before any review sets hold_reason)
                 "follows_rejection": ((c.get("follows_rejection") or {}).get("cca_id")
@@ -738,8 +744,50 @@ _IMMUNE_DEFENCE: dict[str, dict] = {
     "HIGH":     {"section": "organism", "key": "metabolic_throttle", "value": True,     "tier": "LOW",
                  "why": "High threat — throttle metabolic load to relieve the organism."},
     "CRITICAL": {"section": "organism", "key": "immune_quarantine",  "value": True,     "tier": "MEDIUM",
-                 "why": "Critical threat — quarantine failing endpoints (innate containment)."},
+                 #  ledger v17 (FU-974) - the fallback wording only; engage_immune_defence words the record
+                 #  from what the lever could reach when it was engaged (_quarantine_reach)
+                 "why": "Critical threat — hold self-healing probes on open circuits (innate containment)."},
 }
+
+
+def _quarantine_reach() -> dict:
+    """ledger v17 (FU-974) - WHAT THE QUARANTINE LEVER COULD REACH, read at the moment it is engaged.
+
+    The lever's one consumer is self-healing: while it holds, OPEN circuits are not probed. Circuits are
+    opened only by the gateway recording an AI-provider call failure. The record said the defence
+    quarantined the things that were failing, on a beat where no circuit was open and the threat came from
+    events that open none. This returns the counts and one sentence built from them."""
+    out: dict = {"open_circuits_contained": None, "tracked_endpoints": None,
+                 "immune_events_by_type": None, "hot_endpoint": None}
+    try:
+        from agentic_core.organism.self_healing import self_healer
+        _s = self_healer.status()
+        out["open_circuits_contained"] = int(_s.get("open_circuits") or 0)
+        out["tracked_endpoints"] = int(_s.get("tracked_endpoints") or 0)
+    except Exception as _exc:                      # noqa: BLE001 - said in the sentence, never assumed zero
+        out["circuits_error"] = f"{_exc.__class__.__name__}: {_exc}"
+    try:
+        from agentic_core.organism.immune import immune
+        _i = immune.status()
+        out["immune_events_by_type"] = dict(_i.get("by_type") or {})
+        out["hot_endpoint"] = _i.get("hot_endpoint")
+    except Exception as _exc:                      # noqa: BLE001
+        out["immune_error"] = f"{_exc.__class__.__name__}: {_exc}"
+    _n, _types = out["open_circuits_contained"], out["immune_events_by_type"]
+    out["sentence"] = (
+        "Critical threat — the quarantine lever holds self-healing probes on OPEN circuits. "
+        + ("How many circuits were open could not be read. " if _n is None else
+           f"When it was engaged {_n} of {out['tracked_endpoints']} tracked circuit(s) were open"
+           + (", so it contained NOTHING. " if _n == 0 else ", and those are contained. "))
+        + "A circuit is opened only by an AI-provider call failure. "
+        + ("The immune events in the window could not be read"
+           if _types is None else
+           "No immune event is in the window (the level was supplied, or the window has rolled)"
+           if not _types else
+           "The immune events in the window were "
+           + ", ".join(f"{k}: {v}" for k, v in sorted(_types.items())))
+        + "; the lever does nothing about an event that opened no circuit.")
+    return out
 
 
 def _blend_clause(ctx: dict) -> str:
@@ -1203,16 +1251,20 @@ def engage_immune_defence(threat: str | None = None, requested_by: str = "immune
                 "reversible": False, "reverts_to": None,
                 "revert_with": "nothing to revert - no reconfiguration was applied",
                 "cca_id": None, "impact_tier": None, "status": None, "applied": None,
-                "reconfiguration": None, "ueg_logged": None,
+                "reconfiguration": None, "ueg_logged": None, "containment_at_engagement": None,
                 "message": "no defensive reconfiguration was required, so no change was filed",
                 "reason": "Immune state nominal — no defensive reconfiguration required."}
 
+    #  ledger v17 (FU-974) - read BEFORE the lever is applied: what is open now is what it will contain
+    _reach974 = _quarantine_reach() if plan["key"] == "immune_quarantine" else None
+    _why974 = _reach974["sentence"] if _reach974 else plan["why"]
     cca_id = f"cca-{uuid.uuid4().hex[:10]}"
     change = {
         "cca_id": cca_id,
         "title": f"Immune defence: {plan['section']}.{plan['key']} = {plan['value']}",
         "change_type": "immune_reconfiguration",
-        "description": plan["why"],
+        "description": _why974,
+        "containment_at_engagement": _reach974,
         "rationale": f"Immune {_threat_note}; defensive, reversible reconfiguration.",
         "threat_source": threat_source,
         "immune_threat_measured_at_submit": _measured_now,
@@ -1325,9 +1377,10 @@ def engage_immune_defence(threat: str | None = None, requested_by: str = "immune
         #  W670 (ledger v16 R4.4) - "reconfigured" was answered for a lever with no reader and for one whose
         #  reader cannot act; the action is read from what the record says happened.
         "action": ("reconfigured" if change["status"] == "implemented" else "lever_set_nothing_acts_on_it"),
-        "reason": plan["why"],
+        "reason": _why974,
+        "containment_at_engagement": _reach974,
         "ueg_logged": ueg_logged,
-        "reconfiguration": {"section": plan["section"], "key": plan["key"], "value": plan["value"], "why": plan["why"]},
+        "reconfiguration": {"section": plan["section"], "key": plan["key"], "value": plan["value"], "why": _why974},
         "applied": applied,
         # W506 (P2.7(3)) - computed from whether the prior value was captured, never asserted
         "reversible": change["reversible"],
@@ -1399,7 +1452,7 @@ async def immune_reconfigure(req: ImmuneReconfigureRequest = ImmuneReconfigureRe
     """Immune-system reconfigurator, governed arms-length by the CCA.
 
     Biomimetic defence: when the immune system is under threat it proposes a SAFE, REVERSIBLE
-    defensive reconfiguration (tighten generation -> throttle load -> quarantine failing endpoints).
+    defensive reconfiguration (tighten generation -> throttle load -> hold self-healing probes on open circuits).
     The CCA records it as a change-controlled, audited action and - because these are low-risk,
     reversible defensive levers - auto-approves and APPLIES it via the reconfiguration engine (a fast
     innate-immune reflex that is nonetheless governed). Admin-only: it applies governed live levers.
@@ -2266,4 +2319,15 @@ async def list_all_changes():
     for c in all_changes:
         s = c["status"]
         by_status[s] = by_status.get(s, 0) + 1
-    return {"changes": all_changes[:50], "total": len(all_changes), "by_status": by_status}
+    #  ledger v17 (FU-953) - the split of the implemented count, over EVERY record (not the fifty listed)
+    _impl953 = [c for c in all_changes if c["status"] == "implemented"]
+    _by_effect = {"applied": sum(1 for c in _impl953 if c.get("implementation_effect") == "applied"),
+                  "recorded_only": sum(1 for c in _impl953 if c.get("implementation_effect") == "recorded_only")}
+    _by_effect["effect_not_recorded"] = len(_impl953) - _by_effect["applied"] - _by_effect["recorded_only"]
+    return {"changes": all_changes[:50], "total": len(all_changes), "by_status": by_status,
+            "implemented_by_effect": _by_effect,
+            "implemented_by_effect_basis": (
+                f"of {len(_impl953)} implemented record(s): {_by_effect['applied']} applied something to the "
+                f"platform, {_by_effect['recorded_only']} recorded the decision and applied nothing, and "
+                f"{_by_effect['effect_not_recorded']} carry no record of the effect (a lever set by the immune "
+                f"reflex, or a record implemented before the effect was kept)")}

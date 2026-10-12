@@ -39,6 +39,12 @@ interface FundStatus {
   allocation_count: number;
   fund_health: string;
   currency?: string;
+  // ledger v17 (FU-977) — computed by the API since W496 and never rendered: how much of the pool was
+  // seeded rather than contributed, and what the health word is a ratio against
+  seed_capital_wst?: number | null;
+  contributed_wst?: number | null;
+  capital_basis?: string | null;
+  fund_health_basis?: string | null;
   // W577 (FU-298) — an unreadable tail is dropped ALLOCATIONS, so `allocated` and `utilisation_pct`
   // are understated and `fund_health` is computed from them: the page can read HEALTHY of a fund
   // that is constrained. The figures stay on screen and stop claiming to be the whole fund.
@@ -205,6 +211,16 @@ export const CapitalDashboard: React.FC = () => {
                 {fund ? fund.total_capital.toLocaleString() : "—"}
                 <span className="text-xs text-slate-500 ml-1">WST</span>
               </p>
+              {fund && typeof fund.contributed_wst === 'number' && (
+                <p data-testid="fund-contributed" className="text-[10px] font-bold text-slate-300 mt-1">
+                  contributed by cycles: {fund.contributed_wst.toLocaleString()} WST
+                </p>
+              )}
+              {fund?.capital_basis && (
+                <p data-testid="fund-capital-basis" className="text-[9px] font-bold text-amber-400/90 mt-1 leading-snug">
+                  {fund.capital_basis}
+                </p>
+              )}
             </Card>
             <Card className="p-6 bg-slate-900/50 border-slate-800">
               <p className="text-xs font-black text-slate-500 uppercase tracking-tighter mb-1">Available</p>
@@ -229,6 +245,11 @@ export const CapitalDashboard: React.FC = () => {
               <p className="text-[9px] font-bold text-slate-600 mt-1">
                 {fund ? `${fund.allocation_count} allocation(s) · ${fund.fund_health}` : ""}
               </p>
+              {fund?.fund_health_basis && (
+                <p data-testid="fund-health-basis" className="text-[9px] font-bold text-amber-400/90 mt-1 leading-snug">
+                  {fund.fund_health}: {fund.fund_health_basis}
+                </p>
+              )}
               {fund?.fund_health_is_incomplete && (
                 <span data-testid="fund-health-incomplete"
                       title={fund.fund_health_incomplete_basis ?? undefined}
@@ -239,8 +260,8 @@ export const CapitalDashboard: React.FC = () => {
             </Card>
             <Card className="p-6 bg-aura/10 border-aura/20 flex items-center">
               <p className="text-[10px] font-bold text-slate-400 leading-relaxed">
-                Figures are the real capital fund from <code>/api/v1/fund/status</code>, in virtual
-                WST. They were previously derived from project counts and shown in dollars.
+                Figures are read from <code>/api/v1/fund/status</code>, in virtual WST. The pool is mostly
+                an Owner-set virtual endowment; what cycles contributed is shown apart, under Fund Capital.
               </p>
             </Card>          </div>
         </div>

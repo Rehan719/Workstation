@@ -523,10 +523,16 @@ async def list_resources(resource_class: Optional[str] = None, usable_in: Option
             #  ledger v17 R4.2 - read from what the handler DOES, not from a branch existing
             return {"fabric_runs_engine": _a["runs_engine"],
                     "fabric_runs_basis": _a["runs_engine_basis"],
-                    "fabric_handler_kind": _a["handler_kind"]}
+                    "fabric_handler_kind": _a["handler_kind"],
+                    #  ledger v17 (FU-957) - the registry row prints `endpoint`; whether that door is retired
+                    #  is said on the same row
+                    "endpoint_retired": _a["endpoint_retired"],
+                    "endpoint_retired_basis": _a["endpoint_retired_basis"]}
         except Exception as _exc:
             return {"fabric_runs_engine": None,
-                    "fabric_runs_basis": f"NOT CHECKED - the availability check could not run ({_exc.__class__.__name__})"}
+                    "fabric_runs_basis": f"NOT CHECKED - the availability check could not run ({_exc.__class__.__name__})",
+                    "endpoint_retired": None,
+                    "endpoint_retired_basis": f"NOT CHECKED - the availability check could not run ({_exc.__class__.__name__})"}
     items = [{**r, **_runs(r["id"])} for r in items]
     if resource_class:
         items = [r for r in items if r["resource_class"] == resource_class]

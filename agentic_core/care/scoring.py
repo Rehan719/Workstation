@@ -118,6 +118,10 @@ def score_news2(obs: Dict[str, Any]) -> Dict[str, Any]:
         else:
             pts = 3 if spo2 <= 83 else 2 if spo2 <= 85 else 1 if spo2 <= 87 else 0
         add("spo2_scale_2", spo2, pts, "% (scale 2 — prescribed target 88–92%)")
+        #  THE CHOICE OF SCALE IS SAID. The caller chose it; nothing here can know whether a clinician did.
+        w.append("the SECOND oxygen scale was used because this request asked for it. It applies only where a "
+                 "clinician has prescribed a target saturation of 88 to 92% for this patient; this platform "
+                 "cannot know that. On the first scale the same reading may score higher")
     if on_o2 is None:
         missing.append("oxygen (air or supplemental oxygen)")
     else:
@@ -333,51 +337,32 @@ _FALLS_FACTORS = ("falls_history", "gait_balance_mobility_problem", "osteoporosi
                   "polypharmacy_or_psychotropics", "postural_hypotension", "age_65_plus")
 
 
+#  OWNER RULING 2026-10-12 - THE FALLS COUNT IS RETIRED. It implemented a guideline its publisher replaced on
+#  29 April 2025, and the replacement's first recommendation is not to use falls-risk prediction tools. It is
+#  not rebuilt on the replacement without a qualified person's review. What this returns is a retirement
+#  record: no count, no trigger and no reassurance.
+FALLS_RETIRED = {
+    "replaced": "NICE CG161 (12 June 2013)",
+    "replaced_by": "NICE NG249 (29 April 2025)",
+    "page": "https://www.nice.org.uk/guidance/ng249/chapter/Recommendations",
+    "says": "Recommendation 1.1.1: do not use falls risk prediction tools to predict a person's risk of falling.",
+    "read_on": "2026-10-12", "read_by": "round W676, in a browser at the publisher's page",
+}
+_FALLS_RETIRED_SENTENCE = (
+    "RETIRED - nothing was counted and nothing was assessed. This entry counted factors under a guideline its "
+    "publisher has replaced; the replacement says not to use a tool to predict a person's risk of falling. "
+    "Read the replacement's recommendations at its publisher's page; this platform does not restate them.")
+
+
 def score_falls(obs: Dict[str, Any]) -> Dict[str, Any]:
-    """NICE CG161 is a MULTIFACTORIAL assessment with no validated numeric total: this is a labelled
-    COUNT of the factors present, not a score. A falls history, or two or more factors, warrants the
-    multifactorial assessment; it does not replace it."""
-    present, absent, missing = [], [], []
-    for f in _FALLS_FACTORS:
-        _, raw = _first(obs, f)
-        if f == "age_65_plus" and raw is None:
-            _, age_raw = _first(obs, "age")
-            if age_raw is not None:
-                a = _num(age_raw, 0, 120, "age", [])
-                raw = None if a is None else ("yes" if a >= 65 else "no")
-        v = _yes(raw)
-        (present if v else absent if v is False else missing).append(f)
-    count = len(present)
-    _triggered = ("falls_history" in present or count >= 2)
-    # §3A (W496, FU-113) - AN UNRECOGNISED KEY WAS DROPPED IN SILENCE. A caller who sent
-    # {"fallen twice this year": "yes"} got every factor listed as MISSING, a count of 0, and the
-    # sentence "no falls history and fewer than two factors recorded" - which reads as a finding about
-    # the patient when the truth is that nothing the caller sent was understood. Keys this instrument
-    # does not know are now named back, and the response says whether anything was read at all.
-    _known = set(_FALLS_FACTORS) | {"age", "age_years"}
-    _unread = sorted(str(k) for k in (obs or {}) if str(k).strip().lower().replace(" ", "_") not in _known
-                     and str(k) not in _known)
-    _w = ([f"not part of this instrument, so not read: {', '.join(_unread)} - NICE CG161's factors are "
-           + ", ".join(_FALLS_FACTORS)] if _unread else [])
-    _nothing_read = not present and not absent
-    _response = ("offer a multifactorial falls risk assessment (NICE CG161 1.1.2) — this count is not a score"
-                 if _triggered else
-                 "NOTHING WAS READ - none of NICE CG161's factors was recorded, so this is not a finding "
-                 "about the patient: no assessment has been made. Record the factors to assess."
-                 if _nothing_read else
-                 "no falls history and fewer than two factors recorded — reassess on change")
-    return {"tool": "falls_risk", "table": "NICE CG161 multifactorial falls risk — factor COUNT, not a validated score",
-            "components": {f: {"value": "present", "points": 1, "note": ""} for f in present},
-            "total": count,
-            # a band is a reading; with nothing recorded there is nothing to read
-            "band": ("multifactorial assessment warranted" if _triggered else
-                     "not assessed - no factor recorded" if _nothing_read else "no trigger recorded"),
-            "assessed": not _nothing_read,
-            "response": _response,
-            "factors_present": present, "factors_absent": absent, "complete": not missing, "missing": missing, "warnings": _w,
-            "keys_not_read": _unread,
-            "note": "NICE CG161 defines no numeric falls score — this is a count of factors, not a score; a prompt for the multifactorial assessment, never a substitute",
-            "basis": DISCLAIMER}
+    """RETIRED (see FALLS_RETIRED). Whatever is sent, nothing is read as a factor and every key is named back."""
+    _named = sorted(str(k) for k in (obs or {}))
+    return {"tool": "falls_risk", "retired": True, "retired_basis": dict(FALLS_RETIRED),
+            "table": None, "components": {}, "total": None, "band": None, "assessed": False,
+            "response": _FALLS_RETIRED_SENTENCE, "complete": False, "missing": [], "warnings": [],
+            "keys_not_read": _named,
+            "note": "retired: no count is computed, so nothing here is a finding about the patient",
+            "basis": "nothing was computed - this entry is retired"}
 
 
 _SCORERS = {"news2": score_news2, "must": score_must, "waterlow": score_waterlow, "falls_risk": score_falls}
@@ -394,12 +379,14 @@ def compute_score(tool: str, obs: Dict[str, Any]) -> Dict[str, Any]:
                          "is a narrative, not a score; its own provenance line says what composed it"),
                 "basis": "no score exists for this tool — nothing was computed from any table"}
     out = fn(obs or {})
-    out["available"] = True
+    out["available"] = not out.get("retired")          # a retired entry computes nothing
     return out
 
 
 def score_summary(score: Dict[str, Any]) -> str:
     """One line for the AI's prompt and the record: 'NEWS2 6 · medium · urgent ward-based response'."""
+    if score and score.get("retired"):
+        return "RETIRED - no count is computed for this entry (its guideline was replaced)"
     if not score or not score.get("available"):
         return "no computed score (no published table for this tool)"
     tool = str(score.get("tool", "")).upper().replace("_", " ")
@@ -407,7 +394,6 @@ def score_summary(score: Dict[str, Any]) -> str:
     if total is None:
         return f"{tool}: no total — missing {', '.join(score.get('missing') or [])}"
     parts = ", ".join(f"{k} {v['points']}" for k, v in (score.get("components") or {}).items() if v.get("points") is not None)
-    head = (f"{tool} factor count {total}" if score.get("tool") == "falls_risk"
-            else f"{tool} {total}" if score.get("complete") or score.get("band") else f"{tool} ≥ {total} (lower bound)")
+    head = (f"{tool} {total}" if score.get("complete") or score.get("band") else f"{tool} ≥ {total} (lower bound)")
     return (f"{head} · {score.get('band') or 'no band'} · {score.get('response')} ({parts})"
             + ("" if score.get("complete") else f" — INCOMPLETE, missing: {', '.join(score.get('missing') or [])}"))
