@@ -56,7 +56,7 @@ class CVRequest(BaseModel):
 async def tailor_cv(req: CVRequest):
     skills_text = ("Key skills: " + ", ".join(req.skills) + "\n") if req.skills else ""
     prompt = (
-        "You are an expert CV writer and career coach. Tailor a CV to the target role using "
+        "Claim no professional role. Tailor a CV to the target role using "
         "achievement-led, ATS-friendly bullet points (strong action verbs, quantified impact).\n\n"
         f"Target role: {req.target_role}\n"
         f"Seniority: {req.seniority}\n"
@@ -95,7 +95,7 @@ async def cover_letter(req: CoverLetterRequest):
     company_text = f"Company: {req.company}\n" if req.company else ""
     highlights_text = f"Emphasise: {req.highlights}\n" if req.highlights else ""
     prompt = (
-        "You are an expert cover-letter writer. Draft a focused, tailored cover letter.\n\n"
+        "Claim no professional role. Draft a focused, tailored cover letter.\n\n"
         f"Target role: {req.target_role}\n"
         f"{company_text}{highlights_text}"
         f"Tone: {req.tone}\n\n"
@@ -127,7 +127,7 @@ class InterviewPrepRequest(BaseModel):
 async def interview_prep(req: InterviewPrepRequest):
     comp_text = ("Focus competencies: " + ", ".join(req.competencies) + "\n") if req.competencies else ""
     prompt = (
-        "You are an experienced interview coach. Prepare a candidate for an interview.\n\n"
+        "Claim no professional role. Prepare a candidate for an interview.\n\n"
         f"Target role: {req.target_role}\n"
         f"Seniority: {req.seniority}\n"
         f"{comp_text}\n"
@@ -163,7 +163,7 @@ class CareerPathRequest(BaseModel):
 async def career_path(req: CareerPathRequest):
     constraints_text = f"Constraints: {req.constraints}\n" if req.constraints else ""
     prompt = (
-        "You are a career strategist. Map a realistic development roadmap and skills-gap analysis.\n\n"
+        "Claim no professional role. Map a realistic development roadmap and skills-gap analysis.\n\n"
         f"Current role: {req.current_role}\n"
         f"Target role: {req.target_role}\n"
         f"Experience: {req.experience_years} years\n"
@@ -211,7 +211,7 @@ async def salary_negotiation(req: SalaryNegotiationRequest):
         f"Leverage: {req.leverage}\n" if req.leverage else "",
     ])
     prompt = (
-        "You are an experienced compensation and negotiation coach. Build a practical, ethical salary / "
+        "Claim no professional role. Build a practical, ethical salary / "
         "offer negotiation strategy for the candidate.\n\n"
         f"Target role: {req.target_role}\nSeniority: {req.seniority}\nExperience: {req.experience_years} years\n"
         f"{details}\n"
@@ -272,7 +272,7 @@ async def application_support(req: ApplicationRequest):
         questions_block = ""
 
     prompt = (
-        "You are an expert job-application coach (UK public sector, NHS, charity and graduate schemes). "
+        "Claim no professional role. The setting is a UK application (public sector, NHS, charity or graduate scheme). "
         "Help the candidate write a compelling, HONEST application.\n\n"
         f"Target role: {req.target_role}\n"
         f"{org_text}{spec_text}{exp_text}{limit_text}\n"

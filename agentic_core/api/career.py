@@ -333,7 +333,7 @@ async def job_search(req: JobSearchRequest):
     limit = min(max(req.limit, 3), 12)
 
     prompt = (
-        f"You are a job market analyst. Generate exactly {limit} realistic job listings "
+        f"Claim no professional role. Generate exactly {limit} realistic job listings "
         f"tailored to the following candidate profile.\n\n"
         + (f"Profile:\n{profile_summary}\n" if profile_summary else "")
         + (f"Search query: {req.query}\n" if req.query else "")

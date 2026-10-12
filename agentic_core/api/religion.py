@@ -202,7 +202,7 @@ async def fatwa_research(req: FatwaResearchRequest):
     madhab_info = next((m for m in _MADHABS if m["id"] == req.madhab), _MADHABS[0])
 
     prompt = (
-        f"You are an Islamic studies scholar with expertise in classical jurisprudence (fiqh). "
+        f"Claim no professional or scholarly role. "
         f"Provide scholarly research on the following question from the perspective of the "
         f"{madhab_info['name']} school of jurisprudence.\n\n"
         f"Question: {req.question}\n"
@@ -290,7 +290,7 @@ async def hadith_study(req: HadithStudyRequest):
     ruling; fabricating a grade or attribution is a serious error, so uncertainty is stated honestly and
     everything must be verified against authenticated collections and qualified scholars."""
     prompt = (
-        "You are a scholar of hadith sciences (ulum al-hadith). Research the following hadith rigorously.\n\n"
+        "Claim no professional or scholarly role. Research the following hadith rigorously.\n\n"
         f"Hadith (text or reference): {req.hadith}\nFocus: {req.focus}\n"
         + (f"Jurisprudential lens: {req.madhab}\n" if req.madhab else "")
         + "\nStructure your research as:\n"
@@ -429,7 +429,7 @@ async def quran_tafsir(req: QuranTafsirRequest):
     arabic_text = "\n".join(sourced) if sourced else None
 
     prompt = (
-        f"You are an Islamic scholar and Quranic exegete. "
+        f"Claim no professional or scholarly role. "
         f"Provide a scholarly tafsir (exegesis) of {reference}.\n\n"
         # W475 (ledger v4 R1.1) — the floor grounds its frame in a LABELLED subject; without one it took the longest
         # sentence — the sourced Arabic — and cut it at 220 characters mid-word under 'THE AUTHENTIC ARABIC TEXT'.
@@ -692,7 +692,7 @@ async def halal_pre_assessment(req: HalalReviewRequest):
     _model_expected = _model_available()
 
     prompt = (
-        f"You are a halal certification consultant with expertise in Islamic dietary law (fiqh al-at'ima) "
+        f"Claim no professional or scholarly role. The subject is Islamic dietary law (fiqh al-at'ima) "
         f"and international halal standards (ESMA UAE.S/GSO 2055, JAKIM Malaysia, HFA UK).\n\n"
         f"Product: {req.product_name}\n"
         f"Description: {req.product_description}\n"
@@ -818,7 +818,7 @@ async def interfaith_dialogue(req: InterfaithRequest):
     purpose_text = purpose_map.get(req.dialogue_purpose, purpose_map["understanding"])
 
     prompt = (
-        f"You are a scholar of comparative religion and interfaith dialogue. "
+        f"Claim no professional or scholarly role. "
         f"Create a respectful, academically rigorous comparative analysis of the following topic "
         f"across {len(traditions)} faith traditions, {purpose_text}.\n\n"
         f"Topic: {req.topic}\n"

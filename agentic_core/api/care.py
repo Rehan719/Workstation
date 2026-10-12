@@ -32,10 +32,17 @@ _TOOLS = [
     #  "frame" (a narrative with no score). `standard` names a publication only where one was read; a source
     #  not yet read at its publisher's page says so instead of naming something that is not a publication.
     {"id": "news2", "name": "NEWS2 Early Warning Score", "type": "risk_score", "does": "computes",
-     "standard": "Royal College of Physicians, NEWS2 (December 2017)"},
-    {"id": "must", "name": "MUST Malnutrition Screening", "type": "screening", "does": "computes", "standard": "BAPEN"},
-    {"id": "waterlow", "name": "Waterlow Pressure Ulcer Risk", "type": "risk_score", "does": "computes",
-     "standard": "Waterlow (its source and reuse terms have not been read at their owner's page)"},
+     "standard": "Royal College of Physicians, NEWS2 (December 2017)",
+     #  the acknowledgement its owner requires of anyone reproducing it (read at rcp.ac.uk, 2026-10-12); the
+     #  scoring is the chart's, unmodified - the 47 boundary cases in the suite are the evidence
+     "acknowledgement": ("Reproduced from: Royal College of Physicians. National Early Warning Score (NEWS) 2: "
+                         "Standardising the assessment of acute-illness severity in the NHS. Updated report of "
+                         "a working party. London: RCP, 2017."),
+     "unmodified": True},
+    {"id": "must", "name": "MUST Malnutrition Screening (withheld)", "type": "withheld", "does": "nothing - withheld on its owner's terms",
+     "standard": "BAPEN - free for non-commercial purposes; commercial use needs a licence (read at its owner's page, 2026-10-12)"},
+    {"id": "waterlow", "name": "Waterlow Pressure Ulcer Risk (withheld)", "type": "withheld", "does": "nothing - withheld on its owner's terms",
+     "standard": "Waterlow (its reuse terms have not been read at their owner's page)"},
     {"id": "falls_risk", "name": "Falls count (retired)", "type": "retired", "does": "nothing - retired",
      "standard": "NICE CG161, replaced by NICE NG249 on 29 April 2025"},
     {"id": "dementia_care", "name": "Dementia Care Planning", "type": "care_plan", "does": "frame", "standard": "NICE NG97"},
@@ -159,7 +166,11 @@ async def risk_assessment(req: RiskAssessRequest):
     if tool_info is None:
         raise HTTPException(status_code=422, detail=(
             f"'{req.tool}' is not a tool this platform holds. The tools are: "
-            + ", ".join(t["id"] for t in _TOOLS if t["type"] != "retired") + "."))
+            + ", ".join(t["id"] for t in _TOOLS if t["type"] not in ("retired", "withheld")) + "."))
+    #  OWNER RULING 2026-10-12 - A SCORE WITHHELD ON ITS OWNER'S TERMS: nothing is computed and nothing is composed.
+    if tool_info["type"] == "withheld":
+        from agentic_core.care.scoring import withheld_sentence as _ws
+        raise HTTPException(status_code=409, detail=_ws(tool_info["id"]))
     #  Care item, clause 2 - THE FALLS COUNT IS RETIRED: nothing is computed and nothing is composed about it.
     if tool_info["type"] == "retired":
         from agentic_core.care.scoring import FALLS_RETIRED as _fr

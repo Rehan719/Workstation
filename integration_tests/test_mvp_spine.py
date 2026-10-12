@@ -44297,11 +44297,26 @@ def test_w600_p311_the_qep_vsb_has_an_economic_model_that_is_its_own(client):
         "an individual was charged and not refused; A.8 says FREE at the point of use, not reduced", _v)
     assert _qp.check_individual_price(0.0)[0] is True, "a free individual price was refused"
 
-    _ok, _v = _qp.check_institutional_price(120.0, 100.0)
-    assert not _ok and "cost-plus-5%" in _v[0] and "105" in _v[0], (
-        "an institutional margin above cost+5% was accepted, or the refusal does not NAME the computed "
-        "ceiling so the person who hit it cannot correct it", _v)
-    assert _qp.check_institutional_price(105.0, 100.0)[0] is True, "the exact ceiling was refused"
+    #  W679 (OWNER RULING 2026-10-12, amending A.8) - FREE FOR INSTITUTIONS: every price above 0 is refused by
+    #  name, including the one the retired cost-plus-5% rule used to accept, and 0 is accepted
+    for _p in (120.0, 105.0, 0.01):
+        _ok, _v = _qp.check_institutional_price(_p, 100.0)
+        assert not _ok and "free-for-institutions" in _v[0] and "2026-10-12" in _v[0], (
+            "an institution was charged and not refused, or the refusal does not name the ruling", _p, _v)
+    assert "105.0" in _qp.check_institutional_price(105.0, 100.0)[1][0], "the refusal does not say what the retired rule allowed"
+    assert _qp.check_institutional_price(0.0, 100.0)[0] is True, "a free institutional price was refused"
+    assert _qp.check_all(institutional_price=0.0, institutional_cost=100.0)["figures"]["institutional_price"] == 0.0
+    #  ...and the Owner's canon says the same in both documents, with the earlier words kept beside the ruling
+    import pathlib as _pl679
+    _docs = _pl679.Path(__file__).resolve().parents[1] / "docs"
+    for _name, _n in (("WORKSTATION_IDBO_WHOLE_VISION.md", 2), ("QURAN_EDUCATION_PLATFORM_VISION.md", 4)):
+        _text = (_docs / _name).read_text(encoding="utf-8")
+        assert _text.count("OWNER RULING 2026-10-12") >= _n, (_name, _text.count("OWNER RULING 2026-10-12"))
+        #  every remaining mention of the retired rule sits INSIDE a ruling note that says it is what stood before
+        for _i in [m.start() for m in __import__("re").finditer(r"cost \+ 5%", _text)]:
+            _before = " ".join(_text[max(0, _i - 700):_i].split())      # a note may wrap across lines
+            assert "OWNER RULING 2026-10-12" in _before and "before the ruling" in _before.split("OWNER RULING 2026-10-12")[-1], (
+                "the canon still states the retired institutional rule as current", _name, _text[_i - 120:_i + 30])
 
     _ok, _v = _qp.check_surplus(10.0, 100.0)
     assert not _ok and "surplus cap" in _v[0], ("a surplus above 5% of revenue was accepted", _v)
@@ -50676,12 +50691,25 @@ def test_w656_what_an_entitys_records_and_pages_say_is_what_happened(client):
     from agentic_core.care import scoring as _sc656
     _care = _code_only((_src / "pages/domains/CareHub.tsx").read_text(encoding="utf-8"))
     _lbl = re.search(r"label: 'Tool \(([a-z0-9_, ]+?) and ([a-z0-9_]+) compute a score", _care)
-    assert _lbl, "the Care tool's field does not say which instruments compute a score"
+    if _lbl is None:                       # W679 - ONE instrument computes: "news2 computes a score"
+        _one656 = re.search(r"label: 'Tool \(([a-z0-9_]+) computes a score", _care)
+        assert _one656, "the Care tool's field does not say which instruments compute a score"
+
+        class _One656:
+            def group(self, i):
+                return _one656.group(1) if i == 2 else ""
+
+            def groups(self):
+                return (_one656.group(1),)
+        _lbl = _One656()
     #  W677 - the falls entry is RETIRED: its scorer stays in the table and answers with a retirement record, so
     #  the instruments that COMPUTE are the ones whose answer is not one. Computed, so retiring another needs no edit.
-    _live656 = sorted(k for k, f in _sc656._SCORERS.items() if not f({}).get("retired"))
-    assert len(_live656) < len(_sc656._SCORERS), "no scorer answers as retired - this leg no longer separates anything"
-    assert sorted([x.strip() for x in _lbl.group(1).split(",")] + [_lbl.group(2)]) == _live656, (
+    #  W679 - read THROUGH THE DISPATCH, which is what a person reaches: a score may be retired by its own
+    #  function or withheld on its owner's terms before its function is ever called.
+    _live656 = sorted(k for k in _sc656._SCORERS
+                      if not (_sc656.compute_score(k, {}).get("retired") or _sc656.compute_score(k, {}).get("withheld")))
+    assert len(_live656) < len(_sc656._SCORERS), "no scorer answers as retired or withheld - this leg no longer separates anything"
+    assert sorted([x.strip() for x in _lbl.group(1).split(",") if x.strip()] + [_lbl.group(2)]) == _live656, (
         "the instruments the page says compute a score are not the ones the module scores", _lbl.groups())
 
     #  ...and THE ROSTER ROW carries the entity's own status beside its word 'living' (read, not typed)
@@ -61607,7 +61635,7 @@ def test_care_the_falls_count_is_retired_and_the_safeguarding_form_is_the_adult_
     assert _sent == [], "something was composed for a retired or unknown tool"
     _cat = {t["id"]: t for t in client.get("/api/v1/care/tools").json()["tools"]}
     assert _cat["falls_risk"]["type"] == "retired" and all(t.get("does") for t in _cat.values()), _cat
-    assert [i for i, t in _cat.items() if t["does"] == "computes"] == ["news2", "must", "waterlow"]
+    assert [i for i, t in _cat.items() if t["does"] == "computes"] == ["news2"], "W679: two scores are withheld on their owners' terms"
     assert not [t for t in _cat.values() if t["standard"] in ("UK Clinical", "NHS Standard", "NHSI 2017")]
     assert client.post("/api/v1/care/risk-assess", json={"tool": "news2", "patient_data": {"respiratory_rate": 25}}).status_code == 200
     # 3. SAFEGUARDING: another jurisdiction is refused before composing; the adult route carries two typed lines
@@ -61822,3 +61850,76 @@ def test_w678_the_settings_object_never_prints_a_secret():
         assert "DO-NOT-PRINT" not in _shown, "a planted secret is in the settings object's printed form"
     #  ...and the values are still there for the code that needs them
     assert all(getattr(_s, k) == v for k, v in _planted.items())
+
+
+def test_w679_a_score_is_withheld_on_its_owners_terms_and_the_one_that_computes_is_acknowledged(client, monkeypatch):
+    """OWNER RULING 2026-10-12. The malnutrition score's owner allows free use for non-commercial purposes only,
+    and the pressure-ulcer score's terms could not be read. Neither computes through any door; the scoring
+    functions are kept; the early-warning score carries the acknowledgement its owner requires."""
+    from agentic_core.api import care as _care
+    from agentic_core.care import scoring as _sc
+    _sent = []
+
+    async def _capture(prompt, agent, **kw):
+        _sent.append(prompt)
+        return "x", {"served_by": "capture"}
+    monkeypatch.setattr(_care, "ai_text", _capture)
+    assert sorted(_sc.WITHHELD_ON_TERMS) == ["must", "waterlow"]
+    _full = {"bmi": 17.0, "weight_loss_pct": 12, "acute_disease": "yes", "build": "average", "skin": "dry"}
+    for _tool in sorted(_sc.WITHHELD_ON_TERMS):
+        # the dispatch: nothing computed, every key named back, and the reason said
+        _d = _sc.compute_score(_tool, dict(_full))
+        assert _d["withheld"] is True and _d["total"] is None and _d["band"] is None and _d["components"] == {}, _d
+        assert _d["available"] is False and _d["assessed"] is False and _d["keys_not_read"] == sorted(_full), _d
+        assert "WITHHELD" in _d["response"] and "nothing was computed" in _d["response"]
+        # the route: refused with that sentence as a STRING, and nothing composed
+        _r = client.post("/api/v1/care/risk-assess", json={"tool": _tool, "patient_data": dict(_full)})
+        assert _r.status_code == 409 and isinstance(_r.json()["detail"], str) and "WITHHELD" in _r.json()["detail"], _r.text[:300]
+    assert _sent == [], "something was composed for a withheld score"
+    # what was READ is said, and what was NOT read is said to be unread - never the other way round
+    _m, _w = _sc.WITHHELD_ON_TERMS["must"], _sc.WITHHELD_ON_TERMS["waterlow"]
+    assert _m["terms_read"] is True and "bapen.org.uk" in _m["page"] and "non-commercial" in _m["says"] and _m["read_on"]
+    assert _w["terms_read"] is False and _w["page"] is None and _w["says"] is None and "NOT been read" in _w["why"]
+    assert "bapen.org.uk" in _sc.withheld_sentence("must") and "says" not in _sc.withheld_sentence("waterlow").split("WITHHELD")[1][:80]
+    # THE CODE IS KEPT: the scoring functions still answer when called directly
+    assert _sc.score_must({"bmi": 17.0, "weight_loss_pct": 12, "acute_disease": "no"})["total"] is not None
+    assert "must" in _sc._SCORERS and "waterlow" in _sc._SCORERS
+    # the catalogue and the unknown-tool refusal agree with the dispatch
+    _cat = {t["id"]: t for t in client.get("/api/v1/care/tools").json()["tools"]}
+    assert sorted(i for i, t in _cat.items() if t["type"] == "withheld") == sorted(_sc.WITHHELD_ON_TERMS)
+    _u = client.post("/api/v1/care/risk-assess", json={"tool": "w679_made_up", "patient_data": {"x": 1}})
+    assert _u.status_code == 422 and "must" not in _u.json()["detail"].split("The tools are:")[1], _u.text[:300]
+    # the one that computes carries its owner's acknowledgement, whole
+    assert _cat["news2"]["acknowledgement"].startswith("Reproduced from: Royal College of Physicians.") and _cat["news2"]["unmodified"] is True
+    assert "London: RCP, 2017." in _cat["news2"]["acknowledgement"]
+    # the page offers only what answers
+    import pathlib as _pl
+    _page = (_pl.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages" / "domains" / "CareHub.tsx").read_text(encoding="utf-8")
+    _opts = _page.split("label: 'Tool (news2 computes a score", 1)[1].split("options: [", 1)[1].split("]", 1)[0]
+    assert "'must'" not in _opts and "'waterlow'" not in _opts and "'news2'" in _opts, _opts
+
+
+def test_w679_no_prompt_in_any_domain_claims_a_professions_role():
+    """OWNER RULING 2026-10-12. Sixteen prompt lines in Religion, Science and Employment still opened by claiming
+    a profession ("an Islamic scholar and Quranic exegete", "a senior research scientist", "an expert CV writer
+    and career coach"). The property is read over EVERY domain router, so a new one is covered without an edit."""
+    import pathlib as _pl
+    import re as _re
+    _api = _pl.Path(__file__).resolve().parents[1] / "agentic_core" / "api"
+    _files = [_api / n for n in ("religion.py", "science.py", "employment.py", "career.py", "law.py", "education.py", "care.py")]
+    assert all(f.is_file() for f in _files), [f.name for f in _files if not f.is_file()]
+    _prof = _re.compile(r"You are (?:an?|the) [^.\n\"]{0,90}?\b(scholar|exegete|scientist|consultant|coach|writer|strategist|specialist|"
+                        r"expert|methodologist|analyst|solicitor|lawyer|barrister|nurse|clinician|doctor|teacher|examiner|"
+                        r"tutor|advis[eo]r|counsellor|practitioner|officer|therapist|pharmacist)\b", _re.I)
+    _found = []
+    for f in _files:
+        for i, ln in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
+            if _prof.search(ln) and not ln.lstrip().startswith("#"):
+                _found.append(f"{f.name}:{i}: {ln.strip()[:90]}")
+    assert _found == [], ("a prompt claims a profession's role", _found)
+    #  the instrument can fail: it is shown a line it must catch, and one it must not
+    assert _prof.search('f"You are an Islamic scholar and Quranic exegete. "') and _prof.search('"You are a senior research scientist"')
+    assert not _prof.search('"Claim no professional or scholarly role. "') and not _prof.search('"You are a career document classifier."')
+    #  ...and each of the three domains now says, in its own prompts, that no role is claimed
+    for n, least in (("religion.py", 5), ("science.py", 4), ("employment.py", 6)):
+        assert (_api / n).read_text(encoding="utf-8").count("Claim no professional") >= least, n

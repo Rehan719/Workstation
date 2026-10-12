@@ -27,13 +27,15 @@ from __future__ import annotations
 from typing import Any, Dict, List, Tuple
 
 #  A.8's figures. They are the Owner's and a round may not adjust them.
-INSTITUTIONAL_MARGIN = 0.05        # "institutional partnerships at cost + 5%"
+INSTITUTIONAL_MARGIN = 0.05        # RETIRED by the Owner's ruling of 2026-10-12; kept so its history can be read
+INSTITUTIONAL_PRICE = 0.0          # OWNER RULING 2026-10-12: free for institutions; income is donations and the waqf
 SURPLUS_CAP = 0.05                 # "a surplus cap of <= 5% with reinvestment"
 INDIVIDUAL_PRICE = 0.0             # "free at the point of use" for individuals
 
-A8_BASIS = ("these three limits are vision A.8's own figures (Owner-authored): free at the point of use for "
-            "individuals, institutional partnerships at cost + 5%, and a surplus cap of 5% with "
-            "reinvestment. A round may not adjust them. Virtual WST throughout - no real-money rail.")
+A8_BASIS = ("these three limits are vision A.8's own figures (Owner-authored), as AMENDED BY THE OWNER'S RULING "
+            "OF 2026-10-12: free at the point of use for individuals AND for institutions, and a surplus cap of "
+            "5% with reinvestment. The platform's only income is donations and the waqf. A round may not "
+            "adjust them. Virtual WST throughout - no real-money rail.")
 
 
 def check_individual_price(price_wst: float) -> Tuple[bool, List[str]]:
@@ -67,12 +69,14 @@ def check_institutional_price(price_wst: float, cost_wst: float) -> Tuple[bool, 
         return False, [f"the institutional price {price_wst!r} or cost {cost_wst!r} is not a number, so no "
                        f"ceiling could be computed and the price was NOT accepted"]
     if c < 0:
-        return False, [f"the stated cost {c} is negative, so no ceiling could be computed"]
-    ceiling = round(c * (1.0 + INSTITUTIONAL_MARGIN), 2)
-    if p > ceiling:
-        v.append(f"REFUSED by the cost-plus-5% rule (A.8): the stated cost is {c} WST, so the ceiling is "
-                 f"{ceiling} WST ({c} x 1.05) and this price is {p}. The margin asked for is "
-                 f"{round((p / c - 1.0) * 100, 2) if c else 'undefined'}%.")
+        return False, [f"the stated cost {c} is negative, so it was not read as a cost"]
+    #  OWNER RULING 2026-10-12 - FREE FOR INSTITUTIONS. The cost-plus-5% ceiling stood here; whatever the cost,
+    #  the only permitted price is now 0, and the refusal says which ruling refused it and what the old rule was.
+    if p != INSTITUTIONAL_PRICE:
+        v.append(f"REFUSED by the free-for-institutions rule (the Owner's ruling of 2026-10-12, amending A.8): "
+                 f"an institution may be charged {INSTITUTIONAL_PRICE} WST and this is {p}. The Quran platform's "
+                 f"only income is donations and the waqf. (Before the ruling the ceiling was cost plus 5%, "
+                 f"which for the stated cost {c} was {round(c * (1.0 + INSTITUTIONAL_MARGIN), 2)} WST.)")
     return not v, v
 
 
@@ -141,7 +145,8 @@ def check_all(individual_price: Any = INDIVIDUAL_PRICE, institutional_price: Any
         "violations": violations,
         "not_assessed": not_assessed,
         "limits": results,
-        "figures": {"individual_price": INDIVIDUAL_PRICE, "institutional_margin": INSTITUTIONAL_MARGIN,
+        "figures": {"individual_price": INDIVIDUAL_PRICE, "institutional_price": INSTITUTIONAL_PRICE,
+                    "institutional_margin_retired": INSTITUTIONAL_MARGIN,
                     "surplus_cap": SURPLUS_CAP},
         "basis": (A8_BASIS
                   + (f" {len(not_assessed)} limit(s) were NOT ASSESSED because their inputs were not "

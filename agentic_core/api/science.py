@@ -64,7 +64,7 @@ async def synthesise_research(req: SynthesiseRequest):
     }.get(req.depth, "Produce a 1000-1500 word synthesis with 6-8 key findings.")
 
     prompt = (
-        f"You are a senior research scientist and evidence synthesis specialist.\n"
+        f"Claim no professional role.\n"
         f"Research question: {req.research_question}\n"
         f"Domain: {req.domain}\n"
         f"Primary methodology lens: {req.methodology.replace('_', ' ')}\n\n"
@@ -113,7 +113,7 @@ async def generate_hypotheses(req: HypothesisRequest):
     n = min(max(req.num_hypotheses, 2), 5)
 
     prompt = (
-        f"You are a research design expert. Generate exactly {n} distinct, testable hypotheses "
+        f"Claim no professional role. Generate exactly {n} distinct, testable hypotheses "
         f"for the following research question.\n\n"
         f"Research question: {req.research_question}\n"
         f"Domain: {req.domain}\n"
@@ -176,7 +176,7 @@ async def experiment_design(req: ExperimentDesignRequest):
         f"Sample/effect-size context: {req.sample_size_hint}\n" if req.sample_size_hint else "",
     ])
     prompt = (
-        "You are a senior research methodologist. Design a rigorous, feasible study to TEST the hypothesis "
+        "Claim no professional role. Design a rigorous, feasible study to TEST the hypothesis "
         "below, grounded in the chosen methodology.\n\n"
         f"Hypothesis: {req.hypothesis}\n"
         f"Domain: {req.domain}\n"
@@ -226,7 +226,7 @@ async def literature_review_outline(req: LiteratureRequest):
     Generate a structured literature review outline with search strategy.
     """
     prompt = (
-        f"You are a systematic review specialist. Create a comprehensive literature review outline "
+        f"Claim no professional role. Create a comprehensive literature review outline "
         f"for the following research question.\n\n"
         f"Research question: {req.research_question}\n"
         f"Domain: {req.domain}\n"

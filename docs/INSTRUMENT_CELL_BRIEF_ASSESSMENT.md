@@ -1708,7 +1708,10 @@ Ireland; and every fee except what the agent reported.
    the chart's; the wording is a small build.
 3. **The pressure-ulcer score's terms are still unread** and the catalogue says so. Unchanged.
 
-### 29.3 The recombined designs - PROPOSED, each the Owner's to rule
+### 29.3 The recombined designs - RULED by the Owner on 2026-10-12, as recommended
+
+The Owner accepted these the same night, with what follows in 29.4, and they are chartered as two items of the
+fifth phase: the review cell, and what is charged.
 
 - **Children and Education.** Not child sign-up. School-provisioned accounts only, in closed tasks; the
   children's code applied to ALL users (the regulator's own alternative to establishing age), which this
@@ -1729,3 +1732,55 @@ Ireland; and every fee except what the agent reported.
 - **Real money.** Stays off. The shape the research points to - selling the platform's own service through a
   regulated processor, the virtual unit never convertible - is recorded as a lead only: none of its sources was
   read here, and a solicitor, a scholar and an accountant are each needed before any step.
+
+### 29.4 What else the Owner ruled that night (2026-10-12)
+
+1. THE REVIEW CELL. Asked whether the review a qualified person would give could be done by this platform's own
+   specialist agents until people are engaged, the answer given was: most of the work, never the signature.
+   Ruled: three tiers stated on every tool - checked by rule, reviewed by Workstation's specialist agent, signed
+   by a qualified person - with Care first; a reviewer agent's reviews count only after calibration on planted
+   defects; money readiness is a fourth discipline limited to virtual, on paper and a provider's test mode; an
+   entity may attach its own named specialists, as a short roster and not a registry of people.
+2. WHAT IS CHARGED. The Quran platform and every Domain are free for individuals and institutions, and the Quran
+   platform's only income is donations and the waqf (confirmed when the seven sentences of the canon this
+   amends were shown). Only generating an entity is charged, once, at a price to be set from comparable prices
+   read at their publishers' pages. Each generated entity pays 25% of its profit for updates and maintenance,
+   taken first. A scholar's view on that fee's form comes before real money.
+3. THE CARE INSTRUMENTS. The malnutrition score is withheld and its owner is asked in writing; the
+   pressure-ulcer score is withheld until its terms are read; the early-warning score carries its owner's
+   acknowledgement.
+4. THE GATES. Children: closed for now, the first step being the education department's thirteen headings
+   against the tools. Law: the second tier now, release waiting for the third. Care: an open hazard log, no
+   reviewer yet. The avatar: a register of its constraints in four states. Real money: off.
+5. THE WORK. No new set of documents until the three mechanism rounds and the first walk are done, with each
+   round saying whether the backlog shrank.
+6. RELEASE ON THE AI REVIEW ALONE (ruled later the same night). For Workstation's own free services no human
+   specialist is engaged now; its own specialist agents are developed in those roles. A free tool may be
+   released on their review alone - said on every answer, and only once the agent is calibrated - with four
+   exceptions that keep a person: religious content, a clinical score used in someone's direct care, regulated
+   advice, and real money. Both options are shown wherever a tool is offered: the tier reached, and the option
+   of a qualified person with the platform's recommendation of when one is warranted. For a generated entity,
+   engaging a specialist is a chargeable option. This amends the two earlier rulings that a qualified person
+   reviews the Law and the Care tools before public release.
+7. THE FEE. No loss is carried forward for now; non-distributing and charitable entities are exempt; the fee
+   starts with the first cycle that shows a profit. A reviewer agent passes calibration when every planted
+   defect is flagged for the right reason and at most one of six clean cases is flagged.
+8. THE REMAINING DOMAINS AND THE REALMS are read now and built later - Religion, Employment, Science, then the
+   Realms - and the first walk is one sitting after the mechanism rounds.
+9. NO LETTER (ruled later still, and it corrects item 3). The Owner does not send a letter to the malnutrition
+   tool's owner. That score stays withheld and its place becomes a ROUTE to its owner's own published tool,
+   printed only after that page has been read; the same for the pressure-ulcer score.
+10. EXTERNAL MODELS. A table of channels by kind of data is adopted: never the Owner's legal matter, a secret,
+    religious composition, Quranic Arabic, health or care details, or a child's information; another person's
+    data only masked; a person's own text on their consent; nothing personal leaves a free tool. An entity's
+    owner may bring their own provider key. The wall closes on its own and every opening is a person's
+    decision. The two open completion doors are driven and then scoped. The next rung is on paper only.
+11. THE HOST. The build server's suite is the gate for every round, with a full local suite every third round
+    and before each walk and audit (the build server and the Owner's machine run different systems); guards
+    and blinds stay local. A paired host is another machine of the Owner's only; the host sense comes first.
+12. EMPLOYMENT takes the Law domain's fences: no predicted salary, outcome or likelihood about a person; an
+    estimate only when the person asks and consents, as a range with its source. SCIENCE prints a citation only
+    when it resolves to a source record. THE QURAN PLATFORM is the flagship and is driven route by route. A
+    REALM changes more than the tone of the writing. THE FUND may meet the price of generation as a grant
+    against written criteria, an interest-free loan or a profit share that stops, with a ceiling on the
+    combined take; each is a contract a person accepts, decided by the Owner, in virtual units.

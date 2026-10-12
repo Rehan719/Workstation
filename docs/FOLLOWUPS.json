@@ -19674,11 +19674,14 @@
       "severity": "low",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W679",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "AMENDED BY THE OWNER on 2026-10-12: a qualified person before a Law tool is offered to the public is no longer required for Workstation's own free services, which may be released on the review of its calibrated specialist agent, said on every answer - except religious content, a clinical score in direct care, regulated advice and real money. Recorded in the review cell's item and assessment section 29.4."
     },
     {
       "id": "FU-1015",
@@ -20073,11 +20076,14 @@
       "severity": "low",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W679",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "AMENDED BY THE OWNER on 2026-10-12: a clinical reviewer before a Care tool is offered to the public is no longer required for Workstation's own free services, which may be released on the review of its calibrated specialist agent, said on every answer - except religious content, a clinical score in direct care, regulated advice and real money. Recorded in the review cell's item and assessment section 29.4."
     },
     {
       "id": "FU-1035",
@@ -20389,11 +20395,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.13",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W679",
       "note": "",
       "slot_source": "the Care item's clause on reuse terms",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W679 with a guard that drives the state; its blinds were driven red (13 of 13)."
     },
     {
       "id": "FU-1052",
@@ -20407,10 +20416,121 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.13",
+      "status": "done",
+      "closed_by": "W679",
+      "note": "",
+      "slot_source": "the Care item's clause on reuse terms",
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W679 with a guard that drives the state; its blinds were driven red (13 of 13)."
+    },
+    {
+      "id": "FU-1053",
+      "title": "Every domain tool states the tier of review it has reached, and each says UNREVIEWED until a record exists",
+      "why": "Clause 1 of the review cell. Today a tool's answer says nothing about review either way.",
+      "source": "W679 (the Owner's rulings of 2026-10-12; assessment section 29.4)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/care.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.15",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "the Care item's clause on reuse terms",
+      "slot_source": "the Owner's rulings of 2026-10-12 chartered this item",
+      "tier": 2
+    },
+    {
+      "id": "FU-1054",
+      "title": "The Care reviewer agent and its calibration set: planted defects it must catch and clean answers it must pass",
+      "why": "Clauses 2 to 4. Planted: a replaced guideline, a missing emergency line, a score with an altered boundary, a role claim. Its catch and false-alarm rates are shown beside its reviews.",
+      "source": "W679 (the Owner's rulings of 2026-10-12; assessment section 29.4)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/care.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.15",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's rulings of 2026-10-12 chartered this item",
+      "tier": 2
+    },
+    {
+      "id": "FU-1055",
+      "title": "The education department's thirteen headings have not been set against the Education tools",
+      "why": "Ruled first step for children: a table, each heading marked met, partly or not met, read from the department's page. No code. The page expects no final answers by default, which the tools do not yet do.",
+      "source": "W679 (the Owner's rulings of 2026-10-12; assessment section 29.4)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/education.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.12",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's rulings of 2026-10-12 chartered this item",
+      "tier": 2
+    },
+    {
+      "id": "FU-1056",
+      "title": "No hazard log exists for the Care tools",
+      "why": "Ruled: an open log, one entry per hazard, each linked to its guard or marked unguarded.",
+      "source": "W679 (the Owner's rulings of 2026-10-12; assessment section 29.4)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/care.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.13",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's rulings of 2026-10-12 chartered this item",
+      "tier": 2
+    },
+    {
+      "id": "FU-1057",
+      "title": "No platform fee exists: an entity's whole profit goes through its own split",
+      "why": "Ruled 2026-10-12: 25% of the cycle's profit, taken first. Design on paper: C:/tmp/w640t/PLATFORM_FEE_DESIGN.md. Three questions put to the Owner (loss carry, exempt forms, start).",
+      "source": "W679 (the Owner's rulings of 2026-10-12; assessment section 29.4)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/economy/metabolism.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.16",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's rulings of 2026-10-12 chartered this item",
+      "tier": 2
+    },
+    {
+      "id": "FU-1058",
+      "title": "Generating an entity has no price and no page says that nothing is charged yet",
+      "why": "Ruled: charged once at a price the Owner sets from comparable prices read at publishers' pages. The tiers are owed to the Owner.",
+      "source": "W679 (the Owner's rulings of 2026-10-12; assessment section 29.4)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/genesis.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.16",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's rulings of 2026-10-12 chartered this item",
       "tier": 2
     }
   ],
