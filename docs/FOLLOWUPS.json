@@ -11720,11 +11720,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W672",
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region; P3.30 is the M3 item they ride",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Ledger v13 region R1, 5 finding(s). [2] The scholar-review gate withholds correctly but its reviewer…: the same subject was a tier-2 finding of ledger v16, closed as FU-752. [3] §11's 'engines integrated into every workflow' are keyword…: the same subject is ledger v16 R1.9, carried by row FU-799, where it is built or stated and guarded as of W672. [6] Nine of A.6's fifteen QEP features have no module, and the…: the same subject is ledger v16 R1.10, carried by row FU-799, where it is built or stated and guarded as of W671. [7] The /qep hub header points at a roadmap that is not on that…: built in W671 and held by its guard. [8] On the floor the halal pre-assessment serves 'Recommended…: built in W671 and held by its guard."
     },
     {
       "id": "FU-612",
@@ -11736,11 +11739,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W672",
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region; P3.30 is the M3 item they ride",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Ledger v13 region R2, 7 finding(s). [2] There are two lifecycles to an \"established\" VSB, and the…: the same subject is ledger v16 R2.11, R2.14, carried by row FU-800, where it is built or stated and guarded as of W672. [3] The lifecycle is not gated stage by stage: every stage runs…: the same subject is ledger v16 R2.11, carried by row FU-800, where it is built or stated and guarded as of W672. [4] An \"established\" VSB is a persisted record plus templates: a…: the same subject is ledger v16 R2.12, carried by row FU-800, where it is built or stated and guarded as of W672. [5] \"Run · Defend · Heal · Learn · Improve · Grow — forever\" is a…: the same subject is ledger v16 R2.12, carried by row FU-800, where it is built or stated and guarded as of W672. [6] §4.5 on the floor: the three \"alternatives\" are…: built in an earlier round and still in place. [7] The shipped Website is generated from the entity's data, but…: built in W671 and held by its guard. [8] §4.1 Describe is text + dictation + an in-browser…: the same subject is ledger v16 R2.13, carried by row FU-800, where it is built or stated and guarded as of W671."
     },
     {
       "id": "FU-613",
@@ -11752,11 +11758,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W672",
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region; P3.30 is the M3 item they ride",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Ledger v13 region R3, 5 finding(s). [2] A HIGH code change is 'approved' by the health-threshold rule…: the same subject is ledger v16 R3.13, R6.11, carried by row FU-801, FU-804, where it is built or stated and guarded as of W672. [3] The apex chain on the floor — Chief directive, AI CEO plan,…: built in an earlier round and still in place; what was left is filed in this round (No test was found that holds the Board page's line saying why the plan is a floor frame). [4] The on-demand Board Pack and the Mode 3 review-gate panel are…: built in W671 and held by its guard. [7] The §17.3 strategic and action-plan cadence layers refresh on…: built in W671 and held by its guard. [9] The specialist C-Suite exists only as floor prose inside a…: not done; filed in this round as its own row (The C-Suite's two standalone routes are mounted outside the versioned API and no page reads them)."
     },
     {
       "id": "FU-614",
@@ -11768,11 +11777,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W672",
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region; P3.30 is the M3 item they ride",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Ledger v13 region R4, 1 finding(s). [8] The seven biomimetic layers are real as buses, sensors and…: the same subject is ledger v16 R4.15, R6.13, carried by row FU-802, FU-804, where it is built or stated and guarded as of W672."
     },
     {
       "id": "FU-615",
@@ -11784,11 +11796,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W672",
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region; P3.30 is the M3 item they ride",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Ledger v13 region R5, 4 finding(s). [3] The Education marking tool keeps an \"Indicative Level /…: built in W671 and held by its guard; what was left is FU-829. [4] The QEP \"AI Coach\" tab explains the absent recitation score…: built in W671 and held by its guard; what was left is FU-819. [5] Interface translation covers four of the vision's \"all…: the same subject is ledger v16 R5.8, carried by row FU-803, where it is built or stated and guarded as of W672. [6] The avatar's multimodal honesty is delivered, but its…: built in W671 and held by its guard; what was left is FU-826."
     },
     {
       "id": "FU-616",
@@ -11800,11 +11815,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W672",
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region; P3.30 is the M3 item they ride",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Ledger v13 region R6, 5 finding(s). [3] The survival instinct and energy regulation cannot fire: ATP…: the same subject is ledger v16 R6.13, carried by row FU-804, where it is built or stated and guarded as of W671. [4] Selection refuses honestly: of the four measures §8 says are…: the same subject is ledger v16 R6.13, R4.16, carried by row FU-802, FU-804, where it is built or stated and guarded as of W671. [5] The organism's immune and self-healing sensors see only…: built in W671 and held by its guard; what was left is FU-822. [6] Charity intelligence is a weighted sum over editorial…: the same subject is ledger v16 R6.14, carried by row FU-804, where it is built or stated and guarded as of W671. [8] Nine of the ten §17.5 invariants hold in code, and three the…: built or stated in W672 and held by its guard; what was left is filed in this round (Two lines of the vision's invariant status were not re-measured: torch optionality and the organism perimeter)."
     },
     {
       "id": "FU-617",
@@ -12818,11 +12836,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W672",
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region on the M3 item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Ledger v14 region R2, 1 finding(s). [6] On the floor, none of the journey's stages contains anything…: the same subject is ledger v16 R2.10, carried by row FU-800, where it is built or stated and guarded as of W672."
     },
     {
       "id": "FU-665",
@@ -12853,11 +12874,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W672",
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region on the M3 item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Ledger v14 region R4, 1 finding(s). [7] Swarms are not synthesised per solution or per founder and…: the same subject is ledger v16 R4.13, R4.12, carried by row FU-802, where it is built or stated and guarded as of W672."
     },
     {
       "id": "FU-667",
@@ -12888,11 +12912,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W672",
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region on the M3 item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Ledger v14 region R6, 2 finding(s). [5] The mandatory GaaS gate is on a minority of output paths, and…: the same subject is ledger v16 R6.10, carried by row FU-804, where it is built or stated and guarded as of W672. [6] The organism senses and acts but cannot regulate, select or…: the same subject is ledger v16 R6.13, carried by row FU-804, where it is built or stated and guarded as of W671."
     },
     {
       "id": "FU-669",
@@ -14185,11 +14212,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W672",
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region on the M3 item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Ledger v15 region R1, 10 finding(s). [5] The halal review leaves a 'Steps to Achieve Certification'…: built in W671 and held by its guard. [7] With a model serving, the tafsir route asks it to translate…: the same subject was a tier-2 finding of ledger v16, closed as FU-751. [8] The §11 'compliance engines' are word lists that can refuse…: the same subject is ledger v16 R1.9, R1.7, carried by row FU-799, where it is built or stated and guarded as of W672. [9] The Sharia screen FAILS a deliverable because the brief asks…: built in W671 and held by its guard. [10] On this deployment the §10 bar measures nothing: 0 of 16…: the same subject is ledger v16 R1.8, carried by row FU-799, where it is built or stated and guarded as of W672. [11] The vision's §10 amendment says modelled · simulated · ranked…: built in an earlier round and still in place. [12] No QEP learning content can reach a learner: tajwid lessons…: the same subject was a tier-2 finding of ledger v16, closed as FU-752. [13] Most of Appendix A's fifteen features are unbuilt and the…: the same subject is ledger v16 R1.10, carried by row FU-799, where it is built or stated and guarded as of W671; what was left is filed in this round (The Quran platform document's dated status notes have not been checked against what is built). [14] A.8's Zakat and Sponsor-a-Student channels exist as routes…: the same subject is ledger v16 R1.11, carried by row FU-799, where it is built or stated and guarded as of W671. [15] The written-recall route answers a nonexistent ayah with a…: built in W671 and held by its guard."
     },
     {
       "id": "FU-733",
@@ -14201,11 +14231,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W672",
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region on the M3 item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Ledger v15 region R2, 7 finding(s). [7] The generated Web app and Phone app do not deliver the…: built in W671 and held by its guard. [8] There is not one gated lifecycle: three doors create a VSB,…: the same subject is ledger v16 R2.11, carried by row FU-800, where it is built or stated and guarded as of W672. [9] On the owned floor every journey stage is a term-frequency…: the same subject is ledger v16 R2.10, carried by row FU-800, where it is built or stated and guarded as of W672. [10] Model · Simulate · Optimise · Rank compares nothing on the…: the same subject is ledger v16 R2.10, carried by row FU-800, where it is built or stated and guarded as of W672. [11] An established VSB does not run: it is a registered record…: the same subject is ledger v16 R2.12, carried by row FU-800, where it is built or stated and guarded as of W672. [12] Static headings on the Genesis page and Cockpit promise…: built in W671 and held by its guard. [13] Describe accepts text, dictation, text documents and PDFs but…: the same subject is ledger v16 R2.13, carried by row FU-800, where it is built or stated and guarded as of W671."
     },
     {
       "id": "FU-734",
@@ -14217,11 +14250,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W672",
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region on the M3 item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Ledger v15 region R3, 6 finding(s). [10] The digital-twin Chief is the Owner's last instructions and…: not done; filed in this round as its own row (The vision's Mode 2 sentence still records the Chief as a delivered twin built from the Owner's record). [11] The Board of specialist Directors only deliberates through an…: the same subject is ledger v16 R3.11, carried by row FU-801, where it is built or stated and guarded as of W671. [12] On this environment the org cascade is twenty-two floor…: the same subject is ledger v16 R3.15, carried by row FU-801, where it is built or stated and guarded as of W672; what was left is filed in this round (The appraisal heading says each tier develops the one below, over text the floor framed). [13] The Strategic and Action-Plan layers and the Board Pack…: the same subject is ledger v16 R3.9, carried by row FU-801, where it is built or stated and guarded as of W672. [14] 'Chief: AI-Generate' writes nothing to the plan on the floor…: built in W671 and held by its guard. [15] User design control of the organisation reaches the C-Suite…: the same subject is ledger v16 R3.15, carried by row FU-801, where it is built or stated and guarded as of W672."
     },
     {
       "id": "FU-735",
@@ -14233,11 +14269,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W672",
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region on the M3 item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Ledger v15 region R4, 7 finding(s). [7] Cascades are not synthesised or optimised per solution or…: the same subject is ledger v16 R4.13, carried by row FU-802, where it is built or stated and guarded as of W672. [8] Swarm, tree, ensemble and saved-cascade runs do not tell the…: the same subject is ledger v16 R4.17, carried by row FU-802, where it is built or stated and guarded as of W671; what was left is FU-827. [9] Forge pipeline stages (Petri dish, Simulator, Factory…) are…: the same subject is ledger v16 R4.12, carried by row FU-802, where it is built or stated and guarded as of W671. [10] Immune defence and self-healing are sensing without action:…: the same subject was a tier-2 finding of ledger v16, closed as FU-776. [11] Cardiovascular is host CPU headroom under an anatomical name…: the same subject is ledger v16 R4.15, carried by row FU-802, where it is built or stated and guarded as of W672. [12] The Genome layer is a trait-vector lab separate from each…: the same subject is ledger v16 R4.16, carried by row FU-802, where it is built or stated and guarded as of W671. [13] Pre-commit 'simulation' of a fabric composition is a static…: the same subject is ledger v16 R4.13, carried by row FU-802, where it is built or stated and guarded as of W672."
     },
     {
       "id": "FU-736",
@@ -14249,11 +14288,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W672",
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region on the M3 item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Ledger v15 region R5, 8 finding(s). [8] The Legal Document Drafter and the Care risk narrative never…: built in W671 and held by its guard. [9] The six domains do not carry tool sets of comparable scope,…: the same subject is ledger v16 R5.10, carried by row FU-803, where it is built or stated and guarded as of W671. [10] 'All languages' is five interface dictionaries of about…: the same subject is ledger v16 R5.8, carried by row FU-803, where it is built or stated and guarded as of W672. [11] The avatar is text-only in practice here: images are refused,…: not built; the page says so in its text and a test holds it. [12] The Products axis is recorded but changes nothing, and no…: the same subject is ledger v16 R5.7, carried by row FU-803, where it is built or stated and guarded as of W671. [13] Of Appendix A.6's fifteen QEP features, the memorisation core…: the same subject is ledger v16 R5.6, carried by row FU-803, where it is built or stated and guarded as of W671. [14] Zakat and Sponsor-a-Student contributions exist as routes but…: the same subject is ledger v16 R1.11, carried by row FU-799, where it is built or stated and guarded as of W671. [15] Personalisation is an explicit profile and four preferences;…: the same subject is ledger v16 R5.9, carried by row FU-803, where it is built or stated and guarded as of W671."
     },
     {
       "id": "FU-737",
@@ -14265,11 +14307,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W672",
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region on the M3 item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Ledger v15 region R6, 10 finding(s). [5] The organism cannot regulate: ATP is a simulator that only…: the same subject is ledger v16 R6.13, carried by row FU-804, where it is built or stated and guarded as of W671. [6] The organism cannot turn over: every retirement check refuses…: the same subject is ledger v16 R6.12, carried by row FU-804, where it is built or stated and guarded as of W672. [7] The organism cannot select: three of the four §8 measures…: the same subject is ledger v16 R6.13, R4.16, carried by row FU-802, FU-804, where it is built or stated and guarded as of W671. [8] Self-healing is a circuit breaker on AI providers and, with…: the same subject is ledger v16 R6.13, carried by row FU-804, where it is built or stated and guarded as of W671. [9] Twin pre-validation simulates nothing — it is a health…: the same subject is ledger v16 R6.11, R3.13, carried by row FU-801, FU-804, where it is built or stated and guarded as of W672; what was left is filed in this round (HYPOTHESIS: a governed live lever is tiered so that it gets no pre-validation, and no page says so). [10] Self-improvement and the six-stage reflect loop run but…: cannot be built here; the page says so in its text and a test holds it. [11] The KPI gate exists but gates only a marketplace listing, on…: the same subject was a tier-2 finding of ledger v16, closed as FU-798. [12] Charity and venture 'intelligence' rank on typed constants,…: the same subject is ledger v16 R6.14, carried by row FU-804, where it is built or stated and guarded as of W671; what was left is FU-826. [13] The books balance, but the chart types every waterfall pot as…: the same subject is ledger v16 R6.15, carried by row FU-804, where it is built or stated and guarded as of W672; what was left is filed in this round (The reason the profit line is a surplus after distributions is shown only in a tooltip). [14] The vision's own §17.5 status paragraph still says three…: built or stated in W672 and held by its guard; what was left is filed in this round (Two lines of the vision's invariant status were not re-measured: torch optionality and the organism perimeter)."
     },
     {
       "id": "FU-738",
@@ -15438,11 +15483,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W672",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v16 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W672 on the Owner's ruling of 2026-10-11: every allocation is held until a person approves it, with no threshold; an unknown id is refused; an approved allocation is applied when requested again and the page says so. Held by test_fu794_a_fund_allocation_is_held_until_a_person_approves_it, driven red."
     },
     {
       "id": "FU-795",
@@ -15541,11 +15589,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W672",
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region on the M3 item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Ledger v16 region R1, 7 finding(s). [7] The Sharia screen does not match an ordinary interest-paying…: built in W671 and held by its guard. [8] On this deployment the §10 bar measures none of its sixteen…: cannot be built here; the page says so in its text, held by this round's guard. [9] The vision's §11 opening still claims continuous live…: built or stated in W672 and held by its guard. [10] Most of QEP's fifteen features are not built, and the hub…: not built; the page says so in its text and a test holds it. [11] Zakat and Sponsor-a-Student contributions, and the interfaith…: built in W671 and held by its guard; what was left is FU-834. [12] A real delivery defect can be closed, and the platform…: ruled by the Owner on 2026-10-11 and built as ruled in W671; what was left is FU-816. [13] The QEP 'explainability' figures are display constants and…: built or stated in W672 and held by its guard."
     },
     {
       "id": "FU-800",
@@ -15557,11 +15608,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W672",
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region on the M3 item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Ledger v16 region R2, 7 finding(s). [9] A founder on the floor cannot write the pending Design,…: built in W671 and held by its guard; what was left is FU-832; what was left is filed in this round (The Genesis result card lists pending sections and offers no way to write one). [10] On this install no Genesis stage contains anything about the…: cannot be built here; the page says so in its text, held by this round's guard. [11] There is not one lifecycle: four doors establish an…: ruled by the Owner on 2026-10-11 and built as ruled in W672; what was left is FU-843; what was left is filed in this round (The Studio cascade route still registers an entity although the Owner ruled it retired with the Studio spawn). [12] What 'operating' means for an established enterprise is a…: built or stated in W672 and held by its guard; what was left is filed in this round (The Genesis birth card prints an operating status without saying what operating means). [13] Describe accepts typed text, dictation, text files and…: built in W671 and held by its guard. [14] The Spawn Studio door stores fixed engine figures - alignment…: built in W671 and held by its guard. [15] Video output is a self-playing HTML page and Platforms,…: built or stated in W672 and held by its guard."
     },
     {
       "id": "FU-801",
@@ -15573,11 +15627,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W672",
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region on the M3 item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Ledger v16 region R3, 8 finding(s). [8] The Chief is a carrier of the Owner's recorded words, not a…: built in W671 and held by its guard; what was left is FU-817. [9] The §17.3 Strategic and Action-Plan layers refresh on cadence…: built or stated in W672 and held by its guard; what was left is FU-830; what was left is filed in this round (HYPOTHESIS: plan generation hands a strategy the cadence wrote to the model as the existing strategy). [10] The Board Pack can be assembled only in the browser session…: built in W671 and held by its guard. [11] The specialist Board deliberation (directors each…: built in W671 and held by its guard. [12] Mode 3 review gates are all-or-nothing and do not hold the…: ruled by the Owner on 2026-10-11 and built as ruled in W672; what was left is FU-818. [13] With no model serving, Change Control's review approves on…: ruled by the Owner on 2026-10-11 and built as ruled in W672. [14] The Chief can be instructed only by typed text; no voice,…: built or stated in W672 and held by its guard. [15] The organisation is not modelled or simulated: its 'twin' is…: built or stated in W672 and held by its guard."
     },
     {
       "id": "FU-802",
@@ -15589,11 +15646,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W672",
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region on the M3 item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Ledger v16 region R4, 7 finding(s). [11] The Digital Twin and Simulator never simulate: model,…: built or stated in W672 and held by its guard. [12] Every Forge facility — Petri Dish, Incubator, Laboratory,…: built in W671 and held by its guard; what was left is FU-823; what was left is filed in this round (No test holds the Forge page's statement that each stage is a persona prompt). [13] Nothing optimises a cascade, and 'model before commit' is a…: built or stated in W672 and held by its guard. [14] The Nervous layer's engines do not think: six return fixed…: built in W671 and held by its guard; what was left is filed in this round (Two cascade engines still return a fixed alignment and a fixed threat score to every caller). [15] The Cardiovascular, Endocrine and metabolic regulators…: built or stated in W672 and held by its guard. [16] The Genome is two unconnected records, the encoder produces…: cannot be built here; the page says so in its text and a test holds it. [17] No owned model is present, so the 'native' tier serving…: built in W671 and held by its guard; what was left is FU-827."
     },
     {
       "id": "FU-803",
@@ -15605,11 +15665,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W672",
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region on the M3 item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Ledger v16 region R5, 8 finding(s). [5] Recording the approval the Settings panel asks for makes the…: built in W671 and held by its guard. [6] Of Appendix A's fifteen QEP features, the Religion domain…: built in W671 and held by its guard. [7] The 4×6×4 grid is exposed only as three pickers on Genesis;…: built in W671 and held by its guard; what was left is FU-831. [8] 'All languages' is five interface dictionaries of about…: cannot be built here; the page says so in its text, held by this round's guard. [9] Personalisation is a display name, two defaults, two text…: not built; the page says so in its text and a test holds it; what was left is filed in this round (HYPOTHESIS: the unread user-preferences route the audit named could not be located). [10] Several working domain routes have no screen: hypothesis…: built in W671 and held by its guard; what was left is FU-835; what was left is filed in this round (The manufacturing-record gate and four domain list routes have no screen, and no page says so). [11] The application-form route returns questions_answered: 1 when…: built in W671 and held by its guard; what was left is FU-824. [12] The matter-assembly route crashes with a 500 when a…: built in W671 and held by its guard; what was left is FU-825."
     },
     {
       "id": "FU-804",
@@ -15621,11 +15684,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W672",
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region on the M3 item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Ledger v16 region R6, 6 finding(s). [10] Invariant 2 - a GaaS gate on every output - is not held: 37…: built or stated in W672 and held by its guard. [11] Twin pre-validation before a major change is a health…: built or stated in W672 and held by its guard. [12] The organism cannot remove a part: every removal proposal is…: ruled by the Owner on 2026-10-11 and built as ruled in W672; what was left is filed in this round (The protected-entities rule lists none of the Owner's own entities, and no restore route exists). [13] Regulation and selection are absent and say so: ATP cannot…: cannot be built here; the page says so in its text and a test holds it. [14] Charity intelligence ranks on typed constants and the…: built in W671 and held by its guard. [15] 'Template-bounded' waterfall has two rules: a Waqf-Ltd Hybrid…: ruled by the Owner on 2026-10-11 and built as ruled in W672."
     },
     {
       "id": "FU-805",
@@ -15821,11 +15887,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W672",
       "note": "",
       "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W672 and held by test_t2b_eight_statements_say_what_the_code_beside_them_does, each leg driven red: a step that returned nothing says so, and the text None is no longer written as a result."
     },
     {
       "id": "FU-816",
@@ -15839,11 +15908,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W672",
       "note": "",
       "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W672 and held by test_t2b_eight_statements_say_what_the_code_beside_them_does, each leg driven red: an attested re-verification no longer answers that it is real."
     },
     {
       "id": "FU-817",
@@ -15857,11 +15929,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W672",
       "note": "",
       "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W672 and held by test_t2b_eight_statements_say_what_the_code_beside_them_does, each leg driven red: the Chief model route's method sentence says what the record carries."
     },
     {
       "id": "FU-818",
@@ -15875,11 +15950,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W672",
       "note": "",
       "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W672 and held by test_t2b_eight_statements_say_what_the_code_beside_them_does, each leg driven red: the life-cycle sentence and the Cockpit's gate line read the one list of movers a gate holds."
     },
     {
       "id": "FU-819",
@@ -15893,11 +15971,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W672",
       "note": "",
       "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W672 and held by test_t2b_eight_statements_say_what_the_code_beside_them_does, each leg driven red: the Quran status route gives the ruling first."
     },
     {
       "id": "FU-820",
@@ -15911,11 +15992,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W672",
       "note": "",
       "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W672 and held by test_t2b_eight_statements_say_what_the_code_beside_them_does, each leg driven red: the Religion tabs say a model-served answer is withheld until a named scholar approves it."
     },
     {
       "id": "FU-821",
@@ -15929,11 +16013,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W672",
       "note": "",
       "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W672 and held by test_t2b_eight_statements_say_what_the_code_beside_them_does, each leg driven red: the gate's empty-roster sentence serves the research and refine paths as well as teaching."
     },
     {
       "id": "FU-822",
@@ -15947,11 +16034,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.39",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W672",
       "note": "",
       "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W672 and held by test_t2b_eight_statements_say_what_the_code_beside_them_does, each leg driven red: the hypothesis was driven and the scope sentence corrected to what lowers health."
     },
     {
       "id": "FU-823",
@@ -16343,10 +16433,677 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.30",
+      "status": "done",
+      "closed_by": "W672",
+      "note": "",
+      "slot_source": "ruled by the Owner; to be chartered as its own item in the round that lands the brief's assessment",
+      "tier": 3,
+      "close_note": "Chartered in W672 as its own plan item on the Owner's ruling of 2026-10-11, with the twelve terms ruled the same day; assessment section 19.5 records the ruling."
+    },
+    {
+      "id": "FU-845",
+      "title": "HYPOTHESIS: seven business-plan routes ask for no caller, so with authentication on anyone could add an objective to any plan",
+      "why": "Read, not driven: the objective, review, orchestrate and generate routes and three reads declare no user dependency, and the router is mounted with none. Done when an authentication-on guard shows no-token refused and another owner's scope not found on each, with the plan file unchanged, and was driven red.",
+      "source": "W672 (assessment section 19: the external people-and-organisation brief, verified against the code)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/api/business_plan.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P4.1",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "ruled by the Owner; to be chartered as its own item in the round that lands the brief's assessment",
+      "slot_source": "ruled by the Owner on 2026-10-11: fixed in one authentication-readiness round after P5 and before the final audit",
+      "tier": 3
+    },
+    {
+      "id": "FU-846",
+      "title": "HYPOTHESIS: nothing counts which mounted routes require a caller; a read by signature found about 299 of 547 that name none",
+      "why": "The perimeter is described as closed and is measured on six paths. Build an instrument that reads the MOUNTED dependencies, and a declared list of routes that are public on purpose with the reason for each. Done when every route is guarded or listed and adding an unguarded route fails the guard.",
+      "source": "W672 (assessment section 19: the external people-and-organisation brief, verified against the code)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/app_mvp.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ruled by the Owner on 2026-10-11: fixed in one authentication-readiness round after P5 and before the final audit",
+      "tier": 2
+    },
+    {
+      "id": "FU-847",
+      "title": "An API key is issued and stored, and nothing accepts one",
+      "why": "The Owner ruled: make keys work in the readiness round. Look the key up by prefix, verify the stored hash, resolve the user. Done when a guard issues a key with authentication on and the key authenticates.",
+      "source": "W672 (assessment section 19: the external people-and-organisation brief, verified against the code)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/auth/core.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P4.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ruled by the Owner on 2026-10-11: fixed in one authentication-readiness round after P5 and before the final audit",
+      "tier": 3
+    },
+    {
+      "id": "FU-848",
+      "title": "The role viewer can be given to a user and no route reads it",
+      "why": "The Owner ruled: make the read-only role work in the readiness round. Done when a guard shows a viewer's write refused on every writing route the perimeter instrument lists.",
+      "source": "W672 (assessment section 19: the external people-and-organisation brief, verified against the code)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/auth/core.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P4.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ruled by the Owner on 2026-10-11: fixed in one authentication-readiness round after P5 and before the final audit",
+      "tier": 3
+    },
+    {
+      "id": "FU-849",
+      "title": "The heartbeat acts on any owner's entity with no principal, and the ownership check lets an absent user through",
+      "why": "The Owner ruled: a per-entity opt-in, and a named service identity once authentication is on. Done when an entity that has not opted in is skipped by the beat and says so, and a beat-driven cycle's record names the service identity and the lever that allowed it.",
+      "source": "W672 (assessment section 19: the external people-and-organisation brief, verified against the code)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/organism/heartbeat.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P4.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ruled by the Owner on 2026-10-11: fixed in one authentication-readiness round after P5 and before the final audit",
+      "tier": 3
+    },
+    {
+      "id": "FU-850",
+      "title": "For a high or critical change the decider must differ from the submitter once more than one administrator exists",
+      "why": "The Owner ruled yes. One comparison at review, override and ratification, applied only when a second administrator exists; with one Owner the present behaviour stands.",
+      "source": "W672 (assessment section 19: the external people-and-organisation brief, verified against the code)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/api/change_control.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P4.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "ruled by the Owner on 2026-10-11: fixed in one authentication-readiness round after P5 and before the final audit",
+      "tier": 3
+    },
+    {
+      "id": "FU-851",
+      "title": "LEAD: a linear hash chain is described as a verifiable Merkle-DAG",
+      "why": "Not read far enough to be a finding. Read the module and the one page that uses the word; if either says it of the chain, reword.",
+      "source": "W672 (assessment section 19: the external people-and-organisation brief, verified against the code)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/gaas/v5/ueg.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found while verifying the brief and not done",
+      "tier": 3
+    },
+    {
+      "id": "FU-852",
+      "title": "The word living still stands in sentences that say an entity runs",
+      "why": "The Owner ruled it stays as the name of the kind of entity and leaves sentences that assert operation. The Genesis headings were corrected; a word search finds about two dozen uses on other pages, most of them the name, a few an assertion (the Solutions page log line, two dashboard cards). Read each and reword the assertions.",
+      "source": "W672 (assessment section 19: the external people-and-organisation brief, verified against the code)",
+      "found": "2026-10-11",
+      "files": [
+        "apps/workstation-superapp/src/pages/SolutionsPlatform.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-853",
+      "title": "No page shows which door established an entity",
+      "why": "An entity made by the spawn route now says so on its record. The Cockpit does not show the field.",
+      "source": "W672 (assessment section 19: the external people-and-organisation brief, verified against the code)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/api/vsb.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-854",
+      "title": "HYPOTHESIS, possibly tier 1: two cognitive engines return an alignment of 0.99 and a threat score of 0.01 that nothing computes",
+      "why": "Ledger v16 R4.14. Stands at source in the iman and hoshiyari engines. The auditor wrote that without the status sentence beside it this would be tier 1. Not driven: run the cascade as a fabric resource on a composed run and read what a person is shown; then return not assessed with the reason.",
+      "source": "W672 (closure evidence for the third phase, hypothesis H2)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/api/cognitive.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found while closing the bundle rows and not done",
+      "tier": 3
+    },
+    {
+      "id": "FU-855",
+      "title": "HYPOTHESIS, possibly tier 2: the Deliverables page is headed reports, presentations, websites, apps and services, and each type is a set of section headings for one text document",
+      "why": "Ledger v16 R2.15. The heading also says kept living. Read the page and the deliverable types, then reword the heading to what is produced.",
+      "source": "W672 (closure evidence for the third phase, hypothesis H3)",
+      "found": "2026-10-11",
+      "files": [
+        "apps/workstation-superapp/src/pages/Deliverables.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found while closing the bundle rows and not done",
+      "tier": 3
+    },
+    {
+      "id": "FU-856",
+      "title": "The C-Suite's two standalone routes are mounted outside the versioned API and no page reads them",
+      "why": "Ledger v13 R3[9], carried by no later finding and no prepared round. Either archive the two routes as a reversible move after a reachability check, or mount them with the others and read them from the organisation hub.",
+      "source": "W672 (closure evidence for the tier-3 bundle rows: C:/tmp/w640t/close_EVIDENCE.md)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/app_mvp.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "what a closed tier-3 bundle row left undone; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-857",
+      "title": "The vision's Mode 2 sentence still records the Chief as a delivered twin built from the Owner's record",
+      "why": "Ledger v15 R3[10], a document over-claim. The code now says the Chief carries a record and nothing is trained; the document has no as-built note. The sentence is recorded as an Owner ruling, so add a note beneath it rather than rewrite it.",
+      "source": "W672 (closure evidence for the tier-3 bundle rows: C:/tmp/w640t/close_EVIDENCE.md)",
+      "found": "2026-10-11",
+      "files": [
+        "docs/WORKSTATION_IDBO_WHOLE_VISION.md"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "what a closed tier-3 bundle row left undone; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-858",
+      "title": "Two lines of the vision's invariant status were not re-measured: torch optionality and the organism perimeter",
+      "why": "Ledger v13 R6[8] and v15 R6[14]. This round's note re-states three lines of that paragraph and says the others are not re-measured. Measure the two and date the result.",
+      "source": "W672 (closure evidence for the tier-3 bundle rows: C:/tmp/w640t/close_EVIDENCE.md)",
+      "found": "2026-10-11",
+      "files": [
+        "docs/WORKSTATION_IDBO_WHOLE_VISION.md"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "what a closed tier-3 bundle row left undone; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-859",
+      "title": "The reason the profit line is a surplus after distributions is shown only in a tooltip",
+      "why": "Ledger v15 R6[13]. The label is text; the sentence saying every distribution pot is typed as an expense and no liability account exists is in a title attribute. Print it as text.",
+      "source": "W672 (closure evidence for the tier-3 bundle rows: C:/tmp/w640t/close_EVIDENCE.md)",
+      "found": "2026-10-11",
+      "files": [
+        "apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "what a closed tier-3 bundle row left undone; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-860",
+      "title": "The appraisal heading says each tier develops the one below, over text the floor framed",
+      "why": "Ledger v15 R3[12], named fix not applied: say beside the heading that no development was applied when the floor served.",
+      "source": "W672 (closure evidence for the tier-3 bundle rows: C:/tmp/w640t/close_EVIDENCE.md)",
+      "found": "2026-10-11",
+      "files": [
+        "apps/workstation-superapp/src/components/organism/SwarmIntelligence.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "what a closed tier-3 bundle row left undone; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-861",
+      "title": "Two cascade engines still return a fixed alignment and a fixed threat score to every caller",
+      "why": "Ledger v16 R4.14. The spawn record no longer stores them, but the cascade route still answers with both figures beside a sentence saying nothing computes. Return not-assessable with a reason at the source, after reading every reader of the cascade.",
+      "source": "W672 (closure evidence for the tier-3 bundle rows: C:/tmp/w640t/close_EVIDENCE.md)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/cognitive/iman_engine.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "what a closed tier-3 bundle row left undone; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-862",
+      "title": "The manufacturing-record gate and four domain list routes have no screen, and no page says so",
+      "why": "Ledger v16 R5.10 and v15 R5[9]. Hypothesis generation and the frameworks list were given screens and interfaith a stated absence; these were not touched.",
+      "source": "W672 (closure evidence for the tier-3 bundle rows: C:/tmp/w640t/close_EVIDENCE.md)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/api/science.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "what a closed tier-3 bundle row left undone; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-863",
+      "title": "HYPOTHESIS: plan generation hands a strategy the cadence wrote to the model as the existing strategy",
+      "why": "Ledger v16 R3.9's fix, second half. Read from code, not driven; it is a model path, so not reachable until a model serves.",
+      "source": "W672 (closure evidence for the tier-3 bundle rows: C:/tmp/w640t/close_EVIDENCE.md)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/api/business_plan.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "what a closed tier-3 bundle row left undone; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-864",
+      "title": "The Genesis result card lists pending sections and offers no way to write one",
+      "why": "Ledger v16 R2.9. The Cockpit has the write box since W671; the page a founder is on at establishment does not.",
+      "source": "W672 (closure evidence for the tier-3 bundle rows: C:/tmp/w640t/close_EVIDENCE.md)",
+      "found": "2026-10-11",
+      "files": [
+        "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "what a closed tier-3 bundle row left undone; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-865",
+      "title": "No test holds the Forge page's statement that each stage is a persona prompt",
+      "why": "Ledger v16 R4.12 and v15 R4[9]. The sentence is on the page; nothing was found that fails if it is removed. Add a leg on the property and drive it red.",
+      "source": "W672 (closure evidence for the tier-3 bundle rows: C:/tmp/w640t/close_EVIDENCE.md)",
+      "found": "2026-10-11",
+      "files": [
+        "apps/workstation-superapp/src/pages/developers/ForgePipeline.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "what a closed tier-3 bundle row left undone; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-866",
+      "title": "HYPOTHESIS: the unread user-preferences route the audit named could not be located",
+      "why": "Ledger v16 R5.9. Dump the route table; if the route exists and nothing reads it, archive it as a reversible move; if it does not exist, record that the finding's fix has no object.",
+      "source": "W672 (closure evidence for the tier-3 bundle rows: C:/tmp/w640t/close_EVIDENCE.md)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/app_mvp.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "what a closed tier-3 bundle row left undone; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-867",
+      "title": "HYPOTHESIS: a governed live lever is tiered so that it gets no pre-validation, and no page says so",
+      "why": "Ledger v15 R6[9], second half, carried by no later finding. Taken from the ledger and an earlier reader's note, not re-read: drive it first.",
+      "source": "W672 (closure evidence for the tier-3 bundle rows: C:/tmp/w640t/close_EVIDENCE.md)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/api/change_control.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "what a closed tier-3 bundle row left undone; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-868",
+      "title": "The Quran platform document's dated status notes have not been checked against what is built",
+      "why": "Ledger v15 R1[13] (missing features) is stated feature by feature on the product surface. Ledger v16 region 1 listed the document's status notes as stale among its unlisted findings. Read and date them.",
+      "source": "W672 (closure evidence for the tier-3 bundle rows: C:/tmp/w640t/close_EVIDENCE.md)",
+      "found": "2026-10-11",
+      "files": [
+        "docs/QURAN_EDUCATION_PLATFORM_VISION.md"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "what a closed tier-3 bundle row left undone; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-869",
+      "title": "The protected-entities rule lists none of the Owner's own entities, and no restore route exists",
+      "why": "Owner rulings 2026-10-11: the Owner's two entities are protected, and a restore route is built before any removal can be performed. The rule ships with that list empty and every removal still refused.",
+      "source": "W672 (closure evidence for the tier-3 bundle rows: C:/tmp/w640t/close_EVIDENCE.md)",
+      "found": "2026-10-11",
+      "files": [
+        "agentic_core/economy/turnover.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "what a closed tier-3 bundle row left undone; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-870",
+      "title": "The Genesis birth card prints an operating status without saying what operating means",
+      "why": "Ledger v16 R2.12. The Cockpit prints it since this round; the establish answer does not pass through the same read.",
+      "source": "W672 (closure evidence for the tier-3 bundle rows: C:/tmp/w640t/close_EVIDENCE.md)",
+      "found": "2026-10-11",
+      "files": [
+        "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "what a closed tier-3 bundle row left undone; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-871",
+      "title": "No test was found that holds the Board page's line saying why the plan is a floor frame",
+      "why": "Ledger v13 R3[3], fixed in an earlier round. The Cockpit's twin of the line is pinned; the Board page's own was not found pinned. Confirm, then add a leg.",
+      "source": "W672 (closure evidence for the tier-3 bundle rows: C:/tmp/w640t/close_EVIDENCE.md)",
+      "found": "2026-10-11",
+      "files": [
+        "apps/workstation-superapp/src/pages/enterprise/BoardOfDirectors.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "what a closed tier-3 bundle row left undone; filed where the next rounds will meet it",
+      "tier": 3
+    },
+    {
+      "id": "FU-872",
+      "title": "A payout is recorded for whatever owner name the request carries, because the name is never read",
+      "why": "The payout function takes an owner argument and never reads it; the account is chosen by entity id alone, and the route compares the caller with the entity's owner id, never with the account's stored owner. Ledger v16 drove this on an earlier commit (a payout naming another owner was accepted) and recorded it inside the capital fund row, which was closed in W672 on the fund's fix alone: this row carries the half that was not built. No test sends the field. Decide first: refuse a differing name, or remove the field from the request.",
+      "source": "W672 (five external finance documents verified against the tree; assessment section 20 lands in the next round)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/economy/owner_payments.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found while verifying an external audit and not done in this round",
+      "tier": 2
+    },
+    {
+      "id": "FU-873",
+      "title": "A payout leaves no audit event, and its only record is a list that forgets after 200 entries",
+      "why": "Nothing in the payout function or its route writes to the constitutional ledger, while every other money route in the same router does. The entry a payout appends names no requester, and the list is cut to its last 200 on every accrual and payout, so the 201st entry removes the only record of the first. The running totals survive; the history does not.",
+      "source": "W672 (five external finance documents verified against the tree; assessment section 20 lands in the next round)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/economy/owner_payments.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found while verifying an external audit and not done in this round",
+      "tier": 2
+    },
+    {
+      "id": "FU-874",
+      "title": "HYPOTHESIS: a transfer request sent twice is two transfers",
+      "why": "The transfer core replays safely on a transfer id, but the route passes none and one is minted per request; no request model anywhere carries a key that identifies a repeat. Read, not driven: post the same body twice and read the sender's postings.",
+      "source": "W672 (five external finance documents verified against the tree; assessment section 20 lands in the next round)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/economy.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found while verifying an external audit and not done in this round",
+      "tier": 3
+    },
+    {
+      "id": "FU-875",
+      "title": "A ledger posting has no identifier, so nothing can point at one",
+      "why": "A posting holds a time, two accounts, an amount, a memo and a source. There is no reversal, and no way for a correction, a settlement or a reconciliation to name the posting it concerns. A new field must leave old postings readable and reported as having none.",
+      "source": "W672 (five external finance documents verified against the tree; assessment section 20 lands in the next round)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/economy/ledger.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found while verifying an external audit and not done in this round",
+      "tier": 3
+    },
+    {
+      "id": "FU-876",
+      "title": "HYPOTHESIS: the ledger's one posting function accepts a zero or a negative amount",
+      "why": "It refuses an account outside the chart and then rounds the amount with no sign check. Every caller read passes a checked amount, so this is a missing floor and not a live fault. Enumerate every caller by the call before adding a refusal: the period close passes balances that may be negative.",
+      "source": "W672 (five external finance documents verified against the tree; assessment section 20 lands in the next round)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/economy/ledger.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found while verifying an external audit and not done in this round",
+      "tier": 3
+    },
+    {
+      "id": "FU-877",
+      "title": "HYPOTHESIS: a capital fund store that has been deleted is answered as a new fund of ten million",
+      "why": "A missing file is treated as first creation for readers and writers alike; only a file that exists and cannot be read is refused. After a deletion the status reads a full seed with no allocations, and an approved allocation would write a new store on top. Drive it in an isolated store. A fix needs a second witness that the fund was ever created, and must not invent a balance from it.",
+      "source": "W672 (five external finance documents verified against the tree; assessment section 20 lands in the next round)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/capital_fund.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found while verifying an external audit and not done in this round",
+      "tier": 3
+    },
+    {
+      "id": "FU-878",
+      "title": "A Stripe adapter with live charge and payout calls reads no real-money switch",
+      "why": "It calls the provider's charge and payout functions with a key taken from the environment at import, and never reads the real-money switch. It is unreached only because nothing imports it and the provider's library is not installed - the shape an earlier round called a latent money path in the crypto adapter, where the switch was then put first. Either put the switch first here or archive the package (an Owner decision put separately).",
+      "source": "W672 (five external finance documents verified against the tree; assessment section 20 lands in the next round)",
+      "found": "2026-10-12",
+      "files": [
+        "products/capital_fund/adapters/stripe_gateway.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found while verifying an external audit and not done in this round",
+      "tier": 2
+    },
+    {
+      "id": "FU-879",
+      "title": "Two unreached adapters return a fixed verified bank account and a fixed successful settlement under docstrings that say live",
+      "why": "One returns a named real bank, an account mask and an institutional tier for any token, and logs that a bank account was verified; the other returns a constant receipt and logs a completed settlement. Neither marks what it returns as simulated. Unreached today; it would be a false statement to a person the day anything calls it.",
+      "source": "W672 (five external finance documents verified against the tree; assessment section 20 lands in the next round)",
+      "found": "2026-10-12",
+      "files": [
+        "products/capital_fund/adapters/institutional_banking.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found while verifying an external audit and not done in this round",
+      "tier": 3
+    },
+    {
+      "id": "FU-880",
+      "title": "Reading an owner account that has never accrued answers with the owner name the request sent",
+      "why": "The status function builds a new account from the caller's own value and returns it as the owner. The same echo was removed from three other economy reads in an earlier round.",
+      "source": "W672 (five external finance documents verified against the tree; assessment section 20 lands in the next round)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/economy/owner_payments.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found while verifying an external audit and not done in this round",
+      "tier": 3
+    },
+    {
+      "id": "FU-881",
+      "title": "HYPOTHESIS: the missed-accrual reconciliation looks for its own mark in a list that is cut to 200",
+      "why": "It decides a pending row was already applied by finding its reference among the account's entries, which are truncated. If the pending file could not be cleared and 200 further entries arrive before the next run, the accrual would be applied twice. Narrow; drive it.",
+      "source": "W672 (five external finance documents verified against the tree; assessment section 20 lands in the next round)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/economy/owner_payments.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found while verifying an external audit and not done in this round",
       "tier": 3
     }
   ],

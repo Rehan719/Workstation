@@ -192,6 +192,16 @@ export const VSBSpawnStudio: React.FC = () => {
     );
   };
 
+  //  P3.30 r5 (Owner ruling 2026-10-11) - the page's door now leads to Genesis. The words travel through
+  //  the same session seed DomainTool and My Work use (read once by GenesisJourney), never through the URL.
+  const continueInGenesis = () => {
+    if (!challenge.trim()) return;
+    const sid = `seed_${Date.now().toString(36)}`;
+    try { sessionStorage.setItem(`ws_genesis_${sid}`, JSON.stringify({ title: '', domain, input: challenge, output: '' })); } catch { /* seed best-effort */ }
+    const d = (CANON_DOMAINS as readonly string[]).includes(domain) ? `&domain=${encodeURIComponent(domain)}` : '';
+    navigate(`/genesis?seed=${sid}${d}`);
+  };
+
   const DOMAINS = ['enterprise', ...CANON_DOMAINS];   // §17.1 (W321) — canonical + the general workspace
   const SCOPES  = ['concept', 'build', 'commercialise'];
 
@@ -217,6 +227,13 @@ export const VSBSpawnStudio: React.FC = () => {
           Three meta engines (Niyyah, Tafakkur, Tawazun) now compute — a quorum counted from real
           signatures, drift against a recorded baseline, and a Pareto frontier — but this pipeline does
           not call them: they regulate clearance, not spawning.
+        </p>
+        {/* P3.30 r5 (Owner ruling 2026-10-11) - one door establishes an enterprise: Genesis. This page's own
+            pipeline is no longer started from here; the button carries what was typed to Genesis. */}
+        <p className="text-[11px] text-amber-400/90 font-bold mt-2 max-w-xl leading-relaxed" data-testid="spawn-one-door">
+          Enterprises are now established in Genesis, the one door (Owner ruling 2026-10-11). This page no
+          longer creates one: the button below takes what you wrote to Genesis. The pipeline described above
+          is kept on the server and is not started from this page. Entities already spawned stay listed below.
         </p>
       </header>
 
@@ -279,12 +296,12 @@ export const VSBSpawnStudio: React.FC = () => {
 
         <div className="flex items-center gap-4 pt-2">
           <Button
-            onClick={handleSpawn}
+            onClick={continueInGenesis}
             disabled={spawning || !challenge.trim()}
             className="flex items-center gap-2"
           >
             {spawning ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-            {spawning ? 'Spawning VSB...' : 'Spawn VSB Entity'}
+            {spawning ? 'Spawning VSB...' : 'Continue in Genesis'}
           </Button>
           {error && (
             <p className="text-vital text-xs font-bold flex items-center gap-2">
@@ -373,7 +390,7 @@ export const VSBSpawnStudio: React.FC = () => {
 
         {entities.length === 0 ? (
           <p className="text-slate-600 text-sm font-bold uppercase tracking-widest text-center py-10">
-            No VSB entities yet. Spawn your first one above.
+            No VSB entities yet. Establish your first one in Genesis.
           </p>
         ) : (() => {
           const q = entityFilter.trim().toLowerCase();

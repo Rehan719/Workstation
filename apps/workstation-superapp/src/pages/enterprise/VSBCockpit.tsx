@@ -824,6 +824,10 @@ export const VSBCockpit: React.FC = () => {
                     {(detail as any).status_basis && (
                       <span className="text-[9px] text-slate-500" data-testid="cockpit-status-basis">{(detail as any).status_basis}</span>
                     )}
+                    {/* P3.30 r6 (ledger v16 R2.12) - what "operating" does and does not mean, from the server */}
+                    {(detail as any).operating_means && (
+                      <span className="basis-full text-[9px] text-amber-400/80" data-testid="cockpit-operating-means">{(detail as any).operating_means}</span>
+                    )}
                     {/* W573 (M1 R2.1) — this badge printed "commercialise" on every entity ever
                         established, beside a status of "body pending" whose own basis named four
                         sections still awaiting the owned model. The stage is now DERIVED, and a
@@ -914,10 +918,15 @@ export const VSBCockpit: React.FC = () => {
               {gates && Array.isArray(gates.statuses) && gates.statuses.some((g: any) => g?.gated) && (
                 <Card className="p-6 space-y-3" data-testid="cockpit-review-gates">
                   <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Review gates on this entity</h4>
+                  {/* T2B (row 4) - what a blocking gate holds, from the answer's own list (`holds`: one tuple in
+                      api/vsb.py). The row below said three movers; the list has every one. */}
+                  <p className="text-[10px] text-slate-500 leading-relaxed" data-testid="cockpit-gate-holds">
+                    A pending or rejected gate holds: {Array.isArray(gates.holds) && gates.holds.length > 0 ? gates.holds.map((h: any) => String(h)).join(' · ') : 'the list was not returned with this response'}.{typeof gates.holds_basis === 'string' && gates.holds_basis ? ` ${gates.holds_basis}` : ''}
+                  </p>
                   {gates.statuses.filter((g: any) => g?.gated).map((g: any) => (
                     <div key={String(g.stage)} className="flex flex-wrap items-center gap-3 text-[11px] text-slate-300">
                       <span className="font-black uppercase">{String(g.stage)}</span>
-                      <span data-testid="cockpit-gate-status" className={g.blocks_progress ? 'text-amber-400 font-bold' : 'text-slate-400'}>{String(g.status)}{g.blocks_progress ? ' — blocks ship, evolve and cascade' : ''}</span>
+                      <span data-testid="cockpit-gate-status" className={g.blocks_progress ? 'text-amber-400 font-bold' : 'text-slate-400'}>{String(g.status)}{g.blocks_progress ? ' — blocks every mover listed above' : ''}</span>
                       {g.decision?.decided_by && <span className="text-[10px] text-slate-500">decided by: {String(g.decision.decided_by)}</span>}
                       {g.blocks_progress && (
                         <>

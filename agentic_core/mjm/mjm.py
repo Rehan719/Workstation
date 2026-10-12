@@ -100,9 +100,17 @@ class MJMOrchestratorV4:
     async def consult(self, request: ConsultationRequest) -> ConsultationResponse:
         """Standardized Mushawara consultation implementation for MJM v4.0."""
         res = await self.run_lifecycle(request.query)
+        #  T2B (row 1) - A MISSING RESULT IS SAID, NOT PRINTED. muaina returns result=None with a
+        #  `result_basis` (W538), and this formatted the None into the answer, so the route answered with the
+        #  text of a missing value. The lifecycle's own reason is carried instead; a value, when one is
+        #  returned, is still printed as before.
+        _res = res if isinstance(res, dict) else {}
+        _result = _res.get("result")
         _resp = ConsultationResponse(
             engine="mjm",
-            answer=f"MJM Lifecycle Result: {res.get('result', 'unknown')}",
+            answer=(f"MJM Lifecycle Result: {_result}" if _result is not None else
+                    "MJM Lifecycle Result: none was returned - "
+                    + str(_res.get("result_basis") or "the lifecycle gave no reason")),
             # P3.12 - a stated refusal, not a fabricated figure. MJM is a lifecycle, not a cognitive
             # engine, and it computed no confidence either.
             confidence=None,

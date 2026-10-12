@@ -160,7 +160,23 @@ async def qms_reverify_defect(defect_id: str, req: DefectReverify,
                                               "basis": "caller_attested"})
     if not res:
         raise HTTPException(status_code=404, detail=f"No CORRECTED defect '{defect_id}' awaiting re-verification.")
-    return {**res, "real": True}
+    #  T2B (row 2) - `real` WAS TRUE ON EVERY ANSWER, including a re-verification run on a coverage figure
+    #  the caller typed - which the QMS itself records as caller_attested and, since P3.30, counts apart.
+    #  It is now read from the basis the defect records. `measured` and `real_basis` are added; the basis is
+    #  also lifted to the top level, where the panel already looks for it first.
+    _d_t2b = res.get("defect") or {}
+    _basis_t2b = str(_d_t2b.get("reverify_basis") or "")
+    _measured_t2b = _basis_t2b.startswith("measured_from_content")
+    return {**res, "real": _measured_t2b, "measured": _measured_t2b, "reverify_basis": _basis_t2b,
+            "real_basis": (
+                (f"MEASURED here: the corrected delivery's own content was run through the gate's "
+                 f"instruments ({_basis_t2b})") if _measured_t2b else
+                (f"NOT measured here: the gate was run on a coverage figure the caller typed "
+                 f"({_basis_t2b or 'no basis recorded'}), so `real` is false. "
+                 + ("The defect is a what-if, so this gate is outside the non-conformance rate and outside "
+                    "the count of attested re-verifications in it." if _d_t2b.get("what_if") else
+                    "By ruling it stays in the non-conformance rate, and it is counted in "
+                    "`attested_reverifications` beside that rate.")))}
 
 
 class DCMSCommit(BaseModel):

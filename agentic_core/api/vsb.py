@@ -2077,6 +2077,31 @@ def _rederive(vsb: dict) -> dict:
     return vsb
 
 
+#  P3.30 r6 (ledger v16 R2.12) - WHAT "OPERATING" MEANS, SAID BESIDE THE WORD. The status is true: the
+#  heartbeat is tending the entity. What a founder reads into it - an enterprise with customers - is not
+#  what it measures, and nothing on the page said so. The sentence lists the heartbeat steps that are
+#  switched on NOW (read from the heartbeat, not typed), and then says what no beat contains.
+_BEAT_STEPS_R6 = (("auto_economy", "runs a paced economy cycle on its books, in virtual WST"),
+                  ("auto_compliance", "re-screens it against the compliance word lists"),
+                  ("auto_evolve", "runs an evolution cycle that files proposals for it"))
+
+
+def _operating_means(vsb: dict):
+    """None unless the entity's status is 'operating'; then one sentence, built from the heartbeat's levers."""
+    if vsb.get("status") != OPERATING_STATUS:
+        return None
+    try:
+        from agentic_core.organism.heartbeat import heartbeat as _hb
+        _on = [w for a, w in _BEAT_STEPS_R6 if bool(getattr(_hb, a, False))]
+    except Exception:                           # noqa: BLE001 - said, never guessed
+        _on = None
+    _did = ("which of its steps are switched on could not be read" if _on is None else
+            "no step that touches this entity is switched on" if not _on else "; ".join(_on))
+    return ("'Operating' means the organism is tending this entity on the heartbeat. On a beat it: " + _did
+            + ". It does not mean customers are being served: no order, no delivery to a customer and no "
+            "satisfaction reading is part of a beat.")
+
+
 def _read_view(vsb: dict) -> dict:
     """W668 (ledger v16 R2.2) - WHAT A READER IS GIVEN: the status, the stage and the living statement as they
     are NOW. They were derived when a gate, a body section or the ship changed, and never when the heartbeat
@@ -2089,6 +2114,7 @@ def _read_view(vsb: dict) -> dict:
         if isinstance(v.get("living"), dict) and v["living"].get("registered") is not False:
             from agentic_core.economy.living_vsbs import living_statement
             v["living"] = {**living_statement(), "read_at": v.get("status_derived_at")}
+        v["operating_means"] = _operating_means(v)     # P3.30 r6 - from the status derived just above
     except Exception as _exc668:                # noqa: BLE001 - the stored view is returned, and says so
         v["read_view_error"] = f"{type(_exc668).__name__}: the status below is the STORED one, not derived now"
     return v
@@ -2385,6 +2411,23 @@ def _stage_label(vsb: dict) -> str:
     return str(vsb.get("stage") or "no stage reached")
 
 
+#  T2B (row 1) - WHAT THE MJM STEP RETURNED, AS A VALUE OR AS A STATED ABSENCE. The spawn pipeline wrote
+#  str(...) of the step's `result`, which has been None since W538, so the feed and the genome record both
+#  carried the four letters "None" - and the genome's default wrote "optimised" when the step had raised.
+#  One reader for both writers: a missing value stays None, and the reason travels beside it.
+def _mjm_result_said(mjm_result) -> tuple:
+    """(value or None, basis). The basis is the step's own `result_basis` when it gave one."""
+    if not isinstance(mjm_result, dict):
+        return None, f"the MJM step returned no record (it returned {type(mjm_result).__name__})"
+    if mjm_result.get("error"):
+        return None, ("the MJM step did not run, so there is no result: " + str(mjm_result["error"]))[:400]
+    _v = mjm_result.get("result")
+    if _v is None:
+        return None, ("the MJM step returned no result: "
+                      + str(mjm_result.get("result_basis") or "it gave no reason"))[:400]
+    return _v, "the result the MJM step returned"
+
+
 #  P3.30 (ledger v14 R3[7]) - WHAT A REVIEW GATE HOLDS, IN ONE PLACE. Each name is the `mover` a route hands to
 #  _refuse_gated (here and in business_plan.py, economy.py, resource_fabric.py and swarm.py). The gate panel
 #  listed five of them from memory and left out the board pack and the public surfaces. A guard collects the
@@ -2526,8 +2569,12 @@ async def get_review_gates(vsb_id: str, user: dict | None = Depends(get_current_
             #  W633 (FU-564) - these stages are NOT the Genesis journey's: said, so no reader takes them for one lifecycle
             "lifecycle_basis": (f"these {len(_CONCEPT_TO_COMMERCIALISE_STAGES)} stages are the entity's GOVERNANCE "
                                 "lifecycle, a separate list from the Genesis journey's own stages (GET "
-                                "/api/v1/genesis/status). A gate here pauses the entity's lifecycle movers (ship, "
-                                "evolve, cascade), not a journey stage, and every gate is OFF until the founder sets one")}
+                                #  T2B (row 4) - this listed three movers; the gate holds every name in
+                                #  GATE_HOLDS (the same answer returns the tuple as `holds`)
+                                "/api/v1/genesis/status). A gate here pauses the entity's lifecycle movers ("
+                                + ", ".join(GATE_HOLDS) + "), not a journey stage; it does not hold "
+                                + ", ".join("the " + _m for _m in GATE_DOES_NOT_HOLD)
+                                + "; and every gate is OFF until the founder sets one")}
 
 
 @router.post("/{vsb_id}/review-gates")
@@ -2916,12 +2963,16 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
         yield _event("mjm", "MJM Orchestrator", "Mushahida-Jaiza-Muaina evaluation...")
         try:
             mjm_result = await _mjm.run_lifecycle({"challenge": req.challenge, "cascade": cascade_result})
-            mjm_summary = str(mjm_result.get("result", mjm_result))[:300]
             _mjm_ran = True
+            mjm_summary = ""
         except Exception as e:
             mjm_result = {"error": str(e)}
             mjm_summary = f"MJM note: {e}"
             _mjm_ran = False
+        #  T2B (row 1) - the value or the stated absence, read once for the event and for the genome record
+        _mjm_value, _mjm_value_basis = _mjm_result_said(mjm_result)
+        if _mjm_ran:
+            mjm_summary = (str(_mjm_value) if _mjm_value is not None else _mjm_value_basis)[:300]
         # W489 — MJM re-runs the SAME six engines, so it is not a second, independent judgement of the
         # challenge. (refutation) And when it raises, the row says it did not run rather than
         # describing markers nobody produced.
@@ -2934,6 +2985,8 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
                      "MJM Evaluation Complete (fixed markers)" if _mjm_ran else "MJM FAILED — it did not run",
                      mjm_summary,
                      {"computed": False, "ran": _mjm_ran,
+                      "result": (None if _mjm_value is None else str(_mjm_value)[:300]),      # T2B (row 1)
+                      "result_basis": _mjm_value_basis,
                       "basis": ("MJM re-runs the same six fixed-response engines, so this is not an independent second judgement; since W538 its own figures are measured or declared NOT ASSESSED"
                                 if _mjm_ran else "MJM raised; no evaluation was produced")})
 
@@ -3019,7 +3072,9 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
             "realm": req.realm,
             "scope": req.scope,
             "cascade_analysis": cascade_result.get("status", "complete"),
-            "mjm_result": str(mjm_result.get("result", "optimised"))[:100],
+            #  T2B (row 1) - None stays None (it was the text "None", and "optimised" when the step raised)
+            "mjm_result": (None if _mjm_value is None else str(_mjm_value)[:100]),
+            "mjm_result_basis": _mjm_value_basis,
             "constitutional_alignment": gaas_passed,
         }
         try:
@@ -3089,6 +3144,13 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
                 ("model:" + str(_spawn_prov["served_by_agent"]["vsb_ceo"]))
                 if (_spawn_prov.get("served_by_agent") or {}).get("vsb_ceo") else "not recorded"),
             "swarm_config": swarm_config,
+            #  W672 (OWNER RULING 2026-10-11) - WHICH DOOR MADE THIS ENTITY, on its own record. This route is
+            #  kept as a test and API door: no page calls it, and it asks for none of what Genesis asks for.
+            "established_through": "spawn_route",
+            "established_through_basis": (
+                "created by POST /api/v1/vsb/spawn, a test and API door kept by ruling. It skips what the "
+                "Genesis journey requires: no journey record, no evidence, no review gates before the "
+                "entity exists. An enterprise a person establishes comes through Genesis."),
             "cascade_analysis": _stored_cascade_record(cascade_result),     # P3.30 (R2.14)
             "mjm_result": mjm_result,
             "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),

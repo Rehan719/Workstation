@@ -142,6 +142,10 @@ beside it would be the parallel tree refused in §2.1.
    not now.* If it is wanted later, the admissible core is narrow — a record that a **named person holds a
    role on an engagement** and has given a stated consent — with no grading, no payroll, and not before
    `AUTH_ENABLED` is on. That would be a new item for the Owner to charter, not a row.
+   > **AMENDED 2026-10-11.** Asked again in the light of two later revisions of the brief, the Owner ruled
+   > that staff records, payroll and wellbeing ARE wanted within Workstation. See
+   > `docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md` section 19.5 and the plan item chartered from it. What this
+   > section says about a deployment with authentication off still stands, and is that item's boundary.
 2. **`multisig_council.py`: wire or archive?** *Recommendation: archive*, unless the Owner wants constitutional
    rule changes to need more than the Board's ratification they ruled on 2026‑09‑14.
 3. **Does the vision adopt any of the brief's vocabulary** (OGE, HAIRMS, "Facilities Plane")? *Recommendation:

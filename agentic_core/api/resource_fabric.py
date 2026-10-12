@@ -1089,7 +1089,9 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
                                       max_stages=_cfg_num(cfg.get("max_stages"), 3, int))
             sb = ",".join(sorted(r["served_by"].keys())) or "native"
             out = r["stages"].get("solution_concept") or next(iter(r["stages"].values()), "")
-            return {"resource": "synthesis_studio", "ran": "/api/v1/studio/synthesise",
+            #  W672 - this named the Studio's HTTP route as what ran. What ran is the function above, which
+            #  composes the stages and saves no entity; the route is retired and was never called from here.
+            return {"resource": "synthesis_studio", "ran": "run_lab_cascade (the laboratory cascade; no entity is saved)",
                     "stages_run": r["stages_run"], "served_by": sb, "output": (out or "")[:600]}
         if rid == "studio":
             # the §7 Studio: deterministic 2D/3D analytics + insight over a REAL configured data series.

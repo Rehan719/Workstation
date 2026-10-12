@@ -45,13 +45,17 @@ class SimVerseCausalSimulator:
         # P(Y|do(X)) = sum_z P(Y|X,z)P(z)
         # In our simulation, we directly calculate the interventional distribution.
 
-        fidelity = 0.924 # Validated baseline
+        #  W672 - this was a typed constant with a comment calling it a validated baseline. Nothing here
+        #  validates anything: the arrays above are random draws and no input changes the figure.
+        fidelity = None
 
         # 2. CSL Attestation (Hardening Directive 5)
         csl_attestation = {
             "intervention": scenario.get("id"),
             "intervention_value": x_val,
-            "backdoor_criterion_verified": True,
+            "backdoor_criterion_verified": None,
+            "verification_basis": ("not assessed: this routine draws random numbers for a fixed three-variable "
+                                   "model and checks nothing about the action it was asked about"),
             "confounders": ["Z_environmental"],
             "scm_hash": hashlib.sha256(y_do_x.tobytes()).hexdigest(),
             "identifiability_proof": r"P(Y|do(X)) = \int P(Y|X,z)P(z)dz"
@@ -60,6 +64,7 @@ class SimVerseCausalSimulator:
         result = {
             "scenario_id": scenario.get("id"),
             "fidelity": fidelity,
+            "fidelity_basis": "not assessed: no reference exists to compare this run against",
             "interventional_mean": float(np.mean(y_do_x)),
             "csl_attestation": csl_attestation,
             "timestamp": datetime.now(timezone.utc).isoformat(),

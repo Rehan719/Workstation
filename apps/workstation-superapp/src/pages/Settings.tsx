@@ -7,6 +7,7 @@ import { getPrefs, setPrefs, clearPrefs, LANGUAGES, type UserPrefs } from '../li
 import { coverageFor, applyDocumentDirection } from '../lib/i18n';
 import { clearWorkspaceEverywhere } from '../lib/outputHistory';
 import AvatarClearancePanel from '../components/AvatarClearancePanel';
+import ProtectedEntitiesPanel from '../components/ProtectedEntitiesPanel';
 import {
   PROFILE_FIELDS, MAX_FIELD_CHARS, EMPTY_PROFILE,
   getProfile, putProfile, clearProfile, type UserProfile,
@@ -316,6 +317,11 @@ export const Settings: React.FC = () => {
 
       <Card className="p-8 space-y-4">
         <AvatarClearancePanel />
+      </Card>
+
+      {/* P3.30 r5 (Owner ruling 2026-10-11) - the protected-entities record; the Owner names their own here */}
+      <Card className="p-8 space-y-4">
+        <ProtectedEntitiesPanel />
       </Card>
 
       <Card className="p-8 space-y-4 border-slate-900">

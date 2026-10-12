@@ -398,6 +398,16 @@ async def set_venture_funding_share_route(req: VentureFundingShareRequest,
             "note": "virtual/simulated WST only — no real funds move"}
 
 
+def _bound_report_r5(waterfall: dict, template: dict, entity_type: str, source: str) -> dict:
+    """P3.30 r5 - the Owner's bound, and whether the waterfall in force is inside it. Computed on every read."""
+    from agentic_core.economy.metabolism import WATERFALL_BOUND_RULE, waterfall_bound_violations
+    _v = waterfall_bound_violations(waterfall, template, entity_type)
+    return {"bound_rule": WATERFALL_BOUND_RULE, "out_of_bound": _v,
+            "out_of_bound_basis": ((f"this waterfall ({source}) was stored before the bound applied. It is "
+                                    f"reported, not rewritten, and it still applies to the next cycle; saving "
+                                    f"a waterfall inside the bound replaces it.") if _v else None)}
+
+
 @router.get("/waterfall")
 async def get_waterfall(vsb_id: str = "workstation-idbo", entity_type: str | None = None,
                         user: dict | None = Depends(get_current_user)):
@@ -413,6 +423,9 @@ async def get_waterfall(vsb_id: str = "workstation-idbo", entity_type: str | Non
         "entity_name": t["name"],
         "waterfall": m.waterfall, "source": m.waterfall_source,
         "template_default": t["waterfall"], "stages": _WATERFALL_STAGES,
+        #  P3.30 r5 (Owner ruling 2026-10-11) - a waterfall stored before the bound is NOT rewritten; it is
+        #  reported here as out of bound, with each rule it breaks, and it goes on applying until it is reset.
+        **_bound_report_r5(m.waterfall, t, entity_type, m.waterfall_source),
         "constraints": {"distributes_profit": t["distributes_profit"],
                         "capital_preserved": t["capital_preserved"]},
         "note": "Proportions of distributable profit (after reserves), summing to 1.0. Virtual/simulated WST.",
@@ -520,6 +533,14 @@ async def set_waterfall(req: WaterfallRequest, user: dict | None = Depends(get_c
             "constraints": {"distributes_profit": template["distributes_profit"],
                             "capital_preserved": template["capital_preserved"]},
             "stages": _WATERFALL_STAGES})
+    #  P3.30 r5 (Owner ruling 2026-10-11) - the bound, refused HERE and before the store is opened, as a plain
+    #  sentence the page can print. The two older violations above keep their shape for their readers.
+    from agentic_core.economy.metabolism import waterfall_bound_violations as _wbv_r5
+    _out_r5 = _wbv_r5(waterfall, template, entity_type)
+    if _out_r5:
+        raise HTTPException(status_code=400, detail=(
+            "Not saved - the waterfall is out of bound. " + " ".join(_out_r5)
+            + " Nothing was written; the waterfall in force is unchanged."))
     # W472 (register FU-051) — locked, strict, atomic: an unreadable store is refused, never replaced
     from agentic_core.config import StoreUnavailable, store_lock
     try:
@@ -610,6 +631,24 @@ class RemovalRequest(BaseModel):
     why: str
 
 
+def _owner_only_r5(user: dict | None, what: str) -> None:
+    """P3.30 r5 (Owner ruling 2026-10-11) - an act that is the Owner's alone. With authentication on, the
+    Owner is the admin; anyone else is refused with a plain sentence. With authentication off there is one
+    user and it is the Owner (single-user mode), as everywhere else in this router. The switch is READ here
+    and never set."""
+    from agentic_core.auth.core import auth_enabled
+    if not auth_enabled():
+        return
+    if not isinstance(user, dict) or user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail=(
+            f"Only the Owner may {what} (Owner ruling 2026-10-11). Nothing was changed."))
+
+
+class ProtectedEntitiesRequest(BaseModel):
+    entities: Dict[str, str] = {}      # {vsb_id: why it is protected}
+    owner_confirms: bool = False       # the caller states this is the Owner's own direction
+
+
 class MitosisRequest(BaseModel):
     child_name: str
     amount_wst: float
@@ -635,6 +674,7 @@ async def living_vsb_propose_removal(vsb_id: str, req: RemovalRequest, user: dic
     entity any never-auto-retire rule protects or cannot clear; nothing moves until the change is approved and
     implemented, which re-checks before it retires anything."""
     _require_economy_access(vsb_id, user)
+    _owner_only_r5(user, "propose the removal of an entity")     # P3.30 r5 - removable only by the Owner
     from agentic_core.economy.turnover import propose_removal
     _who = ((user.get("username") or user.get("user_id")) if isinstance(user, dict) else None)
     res = await propose_removal(vsb_id, req.why, by=str(_who or "owner (single-user mode)"))
@@ -650,6 +690,73 @@ async def living_vsb_retirement_check(vsb_id: str, user: dict | None = Depends(g
     _require_economy_access(vsb_id, user)
     from agentic_core.economy.turnover import retirement_refusal
     return retirement_refusal(vsb_id)
+
+
+@router.get("/protected-entities")
+async def protected_entities(user: dict | None = Depends(get_current_user)):
+    """P3.30 r5 (Owner ruling 2026-10-11) - the Owner's rule and what is protected now. Read-only."""
+    _owner_only_r5(user, "read the protected-entities record")
+    from agentic_core.economy.turnover import protected_state
+    return protected_state()
+
+
+@router.put("/protected-entities")
+async def name_protected_entities(req: ProtectedEntitiesRequest, user: dict | None = Depends(get_current_user)):
+    """P3.30 r5 (Owner ruling 2026-10-11) - the Owner NAMES the entities the rule protects beside the apex.
+
+    The repository cannot know which entities are the Owner's own, so nothing here guesses: the record is
+    written only from what the Owner states, each id must be a stored entity, and an empty list is refused
+    (that would clear every entity for removal by saying nothing). The earlier record, if any, is KEPT in the
+    new one's history. Virtual-only; nothing is removed, retired or moved by this route."""
+    _owner_only_r5(user, "name the protected entities")
+    if not req.owner_confirms:
+        raise HTTPException(status_code=400, detail=(
+            "Not recorded: state that this is the Owner's own direction (owner_confirms). Nothing was written."))
+    named = {str(k).strip(): str(v).strip() for k, v in (req.entities or {}).items() if str(k).strip()}
+    if not named:
+        raise HTTPException(status_code=400, detail=(
+            "Not recorded: no entity was named. An empty record would clear every entity for removal, so it "
+            "is refused. Nothing was written."))
+    _no_why = sorted(k for k, v in named.items() if not v)
+    if _no_why:
+        raise HTTPException(status_code=400, detail=(
+            f"Not recorded: no reason was given for {', '.join(_no_why)}. Nothing was written."))
+    from agentic_core.api.vsb import _load_vsb
+    _absent = sorted(k for k in named if not _load_vsb(k))
+    if _absent:
+        raise HTTPException(status_code=400, detail=(
+            f"Not recorded: {', '.join(_absent)} is not a stored entity, so naming it would protect nothing. "
+            f"Nothing was written."))
+    import time as _time
+    from agentic_core.config import atomic_write_json, data_path, read_json_strict, store_lock
+    from agentic_core.economy import turnover as _to
+    _who = ((user.get("username") or user.get("user_id")) if isinstance(user, dict) else None)
+    _path = data_path(_to.PROTECTED_RECORD)
+    try:
+        _path.parent.mkdir(parents=True, exist_ok=True)
+        with store_lock(_path):
+            _prev = read_json_strict(_path, missing=None, expect=dict)
+            _hist = list((_prev or {}).get("history") or [])
+            if _prev is not None:
+                _hist.append({"entities": _prev.get("entities"), "named_by": _prev.get("named_by"),
+                              "named_at": _prev.get("named_at")})
+            atomic_write_json(_path, {
+                "entities": named, "named_by": str(_who or "owner (single-user mode)"),
+                "named_at": _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime()),
+                "ruling": _to.protected_rule().get("ruling"), "history": _hist})
+    except HTTPException:
+        raise
+    except Exception as e:  # noqa: BLE001 - an unreadable record is refused, never replaced
+        raise HTTPException(status_code=503, detail=(
+            f"Not recorded: the protected-entities record could not be read or written "
+            f"({e.__class__.__name__}). The earlier record is unchanged."))
+    try:
+        from agentic_core.gaas.v5 import UEGLogger
+        UEGLogger().log({"type": "protected_entities_named", "entities": sorted(named),
+                         "by": str(_who or "owner (single-user mode)")})
+    except Exception:  # noqa: BLE001 - the record is written; the ledger entry is best-effort, as elsewhere here
+        pass
+    return _to.protected_state()
 
 
 @router.get("/living-vsbs")

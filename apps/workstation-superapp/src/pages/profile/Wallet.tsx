@@ -23,12 +23,36 @@ interface Allocation {
   allocated_at?: string;
   // W672 (ledger v16 R6.5) - what the allocation passed, as the fund recorded it
   governance?: { gate?: string; change_control?: string; recipient_registered?: boolean | null; basis?: string };
+  // FU-794 - the change that authorised it (absent on a row stored before allocations were governed)
+  cca_id?: string | null;
+  record_state?: string;
+  record_state_label?: string;
 }
+
+// FU-794 - a REQUEST for an allocation, as its Change Control record stands now. Not an allocation.
+interface AllocationRequest {
+  cca_id: string;
+  state: string;
+  state_label: string;
+  project_id?: string | null;
+  project_name?: string | null;
+  amount?: number | null;
+  decided_by?: string | null;
+  decided_by_verified?: boolean | null;
+  allocation_id?: string | null;
+}
+
+// a refusal's detail may be a string or an object: it is flattened to text and never rendered as a child
+const flat = (d: unknown): string =>
+  typeof d === 'string' ? d : d == null ? 'no reason was given' : JSON.stringify(d);
 
 export const Wallet: React.FC = () => {
   const [fund, setFund] = useState<FundStatus | null>(null);
   const [allocations, setAllocations] = useState<Allocation[]>([]);
   const [allocBasis, setAllocBasis] = useState<string | null>(null);   // W577 (FU-298)
+  const [requests, setRequests] = useState<AllocationRequest[]>([]);          // FU-794
+  const [requestsUnread, setRequestsUnread] = useState<string | null>(null);  // FU-794
+  const [portfolioErr, setPortfolioErr] = useState<string | null>(null);      // FU-794
   const [loading, setLoading] = useState(true);
   const [down, setDown] = useState(false);
 
@@ -45,6 +69,15 @@ export const Wallet: React.FC = () => {
         setAllocBasis(portfolioRes.data.allocations_are_incomplete
           ? (portfolioRes.data.allocations_basis ?? '') : null);
         setAllocations(allocs.slice(-8).reverse());
+        // FU-794 - an unreadable list arrives as null with its reason, and is never shown as an empty one
+        const reqs: unknown = portfolioRes.data.allocation_requests;
+        if (Array.isArray(reqs)) {
+          setRequests((reqs as AllocationRequest[]).slice(0, 8));
+        } else {
+          setRequestsUnread(flat(portfolioRes.data.allocation_requests_basis ?? 'the allocation requests could not be read'));
+        }
+      } else {
+        setPortfolioErr(`The portfolio could not be read (HTTP ${portfolioRes.status}): ${flat(portfolioRes.data?.detail)}`);
       }
     }).catch(() => setDown(true)).finally(() => setLoading(false));
   }, []);
@@ -91,9 +124,41 @@ export const Wallet: React.FC = () => {
             <div>
                <h3 className="text-2xl font-black">Allocate Capital</h3>
                <p className="text-slate-400 font-bold">Deploy sovereign capital to projects and VSB entities from the fund.</p>
+               <p className="text-slate-500 text-xs font-bold mt-1" data-testid="wallet-allocation-governed">An allocation is requested, held at Change Control for an explicit decision, and applied only after it is approved.</p>
             </div>
          </div>
          <button type="button" onClick={() => notImplemented('Allocate Capital')} className="px-10 py-4 bg-aura text-sovereign font-black rounded-2xl hover:scale-105 transition-all">Allocate</button>
+      </div>
+
+      <div className="p-8 rounded-3xl bg-slate-900/40 border border-slate-800" data-testid="wallet-allocation-requests">
+        <h3 className="text-xl font-bold mb-2">Allocation Requests</h3>
+        <p className="text-[11px] text-slate-500 font-bold mb-6">A request moves nothing. It is held at Change Control until an explicit decision approves it, and it is applied when the same allocation is requested again.</p>
+        {portfolioErr && (
+          <p data-testid="wallet-portfolio-error" className="text-[11px] font-bold px-2 py-1 rounded bg-rose-500/20 text-rose-400 mb-3">{portfolioErr}</p>
+        )}
+        {requestsUnread !== null && (
+          <p data-testid="wallet-requests-unread" className="text-[11px] font-bold px-2 py-1 rounded bg-amber-500/20 text-amber-400 mb-3">{requestsUnread}</p>
+        )}
+        {!loading && !portfolioErr && requestsUnread === null && requests.length === 0 && (
+          <p className="text-slate-600 text-sm">No allocation has been requested.</p>
+        )}
+        <div className="space-y-3">
+          {requests.map((req) => (
+            <div key={req.cca_id} data-testid="wallet-allocation-request" className="flex items-center justify-between p-4 rounded-2xl bg-slate-800/30 border border-slate-700/50">
+              <div>
+                <p className="font-bold uppercase tracking-widest text-xs text-white">{String(req.project_name ?? req.project_id ?? 'recipient not recorded')}</p>
+                <p data-testid="wallet-allocation-request-state" className={`text-[10px] font-black mt-1 ${req.state === 'applied' ? 'text-emerald-400' : req.state === 'rejected' || req.state === 'withdrawn' ? 'text-rose-400' : 'text-amber-400'}`}>{req.state_label}</p>
+                <p className="text-[10px] text-slate-500 mt-1">
+                  Change {req.cca_id}
+                  {req.decided_by ? ` · decided by ${req.decided_by}${req.decided_by_verified ? '' : ' (a name the platform did not check)'}` : ' · not decided'}
+                </p>
+              </div>
+              <div className="text-sm font-black text-slate-300">
+                {typeof req.amount === 'number' ? req.amount.toLocaleString() : '—'} WST {req.state === 'applied' ? 'applied' : 'requested'}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="p-8 rounded-3xl bg-slate-900/40 border border-slate-800">
@@ -125,6 +190,9 @@ export const Wallet: React.FC = () => {
                      <p className="text-[10px] text-slate-500 mt-1">{alloc.purpose} · {alloc.domain} · {alloc.realm}</p>
                      {alloc.governance?.basis && (
                        <p data-testid="wallet-allocation-governance" className="text-[9px] text-amber-400/80 mt-1 normal-case">{alloc.governance.basis}</p>
+                     )}
+                     {alloc.record_state_label && (
+                       <p data-testid="wallet-allocation-state" className="text-[9px] text-slate-500 mt-1 normal-case">{alloc.record_state_label}{alloc.cca_id ? ` · change ${alloc.cca_id}` : ''}</p>
                      )}
                    </div>
                  </div>

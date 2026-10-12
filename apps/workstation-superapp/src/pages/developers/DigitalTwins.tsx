@@ -20,6 +20,8 @@ interface TwinModel {
   projections?: Projection[];
   trained?: boolean;
   template_note?: string;
+  // P3.30 r6 - how this record's text was produced, as the route recorded it (absent on older records)
+  composition?: { kind?: string; computed?: boolean; served_by?: string; basis?: string } | null;
   created_at?: string;
 }
 
@@ -135,6 +137,12 @@ export const DigitalTwins: React.FC = () => {
                   ))}
                 </div>
               )}
+              {/* P3.30 r6 (ledger v16 R4.11) - the record's own statement of how its text was produced, above the
+                  text. A record that carries none says that, rather than nothing. */}
+              <p className="text-[10px] text-amber-400/90 leading-relaxed mb-2" data-testid="twin-composition-basis">
+                {selected.composition?.basis
+                  ?? 'This record does not say how its text was produced.'}
+              </p>
               <pre className="text-[10px] text-slate-400 leading-relaxed whitespace-pre-wrap font-mono bg-slate-950 rounded-xl p-4 max-h-[460px] overflow-auto border border-slate-900">{selected.model_spec ?? 'No model spec.'}</pre>
             </div>
           )}

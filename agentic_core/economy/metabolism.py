@@ -68,6 +68,44 @@ def validate_waterfall(proportions: Dict[str, Any], template: Dict[str, Any]) ->
         violations.append("This entity form preserves capital — the capital_fund share must be greater than 0.")
     return w, violations
 
+
+#  P3.30 r5 (Owner ruling 2026-10-11) - THE WATERFALL BOUND. "Template-bounded" had two rules (no owner share
+#  for a non-distributing form, a capital share above zero for a capital-preserving one), and a Waqf-Ltd
+#  Hybrid was accepted with owner 97% and charity 0%. Two more, as the Owner ruled them:
+#    * a stage the entity's template funds cannot be set to zero;
+#    * a waqf-form entity keeps at least its template's charity share.
+#  A SEPARATE FUNCTION, ON PURPOSE. validate_waterfall is also run over every STORED override each time a
+#  metabolism is built, and an override that fails it is silently replaced by the template. Putting the new
+#  bound there would rewrite, in effect, every waterfall stored before the ruling. The ruling says they are
+#  not rewritten: this is called where a NEW waterfall is set (refused) and where one is READ (reported).
+WATERFALL_BOUND_RULE = ("a stage the entity's template funds cannot be set to zero, and a waqf-form entity "
+                        "keeps at least its template's charity share (Owner ruling 2026-10-11)")
+_BOUND_TOLERANCE = 0.00005          # shares are normalised and rounded to four places
+
+
+def waterfall_bound_violations(waterfall: Dict[str, Any], template: Dict[str, Any],
+                               entity_type: str = "") -> List[str]:
+    """Every way `waterfall` is outside the Owner's bound for this form; [] when it is inside."""
+    from .entities import WAQF_FORMS
+    out: List[str] = []
+    tw = template.get("waterfall") or {}
+
+    def _f(d: Dict[str, Any], k: str) -> float:
+        try:
+            return float(d.get(k) or 0.0)
+        except (TypeError, ValueError):
+            return 0.0
+    for s in _WATERFALL_STAGES:
+        if _f(tw, s) > 0 and _f(waterfall, s) <= 0:
+            out.append(f"The {s} share cannot be zero: this entity's form ({template.get('name')}) funds that "
+                       f"stage ({_f(tw, s):.2%} in its template), and a stage the template funds is never set "
+                       f"to zero.")
+    if entity_type in WAQF_FORMS and _f(waterfall, "charity") < _f(tw, "charity") - _BOUND_TOLERANCE:
+        out.append(f"The charity share ({_f(waterfall, 'charity'):.2%}) is below this waqf-form entity's "
+                   f"template share ({_f(tw, 'charity'):.2%}), and a waqf-form entity keeps at least its "
+                   f"template's charity share.")
+    return out
+
 _CYCLE_ROLE = {
     "owner": "nourishing the sovereign (host)",
     "self_investment": "growth & tissue repair (anabolism)",

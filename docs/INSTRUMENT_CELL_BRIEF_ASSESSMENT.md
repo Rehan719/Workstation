@@ -597,3 +597,112 @@ The prompt's first milestone is one real path: an appraisal resting on evidence,
 verification, and the result returned to the next appraisal. Nothing in the suite drives that path end to end,
 and the ledger's finding that the organisational cascade's appraisals "develop nothing" is the same absence
 seen from a page. It is registered as a row: drive the path with a guard and name the step where it stops.
+
+## 19. Addendum (W672): two revisions of an external "canonical biomimetic OGE/HAIRMS master prompt", assessed
+
+**What was received (Owner, 2026-10-11).** Two files, each a prompt addressed to this model: "v6" (1,413 lines)
+and "v7 converged final" (1,524 lines), both dated 2026-10-11. They ask for the functions of the "OGE / HAIRMS"
+blueprint assessed in `docs/OGE_HAIRMS_BRIEF_ASSESSMENT.md` on 2026-10-09 to be delivered through the existing
+architecture, led by authentication and entity isolation, an "execution contract" and one end-to-end slice.
+
+**How they were read.** v7 was read whole. v6 was compared with it line by line: it differs in eight lines and
+is otherwise v7 without Appendices L to O (a "Clownfish" separation of duties, per-engine contracts for the six
+foundational engines, "Needs-Wants-Desires", and a crosswalk) and without one sentence of plan figures. Every
+statement that can be checked against this tree, the plan on main (`d4ecfdb2`, the W670 merge) or an official
+page was checked: 79 in all, listed in the round's notes. The blueprint itself was not supplied with these
+files, so what they say the blueprint contains is not checked here. Both prompts label most figures as dated
+leads to re-measure, and most of their text is instruction, not claim.
+
+### 19.1 What was checked
+
+| # | Statement | Finding |
+|---|---|---|
+| 1 | The README reports W670 with 700 integration tests passing and 15 skipped | **TRUE** of the README on main (line 134) |
+| 2 | The plan's queue begins P2.37, then P2.38, P2.39, P3.30, P3.31 with 4 of 6 rows, P3.32 with 0 of 1 | **TRUE** of the generated block on main; it moves with every round |
+| 3 | FU-814 is the gap joining appraisal, Change Control, applied action, verification and the next appraisal | **TRUE**, open on P3.30, and already scripted as a guarded path |
+| 4 | The latest recorded ruling declined a third cell and kept the saved, versioned proposal inside P3.31 | **TRUE** (Owner ruling 2026-10-11; section 18.3; row FU-813) |
+| 5 | The 2026-10-09 assessment found the blueprint's paths absent, six named technologies a name list, a constant-success executor, no Nemoclaw runtime, a naive grep gate of 1,173 lines | **TRUE** of that document, each as the prompts report it |
+| 6 | The blueprint's ten package paths, the `sovereignctl` command and its two branch names are "not presumed" | **ABSENT, still.** Nine paths are not directories and one holds no tracked file; the command appears in no code; neither branch exists |
+| 7 | "The current P3.30 records should establish whether [the constant-success executor] is fixed" | **STALE.** It was archived (`_archive/agentic_core/products/signature_suite/`) and its branch removed from `governance/uci_interceptor.py` |
+| 8 | "If MultiSigCouncil ... exists but is unreachable"; the crosswalk lists it as an owner to inspect | **STALE.** Archived on the Owner's ruling of 2026-10-09 (evening); the Board's ratification is the control |
+| 9 | Heartbeat, genome, organism status, Sovereign Evolution, Board and Change Control routes are "retest targets" for missing protection | **STALE for those named.** That is plan item P2.6's own list, closed in W505: each router is mounted behind an admin or authenticated dependency (`app_mvp.py:357-483`) and a guard reads the mounted dependency. Not closed for the business plan: see 19.4 |
+| 10 | "Read the current data-classification and barred-data rules" | **ABSENT.** No live file carries a data class; it is row FU-610 on P4.3, as the same prompts say elsewhere |
+| 11 | A change-class vocabulary C0 to C5; a model tier arrangement 0 to 5 | **ABSENT.** Change Control has LOW, MEDIUM, HIGH, CRITICAL; the tier router declares five tiers and external models are a switch, not a tier |
+| 12 | The crosswalk's "current policy middleware" as the owner of constitutional checks | **FALSE.** There is no app-wide gate; `app_mvp.py` says so on every response and gates are applied route by route |
+| 13 | Federation interfaces "if operational" | **ABSENT.** No federation package; the validators record that no federation runs |
+| 14 | AlphaFold, Ginkgo, Cosmos or Omniverse, holographic systems | **ABSENT** from live code (one comment in `products/`); archived files only |
+| 15 | An "OAM-QKD software surrogate"; Mammouth | **NAMES ONLY.** A declared constraint names an enforcer, "OAM_QKDSurrogate validation", that does not exist, and the validator says it measures nothing; Mammouth is a word in one docstring |
+| 16 | "A narrative scenario is not a world simulator" | **A FINDING IN THE TREE.** `agentic_core/simverse/causal_simulator.py` is live and called: it returns `fidelity = 0.924` and `backdoor_criterion_verified: True` as constants and writes an event; the avatar effector's "causal" gate is built on it and can refuse only on an exception (19.4) |
+| 17 | "Preserve the authentication and roles already implemented" | **EXISTS, narrower than asked.** One user store, three role strings of which only `admin` is ever read, owner scoping by username, switches off by default. No delegation, no service principal, no per-entity grant. An API key is issued and nothing accepts it |
+| 18 | 23 engines in five tiers, three MJM engines, `MJMOrchestratorV4`; the six foundational names | **TRUE** (Owner ruling 2026-09-30; `cognitive/registry.py`) |
+| 19 | A contract per engine (function, evidence, prohibited inference) | **NOT IN THE TREE in that form.** `docs/COGNITIVE_ENGINE_ARCHITECTURE.md` section 4 states eight invariants that bind every engine alike; the six engines share one response shape |
+| 20 | "Clownfish Protocol"; "Needs-Wants-Desires" | **ABSENT** from live code and from the vision; both were in the brief assessed on 2026-10-09 |
+| 21 | NIST AI RMF 1.0 has four functions (Govern, Map, Measure, Manage), is voluntary, and is being revised | **CONFIRMED** on the NIST page read 2026-10-11 |
+| 22 | "The supplied blueprint is now part of the intended functional destination"; "this prompt adopts those requirements as the target design vocabulary"; "the latest target specification supplied to you" | **NOT ESTABLISHED BY THE DOCUMENT, and contrary to a ruling.** The Owner ruled on 2026-10-09 (evening) that the OGE and HAIRMS vocabulary is not adopted |
+| 23 | Real-person records kept as "a future capability vision" in tiers H0 to H3 | **NOT ESTABLISHED BY THE DOCUMENT; the Owner was asked.** The ruling of 2026-10-09 (evening) was no registry of real people. Asked on 2026-10-11, the Owner AMENDED it: the capabilities are wanted inside Workstation, for its entities (19.5) |
+
+### 19.2 What is sound, and already the rule here
+
+One vision, one plan, one register, one runner, one result vocabulary; no package skeletons, no branch named by
+a document, no second scheduler; a class, route or count is not a capability; a check that did not run cannot
+pass; a threshold with no instrument is not a gate; no number on a person's faith, sincerity or worth; sacred
+text never generated; external models, sign-up, real money and deployment the Owner's switches; the facility
+lifecycle (FU-609), the data class on an external call (FU-610) and the read-only resource inventory (FU-618,
+built W639) routed where the earlier assessment put them. Each is a ruling or a clause already in force, and the
+prompts mostly say so themselves.
+
+### 19.3 What is declined, and why
+
+| Asked | Decision |
+|---|---|
+| OGE and HAIRMS as "target design vocabulary", with an appendix mapping every blueprint name | **Declined.** Owner ruling 2026-10-09 (evening): the vocabulary is not adopted. The crosswalk is used once, here, as a check list |
+| Real-person engagement, HR and payroll tiers kept in the target model | **Not taken from the document; chartered on the Owner's own ruling.** The Owner ruled on 2026-10-11 that staff records, payroll and wellbeing are wanted within Workstation. It is chartered as its own plan item, in this platform's words and under its rulings, not as the brief's tiers |
+| "Needs-Wants-Desires": contentment, rest, play and focus features | **Not scheduled.** Assessed on 2026-10-09 (section 6) in its monitoring form and refused; the opt-in form names no user who has asked for it |
+| "Clownfish" executor, editor and watcher roles | **No new roles.** The existing separation is proposer and admin decider with the Board's ratification (ruling 2026-09-14). The one question it raised is ruled in 19.5 |
+| An "execution contract" of twelve concerns and eleven tests on every action | **Not added as a schema.** The saved specification (FU-813), the driven path (FU-814) and the P5.1 journey are scripted and cover the proposal, run, verification and readback links; delegation and expiry have nothing to bind to while there is one principal |
+| With authentication enabled, tests of delegates, reviewers, service jobs and agents | **Not buildable as asked.** None of those principals exists. What can be read today is in 19.4, and authentication is the Owner's switch (P4.1) |
+| A baseline report, a route matrix and a trace record before any edit | **Not adopted as a gate.** It is the prompt's procedure; every round records its baseline |
+| Core-technology adapters, facility provisioning, a CLI | **Declined**, as on 2026-10-09; nothing here can run them and the prompts do not insist |
+
+### 19.4 What it adds
+
+The prompts are right that authentication is the part least proven, and reading for them found things the
+audits do not reach, because every audit runs with authentication off. All but the last are **findings from
+reading, to be driven before they are relied on**; all sit behind the Owner's switch, so they are pre-flight
+work for P4.1, which today carries no rows.
+
+1. Four business-plan routes that write (`/objective`, its `/review` and `/orchestrate`, `/generate`) and three
+   that read declare no user at all and the router is mounted with none, although P2.6 lists "owner scoping on
+   business-plan". The sibling `/set` stamps the caller; these do not ask who is calling.
+2. No instrument counts this. A read of the 84 mounted routers found 547 routes, of which 153 that write and
+   146 that read name no user in their signature or their mount. Many are public by design; nothing says which.
+3. An API key is generated and stored hashed (`auth/core.py:417`) and no code path verifies one; the module
+   says keys "are also accepted as Bearer tokens". The role `viewer` can be assigned and nothing reads it.
+4. The heartbeat calls the entity's evolve and re-ship handlers with `user=None`, which the ownership check
+   treats as allowed whether or not authentication is on. The only record of who acted is a trigger string.
+5. The causal simulator of row 16: a constant presented as a verification, on the held avatar path (P3.30).
+
+### 19.5 What the Owner ruled (2026-10-11)
+
+The questions this reading raised were put to the Owner, who ruled the same day:
+
+1. The vocabulary of the brief is not adopted (the 2026-10-09 ruling stands).
+2. The authentication findings of 19.4 are fixed in ONE authentication-readiness round, after P5 and before the
+   final audit, chartered under P4.1. No round turns the switch on.
+3. The heartbeat acts on an entity only where that entity has opted in, and under a named service identity
+   once authentication is on.
+4. For a high or critical change the person deciding must differ from the person submitting, once more than
+   one administrator exists. Whether they were the same is recorded on every decision from this round.
+5. API keys and a read-only role are wanted: both are made to work in the readiness round. Until then the
+   product says that a key is not yet accepted.
+6. No written contract per engine: the eight shared invariants bind each.
+7. **The 2026-10-09 ruling against a registry of real people is amended.** Staff records, payroll and
+   wellbeing are wanted "within and for" Workstation and its entities. Chartered as its own plan item. What it
+   may hold before authentication is on, and the form wellbeing may take under ruling A.9.5, are stated in the
+   item and are still the Owner's to confirm.
+
+**Built in the round that landed this section (W672):** every decision on a change records whether its decider
+was also its submitter, stated only when both names were checked; an issued API key and the module that issues
+it say a key is not yet accepted; the causal simulator returns no typed fidelity and no typed verdict, and the
+string the effector records is headed as not assessed. The rest of 19.4 is filed as rows on the fourth
+phase's first item.

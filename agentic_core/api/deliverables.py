@@ -236,6 +236,14 @@ async def output_formats():
         catalogue = [f.value for f in OutputFormat if f.value not in {x["id"] for x in live}]
     except Exception:
         catalogue = []
+    #  P3.30 r6 (ledger v16 R2.15) - WHAT THE VIDEO FORMAT IS, on the format itself, so the page that offers
+    #  it can say it outside an option label. The second clause is read from the catalogue computed above.
+    for _f in live:
+        if _f["id"] == "video-html":
+            _f["is_media_file"] = False
+            _f["basis"] = ("This format is an HTML page that plays its scenes in a browser. It is not a video "
+                           "file" + ("; no media encoder is present here, so mp4 is listed as not yet produced."
+                                     if "mp4" in catalogue else "."))
     return {
         "live": live,
         "live_ids": [x["id"] for x in live],

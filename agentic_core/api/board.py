@@ -684,9 +684,22 @@ async def chief_model(scope: "str | None" = None, owner: "str | None" = None):
     m = founder_model(scope=scope, owner=owner)
     return {
         **m,
-        "method": ("a Chief is a MODELLED TWIN only when the Owner has written an instruction or made a "
-                   "recorded decision. The standing canon is carried either way and is the platform's, "
-                   "identical for every Chief, so it is never counted as this Owner's own declaration"),
+        #  T2B (row 3) - this still said a Chief IS a modelled twin when the Owner has written something,
+        #  beside a record whose own basis says nothing is modelled. Computed from the record's fields:
+        #  `carries_owner_record` (and its older name, which always equals it), the count of the Owner's
+        #  inputs, and whether the instruction store could be read. The canon clause is unchanged.
+        "method": (
+            "a Chief CARRIES THE OWNER'S RECORD only when the Owner has written an instruction or made a "
+            "recorded decision; nothing is modelled, trained or fitted in either case. This Chief "
+            + (f"carries it: {m['owner_inputs']} such input(s) are on record"
+               if m["carries_owner_record"] else
+               "does not: no such input is on record, so it is a role")
+            + ("" if m["instructions"]["readable"] else
+               " (the instruction store could not be read, so instructions are not in that count)")
+            + f". `is_modelled_twin` ({m['is_modelled_twin']}) is the older name of `carries_owner_record` "
+              f"({m['carries_owner_record']}) and always equals it. The standing canon is carried either "
+              "way and is the platform's, identical for every Chief, so it is never counted as this Owner's "
+              "own declaration"),
     }
 
 

@@ -6,7 +6,8 @@ Manages the virtual capital allocation system for the VSB ecosystem:
 - Marketplace: list, discover, and transact VSB products/services
 
   GET  /api/v1/fund/status          — fund health and allocation overview
-  POST /api/v1/fund/allocate        — allocate capital to a project/VSB
+  POST /api/v1/fund/allocate        — REQUEST an allocation to a registered entity or a project: held at
+                                       Change Control, applied only after an explicit approval (FU-794)
   GET  /api/v1/fund/portfolio       — portfolio view of all allocations
   POST /api/v1/fund/report          — AI-generated fund performance report
   (the parallel marketplace routes this file once carried are RETIRED — W444; the real,
@@ -231,6 +232,149 @@ async def fund_status():
     }
 
 
+#  FU-794 (Owner ruling 2026-10-11, plan item P2.39) - AN ALLOCATION IS GOVERNED.
+#
+#  Until this ruling the route below allocated any amount to any id: no gate, no Change Control hold, and the
+#  id was not looked up. It now goes through the path every other material economic action already takes -
+#  the economy's own gate (economy.governance._materiality_gate), which files a Change Control hold, keeps
+#  one live record per action, and hands back an approval ONCE, by compare-and-set, when the action is run
+#  again after the Owner's explicit decision. Nothing here decides anything and there is no second mechanism:
+#    - a request files (or finds) the hold and answers "held"; the fund is not touched;
+#    - only an explicit decision at Change Control approves it (the hold is CRITICAL: a review, a model's
+#      marker and the organism-health rule can each only record a recommendation);
+#    - the allocation is applied when the same allocation is requested again and the gate spends that
+#      approval; the applied row names the change. Approving moves nothing by itself;
+#    - a rejection applies nothing, and the same request is answered "rejected" until the action changes.
+#  A request's state is never stored here: it is computed from the Change Control record every time it is read.
+_SAFE_PROJECT_ID = __import__("re").compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,79}")
+
+STATE_LABELS = {
+    "held": "held - awaiting decision",
+    "approved_not_applied": "approved - not applied yet: request the same allocation again to apply it",
+    "applied": "approved and applied",
+    "approval_spent": "approved - the approval was spent and no allocation is stored for it",
+    "rejected": "rejected - nothing was allocated",
+    "withdrawn": "withdrawn - nothing was allocated",
+}
+LEGACY_LABEL = "recorded before allocations were governed"
+
+
+def recipient_known(recipient_id: str) -> dict:
+    """WHO THE FUND MAY ALLOCATE TO: an id that EXISTS - a registered living entity, or a project in the
+    project store. What is refused is only what cannot exist. Three answers, and the third is never given as
+    either of the other two: known True (with its kind), known False, known None (a store could not be read).
+    A lookup only: it refuses nothing, the route does."""
+    rid = str(recipient_id or "")
+    registered, why = None, None
+    try:
+        from agentic_core.economy import living_vsbs as _lv
+        registered = bool(_lv.is_registered(rid))
+    except Exception as _err:                            # noqa: BLE001 - not known is said, never guessed
+        why = type(_err).__name__
+    project = False
+    #  the project store is a directory of <id>.json files, so only an id that is ONE safe path segment is
+    #  ever looked up in it; anything else cannot be a project id and never reaches the file system
+    if registered is not True and _SAFE_PROJECT_ID.fullmatch(rid):
+        try:
+            from agentic_core.projects import api as _pj
+            project = bool(_pj._path(rid).is_file())
+        except Exception as _err:                        # noqa: BLE001
+            project, why = None, (why or type(_err).__name__)
+    if registered is True:
+        known, kind = True, "entity"
+    elif project is True:
+        known, kind = True, "project"
+    elif registered is None or project is None:
+        known, kind = None, None
+    else:
+        known, kind = False, None
+    return {"known": known, "kind": kind, "registered": registered, "why_unknown": why}
+
+
+def _decision_of(c: dict) -> dict:
+    """Who decided a change, read from its own audit trail - never from a request and never assumed."""
+    ev = next((e for e in reversed((c or {}).get("audit_trail") or [])
+               if isinstance(e, dict) and e.get("event") in ("approved", "rejected")), None)
+    if ev is None:
+        return {"decision": None, "decided_by": None, "decided_by_verified": None, "decided_at": None,
+                "decision_source": None}
+    return {"decision": ev.get("event"),
+            "decided_by": ev.get("by"),
+            "decided_by_verified": ev.get("by_verified"),
+            "decided_at": ev.get("ts"),
+            "decision_source": (c or {}).get("decision_source")}
+
+
+def _request_view(c: dict, allocation: dict | None) -> dict:
+    """One allocation request, as its Change Control record says it stands NOW. `allocation` is the stored
+    allocation that names this change, when there is one."""
+    from agentic_core.economy import governance as _gov
+    st = c.get("status")
+    if st in ("submitted", "under_review"):
+        state, label = "held", STATE_LABELS["held"]
+    elif st == "approved" and _gov._owner_decided(c):
+        state, label = "approved_not_applied", STATE_LABELS["approved_not_applied"]
+    elif st == "approved":
+        #  an approval that is not an explicit decision releases nothing (the gate's own rule), so it is not
+        #  reported as one
+        state, label = "held", (STATE_LABELS["held"] + " (an approval that was not an explicit decision "
+                                                        "releases nothing)")
+    elif st == "implemented" and allocation:
+        state, label = "applied", STATE_LABELS["applied"]
+    elif st == "implemented":
+        state, label = "approval_spent", STATE_LABELS["approval_spent"]
+    elif st == "rejected":
+        state, label = "rejected", STATE_LABELS["rejected"]
+    else:
+        state, label = "withdrawn", STATE_LABELS["withdrawn"]
+    asked = c.get("fund_request") if isinstance(c.get("fund_request"), dict) else {}
+    return {
+        "cca_id": c.get("cca_id"), "state": state, "state_label": label, "change_status": st,
+        "project_id": c.get("counterparty"), "project_name": asked.get("project_name"),
+        "purpose": asked.get("purpose"), "domain": asked.get("domain"), "realm": asked.get("realm"),
+        "amount": c.get("est_distributable_wst"),
+        "requested_by": asked.get("requested_by"), "requested_by_verified": asked.get("requested_by_verified"),
+        "requested_at": asked.get("first_requested_at") or c.get("submitted_at"),
+        "fund_available_at_request": asked.get("fund_available_at_request"),
+        **_decision_of(c),
+        "allocation_id": (allocation or {}).get("allocation_id"),
+        "applied_amount": (allocation or {}).get("amount"),
+    }
+
+
+def _fund_requests(fund: dict) -> tuple[list | None, str]:
+    """Every allocation request, newest first, read from the Change Control records the gate filed for the
+    fund. (requests, basis) - requests is None, with the reason, when the records could not be read: an
+    unreadable list is never answered as an empty one."""
+    try:
+        from agentic_core.api import change_control as _cca
+        from agentic_core.economy import governance as _gov
+        applied = {a.get("cca_id"): a for a in (fund.get("allocations") or [])
+                   if isinstance(a, dict) and a.get("cca_id")}
+        rows = []
+        for x in _cca._list_changes():
+            if (x.get("change_type") != "economy_material"
+                    or not str(x.get("title") or "").startswith(_gov.FUND_HOLD_TITLE_PREFIX)):
+                continue
+            c = _cca._load_change(x["cca_id"])
+            if (not c or c.get("vsb_id") != _gov.FUND_ENTITY_ID
+                    or not str(c.get("submitted_by") or "").startswith("economy:" + _gov.FUND_SOURCE_PREFIX)):
+                continue
+            rows.append(_request_view(c, applied.get(c["cca_id"])))
+        return rows, ("every Change Control record the fund's gate filed; each state is computed from that "
+                      "record when this is read")
+    except Exception as _err:                            # noqa: BLE001 - said, never an empty list
+        return None, f"the allocation requests could not be read ({type(_err).__name__})"
+
+
+def _allocation_row(a: dict) -> dict:
+    """A stored allocation with what kind of record it is, COMPUTED when read. The stored row is not rewritten:
+    one written before allocations were governed carries no change id, and says so here."""
+    governed = bool(isinstance(a, dict) and a.get("cca_id"))
+    return {**a, "record_state": "applied" if governed else "ungoverned_legacy",
+            "record_state_label": STATE_LABELS["applied"] if governed else LEGACY_LABEL}
+
+
 class AllocateRequest(BaseModel):
     project_id: str
     project_name: str
@@ -241,114 +385,242 @@ class AllocateRequest(BaseModel):
 
 
 @router.post("/fund/allocate")
-async def allocate_capital(req: AllocateRequest):
-    """Allocate virtual capital to a project or VSB entity.
+async def allocate_capital(req: AllocateRequest, user: dict | None = Depends(get_current_user)):
+    """Request an allocation of virtual capital to a registered entity or a project (FU-794).
 
-    W444 refuter catch (reproduced): only contribute_from_cycle held the store lock — this
-    read-modify-write raced it unlocked and erased contributions (total, row and running total
-    all reverted). Both writers now serialise on the same lock."""
+    The request moves nothing. It is held at Change Control until an explicit decision approves it, and it is
+    applied - once - when the same allocation is requested again and the economy's gate spends that approval.
+
+    W496 (FU-119b): the STRICT store read is the first thing this route does, before the amount, the recipient
+    or the gate is looked at - a fund that cannot be read whole answers 503 and nothing else is said about the
+    request. W444: every read-modify-write of the fund runs under the store lock."""
     from agentic_core.config import StoreUnavailable, store_lock as _sl
     with _sl(_FUND_STORE):
         try:
-            return _allocate_locked(req)
+            fund = _load_fund(strict=True)
         except StoreUnavailable as e:
             # W496 (FU-119b) - the fund could not be read whole, so nothing was allocated and no
             # balance was reset to the seed. A 500 would have read as a bug; this says what happened.
             raise HTTPException(status_code=503, detail=f"{e}")
+    #  the lock is released before the gate runs: the gate takes its own per-action lock and writes to the
+    #  constitutional ledger, and the fund's lock must not be held across either
+    return _allocate_governed(req, fund, user if isinstance(user, dict) else None)
 
 
-def _allocate_locked(req: "AllocateRequest"):
-    # W496 (FU-119b) - a writer refuses rather than writing back over a quarantined store
-    fund = _load_fund(strict=True)
+def _allocate_governed(req: "AllocateRequest", fund: dict, user: dict | None):
+    import math
+    from agentic_core.api import change_control as _cca
+    from agentic_core.auth.core import auth_enabled, request_owner_id
+    from agentic_core.config import StoreUnavailable, store_lock as _sl
+    from agentic_core.economy import governance as _gov
 
-    if req.amount <= 0:
+    amount = round(float(req.amount), 2) if math.isfinite(float(req.amount)) else float("nan")
+    if not math.isfinite(amount) or amount <= 0:
         raise HTTPException(status_code=400, detail="Amount must be positive.")
-    if req.amount > fund["available"]:
+    if amount > fund["available"]:
         raise HTTPException(
             status_code=400,
-            detail=f"Insufficient capital. Available: {fund['available']} WST, requested: {req.amount} WST."
+            detail=f"Insufficient capital. Available: {fund['available']} WST, requested: {amount} WST."
         )
 
-    # §8 survival instinct — the organism's posture governs capital deployment. ADVISORY only: virtual WST,
-    # and real-money decisions are Owner-gated, so we never auto-block the allocation — we flag restraint when
-    # the organism is energy-depleted and the tranche is a large fraction of remaining capital.
+    #  THE RECIPIENT EXISTS, OR NOTHING IS FILED. Checked after the strict read and before the gate, so an id
+    #  nothing knows never becomes a Change Control record somebody has to decide.
+    pid = str(req.project_id)
+    _shown = pid[:80]
+    who = recipient_known(pid)
+    if who["known"] is None:
+        raise HTTPException(status_code=503, detail=(
+            f"Whether '{_shown}' is a registered entity or a project could not be read ({who['why_unknown']}), "
+            f"so the allocation was not requested: nothing was filed with Change Control and the fund is "
+            f"unchanged."))
+    if who["known"] is False:
+        raise HTTPException(status_code=404, detail=(
+            f"'{_shown}' is neither a registered entity nor a project, so there is nothing for the fund to "
+            f"allocate to. Nothing was filed with Change Control and the fund is unchanged."))
+
+    now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    requester = request_owner_id(user, "single-user-mode")
+    requester_verified = bool(auth_enabled() and user)
+
+    # §8 survival instinct — the organism's posture is ADVISORY only (virtual WST): restraint is flagged when
+    # the organism is energy-depleted and the tranche is a large fraction of remaining capital. It decides
+    # nothing; the decision is Change Control's.
     posture = _organism_posture()
     atp = posture.get("atp_ratio")
-    frac = req.amount / fund["available"] if fund["available"] else 1.0  # of capital available BEFORE this draw
+    frac = amount / fund["available"] if fund["available"] else 1.0   # of capital available BEFORE this draw
     caution = None
     if isinstance(atp, (int, float)) and atp < 0.3 and frac > 0.25:
         caution = (f"§8 survival instinct: the organism is energy-depleted (ATP {atp:.0%}); this tranche is "
                    f"{frac:.0%} of available capital. Consider a smaller tranche or deferring until recovery.")
 
-    #  W672 (ledger v16 R6.5) - WHAT THIS ALLOCATION PASSED, SAID ON THE RECORD. It is checked for a positive
-    #  amount and for the fund's balance and for nothing else: no constitutional gate, no Change Control hold,
-    #  and the id it names is not looked up. Whether it SHOULD be governed is the Owner's decision and is not
-    #  taken here - nothing new is refused. Three states for the recipient: registered, not registered, or
-    #  not known (the roster could not be read), which is never answered as either of the other two.
-    _reg_why = None
-    try:
-        from agentic_core.economy.living_vsbs import is_registered as _is_registered
-        _registered = bool(_is_registered(req.project_id))
-    except Exception as _reg_err:                        # noqa: BLE001 - not known is said, and refuses nothing
-        _registered, _reg_why = None, type(_reg_err).__name__
-    _pid = str(req.project_id)[:80]
-    _governance = {
-        "gate": "not applied", "change_control": "not applied",
-        "recipient_registered": _registered, "credited_to": None,
-        "basis": ("an UNGOVERNED RECORD: this allocation passed no constitutional gate and no Change Control "
-                  "hold. It "
-                  + ("names a registered entity" if _registered is True else
-                     f"names '{_pid}', which is not a registered entity" if _registered is False else
-                     f"names '{_pid}'; whether that is a registered entity could not be read ({_reg_why})")
-                  + ". This route credited no entity's ledger: it reduced the fund's available figure and "
-                    "did nothing else. Virtual WST."),
-    }
+    #  THE GOVERNED PATH - the economy's own gate, with the fund as the actor and the recipient as the
+    #  counterparty. It returns (held, consumed): held -> nothing may run; consumed -> an approval was spent
+    #  for THIS allocation and bounds it. The fund's class has no threshold (economy.governance).
+    held, consumed = _gov._materiality_gate(_gov.FUND_ENTITY_ID, amount,
+                                            source=_gov.FUND_SOURCE_PREFIX + pid, counterparty=pid)
 
-    allocation_id = f"alloc-{uuid.uuid4().hex[:8]}"
-    allocation = {
-        "allocation_id": allocation_id,
-        "project_id": req.project_id,
-        "project_name": req.project_name,
-        "amount": req.amount,
-        "purpose": req.purpose,
-        "domain": req.domain,
-        "realm": req.realm,
-        "status": "active",
-        "homeostasis_caution": caution,
-        "governance": dict(_governance),
-        "allocated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-    }
+    if held is not None:
+        cca_id = held.get("cca_id")
+        rejected = held.get("status") == "rejected_by_change_control"
+        record, request_recorded = None, None
+        if cca_id and not rejected:
+            #  what was asked, written onto the hold the gate filed - while it is still undecided only, so a
+            #  record under review keeps exactly what its decider was shown
+            asked = {"project_id": pid, "project_name": req.project_name, "purpose": req.purpose,
+                     "domain": req.domain, "realm": req.realm, "amount": amount,
+                     "requested_by": requester, "requested_by_verified": requester_verified,
+                     "requested_at": now, "recipient_kind": who["kind"],
+                     "fund_available_at_request": fund["available"],
+                     "currency": fund.get("currency")}
 
-    fund["allocated"] += req.amount
-    fund["available"] -= req.amount
-    fund["allocations"].append(allocation)
-    _save_fund(fund)
+            def _note(fresh: dict) -> None:
+                if fresh.get("status") != "submitted":
+                    return
+                _before = fresh.get("fund_request") if isinstance(fresh.get("fund_request"), dict) else {}
+                fresh["fund_request"] = {**asked, "first_requested_at": _before.get("first_requested_at") or now}
+            try:
+                record = _cca._update_change(cca_id, _note)
+                request_recorded = "recorded"
+            except Exception as _note_err:               # noqa: BLE001 - said, never silent
+                request_recorded = f"NOT recorded ({type(_note_err).__name__})"
+        if record is None and cca_id:
+            record = _cca._load_change(cca_id)
+        view = _request_view(record, None) if record else None
+        _state = "rejected" if rejected else "held"
+        if rejected:
+            _basis = (f"REJECTED, NOT ALLOCATED: Change Control record {cca_id} rejected exactly this allocation "
+                      f"({amount} {fund.get('currency')} to '{_shown}'). Nothing was allocated and the fund's "
+                      f"available figure is unchanged at {fund['available']}. It is asked again, as a fresh hold, "
+                      f"when the allocation changes.")
+        elif cca_id:
+            _basis = (f"HELD, NOT ALLOCATED: this request is Change Control record {cca_id}. Nothing moves until "
+                      f"an explicit decision approves it and the allocation is then requested again; the fund's "
+                      f"available figure is unchanged at {fund['available']} {fund.get('currency')}.")
+        else:
+            _basis = ("HELD, NOT ALLOCATED: the governed path could not file or read a hold for this request, "
+                      "and an allocation is never applied without one. The fund is unchanged.")
+        return {
+            "allocation_id": None,
+            "applied": False,
+            "amount": amount,
+            "currency": fund["currency"],
+            "remaining_available": fund["available"],
+            "status": "rejected" if rejected else "held",
+            "status_label": STATE_LABELS[_state],
+            "cca_id": cca_id,
+            "change": view,
+            "organism": posture,
+            "homeostasis_caution": caution,
+            "governance": {"gate": "not applied", "change_control": _state, "cca_id": cca_id,
+                           "recipient_registered": who["registered"], "recipient_kind": who["kind"],
+                           "credited_to": None, "request_recorded": request_recorded,
+                           "note": held.get("note"), "basis": _basis},
+        }
 
-    #  W672 (ledger v16 R6.5) - the module's other writer leaves an audit event and this one left none.
-    #  Written after the save, so an event never describes an allocation that was not stored; whether it was
-    #  recorded is said in the response (the stored row was written before this was known).
+    #  NOTHING IS APPLIED WITHOUT AN APPROVAL THE GATE SPENT FOR IT. The gate has no "proceed" answer for the
+    #  fund; if it ever gave one, this refuses rather than allocating on it.
+    if not consumed or not consumed.get("cca_id"):
+        raise HTTPException(status_code=503, detail=(
+            "The governed path returned neither a hold nor an approval for this allocation, so nothing was "
+            "allocated: an allocation is applied only against an approved Change Control record."))
+    cca_id, consume_id = consumed["cca_id"], consumed.get("consume_id")
+
+    def _give_back(reason: str) -> str:
+        """The approval was spent and the allocation did not happen: hand it back, and SAY what happened."""
+        _r = _gov._restore_consumed_approval(consumed, vsb_id=_gov.FUND_ENTITY_ID, reason=reason)
+        return (f"the approval {cca_id} was given back and can be applied again" if _r == "restored" else
+                f"the approval {cca_id} was NOT given back ({_r}) and stays spent; a new request files a new hold")
+
+    with _sl(_FUND_STORE):
+        try:
+            fresh = _load_fund(strict=True)
+        except StoreUnavailable as e:
+            raise HTTPException(status_code=503, detail=(
+                f"{e}. Nothing was allocated; " + _give_back("the fund store could not be read whole") + "."))
+        if amount > fresh["available"]:
+            raise HTTPException(status_code=400, detail=(
+                f"Insufficient capital. Available: {fresh['available']} WST, requested: {amount} WST. "
+                f"Nothing was allocated; " + _give_back("the fund no longer holds the amount") + "."))
+        approved = _cca._load_change(cca_id) or {}
+        decided = _decision_of(approved)
+        _by = decided.get("decided_by")
+        _governance = {
+            "gate": "not applied", "change_control": "approved", "cca_id": cca_id,
+            "decided_by": _by, "decided_by_verified": decided.get("decided_by_verified"),
+            "decided_at": decided.get("decided_at"), "decision_source": decided.get("decision_source"),
+            "approved_amount": approved.get("est_distributable_wst"),
+            "recipient_registered": who["registered"], "recipient_kind": who["kind"], "credited_to": None,
+            "basis": (f"A GOVERNED RECORD: Change Control record {cca_id} was approved by "
+                      + (f"'{_by}'" if _by else "a decider its record does not name")
+                      + (" (an authenticated principal)" if decided.get("decided_by_verified") else
+                         " (a name the platform did not check - authentication is off)")
+                      + f" as an explicit decision, and this allocation spent that approval. It names "
+                      + ("a registered entity" if who["kind"] == "entity" else f"the project '{_shown}'")
+                      + ". No constitutional gate was applied. This route credited no entity's ledger: it "
+                        "reduced the fund's available figure and did nothing else. Virtual WST."),
+        }
+        allocation_id = f"alloc-{uuid.uuid4().hex[:8]}"
+        allocation = {
+            "allocation_id": allocation_id,
+            "project_id": req.project_id,
+            "project_name": req.project_name,
+            "amount": amount,
+            "purpose": req.purpose,
+            "domain": req.domain,
+            "realm": req.realm,
+            "status": "active",
+            "cca_id": cca_id,
+            "consume_id": consume_id,
+            "requested_by": requester,
+            "requested_by_verified": requester_verified,
+            "homeostasis_caution": caution,
+            "governance": dict(_governance),
+            "allocated_at": now,
+        }
+        fresh["allocated"] = round(float(fresh["allocated"]) + amount, 2)
+        fresh["available"] = round(float(fresh["available"]) - amount, 2)
+        fresh["allocations"].append(allocation)
+        try:
+            _save_fund(fresh)
+        except Exception as _save_err:                   # noqa: BLE001 - the approval is not spent on nothing
+            raise HTTPException(status_code=503, detail=(
+                f"The fund store could not be written ({type(_save_err).__name__}). Nothing was allocated; "
+                + _give_back("the fund store could not be written") + "."))
+
+    #  the allocation is stored: the spent approval records that its action ran (never given back after this)
+    _gov._mark_action_ran(consumed, _gov.FUND_ENTITY_ID, "capital fund allocation stored")
+
+    #  W672 (ledger v16 R6.5) - the audit event, written after the save, so an event never describes an
+    #  allocation that was not stored; whether it was recorded is said in the response. FU-794: it names the
+    #  change that authorised it. (The request, the decision and the spend are already on the ledger from the
+    #  gate and from Change Control - economy.materiality_hold_filed, cca.change_approved / cca.change_rejected,
+    #  economy.materiality_approved_consumed - so none of them is written a second time here.)
     try:
         from agentic_core.gaas.v5 import UEGLogger
         UEGLogger().log({"type": "economy.capital_fund.allocation", "allocation_id": allocation_id,
-                         "project_id": req.project_id, "amount_wst": req.amount,
-                         "recipient_registered": _registered, "gate": "not applied",
-                         "change_control": "not applied"})
+                         "project_id": req.project_id, "amount_wst": amount,
+                         "recipient_registered": who["registered"], "gate": "not applied",
+                         "change_control": "approved", "cca_id": cca_id, "consume_id": consume_id,
+                         "decided_by": _by})
         _audit_event = "recorded"
     except Exception as _ueg_err:                        # noqa: BLE001 - said, never silent
         _audit_event = f"NOT recorded ({type(_ueg_err).__name__})"
 
     biobus.fire_signal(
         "motor", "fund.allocate",
-        f"Capital allocated: {req.amount} WST → {req.project_name} [{req.domain}]",
+        f"Capital allocated: {amount} WST → {req.project_name} [{req.domain}] (Change Control {cca_id})",
         0.8,
     )
 
     return {
         "allocation_id": allocation_id,
-        "amount": req.amount,
-        "currency": fund["currency"],
-        "remaining_available": fund["available"],
+        "applied": True,
+        "amount": amount,
+        "currency": fresh["currency"],
+        "remaining_available": fresh["available"],
         "status": "allocated",
+        "status_label": STATE_LABELS["applied"],
+        "cca_id": cca_id,
         "organism": posture,
         "homeostasis_caution": caution,
         "governance": {**_governance, "audit_event": _audit_event},
@@ -367,13 +639,19 @@ async def fund_portfolio():
         by_domain[a.get("domain", "unknown")] = by_domain.get(a.get("domain", "unknown"), 0) + a["amount"]
         by_realm[a.get("realm", "unknown")] = by_realm.get(a.get("realm", "unknown"), 0) + a["amount"]
 
+    #  FU-794 - what was ASKED and where each request stands, beside what was applied. A held request is in
+    #  `allocation_requests` and never in `allocations`: every total on this page sums `allocations`, and a
+    #  request has moved nothing.
+    _requests, _requests_basis = _fund_requests(fund)
     return {
         "total_capital": fund["total_capital"],
         "allocated": fund["allocated"],
         "available": fund["available"],
         "currency": fund["currency"],
-        "allocations": allocations,
+        "allocations": [_allocation_row(a) for a in allocations],
         "allocation_count": len(allocations),
+        "allocation_requests": _requests,
+        "allocation_requests_basis": _requests_basis,
         "by_domain": by_domain,
         "by_realm": by_realm,
         # W577 (FU-298) — a PORTFOLIO is the one place a missing allocation is most invisible: every

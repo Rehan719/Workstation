@@ -1,0 +1,22 @@
+{
+  "ruling": "Owner, 2026-10-11",
+  "rule": "The Owner's own two entities and the apex are protected. Everything else is removable only by the Owner, as a reversible move.",
+  "protected": {
+    "apex": {
+      "ids": ["workstation-idbo"],
+      "reason": "the apex - protected by the Owner's ruling of 2026-10-11"
+    },
+    "owner_own": {
+      "expected_count": 2,
+      "ids": {},
+      "ids_empty_because": "the Owner's own two entities are not identified anywhere in the repository (docs/R13_TEST_OWNED_ENTITIES.md lists only the test-owned ids, and the plan records the Owner's as a count), and the round that wrote this record was not permitted to read the data directory. They are named by the Owner, in the data directory's own record."
+    }
+  },
+  "removal": {
+    "by": "owner",
+    "as": "reversible_move",
+    "through": "Change Control (propose, approve, implement); the entity's record and books are kept"
+  },
+  "named_record": "governance/protected_entities.json under the data directory",
+  "name_them_at": "PUT /api/v1/economy/protected-entities (the Settings page: Protected enterprises)"
+}

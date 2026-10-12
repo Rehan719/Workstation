@@ -2031,11 +2031,18 @@ def test_every_generated_vsb_carries_board_and_economy(client):
     # registration, and a seeded business plan. Previously only Genesis /establish delivered this; the
     # SSE /vsb/spawn and Studio spawn paths produced governance-orphaned entities. Assert ALL paths.
     import re as _re
-    # 1) Studio spawn (non-streaming)
-    s = client.post("/api/v1/studio/vsb/spawn", json={
+    # 1) The Studio spawn door is RETIRED (P3.30 r5, Owner ruling 2026-10-11: Genesis is the one door). It
+    #    answers 410 and creates nothing, so there is no entity for the invariant to hold on; the invariant is
+    #    asserted on the door that establishes.
+    _gone = client.post("/api/v1/studio/vsb/spawn", json={
         "solution_name": "InvariantCo", "challenge": "invariant check", "realm": "enterprise",
-        "domain": "enterprise", "project_id": "inv-1"}).json()
-    assert s.get("has_board") is True
+        "domain": "enterprise", "project_id": "inv-1"})
+    assert _gone.status_code == 410 and "Genesis" in str(_gone.json().get("detail")), _gone.text[:200]
+    _g = client.post("/api/v1/genesis/establish", json={
+        "problem": "invariant check", "name": "InvariantCo", "domain": "enterprise", "ship_output": False}).json()
+    s = client.get(f"/api/v1/vsb/{_g['vsb_id']}").json()
+    s = s.get("entity", s)
+    assert s.get("board"), "an established VSB has no Board (invariant broken)"
     assert (s.get("economy") or {}).get("entity_type")     # living economy attached
     assert s.get("living")                                  # registered as a living entity
     # 2) SSE /vsb/spawn cascade — the stream emits a governance event and the persisted entity is enriched
@@ -16790,7 +16797,7 @@ def test_w472_stores_refuse_never_replace_the_class(client, monkeypatch, tmp_pat
     assert hb.screen_living_vsb(vid)["overall"] in ("pass", "review", "fail")
     assert client.post("/api/v1/economy/waterfall", json={"vsb_id": vid, "entity_type": "waqf_ltd_hybrid",
                                                           "proportions": {"owner": 0.2, "self_investment": 0.3, "capital_fund": 0.2,
-                                                                          "user_projects": 0.2, "charity": 0.1}}).status_code == 200
+                                                                          "user_projects": 0.15, "charity": 0.15}}).status_code == 200
     vt.record_positions(vid, {"positions": [{"id": "h1", "name": "H1", "amount_wst": 10.0, "score": 0.5}]})
     twins_store = cfg.data_path("federation_twins.json")
     assert client.post("/api/v210/federation/spawn-twin", json={"node_id": "n-w472"}).status_code in (200, 201)
@@ -16823,7 +16830,7 @@ def test_w472_stores_refuse_never_replace_the_class(client, monkeypatch, tmp_pat
         ("the Owner's waterfall overrides", mb._WATERFALL_OVERRIDES,
          lambda: client.post("/api/v1/economy/waterfall", json={"vsb_id": vid, "entity_type": "waqf_ltd_hybrid",
                                                                 "proportions": {"owner": 0.1, "self_investment": 0.4, "capital_fund": 0.2,
-                                                                                "user_projects": 0.2, "charity": 0.1}}).status_code,
+                                                                                "user_projects": 0.15, "charity": 0.15}}).status_code,
          lambda r: r == 503,
          lambda: (mb.EconomicMetabolism(vid, "waqf_ltd_hybrid").waterfall_source,
                   client.get(f"/api/v1/economy/status?vsb_id={vid}").json()),
@@ -47142,7 +47149,7 @@ def test_w627_p225_establish_subject_kpi_and_quarantine(client, monkeypatch):
         _hb.last_immune_defence, _hb._last_defence_beat, _hb.beats = _saved
 
 
-def test_w627_p225_ceo_cites_and_studio_provenance(client):
+def test_w627_p225_ceo_cites_and_studio_provenance(client, monkeypatch):
     """W627 (P2.25): FU-526 (the CEO's chip counts what the answer NAMES) and FU-529 (Studio stages carry
     who served them, on the stream and in the durable record)."""
     import json as _j
@@ -47175,9 +47182,14 @@ def test_w627_p225_ceo_cites_and_studio_provenance(client):
     assert "opacity-0 group-hover:opacity-100" not in _src.split("aria-label=\"Helpful\"")[0][-900:], (
         "the rating buttons still sit invisible under an ancestor with no `group`")
 
+    #  W672 - the route is RETIRED by ruling (410 by default; its own guard drives that). This test guards the
+    #  KEPT code, so it re-opens the door for itself, as the tests of the kept Studio spawn do.
+    import agentic_core.api.synthesis_studio as _ss627
+    monkeypatch.setattr(_ss627, "STUDIO_SYNTHESISE_RETIRED", False)
     s = client.post("/api/v1/studio/synthesise", json={
         "challenge": "CHALLENGE probe: community bakery cooperative", "domain": "enterprise",
         "realm": "enterprise"})
+    monkeypatch.setattr(_ss627, "STUDIO_SYNTHESISE_RETIRED", True)
     assert s.status_code == 200
     _ev = [_j.loads(l[6:]) for l in s.text.splitlines() if l.startswith("data: ")]
     _comp = [e for e in _ev if e.get("stage") == "complete"]
@@ -49804,8 +49816,14 @@ def test_w647_every_door_that_creates_an_entity_runs_its_first_screen(client, mo
     assert _lv.operate_vsb(_cid).get("held") != "compliance_fail_hold"
 
     # (c) THE STUDIO DOOR
+    #  P3.30 r5 (Owner ruling 2026-10-11) - the Studio door is RETIRED and answers 410. This leg drives the
+    #  KEPT handler with the retirement lifted, so the code a reversal would bring back still does this.
+    import agentic_core.api.synthesis_studio as _ss_r5
+    assert client.post("/api/v1/studio/vsb/spawn", json={"project_id": "w647-retired", "solution_name": "r5"}).status_code == 410
+    monkeypatch.setattr(_ss_r5, "STUDIO_SPAWN_RETIRED", False)
     _sr = client.post("/api/v1/studio/vsb/spawn", json={"project_id": "w647-project", "challenge": _bad,
                                                          "solution_name": "W647 Studio Probe", "domain": "commerce"})
+    monkeypatch.setattr(_ss_r5, "STUDIO_SPAWN_RETIRED", True)
     #  asserted, not skipped: a door this leg cannot reach is a leg that proves nothing
     assert _sr.status_code == 200, (_sr.status_code, _sr.text[:300])
     _sid = (re.findall(r"vsb-[0-9a-f]{8,10}", json.dumps(_sr.json())) or [None])[0]      # the Studio mints 8 hex
@@ -51288,7 +51306,7 @@ def test_w658_every_carrier_of_the_health_figure_says_what_it_rests_on(client):
 
     #  NO TYPED COPY of the scope sentence is left in a route module (W637 gave it one home and missed one)
     _root = _pl.Path(__file__).resolve().parents[1]
-    _frag = "AI-call failures and compliance regressions"
+    _frag = "lowered by every recorded event that is not a review flag"
     _typed = [str(_p.relative_to(_root)).replace(chr(92), "/") for _p in (_root / "agentic_core").rglob("*.py")
               if _frag in _p.read_text(encoding="utf-8", errors="replace")]
     assert _typed == ["agentic_core/organism/immune.py"], ("the scope sentence is typed outside its home", _typed)
@@ -52078,8 +52096,14 @@ def test_w663_a_screen_failed_entity_reads_as_held_a_gate_is_decidable_after_rel
     assert _entity(_cid).get("status") != _vm.SCREEN_HELD_STATUS, "a clean entity reads as held"
 
     # (b) THE STUDIO DOOR: no literal survives a failed screen, and the answer says so
+    #  P3.30 r5 (Owner ruling 2026-10-11) - the Studio door is RETIRED and answers 410. This leg drives the
+    #  KEPT handler with the retirement lifted, so the code a reversal would bring back still does this.
+    import agentic_core.api.synthesis_studio as _ss_r5
+    assert client.post("/api/v1/studio/vsb/spawn", json={"project_id": "w663-retired", "solution_name": "r5"}).status_code == 410
+    monkeypatch.setattr(_ss_r5, "STUDIO_SPAWN_RETIRED", False)
     _sr = client.post("/api/v1/studio/vsb/spawn", json={"project_id": "w663-project", "challenge": _bad,
                                                          "solution_name": "W663 Studio Probe", "domain": "commerce"})
+    monkeypatch.setattr(_ss_r5, "STUDIO_SPAWN_RETIRED", True)
     assert _sr.status_code == 200, (_sr.status_code, _sr.text[:300])
     _sj = _sr.json()
     assert _sj.get("entity_status") == _vm.SCREEN_HELD_STATUS and _sj.get("first_screen") == "fail", (
@@ -52446,9 +52470,15 @@ def test_w667_a_typed_threat_is_recorded_as_typed_and_a_lever_nothing_can_act_on
     assert "POT is not installed" not in str(_ce), "the catalogue still states the solver's absence beside a route that reads it"
 
     # -- 5. THE STUDIO'S ENTITY carries a derived status, not a literal -----------------------------------
+    #  P3.30 r5 (Owner ruling 2026-10-11) - the Studio door is RETIRED and answers 410. This leg drives the
+    #  KEPT handler with the retirement lifted, so the code a reversal would bring back still does this.
+    import agentic_core.api.synthesis_studio as _ss_r5
+    assert client.post("/api/v1/studio/vsb/spawn", json={"project_id": "w667-retired", "solution_name": "r5"}).status_code == 410
+    monkeypatch.setattr(_ss_r5, "STUDIO_SPAWN_RETIRED", False)
     _sr = client.post("/api/v1/studio/vsb/spawn", json={
         "project_id": "w667-project", "challenge": "A village bakery cooperative selling bread to the local school",
         "solution_name": "W667 Studio Probe", "domain": "commerce"})
+    monkeypatch.setattr(_ss_r5, "STUDIO_SPAWN_RETIRED", True)
     assert _sr.status_code == 200, _sr.text[:300]
     _se = client.get(f"/api/v1/studio/vsb/{_sr.json()['entity_id']}").json()
     _se = _se.get("entity") or _se
@@ -53325,56 +53355,21 @@ def test_w672_a_figure_or_a_ledger_row_says_what_it_counts(client, monkeypatch):
     assert "{summary?.in_house_rate_basis && (" in _op, "the basis line is behind a gate that is not its own field"
     assert "o.reported_by === 'caller'" in _op and 'data-testid="outcome-caller-reported"' in _op
 
-    # -- 3. R6.5 A FUND ALLOCATION says what it passed, and leaves an audit event ---------------------------
-    from agentic_core.gaas import v5 as _g5
+    # -- 3. R6.5 A FUND ALLOCATION - SUPERSEDED BY THE OWNER'S RULING OF 2026-10-11 (FU-794) ----------------
+    #    This leg drove an allocation to an id nothing knows, asserted that it went through, and asserted that
+    #    its record said no hold had been applied. The ruling reverses the behaviour itself: an allocation is
+    #    held at Change Control and an unknown recipient is refused, so each of those asserts stated the
+    #    opposite of what is now built. What the leg protected that still holds - the stored row carries what
+    #    the response said, the audit event is written after the save and one that was not written is said so -
+    #    is driven on the governed path by test_fu794_a_fund_allocation_is_held_until_a_person_approves_it.
+    #    Kept here: the same probe id, answered the way the ruling requires.
     import agentic_core.economy.living_vsbs as _lv
-    _kind = "economy.capital_fund.allocation"
-    _seen = []
-    _real_log = _g5.UEGLogger.log
-
-    def _spy(self, ev, *a, **k):
-        if isinstance(ev, dict) and ev.get("type") == _kind:
-            _seen.append(dict(ev))
-        return _real_log(self, ev, *a, **k)
-
-    def _alloc(pid):
-        _a = client.post("/api/v1/fund/allocate", json={"project_id": pid, "project_name": "w672 guard",
-                                                        "amount": 1.0, "purpose": "guard"})
-        assert _a.status_code == 200, ("an allocation that went through before is refused now", _a.status_code, _a.text[:300])
-        assert _a.json()["status"] == "allocated", _a.json()
-        return _a.json()
-
     _pid = f"w672-no-such-thing-{uuid.uuid4().hex[:6]}"
-    monkeypatch.setattr(_g5.UEGLogger, "log", _spy)
     monkeypatch.setattr(_lv, "is_registered", lambda vid: False)
-    _a1 = _alloc(_pid)
-    _g1 = _a1["governance"]
-    assert _g1["recipient_registered"] is False and _g1["gate"] == "not applied" and _g1["change_control"] == "not applied", _g1
-    assert "UNGOVERNED RECORD" in _g1["basis"] and f"names '{_pid}', which is not a registered entity" in _g1["basis"], _g1["basis"]
-    assert _g1["audit_event"] == "recorded" and _g1["credited_to"] is None, _g1
-    monkeypatch.setattr(_lv, "is_registered", lambda vid: True)
-    _g2 = _alloc(_pid)["governance"]
-    assert _g2["recipient_registered"] is True and "names a registered entity" in _g2["basis"] and _pid not in _g2["basis"], _g2
-
-    def _unreadable(vid):
-        raise RuntimeError("driven")
-    monkeypatch.setattr(_lv, "is_registered", _unreadable)
-    _g3 = _alloc(_pid)["governance"]            # not known is said, and is never answered as yes or no
-    assert _g3["recipient_registered"] is None and "could not be read (RuntimeError)" in _g3["basis"], _g3
-    assert [e["recipient_registered"] for e in _seen] == [False, True, None], ("the audit events", _seen)
-    assert all(e["gate"] == "not applied" and e["project_id"] == _pid and e["amount_wst"] == 1.0 for e in _seen), _seen
-    _stored = {r["allocation_id"]: r for r in client.get("/api/v1/fund/portfolio").json()["allocations"]}
-    assert _stored[_a1["allocation_id"]]["governance"]["basis"] == _g1["basis"], (
-        "the stored row does not carry what the response said")
-    assert _stored[_a1["allocation_id"]]["status"] == "active"
-
-    def _log_fails(self, ev, *a, **k):
-        if isinstance(ev, dict) and ev.get("type") == _kind:
-            raise RuntimeError("driven")
-        return _real_log(self, ev, *a, **k)
-    monkeypatch.setattr(_g5.UEGLogger, "log", _log_fails)
-    assert _alloc(_pid)["governance"]["audit_event"] == "NOT recorded (RuntimeError)", (
-        "an audit event that was not written is reported as recorded")
+    _a1 = client.post("/api/v1/fund/allocate", json={"project_id": _pid, "project_name": "w672 guard",
+                                                     "amount": 1.0, "purpose": "guard"})
+    assert _a1.status_code == 404 and _pid in _a1.json()["detail"], (
+        "an allocation to an id nothing knows is not refused", _a1.status_code, _a1.text[:300])
     monkeypatch.undo()
     _wl = _page("pages/profile/Wallet.tsx")
     assert 'data-testid="wallet-allocation-governance"' in _wl and "{alloc.governance.basis}" in _wl
@@ -55316,3 +55311,1412 @@ def test_rel_refine_the_gate_reads_the_rewrite_and_a_withheld_rewrite_is_not_sav
     assert "source_endpoint:" in _fn and "=== 'religion'" in _fn, "the page does not say a religion deliverable is one"
     assert _fn.index("if (rj?.refine_withheld) throw") < _fn.index("/regenerate`"), (
         "a withheld rewrite can still be saved as a new version")
+
+
+def test_p330_r5_the_owners_rulings_of_2026_10_11_are_built(client, monkeypatch):
+    """P3.30 r5 (Owner rulings 2026-10-11). Five rulings, each driven BOTH ways with its precondition asserted
+    first. Stores this test alters in place (the waterfall overrides, the protected-entities record) are
+    restored byte-for-byte in `finally`; records it merely creates are left, as every other test's are.
+
+      1  one door establishes an enterprise: the Studio's spawn route answers 410 and creates nothing, its
+         kept code still runs when the retirement is lifted, and the Spawn page leads to Genesis
+      2  a review gate holds the ship, the board pack and the public surfaces, and NOT the economy cycle
+      3  a change the method gate withheld and the health rule approved says BOTH on its record; no decision moves
+      4  the protected-entities record: the apex by rule, the Owner's own by the Owner's naming, fail-safe until then
+      5  the waterfall bound: refused when set, reported (never rewritten) when stored
+    """
+    import asyncio as _aio
+    import json as _json
+    import pathlib as _pl
+    import re as _re
+    import uuid as _uuid
+    import pytest as _pytest
+    from fastapi import HTTPException as _HTTPExc
+    import agentic_core.api.synthesis_studio as _ss
+    from agentic_core.api import change_control as _cc
+    from agentic_core.api import economy as _ec
+    from agentic_core.api import vsb as _vm
+    from agentic_core.auth import core as _auth
+    from agentic_core.config import data_path as _dp, store_lock as _lock
+    from agentic_core.economy import living_vsbs as _lv
+    from agentic_core.economy import metabolism as _mb
+    from agentic_core.economy import turnover as _to
+    from agentic_core.economy.entities import ENTITY_TEMPLATES as _TPL, WAQF_FORMS as _WAQF
+
+    assert not _auth.auth_enabled(), "this guard's owner legs are written for single-user mode"
+    _root = _pl.Path(__file__).resolve().parents[1]
+    _src = _root / "apps/workstation-superapp/src"
+    _tag = _uuid.uuid4().hex[:6]
+
+    def _fe(rel):
+        return _code_only((_src / rel).read_text(encoding="utf-8"))
+
+    def _establish(name, **kw):
+        r = client.post("/api/v1/genesis/establish", json={
+            "problem": f"r5 {_tag} a village bakery cooperative selling bread", "name": name,
+            "domain": "enterprise", "ship_output": False, **kw})
+        assert r.status_code == 200, r.text[:300]
+        return r.json()
+
+    # ══ 1. ONE DOOR ═════════════════════════════════════════════════════════════════════════════════════
+    assert _ss.STUDIO_SPAWN_RETIRED is True, "the Studio door is not retired, so the 410 leg would prove nothing"
+    _body = {"project_id": f"r5-{_tag}", "solution_name": f"R5 Studio {_tag}", "challenge": "a village bakery",
+             "domain": "commerce"}
+    _n0 = len(_ss._list_vsb())
+    _gone = client.post("/api/v1/studio/vsb/spawn", json=_body)
+    assert _gone.status_code == 410, ("the retired door still answers", _gone.status_code, _gone.text[:200])
+    _why = _gone.json().get("detail")
+    assert isinstance(_why, str) and "Genesis" in _why and "Nothing was created" in _why, (
+        "the refusal is not a plain sentence that names the door to use", _why)
+    assert len(_ss._list_vsb()) == _n0, "the retired door answered 410 and still stored an entity"
+    #  the other way: the code is KEPT - with the retirement lifted the same request creates an entity
+    monkeypatch.setattr(_ss, "STUDIO_SPAWN_RETIRED", False)
+    _back = client.post("/api/v1/studio/vsb/spawn", json=_body)
+    monkeypatch.setattr(_ss, "STUDIO_SPAWN_RETIRED", True)
+    assert _back.status_code == 200 and _back.json().get("entity_id"), (
+        "the kept handler no longer runs, so the retirement is not reversible", _back.status_code, _back.text[:200])
+    assert len(_ss._list_vsb()) == _n0 + 1
+    assert client.post("/api/v1/studio/vsb/spawn", json=_body).status_code == 410, "the retirement did not come back"
+    #  Genesis establishes
+    _g1 = _establish(f"R5 Door {_tag}")
+    assert _g1.get("vsb_id") and _vm._load_vsb(_g1["vsb_id"]), "Genesis, the one door, established nothing"
+    #  the page: its button leads to Genesis and nothing on it starts the spawn pipeline
+    _sp = _fe("pages/enterprise/VSBSpawnStudio.tsx")
+    assert "onClick={continueInGenesis}" in _sp and "onClick={handleSpawn}" not in _sp, (
+        "the Spawn page's button still starts its own pipeline")
+    assert _sp.count("handleSpawn") == 1, "something on the page still calls the spawn handler"
+    _fn = _sp.split("const continueInGenesis = () => {", 1)[1].split("\n  };", 1)[0]
+    assert "navigate(`/genesis?seed=${sid}" in _fn and "sessionStorage.setItem(`ws_genesis_${sid}`" in _fn, (
+        "the page's door does not carry the words to Genesis", _fn[:300])
+    assert "challenge" not in _fn.split("navigate(", 1)[1], "what the person typed is put in the address"
+    _note = _sp.split('data-testid="spawn-one-door"', 1)[1].split("</p>", 1)[0]
+    assert "Genesis" in _note and "no longer creates one" in " ".join(_note.split()), _note[:300]
+    _callers = [p.as_posix() for p in _src.rglob("*.ts*") if "studio/vsb/spawn" in p.read_text(encoding="utf-8")]
+    assert _callers == [], ("a page calls the retired door", _callers)
+
+    # ══ 2. WHAT A REVIEW GATE HOLDS ═════════════════════════════════════════════════════════════════════
+    _stage = _vm._LIFECYCLE_STAGE_IDS[0]
+    _gated = _establish(f"R5 Gated {_tag}", review_gates=[_stage])
+    _open = _establish(f"R5 Open {_tag}")
+    _gid, _oid = _gated["vsb_id"], _open["vsb_id"]
+    assert _vm._gates_blocking(_vm._load_vsb(_gid)), "the gated entity has no blocking gate: the legs below are vacuous"
+    assert not _vm._gates_blocking(_vm._load_vsb(_oid)), "the ungated twin is gated"
+    for _path, _mover in (("repo/ship", "ship"), ("board-pack", "board pack"), ("website", "website"),
+                          ("webapp", "web app"), ("mobile", "phone app"), ("repo", "repo")):
+        _r = client.post(f"/api/v1/vsb/{_gid}/{_path}")
+        assert _r.status_code == 409, (_path, "a gated entity's", _mover, "was not refused", _r.status_code, _r.text[:200])
+        _d = _r.json()["detail"]
+        assert _d.get("gate") == _stage and _d.get("mover") == _mover and _d.get("blocks_progress") is True, (_path, _d)
+    assert _vm._refuse_gated(_vm._load_vsb(_oid), "ship") is None, "an ungated entity is refused by a gate"
+    #  NOT the economy cycle: the gated entity's cycle is treated exactly as its ungated twin's
+    _fc_g, _fc_o = (_gated["birth_vitals"]["first_cycle"] or {}), (_open["birth_vitals"]["first_cycle"] or {})
+    assert _fc_o.get("outcome"), ("the ungated twin's first cycle reports no outcome", _fc_o)
+    assert _fc_g.get("outcome") == _fc_o.get("outcome") and "gate" not in str(_fc_g.get("held") or "").lower(), (
+        "a review gate changed the first economy cycle - the Owner ruled it does not hold the economy",
+        _fc_g.get("outcome"), _fc_g.get("held"), _fc_o.get("outcome"))
+    _c_g, _c_o = _lv.operate_vsb(_gid, source="p330-r5-guard") or {}, _lv.operate_vsb(_oid, source="p330-r5-guard") or {}
+    assert _c_g.get("outcome") == _c_o.get("outcome") and "gate" not in str(_c_g.get("held") or "").lower(), (
+        "a later economy cycle is held by the gate", _c_g.get("outcome"), _c_g.get("held"), _c_o.get("outcome"))
+    assert _vm._gates_blocking(_vm._load_vsb(_gid)), "the gate cleared itself while the cycles ran"
+    _lv_src = (_root / "agentic_core/economy/living_vsbs.py").read_text(encoding="utf-8")
+    for _helper in ("_gate_block_reason", "_gates_blocking", "_refuse_gated", "review_gates"):
+        assert _helper not in _lv_src, ("the economy now reads the review gates; the vision's status note under "
+                                        "17.4 and the Owner's ruling say it does not", _helper)
+    #  and the way out: an approval lifts the hold
+    _ok = client.post(f"/api/v1/vsb/{_gid}/review-gates/{_stage}/decision", json={"decision": "approve"})
+    assert _ok.status_code == 200, _ok.text[:200]
+    assert not _vm._gates_blocking(_vm._load_vsb(_gid)), "an approved gate still blocks"
+    #  the vision says it, in 17.4's own section, and every mover it names is one the code refuses
+    _vis = (_root / "docs/WORKSTATION_IDBO_WHOLE_VISION.md").read_text(encoding="utf-8")
+    _s174 = _vis.split("**17.4 The 3 Human", 1)[1].split("**17.5 The 10 architecture invariants", 1)[0]
+    _n174 = " ".join(_s174.replace(">", " ").split())
+    assert "STATUS AS BUILT" in _n174 and "The economy cycle is not held" in _n174.replace("**", ""), (
+        "17.4 does not say the economy cycle is outside a gate's reach")
+    _movers = set()
+    for _py in sorted((_root / "agentic_core/api").glob("*.py")):
+        _movers |= set(_re.findall(r'_refuse_gated\([^\n]*?"([^"\n]+)"\)', _py.read_text(encoding="utf-8")))
+    assert len(_movers) >= 8, ("the mover scan found too few refusals to be looking in the right place", sorted(_movers))
+    _named = {"the ship": "ship", "the board pack": "board pack", "the repository": "repo", "the website": "website",
+              "the web app": "web app", "the phone app": "phone app", "evolve": "evolve",
+              "evolution apply": "evolution apply", "the repository cascade": "repo cascade",
+              "orchestration": "orchestrate", "a swarm run": "swarm run", "a cascade": "cascade",
+              "a contract delivery": "contract delivery"}
+    for _words, _mover in _named.items():
+        assert _words in _n174, ("the 17.4 status note no longer names", _words)
+        assert _mover in _movers, ("the 17.4 status note names a mover the code does not refuse", _words, _mover)
+    assert "W???" not in _vis, "the round id token was not replaced in the vision's status notes"
+
+    # ══ 3. THE RECORD STATES BOTH FACTS ═════════════════════════════════════════════════════════════════
+    _w464_healthy(monkeypatch, _cc)
+    _w464_serving(monkeypatch, _cc, review="an assessment with no decision marker")
+
+    def _submit(**kw):
+        return client.post("/api/v1/cca/submit", json={
+            "title": f"R5 {_tag} {_uuid.uuid4().hex[:5]}", "change_type": "config_minor",
+            "description": "a low-tier change", **kw}).json()
+
+    _thin = _submit()
+    assert _thin["status"] == "submitted" and _thin.get("auto_approval_withheld"), (
+        "the method gate did not withhold this incomplete record's automatic approval - precondition", _thin)
+    assert "decision_account" not in _cc._load_change(_thin["cca_id"]), "an undecided change already carries an account"
+    _rv = client.post(f"/api/v1/cca/{_thin['cca_id']}/review", json={}).json()
+    assert _rv["decision"] == "approved" and _rv["decision_source"] == "health_threshold_rule", (
+        "the designed behaviour moved: the health rule no longer approves what the method gate withheld", _rv)
+    _acct = _rv.get("decision_account") or {}
+    assert _acct.get("method_gate") == "the method gate withheld automatic approval because " + _thin["auto_approval_withheld"], _acct
+    assert str(_acct.get("review")).startswith("approved at review by the health rule because ") and ">= 0.5" in _acct["review"], _acct
+    _rec = _cc._load_change(_thin["cca_id"])
+    assert _rec["decision_account"] == _acct and _rec["status"] == "approved" and _rec.get("auto_approval_withheld") == _thin["auto_approval_withheld"]
+    _row = next(r for r in _cc._list_changes() if r["cca_id"] == _thin["cca_id"])
+    assert _row.get("decision_account") == _acct and _row.get("auto_approval_withheld") == _thin["auto_approval_withheld"], (
+        "the list row the Agency page draws its cards from does not carry both", sorted(_row))
+    #  a person's decision on a withheld change is said to be a person's
+    _thin2 = _submit()
+    assert _thin2.get("auto_approval_withheld")
+    _ov = client.post(f"/api/v1/cca/{_thin2['cca_id']}/review", json={"override_decision": "rejected", "reviewer_notes": "r5"}).json()
+    assert _ov["decision"] == "rejected" and _ov["decision_source"] == "admin_override", _ov
+    assert str((_ov.get("decision_account") or {}).get("review")).startswith("rejected at review by a person's explicit decision"), _ov
+    #  the other way: a change the method gate never withheld gets NO account
+    _full = client.post("/api/v1/cca/submit", json={
+        "title": f"R5 full {_tag}", "change_type": "config_major", "description": "a complete medium change",
+        "rationale": "a complete record, so the method gate withholds nothing", "affected_systems": ["change_control"],
+        "rollback_plan": "revert the setting"}).json()
+    assert not _full.get("auto_approval_withheld"), _full
+    _rf = client.post(f"/api/v1/cca/{_full['cca_id']}/review", json={}).json()
+    assert _rf["decision"] == "approved" and "decision_account" not in _rf, _rf
+    assert "decision_account" not in _cc._load_change(_full["cca_id"])
+    assert _cc._decision_account({"auto_approval_withheld": "x"}, None, "held_awaiting_admin", "nothing") is None, (
+        "a held change is given an account of a decision nobody made")
+    _cca = _fe("pages/enterprise/ChangeControlAgency.tsx")
+    _blk = _cca.split("{entry.decision_account && (", 1)
+    assert len(_blk) == 2, "the card does not gate the account on its presence"
+    _blk = _blk[1].split(")}", 1)[0]
+    assert "{entry.decision_account.method_gate}" in _blk and "{entry.decision_account.review}" in _blk, _blk[:300]
+
+    # ══ 4. THE PROTECTED-ENTITIES RECORD ════════════════════════════════════════════════════════════════
+    _rule = _to.protected_rule()
+    _own = _rule["protected"]["owner_own"]
+    assert _own["ids"] == {} and _own["ids_empty_because"] and _own["expected_count"] == 2, (
+        "the shipped rule names entities as the Owner's own; only the Owner may", _own)
+    _apex = _rule["protected"]["apex"]["ids"]
+    assert _apex == ["workstation-idbo"], _apex
+    _e1, _e2 = _oid, _g1["vsb_id"]
+    _pf = _dp(_to.PROTECTED_RECORD)
+    _pf.parent.mkdir(parents=True, exist_ok=True)
+    _had = _pf.exists()
+    _prev = _pf.read_bytes() if _had else None
+    try:
+        if _pf.exists():
+            _pf.unlink()
+        # -- nothing named yet: fail-safe, and the way out is stated --------------------------------------
+        _s0 = client.get("/api/v1/economy/protected-entities")
+        assert _s0.status_code == 200, _s0.text[:200]
+        _s0 = _s0.json()
+        assert _s0["state"] == "not_named" and _s0["record_exists"] is False and _s0["named"] == {}, _s0
+        assert _to.NAME_THEM_AT in _s0["basis"] and _own["ids_empty_because"] in _s0["basis"], _s0["basis"]
+        _u = _to.retirement_refusal(_e1)
+        assert _u["refused"] is True and _u["not_assessable"] == ["named_in_a_ruling"], (_u["refusing"], _u["not_assessable"])
+        _rb = next(r["basis"] for r in _u["rules"] if r["rule"] == "named_in_a_ruling")
+        assert _to.NAME_THEM_AT in _rb and _rule["rule"] in _rb, _rb
+        assert _u["removal_rule"] == _rule["removal"], _u.get("removal_rule")
+        assert _to._ruling(_apex[0])["verdict"] == "refuses", "the apex is not protected while nothing is named"
+        # -- what the route refuses, and writes nothing --------------------------------------------------
+        for _bad, _needle in (({"entities": {_e1: "the Owner's own"}}, "owner_confirms"),
+                              ({"entities": {}, "owner_confirms": True}, "no entity was named"),
+                              ({"entities": {_e1: ""}, "owner_confirms": True}, "no reason was given"),
+                              ({"entities": {"vsb-never-existed-r5": "x"}, "owner_confirms": True}, "vsb-never-existed-r5")):
+            _r = client.put("/api/v1/economy/protected-entities", json=_bad)
+            assert _r.status_code == 400 and isinstance(_r.json()["detail"], str) and _needle in _r.json()["detail"], (
+                _bad, _r.status_code, _r.text[:200])
+            assert not _pf.exists(), ("a refused naming wrote the record", _bad)
+        # -- the Owner names one: that one is protected, the other is not; the count is compared with the rule
+        _p1 = client.put("/api/v1/economy/protected-entities", json={"entities": {_e1: "the Owner's own"}, "owner_confirms": True})
+        assert _p1.status_code == 200, _p1.text[:300]
+        _p1 = _p1.json()
+        assert _p1["state"] == "named" and _p1["named"] == {_e1: "the Owner's own"} and _p1["count_matches_rule"] is False, _p1
+        assert "do not agree" in _p1["basis"], _p1["basis"]
+        _r1 = _to.retirement_refusal(_e1)
+        assert "named_in_a_ruling" in _r1["refusing"], (_r1["refusing"], _r1["not_assessable"])
+        _r2 = _to.retirement_refusal(_e2)
+        assert "named_in_a_ruling" not in _r2["refusing"] + _r2["not_assessable"], (
+            "an entity the Owner did not name is still held by this rule", _r2["refusing"], _r2["not_assessable"])
+        assert _to._ruling(_apex[0])["verdict"] == "refuses", "the apex stopped being protected once entities were named"
+        # -- naming both: the earlier record is kept in the history, and the count now matches the rule ---
+        _p2 = client.put("/api/v1/economy/protected-entities",
+                         json={"entities": {_e1: "the Owner's own", _e2: "the Owner's own"}, "owner_confirms": True}).json()
+        assert _p2["named_count"] == 2 and _p2["count_matches_rule"] is True and "do not agree" not in _p2["basis"], _p2
+        _stored = _json.loads(_pf.read_text(encoding="utf-8"))
+        assert [h["entities"] for h in _stored["history"]] == [{_e1: "the Owner's own"}], (
+            "the earlier record was replaced without being kept", _stored.get("history"))
+    finally:
+        if _had:
+            _pf.write_bytes(_prev)
+        elif _pf.exists():
+            _pf.unlink()
+    # -- removable ONLY BY THE OWNER, once authentication is on ------------------------------------------
+    with monkeypatch.context() as _m:
+        _m.setattr(_auth, "auth_enabled", lambda: True)
+        with _pytest.raises(_HTTPExc) as _x:
+            _ec._owner_only_r5({"username": "a-tenant", "role": "user"}, "propose the removal of an entity")
+        assert _x.value.status_code == 403 and isinstance(_x.value.detail, str) and "Only the Owner" in _x.value.detail
+        with _pytest.raises(_HTTPExc):
+            _ec._owner_only_r5(None, "x")
+        assert _ec._owner_only_r5({"username": "owner", "role": "admin"}, "x") is None
+    assert _ec._owner_only_r5(None, "x") is None, "single-user mode refuses its one user"
+    _ecs = (_root / "agentic_core/api/economy.py").read_text(encoding="utf-8")
+    _h = _ecs.split("async def living_vsb_propose_removal(", 1)[1].split("\n@router.", 1)[0]
+    assert "_owner_only_r5(user," in _h and _h.index("_owner_only_r5(user,") < _h.index("propose_removal("), (
+        "the removal route does not ask who is proposing before it files")
+    _set = _fe("pages/Settings.tsx")
+    assert "import ProtectedEntitiesPanel from" in _set and "<ProtectedEntitiesPanel />" in _set
+    _pn = _fe("components/ProtectedEntitiesPanel.tsx")
+    _st = _pn.split('data-testid="protected-entities-state"', 1)[1].split("</p>", 1)[0]
+    assert "{String(rec.basis ?? '')}" in _st, "the panel paraphrases the state instead of printing the route's sentence"
+    assert "'/api/v1/economy/protected-entities'" in _pn and "method: 'PUT'" in _pn and "owner_confirms: confirm" in _pn
+
+    # ══ 5. THE WATERFALL BOUND ══════════════════════════════════════════════════════════════════════════
+    assert "waqf_ltd_hybrid" in _WAQF and "ltd" not in _WAQF and _WAQF <= set(_TPL), sorted(_WAQF)
+    _wq, _lt, _old = f"r5-wq-{_tag}", f"r5-ltd-{_tag}", f"r5-old-{_tag}"
+    _wbytes = _mb._WATERFALL_OVERRIDES.read_bytes() if _mb._WATERFALL_OVERRIDES.exists() else None
+
+    def _post(vid, form, **p):
+        return client.post("/api/v1/economy/waterfall", json={"vsb_id": vid, "entity_type": form, "proportions": p})
+
+    def _get(vid, form):
+        return client.get("/api/v1/economy/waterfall", params={"vsb_id": vid, "entity_type": form}).json()
+
+    try:
+        _t0 = _get(_wq, "waqf_ltd_hybrid")
+        assert _t0["source"] == "entity_template" and _t0["out_of_bound"] == [] and _t0["out_of_bound_basis"] is None, _t0
+        assert _t0["bound_rule"] == _mb.WATERFALL_BOUND_RULE
+        _floor = _t0["template_default"]["charity"]
+        assert _floor > 0.10, ("the template's charity share is not above the probe's 10%", _floor)
+        #  inside the bound: saved
+        _in = _post(_wq, "waqf_ltd_hybrid", owner=0.10, self_investment=0.30, capital_fund=0.20, user_projects=0.15, charity=0.25)
+        assert _in.status_code == 200, _in.text[:300]
+        _kept = _get(_wq, "waqf_ltd_hybrid")["waterfall"]
+        #  out of bound, each rule on its own: refused with a plain sentence, and nothing written
+        for _props, _needle in (
+                (dict(owner=0.25, self_investment=0.30, capital_fund=0.20, user_projects=0.0, charity=0.25), "user_projects share cannot be zero"),
+                (dict(owner=0.25, self_investment=0.30, capital_fund=0.20, user_projects=0.15, charity=0.10), "keeps at least its template's charity share"),
+                (dict(owner=0.97, self_investment=0.01, capital_fund=0.02, user_projects=0.0, charity=0.0), "charity share cannot be zero")):
+            _r = _post(_wq, "waqf_ltd_hybrid", **_props)
+            assert _r.status_code == 400, ("an out-of-bound waterfall was accepted", _props, _r.text[:200])
+            _d = _r.json()["detail"]
+            assert isinstance(_d, str) and _needle in _d and "Nothing was written" in _d, (_props, _d)
+            assert _get(_wq, "waqf_ltd_hybrid")["waterfall"] == _kept, "a refused waterfall changed the one in force"
+        #  the other way: the SAME 10% charity split on a form that is not a waqf form is inside the bound
+        _l = _post(_lt, "ltd", owner=0.25, self_investment=0.30, capital_fund=0.20, user_projects=0.15, charity=0.10)
+        assert _l.status_code == 200, ("a non-waqf form is held to the waqf charity floor", _l.text[:200])
+        assert _post(_lt, "ltd", owner=0.40, self_investment=0.30, capital_fund=0.20, user_projects=0.10, charity=0.0).status_code == 400
+        #  the two older refusals keep their shape for their readers
+        _np = _post(f"r5-np-{_tag}", "nonprofit", owner=0.5, self_investment=0.2, capital_fund=0.1, user_projects=0.1, charity=0.1)
+        assert _np.status_code == 400 and _np.json()["detail"]["violations"], _np.text[:200]
+        #  a waterfall STORED before the bound is reported, not rewritten, and still applies
+        _bad = {"owner": 0.97, "self_investment": 0.01, "capital_fund": 0.02, "user_projects": 0.0, "charity": 0.0}
+        with _lock(_mb._WATERFALL_OVERRIDES):
+            _all = _mb._load_waterfall_overrides()
+            _all[_old] = dict(_bad)
+            _mb._save_waterfall_overrides(_all)
+        _o = _get(_old, "waqf_ltd_hybrid")
+        assert _o["source"] == "owner_override" and _o["waterfall"]["owner"] == 0.97, (
+            "the stored waterfall was replaced or ignored on read", _o["source"], _o["waterfall"])
+        assert len(_o["out_of_bound"]) == 3 and "not rewritten" in _o["out_of_bound_basis"], _o["out_of_bound"]
+        assert _mb._load_waterfall_overrides()[_old] == _bad, "reading an out-of-bound waterfall rewrote it"
+        assert _mb.EconomicMetabolism(_old, "waqf_ltd_hybrid").waterfall["owner"] == 0.97, (
+            "the bound was put where stored overrides are re-validated, so an earlier waterfall is silently dropped")
+    finally:
+        if _wbytes is None:
+            if _mb._WATERFALL_OVERRIDES.exists():
+                _mb._WATERFALL_OVERRIDES.unlink()
+        else:
+            _mb._WATERFALL_OVERRIDES.write_bytes(_wbytes)
+    _ve = _fe("pages/enterprise/VSBEconomy.tsx")
+    assert "typeof d?.detail === 'string' ? [d.detail]" in _ve, "the page turns a plain-sentence refusal into a bare status code"
+    _ob = _ve.split("{(wf?.out_of_bound ?? []).length > 0 && (", 1)
+    assert len(_ob) == 2, "the page does not gate the out-of-bound statement on the route's list"
+    _ob = _ob[1].split("{wfMsg &&", 1)[0]
+    assert 'data-testid="waterfall-out-of-bound"' in _ob and "{wf?.out_of_bound_basis}" in _ob and "(wf?.out_of_bound ?? []).map(" in _ob, _ob[:400]
+
+
+def test_p330_r6_each_capability_gap_is_stated_where_a_person_meets_it(client, monkeypatch):
+    """P3.30 r6 - ACCEPT (2): a PARTIAL closes only when its disclosure is driven at the surface and reaches
+    the reader as TEXT. Part I drives the seven statements this round added, each both ways. Part II holds
+    the disclosures that were already in body text, asserted inside the sentence's own element and on its
+    gate expression.
+
+    WHAT THIS DOES NOT COVER, said here so a pass is not read as more: no browser renders a page in this
+    suite, so every page leg is a read of the page's source (comments removed); and the twin page's sentence
+    is not driven through a created model (the API half is driven by the W662 guard of the twin routes)."""
+    import asyncio as _aio
+    import pathlib as _pl
+    import re as _re
+    import uuid as _uuid
+    from agentic_core.api import change_control as _cc
+    from agentic_core.api import vsb as _vm
+    from agentic_core.organism.heartbeat import heartbeat as _hb
+
+    _root = _pl.Path(__file__).resolve().parents[1]
+    _src = _root / "apps/workstation-superapp/src"
+
+    def _fe(rel):
+        return _code_only((_src / rel).read_text(encoding="utf-8"))
+
+    def _within(code, start, end, what):
+        parts = code.split(start, 1)
+        assert len(parts) == 2, ("the page no longer holds", what, start[:80])
+        return parts[1].split(end, 1)[0]
+
+    # ══ PART I - the seven statements added ═════════════════════════════════════════════════════════════
+    # -- A. "operating" says what a beat does, from the levers, and what it is not -------------------------
+    assert _vm._operating_means({"status": "body pending"}) is None, "an entity that is not operating is told what operating means"
+    with monkeypatch.context() as _m:
+        _m.setattr(_hb, "auto_economy", True, raising=False)
+        _m.setattr(_hb, "auto_compliance", False, raising=False)
+        _m.setattr(_hb, "auto_evolve", False, raising=False)
+        _s1 = _vm._operating_means({"status": _vm.OPERATING_STATUS})
+        assert "economy cycle" in _s1 and "re-screens" not in _s1 and "evolution cycle" not in _s1, _s1
+        _m.setattr(_hb, "auto_economy", False, raising=False)
+        _m.setattr(_hb, "auto_compliance", True, raising=False)
+        _s2 = _vm._operating_means({"status": _vm.OPERATING_STATUS})
+        assert "re-screens" in _s2 and "economy cycle" not in _s2, ("the sentence is typed, not read from the levers", _s2)
+        _m.setattr(_hb, "auto_compliance", False, raising=False)
+        assert "no step that touches this entity is switched on" in _vm._operating_means({"status": _vm.OPERATING_STATUS})
+    assert "does not mean customers are being served" in _s1 and "does not mean customers are being served" in _s2
+    _e = client.post("/api/v1/genesis/establish", json={"problem": "r6 a village bakery cooperative", "name": f"R6 {_uuid.uuid4().hex[:6]}",
+                                                        "domain": "enterprise", "ship_output": False})
+    assert _e.status_code == 200, _e.text[:300]
+    _view = client.get(f"/api/v1/vsb/{_e.json()['vsb_id']}").json()
+    _view = _view.get("entity", _view)
+    assert "operating_means" in _view, "the entity's read does not carry the field at all"
+    assert (_view["operating_means"] is not None) == (_view.get("status") == _vm.OPERATING_STATUS), (
+        "the sentence and the status disagree", _view.get("status"), _view["operating_means"])
+    _ck = _fe("pages/enterprise/VSBCockpit.tsx")
+    _b = _within(_ck, "{(detail as any).operating_means && (", ")}", "the cockpit's operating sentence")
+    assert "{(detail as any).operating_means}</span>" in _b and "title=" not in _b, _b[:300]
+
+    # -- B. the video format is an HTML page, said on the format and printed under the picker --------------
+    _fm = client.get("/api/v1/deliverables/output-formats").json()
+    _vid = next(f for f in _fm["live"] if f["id"] == "video-html")
+    assert _vid["is_media_file"] is False and "not a video file" in _vid["basis"], _vid
+    assert ("mp4 is listed as not yet produced" in _vid["basis"]) == ("mp4" in _fm["catalogue_not_yet_produced"]), (
+        "the sentence about the encoder is typed, not read from the catalogue", _vid["basis"], _fm["catalogue_not_yet_produced"])
+    assert [f["id"] for f in _fm["live"] if f.get("basis")] == ["video-html"], "a format that is what it says carries a caveat"
+    _dv = _fe("pages/Deliverables.tsx")
+    assert "basis: typeof f.basis === 'string' ? f.basis : undefined" in _dv, "the page drops the format's basis when it loads the list"
+    _b = _within(_dv, "{formats.find(f => f.id === dlFormat)?.basis && (", ")}", "the export format's basis")
+    assert 'data-testid="export-format-basis"' in _b and "{formats.find(f => f.id === dlFormat)?.basis}</p>" in _b, _b[:300]
+
+    # -- C. the recommendation "model" is counted from what is held ---------------------------------------
+    _qi = _fe("components/qep/QEPIntelligence.tsx")
+    _b = _within(_qi, 'data-testid="qep-recommendation-model-basis">', "</p>", "the recommendation model's basis")
+    assert "{Object.keys(weights ?? {}).length} stored number(s)" in _b and "Nothing is trained on them" in _b, _b[:300]
+
+    # -- D. the twin page prints the record's own statement above its text ---------------------------------
+    _dt = _fe("pages/developers/DigitalTwins.tsx")
+    _b = _within(_dt, 'data-testid="twin-composition-basis">', "</p>", "the twin record's composition basis")
+    assert "{selected.composition?.basis" in _b and "This record does not say how its text was produced." in _b, _b[:300]
+    assert _dt.index('data-testid="twin-composition-basis"') < _dt.index("{selected.model_spec ?? 'No model spec.'}"), (
+        "the statement comes after the text it is about")
+
+    # -- E. the fabric's capacity chip says in text that the energy figure cannot fall ---------------------
+    from agentic_core.api import resource_fabric as _rfm
+    _sim = client.post("/api/v1/resources/compose/simulate", json={
+        "name": "r6 probe", "resource_ids": [next(iter(_rfm._BY_ID))], "usage_area": "synthesis"})
+    assert _sim.status_code == 200, _sim.text[:300]
+    _org = ((_sim.json()["model"].get("organism_capacity") or {}).get("organism"))
+    if isinstance(_org, dict):          # None only on the capacity fallback path, which carries no figure at all
+        assert isinstance(_org.get("atp_can_fall"), bool), ("the capacity reading does not say whether ATP can fall", sorted(_org))
+    _rf = _fe("pages/synthesis/ResourceFabric.tsx")
+    _b = _within(_rf, "{sim.model.organism_capacity?.organism?.atp_can_fall === false && (", ")}", "the fabric's ATP sentence")
+    assert 'data-testid="fabric-atp-cannot-fall"' in _b and "simulated and cannot fall" in _b and "title=" not in _b, _b[:300]
+
+    # -- F. invariant 2: the unmet check prints its own basis as text --------------------------------------
+    _real = client.get("/api/v1/transformation/realisation").json()
+    _gov = next(p for p in _real["pillars"] if p["id"] == "governance")
+    _inv = [c for c in _gov["evidence"] if c["label"].startswith("GaaS gate on EVERY output")]
+    assert _inv and (_inv[0]["met"] is False) == ("NOT held" in _inv[0]["basis"]), _inv
+    _td = _fe("pages/TransformationDashboard.tsx")
+    _b = _within(_td, "{p.evidence.filter(e => e.met === false && e.basis).map((e, i) => (", "))}", "the unmet evidence's basis")
+    assert 'data-testid="pillar-evidence-basis">{e.basis}</p>' in _b, _b[:300]
+
+    # -- G. pre-validation that was not a twin's says how it was reached, as text --------------------------
+    _w464_healthy(monkeypatch, _cc)
+    _serve = _w464_serving(monkeypatch, _cc, review="no marker", twin="no twin marker either")
+    _c = client.post("/api/v1/cca/submit", json={"title": f"R6 {_uuid.uuid4().hex[:6]}", "change_type": "code_change",
+                                                 "description": "a high change", "rationale": "probe",
+                                                 "affected_systems": ["change_control"], "rollback_plan": "revert"}).json()
+    _tp = _aio.run(_cc._twin_prevalidate(_cc._load_change(_c["cca_id"])))
+    assert _tp["source"] == "health_gate_default" and "was NOT simulated" in _tp["method"], _tp
+    _serve["twin"] = "[TWIN: PASS]"
+    _tp2 = _aio.run(_cc._twin_prevalidate(_cc._load_change(_c["cca_id"])))
+    assert _tp2["source"] == "twin_marker" and "NOT simulated" not in _tp2["method"], _tp2
+    _cca = _fe("pages/enterprise/ChangeControlAgency.tsx")
+    _b = _within(_cca, "{detail.twin_prevalidation.source !== 'twin_marker' && detail.twin_prevalidation.method && (", ")}",
+                 "the pre-validation method sentence")
+    assert 'data-testid="cca-twin-method">{detail.twin_prevalidation.method}</span>' in _b, _b[:300]
+
+    # ══ PART II - disclosures that were already text where the capability is met ════════════════════════
+    # no served model: the journey's own card, gated on the floor's count of calls
+    _gj = _fe("pages/synthesis/GenesisJourney.tsx")
+    _b = _within(_gj, "{(result.ai_provenance.served_by['native'] || 0) > 0 && (", ")}", "the journey's floor sentence")
+    assert "The deterministic native floor served {result.ai_provenance.served_by['native']}" in " ".join(_b.split()), _b[:300]
+    assert "not generative model" in " ".join(_b.split())
+    assert "{result.stages_note && (" in _gj and "{result.stages_note}</p>" in _gj
+    # the quality bar: the count is text on both surfaces that show it
+    for _rel, _obj in (("pages/Deliverables.tsx", "selected"), ("pages/synthesis/GenesisJourney.tsx", "result")):
+        _pg = _fe(_rel)
+        _b = _within(_pg, f"{{{_obj}.quality_assurance.quality" + ("?" if _obj == "selected" else "") + ".bar_measured && (", ")}",
+                     f"the bar chip on {_rel}")
+        assert "bar_measured.summary" in _b.split(">", 1)[1], (_rel, "the bar's count is not in the chip's text", _b[:300])
+    # explainability: the basis is a paragraph, and the route still says the figure is a display constant
+    assert "{xai.explanations_basis}</p>" in _qi
+    assert "display constant" in client.get("/api/v1/qep/xai/explanations").json()["explanations_basis"]
+    # model before commit: the route's note is printed, and it says nothing was run
+    assert "{sim.note && <p" in _rf and "{sim.note}</p>" in _rf
+    # the energy figure, on the page that shows the governor
+    _na = _fe("pages/developers/NativeAI.tsx")
+    _b = _within(_na, "{homeo.organism.atp_can_fall", "</span>}", "the Native AI page's ATP sentence")
+    assert "simulated and cannot fall" in " ".join(_b.split()), _b[:300]
+    _hm = _fe("pages/organism/HeartbeatMonitor.tsx")
+    assert "ATP cannot fall, so they do not fire in practice" in _within(_hm, 'data-testid="heartbeat-survival-note"', "</p>", "the survival note")
+    # the genome is two records: printed from the route
+    _an = _fe("pages/organism/OrganismAnatomy.tsx")
+    assert "{entGenomes.basis}" in _within(_an, 'data-testid="entity-genomes-basis"', "</p>", "the two-records sentence")
+    # languages: both sentences are text, and the count is computed
+    _st = _fe("pages/Settings.tsx")
+    assert "AI-generated content is still produced" in _st and "{interfaceLanguages(LANGUAGES).length} language(s)" in _st
+    # the pre-validation label (the half that was already text)
+    assert "({detail.twin_prevalidation.source_label ?? detail.twin_prevalidation.source})" in _cca
+
+
+def test_p330_r7_the_vision_says_what_is_built(client):
+    """P3.30 r7 - five status notes in the vision, each held to the CODE FACT it states rather than to its
+    wording. A note is found inside the section it corrects; the modules, constants and readings it names are
+    computed from the tree at test time, so the note goes red when the tree stops being what it says - and
+    the message then says which sentence to correct. The Owner's vision text above each note is not asserted."""
+    import inspect
+    import pathlib as _pl
+    import re as _re
+    from agentic_core.api import change_control as _cc
+    from agentic_core.api import compliance as _cp
+    from agentic_core.api import swarm as _sw
+    from agentic_core.organism import cadence as _cad
+
+    _root = _pl.Path(__file__).resolve().parents[1]
+    _core = _root / "agentic_core"
+    _vis = (_root / "docs/WORKSTATION_IDBO_WHOLE_VISION.md").read_text(encoding="utf-8")
+    assert "W???" not in _vis, "the round id token was not replaced in the vision's status notes"
+
+    def _note(start, end, opening):
+        """The status note that opens with `opening`, taken from inside its own section, whitespace-flattened."""
+        assert start in _vis and end in _vis.split(start, 1)[1], ("the vision's section is not where this guard looks", start, end)
+        sec = " ".join(_vis.split(start, 1)[1].split(end, 1)[0].replace(">", " ").split())
+        hits = [p for p in sec.split("**STATUS AS BUILT, corrected W") if p.split(".**", 1)[-1].lstrip().startswith(opening)]
+        assert len(hits) == 1, ("the section does not hold exactly one status note opening with", opening, start)
+        return hits[0]
+
+    def _src(rel):
+        return (_core / rel).read_text(encoding="utf-8")
+
+    # -- 1. section 11: six screens, and where the screen is called -------------------------------------------
+    _n11 = _note("## 11. Compliance, Safety & Ethics", "\n## 12.", "The six are six SCREENS")
+    assert len(_cp._FRAMEWORKS) == 6, ("the note says six screens; the module lists", len(_cp._FRAMEWORKS))
+    _callers = set()
+    for _py in sorted(_core.rglob("*.py")):
+        _rel = _py.relative_to(_core).as_posix()
+        if "_archive" in _rel or _rel == "api/compliance.py":
+            continue
+        if "screen_compliance(" in _py.read_text(encoding="utf-8", errors="replace"):
+            _callers.add(_rel)
+    assert len(_callers) >= 4, ("the caller scan found too few modules to be looking in the right place", sorted(_callers))
+    _named = set(_re.findall(r"\(`((?:api|economy|governance|organism|vbs)/[\w/]+\.py)`\)", _n11))
+    _says_not = {"api/forge.py", "api/synthesis_studio.py"}
+    assert _named - _says_not == _callers, (
+        "section 11's status note lists the modules that call the screen 'and from nowhere else'; the tree's "
+        "callers are different now - correct the note's list", sorted(_named - _says_not), sorted(_callers))
+    for _rel in _says_not:
+        assert _rel in _named and "screen_compliance(" not in _src(_rel) and "assure_delivery(" not in _src(_rel), (
+            "the note says this module does not call the screen, and it does (or the note no longer names it)", _rel)
+    assert _re.search(r"self\.auto_compliance = False\b", _src("organism/heartbeat.py")), (
+        "the note says the re-screen lever is off unless the Owner turns it on; its default changed")
+    assert "auto_compliance" in _n11
+
+    # -- 2. section 5: a template, C-Suite selection, and no avatar path to the Chief ---------------------------
+    _n5 = _note("## 5. The Living Organisation", "\n## 6.", "The organisation is not modelled or simulated")
+    _to_src = _src("api/transformation_orchestration.py")
+    assert '"model_type": "organisational_template", "trained": False' in _to_src, (
+        "the note says the twin is recorded as an untrained organisational template; the record changed")
+    assert "organisational_template" in _n5 and "_MAX_AGENTS_PER_RUN" in _n5 and isinstance(_sw._MAX_AGENTS_PER_RUN, int)
+    assert "agent_ids" in _src("api/swarm.py")
+    _instructors = sorted(p.relative_to(_root).as_posix()
+                          for d in (_core / "avatars", _root / "apps/workstation-superapp/src")
+                          for p in d.rglob("*") if p.suffix in (".py", ".ts", ".tsx")
+                          and "chief/instruct" in p.read_text(encoding="utf-8", errors="replace"))
+    assert all(("BoardOfDirectors.tsx" in p or "VSBCockpit.tsx" in p) for p in _instructors), (
+        "the note says no avatar or navigation path instructs the Chief; another caller of the route exists now",
+        _instructors)
+
+    # -- 3. section 7: nothing optimises a cascade; the preview runs nothing --------------------------------------
+    _n7 = _note("## 7. The Reconfigurable Resource Fabric", "\n## 8.", "Nothing optimises a cascade")
+    from agentic_core.api import resource_fabric as _rf
+    _sim = client.post("/api/v1/resources/compose/simulate", json={
+        "name": "r7 probe", "resource_ids": [next(iter(_rf._BY_ID))], "usage_area": "synthesis"})
+    assert _sim.status_code == 200 and "NOTHING WAS RUN" in _sim.json()["note"] and _sim.json()["saved"] is False, _sim.text[:300]
+    assert "/api/v1/resources/compose/simulate" in _n7 and "NOTHING WAS RUN" in _n7
+    assert '"computed": False' in _src("api/digital_twin.py") and '"computed": True' not in _src("api/digital_twin.py"), (
+        "the note says the twin routes record computed false; one of them now records a computation")
+
+    # -- 4. section 17.3: the cadence layers refresh, from plan state, with no observed signal --------------------
+    _n173 = _note("**17.3 The Living Business System", "**17.4 The 3 Human", "The Strategic and Action-Plan layers are no longer missing")
+    assert set(_cad.LAYERS) == {_cad.STRATEGIC, _cad.ACTION_PLAN} and callable(_cad.due)
+    assert '"served_by": "deterministic-floor"' in inspect.getsource(_cad._compose), (
+        "the note says a default refresh is composed by code and says so; the composition's provenance changed")
+    assert "deterministic-floor" in _n173
+    assert "nothing in this platform observes markets or KPIs" in _cad.SIGNALS_OBSERVED_BY, (
+        "the note says nothing observes a signal; the module's own statement changed", _cad.SIGNALS_OBSERVED_BY)
+    assert "cadence_refresh" in _src("organism/heartbeat.py")
+
+    # -- 5. section 17.5: three of the ten ----------------------------------------------------------------------
+    _n175 = _note("**17.5 The 10 architecture invariants", "**16.1 Reconciliation addendum", "*GaaS gate on every output* is still not held")
+    _gov = next(p for p in client.get("/api/v1/transformation/realisation").json()["pillars"] if p["id"] == "governance")
+    _inv = [c for c in _gov["evidence"] if c["label"].startswith("GaaS gate on EVERY output")]
+    assert _inv and _inv[0]["met"] is False and "NO global gate" in _inv[0]["basis"], (
+        "the note says invariant 2 is not held and there is no global gate; the platform's own reading changed", _inv)
+    assert "health_gate_default" in inspect.getsource(_cc._twin_prevalidate) and "health_gate_default" in _n175
+    assert "kpi_release_gate(" in _src("api/business_plan.py") and "kpi_release_gate" in _src("api/marketplace.py"), (
+        "the note says the KPI gate is read by the marketplace before a listing is released")
+    assert "kpi_release_gate" in _n175
+
+
+def test_fu794_a_fund_allocation_is_held_until_a_person_approves_it(client, monkeypatch):
+    """FU-794 (P2.39, Owner ruling 2026-10-11) - the Sovereign Capital Fund's allocation is governed.
+
+    Before: POST /api/v1/fund/allocate moved any amount to any id - no hold, no decision, the id not looked up.
+    Now it is one more class of the economy's existing gate: a request files a Change Control hold and moves
+    nothing; only an explicit decision approves it; the allocation is applied, once, when it is requested
+    again; a rejection applies nothing; an id that does not exist is refused before anything is filed.
+
+    Every leg DRIVES its state, the preconditions are asserted first, and every store this test changes is
+    put back: the fund store byte for byte, and each Change Control record and project it created is removed.
+    """
+    import json
+    import pathlib
+    import uuid
+    from agentic_core.api import capital_fund as _cf
+    from agentic_core.api import change_control as _cc
+    from agentic_core.auth import core as _auth
+    from agentic_core.economy import governance as _gv
+    from agentic_core.economy import living_vsbs as _lv
+    from agentic_core.gaas import v5 as _g5
+
+    # -- 0. PRECONDITIONS --------------------------------------------------------------------------------
+    assert _auth.auth_enabled() is False, "this test drives the shipped single-user mode"
+    assert _cc._TIER_MAP["economy_material"] == "CRITICAL", "the hold's type is no longer decided only explicitly"
+    monkeypatch.setattr(_gv, "MATERIALITY_WST", 250000.0)       # driven: every amount below is far under it
+    _tag = uuid.uuid4().hex[:6]
+    _ent, _unk, _dark = f"fu794-entity-{_tag}", f"fu794-nothing-{_tag}", f"fu794-unreadable-{_tag}"
+    _real_registered = _lv.is_registered
+
+    def _registered(vid):
+        if vid == _dark:
+            raise RuntimeError("driven")
+        return vid == _ent or bool(_real_registered(vid))
+    monkeypatch.setattr(_lv, "is_registered", _registered)
+    assert _cf.recipient_known(_ent) == {"known": True, "kind": "entity", "registered": True, "why_unknown": None}
+    assert _cf.recipient_known(_unk)["known"] is False and _cf.recipient_known(_dark)["known"] is None
+
+    def _fund_holds(recipient=None):
+        _out = []
+        for _x in _cc._list_changes():
+            if not str(_x.get("title") or "").startswith(_gv.FUND_HOLD_TITLE_PREFIX):
+                continue
+            _c = _cc._load_change(_x["cca_id"]) or {}
+            if recipient is None or _c.get("counterparty") == recipient:
+                _out.append(_c["cca_id"])
+        return _out
+    assert _fund_holds(_ent) == [] and _fund_holds(_unk) == [], "a fund hold for a fresh probe id already exists"
+
+    _store = _cf._FUND_STORE
+    _backup = _store.read_bytes() if _store.exists() else None
+    _created, _project_id, _outside = [], None, None
+    _seen = []
+    _real_log = _g5.UEGLogger.log
+
+    _audit = {"fails": False}
+
+    def _spy(self, ev, *a, **k):
+        if isinstance(ev, dict) and str(ev.get("type") or "").startswith("economy.capital_fund."):
+            if _audit["fails"]:
+                raise RuntimeError("driven")
+            _seen.append(dict(ev))
+        return _real_log(self, ev, *a, **k)
+
+    def _bal():
+        _s = client.get("/api/v1/fund/status").json()
+        return (round(float(_s["available"]), 2), round(float(_s["allocated"]), 2))
+
+    def _ask(pid, amount=100.0):
+        return client.post("/api/v1/fund/allocate", json={"project_id": pid, "project_name": "fu794 guard",
+                                                          "amount": amount, "purpose": "guard"})
+
+    def _decide(cid, verdict):
+        return client.post(f"/api/v1/cca/{cid}/review", json={
+            "override_decision": verdict, "admin_decision_for_critical": True, "reviewer_notes": "fu794"})
+
+    def _portfolio():
+        _p = client.get("/api/v1/fund/portfolio")
+        assert _p.status_code == 200, _p.text[:300]
+        return _p.json()
+
+    def _request_row(cid):
+        return next(r for r in _portfolio()["allocation_requests"] if r["cca_id"] == cid)
+
+    try:
+        #  a fund of known size, with ONE allocation stored before allocations were governed (no change id)
+        _store.parent.mkdir(parents=True, exist_ok=True)
+        _legacy = {"allocation_id": f"alloc-legacy-{_tag}", "project_id": "fu794-legacy", "project_name": "legacy",
+                   "amount": 5.0, "purpose": "stored before FU-794", "domain": "general", "realm": "enterprise",
+                   "status": "active"}
+        _store.write_text(json.dumps({"total_capital": 1000.0, "currency": "WST", "allocated": 5.0,
+                                      "available": 995.0, "allocations": [_legacy], "seed_capital_wst": 1000.0}),
+                          encoding="utf-8")
+        _b0 = _bal()
+        assert _b0 == (995.0, 5.0), _b0
+        monkeypatch.setattr(_g5.UEGLogger, "log", _spy)
+
+        # -- 1. A REQUEST IS HELD: a change exists, nothing moved, and it is not drawn as allocated -------
+        _r1 = _ask(_ent)
+        assert _r1.status_code == 200, (_r1.status_code, _r1.text[:300])
+        _j1 = _r1.json()
+        assert _j1["status"] == "held" and _j1["status_label"] == "held - awaiting decision", _j1
+        assert _j1["applied"] is False and _j1["allocation_id"] is None and _j1["remaining_available"] == 995.0, _j1
+        _cid = _j1["cca_id"]
+        assert _cid and _fund_holds(_ent) == [_cid], ("no change was filed, or more than one", _fund_holds(_ent))
+        _created.append(_cid)
+        assert _bal() == _b0, ("a request moved the fund", _bal())
+        _c1 = _cc._load_change(_cid)
+        assert _c1["change_type"] == "economy_material" and _cc.effective_tier(_c1) == "CRITICAL", _c1
+        assert _c1["status"] == "submitted" and _c1["vsb_id"] == _gv.FUND_ENTITY_ID, _c1
+        assert _c1["counterparty"] == _ent and _c1["title"] == _gv.FUND_HOLD_TITLE_PREFIX + _ent, _c1["title"]
+        assert _c1["est_distributable_wst"] == 100.0 and "no threshold lets one pass" in _c1["description"], _c1
+        assert "materiality threshold" not in _c1["description"], "a threshold is stated for a class that has none"
+        _fr = _c1["fund_request"]
+        assert _fr["fund_available_at_request"] == 995.0 and _fr["amount"] == 100.0 and _fr["project_id"] == _ent, _fr
+        assert _fr["requested_by"] == "single-user-mode" and _fr["requested_by_verified"] is False, _fr
+        assert _j1["governance"]["change_control"] == "held" and _j1["governance"]["request_recorded"] == "recorded"
+        assert _j1["governance"]["basis"].startswith("HELD, NOT ALLOCATED") and _cid in _j1["governance"]["basis"]
+        _row1 = _request_row(_cid)
+        assert _row1["state"] == "held" and _row1["state_label"] == "held - awaiting decision", _row1
+        assert _row1["allocation_id"] is None and _row1["decided_by"] is None and _row1["amount"] == 100.0, _row1
+        _p1 = _portfolio()
+        assert all(a.get("cca_id") != _cid for a in _p1["allocations"]) and _p1["allocation_count"] == 1, (
+            "a held request is listed as an allocation")
+        assert _p1["allocated"] == 5.0 and sum(_p1["by_domain"].values()) == 5.0, "a held request is in a total"
+        #    asked again while undecided: the same hold, and still nothing moved
+        _again = _ask(_ent).json()
+        assert _again["cca_id"] == _cid and _again["status"] == "held" and _bal() == _b0, _again
+        #    the gate can still release it, so Change Control's implement refuses rather than retiring it
+        assert _gv.unreleasable_reason(_cc._load_change(_cid)) is None, _gv.unreleasable_reason(_cc._load_change(_cid))
+        assert _seen == [], ("an allocation event was written for a request", _seen)
+
+        # -- 2. NO RULE AND NO MODEL APPROVES IT - driven as test_w459 drives the rule for an ordinary change --
+        _serve = {"text": "an assessment with no decision marker"}
+
+        async def _serving(prompt, agent=None, **kw):
+            return _serve["text"]
+        monkeypatch.setattr(_cc.gateway, "query", _serving)
+        monkeypatch.setattr(_cc.gateway, "query_meta", _as_meta(_serving))
+        _real_ctx = _cc.biobus.organism_context
+
+        def _ctx():
+            _c = dict(_real_ctx())
+            _c["composite_health"] = 0.87
+            _c["composite_health_measured_only"] = 0.87
+            _c["composite_health_measured_weight"] = 0.4
+            return _c
+        monkeypatch.setattr(_cc.biobus, "organism_context", _ctx)
+        #    the control: in this very state the health rule DOES approve an ordinary change
+        _ctl = client.post("/api/v1/cca/submit", json={"title": f"FU794 control {_tag}", "change_type": "config_major",
+                                                       "description": "a control for the health rule",
+                                                       "rationale": "fu794 control"}).json()["cca_id"]
+        _created.append(_ctl)
+        _rv = client.post(f"/api/v1/cca/{_ctl}/review", json={}).json()
+        assert _rv["decision"] == "approved" and _rv["decision_source"] == "health_threshold_rule", (
+            "the control did not reach the health rule, so the leg below would prove nothing", _rv)
+        #    the fund's change, same state, same call: held, undecided
+        _hv = client.post(f"/api/v1/cca/{_cid}/review", json={}).json()
+        assert _hv["decision"] is None and _hv["hold_reason"] == "critical_requires_admin_decision", _hv
+        assert _hv["status"] == "under_review" and _cc._load_change(_cid)["status"] == "under_review", _hv
+        _serve["text"] = "the allocation looks fine [DECISION: APPROVED]"
+        _mv = client.post(f"/api/v1/cca/{_cid}/review", json={}).json()
+        assert _mv["decision"] is None and _mv["recommendation"] == {"verdict": "approved", "source": "model_decision_marker"}, _mv
+        assert _cc._load_change(_cid)["status"] == "under_review" and _bal() == _b0
+        assert _ask(_ent).json()["status"] == "held" and _bal() == _b0, "a request under review was applied"
+        #    an override that does not say it is an explicit decision is refused
+        _no = client.post(f"/api/v1/cca/{_cid}/review", json={"override_decision": "approved"})
+        assert _no.status_code == 403 and _cc._load_change(_cid)["status"] == "under_review" and _bal() == _b0, _no.text[:200]
+
+        # -- 3. AN EXPLICIT APPROVAL, THEN THE ALLOCATION: applied once, by exactly the amount --------------
+        _ok = _decide(_cid, "approved")
+        assert _ok.status_code == 200 and _ok.json()["decision_source"] == "admin_override", _ok.text[:300]
+        assert _bal() == _b0, "approving moved the fund by itself"
+        assert _request_row(_cid)["state"] == "approved_not_applied", _request_row(_cid)
+        _imp = client.post(f"/api/v1/cca/{_cid}/implement")
+        assert _imp.status_code == 409 and _bal() == _b0, ("implementing the hold spent or applied it", _imp.text[:200])
+        _a = _ask(_ent)
+        assert _a.status_code == 200, _a.text[:300]
+        _ja = _a.json()
+        assert _ja["status"] == "allocated" and _ja["applied"] is True and _ja["cca_id"] == _cid, _ja
+        assert _ja["status_label"] == "approved and applied" and _ja["remaining_available"] == 895.0, _ja
+        _b1 = _bal()
+        assert _b1 == (895.0, 105.0), ("the fund did not move by exactly the amount", _b0, _b1)
+        _p3 = _portfolio()
+        _stored = {r["allocation_id"]: r for r in _p3["allocations"]}
+        _al = _stored[_ja["allocation_id"]]
+        assert _al["cca_id"] == _cid and _al["amount"] == 100.0 and _al["status"] == "active", _al
+        assert _al["record_state"] == "applied" and _al["record_state_label"] == "approved and applied", _al
+        _g = _al["governance"]
+        assert _g["change_control"] == "approved" and _g["cca_id"] == _cid and _g["credited_to"] is None, _g
+        assert _g["decided_by"] == "single-user-mode" and _g["decided_by_verified"] is False, _g
+        assert _g["decision_source"] == "admin_override" and _g["recipient_registered"] is True, _g
+        assert _g["basis"] == _ja["governance"]["basis"], "the stored row does not carry what the response said"
+        assert "a name the platform did not check" in _g["basis"] and _cid in _g["basis"], _g["basis"]
+        assert "It names a registered entity" in _g["basis"] and _ent not in _g["basis"], _g["basis"]
+        _row3 = _request_row(_cid)
+        assert _row3["state"] == "applied" and _row3["allocation_id"] == _ja["allocation_id"], _row3
+        assert _row3["decided_by"] == "single-user-mode" and _row3["decision_source"] == "admin_override", _row3
+        assert _cc._load_change(_cid)["status"] == "implemented"
+        #    the audit trail: one allocation event naming the change; the decision is Change Control's own event
+        assert [e["type"] for e in _seen] == ["economy.capital_fund.allocation"], _seen
+        assert _seen[0]["cca_id"] == _cid and _seen[0]["amount_wst"] == 100.0 and _seen[0]["change_control"] == "approved", _seen
+        assert _ja["governance"]["audit_event"] == "recorded"
+        _trail = _cc._load_change(_cid)["audit_trail"]
+        assert any(e.get("event") == "ueg_written" and e.get("event_type") == "cca.change_approved" for e in _trail), (
+            "the approval is not on the ledger as Change Control's decision", [e.get("event") for e in _trail])
+        assert any(e.get("event") == "released_action_ran" for e in _trail), "the spent approval does not say its action ran"
+
+        # -- 4. APPROVED TWICE, ASKED TWICE: applied once ----------------------------------------------------
+        _twice = _decide(_cid, "approved")
+        assert _twice.status_code == 400 and _bal() == _b1, (_twice.status_code, _twice.text[:200])
+        _a2 = _ask(_ent).json()
+        assert _a2["status"] == "held" and _a2["cca_id"] not in (None, _cid) and _bal() == _b1, (
+            "a spent approval released a second allocation", _a2)
+        _cid2 = _a2["cca_id"]
+        _created.append(_cid2)
+        assert sum(1 for r in _portfolio()["allocations"] if r.get("cca_id") == _cid) == 1
+        assert len(_seen) == 1, _seen
+
+        # -- 5. A REJECTION applies nothing, and the same request is answered as rejected --------------------
+        _rj = _decide(_cid2, "rejected")
+        assert _rj.status_code == 200 and _cc._load_change(_cid2)["status"] == "rejected", _rj.text[:300]
+        _a3 = _ask(_ent).json()
+        assert _a3["status"] == "rejected" and _a3["applied"] is False and _a3["cca_id"] == _cid2, _a3
+        assert _a3["status_label"] == "rejected - nothing was allocated" and _bal() == _b1, _a3
+        assert _a3["governance"]["basis"].startswith("REJECTED, NOT ALLOCATED"), _a3["governance"]["basis"]
+        _row5 = _request_row(_cid2)
+        assert _row5["state"] == "rejected" and _row5["decided_by"] == "single-user-mode" and _row5["allocation_id"] is None, _row5
+        assert any(e.get("event") == "ueg_written" and e.get("event_type") == "cca.change_rejected"
+                   for e in _cc._load_change(_cid2)["audit_trail"]), "the rejection is not on the ledger"
+        assert len(_seen) == 1 and set(_fund_holds(_ent)) == {_cid, _cid2}, (_seen, _fund_holds(_ent))
+
+        # -- 6. AN UNKNOWN RECIPIENT is refused by name, and NOTHING is filed --------------------------------
+        _h0 = set(_fund_holds())
+        _ru = _ask(_unk)
+        assert _ru.status_code == 404, (_ru.status_code, _ru.text[:300])
+        assert isinstance(_ru.json()["detail"], str) and _unk in _ru.json()["detail"], _ru.json()
+        assert "Nothing was filed" in _ru.json()["detail"] and set(_fund_holds()) == _h0 and _bal() == _b1
+        #    an id that is not ONE safe segment never reaches the project store - driven with a real .json file
+        #    one level above the store, which a path-shaped id would otherwise resolve to
+        from agentic_core.projects import api as _pjm
+        _outside = _pjm._STORE.parent / f"fu794-outside-{_tag}.json"
+        _outside.parent.mkdir(parents=True, exist_ok=True)
+        _outside.write_text("{}", encoding="utf-8")
+        assert _pjm._path(f"../fu794-outside-{_tag}").is_file(), "the probe file is not where a path-shaped id resolves"
+        _rp = _ask(f"../fu794-outside-{_tag}")
+        assert _rp.status_code == 404 and set(_fund_holds()) == _h0, (_rp.status_code, _rp.text[:200])
+        #    "could not be read" is not "does not exist", and is not "exists" either
+        _rd = _ask(_dark)
+        assert _rd.status_code == 503 and isinstance(_rd.json()["detail"], str) and _dark in _rd.json()["detail"], _rd.text[:300]
+        assert "RuntimeError" in _rd.json()["detail"] and set(_fund_holds()) == _h0 and _bal() == _b1
+        #    a bad amount is refused before the recipient or the gate is looked at
+        assert _ask(_ent, amount=0).status_code == 400 and _ask(_ent, amount=10 ** 9).status_code == 400
+        assert set(_fund_holds()) == _h0
+
+        # -- 7. A PROJECT IN THE PROJECT STORE is a recipient; a failed store write hands the approval back --
+        _pj = client.post("/api/v1/projects/", json={"title": f"FU794 project {_tag}", "description": "guard",
+                                                     "realm": "enterprise", "domain": "general"})
+        assert _pj.status_code == 201, _pj.text[:300]
+        _project_id = _pj.json()["id"]
+        _hp = _ask(_project_id, amount=10.0).json()
+        assert _hp["status"] == "held" and _hp["governance"]["recipient_kind"] == "project", _hp
+        assert _hp["governance"]["recipient_registered"] is False, _hp["governance"]
+        _cid3 = _hp["cca_id"]
+        _created.append(_cid3)
+        assert _decide(_cid3, "approved").status_code == 200 and _bal() == _b1
+
+        def _write_fails(fund):
+            raise OSError("driven")
+        _real_save = _cf._save_fund
+        monkeypatch.setattr(_cf, "_save_fund", _write_fails)
+        _wf = _ask(_project_id, amount=10.0)
+        monkeypatch.setattr(_cf, "_save_fund", _real_save)
+        assert _wf.status_code == 503 and isinstance(_wf.json()["detail"], str), (_wf.status_code, _wf.text[:300])
+        assert "was given back" in _wf.json()["detail"] and _bal() == _b1, _wf.json()
+        assert _cc._load_change(_cid3)["status"] == "approved", "an approval was spent on an allocation that was not stored"
+        _audit["fails"] = True                      # the allocation's own audit event cannot be written
+        _ap = _ask(_project_id, amount=10.0).json()
+        _audit["fails"] = False
+        assert _ap["status"] == "allocated" and _ap["cca_id"] == _cid3 and _bal() == (885.0, 115.0), (_ap, _bal())
+        assert "the project '" + _project_id + "'" in _ap["governance"]["basis"], _ap["governance"]["basis"]
+        assert _ap["governance"]["audit_event"] == "NOT recorded (RuntimeError)", (
+            "an audit event that was not written is reported as recorded", _ap["governance"])
+        assert [e["cca_id"] for e in _seen] == [_cid], _seen
+
+        # -- 8. NOTHING IS APPLIED WITHOUT AN APPROVAL THE GATE SPENT ---------------------------------------
+        _real_gate = _gv._materiality_gate
+        monkeypatch.setattr(_gv, "_materiality_gate", lambda *a, **k: (None, None))     # a gate that says "proceed"
+        _b8 = _bal()
+        _fc = _ask(_ent, amount=1.0)
+        monkeypatch.setattr(_gv, "_materiality_gate", _real_gate)
+        assert _fc.status_code == 503 and "nothing was allocated" in _fc.json()["detail"] and _bal() == _b8, _fc.text[:300]
+
+        # -- 9. A ROW STORED BEFORE THIS CHANGE says so, and is not rewritten -------------------------------
+        _old = {r["allocation_id"]: r for r in _portfolio()["allocations"]}[_legacy["allocation_id"]]
+        assert _old["record_state_label"] == "recorded before allocations were governed" and not _old.get("cca_id"), _old
+        _on_disk = json.loads(_store.read_text(encoding="utf-8"))["allocations"]
+        assert _on_disk[0] == _legacy, ("the stored row was rewritten", _on_disk[0])
+
+        # -- 10. THE HOLD'S TITLE cannot be claimed by a submitted change -----------------------------------
+        _imp2 = client.post("/api/v1/cca/submit", json={
+            "title": _gv.FUND_HOLD_TITLE_PREFIX + _ent, "change_type": "config_minor",
+            "description": "fu794 impersonation probe", "rationale": "fu794 impersonation probe"})
+        assert _imp2.status_code == 422 and "reserved" in str(_imp2.json()["detail"]), _imp2.text[:300]
+
+        # -- 11. THE 503 CASE IS UNCHANGED: the strict read comes before the recipient is looked at ---------
+        monkeypatch.setattr(_g5.UEGLogger, "log", _real_log)
+        _good = _store.read_bytes()
+        try:
+            _store.write_text('{"total_capital": 10000000, "available":', encoding="utf-8")
+            _q = client.post("/api/v1/fund/allocate", json={"project_id": "w496", "project_name": "guard",
+                                                            "amount": 1000, "purpose": "guard"})
+            assert _q.status_code == 503, (_q.status_code, _q.text[:200])     # w496 is registered nowhere
+            assert "quarantined" in _q.text and "no balance was reset" in _q.text, _q.text[:300]
+        finally:
+            for _c in _store.parent.glob(_store.stem + ".corrupt-*"):
+                _c.unlink(missing_ok=True)
+            _store.write_bytes(_good)
+    finally:
+        monkeypatch.undo()
+        for _c in _store.parent.glob(_store.stem + ".corrupt-*"):
+            _c.unlink(missing_ok=True)
+        if _backup is None:
+            _store.unlink(missing_ok=True)
+        else:
+            _store.write_bytes(_backup)
+        for _id in _created:
+            _cc._cca_path(_id).unlink(missing_ok=True)
+        if _project_id:
+            client.delete(f"/api/v1/projects/{_project_id}")
+        if _outside is not None:
+            _outside.unlink(missing_ok=True)
+
+    # -- 12. THE PAGE draws a request with its state and never as an allocation -----------------------------
+    _wl = (pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages"
+           / "profile" / "Wallet.tsx").read_text(encoding="utf-8")
+    _blk = _wl[_wl.index('data-testid="wallet-allocation-requests"'):_wl.index("Recent Capital Allocations")]
+    assert 'data-testid="wallet-allocation-request-state"' in _blk and "{req.state_label}</p>" in _blk
+    assert "text-vital" not in _blk and "+{" not in _blk, "a request is drawn the way an allocation is"
+    assert "requests.map((req) => (" in _blk and "{req.state === 'applied' ? 'applied' : 'requested'}" in _blk
+    assert 'data-testid="wallet-portfolio-error"' in _blk and "{portfolioErr && (" in _blk
+    assert "{requestsUnread !== null && (" in _blk and "flat(portfolioRes.data?.detail)" in _wl
+    assert "{alloc.record_state_label && (" in _wl and "{alloc.record_state_label}{alloc.cca_id ?" in _wl
+
+
+def test_t2b_eight_statements_say_what_the_code_beside_them_does(client, monkeypatch, tmp_path):
+    """T2B - eight tier-2 truth rows: a statement a route or a page made that the code beside it contradicted.
+
+    1 a missing MJM result is None with a basis, never the text "None" (and never "optimised" for a step that
+    raised); 2 an attested re-verification does not answer real; 3 the Chief model's method is computed from the
+    record; 4 the entity's gate sentence and the Cockpit's line read the one tuple; 5 recitation is unscored by
+    ruling first, the missing model second; 6 the four Religion blurbs state the model-served rule as well as
+    the floor's; 7 the empty-roster sentence is true for a learner AND for a research tool; 8 the health scope
+    sentence is computed from the kinds recorded and the rule status() applies.
+
+    Each state is driven both ways with its precondition asserted first. COVERAGE STATED: the refine route's use
+    of the roster sentence is not driven here (it passes through the same helper, which is); no page is rendered
+    - page legs read the source inside the element's own scope, comments removed.
+    """
+    import copy
+    import json
+    import pathlib
+    import re
+    import uuid
+    _root = pathlib.Path(__file__).resolve().parents[1]
+    _src = _root / "apps" / "workstation-superapp" / "src"
+    _core = _root / "agentic_core"
+    _tag = uuid.uuid4().hex[:8]
+
+    def _run(coro):
+        return _ensure_loop().run_until_complete(coro)
+
+    # ================================================================================================
+    # 1. A MISSING MJM RESULT IS SAID, NOT PRINTED
+    # ================================================================================================
+    import agentic_core.api.vsb as _vsb
+    from agentic_core.consultation.interface import ConsultationRequest as _CR
+    from agentic_core.mjm.mjm import MJMOrchestratorV4 as _MJM
+    _mjm = _MJM()
+    _real = _run(_mjm.run_lifecycle("t2b probe"))
+    assert isinstance(_real, dict) and _real.get("result") is None and _real.get("result_basis"), (
+        "the lifecycle returns a result now, so the legs below would not be driving the missing-value state", _real)
+    #    the producer, both ways
+    _a0 = _run(_mjm.consult(_CR(engine="mjm", query=f"t2b {_tag}: is the rota fair to both wards?"))).answer
+    assert "None" not in _a0 and "none was returned" in _a0 and _real["result_basis"] in _a0, _a0
+
+    async def _valued(analysis):
+        return {"result": "ZZ-T2B-VALUE", "impact": "probe"}
+    with monkeypatch.context() as _mp:
+        _mp.setattr(_mjm, "muaina", _valued)
+        assert _run(_mjm.consult(_CR(engine="mjm", query="t2b value leg"))).answer == "MJM Lifecycle Result: ZZ-T2B-VALUE", (
+            "a value the lifecycle DID return is no longer printed")
+    #    the route that passes it through
+    _rt = client.post("/api/v1/cognitive/mjm", json={"query": f"t2b {_tag}: route leg"})
+    assert _rt.status_code == 200 and "None" not in _rt.json()["answer"] and "none was returned" in _rt.json()["answer"], _rt.text[:300]
+    #    the pipeline's one reader of the step
+    assert _vsb._mjm_result_said({"result": "kept"}) == ("kept", "the result the MJM step returned")
+    _v, _b = _vsb._mjm_result_said(dict(_real))
+    assert _v is None and _b.startswith("the MJM step returned no result: ") and _real["result_basis"][:80] in _b, _b
+    _v, _b = _vsb._mjm_result_said({"error": "boom"})
+    assert _v is None and "did not run" in _b and "boom" in _b, _b
+    assert _vsb._mjm_result_said("not a record")[0] is None
+
+    def _spawn(stub):
+        class _Stub:
+            async def run_lifecycle(self, *a, **k):
+                if isinstance(stub, Exception):
+                    raise stub
+                return stub
+        with monkeypatch.context() as _mp:
+            _mp.setattr(_vsb, "_mjm", _Stub())
+            _sp = client.post("/api/v1/vsb/spawn", json={"challenge": f"t2b {_tag} {uuid.uuid4().hex[:6]}: a ward rota that is fair"})
+        assert _sp.status_code == 200, _sp.text[:300]
+        _evs = [json.loads(_l[6:]) for _l in _sp.text.splitlines() if _l.startswith("data: ")]
+        _mc = next((e for e in _evs if e.get("stage") == "mjm_complete"), None)
+        _init = next((e for e in _evs if e.get("stage") == "init"), None)
+        assert _mc is not None and _init is not None, ("the feed carries no MJM row or no init row", [e.get("stage") for e in _evs])
+        _vid = _init["data"]["vsb_id"]
+        _g = client.get(f"/api/v1/vsb/{_vid}/genome")
+        assert _g.status_code == 200, ("the spawned entity was not saved, so its genome record cannot be read", _g.text[:200])
+        return _vid, _mc, _g.json()["genome_spec"]
+    #    state A - the step returns no result (the real shape, asserted above)
+    _vid_a, _mc, _gen = _spawn(dict(_real))
+    assert (_mc.get("data") or {}).get("ran") is True, _mc
+    assert _mc["content"] != "None" and "None" not in _mc["content"] and _real["result_basis"][:60] in _mc["content"], _mc["content"]
+    assert _mc["data"]["result"] is None and _mc["data"]["result_basis"].startswith("the MJM step returned no result"), _mc["data"]
+    assert _gen["mjm_result"] is None and _gen["mjm_result_basis"] == _mc["data"]["result_basis"], (
+        "the genome record carries the text of a missing value, or no reason", _gen.get("mjm_result"), _gen.get("mjm_result_basis"))
+    #    state B - the step returns a value: it is carried, unchanged
+    _vid_b, _mc, _gen = _spawn({"result": "ZZ-T2B-MJM"})
+    assert _mc["content"] == "ZZ-T2B-MJM" and _mc["data"]["result"] == "ZZ-T2B-MJM", _mc
+    assert _gen["mjm_result"] == "ZZ-T2B-MJM" and _gen["mjm_result_basis"] == "the result the MJM step returned", _gen
+    #    state C - the step raised: no result, and not the default that used to claim an optimisation
+    _vid_c, _mc, _gen = _spawn(RuntimeError("t2b induced mjm failure"))
+    assert (_mc.get("data") or {}).get("ran") is False and "FAILED" in _mc.get("label", ""), _mc
+    assert _mc["data"]["result"] is None and "did not run" in _mc["data"]["result_basis"], _mc["data"]
+    assert _gen["mjm_result"] is None and "t2b induced mjm failure" in _gen["mjm_result_basis"], (
+        "a step that raised is recorded on the genome with a result", _gen.get("mjm_result"))
+
+    # ================================================================================================
+    # 2. AN ATTESTED RE-VERIFICATION DOES NOT ANSWER real
+    # ================================================================================================
+    from agentic_core.vbs.registry import qms as _qms
+    _qms_before = copy.deepcopy(_qms._load_state())
+    try:
+        def _corrected(label, count_in_rate=True):
+            _ok = _run(_qms.run_quality_gates(
+                {"coverage": 0.5, "stubs_found": False}, label=label, count_in_rate=count_in_rate,
+                delivery_ref={"content_sha3": "t2b", "required_sections": ["Alpha"], "label": label}))
+            assert _ok is False, "the gate should have failed at coverage 0.5, so no defect was opened"
+            _id = [x for x in _qms.defects if x.get("label") == label][-1]["id"]
+            assert client.post(f"/api/v1/vbs/qms/defects/{_id}/correct", json={"correction": "t2b"}).status_code == 200
+            return _id
+
+        def _rv(defect_id, body):
+            _r = client.post(f"/api/v1/vbs/qms/defects/{defect_id}/reverify", json=body)
+            assert _r.status_code == 200, _r.text[:300]
+            return _r.json()
+        _att = _rv(_corrected(f"t2b-att-{_tag}"), {"coverage": 1.0})
+        assert _att["passed"] is True and _att["defect"]["reverify_basis"] == "caller_attested", (
+            "this is not the attested state, so the leg proves nothing", _att)
+        assert _att["real"] is False and _att["measured"] is False and _att["reverify_basis"] == "caller_attested", (
+            "a re-verification on typed figures still answers real", {k: _att.get(k) for k in ("real", "measured", "reverify_basis")})
+        assert "NOT measured here" in _att["real_basis"] and "`attested_reverifications`" in _att["real_basis"], _att["real_basis"]
+        _meas = _rv(_corrected(f"t2b-meas-{_tag}"), {"content": "## Alpha" + chr(10) + "y " * 200})
+        assert _meas["passed"] is True and _meas["defect"]["reverify_basis"].startswith("measured_from_content"), _meas
+        assert _meas["real"] is True and _meas["measured"] is True and "MEASURED here" in _meas["real_basis"], (
+            "a re-verification measured from content no longer answers real", _meas.get("real_basis"))
+        #    `real` follows the BASIS, not the outcome: a measured re-verification that FAILS is still measured
+        _mfail = _rv(_corrected(f"t2b-measfail-{_tag}"), {"content": "## Beta" + chr(10) + "y " * 200})
+        assert _mfail["passed"] is False and _mfail["real"] is True and _mfail["measured"] is True, _mfail
+        _afail = _rv(_corrected(f"t2b-attfail-{_tag}"), {"coverage": 0.1})
+        assert _afail["passed"] is False and _afail["real"] is False, _afail
+        #    a what-if defect: attested, and the sentence says it is outside the rate rather than counted in it
+        _wi = _rv(_corrected(f"t2b-whatif-{_tag}", count_in_rate=False), {"coverage": 1.0})
+        assert _wi["defect"]["what_if"] is True and _wi["real"] is False, _wi
+        assert "what-if" in _wi["real_basis"] and "it is counted in" not in _wi["real_basis"], _wi["real_basis"]
+        assert "what-if" not in _att["real_basis"], _att["real_basis"]
+    finally:
+        _qms._state = _qms_before
+        _qms._save_state()
+
+    # ================================================================================================
+    # 3. THE CHIEF MODEL'S METHOD IS COMPUTED FROM THE RECORD
+    # ================================================================================================
+    import agentic_core.api.board as _bd
+    _scope = f"vsb:t2b-{_tag}"
+    _rows_before = _bd._load_for_write()
+    try:
+        _m0 = client.get("/api/v1/board/chief/model", params={"scope": _scope}).json()
+        assert _m0["carries_owner_record"] is False and _m0["owner_inputs"] == 0, ("the scratch scope is not empty", _m0)
+        assert "does not: no such input is on record, so it is a role" in _m0["method"], _m0["method"]
+        assert "MODELLED TWIN" not in _m0["method"] and "(False)" in _m0["method"], _m0["method"]
+        _bd._save(_rows_before + [{"kind": "chief_instruction", "instruction": f"T2B-{_tag} open the second counter",
+                                   "business_plan_scope": _scope, "created_at": "2026-10-11T00:00:00Z"}])
+        _m1 = client.get("/api/v1/board/chief/model", params={"scope": _scope}).json()
+        assert _m1["carries_owner_record"] is True and _m1["is_modelled_twin"] is True and _m1["owner_inputs"] >= 1, _m1
+        assert f"carries it: {_m1['owner_inputs']} such input(s) are on record" in _m1["method"], _m1["method"]
+        assert "MODELLED TWIN" not in _m1["method"] and "so it is a role" not in _m1["method"] and "(True)" in _m1["method"], _m1["method"]
+        for _m in (_m0, _m1):
+            assert "never counted as this Owner's own declaration" in _m["method"], "the canon clause was lost"
+            assert "could not be read" not in _m["method"], _m["method"]
+
+        def _unreadable():
+            raise OSError("t2b: the board store cannot be read")
+        with monkeypatch.context() as _mp:
+            _mp.setattr(_bd, "_load_strict", _unreadable)
+            _m2 = client.get("/api/v1/board/chief/model", params={"scope": _scope}).json()
+        assert _m2["instructions"]["readable"] is False, ("the unreadable state was not reached", _m2["instructions"])
+        assert "the instruction store could not be read" in _m2["method"], _m2["method"]
+    finally:
+        _bd._save(_rows_before)
+
+    # ================================================================================================
+    # 4. WHAT A GATE HOLDS: one tuple, read by the entity's sentence and by the Cockpit
+    # ================================================================================================
+    _rg = client.get(f"/api/v1/vsb/{_vid_a}/review-gates").json()
+    assert len(_vsb.GATE_HOLDS) > 3 and _rg["holds"] == list(_vsb.GATE_HOLDS), _rg.get("holds")
+    _lb = _rg["lifecycle_basis"]
+    assert "(" + ", ".join(_vsb.GATE_HOLDS) + ")" in _lb, ("the sentence does not list what the gate holds", _lb)
+    assert "it does not hold the " + _vsb.GATE_DOES_NOT_HOLD[0] in _lb and "separate list from the Genesis journey" in _lb, _lb
+    with monkeypatch.context() as _mp:                       # the other way: the list moves, the sentence moves
+        _mp.setattr(_vsb, "GATE_HOLDS", ("zz-mover-a", "zz-mover-b"))
+        _lb2 = client.get(f"/api/v1/vsb/{_vid_a}/review-gates").json()["lifecycle_basis"]
+    assert "(zz-mover-a, zz-mover-b)" in _lb2 and "board pack" not in _lb2, ("the sentence is typed, not read from the tuple", _lb2)
+    _ck = _code_only((_src / "pages" / "enterprise" / "VSBCockpit.tsx").read_text(encoding="utf-8"))
+    _i, _j = _ck.find('data-testid="cockpit-review-gates"'), _ck.find('data-testid="cockpit-gate-message"')
+    assert 0 < _i < _j, "the Cockpit's gate card was not found, so nothing below reads it"
+    _card = _ck[_i:_j]
+    assert 'data-testid="cockpit-gate-holds"' in _card, "the Cockpit does not say what a gate holds"
+    assert "{Array.isArray(gates.holds) && gates.holds.length > 0 ? gates.holds.map((h: any) => String(h)).join(' · ') : 'the list was not returned with this response'}" in _card
+    assert "typeof gates.holds_basis === 'string' && gates.holds_basis ? ` ${gates.holds_basis}` : ''" in _card
+    assert "{g.blocks_progress ? ' — blocks every mover listed above' : ''}" in _card
+    assert not [m for m in _vsb.GATE_HOLDS if len(m) > 6 and m in _card], "the Cockpit types a mover instead of reading the list"
+    assert "ship, evolve and cascade" not in _ck, "the three-mover line is back"
+
+    # ================================================================================================
+    # 5. RECITATION: THE RULING LEADS
+    # ================================================================================================
+    import agentic_core.religious_domain.api as _qs
+    _st = client.get("/api/v1/qep/status").json()
+    _taj = _st["components"]["tajweed"]
+    assert "by ruling" in _taj and "no phonetic model" in _taj, _taj
+    assert _taj.index("by ruling") < _taj.index("no phonetic model"), ("the missing model is still given before the ruling", _taj)
+    _con = [c for c in _st["constraints"] if "ecitation" in c]
+    assert len(_con) == 1 and _con[0].startswith("Recitation is never scored, by ruling"), _st["constraints"]
+    assert _con[0].index("by ruling") < _con[0].index("no phonetic model"), _con[0]
+    assert "exists to score it" not in str(_st), "the model is still given as the reason"
+    _rec = _st["recitation"]
+    assert _rec["scored"] is False and _rec["reason"] == "ruling" and _rec["ruling"] in _taj and _rec["model_fact"] in _taj, _rec
+    assert all(isinstance(v, str) for v in _st["components"].values()), "a component is not text, and the page prints each as text"
+    with monkeypatch.context() as _mp:                       # one home: the line, the constraint and the field move together
+        _mp.setattr(_qs, "_RECITATION_RULING", "zz-ruling-probe")
+        _st2 = client.get("/api/v1/qep/status").json()
+    assert "zz-ruling-probe" in _st2["components"]["tajweed"] and _st2["recitation"]["ruling"] == "zz-ruling-probe", _st2
+    assert any(c.startswith("Zz-ruling-probe") for c in _st2["constraints"]), _st2["constraints"]
+
+    # ================================================================================================
+    # 6 + 7. THE RELIGION BLURBS AND THE EMPTY-ROSTER SENTENCE, with the states they describe driven
+    # ================================================================================================
+    import agentic_core.api.religion as _R
+    from agentic_core.api import scholar_review as _sr
+    _real_stores = [(_p, _p.read_bytes() if _p.exists() else None) for _p in (_sr._roster_path(), _sr._review_path())]
+    _serve = {"text": None}
+    _real_ai = _R.ai_text
+
+    async def _ai(prompt, agent, **kw):
+        if _serve["text"] is None:
+            return await _real_ai(prompt, agent, **kw)
+        return (_serve["text"], {"posture": "in-house-first", "served_by": "t2b-model", "is_external": False})
+
+    def _hadith(text):
+        _serve["text"] = text
+        _r = client.post("/api/v1/religion/hadith-study", json={"hadith": f"T2B {_tag}: actions are but by intentions",
+                                                                 "focus": "explanation"})
+        assert _r.status_code == 200, _r.text[:300]
+        return _r.json()
+    _body = "## Identification" + chr(10) + "ZZ-T2B-BODY one" + chr(10) + "## Sharh" + chr(10) + "ZZ-T2B-BODY two"
+    with monkeypatch.context() as _mp:
+        _mp.setattr(_sr, "_roster_path", lambda: tmp_path / "scholar_roster.json")
+        _mp.setattr(_sr, "_review_path", lambda: tmp_path / "scholar_review.json")
+        _mp.setattr(_R, "ai_text", _ai)
+        assert _R._model_available() is False, "a model resource is available here, so the floor leg would not be the floor"
+        assert _sr.roster_is_empty(), "the scratch roster is not empty, so the empty-roster sentence is not reached"
+        #    the sentence itself, in the state it is for
+        _none, _state, _why = _sr.published_body("t2b:absent", "x")
+        assert _none is None and _state == "withheld", (_state, _why)
+        for _phrase in ("no scholar has reviewed it", "before a learner sees it", "a person using a research tool",
+                        "asking for a rewrite", "no scholar is on the roster yet",
+                        "A disclaimer is not a review, so nothing is shown in its place."):
+            assert _phrase in _why, ("the empty-roster sentence lost a part of what it says", _phrase, _why)
+        assert "no reviewer is engaged" not in _why
+        #    the FLOOR state: its own note, and neither scholar key
+        _fl = _hadith(None)
+        assert _fl["ai_provenance"]["served_by"] == "native" and _fl.get("floor_note") and "review_note" not in _fl, sorted(_fl)
+        #    a MODEL serves and nobody is on the roster: everything it composed is withheld, and the reason
+        #    given to the person using this RESEARCH TOOL is the sentence above
+        _mw = _hadith(_body)
+        assert _mw["ai_provenance"]["served_by"] == "t2b-model" and "floor_note" not in _mw, sorted(_mw)
+        assert _mw["study"] == "" and "ZZ-T2B-BODY" not in json.dumps(_mw), "a model's text is shown though nobody approved it"
+        assert isinstance(_mw.get("review_note"), str) and "WITHHELD until a named scholar" in _mw["review_note"], _mw.get("review_note")
+        assert _mw["scholar_review"]["basis"] == _why and _why in _mw["review_note"], _mw["scholar_review"]
+        #    the same sentence reaches a LEARNER surface (the other caller of the gate)
+        _ls = client.post("/api/v1/qep/tajweed/lesson", json={"rule_name": f"T2B{_tag}Idgham", "level": "beginner"})
+        assert _ls.status_code == 200 and _ls.json().get("lesson_plan") is None and _ls.json().get("review_state") == "withheld", _ls.text[:300]
+        assert _why in _ls.json()["review_note"], ("the learner surface gives a different reason", _ls.json()["review_note"])
+        #    the other way: a named scholar approves that exact text - shown, named, and the sentence is gone
+        assert client.post("/api/v1/scholar-review/roster", json={"scholar_id": "t2b-r1", "name": "Shaykha T2B",
+                                                                  "credential": "stated"}).status_code == 200
+        assert not _sr.roster_is_empty()
+        assert "roster yet" not in _sr.published_body("t2b:absent", "x")[2], "the empty-roster sentence is given with a scholar on the roster"
+        assert client.post("/api/v1/scholar-review/decide", json={"content_key": _mw["scholar_review"]["content_key"],
+                                                                  "scholar_id": "t2b-r1", "approve": True}).status_code == 200
+        _ma = _hadith(_body)
+        assert "ZZ-T2B-BODY one" in _ma["study"] and _ma["scholar_review"]["state"] == "approved", _ma
+        assert "Shaykha T2B" in _ma["scholar_review"]["basis"] and "review_note" not in _ma, _ma["scholar_review"]
+    assert [(_p, _p.read_bytes() if _p.exists() else None) for _p, _b0 in _real_stores] == _real_stores, (
+        "the guard wrote to the real scholar stores")
+    #    THE PAGE: each of the four blurbs carries the model-served rule, inside its own tab
+    _hub_raw = (_src / "pages" / "domains" / "ReligionHub.tsx").read_text(encoding="utf-8")
+    _hub = _code_only(_hub_raw)
+    _rule = re.search(r"const MODEL_ANSWER_RULE = '([^']+)';", _hub)
+    assert _rule, "the shared sentence is gone"
+    for _phrase in ("When a model serves", "everything it composes is withheld",
+                    "until a named scholar on the roster has approved that exact text", "names who approved it"):
+        assert _phrase in _rule.group(1), ("the sentence no longer states the rule the routes apply", _phrase)
+    for _key, _ep in (("dialogue", "fatwa-research"), ("tafsir", "quran-tafsir"), ("halal", "halal-review"), ("hadith", "hadith-study")):
+        _a = _hub.find("title={T['" + _key + "'].title}")
+        _z = _hub.find('endpoint="/api/v1/religion/' + _ep + '"', _a)
+        assert 0 < _a < _z, (_key, "the tab was not found, so its blurb was not read")
+        _blurb = _hub[_a:_z]
+        assert "description={<>" in _blurb and _blurb.count("{MODEL_ANSWER_RULE}</>}") == 1, (
+            _key, "this tab's blurb describes the floor's withholding only")
+        assert ("{TAFSIR_FLOOR_RULE}" in _blurb) == (_key == "tafsir"), _key
+    assert _hub_raw.count("Withheld on the floor:") == 3 and _hub.count("<>Withheld pending scholar review: ") == 2, (
+        "a result label was added or lost: the floor's is typed three times and the scholar's twice")
+    _hw = _hub[_hub.find('data-testid="halal-withheld"'):][:700]
+    assert "{r?.floor_note ? 'Withheld on this deployment' : (typeof r?.review_note === 'string' && r.review_note !== '' ? 'Withheld until a named scholar approves' : 'Withheld')}" in _hw, (
+        "the halal block heads a model's withheld sections as the deployment's")
+
+    # ================================================================================================
+    # 8. THE HEALTH SCOPE SENTENCE IS WHAT status() DOES
+    # ================================================================================================
+    import agentic_core.organism.immune as _im
+    _kinds = [k for _l, _ks in _im.RECORDED_KINDS for k in _ks]
+    assert len(_kinds) >= 8 and _im.REVIEW_FLAG_TYPES and set(_im.REVIEW_FLAG_TYPES) < set(_kinds), (_kinds, _im.REVIEW_FLAG_TYPES)
+
+    def _lowered_by(kind):
+        _s = _im.ImmuneSystem()                      # a fresh sensor: the singleton is never written
+        _before = _s.status()["health"]
+        _s.record("t2b", kind)
+        return _s.status()["health"] < _before
+    _scope_now = _im.health_scope()
+    assert _scope_now == _im.HEALTH_SCOPE == _im.health_fields()["organism_health_basis"], "the sentence has two homes"
+    _lower_part, _beside_part = _scope_now.split(" - while ")
+    for _label, _ks in _im.RECORDED_KINDS:
+        for _k in _ks:
+            assert _lowered_by(_k) == (_label in _lower_part) == (_label not in _beside_part), (
+                "the sentence and status() disagree about this kind", _k, _label, _scope_now)
+    assert _lowered_by(f"t2b_failed_operation_{_tag}") and _im.OPEN_KIND in _lower_part, "an operation's own name does not lower health"
+    assert not _lowered_by("compliance_escalation"), "a review flag lowers health"
+    assert " only" not in _lower_part and "review flags" in _scope_now and "5xx failures are not tracked" in _scope_now, _scope_now
+    #    the other way: move a whole row into the flag set - status() stops counting it AND the sentence moves
+    _wider = frozenset(_im.REVIEW_FLAG_TYPES) | {"quality_minor", "quality_major", "quality_critical"}
+    with monkeypatch.context() as _mp:
+        _mp.setattr(_im, "REVIEW_FLAG_TYPES", _wider)
+        assert not _lowered_by("quality_major"), "the precondition was not reached: status() still counts the kind"
+        _moved = _im.health_scope()
+    assert "quality non-conformances" in _moved.split(" - while ")[1] and "quality non-conformances" not in _moved.split(" - while ")[0], _moved
+    assert "nothing is reported beside it" in _im.health_scope(frozenset()), _im.health_scope(frozenset())
+    assert _lowered_by("quality_major"), "the patch was not undone"
+    #    THE TABLE IS THE CALLERS': the literal kinds at the call sites that exist, compared as sets
+    _lit = r'"((?:ai|compliance|quality)_[a-z]+|timeout)"'
+    _at_sites = set()
+    for _f in ("ai/gateway.py", "ai/native/orchestrator.py", "organism/heartbeat.py", "vbs/quality.py"):
+        _t = _code_only((_core / _f).read_text(encoding="utf-8"))
+        _calls = re.findall(r"immune\.record\((.*?)\)\n", _t, flags=re.S)
+        assert _calls, (_f, "no immune.record call was found, so this file's kinds were not read")
+        for _c in _calls:
+            _at_sites |= set(re.findall(_lit, _c))
+    _ms = _code_only((_core / "api" / "management_systems.py").read_text(encoding="utf-8"))
+    _i, _j = _ms.find("error_type = {"), _ms.find("biobus.record_error(immune_endpoint, error_type)")
+    assert 0 < _i < _j, "the non-conformance route no longer records through the bus, so its kinds were not read"
+    _at_sites |= set(re.findall(_lit, _ms[_i:_j]))
+    assert _at_sites == set(_kinds), ("the table and the call sites disagree",
+                                      sorted(_at_sites - set(_kinds)), sorted(set(_kinds) - _at_sites))
+    _bb = _code_only((_core / "organism" / "biobus.py").read_text(encoding="utf-8"))
+    assert "self.record_error(source, error_type=operation)" in _bb, "a failed operation is no longer recorded under its own name"
+
+
+def test_w672_a_decision_says_who_decided_a_key_says_it_is_not_accepted_and_no_causal_check_is_claimed(client, monkeypatch):
+    """W672 - OWNER RULINGS 2026-10-11 on the external people-and-organisation brief. (1) A decision on a
+    change records whether the decider was also the submitter - stated only when both names were checked.
+    (2) An issued API key says it is not yet accepted. (3) The causal simulator returns no typed fidelity and
+    no typed verdict, and what the effector records says no causal check ran."""
+    import asyncio
+    import pathlib
+    import agentic_core.api.change_control as _cc
+
+    # -- 1. three states, each driven here ---------------------------------------------------------------
+    monkeypatch.setattr(_cc, "auth_enabled", lambda: True)
+    _same = _cc._decider_and_submitter({"submitted_by": "amina", "submitted_by_verified": True}, "amina", True)
+    assert _same["decider_is_submitter"] is True and "amina" in _same["decider_is_submitter_basis"], _same
+    _diff = _cc._decider_and_submitter({"submitted_by": "amina", "submitted_by_verified": True}, "bilal", True)
+    assert _diff["decider_is_submitter"] is False and "bilal" in _diff["decider_is_submitter_basis"], _diff
+    _unchecked = _cc._decider_and_submitter({"submitted_by": "amina", "submitted_by_verified": False}, "amina", True)
+    assert _unchecked["decider_is_submitter"] is None and "not a checked account" in _unchecked["decider_is_submitter_basis"], (
+        "an unchecked submitter name was compared as if it had been checked", _unchecked)
+    monkeypatch.setattr(_cc, "auth_enabled", lambda: False)
+    _off = _cc._decider_and_submitter({"submitted_by": "system"}, "system", False)
+    assert _off["decider_is_submitter"] is None and "authentication is off" in _off["decider_is_submitter_basis"], (
+        "two unchecked names that happen to match were reported as the same person", _off)
+    monkeypatch.undo()
+    #    both decision records carry it: the review / override entry and the Board's ratification
+    _src = pathlib.Path(_cc.__file__).read_text(encoding="utf-8")
+    assert _src.count("**_decider_and_submitter(fresh, principal, ") == 2, (
+        "a decision record no longer says whether its decider was its submitter")
+
+    # -- 2. the key route's own answer, read from the handler the app mounts -----------------------------
+    import agentic_core.auth.core as _au
+    _doc = _au.__doc__ or ""
+    assert "NOT YET ACCEPTED" in _doc and "also accepted" not in _doc, "the module still says a key is accepted"
+    monkeypatch.setattr(_au, "auth_enabled", lambda: True)
+    _users = {"amina": {"username": "amina", "api_keys": []}}
+    monkeypatch.setattr(_au, "_load_users", lambda: _users)
+    monkeypatch.setattr(_au, "_save_users", lambda u: None)
+    _res = asyncio.new_event_loop().run_until_complete(_au.generate_api_key({"username": "amina"}))
+    assert _res["api_key"].startswith("wstn_") and _res["accepted"] is False, _res
+    assert "NOT YET ACCEPTED" in _res["accepted_basis"], _res["accepted_basis"]
+    monkeypatch.undo()
+
+    # -- 3. the simulator and the string built on it -----------------------------------------------------
+    from agentic_core.simverse.causal_simulator import SimVerseCausalSimulator
+    from agentic_core.causal.csl import CausalSovereigntyLayer as _CSL_cls  # noqa: F401  (name checked below)
+
+    class _Ueg:
+        async def log_minimisation_event(self, kind, payload):
+            self.last = (kind, payload)
+
+    _u = _Ueg()
+    _sim = SimVerseCausalSimulator(ueg_logger=_u)
+    _r = asyncio.new_event_loop().run_until_complete(
+        _sim.run_causal_forecast({"id": "w672", "physically_grounded": True, "horizon_steps": 10}, {}))
+    assert _r["fidelity"] is None and "not assessed" in _r["fidelity_basis"], ("a typed fidelity left the simulator", _r["fidelity"])
+    _att = _r["csl_attestation"]
+    assert _att["backdoor_criterion_verified"] is None and "not assessed" in _att["verification_basis"], _att
+    assert _u.last[1]["fidelity"] is None, "the event written to the ledger carries a typed fidelity"
+    _csl = _CSL_cls(ueg_logger=_u)
+    _proof = asyncio.new_event_loop().run_until_complete(
+        _csl.generate_identifiability_proof({"tool": "w672", "params": {}}, {}))
+    assert _proof and _proof.startswith("NOT ASSESSED - no causal check of this action ran"), (
+        "what the effector records is headed as a proof", _proof)
+
+
+def test_w672_the_studio_synthesise_route_is_retired_and_its_code_is_kept(client, monkeypatch):
+    """W672 - OWNER RULING 2026-10-11: one door establishes an enterprise. The Studio's synthesise route
+    answers retired BEFORE anything is composed or saved; the handler is kept and one constant restores it."""
+    import json as _j
+    import agentic_core.api.synthesis_studio as _ss
+
+    assert _ss.STUDIO_SYNTHESISE_RETIRED is True, "the door is not retired, so the 410 leg would prove nothing"
+    _calls = []
+    _real = _ss.ai_text if hasattr(_ss, "ai_text") else None
+
+    def _count_saves(entity):
+        _calls.append(entity.get("entity_id"))
+    monkeypatch.setattr(_ss, "_save_vsb", _count_saves)
+    _body = {"challenge": "W672 retired-door probe", "domain": "enterprise", "realm": "enterprise"}
+    r = client.post("/api/v1/studio/synthesise", json=_body)
+    assert r.status_code == 410, ("the retired door answered as if open", r.status_code, r.text[:200])
+    assert "Genesis" in r.json()["detail"] and "Nothing was composed" in r.json()["detail"], r.text[:300]
+    assert not r.text.startswith("data: "), "the refusal arrived inside an opened stream"
+    assert _calls == [], ("the retired door saved an entity before refusing", _calls)
+    #    the kept code still runs when the constant is turned: it streams and reaches its save
+    monkeypatch.setattr(_ss, "STUDIO_SYNTHESISE_RETIRED", False)
+    r2 = client.post("/api/v1/studio/synthesise", json=_body)
+    monkeypatch.setattr(_ss, "STUDIO_SYNTHESISE_RETIRED", True)
+    assert r2.status_code == 200, r2.text[:200]
+    _ev = [_j.loads(l[6:]) for l in r2.text.splitlines() if l.startswith("data: ")]
+    assert any(e.get("stage") == "done" for e in _ev) and len(_calls) == 1, (
+        "the kept handler no longer runs to its end", [e.get("stage") for e in _ev][-3:], _calls)
+    #    and the fabric does not name the retired route as what it ran
+    import pathlib
+    _rf = (pathlib.Path(_ss.__file__).parent / "resource_fabric.py").read_text(encoding="utf-8")
+    assert '"ran": "/api/v1/studio/synthesise"' not in _rf and '"ran": "run_lab_cascade' in _rf
+
+
+def test_w672_an_entity_made_by_the_spawn_route_says_which_door_made_it(client):
+    """W672 - OWNER RULING 2026-10-11: the spawn route is kept and labelled. The entity it makes says, on its
+    own record, that it came through the test and API door and what that door skips; an entity established
+    through Genesis does not carry that label."""
+    import json as _j
+    r = client.post("/api/v1/vsb/spawn", json={"solution_name": "W672 Door Probe", "challenge": "label probe",
+                                                "domain": "education", "realm": "enterprise"})
+    assert r.status_code == 200, r.text[:300]
+    import re as _re
+    _m = _re.search(r'"vsb_id": "(vsb-[a-f0-9]+)"', r.text)
+    assert _m, "the spawn stream did not announce a vsb_id"
+    _ent = client.get(f"/api/v1/vsb/{_m.group(1)}").json()
+    _ent = _ent.get("vsb") or _ent
+    assert _ent.get("established_through") == "spawn_route", sorted(_ent)[:40]
+    _b = _ent.get("established_through_basis") or ""
+    assert "test and API door" in _b and "no review gates" in _b and "Genesis" in _b, _b
+    #    the Genesis door does not write this label: read at the writer, which is the only place it is set
+    import pathlib
+    import agentic_core.api.genesis as _g
+    assert "spawn_route" not in pathlib.Path(_g.__file__).read_text(encoding="utf-8")
+
+
+def test_w672_the_capital_fund_refuses_an_amount_that_is_not_a_number(client):
+    """W672 - an amount that is not a finite positive number is refused before anything is filed. A JSON body
+    may carry NaN or Infinity (the parser accepts them); neither is below zero and neither is above the
+    balance, so the two comparisons the route once relied on let them through."""
+    import json as _j
+    _before = client.get("/api/v1/fund/status").json()
+    _holds_before = client.get("/api/v1/cca").json()["total"]
+    for _raw in ("NaN", "Infinity", "-Infinity", "0", "-5"):
+        _body = ('{"project_id": "w672-nan-probe", "project_name": "probe", "purpose": "probe", "amount": '
+                 + _raw + "}")
+        r = client.post("/api/v1/fund/allocate", content=_body, headers={"content-type": "application/json"})
+        assert r.status_code in (400, 422), (f"an amount of {_raw} was not refused", r.status_code, r.text[:200])
+        #  refused FOR THE AMOUNT: this probe's recipient is unknown too, and a refusal for that reason would
+        #  mean the amount had been let through to the next check
+        assert r.status_code == 422 or "must be positive" in r.text, (
+            f"an amount of {_raw} was refused for some other reason, so it passed the amount check", r.text[:200])
+    _after = client.get("/api/v1/fund/status").json()
+    for _k in ("available", "allocated"):
+        if _k in _before:
+            assert _after[_k] == _before[_k], (f"a refused amount moved the fund's {_k}", _before[_k], _after[_k])
+    assert _j.dumps(_after).count("NaN") == 0, "a value that is not a number reached the fund's own figures"
+    assert client.get("/api/v1/cca").json()["total"] == _holds_before, (
+        "a refused amount was filed at Change Control")

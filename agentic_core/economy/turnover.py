@@ -17,6 +17,67 @@ from agentic_core.config import data_path, read_json_strict
 
 QEP_ENTITY_TYPE = "qep_waqf_trust"
 
+#  P3.30 r5 (Owner ruling 2026-10-11) - THE OWNER'S RULE, AS DATA. "The Owner's own two entities and the apex
+#  are protected. Everything else is removable only by the Owner, as a reversible move." The rule ships with
+#  the code (protected_entities_rule.json, beside this file). It names the apex. It CANNOT name the Owner's
+#  own two entities: their ids are not in the repository, so its list is empty and says why, and the Owner
+#  names them in the data directory's record through PUT /api/v1/economy/protected-entities. Until that
+#  record exists the "named in a ruling" rule stays NOT ASSESSABLE and every removal stays refused - the
+#  fail-safe this module already had, now with the way out stated beside it.
+PROTECTED_RULE_FILE = __import__("pathlib").Path(__file__).with_name("protected_entities_rule.json")
+PROTECTED_RECORD = "governance/protected_entities.json"
+NAME_THEM_AT = "PUT /api/v1/economy/protected-entities"
+
+
+def protected_rule() -> Dict[str, Any]:
+    """The Owner's rule as shipped. Raises when the file cannot be read or is not an object."""
+    import json
+    d = json.loads(PROTECTED_RULE_FILE.read_text(encoding="utf-8"))
+    if not isinstance(d, dict) or not isinstance(d.get("protected"), dict):
+        raise ValueError("the protected-entities rule is not the object this module reads")
+    return d
+
+
+def _apex_ids(rule: Any) -> List[str]:
+    return [str(x) for x in ((((rule or {}).get("protected") or {}).get("apex") or {}).get("ids") or [])]
+
+
+def protected_state() -> Dict[str, Any]:
+    """What is protected NOW, read from the rule and from the Owner's own record. One key set on every path."""
+    out: Dict[str, Any] = {"rule": None, "ruling": None, "apex": [], "removal": None, "record_exists": None,
+                           "named": {}, "named_count": 0, "expected_owner_own": None, "count_matches_rule": None,
+                           "state": "unreadable", "name_them_at": NAME_THEM_AT, "basis": ""}
+    try:
+        rule = protected_rule()
+    except Exception as exc:  # noqa: BLE001
+        out["basis"] = (f"the Owner's rule could not be read ({exc.__class__.__name__}), so what is protected is "
+                        f"NOT KNOWN and nothing is removed")
+        return out
+    own = (rule.get("protected") or {}).get("owner_own") or {}
+    out.update(rule=rule.get("rule"), ruling=rule.get("ruling"), apex=_apex_ids(rule), removal=rule.get("removal"),
+               expected_owner_own=own.get("expected_count"))
+    try:
+        d = read_json_strict(data_path(PROTECTED_RECORD), missing=None, expect=dict)
+    except Exception as exc:  # noqa: BLE001
+        out["basis"] = (f"the Owner's record of protected entities could not be read ({exc.__class__.__name__}), "
+                        f"so nothing is removed")
+        return out
+    if d is None:
+        out.update(record_exists=False, state="not_named", basis=(
+            f"The Owner's own entities have NOT been named yet, so every removal is refused: "
+            f"{own.get('ids_empty_because') or 'no reason is recorded'} Name them at {NAME_THEM_AT}."))
+        return out
+    named = {str(k): str(v) for k, v in (d.get("entities") or {}).items()}
+    exp = own.get("expected_count")
+    out.update(record_exists=True, named=named, named_count=len(named), state="named",
+               count_matches_rule=(len(named) == exp) if isinstance(exp, int) else None)
+    out["basis"] = (
+        f"{len(named)} entit{'y is' if len(named) == 1 else 'ies are'} named as protected, beside the apex"
+        + (f" - the Owner's rule speaks of {exp}, so this record and the rule do not agree; the record is what "
+           f"is enforced" if isinstance(exp, int) and len(named) != exp else "")
+        + ". Any other entity is removable only by the Owner, through Change Control, with its record kept.")
+    return out
+
 
 def _rule(rule: str, verdict: str, basis: str) -> Dict[str, Any]:
     return {"rule": rule, "verdict": verdict, "basis": basis}
@@ -57,10 +118,22 @@ def _ruling(vsb_id: str) -> Dict[str, Any]:
         d = read_json_strict(data_path("governance/protected_entities.json"), missing=None, expect=dict)
     except Exception as exc:  # noqa: BLE001
         return _rule("named_in_a_ruling", "not_assessable", f"the protected-entities record could not be read ({exc.__class__.__name__})")
+    #  P3.30 r5 (Owner ruling 2026-10-11) - the apex is protected by the rule itself, whatever the record
+    #  holds; and an unreadable RULE is not a clearance.
+    try:
+        _rule_r5 = protected_rule()
+    except Exception as exc:  # noqa: BLE001
+        return _rule("named_in_a_ruling", "not_assessable",
+                     f"the Owner's protected-entities rule could not be read ({exc.__class__.__name__})")
+    if vsb_id in _apex_ids(_rule_r5):
+        return _rule("named_in_a_ruling", "refuses",
+                     f"it is the apex, which the Owner's ruling protects ({_rule_r5.get('ruling')})")
     if d is None:
         return _rule("named_in_a_ruling", "not_assessable",
                      ("no record of entities named in a ruling exists (data/governance/protected_entities.json), and "
-                      "the council's rulings carry no entity id, so whether this entity is named in one is NOT KNOWN"))
+                      "the council's rulings carry no entity id, so whether this entity is named in one is NOT KNOWN"
+                      f". The Owner's rule ({_rule_r5.get('ruling')}): {_rule_r5.get('rule')} The Owner's own "
+                      f"entities have not been named yet - name them at {NAME_THEM_AT}."))
     named = (d.get("entities") or {})
     if vsb_id in named:
         return _rule("named_in_a_ruling", "refuses", f"it is named in a ruling: {named[vsb_id]}")
@@ -120,8 +193,13 @@ def retirement_refusal(vsb_id: str) -> Dict[str, Any]:
         ([f"protected by {', '.join(refusing)}"] if refusing else [])
         + ([f"could not confirm it is unprotected ({', '.join(unknown)}), and an unknown is not a clear"]
            if unknown else []))) if refused else "no never-auto-retire rule protects it; every rule was checked"
+    #  P3.30 r5 - who may remove an unprotected entity, and how, from the Owner's rule (None if unreadable)
+    try:
+        _removal_r5 = protected_rule().get("removal")
+    except Exception:  # noqa: BLE001
+        _removal_r5 = None
     return {"vsb_id": vsb_id, "refused": refused, "refusing": refusing, "not_assessable": unknown,
-            "rules": rules, "basis": basis}
+            "rules": rules, "basis": basis, "removal_rule": _removal_r5}
 
 
 #  ── P3.26 clauses (3) and (7) — RETIREMENT IS GOVERNED, AND APOPTOSIS CONSERVES ───────────────────────────
