@@ -1784,3 +1784,250 @@ fifth phase: the review cell, and what is charged.
     REALM changes more than the tone of the writing. THE FUND may meet the price of generation as a grant
     against written criteria, an interest-free loan or a profit share that stops, with a ceiling on the
     combined take; each is a contract a person accepts, decided by the Owner, in virtual units.
+
+## 30. The Quran platform's four areas (W683): the earlier attempts read again, the field researched, and a design under the canon's rulings
+
+**What this adds to what was already written.** `docs/QURAN_EDUCATION_PLATFORM_VISION.md` sections 2 to 4 already
+audit three of the Owner's earlier repositories, with measured counts and why each stalled. That audit was NOT
+consulted before the repositories were read again on 2026-10-12 - a repeat of work, against the rule of asking
+the archive first, and recorded here as such. What the second reading added: two further repositories (`FODV-`
+and `github_repos`); the five repositories archived, read-only, on the Owner's instruction (2026-10-12); and
+seven lessons, each mapped to what enforces it here. Nothing was imported from the old code. THIS REPOSITORY IS
+PUBLIC: matters that concern only the Owner's private repositories are in the Owner's own notes, not here.
+
+**One correction made the same night.** A prompt shown when a learner says a different word was first
+recommended to the Owner as a routine choice. The whole-vision appendix (A.9.1) forbids anything that appears to
+correct a live recitation and reserves revisiting that to the Owner, for a capability that is validated and
+scholar-reviewed. The recommendation was withdrawn and the Owner told; the plan item's third clause carries the
+question in its proper form - a private test first, then a ruling on the numbers.
+
+### 30.1 The earlier attempts - the second reading
+
+READ: five private repositories of the Owner's (shallow copies, read only, never run): Quran-recitation-platform (1,942 files, last pushed 2026-02), quran-recitation-mvp (363), QEP-MVP (152),
+github_repos (131, a line-ending copy of QEP-MVP), FODV- (52,356 files of which 51,866 are committed packages).
+BY: three read-only reviewers, each told to
+open files and not trust names; I then checked the scheduling file, and the type files' sizes myself. NOT CHECKED BY ME: the reviewers' per-file line quotes; git history
+(the copies are shallow, one commit each).
+
+#### What exists
+- RECITATION: nothing computes. Scores are random, fixed, or the length of a file name; tajwid feedback is a
+  placeholder string; one recorder is commented out and sends an empty buffer. Working plumbing only: a browser
+  recorder (93 lines) and a live stream to a paid speech-to-text service.
+- MEMORISATION: one real thing - a 38-line textbook SM-2 (verified: 1, 6, then interval x ease; floor 1.3; reset
+  below 3). Everything round it keeps its records in an in-memory list. TODAY'S PLATFORM ALREADY HAS SM-2, kept on
+  disk, per learner - nothing to port.
+- COMPETITIONS: join rules (open/closed, a participant limit, a points gate) and a leaderboard sorted by a random
+  score. No judging criteria, rounds or rules were ever written.
+- LEARNING / TEACHING: the best-developed. A class with an 8-character enrolment code, joining by code, a
+  teacher enrolling a learner, assigning a module with a due date, a per-learner progress summary, and an
+  "at risk" flag below a quiz average of 60. In memory only; no lesson content at all.
+- NO Quran text, translation, tajwid rule data, audio, curriculum, design system or accessibility work in any of
+  them. The only Arabic verse text is two hard-coded lines with no stated source.
+
+#### Worth keeping (as a checklist to read against, never as code)
+1. The class model: class, enrolment by code, assignment with a due date, the teacher's view of each learner's
+   progress. Today's platform has no class or teacher at all - this is the real gap the old work names.
+2. The requirements guide (74 KB, quran-recitation-mvp/mvp/docs) and the 15-feature definition (14 KB): the
+   Owner's earlier intent in one place.
+3. The feedback record shape for recitation (where in the text, when in the audio, what, a suggestion).
+4. The competition entity as a list of fields (kind, criteria, limit, reward).
+
+#### What must NOT come across (each is against a ruling already made)
+- A score for a person's recitation, an "accuracy", an emotion reading of a voice: A.9.5 - recitation is never
+  scored. - A leaderboard with rank, tiered brackets, a points gate to enter: the ranking of learners is retired
+  (2026-10-12). - An "at risk" flag from a quiz average: a measure of a person. - Model-written tajwid advice
+  and religious Q&A with no reviewer: withheld until a named scholar approves. - A subscription and Stripe:
+  the platform is free, funded by donations and waqf.
+
+#### Why each attempt stalled (the evidence, in the old work's own files)
+1. Breadth before one working thing: 15 to 19 features and phases (AR/VR, swarm optimisation, Kafka, Terraform,
+   Kubernetes) while every feature file was empty. 128 of 363 files in one repository are zero bytes.
+2. An agent that could not run code wrote "conceptual" code: the word appears 30 to 54 times per service; one
+   test file in 1,942.
+3. The work about the work outgrew the work: guides about guides, consolidation and recovery scripts, 17
+   identical test tasks - roughly ten times the product.
+4. Restructuring destroyed what ran: a refactor emptied the app (35 build attempts, never green); a script
+   sorted files by extension; folders named BROKEN, backup, restart, refactoring; a merge folder of 1,343 files
+   holding 282 distinct ones.
+5. The source of truth was lost: three parallel repositories auto-merged until a script reset local work
+   ("Local divergent commits lost"); linked sub-projects that can no longer be fetched; the real backend never
+   committed; a working folder inside a synced drive.
+6. The content that makes it a Quran platform was never written: where the text comes from, the tajwid rules,
+   the memorisation method, how a competition is judged, safeguarding for children, who reviews.
+7. Asked to make the plan "more ambitious" rather than to finish a feature.
+
+#### How today's platform compares, and what the old work shows is still missing
+HELD TODAY (and absent from every attempt): sourced Arabic and translations, SM-2 on disk, tajwid analysis and
+lessons behind a scholar gate, a curriculum route, guards and blinds, one repository, one suite.
+STILL MISSING, and wanted by the Owner (2026-10-12: "Recitation and memorisation and competitions along with
+existing planned learning teaching"):
+- TEACHING: a class, a teacher, enrolment, assignments. Needs sign-in (it keeps something about people), so it
+  sits AFTER authentication in the ruled order.
+- MEMORISATION METHOD: SM-2 schedules single verses; the traditional structure (new lesson, recent revision,
+  old revision; by page and juz) is not modelled. To be READ at named sources before design.
+- RECITATION: listening to a learner. Under the rulings this can be: record and play back beside a named
+  reciter's audio from a licensed source; a teacher's comment on a recording; never a score. To research: which
+  reciter audio sources permit this use.
+- COMPETITIONS: under the rulings, not a ranking of people. Candidate shapes to put to the Owner: a circle's
+  SHARED total (already ruled as the later replacement), a personal challenge against one's own past, and a
+  teacher-judged event with written criteria and named human judges where the platform keeps the record and
+  ranks nobody itself.
+
+### 30.2 The field, the sources and the design
+
+HOW THIS WAS READ. Three researchers read publishers' own pages (about 130 pages; URLs in their reports, kept in
+the session). I then re-read three claims myself: the Tanzil text licence, the Quran Foundation developer terms
+(dated 2026-10-11), and Tarteel's help page on recordings. Everything else is ONE reader's report through a
+summarising fetch and is to be re-read before a source row is entered. NOT OPENED BY ANYONE: the King Fahd
+Complex site (refused four connections), any competition's own marking scheme, any primary text on the hifz
+methods, Tarteel's privacy policy and terms.
+
+#### 1. What the canon already rules (read tonight, binding)
+A.9.1: recitation is never scored; nothing may APPEAR TO CORRECT a live recitation - the platform may teach,
+never assess. The narrowing may be revisited only BY OWNER RULING, and only for a capability that is genuine,
+VALIDATED and SCHOLAR-REVIEWED. A.9.4: no emotion inference. A.9.6: no model answers as a scholar. A.9.2: the
+Arabic is fetched, never generated. Rulings of 2026-10-12: free for all; no ranking of learners by the platform;
+days reviewed as a fact; a recording stays on the device until sign-in; teachers see facts.
+
+#### 2. What the evidence says "best" is
+- The leader (Tarteel) charges for live memorisation checking and hidden verses (store listing: about USD 99 a
+  year) and its help page says recordings train its model (re-read by me). It offers no tajwid correction.
+- No independent benchmark exists for any Quran speech model; every figure is the author's own; two authors
+  qualified or retracted figures for leakage; one reports its model heard a rule in 81 of 94 clips where
+  annotators did not; one reports children two to three times worse.
+- A Quran-tuned model tends to write the verse that SHOULD have been said. So: good at "where is the learner",
+  poor at "did the learner err".
+- Flashcard schedulers (SM-2, FSRS) are evidenced only on independent cards; hifz is serial. The nearest
+  research to new-lesson / recent-revision / old-revision is successive relearning (Rawson & Dunlosky).
+  Interleaving supports drilling similar verses as contrast pairs. Overlearning in one sitting fades by four
+  weeks. A study of ten huffaz found no general memory advantage and no need to understand Arabic for retention.
+- Rewards tied to engagement reduce intrinsic motivation in a large meta-analysis (contested); no peer-reviewed
+  proof that streaks harm, but users of one Quran app asked to hide theirs. What is supported: plans tied to a
+  cue (prayer times), self-referenced progress, relatedness.
+- UK regulator: a recitation recording is ordinary personal data unless used to identify someone. The children's
+  code and safeguarding guidance set real conditions for any teacher channel.
+- Gaps nobody fills: teacher feedback pinned to the word; a similar-verses drill; a teacher-issued ijazah record;
+  an audio-first mode for blind learners; free hidden-verse practice; audio never used for training.
+
+#### 3. Sources: what may be used
+SAFE NOW: Tanzil text (CC BY 3.0, verbatim, credit and link - re-read by me); cpfair tajweed annotations and
+word-timing DATA (CC BY 4.0, per the researcher).
+WITH CONDITIONS: Quran Foundation API - audio and word timings; free and donation-funded apps allowed; nothing
+kept longer than one week except through its sync route; no prepackaged copy; credentials on a server; no model
+training without written consent (re-read by me). alquran.cloud (credit; audio described as non-commercial).
+quranenc.com translations (republishable on seven conditions).
+NOT WITHOUT WRITTEN PERMISSION, or until read: everyayah audio (no licence); mp3quran (no terms); Tarteel's QUL
+data sets - mushaf layouts, 59 reciters with word timings, similar-verse lists (NO data licence stated); the King
+Fahd Complex audio and fonts (site unreachable); Saheeh International; The Clear Quran.
+CONSEQUENCE: the richest free data (QUL) and the most-used audio (everyayah) have no stated licence. The honest
+route is to ASK - a short written request to Tarteel and to the King Fahd Complex - and meanwhile build on the
+Quran Foundation API and Tanzil.
+SPEECH MODELS WITH CLEAN LICENCES: Tarteel whisper-tiny and whisper-base Quran models (Apache-2.0), Whisper
+(MIT), whisper.cpp / faster-whisper (MIT), sherpa-onnx (Apache-2.0), Silero VAD (MIT - one badge conflicts, to
+check). RULED OUT BY LICENCE: Meta MMS and its aligner, SeamlessM4T, the strongest Quran phoneme models (custom
+"no profit", gated), Vosk's larger Arabic model (AGPL).
+
+#### 4. The design: one composed workflow per area, built from what Workstation already has
+Each area is a COMPOSITION in the Instrument Cell over registered resources, so the same fences apply to a
+person and to the autonomous system, every source is a row in the register of sources, every tool states its
+review tier, and every journey is a row in the coverage register with the test that drives it.
+
+### 4.1 Memorisation (first; no sign-in; no speech model)
+- A PORTION PLAN in three tracks - new lesson, recent revision, old revision - by page, quarter and juz, set by
+  the learner or their teacher. The platform proposes nothing it cannot source; default portions are EMPTY until
+  a hifz-method source is read and entered (none has been opened yet).
+- RETRIEVAL, not rereading: hidden-verse practice (first word shown, reveal on request), typed recall against
+  the fetched text (exists today), and self-marking "recalled / needed a look".
+- SIMILAR VERSES as contrast pairs (interleaving). Data: needs a licensed list (QUL's is unlicensed) or one
+  COMPUTED from the Tanzil text by exact shared word sequences - arithmetic, no model, no licence question.
+- THE CARD SCHEDULER STAYS only for isolated trouble spots (a junction between two verses, a contrast pair).
+- DAYS REVIEWED and own-progress, this month against last (ruled; prepared).
+- Cued plans: the learner may tie a portion to a prayer time (a reminder they set; never a nudge to protect a
+  count).
+- Integration: the weak-spot list is the learner's own data and feeds the next day's plan; the method's
+  learning loop records which portion sizes the learner actually completes (self-referenced, never compared).
+
+### 4.2 Recitation (three levels; only the first two need no ruling)
+LEVEL 0 - LISTEN AND FOLLOW (no ruling needed): a named reciter's audio with word-by-word highlighting from the
+Quran Foundation API, loop a segment, slow playback. Needs a server credential and the one-week rule honoured.
+LEVEL 1 - HEAR YOURSELF (no ruling needed): record on the device, play back beside the reciter, keep or delete.
+Nothing leaves the device; no model listens.
+LEVEL 2 - THE PLATFORM LISTENS TO FIND YOUR PLACE (needs an Owner ruling: it provisions a speech model, the
+event A.9.1 names): follow-along and find-a-verse-by-voice, on the device, Apache/MIT models only, never used
+for training. It says WHERE the learner is. It never says the learner erred; when unsure it shows nothing.
+Conditions to propose with the ruling: validated on recordings of ordinary learners (not studio reciters),
+adults only until children are ruled on, a scholar's review of the wording on screen, and a stated limit on
+every screen.
+LEVEL 3 - A PROMPT WHEN THE LEARNER STALLS (NOT RECOMMENDED NOW): the evidence says today's free models cannot
+tell reliably that a different word was said, and a wrong prompt is an appearance of correcting recitation.
+A SILENCE-ONLY variant (voice activity detection notices a long pause; the learner taps for the next word) uses
+no speech model at all and corrects nothing - that variant is within the canon and can ship with Level 1.
+TAJWID BY MACHINE: research-grade only. Not proposed.
+
+### 4.3 Learning and teaching (after sign-in)
+- A CIRCLE: a teacher the Owner names, an enrolment code, assigned portions with due dates.
+- THE TEACHER HEARS, THE TEACHER NOTES: the learner chooses to share a recording; the teacher leaves a note
+  pinned to the word, in writing or as a voice note, tagged with the teacher's own words. No score.
+- FACTS ONLY for the teacher: portion heard, date, where the teacher stopped the learner, days since each juz
+  was last heard.
+- A TEACHER-ISSUED RECORD: the teacher attests "heard and passed juz N on date" under their own name - the
+  platform records the attestation and never issues one itself. (An ijazah proper is the teacher's to give.)
+- Children: organisation accounts, a parent can see everything, no private one-to-one by default - all pending
+  the Owner's decision on children.
+- Integration: the review cell's tiers apply (a teacher is a human reviewer of record); the scholar gate holds
+  any model-written explanation; a class is an entity-like owner scope under the existing ownership checks.
+
+### 4.4 Competitions (after teaching)
+- A CIRCLE'S SHARED TOTAL and a PERSONAL CHALLENGE (ruled).
+- A JUDGED EVENT: the organiser writes the criteria and names the judges; judges enter their own marks and
+  remarks; the platform records, totals what the judges entered by the organiser's stated rule (arithmetic), and
+  publishes what the organiser chooses. It ranks nobody of its own motion. No placings for children by default.
+- NOT YET POSSIBLE TO DESIGN IN DETAIL: no organiser's marking scheme has been read. First step is to obtain two
+  or three real schemes (the published four-aspect scheme used in Malaysia is the only one found, without its
+  weights).
+
+### 4.5 Across all four
+- ACCESSIBILITY from the first slice: audio-first operation, human recitation only (a screen reader must never
+  voice the Arabic), per-word labels, large type.
+- THE SOURCES REGISTER gains every source above with its terms and the date read; the check then fails any use
+  of a source whose terms forbid it.
+- THE EXTERNAL-EXCHANGE WALL: the Quran Foundation credential is an external service under the channel table;
+  only public reference content crosses it; nothing about a learner does.
+- A LEARNER'S RECORD is theirs to export and delete (ruled).
+
+#### 5. Where this would stand against the leader
+Ahead: free hidden-verse practice; a real hifz structure; similar-verse drills; audio never leaving the device
+and never training anything; word-pinned teacher feedback; teacher attestations; no streak or rank; every source
+named. Behind, honestly: raw speech recognition, and no automatic mistake detection (by ruling and by evidence).
+
+#### 6. Decisions this raises for the Owner
+1. Level 2 listening: provision an on-device speech model for place-finding only, on the stated conditions?
+2. The silence-only prompt at Level 1 (no model): confirm it is within "teach, never assess".
+3. Two written requests for permission: Tarteel (QUL data) and the King Fahd Complex (audio, fonts). The Owner
+   sends; I draft.
+4. A Quran Foundation developer account (free; the Owner registers; production use needs their approval).
+5. Similar verses computed from the text by exact shared wording, rather than waiting for a licensed list.
+6. The teacher's attestation record: wording to be reviewed by a scholar before it is shown.
+7. Competition detail waits on real marking schemes: does the Owner have one from an event he knows?
+
+#### What the Owner ruled on this (2026-10-12)
+No ruling yet on the platform listening: a private test first. The pause-and-tap prompt is within "teach, never
+assess". A named scholar or trusted institute before recitation or teaching is built. Hafs from Asim on the
+fifteen-line Madinah page, first and only for now. Two letters asking for written permission, drafted here and
+sent by the Owner. A developer account at the foundation whose terms were read, registered by the Owner. Similar
+verses computed from the sourced text. A shared recording kept on the Owner's own machine during the invited
+stage. Children stay out until a scholar and a safeguarding lead are named. Competition detail waits on a real
+marking scheme. The plan item for the four areas carries each of these as a clause.
+
+### 30.3 Seven lessons from the earlier attempts, and what enforces each here
+
+These are CANDIDATES, not yet part of the product's own method: a lesson enters the method only through a
+change record, and that batch (with the collaboration lessons of section 27) is its own round's work.
+
+- **One area is taken to a kept, driven, guarded slice before the next area is opened.** WHAT HAPPENED: Earlier attempts (2024-2025): fifteen to nineteen features and phases were scaffolded at once; in one repository 128 of 363 files were zero bytes and no feature ever kept a record. HERE: A plan item for a new area names the ONE journey a person can complete and the test that drives it; the coverage register counts only a journey or arithmetic row. ENFORCED BY: scripts/coverage_register.py (a row counts only with a named driving test)
+- **Code that was never run is a hypothesis and is labelled as one; it is not a feature.** WHAT HAPPENED: An agent that could not execute wrote 'conceptual' code for months: the word appears 30 to 54 times per service file, with one test file in 1,942. HERE: Every clause is driven; a guard is made to fail first; a claim read from code is filed as a hypothesis until driven. ENFORCED BY: the round rhythm (blinds driven red) and the register's HYPOTHESIS label
+- **Work about the work is bounded: a guide, pipeline or recovery script is written only when a named round needs it.** WHAT HAPPENED: Guides about guides, consolidation and recovery scripts and seventeen identical test tasks grew to roughly ten times the product. HERE: No planning or analysis document is created unless asked for or needed by a row; the method page reports how far the method's own data trails the work. ENFORCED BY: NOTHING - Whether a document was needed is a judgement; only its count can be measured.
+- **A restructure never lands without the suite green before and after, and never sorts or moves files by a mechanical rule alone.** WHAT HAPPENED: One refactor emptied a working app (35 build attempts, never green); a consolidation script sorted files by extension and destroyed the project's structure. HERE: Moves are reversible and dated; a removal is a move into a dated folder with its reversing command shown first. ENFORCED BY: the standing rule on moves and the five required checks on every merge
+- **One repository, one main line, merged only by a checked request; no script resolves a conflict by taking one side wholesale.** WHAT HAPPENED: Three parallel repositories were auto-merged until a script reset local work and recorded 'Local divergent commits lost'; four linked sub-projects can no longer be fetched. HERE: Never push to the main line directly; never an automatic conflict resolution. ENFORCED BY: branch protection and the merge-on-five-green rule
+- **The content that makes a domain tool what it is - its sources, its rules, its method, who reviews it, how the vulnerable are protected - is written and read at named sources BEFORE its software.** WHAT HAPPENED: No earlier attempt ever wrote down where the Quran text comes from, the tajwid rules, the memorisation method, how a competition is judged or how children are safeguarded; only the software shell round them. HERE: A new area's first row is its sources read at their publishers and entered in the register of sources; its design follows. ENFORCED BY: docs/SOURCES.json and scripts/sources_check.py (a named authority with no row fails)
+- **A secret is never pasted into a conversation, a document or a repository; a secret found in one is treated as exposed and revoked at its provider.** WHAT HAPPENED: An earlier project kept real keys in a saved conversation and a committed environment file. HERE: Settings hide secret fields from their printed form; a test never prints a setting; a found secret is reported by path and kind only. ENFORCED BY: the settings fields marked not-to-print (W678) - for this platform's own settings only. Nothing checks text pasted elsewhere; that remains a person's habit.

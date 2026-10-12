@@ -154,8 +154,15 @@ async def _horizon_observe(request, call_next):
         if _authz.lower().startswith("bearer "):
             from agentic_core.auth.core import auth_enabled as _ae619, _decode_token as _dt619, _get_user as _gu619
             if _ae619():
-                _sub = (_dt619(_authz.split(" ", 1)[1].strip()) or {}).get("sub")
-                _u = _gu619(_sub) if _sub else None
+                _tok619 = _authz.split(" ", 1)[1].strip()
+                #  W683 - an issued key is resolved by the same function the route's own dependency uses, so a
+                #  key-holder's profile is applied here exactly as a token-holder's is
+                from agentic_core.auth.core import API_KEY_MARK as _km683, _user_for_api_key as _uk683
+                if _tok619.startswith(_km683):
+                    _u = _uk683(_tok619)
+                else:
+                    _sub = (_dt619(_tok619) or {}).get("sub")
+                    _u = _gu619(_sub) if _sub else None
                 if _u and _u.get("username"):
                     set_request_user(_u["username"])
     except Exception:          # noqa: BLE001 - an invalid token is the route's 401 to give, not this layer's
@@ -190,107 +197,112 @@ async def _horizon_observe(request, call_next):
             pass                      # (membrane._record counts its own failures; this guards the import)
 
 
+#  W683 - the caller dependency, imported BEFORE the first mount so every router below can be mounted behind it.
+#  (The later imports of the same names are kept: they are the same objects.)
+from fastapi import Depends as _Depends
+from agentic_core.auth.core import get_current_user as _get_current_user
+
 # ── MVP spine routers ─────────────────────────────────────────────────────────
 
 # 1. Projects (concept → commercialise lifecycle, SSE streaming, governance)
 from agentic_core.projects import api as projects_api
-app.include_router(projects_api.router, prefix="/api/v1")
+app.include_router(projects_api.router, prefix="/api/v1", dependencies=[_Depends(_get_current_user)])
 
 # 2. AI CEO chat (SSE streaming chat)
 from agentic_core.api.v138 import ceo as ceo_v138
-app.include_router(ceo_v138.router, prefix="/api/v138")
+app.include_router(ceo_v138.router, prefix="/api/v138", dependencies=[_Depends(_get_current_user)])
 
 # 3. CEO generate-blueprint (real AI call → deliverable)
 from agentic_core.api.v290 import ceo_generate
-app.include_router(ceo_generate.router, prefix="/api/v290")
+app.include_router(ceo_generate.router, prefix="/api/v290", dependencies=[_Depends(_get_current_user)])
 
 # 4. C-Suite metrics (CFO/CTO — computed from project store)
 from agentic_core.api import csuite
-app.include_router(csuite.router, prefix="/api")
+app.include_router(csuite.router, prefix="/api", dependencies=[_Depends(_get_current_user)])
 
 # 5. Synthesis (upload → AI → download)
 from agentic_core.synthesis import api as synthesis_api
-app.include_router(synthesis_api.router, prefix="/api/v1")
+app.include_router(synthesis_api.router, prefix="/api/v1", dependencies=[_Depends(_get_current_user)])
 
 # 6. Avatars / biometrics / status
 from agentic_core.avatars import api as avatar_api
-app.include_router(avatar_api.router, prefix="/api/v1")
+app.include_router(avatar_api.router, prefix="/api/v1", dependencies=[_Depends(_get_current_user)])
 
 # 7. Ingestion (file upload pipeline)
 from agentic_core.ingestion import api as ingestion_api
-app.include_router(ingestion_api.router, prefix="/api/v1")
+app.include_router(ingestion_api.router, prefix="/api/v1", dependencies=[_Depends(_get_current_user)])
 
 # 8. Products (Reactor/Factory/Incubator/Intelligence — all real AI execution)
 from agentic_core.api import products as products_api
-app.include_router(products_api.router)
+app.include_router(products_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 9. Marketplace (real listings + WST purchase)
 from agentic_core.api import marketplace as marketplace_api
-app.include_router(marketplace_api.router)
+app.include_router(marketplace_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 10. BTO Catalog + Configurator
 from agentic_core.catalog import api as catalog_api, bto as bto_api
-app.include_router(catalog_api.router, prefix="/api/v1")
-app.include_router(bto_api.router, prefix="/api/v1")
+app.include_router(catalog_api.router, prefix="/api/v1", dependencies=[_Depends(_get_current_user)])
+app.include_router(bto_api.router, prefix="/api/v1", dependencies=[_Depends(_get_current_user)])
 
 # 10. Entrepreneur / Business Plan Wizard (v310)
 from agentic_core.api.v310 import business as business_api
-app.include_router(business_api.router, prefix="/api/v310")
+app.include_router(business_api.router, prefix="/api/v310", dependencies=[_Depends(_get_current_user)])
 
 # 11. Sovereign Realms registry (persist + discover from project store)
 from agentic_core.api.v290.realms import router as realms_router
-app.include_router(realms_router, prefix="/api")
+app.include_router(realms_router, prefix="/api", dependencies=[_Depends(_get_current_user)])
 
 # 12. Generic AI query (real gateway call — used by Solutions Platform and CEO assistant)
 from agentic_core.api import ai_query as ai_query_api
-app.include_router(ai_query_api.router, prefix="/api")
+app.include_router(ai_query_api.router, prefix="/api", dependencies=[_Depends(_get_current_user)])
 
 # 13. (W669, Owner ruling 2026-10-11) The council judiciary route is ARCHIVED, a reversible move to
 #     _archive/agentic_core/api/. No page called it and the pages say no council exists.
 
 # 13b. Scholar review (W669, FU-693) - the roster, the queue and the attested decision
 from agentic_core.api import scholar_review as scholar_review_api
-app.include_router(scholar_review_api.router)
+app.include_router(scholar_review_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 14. Treaties (in-memory treaty creation/signing — Treaty Studio frontend calls /api/v250/treaties/*)
 from agentic_core.api.v250 import treaties as treaties_api
-app.include_router(treaties_api.router, prefix="/api/v250")
+app.include_router(treaties_api.router, prefix="/api/v250", dependencies=[_Depends(_get_current_user)])
 
 # 15. Civilization Intelligence (real assistant query via gateway)
 from agentic_core.api.v260 import intelligence as civilization_api
-app.include_router(civilization_api.router, prefix="/api")
+app.include_router(civilization_api.router, prefix="/api", dependencies=[_Depends(_get_current_user)])
 
 # 16. DAO/Governance — v310 (proposals, voting, treasury) — called by DAODashboard
 from agentic_core.api.v310 import governance as governance_v310
-app.include_router(governance_v310.router, prefix="/api/v310")
+app.include_router(governance_v310.router, prefix="/api/v310", dependencies=[_Depends(_get_current_user)])
 
 # 17. Payments / WST wallet — v310 — called by Wallet and Commerce flows
 from agentic_core.api.v310 import payments as payments_v310
-app.include_router(payments_v310.router, prefix="/api/v310")
+app.include_router(payments_v310.router, prefix="/api/v310", dependencies=[_Depends(_get_current_user)])
 
 # 18. Creator Fund — v310 — epoch synthesis + grants
 from agentic_core.api.v310 import fund as fund_v310
-app.include_router(fund_v310.router, prefix="/api/v310")
+app.include_router(fund_v310.router, prefix="/api/v310", dependencies=[_Depends(_get_current_user)])
 
 # 19. Gamification (XP / quests / levels) — called by gamificationStore.ts
 from agentic_core.api.v280 import gamification as gamification_api
-app.include_router(gamification_api.router, prefix="/api/v280")
+app.include_router(gamification_api.router, prefix="/api/v280", dependencies=[_Depends(_get_current_user)])
 
 # 20. Evolution proposals (v191) — called by Proposals + EvolutionDashboard pages
 from agentic_core.api.v191 import evolution as evolution_v191
-app.include_router(evolution_v191.router, prefix="/api/v191")
+app.include_router(evolution_v191.router, prefix="/api/v191", dependencies=[_Depends(_get_current_user)])
 
 # 21. Contribute / voting (v200) — called by Proposals page vote action
 from agentic_core.api.v200 import contribute as contribute_v200
-app.include_router(contribute_v200.router, prefix="/api/v200")
+app.include_router(contribute_v200.router, prefix="/api/v200", dependencies=[_Depends(_get_current_user)])
 
 # 22. Career / Employment domain (Application Studio, job search, doc generation)
 from agentic_core.api import career as career_api
-app.include_router(career_api.router)
+app.include_router(career_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 23. Law domain (contract analysis, legal document factory)
 from agentic_core.api import law as law_api
-app.include_router(law_api.router)
+app.include_router(law_api.router, dependencies=[_Depends(_get_current_user)])
 
 #  the registers a reader can check: the sources this platform names, and what a person can do here
 from agentic_core.api import registers as registers_api
@@ -298,51 +310,51 @@ app.include_router(registers_api.router)
 
 # 24. Science domain (research synthesis, hypothesis generation, literature review)
 from agentic_core.api import science as science_api
-app.include_router(science_api.router)
+app.include_router(science_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 25. Education domain (curriculum design, lesson plans, assessments)
 from agentic_core.api import education as education_api
-app.include_router(education_api.router)
+app.include_router(education_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 26. Care domain (care plans, risk assessment, clinical handover)
 from agentic_core.api import care as care_api
-app.include_router(care_api.router)
+app.include_router(care_api.router, dependencies=[_Depends(_get_current_user)])
 
 # ── Agent Collaboration Hub + additional routers ──────────────────────────────
 
 # 27. Agent Collaboration Hub (SSE message bus, handoffs, agent registry)
 #     data/agent_messages/, data/handoffs/, data/agent_registry/ must exist
 from agentic_core.api import agent_hub
-app.include_router(agent_hub.router, prefix="/api/v1")
+app.include_router(agent_hub.router, prefix="/api/v1", dependencies=[_Depends(_get_current_user)])
 
 # 28. AI Orchestration (multi-agent CEO delegation)
 from agentic_core.api import ai_orchestration
-app.include_router(ai_orchestration.router, prefix="/api")
+app.include_router(ai_orchestration.router, prefix="/api", dependencies=[_Depends(_get_current_user)])
 
 # 29. Partnerships / Diplomatic Corps
 from agentic_core.api import partnerships
-app.include_router(partnerships.router, prefix="/api")
+app.include_router(partnerships.router, prefix="/api", dependencies=[_Depends(_get_current_user)])
 
 # 30. QEP Analytics (Quran Education Platform analytics)
 from agentic_core.api import qep_analytics
-app.include_router(qep_analytics.router, prefix="/api")
+app.include_router(qep_analytics.router, prefix="/api", dependencies=[_Depends(_get_current_user)])
 
 # 31. Tool Ecosystem (tool discovery and invocation)
 from agentic_core.api import tools as tools_api
-app.include_router(tools_api.router, prefix="/api")
+app.include_router(tools_api.router, prefix="/api", dependencies=[_Depends(_get_current_user)])
 
 # 32. Cross-Platform Bridge (wearable, voice, AR — Phase 3 scaffolding)
 #     Refactored from FastAPI() sub-app to APIRouter (2026-06-18)
 from agentic_core.api import cross_platform
-app.include_router(cross_platform.api, prefix="/api")
+app.include_router(cross_platform.api, prefix="/api", dependencies=[_Depends(_get_current_user)])
 
 # 33. Religion domain (fiqh research, Quran tafsir, halal review, interfaith)
 from agentic_core.api import religion as religion_api
-app.include_router(religion_api.router)
+app.include_router(religion_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 34. Human Synthesis Studio + VSB entity spawning (concept → commercialisation cascade)
 from agentic_core.api import synthesis_studio
-app.include_router(synthesis_studio.router)
+app.include_router(synthesis_studio.router, dependencies=[_Depends(_get_current_user)])
 
 # 35. AI Agent Swarm Orchestration (CEO → C-Suite → CoE delegation)
 # W505 (P2.6, FU-005) — THE FIRST ROUTER PERIMETER. This router carried no dependency and swarm.py has no
@@ -362,33 +374,33 @@ app.include_router(swarm_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 36. Digital Twin & Simulation (AI model generation + scenario simulation)
 from agentic_core.api import digital_twin as twin_api
-app.include_router(twin_api.router)
+app.include_router(twin_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 37. IDBO Self-Healing (circuit breaker status + healing log)
 from agentic_core.organism import self_healing as self_healing_api
-app.include_router(self_healing_api.router)
+app.include_router(self_healing_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 38. Management Systems (QMS/BMS/DCS/Audit/Risk Register — ISO 9001-aligned)
 from agentic_core.api import management_systems as mgmt_api
-app.include_router(mgmt_api.router)
+app.include_router(mgmt_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 39. Capital Fund + VSB Marketplace
 from agentic_core.api import capital_fund as fund_api
-app.include_router(fund_api.router)
+app.include_router(fund_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 40. VSB Full Spawn Pipeline (Cascade → MJM → Genomic Registry → Agent Swarm)
 from agentic_core.api import vsb as vsb_api
-app.include_router(vsb_api.router)
+app.include_router(vsb_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 41. Nine Cognitive Engines + MJM HTTP surface
 from agentic_core.api import cognitive as cognitive_api
-app.include_router(cognitive_api.router)
+app.include_router(cognitive_api.router, dependencies=[_Depends(_get_current_user)])
 from agentic_core.api import attestation as attestation_api
-app.include_router(attestation_api.router)
+app.include_router(attestation_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 42. Business Development Process + Scientific Process Intelligence Engines
 from agentic_core.api import intelligence as intelligence_api
-app.include_router(intelligence_api.router)
+app.include_router(intelligence_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 43. Auth (JWT + API key — single-user by default, multi-user with AUTH_ENABLED=true)
 from agentic_core.auth import core as auth_api
@@ -400,11 +412,11 @@ app.include_router(qep_api.router)
 
 # 45. IDBO Nervous System (signal routing, reflex arcs, arousal state)
 from agentic_core.organism import nervous as nervous_api
-app.include_router(nervous_api.router)
+app.include_router(nervous_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 45. IDBO Reconfiguration Engine (runtime feature flags, provider config)
 from agentic_core.organism import reconfiguration as reconfig_api
-app.include_router(reconfig_api.router)
+app.include_router(reconfig_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 46. IDBO Genome System (project trait encoding, crossover, mutation)
 from agentic_core.organism import genome as genome_api
@@ -434,7 +446,7 @@ app.include_router(method_api.router, prefix="/api/v1", dependencies=[_Depends(_
 
 # 49. Constitutional GaaS v5 (v16-Omega interceptor + self-tuning breaker + UEG audit log)
 from agentic_core.api import constitutional_gaas as gaas_api
-app.include_router(gaas_api.router)
+app.include_router(gaas_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 50. Frontier Phase 4 — RETIRED (W441). Its five consumer pages (Cosmic/Reality/AR-VR/
 # Wearables/Embodiment) were archived to _archive/frontend-pages as "off-vision … not part of
@@ -447,11 +459,11 @@ app.include_router(gaas_api.router)
 
 # 51. QEP Intelligence (explainability/XAI, translation pipeline, cross-domain adaptation)
 from agentic_core.api import qep_intelligence as qep_intel_api
-app.include_router(qep_intel_api.router)
+app.include_router(qep_intel_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 52. Genesis — unified Sovereign Journey orchestrator (Concept → Design → Commercialisation)
 from agentic_core.api import genesis as genesis_api
-app.include_router(genesis_api.router)
+app.include_router(genesis_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 53. Sovereign Evolution Office — autonomous self-improvement curated by the VSB org
 from agentic_core.api import sovereign_evolution as sov_evo_api
@@ -459,12 +471,12 @@ app.include_router(sov_evo_api.router, dependencies=[_Depends(_require_admin)]) 
 
 # 54. Resource Fabric — unified reconfigurable/combinable resource catalogue
 from agentic_core.api import resource_fabric as resource_fabric_api
-app.include_router(resource_fabric_api.router)
+app.include_router(resource_fabric_api.router, dependencies=[_Depends(_get_current_user)])
 #  W640 (P3.31) — the Instrument Cell: availability, contract, proposal and verification OVER the fabric's own
 #  registry. Its paths are two segments under the fabric's prefix, so the fabric's `/{resource_id}` never
 #  takes them.
 from agentic_core.api import instrument_cell as instrument_cell_api
-app.include_router(instrument_cell_api.router)
+app.include_router(instrument_cell_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 55. Board of Directors — apex governance; Chief = Owner's digital twin, above the AI CEO
 from agentic_core.api import board as board_api
@@ -472,15 +484,15 @@ app.include_router(board_api.router, dependencies=[_Depends(_require_admin)])   
 
 # 56. Living Plan — self-updating current-state + progress spine of the D&D Action Plan
 from agentic_core.api import living_plan as living_plan_api
-app.include_router(living_plan_api.router)
+app.include_router(living_plan_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 57. VSB Economy — living biomimetic economic metabolism (Waqf/Trust hybrid, virtual/simulated)
 from agentic_core.api import economy as economy_api
-app.include_router(economy_api.router)
+app.include_router(economy_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 58. Vision→Realisation→Transformation — the living alignment engine (computed from live evidence)
 from agentic_core.api import transformation as transformation_api
-app.include_router(transformation_api.router)
+app.include_router(transformation_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 59. Organism Heartbeat — continuous-autonomy circadian scheduler (the organism runs itself)
 from agentic_core.api import heartbeat as heartbeat_api
@@ -488,95 +500,95 @@ app.include_router(heartbeat_api.router, dependencies=[_Depends(_require_admin)]
 
 # 60. Cognition & Alignment — wires the knowledge system into every living tier
 from agentic_core.api import cognition as cognition_api
-app.include_router(cognition_api.router)
+app.include_router(cognition_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 61. Forge — executable digital-resource pipelines (Petri/Incubator/Lab/Factory/Generator/Simulator/Reactor)
 from agentic_core.api import forge as forge_api
-app.include_router(forge_api.router)
+app.include_router(forge_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 62. Unified Compliance — Sharia/Halal · UK Legal (London) · Regulatory · EHS · Ethical · Constitutional
 from agentic_core.api import compliance as compliance_api
-app.include_router(compliance_api.router)
+app.include_router(compliance_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 63. Living Business-Plan management — Chief/Board own the plan for Workstation + per-VSB
 from agentic_core.api import business_plan as business_plan_api
-app.include_router(business_plan_api.router)
+app.include_router(business_plan_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 64. Integration Surface — wires 18 previously-broken frontend calls to real backend data
 from agentic_core.api import integration_surface as integration_surface_api
-app.include_router(integration_surface_api.router)
+app.include_router(integration_surface_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 65. Transformation Orchestration — runs the whole transformation through the VSB
 # delivery org end-to-end (Chief→Board→AI CEO→C-Suite→CoE→BTO), governed + biomimetic
 from agentic_core.api import transformation_orchestration as transformation_orchestration_api
-app.include_router(transformation_orchestration_api.router)
+app.include_router(transformation_orchestration_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 66. Native AI Fabric (W1) — Workstation's OWN AI resources: model-resource registry,
 # in-house-first orchestrator, and bespoke swarm cascades (not external API calls)
 from agentic_core.api import native_ai as native_ai_api
-app.include_router(native_ai_api.router)
+app.include_router(native_ai_api.router, dependencies=[_Depends(_get_current_user)])
 
 from agentic_core.api import vbs_systems as vbs_systems_api
-app.include_router(vbs_systems_api.router)
+app.include_router(vbs_systems_api.router, dependencies=[_Depends(_get_current_user)])
 
 # P3.18 — autonomous technical support, told truthfully. The archived version of this surface
 # slept a tier-shaped latency and returned a formatted 'Simulated resolution' with success=True
 # always; this one records what served each answer, never resolves itself, and reports a rate
 # only over confirmations.
 from agentic_core.api import support as support_api
-app.include_router(support_api.router)
+app.include_router(support_api.router, dependencies=[_Depends(_get_current_user)])
 
 # W543 (P3.19) — the six biogeochemical cycles, reported. Nothing reached them before this: no live
 # module imports any of the six classes, while the architecture layer on the UCI interception path
 # described itself as six-cycle PID-controlled homeostasis. This surface says what each cycle is bound
 # to, and for the three bound to nothing it names the reader that would bind them.
 from agentic_core.api import cycles as cycles_api
-app.include_router(cycles_api.router)
+app.include_router(cycles_api.router, dependencies=[_Depends(_get_current_user)])
 
 # W548 (P3.17) — the Biomimetic Minimisation Engine, reported. Nothing reached any of it: the Sinkhorn
 # router was imported by no live module and could only report its missing solver by raising, and the
 # Ω-functional was in the archive defaulting every absent term to zero — which in a minimisation is the
 # optimum, so the least-measured candidate always won.
 from agentic_core.api import minimisation as minimisation_api
-app.include_router(minimisation_api.router)
+app.include_router(minimisation_api.router, dependencies=[_Depends(_get_current_user)])
 
 # W550 (P2.11) — HORIZON, the membrane that compresses a request before anything acts on it. Its bar
 # asks that each compression state and each decision state be REACHABLE, and a state reachable only by
 # calling an internal function is a state no user ever meets.
 from agentic_core.api import horizon as horizon_api
-app.include_router(horizon_api.router)
+app.include_router(horizon_api.router, dependencies=[_Depends(_get_current_user)])
 
 from agentic_core.api import ueg as ueg_api
-app.include_router(ueg_api.router)
+app.include_router(ueg_api.router, dependencies=[_Depends(_get_current_user)])
 
 from agentic_core.api import deliverables as deliverables_api
-app.include_router(deliverables_api.router)
+app.include_router(deliverables_api.router, dependencies=[_Depends(_get_current_user)])
 
 from agentic_core.api import operational_excellence as operational_excellence_api
-app.include_router(operational_excellence_api.router)
+app.include_router(operational_excellence_api.router, dependencies=[_Depends(_get_current_user)])
 
 from agentic_core.api import mesh as mesh_api
-app.include_router(mesh_api.router)
+app.include_router(mesh_api.router, dependencies=[_Depends(_get_current_user)])
 
 from agentic_core.api import mega_project as mega_project_api
-app.include_router(mega_project_api.router)
+app.include_router(mega_project_api.router, dependencies=[_Depends(_get_current_user)])
 
 from agentic_core.api import optimizer as optimizer_api
-app.include_router(optimizer_api.router)
+app.include_router(optimizer_api.router, dependencies=[_Depends(_get_current_user)])
 
 from agentic_core.api import collective as collective_api
-app.include_router(collective_api.router)
+app.include_router(collective_api.router, dependencies=[_Depends(_get_current_user)])
 
 from agentic_core.api import employment as employment_api
-app.include_router(employment_api.router)
+app.include_router(employment_api.router, dependencies=[_Depends(_get_current_user)])
 
 from agentic_core.api import refine as refine_api
-app.include_router(refine_api.router)
+app.include_router(refine_api.router, dependencies=[_Depends(_get_current_user)])
 
 # §9 — the user's OWN durable workspace (work history + interface preferences), owner-scoped so it
 # follows the authenticated user across devices instead of living in one browser's localStorage.
 from agentic_core.api import user_workspace as user_workspace_api
-app.include_router(user_workspace_api.router)
+app.include_router(user_workspace_api.router, dependencies=[_Depends(_get_current_user)])
 
 # ── Health ────────────────────────────────────────────────────────────────────
 
@@ -594,7 +606,7 @@ def _circadian_cycle() -> str:
     return "MAINTENANCE_REST"
 
 
-@app.get("/api/v1/biometrics/status")
+@app.get("/api/v1/biometrics/status", dependencies=[_Depends(_get_current_user)])
 async def biometrics_status():
     """Organism vitals: psutil + project store + immune system + ATPSimulator + NervousSystem."""
     from agentic_core.projects.api import _all_projects
@@ -727,7 +739,7 @@ async def health():
     return {"status": "healthy", "version": "1.0.0", "app": "workstation-mvp"}
 
 
-@app.get("/api/v1/system/info")
+@app.get("/api/v1/system/info", dependencies=[_Depends(_get_current_user)])
 async def system_info():
     """Non-sensitive system configuration summary for ops/monitoring."""
     return {
@@ -753,7 +765,7 @@ async def system_info():
     }
 
 
-@app.get("/api/v1/claude/status")
+@app.get("/api/v1/claude/status", dependencies=[_Depends(_get_current_user)])
 async def claude_status():
     return {"authenticated": bool(os.getenv("ANTHROPIC_API_KEY"))}
 

@@ -16485,11 +16485,15 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P4.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W683",
       "note": "",
       "slot_source": "ruled by the Owner on 2026-10-11: fixed in one authentication-readiness round after P5 and before the final audit",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "scripts/auth_perimeter.py reads the mounted dependencies against docs/PUBLIC_ROUTES.json: 558 route-methods ask, 16 are declared public with a reason, none is undecided; the strict check passes; with authentication on in a test process every asking route refuses an anonymous call",
+      "reachability_check": "test_w683_every_mounted_route_asks_or_is_declared_public_and_the_strict_check_passes"
     },
     {
       "id": "FU-847",
@@ -16503,11 +16507,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P4.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W683",
       "note": "",
       "slot_source": "ruled by the Owner on 2026-10-11: fixed in one authentication-readiness round after P5 and before the final audit",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "an issued key is found by its stored prefix and admitted only on its stored hash; its owner can revoke it; driven through real requests with authentication on",
+      "reachability_check": "test_w683_an_issued_key_is_the_person_it_was_issued_to_through_a_real_request"
     },
     {
       "id": "FU-848",
@@ -20581,6 +20589,138 @@
       "note": "",
       "slot_source": "what the register round left, found in W681",
       "tier": 2
+    },
+    {
+      "id": "FU-1061",
+      "title": "A route that asks who is calling does not yet check the record is the caller's: only six paths are driven for another person's record",
+      "why": "The perimeter instrument reads that a route ASKS; it says every run that it cannot see whether the handler uses the answer. With authentication on, 558 route-methods refuse an anonymous call, and the ownership check is driven on the entity routes only. Done when, group by group, a guard signs in as a second person and shows the first person's record is not found, starting with projects, the business plan, economy and the uploads.",
+      "source": "W683 (the authentication-readiness round; assessment section 30)",
+      "found": "2026-10-12",
+      "files": [
+        "scripts/auth_perimeter.py",
+        "agentic_core/auth/core.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the readiness round's own measure names this as what it cannot see",
+      "tier": 2
+    },
+    {
+      "id": "FU-1062",
+      "title": "The pages have never been driven with authentication on: whether every data call carries the token is not established",
+      "why": "76 routers were mounted behind the caller question in one change. With authentication off nothing changes. With it on, a page whose call sends no token would now be refused. Done when the browser smoke is run once with authentication on and a signed-in session, and every page that fails is listed.",
+      "source": "W683 (the authentication-readiness round; assessment section 30)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/app_mvp.py",
+        "apps/workstation-superapp/src/lib/api.ts"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found by the round that mounted the routers behind the caller question",
+      "tier": 2
+    },
+    {
+      "id": "FU-1063",
+      "title": "The public sign-in status answer gives a count of accounts",
+      "why": "GET /api/v1/auth/status is declared public so the sign-in page can learn the mode, and it also returns how many accounts exist. Harmless on one machine; to be removed or moved behind the administrator before any deploy another person can reach.",
+      "source": "W683 (the authentication-readiness round; assessment section 30)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/auth/core.py",
+        "docs/PUBLIC_ROUTES.json"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P4.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "declared in docs/PUBLIC_ROUTES.json with this caveat",
+      "tier": 3
+    },
+    {
+      "id": "FU-1064",
+      "title": "A learner's record on the Quran platform is still kept under a typed id: asking who is calling does not tie the id to the caller",
+      "why": "The learner routes now ask who is calling, and with authentication on an anonymous call is refused. A signed-in person can still read or write another id by typing it. Ruled 2026-10-12: the record is kept, said to be unverified until sign-in, then the learner's to export and delete. Done when, with authentication on, the id is the caller's own and another's is not found.",
+      "source": "W683 (the authentication-readiness round; assessment section 30)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/religious_domain/api.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's rulings of 2026-10-12 on the learner's record",
+      "tier": 2
+    },
+    {
+      "id": "FU-1065",
+      "title": "Memorisation practice: the portion plan in three tracks, hidden-verse practice and the similar-verse drill computed from the sourced text",
+      "why": "Clause 1 of the four areas, ruled first. Today's scheduler treats verses as separate cards. No default portions until a named source on the method is read and entered. Done when a learner can set a portion in each track, practise a hidden verse and a computed pair, and each journey is a coverage-register row with the test that drives it.",
+      "source": "W683 (the authentication-readiness round; assessment section 30)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/religious_domain/api.py",
+        "agentic_core/religious_domain/memorization/engine.py",
+        "docs/COVERAGE_REGISTER.json"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the Owner's ruling of 2026-10-12: memorisation practice first",
+      "tier": 2
+    },
+    {
+      "id": "FU-1066",
+      "title": "The audio, timing and method sources for the four areas are not yet rows in the register of sources, and two were never opened",
+      "why": "Read 2026-10-12 by one reader each, three re-read: the sourced text licence, the foundation's developer terms, the leading app's page on recordings. Never opened: the printing complex's site (refused every connection), any primary text on the memorisation methods, any competition's marking scheme. Done when each source in use has a row with its terms and the date read, and the two letters asking for written permission are drafted for the Owner to send.",
+      "source": "W683 (the authentication-readiness round; assessment section 30)",
+      "found": "2026-10-12",
+      "files": [
+        "docs/SOURCES.json",
+        "scripts/sources_check.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the plan item's sixth clause",
+      "tier": 2
+    },
+    {
+      "id": "FU-1067",
+      "title": "The private test the Owner asked for before ruling on listening has not been run",
+      "why": "Ruled 2026-10-12: no ruling on whether the platform may listen to find a learner's place until clean-licence on-device models are tried on lawful recordings of ordinary reciters, measuring how often the place is found and how often it would mislead. It needs recordings the Owner supplies or approves; it cannot cover children. Done when the numbers and their limits are in the assessment and put to the Owner.",
+      "source": "W683 (the authentication-readiness round; assessment section 30)",
+      "found": "2026-10-12",
+      "files": [
+        "docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the plan item's third clause",
+      "tier": 3
     }
   ],
   "routes": [
