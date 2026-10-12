@@ -92,7 +92,7 @@ export const Wallet: React.FC = () => {
       <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6 border-b border-white/5 pb-8">
         <div>
           <h1 className="text-2xl @[480px]:text-3xl @[680px]:text-5xl font-black tracking-tight neon-text break-words">Sovereign Economy</h1>
-          <p className="text-slate-500 font-bold text-lg mt-2">Sovereign Capital Fund — WST liquidity and virtual capital allocation.</p>
+          <p className="text-slate-500 font-bold text-lg mt-2">Capital Fund — WST liquidity and virtual capital allocation.</p>
         </div>
         <div className="text-right flex items-center gap-6">
            <div>

@@ -13239,11 +13239,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.31",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W673",
       "note": "",
       "slot_source": "a fabric page gap; the Instrument Cell item owns that page's additions",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W673: the designer offers a model per stage and an edit keeps a stage's model. The designer is the Native AI page and the Cockpit, not the fabric page this row named. Held by test_p3d_r9_a_stand_in_is_labelled_a_run_is_checked_on_the_page_and_an_edit_keeps_the_model, driven red."
     },
     {
       "id": "FU-685",
@@ -15851,11 +15854,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.31",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W673",
       "note": "",
       "slot_source": "the Owner asked on 2026-10-11 that this work be added to the plan; it extends the item that owns the Instrument Cell",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W673 inside the Instrument Cell, as the Owner ruled (no third cell): a kept proposal is immutable, versioned, linked to its run and can be run again. Held by test_lgc_spec_a_kept_proposal_is_immutable_versioned_linked_to_its_run_and_run_again, driven red."
     },
     {
       "id": "FU-814",
@@ -15869,11 +15875,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W673",
       "note": "",
       "slot_source": "an instrument for a disclosed and unreached capability, which is the item that holds such rows",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W673: one guard takes an appraisal to Change Control and reads what each step did - the appraisal files nothing and says so, and Change Control decides. Held by test_lgc_path_an_appraisal_files_nothing_says_so_and_change_control_decides, driven red."
     },
     {
       "id": "FU-815",
@@ -16938,11 +16947,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W673",
       "note": "",
       "slot_source": "found while verifying an external audit and not done in this round",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W673 on the Owner's ruling of 2026-10-12: the payout request no longer carries an owner field (a request that sends one is refused naming the field), the payee is the account's recorded owner and the answer says on what basis, and every payout is held for a person's approval with no threshold. held by test_pay_an_owner_payout_is_held_for_a_person_and_pays_the_accounts_recorded_owner, each leg driven red."
     },
     {
       "id": "FU-873",
@@ -16956,11 +16968,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W673",
       "note": "",
       "slot_source": "found while verifying an external audit and not done in this round",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W673: a payout writes an audit event and says when it could not be recorded; its entry names who requested it and the Change Control record that released it. The 200-entry cut is KEPT and is now disclosed on the account and on its status (how many were dropped and from when); the reconciliation's dependence on that list is a separate open row. held by test_pay_an_owner_payout_is_held_for_a_person_and_pays_the_accounts_recorded_owner, each leg driven red."
     },
     {
       "id": "FU-874",
@@ -17046,11 +17061,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W673",
       "note": "",
       "slot_source": "found while verifying an external audit and not done in this round",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Closed by the Owner's ruling of 2026-10-12: the package holding the adapter was archived as a reversible move to _archive/products/capital_fund, with the reason and the command that reverses it in the archive's index; no live module calls the provider library before reading the real-money switch. held by test_w673_the_capital_fund_product_package_is_archived_and_no_provider_call_precedes_the_money_switch, each leg driven red."
     },
     {
       "id": "FU-879",
@@ -17064,11 +17082,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W673",
       "note": "",
       "slot_source": "found while verifying an external audit and not done in this round",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Closed by the same archive: the adapters that return a fixed answer (at least four: a verified bank, two successes and a settlement) are no longer in the live tree. held by test_w673_the_capital_fund_product_package_is_archived_and_no_provider_call_precedes_the_money_switch, each leg driven red."
     },
     {
       "id": "FU-880",
@@ -17082,11 +17103,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W673",
       "note": "",
       "slot_source": "found while verifying an external audit and not done in this round",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W673: an account that has never accrued says no account exists and echoes no name. held by test_pay_an_owner_payout_is_held_for_a_person_and_pays_the_accounts_recorded_owner, each leg driven red."
     },
     {
       "id": "FU-881",
@@ -17104,6 +17128,513 @@
       "closed_by": null,
       "note": "",
       "slot_source": "found while verifying an external audit and not done in this round",
+      "tier": 3
+    },
+    {
+      "id": "FU-882",
+      "title": "The payout function can be called without an approval",
+      "why": "Every payout is held at the ROUTE. The function underneath still pays when called directly, and records that it was not released by Change Control. Its one direct caller is a lock test. Decide whether the function itself should refuse.",
+      "source": "W673 (the third phase's last items, the payout rulings and the archive of the unreached fund package)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/economy/owner_payments.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-883",
+      "title": "The refusal of a reserved hold title names neither the fund's title nor the payout's",
+      "why": "Two classes of hold were added in two rounds and the sentence that refuses an impersonated title was not extended to name them.",
+      "source": "W673 (the third phase's last items, the payout rulings and the archive of the unreached fund package)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/change_control.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-884",
+      "title": "A hold of a class with no threshold is described with the word material and a threshold",
+      "why": "The gate's held note and Change Control's held sentence were written for transfers above a threshold; fund allocations and payouts are held at any amount and are described the same way.",
+      "source": "W673 (the third phase's last items, the payout rulings and the archive of the unreached fund package)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/economy/governance.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-885",
+      "title": "A simulated entity's accrued share can be paid out",
+      "why": "An unregistered simulation may not fund a registered entity (ruling of 2026-10-10). Whether its owner's accrued share is payable was not ruled; today it is, labelled simulated.",
+      "source": "W673 (the third phase's last items, the payout rulings and the archive of the unreached fund package)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/economy/owner_payments.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-886",
+      "title": "An approved payout request has no one-press request-again",
+      "why": "The page lists the request and says to request the same payout again; the amount must be typed again.",
+      "source": "W673 (the third phase's last items, the payout rulings and the archive of the unreached fund package)",
+      "found": "2026-10-12",
+      "files": [
+        "apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-887",
+      "title": "The account's recorded owner is whatever name the first accrual passed",
+      "why": "It defaults to a fixed name and is never checked against the living registry; the board pack resolves an owner differently. The payout's basis sentence says exactly this and claims no more.",
+      "source": "W673 (the third phase's last items, the payout rulings and the archive of the unreached fund package)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/economy/owner_payments.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-888",
+      "title": "The catalogue's count of registered directories now includes one entry that has no directory",
+      "why": "The live fund's card is listed from its route since the product folder was archived. The count and its label on the marketplace page were not reworded; add a field saying whether an entry has a folder.",
+      "source": "W673 (the third phase's last items, the payout rulings and the archive of the unreached fund package)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/catalog/api.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-889",
+      "title": "The operations document still describes the archived council route as live",
+      "why": "Found while archiving the fund package; one line was corrected for the package and this one was left.",
+      "source": "W673 (the third phase's last items, the payout rulings and the archive of the unreached fund package)",
+      "found": "2026-10-12",
+      "files": [
+        "docs/OPERATIONS.md"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-890",
+      "title": "A consultation module and one cloud dependency are left with no live importer",
+      "why": "After the fund package was archived, nothing live imports the consultation orchestrator it used, or the cloud client library four of its modules opened at import. Reported only; no dependency was removed.",
+      "source": "W673 (the third phase's last items, the payout rulings and the archive of the unreached fund package)",
+      "found": "2026-10-12",
+      "files": [
+        "requirements.txt"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-891",
+      "title": "HYPOTHESIS: a stored catalogue listing still carries the fund's old name",
+      "why": "The name was changed where code and pages state it. A listing seeded into a store before the change keeps what was written then. Read the seeding path and say on read which name is current.",
+      "source": "W673 (the third phase's last items, the payout rulings and the archive of the unreached fund package)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/marketplace.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "done",
+      "closed_by": "W673",
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Confirmed in a browser in the same round (the marketplace showed the old name from the store) and built: a catalogue-derived listing takes the catalogue's current name at start and keeps the name it had; a person's own listing is never renamed. Held by test_w673_a_seeded_listing_takes_the_catalogues_current_name, four blinds red."
+    },
+    {
+      "id": "FU-892",
+      "title": "The claim scan covers three directories and the rest of the tree is not scanned",
+      "why": "A statement about a model's ability outside those three is never read by the scan. Say which were read on the scan's own answer, and widen it or state the limit where the result is shown.",
+      "source": "W673 (found while building the third phase's last items and not done)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/native_ai.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.32",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-893",
+      "title": "A baseline of a served local model cannot be obtained here",
+      "why": "No local model is installed (the Owner's boundary of 2026-10-10). The baseline that exists is the floor's. State it wherever a baseline is shown; nothing to build until a model is installed.",
+      "source": "W673 (found while building the third phase's last items and not done)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/native_ai.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.32",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-894",
+      "title": "The model lifecycle store drops evaluations past the newest 50",
+      "why": "A failed case is meant to be kept as a result. The cut predates this round and is not disclosed on read.",
+      "source": "W673 (found while building the third phase's last items and not done)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/native_ai.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.32",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-895",
+      "title": "The stage ceiling is not enforced on three ways of running stages",
+      "why": "It is enforced where this round built it and not on the swarm route, the tree route, or a composed native swarm's stages.",
+      "source": "W673 (found while building the third phase's last items and not done)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/native_ai.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.31",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-896",
+      "title": "A run's checks know few kinds of criterion",
+      "why": "Structural criteria such as what served a stage, how long it took and how many attempts it needed cannot be stated.",
+      "source": "W673 (found while building the third phase's last items and not done)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/instrument_cell.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.31",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-897",
+      "title": "The Cockpit's cascade editor shows a stage's model and cannot change it",
+      "why": "The Native AI designer offers the choice since this round; the Cockpit's editor keeps the model through an edit and offers no selector.",
+      "source": "W673 (found while building the third phase's last items and not done)",
+      "found": "2026-10-12",
+      "files": [
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.31",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-898",
+      "title": "A stand-in resource is run with an empty configuration",
+      "why": "Harmless today because both possible stand-ins take none; the first stand-in that takes one would be run misconfigured.",
+      "source": "W673 (found while building the third phase's last items and not done)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/instrument_cell.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.31",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-899",
+      "title": "Per-run needs are not checked at compose preview or at run",
+      "why": "A resource's declared need is checked when the cell proposes. A composition previewed or run directly is not checked against it.",
+      "source": "W673 (found while building the third phase's last items and not done)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/resource_fabric.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.31",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-900",
+      "title": "Two spawners are registered and selectable, and nothing can start them",
+      "why": "Read from the registry while declaring needs; they appear as resources a composition can choose.",
+      "source": "W673 (found while building the third phase's last items and not done)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/resource_fabric.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.31",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-901",
+      "title": "The composition store is written without the lock and read tolerantly",
+      "why": "The shared-store rule is a lock and an atomic write, and a tolerant read is never a write base.",
+      "source": "W673 (found while building the third phase's last items and not done)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/resource_fabric.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.31",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-902",
+      "title": "A refused composition run is not recorded, so a refused replay leaves no record",
+      "why": "A kept proposal can be run again since this round; when that run is refused nothing says it was asked.",
+      "source": "W673 (found while building the third phase's last items and not done)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/resource_fabric.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.31",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-903",
+      "title": "A kept proposal holds no configuration or run parameters, so running it again is not a reproduction",
+      "why": "It keeps the objective, the criteria and the resources by id. Say so where a replay is offered, or keep the parameters.",
+      "source": "W673 (found while building the third phase's last items and not done)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/instrument_cell.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.31",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-904",
+      "title": "The fabric page's run history does not show that a run came from a kept proposal",
+      "why": "The run record carries the link; the page does not show it, and the swarm run route cannot name a proposal at all.",
+      "source": "W673 (found while building the third phase's last items and not done)",
+      "found": "2026-10-12",
+      "files": [
+        "apps/workstation-superapp/src/pages/synthesis/ResourceFabric.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.31",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-905",
+      "title": "Nothing re-reads the changed state after a change is implemented",
+      "why": "The record's applied value is the value that was given, not one read back afterwards.",
+      "source": "W673 (found while building the third phase's last items and not done)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/change_control.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-906",
+      "title": "No page requests the method appraisal, and its hand-off is rendered nowhere",
+      "why": "The route answers and says it files nothing; a person can only reach it by calling the API.",
+      "source": "W673 (found while building the third phase's last items and not done)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/method.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-907",
+      "title": "The Sovereign Evolution cycle does not read its previous roadmap or the status of what it submitted",
+      "why": "Each cycle starts from nothing it did before. Read from code while driving the path; not driven.",
+      "source": "W673 (found while building the third phase's last items and not done)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/sovereign_evolution.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-908",
+      "title": "A ratified method amendment is recorded only",
+      "why": "Nothing links the change record to the edit of the method document that carries it out.",
+      "source": "W673 (found while building the third phase's last items and not done)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/method.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3
+    },
+    {
+      "id": "FU-909",
+      "title": "The cascade's development-applied field records that a development action was injected, not that it was acted on",
+      "why": "A nature field used to report an outcome.",
+      "source": "W673 (found while building the third phase's last items and not done)",
+      "found": "2026-10-12",
+      "files": [
+        "agentic_core/api/native_ai.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
       "tier": 3
     }
   ],

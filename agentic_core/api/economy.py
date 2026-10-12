@@ -21,6 +21,7 @@ from typing import Any, Dict, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from agentic_core.api._strict_models import STRICT
 from agentic_core.auth.core import get_current_user, user_can_access
 from agentic_core.economy.entities import ENTITY_TEMPLATES, DEFAULT_ENTITY, get_template
 from agentic_core.economy.metabolism import (
@@ -572,40 +573,306 @@ async def set_waterfall(req: WaterfallRequest, user: dict | None = Depends(get_c
 
 
 @router.get("/owner-payments")
-async def owner_payments(vsb_id: str = "workstation-idbo", owner: str = "Rehan",
-                         user: dict | None = Depends(get_current_user)):
+async def owner_payments(vsb_id: str = "workstation-idbo", user: dict | None = Depends(get_current_user)):
     """§7 — the Owner's accrued share (virtual WST) from each cycle's §4 owner stage, plus history. Real-money
     payout rails are DISABLED and gated; no real funds move."""
     _require_economy_access(vsb_id, user)
     from agentic_core.economy.owner_payments import OwnerPaymentsUnavailable, status
     try:
-        return status(vsb_id, owner)
+        account = status(vsb_id)
     except OwnerPaymentsUnavailable as e:
         # W465 (FU-016) — an unreadable store is said, never shown as zero balances
         raise HTTPException(status_code=503, detail=str(e))
+    #  Owner ruling 2026-10-12 - the payout requests for this account and where each stands, read from the
+    #  Change Control records every time (a request's state is never stored on the account)
+    return {**account, **_payout_requests(vsb_id)}
 
 
 class PayoutRequest(BaseModel):
+    #  OWNER RULING 2026-10-12 (R1) - `owner` is REMOVED: the payee is the owner recorded on the account, and
+    #  a typed name can only be wrong (the old field was never read). The model is STRICT, so a request that
+    #  still sends it - or any other undeclared field - is refused 422 naming the field, never dropped.
+    model_config = STRICT
     vsb_id: str = "workstation-idbo"
-    owner: str = "Rehan"
     amount: float = Field(gt=0, allow_inf_nan=False)   # W442 — NaN/inf/≤0 refused at the model
 
 
 @router.post("/owner-payments/payout")
 async def owner_payout(req: PayoutRequest, user: dict | None = Depends(get_current_user)):
-    """Record a VIRTUAL Owner payout (reduces the accrued balance). NO real funds move — real-money rails are
-    gated until the Owner explicitly authorises them AND a compliance/KYC review passes."""
+    """REQUEST a VIRTUAL Owner payout. NO real funds move — real-money rails are gated until the Owner
+    explicitly authorises them AND a compliance/KYC review passes.
+
+    OWNER RULINGS 2026-10-12: the request pays nothing. It is held at Change Control until a person approves
+    it, and it is paid - once, to the owner recorded on the account - when the same payout is requested again
+    and the economy's gate spends that approval."""
     _require_economy_access(req.vsb_id, user)
-    from agentic_core.economy.owner_payments import OwnerPaymentsUnavailable, payout
+    return _payout_governed(req, user if isinstance(user, dict) else None)
+
+
+#  OWNER RULINGS 2026-10-12 - AN OWNER PAYOUT IS GOVERNED.
+#
+#  Until these rulings the route above paid any amount the balance covered the moment it was asked, and took
+#  a payee name it never read. It now takes the path the capital fund's allocation takes (FU-794): the
+#  economy's own gate (economy.governance._materiality_gate), class "payout", which has no threshold.
+#    - a request files (or finds) the hold and answers "held"; the account is not touched;
+#    - only an explicit decision at Change Control approves it (the hold is CRITICAL);
+#    - the payout is paid when the same payout is requested again and the gate spends that approval; the
+#      amount approved bounds the amount paid; approving pays nothing by itself;
+#    - a rejection pays nothing, and the same request is answered "rejected" until the amount changes;
+#    - an approval that was spent on a payout that was not recorded is handed back.
+#  The balance is checked twice: read-only before anything is filed, and again under the store's own lock
+#  when the payout is recorded (owner_payments.payout) - the second is the one that counts.
+PAYOUT_STATE_LABELS = {
+    "held": "held - awaiting a person's decision at Change Control; NOT PAID",
+    "approved_not_applied": "approved - not paid yet: request the same payout again to apply it",
+    "applied": "approved and paid (virtual)",
+    "approval_spent": "approved - the approval was spent and no payout entry is stored for it",
+    "rejected": "rejected - nothing was paid",
+    "withdrawn": "withdrawn - nothing was paid",
+}
+
+
+def _payout_decision(c: dict) -> dict:
+    """Who decided a payout's change, read from its own audit trail - never from a request, never assumed."""
+    ev = next((e for e in reversed((c or {}).get("audit_trail") or [])
+               if isinstance(e, dict) and e.get("event") in ("approved", "rejected")), None)
+    if ev is None:
+        return {"decision": None, "decided_by": None, "decided_by_verified": None, "decided_at": None,
+                "decision_source": None}
+    return {"decision": ev.get("event"), "decided_by": ev.get("by"),
+            "decided_by_verified": ev.get("by_verified"), "decided_at": ev.get("ts"),
+            "decision_source": (c or {}).get("decision_source")}
+
+
+def _payout_request_view(c: dict, entry: dict | None) -> dict:
+    """One payout request, as its Change Control record says it stands NOW. `entry` is the stored payout
+    entry that names this change, when there is one."""
+    from agentic_core.economy import governance as _gov
+    st = c.get("status")
+    if st in ("submitted", "under_review"):
+        state, label = "held", PAYOUT_STATE_LABELS["held"]
+    elif st == "approved" and _gov._owner_decided(c):
+        state, label = "approved_not_applied", PAYOUT_STATE_LABELS["approved_not_applied"]
+    elif st == "approved":
+        #  an approval that is not an explicit decision releases nothing (the gate's own rule)
+        state, label = "held", (PAYOUT_STATE_LABELS["held"] + " (an approval that was not an explicit decision "
+                                                              "releases nothing)")
+    elif st == "implemented" and entry:
+        state, label = "applied", PAYOUT_STATE_LABELS["applied"]
+    elif st == "implemented":
+        state, label = "approval_spent", PAYOUT_STATE_LABELS["approval_spent"]
+    elif st == "rejected":
+        state, label = "rejected", PAYOUT_STATE_LABELS["rejected"]
+    else:
+        state, label = "withdrawn", PAYOUT_STATE_LABELS["withdrawn"]
+    asked = c.get("payout_request") if isinstance(c.get("payout_request"), dict) else {}
+    return {
+        "cca_id": c.get("cca_id"), "state": state, "state_label": label, "change_status": st,
+        "amount_wst": c.get("est_distributable_wst"),
+        "requested_by": asked.get("requested_by"), "requested_by_verified": asked.get("requested_by_verified"),
+        "requested_at": asked.get("first_requested_at") or c.get("submitted_at"),
+        "payee_at_request": asked.get("payee"), "balance_at_request_wst": asked.get("balance_at_request_wst"),
+        **_payout_decision(c),
+        "entry_id": (entry or {}).get("id"), "paid_wst": (entry or {}).get("amount_wst"),
+    }
+
+
+def _payout_requests(vsb_id: str) -> dict:
+    """Every payout request for one account, newest first, read from the Change Control records the gate
+    filed for it. `payout_requests` is None, with the reason, when they could not be read: an unreadable
+    list is never answered as an empty one."""
     try:
-        return payout(req.vsb_id, req.amount, req.owner)
+        from agentic_core.api import change_control as _cca
+        from agentic_core.economy import governance as _gov
+        from agentic_core.economy import owner_payments as _op
+        title = _gov._hold_title(vsb_id, _gov.PAYOUT_SOURCE)
+        paid = _op.paid_changes(vsb_id)
+        rows = []
+        for x in _cca._list_changes():
+            if x.get("change_type") != "economy_material" or x.get("title") != title:
+                continue
+            c = _cca._load_change(x["cca_id"])
+            if not c or not _gov._is_economy_hold(c, vsb_id, title, _gov.PAYOUT_SOURCE):
+                continue
+            rows.append(_payout_request_view(c, paid.get(c["cca_id"])))
+        rows.sort(key=lambda r: str(r.get("requested_at") or ""), reverse=True)
+        return {"payout_requests": rows,
+                "payout_requests_basis": ("every Change Control record the payout gate filed for this account; "
+                                          "each state is computed from that record when this is read")}
+    except Exception as _err:                            # noqa: BLE001 - said, never an empty list
+        return {"payout_requests": None,
+                "payout_requests_basis": f"the payout requests could not be read ({type(_err).__name__})"}
+
+
+def _payout_governed(req: "PayoutRequest", user: dict | None) -> dict:
+    from agentic_core.api import change_control as _cca
+    from agentic_core.auth.core import auth_enabled, request_owner_id
+    from agentic_core.economy import governance as _gov
+    from agentic_core.economy import owner_payments as _op
+
+    #  1 - BEFORE ANYTHING IS FILED: the store is read whole (503 otherwise - W465), and an amount that is
+    #  not positive or that the balance does not cover is refused, so nobody is asked to decide a payout that
+    #  cannot be paid. Read-only; the check that counts is made again under the store's lock in step 3.
+    try:
+        facts = _op.payout_check(req.vsb_id, req.amount)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except OwnerPaymentsUnavailable as e:
+        raise HTTPException(status_code=400, detail=(
+            f"{e} Nothing was filed with Change Control and nothing was paid."))
+    except _op.OwnerPaymentsUnavailable as e:
         raise HTTPException(status_code=503, detail=f"{e} — no payout was recorded.")
+    amount, balance = facts["amount_wst"], facts["balance_wst"]
+    _shown = str(req.vsb_id)[:80]
+    payee = {k: facts[k] for k in ("payee", "payee_recorded", "payee_basis")}
+    requester = request_owner_id(user, "single-user-mode")
+    requester_verified = bool(auth_enabled() and user)
+    _virtual = {"simulated": facts["simulated"], "real_money_moved": False, "real_money_rails": "DISABLED"}
+
+    #  2 - THE GOVERNED PATH: the economy's own gate, with the account as the actor. It returns
+    #  (held, consumed): held -> nothing may be paid; consumed -> an approval was spent for THIS payout and
+    #  bounds it. The payout's class has no threshold (economy.governance).
+    held, consumed = _gov._materiality_gate(req.vsb_id, amount, source=_gov.PAYOUT_SOURCE)
+
+    if held is not None:
+        cca_id = held.get("cca_id")
+        rejected = held.get("status") == "rejected_by_change_control"
+        request_recorded = None
+        if cca_id and not rejected:
+            #  what was asked, written onto the hold the gate filed - while it is still undecided only, so a
+            #  record under review keeps exactly what its decider was shown
+            _at = _gov._now()
+            asked = {"vsb_id": req.vsb_id, "amount_wst": amount, "requested_by": requester,
+                     "requested_by_verified": requester_verified, "requested_at": _at,
+                     "payee": payee["payee"], "payee_basis": payee["payee_basis"],
+                     "balance_at_request_wst": balance, "currency": "WST"}
+
+            def _note(fresh: dict) -> None:
+                if fresh.get("status") != "submitted":
+                    return
+                _before = fresh.get("payout_request") if isinstance(fresh.get("payout_request"), dict) else {}
+                fresh["payout_request"] = {**asked, "first_requested_at": _before.get("first_requested_at") or _at}
+            try:
+                _cca._update_change(cca_id, _note)
+                request_recorded = "recorded"
+            except Exception as _note_err:               # noqa: BLE001 - said, never silent
+                request_recorded = f"NOT recorded ({type(_note_err).__name__})"
+        _state = "rejected" if rejected else "held"
+        if rejected:
+            _basis = (f"REJECTED, NOT PAID: Change Control record {cca_id} rejected exactly this payout "
+                      f"({amount} WST from the account '{_shown}'). Nothing was paid and the balance is unchanged "
+                      f"at {balance} WST. It is asked again, as a fresh hold, when the amount changes.")
+        elif cca_id:
+            _basis = (f"HELD, NOT PAID: this request is Change Control record {cca_id}. Nothing is paid until a "
+                      f"person approves it there and the same payout is then requested again; the balance is "
+                      f"unchanged at {balance} WST.")
+        else:
+            _basis = ("HELD, NOT PAID: the governed path could not file or read a hold for this request, and a "
+                      "payout is never paid without one. The balance is unchanged.")
+        return {
+            "status": _state, "status_label": PAYOUT_STATE_LABELS[_state], "applied": False,
+            "paid_wst": 0.0, "requested_wst": amount, "remaining_balance_wst": balance,
+            "cca_id": cca_id, **payee,
+            "requested_by": requester, "requested_by_verified": requester_verified,
+            **_virtual,
+            "governance": {"change_control": _state, "cca_id": cca_id, "request_recorded": request_recorded,
+                           "note": held.get("note"), "basis": _basis},
+            "note": _basis,
+        }
+
+    #  NOTHING IS PAID WITHOUT AN APPROVAL THE GATE SPENT FOR IT. The gate has no "proceed" answer for a
+    #  payout; if it ever gave one, this refuses rather than paying on it.
+    if not consumed or not consumed.get("cca_id"):
+        raise HTTPException(status_code=503, detail=(
+            "The governed path returned neither a hold nor an approval for this payout, so nothing was paid: "
+            "a payout is paid only against an approved Change Control record."))
+    cca_id, consume_id = consumed["cca_id"], consumed.get("consume_id")
+
+    def _give_back(reason: str) -> str:
+        """The approval was spent and the payout was not recorded: hand it back, and SAY what happened."""
+        _r = _gov._restore_consumed_approval(consumed, vsb_id=req.vsb_id, reason=reason)
+        return (f"the approval {cca_id} was given back and can be applied again" if _r == "restored" else
+                f"the approval {cca_id} was NOT given back ({_r}) and stays spent; a new request files a new hold")
+
+    #  3 - THE PAYOUT ITSELF: the balance is checked again and the entry written under the store's own lock.
+    try:
+        out = _op.payout(req.vsb_id, amount, requested_by=requester, requested_by_verified=requester_verified,
+                         cca_id=cca_id, consume_id=consume_id)
+    except ValueError as e:
+        #  refused under the lock, before anything was written (the balance moved since step 1)
+        raise HTTPException(status_code=400, detail=(
+            f"{e} Nothing was paid; " + _give_back("the balance no longer covers the payout") + "."))
+    except _op.OwnerPaymentsUnavailable as e:
+        #  the strict read under the lock refused: nothing was written
+        raise HTTPException(status_code=503, detail=(
+            f"{e} — no payout was recorded; " + _give_back("the owner-payments store could not be read whole")
+            + "."))
     except TimeoutError:
         raise HTTPException(status_code=503, detail=(
-            "The owner-payments store is busy (another write held its lock) — no payout was recorded. Retry."))
+            "The owner-payments store is busy (another write held its lock) — no payout was recorded; "
+            + _give_back("the owner-payments store was busy") + ". Retry."))
+    except Exception as e:                               # noqa: BLE001 - the STORE says whether it was paid
+        try:
+            _landed = (_op.paid_changes(req.vsb_id).get(cca_id) or {}).get("consume_id") == consume_id
+        except Exception:                                # noqa: BLE001 - unknown is never read as "not paid"
+            _landed = None
+        if _landed is False:
+            raise HTTPException(status_code=503, detail=(
+                f"The owner-payments store could not record the payout ({type(e).__name__}) — no payout was "
+                f"recorded; " + _give_back("the owner-payments store could not record the payout") + "."))
+        if _landed:
+            _gov._mark_action_ran(consumed, req.vsb_id, "owner payout recorded; the request failed afterwards")
+        raise HTTPException(status_code=503, detail=(
+            f"The payout request failed ({type(e).__name__}) "
+            + (f"AFTER the payout was recorded: the account holds an entry released by {cca_id}. Do not "
+               f"request it again; read the account." if _landed else
+               f"and the owner-payments store could not be read to see whether the payout was recorded, so "
+               f"the approval {cca_id} stays spent. Read the account before requesting again.")))
+
+    #  the payout is recorded: the spent approval records that its action ran (never given back after this)
+    _gov._mark_action_ran(consumed, req.vsb_id, "owner payout recorded")
+    approved = _cca._load_change(cca_id) or {}
+    decided = _payout_decision(approved)
+    _by = decided.get("decided_by")
+
+    #  R3 - the audit event, written after the payout is stored so it never describes a payout that was not
+    #  recorded; whether it landed is said in the response. (The request, the decision and the spend are
+    #  already on the constitutional ledger from the gate and from Change Control, and are not written twice.)
+    ueg_logged = False
+    try:
+        from agentic_core.gaas.v5 import UEGLogger
+        UEGLogger().log({"type": "economy.owner_payout", "vsb_id": req.vsb_id, "amount_wst": amount,
+                         "entry_id": out.get("entry_id"), "payee": out.get("payee"),
+                         "payee_recorded": out.get("payee_recorded"),
+                         "requested_by": requester, "requested_by_verified": requester_verified,
+                         "cca_id": cca_id, "consume_id": consume_id, "decided_by": _by,
+                         "simulated": out.get("simulated"), "real_money_moved": False,
+                         "disclaimer": "Virtual/simulated WST — no real funds moved."})
+        ueg_logged = True
+        _audit_event = "recorded"
+    except Exception as _ueg_err:                        # noqa: BLE001 - said, never silent
+        _audit_event = f"NOT recorded ({type(_ueg_err).__name__})"
+
+    _basis = (f"PAID (VIRTUAL): Change Control record {cca_id} was approved by "
+              + (f"'{_by}'" if _by else "a decider its record does not name")
+              + (" (an authenticated principal)" if decided.get("decided_by_verified") else
+                 " (a name the platform did not check)")
+              + f" as an explicit decision, and this payout spent that approval. {amount} WST left the "
+                f"owner-payments account '{_shown}'"
+              + (f" for its recorded owner '{out.get('payee')}'" if out.get("payee_recorded") else
+                 "; the account records no owner, so no payee is named")
+              + ". No real money moved.")
+    return {
+        **out,
+        "status": "paid", "status_label": PAYOUT_STATE_LABELS["applied"], "applied": True,
+        "requested_wst": amount,
+        "ueg_logged": ueg_logged, "audit_event": _audit_event,
+        "governance": {"change_control": "approved", "cca_id": cca_id, "consume_id": consume_id,
+                       "decided_by": _by, "decided_by_verified": decided.get("decided_by_verified"),
+                       "decided_at": decided.get("decided_at"), "decision_source": decided.get("decision_source"),
+                       "approved_amount_wst": approved.get("est_distributable_wst"), "basis": _basis},
+        "note": (str(out.get("note") or "")
+                 + (" The audit event is on the constitutional ledger." if ueg_logged else
+                    f" The audit event was {_audit_event} on the constitutional ledger.")),
+    }
 
 
 class LifecycleRequest(BaseModel):
@@ -1898,7 +2165,7 @@ async def board_pack(vsb_id: str = "workstation-idbo", entity_type: str | None =
     reserves = round(bal.get("reserves", 0.0), 2)
     distributed = round(sum(bal.get(s, 0.0) for s in stages), 2)
     try:
-        owner = _owner_status(vsb_id, m.owner)
+        owner = _owner_status(vsb_id)
         owner_section = {"accrued_wst": owner["accrued_total_wst"], "paid_out_wst": owner["paid_out_total_wst"],
                          "balance_wst": owner["balance_wst"], "real_money_rails": owner["real_money_rails"],
                          "available": True}

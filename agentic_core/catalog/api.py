@@ -40,7 +40,7 @@ def _status(slug: str, route: Any) -> str:
 # (platform-level products and domain signature-product directories).
 CATALOG_OVERRIDES: Dict[str, Dict[str, Any]] = {
     "capital_fund": {
-        "name": "Sovereign Capital Fund",
+        "name": "Capital Fund",
         "tier": "Enterprise",
         "category": "Platform",
         # §14 (W496, FU-114) - the three features listed here were served by nothing: a repo-wide grep
@@ -178,14 +178,24 @@ def _load_product(slug: str, path: Path) -> Dict[str, Any]:
     }
 
 
+#  W673 (OWNER RULING 2026-10-12) - products/capital_fund was archived to _archive/products/capital_fund as a
+#  reversible move: nothing live imported it, and it held a provider adapter that read no real-money switch.
+#  This catalogue lists DIRECTORIES, and the directory of that name was the only reason the live fund's card
+#  (served by agentic_core/api/capital_fund.py at /capital) appeared here. A card is live because a ROUTE
+#  serves it, so the entries named below are listed from their route and their override alone. A slug stays
+#  here only while ROUTE_OVERRIDES routes it; one that has a directory again is listed once, not twice.
+SERVED_WITHOUT_DIRECTORY = ("capital_fund",)
+
+
 def list_products() -> List[Dict[str, Any]]:
     if not PRODUCTS_DIR.exists():
         return []
-    return [
-        _load_product(entry.name, entry)
-        for entry in sorted(PRODUCTS_DIR.iterdir())
-        if entry.is_dir() and not entry.name.startswith((".", "_"))  # skip __pycache__/dotdirs (not products)
-    ]
+    entries = [entry for entry in PRODUCTS_DIR.iterdir()
+               if entry.is_dir() and not entry.name.startswith((".", "_"))]  # skip __pycache__/dotdirs (not products)
+    have = {entry.name for entry in entries}
+    entries += [PRODUCTS_DIR / slug for slug in SERVED_WITHOUT_DIRECTORY
+                if slug not in have and ROUTE_OVERRIDES.get(slug)]
+    return [_load_product(entry.name, entry) for entry in sorted(entries)]
 
 
 def catalogue_counts(products: List[Dict[str, Any]]) -> Dict[str, int]:

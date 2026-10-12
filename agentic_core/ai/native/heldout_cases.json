@@ -1,0 +1,24 @@
+{
+  "version": "1",
+  "what_this_is": "HELD-OUT behaviour cases (plan item P3.32; Owner ruling 2026-10-11). They are kept in this file and nowhere else: not in a prompt template, not in a document, not in a test, not in a page. A change to any case is a NEW version with its own pinned digest in agentic_core/api/native_ai.py - never an edit under this one.",
+  "cases": [
+    {
+      "id": "h-format",
+      "control": false,
+      "marker": "VERDICT:",
+      "prompt": "Answer on one line that begins with the capitalised word for a court's decision and then a colon: is a payment term of thirty days longer than a fortnight?"
+    },
+    {
+      "id": "h-arithmetic",
+      "control": false,
+      "marker": "37",
+      "prompt": "A workshop finishes 12 chairs each day for 7 days and then sells 47 of them. State how many chairs remain in the store room, as a number."
+    },
+    {
+      "id": "h-join",
+      "control": false,
+      "marker": "NORTH-SOUTH",
+      "prompt": "Take the two compass words that name the poles' directions, put the colder-sounding one first, join them with a hyphen and write the result in capital letters."
+    }
+  ]
+}

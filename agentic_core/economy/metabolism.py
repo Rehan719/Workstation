@@ -340,7 +340,7 @@ class EconomicMetabolism:
         else:
             owner_accrual["note"] = "no owner share this cycle"
 
-        # 4c. §12 (W294) — the capital_fund stage COMPOUNDS into the shared Sovereign Capital Fund
+        # 4c. §12 (W294) — the capital_fund stage COMPOUNDS into the shared Capital Fund
         #     (energy storage genuinely STORES — previously only a ledger row; the endowment loop
         #     was three disconnected WST pools). Attributed + UEG-logged; best-effort.
         capital_contribution = None

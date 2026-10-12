@@ -24,7 +24,7 @@ from pathlib import Path
 from agentic_core.config import data_path
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from agentic_core.auth.core import get_current_user, request_owner_id, user_can_access
 
@@ -54,13 +54,41 @@ _STORE = data_path("resource_compositions.json")
 # synthesis | design | development | delivery | build_to_order | forge | commercialisation | governance | evolution
 
 
+#  P3.31 clause 1 (round 10) - WHAT A RESOURCE NEEDS BEFORE THE FABRIC CAN START IT, in the registry's own
+#  shape. A need is one of four kinds, each checked NOW by agentic_core.api.instrument_cell.needs_check:
+#    module      the engine's entry point - the very import the fabric's handler makes - imports
+#    completion  an OWNED completion tier answers (the deterministic floor counts, and the check says when
+#                it is the floor that satisfies it)
+#    config      a parameter without which the handler runs nothing; checked against a configuration
+#    package     a third-party package; always OPTIONAL here (its absence narrows what the resource does)
+#  SCOPE, said once: these are what the fabric needs to START the resource - read from the handler's own
+#  branch. What the engine needs once started is the engine's, and is not declared here.
+#  A registration WITHOUT `needs` declares nothing: it reads "not declared", never "needs nothing". An empty
+#  list IS a statement (it needs nothing beyond this process), exactly as an empty parameter table is.
+def _need_module(module: str, attr: str, why: str) -> Dict[str, Any]:
+    return {"kind": "module", "module": module, "attr": attr, "why": why}
+
+
+def _need_completion(why: str) -> Dict[str, Any]:
+    return {"kind": "completion", "why": why}
+
+
+def _need_config(param: str, why: str) -> Dict[str, Any]:
+    return {"kind": "config", "param": param, "why": why}
+
+
+def _need_package(package: str, why: str) -> Dict[str, Any]:
+    return {"kind": "package", "package": package, "optional": True, "why": why}
+
+
 def _R(rid, name, cls, rtype, desc, caps, params, endpoint, usable_in,
-       reusable=True, rerunnable=True, biomimetic=False, methods=("POST",)) -> Dict[str, Any]:
+       reusable=True, rerunnable=True, biomimetic=False, methods=("POST",), needs=None) -> Dict[str, Any]:
     return {
         "id": rid, "name": name, "resource_class": cls, "type": rtype, "description": desc,
         "capabilities": caps, "reconfigurable_params": params, "endpoint": endpoint,
         "methods": list(methods), "reusable": reusable, "rerunnable": rerunnable,
         "biomimetic": biomimetic, "usable_in": usable_in,
+        **({"needs": list(needs)} if needs is not None else {}),
     }
 
 
@@ -157,7 +185,10 @@ _REGISTRY: List[Dict[str, Any]] = [
        "bar/line/scatter charts (scatter carries an optional z magnitude). Visualises real data, never faked.",
        ["2d charts", "scatter / z-magnitude", "computed analytics", "insight narrative"],
        {"title": "str", "series": "list of {label,value[,z]}", "chart_type": "bar|line|scatter"},
-       "/api/v1/reactor/studio", ["synthesis", "design", "development", "forge", "evolution", "delivery"]),
+       "/api/v1/reactor/studio", ["synthesis", "design", "development", "forge", "evolution", "delivery"],
+       needs=[_need_module("agentic_core.api.products", "reactor_studio", "the handler calls it"),
+              _need_config("series", "with no numeric series configured the handler runs nothing and the "
+                                     "resource contributes a prompt stage only")]),
     _R("generator", "Artefact Generator", "digital_resource", "generator",
        "Generates ONE concrete, targeted artefact (code · schema · config · content · model spec) in a "
        "chosen format on the native swarm — distinct from the Factory (multi-section document production) "
@@ -172,7 +203,9 @@ _REGISTRY: List[Dict[str, Any]] = [
        "trajectory · emergent behaviour · stress points · setpoints). In a composition NO simulator or "
        "engine runs and nothing is computed; the twin's own route is not called.",
        ["scenario simulation", "forward modelling", "stress/failure analysis", "setpoint optimisation"],
-       {"system": "str", "scenario": "str"}, "/api/v1/twin/simulate", ["design", "development", "delivery", "forge"]),   # W324 — a REAL route, not the bare prefix
+       {"system": "str", "scenario": "str"}, "/api/v1/twin/simulate", ["design", "development", "delivery", "forge"],   # W324 — a REAL route, not the bare prefix
+       needs=[_need_module("agentic_core.ai.native", "orchestrator", "the handler sends one persona prompt to it"),
+              _need_completion("one completion writes the narrative")]),
 
     # Organism biomimetic systems
     _R("gaas_v5", "Constitutional Gate (gaas.v5)", "organism_system", "governance_engine",
@@ -242,7 +275,7 @@ _REGISTRY: List[Dict[str, Any]] = [
        ["change submission", "tiered review", "governed implementation"],
        {"title": "str", "change_type": "str", "description": "str"}, "/api/v1/cca/submit",
        ["governance", "evolution", "delivery"]),
-    _R("capital_fund", "Sovereign Capital Fund", "enterprise_org", "treasury",
+    _R("capital_fund", "Capital Fund", "enterprise_org", "treasury",
        "Virtual capital allocation + marketplace for the VSB ecosystem (virtual WST only — real-money "
        "rails gated). When composed, reads the live treasury (available/allocated/utilisation/health).",
        ["capital allocation", "portfolio", "marketplace"], {"amount": "float", "recipient": "str"},
@@ -251,7 +284,8 @@ _REGISTRY: List[Dict[str, Any]] = [
        "The real product catalogue (the owned SDK/product set). When composed, returns the genuine "
        "catalogue ranked by relevance to the objective (deterministic token match — never fabricated).",
        ["product catalogue", "relevance match", "tiers"], {}, "/api/v1/catalog/products",
-       ["commercialisation", "delivery", "build_to_order"], methods=("GET",)),
+       ["commercialisation", "delivery", "build_to_order"], methods=("GET",),
+       needs=[_need_module("agentic_core.catalog.api", "served_products", "the handler ranks its rows")]),
     _R("build_to_order", "Build-to-Order", "enterprise_org", "bto",
        "Bespoke Build-to-Order: assemble a real blueprint integrating chosen catalogue products + "
        "platform components (entity/organism/VSB/C-Suite). When composed, builds the genuine blueprint.",
@@ -271,7 +305,9 @@ _REGISTRY: List[Dict[str, Any]] = [
        ["in-house completion", "graceful degradation", "provenance (served_by)", "model preference (auto/native/local)"],
        {"prompt": "str", "agent": "str", "prefer_external": "bool", "model": "str (auto|native|local)"},
        "/api/v1/native-ai/complete",
-       ["synthesis", "design", "development", "delivery", "governance", "forge"]),
+       ["synthesis", "design", "development", "delivery", "governance", "forge"],
+       needs=[_need_module("agentic_core.ai.native", "orchestrator", "the handler calls orchestrator.complete"),
+              _need_completion("one completion is the whole of what this resource does")]),
     _R("native_ensemble", "Native AI Model Ensemble", "ai_native", "ensemble",
        "Run a prompt across MULTIPLE owned models in parallel, then synthesise a consensus — owned "
        "orchestration as a composable resource. Defaults to all discovered local models + the native floor; "
@@ -279,7 +315,9 @@ _REGISTRY: List[Dict[str, Any]] = [
        ["multi-model ensemble", "parallel", "consensus synthesis", "owned-model provenance"],
        {"prompt": "str", "models": "list (tier ids; empty = all owned)", "synthesize": "bool"},
        "/api/v1/native-ai/ensemble",
-       ["synthesis", "design", "development", "delivery", "governance", "forge"]),
+       ["synthesis", "design", "development", "delivery", "governance", "forge"],
+       needs=[_need_module("agentic_core.ai.native", "orchestrator", "the handler calls orchestrator.ensemble"),
+              _need_completion("each member of the ensemble is a completion")]),
     _R("native_swarm", "Native AI Swarm", "ai_native", "swarm",
        "A bespoke, RECONFIGURABLE agent-cascade run on Workstation's OWN resources — define stages "
        "(role + instruction); each stage completes in-house-first and feeds the next. Define once, "
@@ -287,7 +325,9 @@ _REGISTRY: List[Dict[str, Any]] = [
        ["bespoke cascade", "reconfigurable stages", "in-house provenance", "reusable", "rerunnable"],
        {"agent": "str", "context": "str", "stages": "list[{role,instruction}]"},
        "/api/v1/resources/swarm/run",
-       ["synthesis", "design", "development", "delivery", "governance", "forge", "build_to_order"]),
+       ["synthesis", "design", "development", "delivery", "governance", "forge", "build_to_order"],
+       needs=[_need_module("agentic_core.ai.native", "orchestrator", "the handler calls orchestrator.swarm"),
+              _need_completion("each stage of the cascade is a completion")]),
 
     # Workstation's OWN omnimedia output factory — surfaced into the fabric so the swarm/delivery
     # pipeline can render deliverables across formats (agentic_core.omnimedia).
@@ -306,7 +346,12 @@ _REGISTRY: List[Dict[str, Any]] = [
        "too and are never faked.",
        ["multi-format output", "document", "presentation", "spreadsheet", "self-playing video (HTML)"],
        {"deliverable_id": "str", "format": "str"}, "/api/v1/deliverables/output-formats",
-       ["synthesis", "delivery", "commercialisation", "forge"], methods=("GET",)),
+       ["synthesis", "delivery", "commercialisation", "forge"], methods=("GET",),
+       needs=[_need_module("agentic_core.api.deliverables", "output_formats", "the handler reads the live format list from it"),
+              _need_package("fpdf", "PDF is among the live formats only when it is installed"),
+              _need_package("docx", "Word is among the live formats only when it is installed"),
+              _need_package("pptx", "PowerPoint is among the live formats only when it is installed"),
+              _need_package("openpyxl", "Excel is among the live formats only when it is installed")]),
 
     # Workstation's OWN multi-instance federation mesh — surfaced into the fabric so VSBs can
     # federate (peer discovery, reputation-weighted BFT consensus, health) (agentic_core.mesh).
@@ -345,7 +390,10 @@ _REGISTRY: List[Dict[str, Any]] = [
        "weighted consensus clears the threshold. For cross-swarm / cross-VSB agreement on ground truth.",
        ["consensus", "reputation weighting", "calibration"],
        {"claims": "list[{claim,confidence,reputation}]", "threshold": "float"},
-       "/api/v1/collective/consensus", ["governance", "evolution", "delivery"], biomimetic=True),
+       "/api/v1/collective/consensus", ["governance", "evolution", "delivery"], biomimetic=True,
+       needs=[_need_module("agentic_core.api.collective", "consensus", "the handler calls it"),
+              _need_config("claims", "with no claims configured the handler runs nothing and the resource "
+                                     "contributes a prompt stage only")]),
 ]
 
 _BY_ID = {r["id"]: r for r in _REGISTRY}
@@ -536,6 +584,10 @@ class RunCompositionRequest(BaseModel):
     # onto the objective and planned→in_progress advances (never auto-done — W266 semantics).
     objective_id: Optional[str] = None
     scope: str = "workstation"
+    # P3.31 - the kept specification this run comes from. Found and digest-checked before anything
+    # runs; the run's record then says which proposed resources were executed and which were not.
+    specification_id: Optional[str] = None
+    specification_digest: Optional[str] = None
 
 
 def _csv(v) -> list:
@@ -1242,6 +1294,297 @@ async def _run_real_resource(rid: str, config: dict, objective: str, domain: str
     return r
 
 
+# ── Assembly specifications (P3.31): a proposal a person chose to KEEP ─────────────────────────────
+#  A specification is what the Instrument Cell proposed for stated requirements at the moment it was kept:
+#  the objective, the requirements, the acceptance criteria, the proposed resources by id, the selection
+#  rule and what was left uncovered, with who kept it, when, and a digest of the content. Kept HERE, in the
+#  fabric's own store style (strict read, the store lock, the atomic write) - the cell computes, the fabric
+#  keeps, and the cell still writes nothing.
+#  IMMUTABLE: nothing below changes a kept record. There is no update route and no update function; a
+#  changed specification is kept as the NEXT VERSION, which names the one it supersedes. Whether a record
+#  has been superseded is computed when it is read and never written onto it.
+#  NO RUNNER HERE: a specification is run through POST /compositions/{cid}/run, like everything else.
+#  (Declared before /{resource_id} so the static /specifications paths win over the dynamic lookup.)
+#  A DECLARED POLICY, NOT A MEASUREMENT: past this many kept specifications a new one is REFUSED. None is
+#  ever discarded to make room - a run may name any of them.
+_SPEC_CAP = 500
+
+
+def _spec_store():
+    return data_path("assembly_specifications.json")
+
+
+def _spec_lock():
+    from agentic_core.config import store_lock
+    return store_lock(_spec_store())
+
+
+def _load_specifications() -> List[Dict[str, Any]]:
+    """The kept specifications, WHOLE, or StoreUnavailable - never an empty list for a store that could not
+    be read (a writer handed [] would write back a file holding only the new one)."""
+    from agentic_core.config import read_json_strict
+    return read_json_strict(_spec_store(), list, expect=list)
+
+
+def _specifications_or_503() -> List[Dict[str, Any]]:
+    from agentic_core.config import StoreUnavailable
+    try:
+        return _load_specifications()
+    except StoreUnavailable as e:
+        raise HTTPException(
+            status_code=503,
+            detail=(f"The kept specifications could not be read: {e}. Nothing was written and nothing was "
+                    f"run. This is a store problem, not a problem with the request."),
+        ) from e
+
+
+def _find_specification(sid) -> Optional[Dict[str, Any]]:
+    """One kept record by id, or None. Raises StoreUnavailable when the store cannot be read whole."""
+    return next((s for s in _load_specifications() if s.get("id") == sid), None)
+
+
+def _specification_view(rec: Dict[str, Any], rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """A kept record as it is, plus what is COMPUTED about it at this read: what superseded it, and whether
+    its content still has the digest it was kept under."""
+    from agentic_core.api import instrument_cell as _ic
+    later = next((s.get("id") for s in rows if s.get("supersedes") == rec.get("id")), None)
+    now = _ic.specification_digest(rec)
+    return {**rec, "superseded_by": later, "is_latest": later is None,
+            "digest_recomputed": now, "digest_ok": now == rec.get("digest"),
+            "immutable_basis": ("a kept specification is never changed. Keeping a changed one makes the next "
+                                "version, which names this one as the one it supersedes")}
+
+
+def _specification_for_run(sid, digest, user) -> Optional[Dict[str, Any]]:
+    """The specification a run names, or None when it names none. Every refusal here is made BEFORE anything
+    runs, and says so."""
+    if not sid:
+        if digest:
+            raise HTTPException(status_code=422, detail=(
+                "a specification digest was given without a specification id. Nothing was run."))
+        return None
+    rec = next((s for s in _specifications_or_503() if s.get("id") == sid), None)
+    if rec is None:
+        raise HTTPException(status_code=404, detail=f"Specification {sid} not found. Nothing was run.")
+    if not user_can_access(user if isinstance(user, dict) else None, rec.get("owner_id")):
+        raise HTTPException(status_code=404, detail=f"Specification {sid} not found. Nothing was run.")
+    from agentic_core.api import instrument_cell as _ic
+    if _ic.specification_digest(rec) != rec.get("digest"):
+        raise HTTPException(status_code=409, detail=(
+            f"the record of specification {sid} no longer has the digest it was kept under, so it is not the "
+            f"specification that was kept. Nothing was run."))
+    if digest and digest != rec.get("digest"):
+        raise HTTPException(status_code=409, detail=(
+            f"specification {sid} has the digest {rec.get('digest')} and this run names {digest}. A kept "
+            f"specification never changes, so the digest named is of something else. Nothing was run."))
+    return rec
+
+
+def _specification_link(spec: Dict[str, Any], now: List[Dict[str, Any]], composed: List[str],
+                        real_runs: List[Dict[str, Any]], org_cascade, refused: Optional[str] = None) -> Dict[str, Any]:
+    """PROPOSED VERSUS EXECUTED for one run, computed from the run's own rows - never typed.
+
+    executed              a proposed resource the fabric attempted on this run, with the outcome word the
+                          fabric already recorded for it (a raised attempt is listed here AS raised, with the
+                          stand-in that was tried for it, when one was)
+    not_attempted         a proposed resource with no attempt on this run, and why: refused (the run was
+                          refused before anything ran) | not_composed (the composition that was run does not
+                          hold it) | unavailable (read so before the run started) | no_handler_ran
+    not_in_specification  every attempt on this run that the specification did not propose - a resource the
+                          composition holds beside it, or a stand-in
+    A stand-in's row is never counted as its original, here or anywhere."""
+    proposed = [p.get("id") for p in (spec.get("proposed") or []) if isinstance(p, dict)]
+    now_by = {x["id"]: x for x in now}
+    rows = [x for x in real_runs if isinstance(x, dict)]
+    own = {x.get("resource"): x for x in rows if not x.get("alternative_for")}
+
+    def _org_row() -> Dict[str, Any]:
+        #  the organisation cascade is run by the runner itself and files no resource row
+        return {"outcome": None if org_cascade else "raised",
+                "outcome_phrase": ("run by the composition runner itself as the organisation cascade; the "
+                                   "fabric records no outcome word for it" if org_cascade
+                                   else _OUTCOME_PHRASE["raised"])}
+
+    executed: List[Dict[str, Any]] = []
+    not_attempted: List[Dict[str, Any]] = []
+    for rid in proposed:
+        chk = now_by.get(rid) or {}
+        row = own.get(rid)
+        if row is None and rid == "vsb_org_swarm" and rid in composed and not refused:
+            row = _org_row()
+        if refused:
+            not_attempted.append({"resource": rid, "why": "refused", "basis": refused})
+        elif rid not in composed:
+            not_attempted.append({"resource": rid, "why": "not_composed",
+                                  "basis": "the composition that was run does not hold it"})
+        elif row is not None:
+            executed.append({"resource": rid, "outcome": row.get("outcome"),
+                             "outcome_phrase": row.get("outcome_phrase"), "error": row.get("error"),
+                             "available_at_run": chk.get("available"),
+                             **({"stand_in": row["alternative"]} if row.get("alternative") else {})})
+        elif chk.get("available") is False:
+            not_attempted.append({"resource": rid, "why": "unavailable", "basis": chk.get("because")})
+        else:
+            not_attempted.append({"resource": rid, "why": "no_handler_ran",
+                                  "basis": ("it was composed, and its handler returned nothing on this run: it "
+                                            "contributed a prompt stage only (a handler declines when what it "
+                                            "requires is not configured)")})
+    extra = [{"resource": x.get("resource"), "outcome": x.get("outcome"),
+              "composed": x.get("resource") in composed,
+              **({"alternative_for": x["alternative_for"]} if x.get("alternative_for") else {})}
+             for x in rows if x.get("alternative_for") or x.get("resource") not in proposed]
+    if "vsb_org_swarm" in composed and "vsb_org_swarm" not in proposed and not refused:
+        extra.append({"resource": "vsb_org_swarm", "outcome": _org_row()["outcome"], "composed": True})
+    unavailable = [{"id": x["id"], "because": x["because"]} for x in now if not x["available"]]
+    stand_ins = [x for x in extra if x.get("alternative_for")]
+    return {"specification_id": spec.get("id"), "specification_digest": spec.get("digest"),
+            "version": spec.get("version"), "lineage": spec.get("lineage"), "proposed": proposed,
+            "refused": bool(refused),
+            "executed": executed, "not_attempted": not_attempted, "not_in_specification": extra,
+            "unavailable_at_run": unavailable,
+            "registration_changed": [x["id"] for x in now if x.get("registration_changed")],
+            "basis": (f"{len(proposed)} resource(s) proposed; {len(executed)} attempted on this run, "
+                      f"{len(not_attempted)} not attempted, and {len(extra)} attempt(s) the specification did "
+                      f"not propose. {len(unavailable)} proposed resource(s) read unavailable before the run "
+                      f"started. "
+                      + (f"{len(stand_ins)} of the attempts not proposed is a stand-in the runner tried once "
+                         f"for a failed status read - the only alternative the fabric has, and it is listed as "
+                         f"a stand-in, never as its original"
+                         if stand_ins else "Nothing was put in the place of any proposed resource")
+                      + ". Computed from this run's own resource rows and the composition that was run")}
+
+
+class SaveSpecificationRequest(BaseModel):
+    objective: str
+    required_capabilities: List[str] = []
+    acceptance_criteria: List[Any] = []
+    usage_area: Optional[str] = None
+    max_stages: Optional[int] = None
+    # the id of the kept specification this one replaces as the next version of the same line
+    supersedes: Optional[str] = None
+
+
+@router.post("/specifications")
+async def save_specification(req: SaveSpecificationRequest, request: Request,
+                             user: dict | None = Depends(get_current_user)):
+    """KEEP a proposal. The cell recomputes the proposal at this call and that is what is kept; nothing is
+    run. The same content kept again writes nothing; a changed one is a new version (`supersedes`)."""
+    from agentic_core.api import instrument_cell as _ic
+    if not str(req.objective or "").strip():
+        raise HTTPException(status_code=422, detail="an objective is required. Nothing was kept.")
+    limit = _ic.MAX_STAGES if req.max_stages is None else req.max_stages
+    if not 1 <= limit <= _ic.MAX_STAGES:
+        raise HTTPException(status_code=422, detail=(
+            f"max_stages must be between 1 and {_ic.MAX_STAGES} ({_ic.MAX_STAGES_BASIS}). Nothing was kept."))
+    if not [c for c in req.required_capabilities if str(c or "").strip()]:
+        raise HTTPException(status_code=422, detail=(
+            "a specification keeps a proposal, and a proposal needs stated requirements: send "
+            "required_capabilities. Nothing was kept."))
+    content = _ic.specification_content(req.objective, req.required_capabilities, req.acceptance_criteria,
+                                        req.usage_area, limit, request.app)
+    if not content["proposed"]:
+        raise HTTPException(status_code=422, detail=(
+            "no available resource covers what was stated, so there is no proposal to keep. Nothing was kept."))
+    if len(content["proposed"]) > limit:
+        raise HTTPException(status_code=422, detail=(
+            f"covering these requirements takes {len(content['proposed'])} resources and the limit is {limit}. "
+            f"Nothing was kept."))
+    digest = _ic.specification_digest(content)
+    owner = _fabric_owner(user)
+    _note = "a kept specification: the proposal as the cell computed it at this call. Nothing was run"
+    with _spec_lock():
+        rows = _specifications_or_503()
+        prev = None
+        if req.supersedes:
+            prev = next((s for s in rows if s.get("id") == req.supersedes), None)
+            if prev is None:
+                raise HTTPException(status_code=404, detail=(
+                    f"Specification {req.supersedes} not found. Nothing was kept."))
+            _require_design_access(prev, user, "Specification", req.supersedes)
+            later = next((s for s in rows if s.get("supersedes") == prev["id"]), None)
+            if later is not None:
+                raise HTTPException(status_code=409, detail=(
+                    f"specification {prev['id']} is already superseded by {later.get('id')}; the next version "
+                    f"supersedes that one. Nothing was kept."))
+            if prev.get("digest") == digest:
+                raise HTTPException(status_code=409, detail=(
+                    f"nothing differs from specification {prev['id']} (the digest is the same), so there is no "
+                    f"new version to keep. Nothing was kept."))
+        else:
+            same = next((s for s in rows if s.get("digest") == digest and s.get("owner_id") == owner), None)
+            if same is not None:
+                return {**_specification_view(same, rows), "saved": False, "already_saved": True, "ran": False,
+                        "what_this_is": ("this content is already kept under this id: nothing new was written "
+                                         "and nothing was run")}
+        if len(rows) >= _SPEC_CAP:
+            raise HTTPException(status_code=409, detail=(
+                f"{len(rows)} specifications are kept and the declared limit is {_SPEC_CAP}. None is discarded "
+                f"to make room, because a run may name any of them. Nothing was kept."))
+        sid = f"spec-{uuid.uuid4().hex[:10]}"
+        rec = {"id": sid, "kind": "assembly_specification",
+               "lineage": (prev.get("lineage") or prev["id"]) if prev else sid,
+               "version": (int(prev.get("version") or 1) + 1) if prev else 1,
+               "supersedes": prev["id"] if prev else None,
+               "digest": digest, **content,
+               "owner_id": owner, "saved_by": owner,
+               "saved_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+        rows.append(rec)
+        from agentic_core.config import atomic_write_json
+        atomic_write_json(_spec_store(), rows)
+    return {**_specification_view(rec, rows), "saved": True, "already_saved": False, "ran": False,
+            "what_this_is": _note}
+
+
+@router.get("/specifications")
+async def list_specifications(user: dict | None = Depends(get_current_user)):
+    _u = user if isinstance(user, dict) else None
+    rows = _specifications_or_503()
+    mine = [s for s in rows if user_can_access(_u, s.get("owner_id"))]
+    return {"specifications": [_specification_view(s, rows) for s in reversed(mine)], "total": len(mine),
+            "limit": _SPEC_CAP,
+            "basis": ("every kept specification you can access, newest first. Each version is its own record; "
+                      "`superseded_by` and `digest_ok` are computed at this read")}
+
+
+@router.get("/specifications/{sid}")
+async def get_specification(sid: str, request: Request, user: dict | None = Depends(get_current_user)):
+    """One kept specification, its line of versions, and what is true of its resources NOW."""
+    from agentic_core.api import instrument_cell as _ic
+    _u = user if isinstance(user, dict) else None
+    rows = _specifications_or_503()
+    rec = next((s for s in rows if s.get("id") == sid), None)
+    if rec is None:
+        raise HTTPException(status_code=404, detail=f"Specification {sid} not found.")
+    _require_design_access(rec, user, "Specification", sid)
+    line = sorted((s for s in rows if s.get("lineage") == rec.get("lineage")),
+                  key=lambda s: int(s.get("version") or 0))
+    now = _ic.recheck(rec, request.app)
+    proposed = [p.get("id") for p in (rec.get("proposed") or []) if isinstance(p, dict)]
+    comps = []
+    for c in _load_compositions():
+        if not user_can_access(_u, c.get("owner_id")):
+            continue
+        held = [r.get("id") for r in c.get("resources", [])]
+        comps.append({"id": c.get("id"), "name": c.get("name"), "version": c.get("version", 1),
+                      "missing": [i for i in proposed if i not in held],
+                      "extra": [i for i in held if i not in proposed]})
+    return {**_specification_view(rec, rows),
+            "versions": [{"id": s.get("id"), "version": s.get("version"), "digest": s.get("digest"),
+                          "supersedes": s.get("supersedes"), "saved_by": s.get("saved_by"),
+                          "saved_at": s.get("saved_at")} for s in line],
+            "availability_now": now,
+            "unavailable_now": [{"id": x["id"], "because": x["because"]} for x in now if not x["available"]],
+            "replay": {"route": "/api/v1/resources/compositions/{cid}/run",
+                       "send": {"specification_id": rec.get("id"), "specification_digest": rec.get("digest")},
+                       "compositions": comps,
+                       "basis": ("a specification is run again through the composition run route, naming it. "
+                                 "The run attempts what the COMPOSITION holds; `missing` and `extra` say how "
+                                 "each saved composition differs from what was proposed, and the run's record "
+                                 "says which proposed resources were attempted. A proposed resource that is "
+                                 "unavailable now is reported and nothing is put in its place; a declared "
+                                 "equivalent is tried by the runner only for a status read that fails, once")}}
+
+
 @router.post("/compositions/{cid}/run")
 async def run_composition(cid: str, req: RunCompositionRequest,
                           user: dict | None = Depends(get_current_user)):
@@ -1269,6 +1612,17 @@ async def run_composition(cid: str, req: RunCompositionRequest,
     # PUT reconfigure path to fix the design. A creative run is never blocked on a noisy signal.
     commit_ready = comp.get("commit_ready", True)          # W475 — tri-state (None: the gate could not assess)
     _area_ok = bool((comp.get("model") or {}).get("usage_area_supported_by_all", True))
+
+    #  P3.31 - A RUN MAY NAME THE SPECIFICATION IT CAME FROM. It is found, and its digest checked, BEFORE
+    #  anything runs; and its proposed resources are read against availability NOW, so a resource that has
+    #  become unavailable since it was kept is reported on the run rather than discovered by its absence.
+    #  Nothing is put in its place here: the stand-in rule further down is untouched and is the only one.
+    _spec = _specification_for_run(req.specification_id, req.specification_digest, user)
+    _spec_now: List[Dict[str, Any]] = []
+    if _spec is not None:
+        from agentic_core.api import instrument_cell as _spec_cell
+        _spec_now = _spec_cell.recheck(_spec)
+    _spec_composed = [r["id"] for r in comp.get("resources", [])]
 
     def _eff_cfg(r: Dict[str, Any]) -> Dict[str, Any]:
         # W273 — the effective config for THIS run: saved design params + per-run overrides.
@@ -1322,6 +1676,11 @@ async def run_composition(cid: str, req: RunCompositionRequest,
     _halt = console_pre_gate("composition-run")
     if _halt:
         return {"composition_id": cid, "refused": True,
+                #  P3.31 - a refused run from a specification says that NOTHING proposed was attempted
+                **({"specification": _specification_link(
+                    _spec, _spec_now, _spec_composed, [], None,
+                    refused=f"the run was refused before anything ran: {_halt.get('refused_reason')}")}
+                   if _spec is not None else {}),
                 "final": f"[CONSTITUTIONAL REFUSAL] {_halt.get('refused_reason')}", "governance_checkpoint": _halt}
     res = await orchestrator.swarm("composition-run", stages, context=objective,
                                    prefer_external=req.prefer_external, timeout=req.timeout,
@@ -1440,6 +1799,12 @@ async def run_composition(cid: str, req: RunCompositionRequest,
                     if _alt is not None:
                         _alt["duration_ms"] = int((time.time() - _a0) * 1000)
                         _alt["alternative_for"] = r["id"]
+                        #  P3.31 (round 9) - THE LABEL TRAVELS WITH THE ROW. `alternative_for` is a field a
+                        #  reader must know to look for; this is the sentence, and it is on the row in the
+                        #  response, in the saved record and wherever either is drawn.
+                        _alt["stand_in_label"] = (
+                            f"STAND-IN: {_alts[0]} is not a resource this composition holds. The fabric "
+                            f"tried it once in place of {r['id']}, which {rr.get('outcome_phrase')}")
                         real_runs.append(_alt)
                     rr["alternative"] = {
                         "tried": _alts[0], "attempts": 1,
@@ -1451,6 +1816,19 @@ async def run_composition(cid: str, req: RunCompositionRequest,
                     rr["alternative"] = {"tried": None, "attempts": 0,
                                          "basis": "no declared equivalent outside this composition; nothing was tried"}
 
+    #  P3.31 (round 9) - WHAT STOOD IN FOR WHAT, STATED ONCE AT THE TOP OF THE RUN. Computed from the rows,
+    #  never typed beside them: a run with no stand-in says so in words rather than by an absent field.
+    _stand_ins = [{"for": x.get("alternative_for"), "resource": x.get("resource"), "outcome": x.get("outcome"),
+                   "label": x.get("stand_in_label")} for x in real_runs if x.get("alternative_for")]
+    _failed_reads = [x for x in real_runs if x.get("alternative")]
+    _stand_ins_basis = (
+        (f"{len(_stand_ins)} of the {len(real_runs)} resource row(s) of this run is a stand-in the fabric tried "
+         f"once in place of a status read that failed; it was not composed. A stand-in is tried only for a "
+         f"status read, never for a resource that runs an engine or writes, and never a second time")
+        if _stand_ins else
+        (f"no stand-in ran. {len(_failed_reads)} status read(s) failed and for each the row says what, if "
+         f"anything, was tried in its place" if _failed_reads else
+         "no stand-in ran: no status read failed on this run"))
     # §7×§6 (W274) — per-resource outcomes feed the learning/selection loop: every REAL facility
     # run this composition executed accrues its own operational-excellence row (fabric:<resource>),
     # so measured facility performance is queryable alongside agents and models.
@@ -1470,6 +1848,10 @@ async def run_composition(cid: str, req: RunCompositionRequest,
     except Exception:
         pass
 
+    #  P3.31 - PROPOSED VERSUS EXECUTED, computed once from this run's own rows; None when the run names
+    #  no specification (an absent link is said, not left off)
+    _spec_link = (_specification_link(_spec, _spec_now, _spec_composed, real_runs, org_cascade)
+                  if _spec is not None else None)
     run_id = f"cr-{uuid.uuid4().hex[:8]}"
     # §7×§5 (W274) — a composition run can DELIVER a living-plan objective: on a QMS-passed run a
     # review writes back onto the bound objective and planned→in_progress advances (never auto-done).
@@ -1497,7 +1879,11 @@ async def run_composition(cid: str, req: RunCompositionRequest,
                     "composition_run": {"run_id": run_id, "composition_id": cid,
                                         "real_resources": [
                                             {"resource": x["resource"],
-                                             "outcome": x.get("outcome") or _resource_outcome(x["resource"], x)}
+                                             "outcome": x.get("outcome") or _resource_outcome(x["resource"], x),
+                                             #  P3.31 (round 9) - a stand-in is not listed on the plan
+                                             #  as a resource that delivered the objective
+                                             **({"alternative_for": x["alternative_for"]}
+                                                if x.get("alternative_for") else {})}
                                             for x in real_runs]},
                 })
                 if tgt.get("status") == "planned":
@@ -1523,6 +1909,11 @@ async def run_composition(cid: str, req: RunCompositionRequest,
             "version": comp.get("version", 1), "objective": objective[:200],
             "commit_ready": commit_ready, "usage_area_supported": _area_ok,
             "run_params_applied": sorted((req.params or {}).keys()),
+            #  P3.31 (round 9) - WHAT WAS COMPOSED, kept with the run: the composition can be edited or
+            #  deleted afterwards, and "attempted versus not attempted" is a statement about THIS run.
+            "composed": [r["id"] for r in comp.get("resources", [])],
+            "stand_ins": _stand_ins, "stand_ins_basis": _stand_ins_basis,
+            "specification": _spec_link,                                   # P3.31
             # W491 (refutation) — this filed a resource whose handler RAISED as kind "facility_run" and
             # dropped the error, so the history read it as a facility that ran. The outcome and the error
             # are what happened; the kind stays as what the resource is.
@@ -1535,6 +1926,7 @@ async def run_composition(cid: str, req: RunCompositionRequest,
                                 #  carries what was tried: the history can never read one as the other
                                 **({"alternative": x["alternative"]} if x.get("alternative") else {}),
                                 **({"alternative_for": x["alternative_for"]} if x.get("alternative_for") else {}),
+                                **({"stand_in_label": x["stand_in_label"]} if x.get("stand_in_label") else {}),
                                 "duration_ms": x.get("duration_ms")} for x in real_runs],
             "org_cascade_run_id": (org_cascade or {}).get("run_id"),
             "served_by": _served, "any_external": bool(res.get("any_external")),
@@ -1567,6 +1959,8 @@ async def run_composition(cid: str, req: RunCompositionRequest,
                                 + ("" if _area_ok else " (usage area not declared by every composed resource)")
                                 + " — review quality_assurance and consider reconfiguring (PUT /compositions/{cid})."),
             "run_params_applied": sorted((req.params or {}).keys()),
+            "stand_ins": _stand_ins, "stand_ins_basis": _stand_ins_basis,      # P3.31 (round 9)
+            "specification": _spec_link,
             "org_cascade": org_cascade, "real_resource_runs": real_runs, **res}
 
 
@@ -1964,6 +2358,16 @@ async def run_swarm(req: RunSwarmRequest, user: dict | None = Depends(get_curren
     if not stages:
         raise HTTPException(status_code=400, detail=(f"Saved cascade {req.swarm_id} has no stages." if req.swarm_id
                                                      else "Provide stages or a saved swarm_id to run."))
+    #  P3.31 clause 6 (round 9) - THE CEILING IS ENFORCED ON THIS RUN ROUTE TOO, BEFORE ANYTHING RUNS. It was
+    #  enforced where a saved COMPOSITION runs and nowhere else, so the same number of stages sent here - as
+    #  a saved cascade or typed ad hoc - ran without a bound. Checked after the access and gate checks above
+    #  (a caller who may not run this cascade is told that, not its length) and before the constitutional
+    #  pre-gate, the model and the ledger: a refused run asks nothing and records nothing.
+    from agentic_core.api.instrument_cell import MAX_STAGES as _max_stages, MAX_STAGES_BASIS as _max_basis
+    if len(stages) > _max_stages:
+        raise HTTPException(status_code=422, detail=(
+            f"this cascade holds {len(stages)} stages and a run attempts at most {_max_stages} "
+            f"({_max_basis}). Nothing was run."))
     from agentic_core.ai.native import orchestrator
     _t0 = time.time()
     # W509 (FU-009) — the run's own identity, minted BEFORE the run so the outcome row, the ledger entry

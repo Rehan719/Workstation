@@ -368,7 +368,7 @@ app.include_router(self_healing_api.router)
 from agentic_core.api import management_systems as mgmt_api
 app.include_router(mgmt_api.router)
 
-# 39. Sovereign Capital Fund + VSB Marketplace
+# 39. Capital Fund + VSB Marketplace
 from agentic_core.api import capital_fund as fund_api
 app.include_router(fund_api.router)
 

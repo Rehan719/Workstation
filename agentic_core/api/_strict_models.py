@@ -32,4 +32,7 @@ STRICT_INSTRUCTION_MODELS = {
         "an instruction in the Owner's name that cascades to the CEO",
     "agentic_core.api.board:BoardDirective":
         "a topic put to the Board for deliberation",
+    "agentic_core.api.economy:PayoutRequest":
+        "a request to pay out of an owner-payments account: an undeclared field (a typed payee name was one) "
+        "would be dropped and the payout answered as if it had been honoured",
 }

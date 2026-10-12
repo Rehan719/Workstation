@@ -37,14 +37,14 @@ proposals guessed a layout rather than reading one.
 | `core/transcendent_subsystems/pid/pid_controllers.py` | `agentic_core/biomimicry/geospheric/` — `regulator.py`, `homeostatic_regulator.py`, `balance_regulator.py`, `drad.py`, `resilience.py` |
 | `core/transcendent_subsystems/geospheric_homeostasis.py` | the same directory |
 | `core/transcendent_subsystems/tfel_accounting.py` | `core/transcendent_subsystems/tfel.py` |
-| `agentic_core/cognitive/bridge/mushawara.py` | three live: `agentic_core/avatars/cognition/mushawara_bridge.py`, `agentic_core/consultation/mushawara/mushawara_bridge_2.py`, `products/capital_fund/consultation/mushawara_capital.py` |
+| `agentic_core/cognitive/bridge/mushawara.py` | three live: `agentic_core/avatars/cognition/mushawara_bridge.py`, `agentic_core/consultation/mushawara/mushawara_bridge_2.py`, `products/capital_fund/consultation/mushawara_capital.py` *(correction 2026-10-12: the third was imported by nothing live, and was archived with its package to `_archive/products/capital_fund/`)* |
 | `agentic_core/cognitive/engines/mjm_v5.py` | `agentic_core/mjm/mjm.py` (+ `products/mjm-intelligence-engine/`) |
 | `agentic_core/cognitive/personaliser/sil.py` | `agentic_core/personalisation/sil_personaliser.py` |
 | `agentic_core/validation/vrpr/pipeline.py` | `agentic_core/quality/vrpr_pipeline.py` |
 | `agentic_core/ledger/ueg/ledger.py` **and** `core/ledger/ueg/ledger.py` | neither — the live logger is `agentic_core.gaas.v5.UEGLogger`. An older `agentic_core/ueg/ledger.py` was archived by the W79 sweep. Two of the documents give different paths for the same object, so at least one was wrong even against itself. |
 | `agentic_core/compliance/nemoclaw/validator.py` | archived: `_archive/agentic_core/governance/nemoclaw_runtime.py` (the live tree has only orphan `.pyc`) |
 | `agentic_core/cognitive/engines/niyyah.py` | archived: `_archive/jules-unwired/agentic_core/cognitive/meta/niyyah_engine.py` (orphan `.pyc` only) |
-| `products/capital_fund/digital_twin.py`, `pid_controllers.py` | do not exist — but `products/capital_fund/` is a real seventeen-package product (core/vault + multisig, treasury, portfolio, mesh, immune, regulatory, investors, sub_funds, vehicles, governance, orchestration, reporting, consultation, adapters, audit) and it IS wired: `agentic_core/api/capital_fund.py`, plus economy, resource_fabric, v310/governance and the native orchestrator import it. |
+| `products/capital_fund/digital_twin.py`, `pid_controllers.py` | do not exist — but `products/capital_fund/` is a real seventeen-package product (core/vault + multisig, treasury, portfolio, mesh, immune, regulatory, investors, sub_funds, vehicles, governance, orchestration, reporting, consultation, adapters, audit) and it IS wired: `agentic_core/api/capital_fund.py`, plus economy, resource_fabric, v310/governance and the native orchestrator import it. *(Correction 2026-10-12: untrue as written. Those modules import the live module `agentic_core/api/capital_fund.py`, which never imported the product package; nothing live imported `products/capital_fund/`, and it was archived to `_archive/products/capital_fund/` on the Owner's ruling of that date.)* |
 
 **Genuinely absent:** `agentic_core/finance/`, `backend/stripe/tiered_subscriptions.py`,
 `core/constitutional/constraint_engine.py`, `config/fidelity_targets.yaml`,

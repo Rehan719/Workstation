@@ -9,6 +9,8 @@ WHAT IT ADDS (each was measured absent before it was built — docs/INSTRUMENT_C
   contract       what a resource takes and what it yields, derived from the registry and refused if incomplete
   propose        the smallest available set covering STATED requirements — it saves nothing and runs nothing
   verify         each stated criterion met / unmet / not assessed against a RECORDED run
+  specification  what a proposal IS in the shape the fabric keeps, its digest, and a re-check of a
+                 kept one against the registry now. Computed here; the FABRIC keeps it
 
 WHAT IT DOES NOT DO: generate instruments, promote anything, tune itself from past runs, or run or save
 anything. An alternative is NAMED here when one is declared. Trying one belongs to the composition runner,
@@ -16,8 +18,10 @@ which does it once and only for a failed status read (Owner ruling 2026-10-10).
 """
 from __future__ import annotations
 
+import hashlib
 import inspect
 import itertools
+import json
 import re
 from typing import Any, Dict, List, Optional
 
@@ -36,6 +40,8 @@ MAX_STAGES_BASIS = ("declared policy: a ceiling against a runaway composition. I
 #  each resource is attempted once per run; nothing in the fabric retries
 ATTEMPTS_PER_RESOURCE = 1
 _EXACT_UP_TO = 3            # the size up to which the smallest cover is found by exhaustive search
+#  P3.31 clause 1 (round 10) - the kinds of need a registration may declare (resource_fabric._need_*)
+_NEED_KINDS = ("module", "completion", "config", "package")
 
 
 # ── the registry is validated where it is read ────────────────────────────────────────────────────
@@ -59,6 +65,23 @@ def registry_defects(registry: List[Dict[str, Any]]) -> List[str]:
             out.append(f"{rid}: declares no endpoint")
         if not r.get("methods"):
             out.append(f"{rid}: declares no method for its endpoint")
+        #  P3.31 clause 1 (round 10) - a declaration that is PRESENT must be one the check can read. An absent
+        #  one is not a defect yet: 33 of 41 registrations declare nothing, and they read "not declared".
+        needs = r.get("needs")
+        if needs is not None and not isinstance(needs, list):
+            out.append(f"{rid}: declares needs that are not a list")
+        elif needs is not None:
+            for n in needs:
+                kind = n.get("kind") if isinstance(n, dict) else None
+                if kind not in _NEED_KINDS:
+                    out.append(f"{rid}: declares a need of a kind the check cannot read ({kind!r})")
+                elif kind == "module" and not (n.get("module") and n.get("attr")):
+                    out.append(f"{rid}: declares a module need without naming the module and what it takes from it")
+                elif kind == "package" and not n.get("package"):
+                    out.append(f"{rid}: declares a package need without naming the package")
+                elif kind == "config" and n.get("param") not in (r.get("reconfigurable_params") or {}):
+                    out.append(f"{rid}: declares that it requires the parameter {n.get('param')!r}, "
+                               f"which its own parameter table does not hold")
     return out
 
 
@@ -111,6 +134,112 @@ def _served(app) -> Optional[Dict[str, set]]:
     return table
 
 
+# ── declared needs: read from the registration, checked now ───────────────────────────────────────
+#  Three seams, so a guard can drive each need both ways without uninstalling anything.
+def _import_attr(module: str, attr: str):
+    import importlib
+    return getattr(importlib.import_module(module), attr)
+
+
+def _completion_order() -> List[str]:
+    from agentic_core.ai.native.model_resource import registry as _models
+    return list(_models.select())
+
+
+def _package_present(name: str) -> bool:
+    import importlib.util
+    return importlib.util.find_spec(name) is not None
+
+
+def needs_check(rid: str, config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """What `rid` DECLARES it needs, each need checked at this call: not_declared | met | unmet | not_checked.
+
+    not_declared  the registration says nothing. NOTHING WAS CHECKED - this is not "needs nothing".
+    met           every need that must hold does (an optional package may be absent; a parameter the
+                  resource requires is listed under `per_run` when no configuration was given to read)
+    unmet         a need that must hold does not; `basis` names it
+    not_checked   a need could not be read either way (the check itself failed)
+    """
+    base = _fab._BY_ID[rid]
+    declared = base.get("needs")
+    if declared is None:
+        return {"declared": False, "state": "not_declared", "needs": [], "per_run": [],
+                "basis": ("this registration declares no needs, so nothing was checked beyond whether the "
+                          "fabric has a handler for it. NOT DECLARED is not the same as needing nothing")}
+    placeholders = base.get("reconfigurable_params") or {}
+    rows: List[Dict[str, Any]] = []
+    per_run: List[str] = []
+    for n in declared:
+        kind = n.get("kind")
+        row: Dict[str, Any] = {"kind": kind, "optional": bool(n.get("optional")), "why": n.get("why")}
+        if kind == "module":
+            row["needs"] = f"{n.get('module')}.{n.get('attr')}"
+            try:
+                _import_attr(n.get("module"), n.get("attr"))
+                row.update(met=True, basis="imported at this call")
+            except (ImportError, AttributeError) as exc:
+                row.update(met=False, basis=f"could not be imported ({type(exc).__name__}: {str(exc)[:120]})")
+            except Exception as exc:                      # noqa: BLE001 - said, never guessed either way
+                row.update(met=None, basis=f"the import could not be tried ({type(exc).__name__})")
+        elif kind == "completion":
+            row["needs"] = "an owned completion tier"
+            try:
+                order = _completion_order()
+                owned = [x for x in order if x not in ("anthropic", "openai")]
+                row.update(met=bool(owned), served_first=(order[0] if order else None),
+                           basis=((f"{owned[0]} is the first owned tier in the selection order read at this call"
+                                   + ("; that is the deterministic floor, so this need is met WITHOUT a model"
+                                      if owned[0] == "native" else
+                                      "; the deterministic floor is behind it" if "native" in owned else ""))
+                                  if owned else "no owned completion tier is in the selection order"))
+            except Exception as exc:                      # noqa: BLE001
+                row.update(met=None, served_first=None,
+                           basis=f"the selection order could not be read ({type(exc).__name__})")
+        elif kind == "package":
+            row["needs"] = f"the package {n.get('package')}"
+            try:
+                present = _package_present(n.get("package"))
+                row.update(met=present, basis="installed" if present else "not installed")
+            except Exception as exc:                      # noqa: BLE001
+                row.update(met=None, basis=f"could not be looked for ({type(exc).__name__})")
+        elif kind == "config":
+            param = n.get("param")
+            row["needs"] = f"the parameter '{param}' set to a value"
+            if config is None:
+                per_run.append(param)
+                row.update(met=None, per_run=True,
+                           basis="per run: it is read from a configuration, and none was given to this check")
+            else:
+                v = config.get(param)
+                ok = v not in (None, "", [], {}) and v != placeholders.get(param)
+                row.update(met=ok, per_run=True,
+                           basis=("set in this configuration" if ok else
+                                  "not set in this configuration; without it the handler runs nothing"))
+        else:
+            row.update(needs=str(kind), met=None, basis="a need of a kind this check cannot read")
+        rows.append(row)
+    must = [r for r in rows if not r["optional"]]
+    unmet = [r for r in must if r["met"] is False]
+    unread = [r for r in must if r["met"] is None and not (r.get("per_run") and config is None)]
+    absent = [r for r in rows if r["optional"] and r["met"] is False]
+    if unmet:
+        state = "unmet"
+        basis = "; ".join(f"{r['needs']}: {r['basis']}" for r in unmet)
+    elif unread:
+        state = "not_checked"
+        basis = "; ".join(f"{r['needs']}: {r['basis']}" for r in unread)
+    else:
+        state = "met"
+        basis = (f"{len(must) - len(per_run)} declared need(s) checked at this call and met"
+                 + (f"; {', '.join(per_run)} must be set in a configuration and was not checked here" if per_run else "")
+                 + (f"; optional and absent: {', '.join(r['needs'] for r in absent)}" if absent else ""))
+    return {"declared": True, "state": state, "needs": rows, "per_run": per_run, "basis": basis}
+
+
+_CHECKED_WORD = {"met": "available", "unmet": "unavailable", "not_declared": "not_checked",
+                 "not_checked": "not_checked"}
+
+
 def availability(rid: str, app=None) -> Dict[str, Any]:
     """available | prompt_stage_only | not_checked — with the reason, and what was NOT checked."""
     base = _fab._BY_ID[rid]
@@ -140,7 +269,22 @@ def availability(rid: str, app=None) -> Dict[str, Any]:
         state = "prompt_stage_only"
         reason = ("registered, and the fabric's real-resource handler has no branch for it: composing it adds "
                   "a prompt stage to the swarm and does not run its engine")
+    #  P3.31 clause 1 (round 10) - `state` above KEEPS ITS MEANING (the fabric has a handler for it). What the
+    #  resource DECLARES it needs is said beside it, and `checked` is the clause's own three words: a resource
+    #  is "available" there only when it has a handler AND its declared needs were checked and met. One that
+    #  declares nothing is "not_checked" - none is available by default.
+    need = needs_check(rid)
+    if state == "available":
+        checked = _CHECKED_WORD[need["state"]]
+        checked_basis = (need["basis"] if need["state"] != "met" else
+                         f"the fabric has a handler for it, and {need['basis']}")
+    else:
+        checked = "unavailable" if state == "prompt_stage_only" else "not_checked"
+        checked_basis = reason
     return {"id": rid, "state": state, "reason": reason,
+            "needs_declared": need["declared"], "needs_state": need["state"], "needs": need["needs"],
+            "needs_per_run": need["per_run"], "needs_basis": need["basis"],
+            "checked": checked, "checked_basis": checked_basis,
             "endpoint_state": endpoint_state, "endpoint_basis": endpoint_basis,
             "not_checked": ("whether its engine succeeds on a real input - that is known only by running it, "
                             "and a run records it as its outcome")}
@@ -182,10 +326,24 @@ def contract(rid: str) -> Dict[str, Any]:
         persists_basis = ("this resource runs an engine, and the registry does not record what the engine "
                           "persists; read its run record to see what it did")
     params = dict(base.get("reconfigurable_params") or {})
+    #  P3.31 clause 2 (round 10) - WHAT IT REQUIRES, where the registration declares it
+    declared = base.get("needs")
+    required = [n.get("param") for n in declared if n.get("kind") == "config"] if declared is not None else None
     return {"id": rid, "inputs": params,
             "inputs_basis": ("the registry's declared parameters, each with its declared type or example; "
-                             "which of them the engine REQUIRES is not declared"),
+                             + ("`required` lists the ones without which the fabric's handler runs nothing"
+                                if declared is not None else
+                                "which of them the engine REQUIRES is not declared")),
             "takes_no_input": not params,
+            "required": required,
+            "required_basis": ("declared by the registration: the handler runs nothing unless these are set"
+                               if required else
+                               "declared by the registration: no parameter is required to start it"
+                               if declared is not None else
+                               "NOT DECLARED: this registration states no needs, so which parameters it "
+                               "requires is not known from the registry"),
+            "needs": (list(declared) if declared is not None else None),
+            "needs_declared": declared is not None,
             #  W640 - a contract describes what a resource WOULD do. The fabric's own kind phrases are written
             #  for a run that happened ("ran its engine and produced this output"), and the first live proposal
             #  printed that sentence over a resource nothing had run. So: its own wording, in the conditional.
@@ -245,6 +403,12 @@ def select(requirements: List[str], app=None, usage_area: Optional[str] = None) 
         if av["state"] != "available":
             excluded.append({"id": r["id"], "would_cover": sorted(hit), "because": f"{av['state']}: {av['reason']}"})
             continue
+        #  P3.31 clause 1 (round 10) - A DECLARED NEED THAT IS UNMET MAKES IT UNAVAILABLE: never proposed, and
+        #  the reason is the need. A resource that declares nothing is NOT excluded here (see the return).
+        if av["needs_state"] == "unmet":
+            excluded.append({"id": r["id"], "would_cover": sorted(hit),
+                             "because": f"unavailable: a declared need is not met - {av['needs_basis']}"})
+            continue
         if usage_area and usage_area not in (r.get("usable_in") or []):
             excluded.append({"id": r["id"], "would_cover": sorted(hit),
                              "because": f"does not declare the usage area '{usage_area}'"})
@@ -290,7 +454,91 @@ def select(requirements: List[str], app=None, usage_area: Optional[str] = None) 
             "uncovered": uncovered,
             "uncovered_basis": ("no AVAILABLE registered resource declares a capability matching these; a "
                                 "requirement left here is not met by widening the match"),
-            "excluded": excluded, "method": method}
+            "excluded": excluded, "method": method,
+            #  P3.31 clause 1 (round 10) - a proposed resource whose needs nobody declared is NAMED. It is
+            #  proposed on the strength of its handler alone, and the proposal says so rather than letting
+            #  "selected" read as "checked".
+            "needs_not_declared": [i for i in chosen if _fab._BY_ID[i].get("needs") is None],
+            "needs_not_declared_basis": ("these are proposed because the fabric has a handler for each; none "
+                                         "declares what it needs, so nothing else about them was checked")}
+
+
+# ── an assembly specification: a proposal a person chose to KEEP (P3.31) ─────────────────────────
+#  COMPUTED HERE, KEPT BY THE FABRIC. This module still saves nothing and runs nothing: it says what a
+#  proposal for stated requirements IS at this call, in the shape that is kept; the digest of that content;
+#  and, for a kept one, what is true of its resources NOW. The store, its lock and its routes are the fabric's.
+SPEC_CONTENT_FIELDS = ("objective", "required_capabilities", "acceptance_criteria", "usage_area",
+                       "max_stages", "proposed", "selection_rule", "uncovered")
+
+
+def _canonical(value: Any) -> str:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), default=str)
+
+
+def registration_digest(rid: str) -> Optional[str]:
+    """A digest of what the registry declares for `rid` NOW; None when it is not registered.
+
+    The registry declares NO contract version: nothing in a registration says "this is contract N". So what
+    is kept beside a proposed resource is this digest of its whole registration, computed, and a later
+    re-check can say the registration is no longer the one that was proposed. It is not a version."""
+    base = _fab._BY_ID.get(rid)
+    if base is None:
+        return None
+    return hashlib.sha256(_canonical(base).encode("utf-8")).hexdigest()
+
+
+def specification_digest(content: Dict[str, Any]) -> str:
+    """The digest of a specification's CONTENT: the fields in SPEC_CONTENT_FIELDS and nothing else. Who kept
+    it, when, its id and its place in a line of versions are not content - the same content has the same
+    digest whoever keeps it and whenever."""
+    return hashlib.sha256(
+        _canonical({k: content.get(k) for k in SPEC_CONTENT_FIELDS}).encode("utf-8")).hexdigest()
+
+
+def specification_content(objective: str, required_capabilities: List[str], acceptance_criteria: List[Any],
+                          usage_area: Optional[str], max_stages: int, app=None) -> Dict[str, Any]:
+    """What a proposal for these stated requirements IS at this call, in the shape that is kept.
+
+    The proposed resources come from `select` - the same selection /propose returns - so a kept
+    specification never holds a resource somebody typed."""
+    sel = select([c for c in required_capabilities if _norm(c)], app, usage_area)
+    return {"objective": str(objective or "").strip(),
+            "required_capabilities": list(sel["requirements"]),
+            "acceptance_criteria": list(acceptance_criteria or []),
+            "usage_area": usage_area or None,
+            "max_stages": int(max_stages),
+            "proposed": [{"id": s["id"], "covers": list(s["covers"]),
+                          "registration_digest": registration_digest(s["id"])} for s in sel["selected"]],
+            "selection_rule": sel["method"],
+            "uncovered": list(sel["uncovered"])}
+
+
+def recheck(spec: Dict[str, Any], app=None) -> List[Dict[str, Any]]:
+    """Each PROPOSED resource of a kept specification, read against the registry and the fabric NOW.
+
+    `available` is decided by the two tests `select` makes before it proposes a resource - the fabric has a
+    handler for it, and no declared need is unmet - so a resource that would not be proposed today reads
+    unavailable here. Nothing is tried and nothing is put in its place: a declared equivalent is NAMED."""
+    out: List[Dict[str, Any]] = []
+    for p in spec.get("proposed") or []:
+        rid = p.get("id") if isinstance(p, dict) else None
+        if rid not in _fab._BY_ID:
+            out.append({"id": rid, "registered": False, "available": False,
+                        "because": "it is no longer in the resource registry",
+                        "state": None, "needs_state": None, "registration_changed": None, "equivalents": []})
+            continue
+        av = availability(rid, app)
+        if av["state"] != "available":
+            ok, because = False, f"{av['state']}: {av['reason']}"
+        elif av.get("needs_state") == "unmet":
+            ok, because = False, f"unavailable: a declared need is not met - {av.get('needs_basis')}"
+        else:
+            ok, because = True, av["reason"]
+        out.append({"id": rid, "registered": True, "available": ok, "because": because,
+                    "state": av["state"], "needs_state": av.get("needs_state"),
+                    "registration_changed": registration_digest(rid) != p.get("registration_digest"),
+                    "equivalents": equivalents(rid)})
+    return out
 
 
 # ── criteria: met / unmet / not assessed, each with the evidence it was read from ─────────────────
@@ -309,8 +557,15 @@ def assess(criteria: List[Any], run: Optional[Dict[str, Any]]) -> Dict[str, Any]
             else:
                 row.update(state="met" if got.get("outcome") == c.get("is") else "unmet",
                            evidence={"resource": got.get("resource"), "outcome": got.get("outcome"),
-                                     "error": got.get("error")},
-                           basis="read from the run's own record of what that resource did")
+                                     "error": got.get("error"),
+                                     #  P3.31 (round 9) - a stand-in's row is evidence about the STAND-IN
+                                     **({"alternative_for": got["alternative_for"]}
+                                        if got.get("alternative_for") else {}),
+                                     **({"alternative": got["alternative"]} if got.get("alternative") else {})},
+                           basis=("read from the run's own record of what that resource did"
+                                  + (f". {got.get('resource')} ran here as a STAND-IN for "
+                                     f"{got['alternative_for']}; this is not evidence about {got['alternative_for']}"
+                                     if got.get("alternative_for") else "")))
         elif isinstance(c, dict) and c.get("kind") == "quality_gate":
             gate = run.get("qms_gate_passed")
             if gate is None:
@@ -338,7 +593,19 @@ async def cell_availability(request: Request):
     counts: Dict[str, int] = {}
     for x in rows:
         counts[x["state"]] = counts.get(x["state"], 0) + 1
+    needs_counts: Dict[str, int] = {}
+    checked_counts: Dict[str, int] = {}
+    for x in rows:
+        needs_counts[x["needs_state"]] = needs_counts.get(x["needs_state"], 0) + 1
+        checked_counts[x["checked"]] = checked_counts.get(x["checked"], 0) + 1
+    _declared = sum(1 for x in rows if x["needs_declared"])
     return {"resources": rows, "counts": counts, "total": len(rows),
+            #  P3.31 clause 1 (round 10) - beside `counts`, which keeps its meaning (handler branches)
+            "needs_counts": needs_counts, "checked_counts": checked_counts, "needs_declared": _declared,
+            "needs_basis": (f"{_declared} of {len(rows)} registration(s) declare what they need, and each "
+                            f"declared need was checked at this call. The other {len(rows) - _declared} "
+                            f"declare nothing: for those only the handler was looked for, and they are "
+                            f"counted 'not_checked', never 'available'"),
             "declaration_defects": [{"id": x["id"], "endpoint_state": x["endpoint_state"],
                                      "basis": x["endpoint_basis"]}
                                     for x in rows if x["endpoint_state"] in ("not_served", "method_mismatch")],
@@ -401,7 +668,9 @@ async def cell_propose(req: ProposeRequest, request: Request):
 
 class VerifyRequest(BaseModel):
     run_id: str
-    criteria: List[Any]
+    #  P3.31 - None (not sent) on a run made from a specification means: read it against the criteria
+    #  kept with that specification. A list, even an empty one, keeps its meaning: these criteria.
+    criteria: Optional[List[Any]] = None
 
 
 @router.post("/verify")
@@ -416,4 +685,73 @@ async def cell_verify(req: VerifyRequest, user: dict | None = Depends(_fab.get_c
     if run is None:
         raise HTTPException(status_code=404, detail=f"run {req.run_id} is not in the run store")
     _fab._require_design_access(run, user, "Composition run", req.run_id)
-    return {"run_id": req.run_id, "composition_id": run.get("composition_id"), **assess(req.criteria, run)}
+    #  P3.31 clause 7 (round 9) - ATTEMPTED VERSUS NOT ATTEMPTED, read from the run's own record. A row is an
+    #  attempt; a composed resource with no row was a prompt stage only, or its handler declined for want of
+    #  configuration. A stand-in is listed apart: it was attempted, and it was not composed.
+    rows = [x for x in (run.get("real_resources") or []) if isinstance(x, dict)]
+    attempted = [x.get("resource") for x in rows if not x.get("alternative_for")]
+    stand_ins = [{"for": x.get("alternative_for"), "resource": x.get("resource"), "outcome": x.get("outcome"),
+                  "label": x.get("stand_in_label") or (
+                      f"STAND-IN: {x.get('resource')} is not a resource this composition holds. The fabric "
+                      f"tried it once in place of {x.get('alternative_for')}")}
+                 for x in rows if x.get("alternative_for")]
+    composed = run.get("composed")
+    known = isinstance(composed, list)
+    #  P3.31 - A RUN MADE FROM A SPECIFICATION IS READ AGAINST THAT SPECIFICATION'S CRITERIA. The run's record
+    #  names the specification and the digest it had; the criteria are read from the kept record, and only
+    #  when that record's content still has that digest. `criteria` in the answer keeps its meaning (the
+    #  criteria that were assessed) and `criteria_source` says whose they were.
+    link = run.get("specification") if isinstance(run.get("specification"), dict) else None
+    spec_rec, spec_problem = None, None
+    if link:
+        try:
+            spec_rec = _fab._find_specification(link.get("specification_id"))
+        except StoreUnavailable as e:
+            spec_problem = f"the specification store could not be read: {e}"
+        else:
+            if spec_rec is None:
+                spec_problem = f"specification {link.get('specification_id')} is not in the specification store"
+            elif specification_digest(spec_rec) != link.get("specification_digest"):
+                spec_rec = None
+                spec_problem = (f"the record of specification {link.get('specification_id')} no longer has the "
+                                f"digest this run recorded, so its criteria were not used")
+    if req.criteria is None:
+        if not link:
+            raise HTTPException(status_code=422, detail=(
+                "criteria are required: this run names no specification, so there are no kept criteria to "
+                "read it against. Nothing was assessed."))
+        if spec_rec is None:
+            raise HTTPException(status_code=409, detail=f"{spec_problem}. Nothing was assessed.")
+    own = assess(req.criteria if req.criteria is not None else (spec_rec.get("acceptance_criteria") or []), run)
+    spec_view = None
+    if link:
+        spec_view = {"specification_id": link.get("specification_id"),
+                     "specification_digest": link.get("specification_digest"), "version": link.get("version"),
+                     "criteria_read": spec_rec is not None,
+                     "basis": (spec_problem if spec_rec is None else
+                               "the criteria kept with the specification this run names, read from the kept "
+                               "record after its content was found to have the digest the run recorded"),
+                     **(assess(spec_rec.get("acceptance_criteria") or [], run) if spec_rec is not None else
+                        {"criteria": None, "counts": None, "all_met": None, "all_met_basis": None}),
+                     "executed": link.get("executed"), "not_attempted": link.get("not_attempted"),
+                     "not_in_specification": link.get("not_in_specification")}
+    return {"run_id": req.run_id, "composition_id": run.get("composition_id"), **own,
+            "criteria_source": "request" if req.criteria is not None else "specification",
+            "criteria_source_basis": (
+                ("the criteria stated in this request. " + (
+                    "This run names a specification: what its own kept criteria say is under `specification`"
+                    if link else "This run names no specification"))
+                if req.criteria is not None else
+                f"no criteria were stated in the request, so the criteria kept with specification "
+                f"{link.get('specification_id')} (the one this run names) were read"),
+            "specification": spec_view,
+            "attempted": attempted,
+            "not_attempted": [c for c in composed if c not in attempted] if known else None,
+            "stand_ins": stand_ins,
+            "attempt_basis": (
+                ("attempted: the fabric ran this resource's handler on this run and recorded what it did. "
+                 "Not attempted: it was composed and no handler ran for it on this run")
+                if known else
+                ("attempted: the fabric ran this resource's handler on this run. NOT KNOWN which composed "
+                 "resources were not attempted: this run was recorded before the composed list was kept "
+                 "with it"))}

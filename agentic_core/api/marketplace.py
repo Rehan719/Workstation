@@ -240,6 +240,33 @@ def _retire_unserved_seeds() -> list[str]:
     return removed
 
 
+def _rename_seeds_to_the_catalogue() -> list[str]:
+    """W673 - A SEEDED LISTING CARRIES THE CATALOGUE'S CURRENT NAME. Seeding runs once, so a catalogue name
+    changed afterwards (the fund, renamed by the Owner's ruling of 2026-10-12) stayed in the store under its
+    old name and was shown to a person. Only a catalogue-derived listing is touched, only its name, and the
+    name it had is kept on the record. A store that cannot be read is left alone."""
+    try:
+        from agentic_core.catalog.api import served_products
+        names = {str(p.get("slug", "")).lower(): p.get("name") for p in served_products()}
+    except Exception:                                        # a catalogue read must never block boot
+        return []
+    renamed = []
+    for path in _LISTINGS_DIR.glob("*.json"):
+        doc = _read_doc(path)
+        if doc is None or doc.get("origin") != "catalog":
+            continue
+        slug = next((t for t in (doc.get("tags") or []) if isinstance(t, str)), "")
+        now = names.get(slug)
+        if not now or doc.get("name") == now:
+            continue
+        doc["previous_names"] = list(doc.get("previous_names") or []) + [doc.get("name")]
+        doc["name"] = now
+        doc["updated_at"] = time.time()
+        atomic_write_json(path, doc)
+        renamed.append(f"{slug}: {doc['previous_names'][-1]} -> {now}")
+    return renamed
+
+
 def _seed_from_catalog() -> int:
     """Seed listings from the REAL registered product catalogue — only the entries a route serves (W470).
 
@@ -294,6 +321,7 @@ def _seed_from_catalog() -> int:
 
 _retire_invented_seeds()
 _retire_unserved_seeds()
+_rename_seeds_to_the_catalogue()
 _seed_from_catalog()
 
 

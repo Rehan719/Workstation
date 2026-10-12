@@ -1490,8 +1490,91 @@ def appraise_scope_for(systems: List[str]) -> Dict[str, Any]:
             "other_candidates": {k: v for k, v in sorted(hits.items(), key=lambda kv: -kv[1])[1:5]}}
 
 
+#  P3.30 - the route a person uses to act on an appraisal. Named once; the guard checks it is served.
+_HAND_OFF_ROUTE = "POST /api/v1/cca/submit"
+_METHOD_FILERS = ("POST /api/v1/method/derive", "POST /api/v1/method/breach", "POST /api/v1/method/correct")
+
+
+def _appraisal_hand_off(scope: Optional[str]) -> Dict[str, Any]:
+    """WHAT BECOMES OF AN APPRAISAL - computed at the call and said on the appraisal itself (P3.30).
+
+    An appraisal is a reading. It is not kept, it files nothing and it authorises nothing. The one thing
+    that carries an appraisal anywhere is a Change Control submission, which is given the appraisal of the
+    scope it declares (`scope_appraisal`) when somebody files it. So what CAN be computed about what became
+    of an appraisal of this scope is which change records carry one - and that is read here, from the Change
+    Control store, with each record's status exactly as Change Control holds it. A record that cannot be
+    read is counted as unread: an unread store is never reported as an empty one.
+    """
+    fixed: Dict[str, Any] = {
+        "kept": False,
+        "kept_basis": ("this appraisal is a reading made at this call. The route writes nothing, so it is "
+                       "not stored and no later appraisal can read this one"),
+        "authorises": False,
+        "authorises_basis": ("this route files, approves and applies nothing, and nothing reads an appraisal "
+                             "in order to file a change. The method's own filers act on a person's request and "
+                             "only SUBMIT; Change Control decides"),
+        "next_route": _HAND_OFF_ROUTE,
+        "next_route_basis": ("to act on this reading a person files a change there, naming the affected "
+                             "systems. Change Control attaches the appraisal of the scope those systems point "
+                             "at (`scope_appraisal`, which is never a gate), and a review decides the change"),
+        "method_filers": list(_METHOD_FILERS),
+        "method_filers_basis": ("the three method routes that can raise a change, each on a person's request "
+                                "(a confirmed defect, a recorded breach, a proposed correction). None of them "
+                                "reads an appraisal"),
+        "not_established": ("whether an implemented change did what it was filed for. The status and effect "
+                            "listed here are Change Control's own record of what it decided and applied; "
+                            "nothing re-reads the changed state after implementation, and this appraisal "
+                            "reads no outcome beyond them"),
+    }
+    try:
+        from agentic_core.api import change_control as _cc
+        paths = sorted(_cc._CCA_STORE.glob("*.json"))
+    except Exception as e:                                # noqa: BLE001 - said, never an empty answer
+        return dict(fixed, records_read=None, records_unreadable=None, changes_carrying_this_scope=None,
+                    statement=(f"the Change Control store could not be read ({e.__class__.__name__}), so "
+                               f"which change records carry an appraisal of this scope is NOT KNOWN. This "
+                               f"is not a statement that none does"))
+    carrying: List[Dict[str, Any]] = []
+    unreadable = 0
+    for p in paths:
+        try:
+            c = _cc._load_change(p.stem)
+        except Exception:                                 # noqa: BLE001
+            c = None
+        if c is None:
+            unreadable += 1
+            continue
+        sa = c.get("scope_appraisal")
+        s = str(sa.get("scope") or "") if isinstance(sa, dict) else ""
+        if s and (not scope or s == scope or s.startswith(scope + ".")):
+            carrying.append({"cca_id": c.get("cca_id"), "scope": s, "status": c.get("status"),
+                             "implementation_effect": c.get("implementation_effect"),
+                             "submitted_at": c.get("submitted_at")})
+    carrying.sort(key=lambda x: str(x.get("submitted_at") or ""), reverse=True)
+    by_status: Dict[str, int] = {}
+    for x in carrying:
+        by_status[str(x.get("status"))] = by_status.get(str(x.get("status")), 0) + 1
+    where = f"an appraisal of {scope}" if scope else "an appraisal of a scope"
+    statement = (
+        (f"{len(carrying)} Change Control record(s) carry {where} "
+         f"({', '.join(f'{v} {k}' for k, v in sorted(by_status.items()))}). Each was filed by a submission, "
+         f"not by an appraisal, and each is decided by Change Control")
+        if carrying else
+        (f"no Change Control record carries {where}: nothing that has been filed points at it. This "
+         f"appraisal does not change that - it files nothing"))
+    if unreadable:
+        statement += (f". {unreadable} record(s) in the store could not be read and are NOT counted, so the "
+                      f"figure is a lower bound")
+    return dict(fixed, records_read=len(paths) - unreadable, records_unreadable=unreadable,
+                changes_carrying_this_scope={"count": len(carrying), "by_status": by_status,
+                                             "records": carrying[:50],
+                                             "records_listed": min(len(carrying), 50)},
+                statement=statement)
+
+
 @router.get("/appraise")
-async def appraise(scope: Optional[str] = None, user: dict | None = Depends(get_current_user)):
+async def appraise(scope: Optional[str] = None, hand_off: bool = True,
+                   user: dict | None = Depends(get_current_user)):
     """Run the Appraisal Cell over a scope — a phase prefix ("P2"), an item ("P2.4"), or the whole plan."""
     method = _load_method()
     lessons = [l for l in method["lessons"] if l.get("group") == "appraisal"]
@@ -1668,6 +1751,10 @@ async def appraise(scope: Optional[str] = None, user: dict | None = Depends(get_
         "so, and the evidence for a delivery is a guard that was made to fail first.")
     out["lessons"] = [{"id": l["id"], "axis": l.get("axis"), "faculty": l.get("faculty"), "rule": l["rule"]}
                       for l in lessons]
+    #  P3.30 - WHAT BECOMES OF THIS APPRAISAL is said ON it, computed now: it is not kept, it authorises
+    #  nothing, and the change records that carry an appraisal of this scope are read from Change
+    #  Control's own store. None when the caller asked for the readings alone (hand_off=false).
+    out["hand_off"] = _appraisal_hand_off(scope) if hand_off else None
     return out
 
 

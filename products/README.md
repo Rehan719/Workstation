@@ -8,11 +8,19 @@ W506 (P2.4, rows FU-071 and FU-072) corrected the claims in this tree. What thes
 ## The pointer directories (FU-071)
 
 `business_incubator`, `cognitive_scraper`, `digital_reactor`, `gse`, `molecular_sdk`,
-`nanophotonic_navigation`, `scraping_suite`, `uviap`, `capital_fund`
+`nanophotonic_navigation`, `scraping_suite`, `uviap`
 
 Each holds a `metadata.json`. `agentic_core/catalog/api.py` scans this folder at runtime and lists them with
 status `source` - "a pointer, nothing served yet". They are KEPT because that reader exists and is honest about
 what it found. No consumer builds from them.
+
+## capital_fund - archived 2026-10-12 (W673)
+
+`products/capital_fund/` is no longer here. On the Owner's ruling of 2026-10-12 it was moved, whole and
+reversibly, to `_archive/products/capital_fund/` (the entry in `_archive/README.md` gives the reason and the
+command that reverses it). It was listed above as a pointer directory; it never held a `metadata.json`, and
+nothing live imported it. The fund the platform serves is a different module, `agentic_core/api/capital_fund.py`
+(routes under `/api/v1/fund`, page `/capital`); the catalogue lists that card from its route.
 
 ## The signature directories (FU-072)
 

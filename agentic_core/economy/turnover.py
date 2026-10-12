@@ -207,7 +207,7 @@ def retirement_refusal(vsb_id: str) -> Dict[str, Any]:
 #  the change only for an entity no never-auto-retire rule protects, naming what it would remove and why. The
 #  change is applied by Change Control's implement step, which calls apply_retirement: it RE-CHECKS the rules
 #  (an entity can become protected between filing and approval), then moves every asset balance out of the
-#  entity's books into the Sovereign Capital Fund with a balanced posting each, credits the fund by exactly that
+#  entity's books into the Capital Fund with a balanced posting each, credits the fund by exactly that
 #  total, and marks the entity retired. THE RECORD IS KEPT: the roster row and the books stay readable, and
 #  nothing is deleted, because a retirement that loses its record fails the clause as surely as one that loses
 #  a balance.
@@ -229,10 +229,10 @@ async def propose_removal(vsb_id: str, why: str, by: str) -> Dict[str, Any]:
     from agentic_core.api.change_control import SubmitChangeRequest, submit_change
     rec = await submit_change(SubmitChangeRequest(
         title=f"[turnover] retire {vsb_id}", change_type=RETIREMENT_CHANGE_TYPE, vsb_id=vsb_id,
-        description=(f"Retire living entity {vsb_id}: its asset balances move to the Sovereign Capital Fund, its "
+        description=(f"Retire living entity {vsb_id}: its asset balances move to the Capital Fund, its "
                      f"record and books are KEPT, and the organism stops operating it. Why: {why}"),
         rationale=why, submitted_by=by,
-        affected_systems=[vsb_id, "living roster", "Sovereign Capital Fund"],
+        affected_systems=[vsb_id, "living roster", "Capital Fund"],
         rollback_plan=("the record is kept, so a retirement is reversible by Change Control; the moved balance "
                        "is attributed in the fund to this entity")))
     out.update(filed=True, cca_id=rec.get("cca_id"), check=chk,
@@ -279,7 +279,7 @@ def apply_retirement(vsb_id: str, cca_id: str) -> Dict[str, Any]:
             rec["retirement"] = {"cca_id": cca_id, "at": stamp, "conserved_wst": total, "moved": moved}
             _lv._save(d)
     out.update(retired=True, conserved_wst=total, moved=moved, fund_after=fund_after)
-    out["basis"] = (f"retired: {total} WST moved from its books to the Sovereign Capital Fund "
+    out["basis"] = (f"retired: {total} WST moved from its books to the Capital Fund "
                       f"({', '.join(f'{k} {v}' for k, v in moved.items()) or 'it held nothing'}); its record and books "
                       f"are kept and the organism no longer operates it")
     return out
