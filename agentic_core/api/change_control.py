@@ -794,6 +794,8 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
     if req.change_type == "economy_material" or _title.startswith(("[economy] material distribution",
                                                                     "[economy] material transfer",
                                                                     "[economy] material contract settlement",
+                                                                    # Owner ruling 2026-10-12 - and the payout's
+                                                                    "[economy] owner payout",
                                                                     # FU-794 - the fund's hold title, reserved too
                                                                     "[economy] capital fund allocation")):
         raise HTTPException(status_code=422, detail=(
@@ -1048,7 +1050,9 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
             # AWAITED, not asyncio.run: this function is async and inside a running loop, where asyncio.run
             # raises. The cell's Depends default is resolved only by FastAPI, so user=None is right in-process.
             from agentic_core.api.method import appraise as _appraise_cell
-            _ap = await _appraise_cell(scope=_sc["slot"], user=None)
+            #  P3.30 - the readings alone: three faculties are copied below, and the appraisal's own
+            #  hand-off statement (a scan of this store) is neither needed nor copied here
+            _ap = await _appraise_cell(scope=_sc["slot"], hand_off=False, user=None)
             change["scope_appraisal"] = {
                 "scope": _sc["slot"], "why_this_scope": _sc.get("why"),
                 "faculties": {k: _ap["faculties"][k] for k in ("reflection", "reasoning", "extrospection")

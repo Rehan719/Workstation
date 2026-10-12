@@ -706,3 +706,126 @@ was also its submitter, stated only when both names were checked; an issued API 
 it say a key is not yet accepted; the causal simulator returns no typed fidelity and no typed verdict, and the
 string the effector records is headed as not assessed. The rest of 19.4 is filed as rows on the fourth
 phase's first item.
+
+## 20. Addendum (W673): five external documents on a finance, tax, invoice, funding and capital-stewardship capability, assessed
+
+**What was received (Owner, 2026-10-12).** Five files and two covering notes. A "Phase 0 reconnaissance" of
+12 October (195 lines) and a "Phase 0 audit and Phase 1 handoff" of 11 October (164 lines), both written from
+the public repository at the W671 merge (`a96e2011`) with no checkout and no test run, as each says; a README
+for an "apply-ready patch" to the capital fund's amount check (43 lines; the patch itself was not supplied);
+and a "master prompt" of 11 October (712 lines) supplied twice. The notes ask for a first slice - an entity's
+financial profile, a test invoice, an accounting entry, an obligation, a proposed payment, an approval, a mock
+payment, a reconciliation - and give an eight-point definition of done.
+
+**How they were read.** All were read whole. The two master prompt files are byte-identical. Every statement
+that can be checked against main, against the working tree of this round, or against the three official pages
+the documents cite and this round was allowed to open (read 2026-10-12) was checked: 78 in all, listed in the round's notes -
+61 true, 6 partly, 3 false, 1 stale, 4 not established by the document, 3 not checked.
+**Unlike the earlier documents in this file, these mostly instruct rather than claim, and where they describe
+this repository they are mostly right.** Their caveats are accurate wherever they were tested: that nothing
+was run, that the plan must be re-read at the checkout, that the payout core was not seen, that a README test
+count is not a run. The three false statements are line numbers in one document. None says the code does
+something it does not.
+
+### 20.1 What was checked
+
+| # | Statement | Finding |
+|---|---|---|
+| 1 | The fund's allocate route declared no caller, checked only sign and balance, and continued for an id nothing knows | **TRUE of main** (`api/capital_fund.py` 243-303 there). **No longer true:** W672 holds every allocation for an explicit decision, refuses an unknown id, and refuses a non-finite amount |
+| 2 | The allocation recorded "gate: not applied", credited no entity, and wrote its audit event after the save | **TRUE of main.** Still true that no constitutional gate runs and no entity is credited; the record now names the change that approved it |
+| 3 | The amount was a plain float, so a NaN would pass both comparisons | **TRUE of main, as reasoning** (nobody drove it). Fixed in the core by W672; the model field is unchanged |
+| 4 | The supplied patch "applies cleanly" and "8 passed" | **NOT ESTABLISHED.** No patch was supplied, and its own README says the run was against a stand-in, not this tree. Superseded by row 1 |
+| 5 | The payout function takes an `owner` and never reads it | **TRUE**, main and tree (`economy/owner_payments.py:260-288`). See 20.4 |
+| 6 | The payout writes no audit event | **TRUE**, main and tree |
+| 7 | "Do not repeat the wrong-owner acceptance as proven; the core could not be retrieved" | **An accurate caveat, now settled by reading:** nothing compares the name with the account's owner |
+| 8 | `REAL_MONEY_ENABLED = False`; the on-chain withdrawal refuses while it is | **TRUE** (`owner_payments.py:35`; `products/capital_fund/adapters/crypto_gateway.py:94-99`) |
+| 9 | The 10,000,000 WST is recorded as an Owner-set virtual endowment, with its basis and with warnings for an incomplete store | **TRUE** (`api/capital_fund.py:84-97`, 57-70) |
+| 10 | The fund store "fails closed" and never re-seeds | **PARTLY.** An unreadable or partial store refuses every writer. A MISSING file is read as first creation: a fresh 10,000,000 (20.4) |
+| 11 | The ledger is a per-entity virtual double-entry ledger and not statutory books | **TRUE** (`economy/ledger.py:1-6`) |
+| 12 | No live path is named for tax, invoices, bookkeeping, VAT or HMRC; one tax module sits under `_archive/` | **TRUE** |
+| 13 | `products/capital_fund/` exists and "file existence does not prove a route is live" | **TRUE, and understated:** nothing in the application imports the package (20.4) |
+| 14 | The transfer route scopes the sender and documents a gate, a hold for a material amount and an audit event | **TRUE.** Below 250,000 WST nothing is held; that is the designed threshold |
+| 15 | PLAN NOW names P2.37 next; 83 of 102 items done; 92 open rows | **TRUE of main.** The tree reads 83 of 103 and 88 |
+| 16 | A "discrepancy" between PLAN NOW (P2.37) and the scheduled block (P2.39) | **NOT A DISCREPANCY.** P2.37 has no open row and P2.38 none, so the first item with a row is P2.39; the block says so on its first line |
+| 17 | The Living Plan's header was last reconciled at W446 | **TRUE**, and the header says the body is newer |
+| 18 | FU-794 was measured against `ca081db0`, with 3,000,000 WST allocated to an id that does not exist, and records a payout issue | **TRUE** of the row. Its allocation half is closed by W672; its payout half is not (20.4) |
+| 19 | The earlier review found `archive/products/swf/` never existed, the historical core was a thirty-line stub, and three of 28 "confirmed" paths existed | **TRUE** of `docs/BIOGEOCHEMICAL_AND_COMMS_REVIEW.md` (lines 20, 52-66) |
+| 20 | "Verify whether PID controllers are called by live modules" | **Settled:** only by the cycle classes' own methods. The one live reader (`api/cycles.py`) reports gains and readings and calls no controller. No controller output reaches a ledger, a transfer or the fund |
+| 21 | "Capital Fund Mesh" as the name of the live capability | **PARTLY.** `mesh/` is a subfolder of the unreached package; the live route calls itself the "Sovereign Capital Fund" |
+| 22 | FU-813 is the bounded core of the third-cell request and needs no new cell; a people capability is separately chartered | **TRUE** (rulings of 2026-10-11) |
+| 23 | Line references in the 11 October handoff (mount 340-343, payout 538-557, transfer 657-676) | **FALSE**, each by 30 to 40 lines. The 12 October document's references are right |
+| 24 | Making Tax Digital for Income Tax: over 50,000 from 6 April 2026, over 30,000 from 6 April 2027, over 20,000 from 6 April 2028 | **CONFIRMED** on the HMRC page read 2026-10-12 (it shows "Updated: 7 September 2026") |
+| 25 | GOV.UK's business finance finder and "Find a grant" do what the prompt says | **CONFIRMED** on both pages read 2026-10-12. Neither is called by anything here |
+| 26 | VAT Notice 700 and the FCA pages | **NOT CHECKED** |
+
+### 20.2 What is sound, and already the rule here
+
+Extend what exists and build no second ledger, planner, scheduler or approval chain; virtual WST is never cash,
+revenue, raised capital or a return; a proposal, a reservation, an approval and a payment are four different
+states; a prepared instruction is not a payment and an offer is not money received; a model's confidence is not
+a gate and a validator returning true is not compliance; no "compliant" badge without a stated scope and date;
+a store that cannot be read is refused and never answered as zeros; nothing is committed, deployed, sent,
+filed or paid by a document's say-so; real money, authentication, sign-up, external models and deployment are
+the Owner's switches. Each is a ruling or a clause in force, and the documents largely say so themselves.
+
+### 20.3 What is declined, and why
+
+| Asked | Decision |
+|---|---|
+| Real-currency books for a "genuinely established entity" | **Not built.** The Owner is unincorporated and the legal form is undecided; there is no entity whose books these would be. A real-currency figure may at most be a declared memo field (20.5) |
+| A tax rules layer, jurisdiction packs, draft computations, filing | **Not built.** A tax figure computed here would be a model's or a table's guess presented as an obligation. An obligations calendar holds only what the Owner declares, with its source and the date it was read, and says nothing is filed |
+| Bank feeds, statement import, payment providers, "approved payment execution" | **Declined** while `REAL_MONEY_ENABLED` is off. A payment in the slice is a virtual posting, labelled as one |
+| Funding search run by the platform; applications sent | **Declined.** External search is behind `AI_ALLOW_EXTERNAL`; nothing is submitted by the platform. A pipeline of records the Owner enters is buildable |
+| "Capital Fund Mesh", "VSB Treasury & Capital Stewardship", autonomy levels 0 to 4, an eleven-step governing loop, a seven-class truth vocabulary | **Vocabulary not adopted** (ruling of 2026-10-09, evening, applied to a new brief). The product's own words stand; the one naming question is the tree's own (20.5) |
+| Decimal amounts in place of floats | **Not as a migration.** The ledger rounds to two places at every write and refuses a non-finite figure at save; the reading found it consistent. New record types (an invoice line) may hold integer hundredths; the ledger's stored shape is not changed |
+| Maker-checker, dual approval, role matrices on every action | **Not buildable as asked** with one principal. The existing hold, an explicit decision, and the recorded "decider was also submitter" (W672) are the control; the rest is the readiness round of P4.1 |
+| The eight-point definition of done as a gate on this plan | **Mapped, not adopted:** isolation and separation of duties wait on authentication; duplicates, balanced journals, traceable corrections, reconciliation and the intact queue are clauses of the item proposed below; "tax calculations keep source rules" has no subject, since nothing is calculated |
+| Applying the supplied patch | **Not applied.** It was not supplied, and W672 already does more |
+
+### 20.4 What it adds
+
+Reading for these documents found things the audits had not, all in what exists today:
+
+1. **The payout half of FU-794 is still true and the row is closed.** A payout is recorded for any owner name,
+   writes no audit event, names no requester, is never held at any amount, and its only history is a list cut
+   to 200 entries. No test sends the name. W672 fixed the fund and did not touch this file.
+2. **Nothing carries a request key.** A transfer request sent twice is two transfers: the ledger is safe to
+   replay on an id, and the route mints a new id each time. A posting has no identifier at all, so no
+   correction or settlement can name one, and the posting function accepts a zero or negative amount.
+3. **A deleted fund store reads as a new fund of 10,000,000 WST**, to readers and writers alike.
+4. **The capital fund product package is reached by nothing.** Inside it: a Stripe adapter with live charge and
+   payout calls that reads no real-money switch (unreached, and `stripe` is not installed - the shape W535
+   fixed in the crypto adapter); a banking adapter that returns "VERIFIED, JP Morgan Chase" for any token and a
+   settlement adapter that returns a fixed "SUCCESS", both under docstrings saying "live"; and four modules
+   that open a Firestore client at import, which FU-346 fixed in one file only.
+5. **What a slice can reuse is more than the documents knew:** service contracts between entities already run
+   offer, accept, deliver and settle with a transfer that is safe to retry; a period close exists; the hold and
+   release mechanism now has a class with no threshold. An invoice here is a record over those, not a new
+   system.
+
+Each is a finding from reading, to be driven first. They are filed as rows; the capability is proposed as one
+plan item, scoped to what is honest with money virtual, authentication off and no legal form.
+
+### 20.5 What the Owner ruled (2026-10-12)
+
+The questions this reading raised were put to the Owner with a recommendation each, and ruled the same day:
+
+1. The capability is chartered as one plan item after the people capability, six clauses, virtual only, built
+   in about four rounds; the rows of 20.4 on the payout and the ledger are fixed first.
+2. The payout request's owner field is removed: the payee is the account's recorded owner.
+3. Every owner payout is held for a person's approval, with no threshold, as every fund allocation is.
+4. The product package under `products/capital_fund/` is archived as a reversible move, after a reachability
+   check; the live fund is untouched.
+5. Invoices are on a cash basis first: a transfer's receiving side is already counted as revenue, so
+   recognising an invoice at approval would count one sale twice.
+6. An invoice names only the Owner's own registered entities until authentication is on.
+7. Every invoice settlement is held for a person's decision.
+8. A real-currency figure may be entered only as a declared note on the financial profile or on an
+   obligation: never summed with WST, never posted.
+9. The obligations calendar suggests nothing; the Owner enters each obligation with its source and the date
+   that source was read.
+10. Only the Owner records a funding state, by hand; the platform prepares drafts and sends nothing.
+11. The name a person reads is "Capital Fund"; "Sovereign" is dropped from it.
+
+Unchanged by any of this: no real currency is posted, no tax is computed, nothing is filed, no bank is
+connected, no payment is made, and nothing is called compliant.

@@ -1,8 +1,8 @@
 """
-Sovereign Capital Fund & Marketplace API.
+Capital Fund & Marketplace API.
 
 Manages the virtual capital allocation system for the VSB ecosystem:
-- Sovereign Capital Fund: allocate, track, and report on virtual capital
+- Capital Fund: allocate, track, and report on virtual capital
 - Marketplace: list, discover, and transact VSB products/services
 
   GET  /api/v1/fund/status          — fund health and allocation overview
@@ -143,7 +143,7 @@ def contribute_from_cycle(vsb_id: str, amount_wst: float) -> dict:
 
 def _organism_posture() -> dict:
     """Read the living organism's current energy/economic posture (§8) — best-effort, read-only, so the
-    Sovereign Capital Fund reflects (and is governed by) the living system's state, not a detached ledger."""
+    Capital Fund reflects (and is governed by) the living system's state, not a detached ledger."""
     try:
         ctx = biobus.organism_context()
         # W492 (refutation) - composite_health is a BLEND with a simulated ATP term and, while no circuits
@@ -176,7 +176,7 @@ def _organism_posture() -> dict:
 
 @router.get("/fund/status")
 async def fund_status():
-    """Return Sovereign Capital Fund health and overview, including the living organism's §8 posture."""
+    """Return Capital Fund health and overview, including the living organism's §8 posture."""
     fund = _load_fund()
     allocation_count = len(fund.get("allocations", []))
     utilisation = round(fund["allocated"] / fund["total_capital"] * 100, 1) if fund["total_capital"] else 0
@@ -673,7 +673,7 @@ class FundReportRequest(BaseModel):
 
 @router.post("/fund/report")
 async def generate_fund_report(req: FundReportRequest):
-    """AI-generated Sovereign Capital Fund performance report."""
+    """AI-generated Capital Fund performance report."""
     fund = _load_fund()
     portfolio_summary = (
         f"Total capital: {fund['total_capital']} WST\n"
@@ -690,7 +690,7 @@ async def generate_fund_report(req: FundReportRequest):
         )
 
     prompt = (
-        f"You are the Chief Investment Officer of a Sovereign Capital Fund. "
+        f"You are writing a report on a VIRTUAL capital fund (no real money is held or invested). "
         f"Generate a {req.focus} report for the {req.period} period.\n\n"
         f"Portfolio summary:\n{portfolio_summary}\n\n"
         "Deliver:\n"

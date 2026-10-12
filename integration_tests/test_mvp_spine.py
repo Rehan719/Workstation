@@ -6190,8 +6190,22 @@ def test_economy_owner_payments_virtual(client):
     assert st["real_money_enabled"] is False and st["real_money_rails"] == "DISABLED"
     # a virtual payout reduces the balance and moves NO real funds
     bal = st["balance_wst"]
-    r = client.post("/api/v1/economy/owner-payments/payout", json={"vsb_id": vid, "amount": round(bal / 2, 2)})
+    #  (Owner ruling 2026-10-12) every payout is HELD for a person's decision: request, approve, request again
+    def _request_approve_request(amount):
+        def _ask():
+            return client.post("/api/v1/economy/owner-payments/payout", json={"vsb_id": vid, "amount": amount})
+        _held = _ask()
+        assert _held.status_code == 200 and _held.json()["status"] == "held", _held.text
+        assert _held.json()["paid_wst"] == 0 and _held.json()["remaining_balance_wst"] == bal, (
+            "a request that was only held paid something", _held.json())
+        _ok = client.post(f"/api/v1/cca/{_held.json()['cca_id']}/review", json={
+            "override_decision": "approved", "admin_decision_for_critical": True,
+            "reviewer_notes": "test_economy_owner_payments_virtual"})
+        assert _ok.status_code == 200, _ok.text
+        return _ask()
+    r = _request_approve_request(round(bal / 2, 2))
     assert r.status_code == 200, r.text
+    assert r.json()["status"] == "paid" and r.json()["applied"] is True, r.json()
     assert r.json()["real_money_moved"] is False
     assert r.json()["remaining_balance_wst"] < bal
     # over-payout beyond the balance is rejected
@@ -22179,10 +22193,12 @@ def test_w496_a_default_is_not_a_decision(client, monkeypatch, tmp_path):
     _live = [p for p in _cat.json()["products"] if str(p.get("status", "")).lower() == "live"]
     assert _live, "no live product to check"
     _cf_row = next((p for p in _live if p["slug"] == "capital_fund"), None)
-    if _cf_row:
-        assert "On-Chain Gateway" in (_cf_row.get("features_declared_not_built") or []), _cf_row
-        assert "On-Chain Gateway" not in _cf_row["features"], _cf_row
-        assert _cf_row.get("features_basis"), _cf_row
+    #  W673 - this leg sat behind `if _cf_row:`. The card is listed from its route now that the product
+    #  directory is archived, and a card that is missing is a failure here rather than a skipped check.
+    assert _cf_row, "the live fund's card is not in the catalogue, so nothing below was checked"
+    assert "On-Chain Gateway" in (_cf_row.get("features_declared_not_built") or []), _cf_row
+    assert "On-Chain Gateway" not in _cf_row["features"], _cf_row
+    assert _cf_row.get("features_basis"), _cf_row
     _mp = (app / "pages/marketplace/LivingMarketplace.tsx").read_text(encoding="utf-8")
     assert "catalog-not-built" in _mp and "line-through" in _mp
 
@@ -30962,65 +30978,26 @@ def test_w535_the_owners_four_rulings_of_2026_10_02():
     assert (refused.get("reason") or "").strip(), "a refusal does not say why it could not route"
 
     # ── 4. FU-332 — the multisig verifies THREE-STATE, and an unverifiable signature is not quorum ──
-    import products.capital_fund.core.multisig_protocol as _mp
-
-    class _U:
-        async def log_event(self, name, payload):
-            self.last = (name, payload)
-
-    def _proto(u):
-        p = _mp.RealMultiSigProtocol.__new__(_mp.RealMultiSigProtocol)
-        p.ueg, p.quorum_threshold = u, 1
-        p.proposals = {"p1": {"signatures": {}, "status": "PENDING"}}
-        return p
-
-    _key_before = _os.environ.pop("WORKSTATION_ATTESTATION_KEY", None)
-    try:
-        #  (a) NO KEY — the signature cannot be CHECKED. That is neither valid nor invalid, and the
-        #      proposal must be untouched: a quorum of unchecked signatures is not a quorum.
-        u1 = _U(); p1 = _proto(u1)
-        assert _aio.run(p1.approve_proposal("p1", "did:a", b"\x01", b"pk")) is False
-        assert u1.last[0] == "MULTISIG_SIGNATURE_UNVERIFIABLE", u1.last[0]
-        assert u1.last[1]["counted_toward_quorum"] is False, u1.last[1]
-        assert p1.proposals["p1"]["signatures"] == {}, "an unverifiable signature was recorded anyway"
-        assert p1.proposals["p1"]["status"] == "PENDING", p1.proposals["p1"]["status"]
-
-        #  (b) WITH a key and a wrong signature — that IS a rejection, and a DIFFERENT event, because
-        #      "invalid" and "could not be checked" are different facts and only one blames the signer.
-        _os.environ["WORKSTATION_ATTESTATION_KEY"] = "w535-guard-key"
-        u2 = _U(); p2 = _proto(u2)
-        assert _aio.run(p2.approve_proposal("p1", "did:a", b"\xde\xad", b"pk")) is False
-        assert u2.last[0] == "MULTISIG_INVALID_SIGNATURE", u2.last[0]
-    finally:
-        _os.environ.pop("WORKSTATION_ATTESTATION_KEY", None)
-        if _key_before is not None:
-            _os.environ["WORKSTATION_ATTESTATION_KEY"] = _key_before
+    #  W673 (OWNER RULING 2026-10-12) - products/capital_fund was archived as a reversible move. This leg
+    #  DROVE approve_proposal with and without a key; an archived module is imported by nothing, tests
+    #  included, so what is held now is the TEXT of that fix where the file lives. If the package is ever
+    #  restored, restore the driven leg with it (it is in this file's history at the W535 commit).
+    _arc_cf = _root / "_archive" / "products" / "capital_fund"
+    assert not (_root / "products" / "capital_fund").exists(), (
+        "the package is back in the live tree - restore the driven legs this round replaced with text legs")
+    _msrc = (_arc_cf / "core" / "multisig_protocol.py").read_text(encoding="utf-8")
+    for _lit in ('"MULTISIG_SIGNATURE_UNVERIFIABLE"', '"counted_toward_quorum": False',
+                 '"MULTISIG_INVALID_SIGNATURE"'):
+        assert _lit in _msrc, ("the archived multisig no longer separates an unverifiable signature from "
+                               "an invalid one", _lit)
 
     # ── 5. THE REGULATORY MANIFEST stops asserting a certification nobody performed ─────────────
-    import products.capital_fund.reporting.regulatory_reporter as _rr
-
-    class _U2:
-        async def log_event(self, *a, **k): return None
-        async def get_events_in_range(self, *a, **k): return [{"e": 1}]
-        async def query_events(self, *a, **k): return [{"e": 1}]
-
-    rep = _rr.RegulatoryReporter.__new__(_rr.RegulatoryReporter)
-    rep.fund_id, rep.ueg = "f1", _U2()
-    try:
-        bundle = _aio.run(rep.generate_fca_compliance_bundle("2026-01-01", "2026-03-31"))
-    except Exception:                                     # noqa: BLE001 — see the source legs below
-        bundle = None
-    if isinstance(bundle, dict) and isinstance(bundle.get("manifest"), dict):
-        man = bundle["manifest"]
-        assert man["status"] in ("ATTESTED", "NOT ATTESTED"), ("a manifest status was invented", man["status"])
-        assert "pqc_manifest_signature" not in man, "the fabricated manifest signature is back"
-        assert "merkle_root" not in man, "a whole-set digest is still called a Merkle root"
-        assert man.get("events_digest"), man
-        assert "NOT a Merkle root" in man["events_digest_basis"], man["events_digest_basis"]
-        assert bundle.get("summary_pdf") is None, "a placeholder is back where PDF content belongs"
-    #  the source legs hold whether or not the call above could run, so an environment that cannot
-    #  reach the method still screens the three fabrications
-    rsrc = (_root / "products/capital_fund/reporting/regulatory_reporter.py").read_text(encoding="utf-8")
+    #  W673 - archived with its package (see section 4). The call that built a bundle is gone with the
+    #  import; the fabrications it screened are screened in the archived text.
+    rsrc = (_arc_cf / "reporting" / "regulatory_reporter.py").read_text(encoding="utf-8")
+    assert "pqc_manifest_signature" not in rsrc, "the fabricated manifest signature is back"
+    assert '"events_digest_basis"' in rsrc and "NOT a Merkle root" in rsrc, (
+        "a whole-set digest is called a Merkle root again")
     assert "FINAL_CERTIFIED" not in rsrc, "the hard-coded certification status is back"
     assert "Base64_PDF_Content_of_" not in rsrc, "the placeholder PDF string is back"
 
@@ -31029,7 +31006,7 @@ def test_w535_the_owners_four_rulings_of_2026_10_02():
     #  at all, because products/capital_fund/core/vault.py calls firestore.client() at MODULE SCOPE. That
     #  is a second, separate cause of FU-332's symptom and rides FU-346. A text search could see the gate
     #  exists; only the AST can see that nothing precedes it.
-    gsrc = (_root / "products/capital_fund/adapters/crypto_gateway.py").read_text(encoding="utf-8")
+    gsrc = (_arc_cf / "adapters" / "crypto_gateway.py").read_text(encoding="utf-8")   # W673: archived path
     gtree = _ast.parse(gsrc)
     fn = next((n for n in _ast.walk(gtree)
                if isinstance(n, (_ast.AsyncFunctionDef, _ast.FunctionDef))
@@ -32577,49 +32554,33 @@ def test_w545_a_withheld_emission_is_visible_and_a_simulator_discloses_itself(cl
     #  The UEG payload has always carried is_simulated; the RETURNED receipt said FINALIZED, named a
     #  post-quantum algorithm and reported a finality, with nothing marked simulated. The disclosure sat
     #  exactly where no consumer looks.
-    import sys as _sys
-    if str(_root) not in _sys.path:
-        _sys.path.insert(0, str(_root))
-    from agentic_core.ueg.logger import VSBUEGLogger as _VSBUEG
-    from products.capital_fund.adapters.qan_bridge import QANBridgeSimulator
-    _r = _aio.run(QANBridgeSimulator(_VSBUEG()).settle_cross_node(Decimal("100"), "node-a", "did:t"))
-    assert _r["simulated"] is True, ("the receipt a caller receives does not say it is simulated", _r)
-    assert "FINAL" not in _r["status"].upper(), (
-        "the receipt still claims settlement finality for a local dict entry", _r["status"])
-    assert _r["pqc_implemented"] is False, _r
-    assert "NOT IMPLEMENTED" in _r["pqc_basis"], _r["pqc_basis"]
-    #  the algorithm name may be KEPT — it records what this bridge is specified against — but it must
-    #  not be returned under a field a consumer reads as a performed primitive
-    assert "pqc_algorithm" not in _r, (
-        "the bare algorithm field is back; a consumer reading it sees a named primitive and nothing to "
-        "say no code implements it", sorted(_r))
-    assert "DECLARED, NOT MEASURED" in _r["finality_basis"], _r["finality_basis"]
+    #  W673 (OWNER RULING 2026-10-12) - products/capital_fund was archived as a reversible move, so this
+    #  leg no longer DRIVES the simulator (an archived module is imported by nothing). The disclosure it
+    #  established is held as text at the archived path; restore the driven leg if the package returns.
+    _arc_cf = _root / "_archive" / "products" / "capital_fund"
+    _qsrc = (_arc_cf / "adapters" / "qan_bridge.py").read_text(encoding="utf-8")
+    assert '"simulated": True' in _qsrc and '"status": "SIMULATED_NOT_SETTLED"' in _qsrc, (
+        "the archived receipt no longer says it is simulated")
+    assert '"status": "FINALIZED"' not in _qsrc, "the receipt claims settlement finality again"
+    assert "DECLARED, NOT IMPLEMENTED" in _qsrc and '"pqc_algorithm":' not in _qsrc, (
+        "the bare algorithm field is back, or its basis is gone")
+    assert "DECLARED, NOT MEASURED" in _qsrc, "the finality figure lost its basis"
 
     # ── L4. AND THE TREATY RECORD, PLUS THE GATE THAT READS IT ───────────────────────────────────
-    from products.capital_fund.mesh.federation_manager import FederationManager
-    _fm = FederationManager("fund-w545")
-    _aio.run(_fm.sign_treaty("peer-1", {"terms": "x"}))
-    _t = _fm.active_treaties["peer-1"]
-    assert _t["status"] != "ACTIVE", ("a treaty nothing signed is recorded as active", _t["status"])
-    assert _t["signature"] is None and "NOT SIGNED" in _t["signature_basis"], _t
-    _dep = _aio.run(_fm.contribute_to_shared_pool("peer-1", Decimal("50")))
-    #  the contribution carries the treaty's real state, because this record GATES a capital path
-    assert _dep["simulated"] is True and _dep["treaty_status"] == _t["status"], _dep
-    assert "NOT A PROOF" in _dep["zk_proof_basis"], _dep["zk_proof_basis"]
-    #  THE READER WAS FIXED WITH THE WRITER: the gate admits a recorded treaty, so its refusal must not
-    #  tell a caller that passing it meant an agreement existed.
-    try:
-        _aio.run(_fm.contribute_to_shared_pool("nobody", Decimal("1")))
-        raise AssertionError("the gate admitted a peer with no treaty at all")
-    except ValueError as _e:
-        assert "active" not in str(_e).lower(), (
-            "the gate still claims it required an active treaty; what it admits is one that was merely "
-            "recorded", str(_e))
+    _fsrc = (_arc_cf / "mesh" / "federation_manager.py").read_text(encoding="utf-8")
+    assert '"status": "RECORDED_NOT_SIGNED"' in _fsrc and '"signature": None' in _fsrc, (
+        "a treaty nothing signed is recorded as active again")
+    assert "NOT SIGNED" in _fsrc and "NOT A PROOF" in _fsrc, "a basis was removed from the archived record"
+    assert '"treaty_status": _treaty.get("status")' in _fsrc, (
+        "the contribution no longer carries the treaty's real state")
+    #  the reader was fixed with the writer: the gate's refusal names what it admits
+    assert 'raise ValueError(f"No treaty recorded with peer {peer_fund_id}")' in _fsrc, (
+        "the gate's refusal no longer says it requires a RECORDED treaty")
 
     # ── L5. NO SECOND USER OF THE RENAMED VALUE, asserted on the AST ─────────────────────────────
     #  A rename that fixes one user and leaves another raises NameError at call time on a path no test
     #  reaches. Both the returned record and the ledger payload had to change together.
-    _ft = ast.parse((_root / "products/capital_fund/mesh/federation_manager.py").read_text(
+    _ft = ast.parse((_root / "_archive/products/capital_fund/mesh/federation_manager.py").read_text(
         encoding="utf-8"))
     _bare = [n.id for n in ast.walk(_ft) if isinstance(n, ast.Name) and n.id == "zk_proof"]
     assert not _bare, ("a bare reference to the renamed value survives, so one caller raises NameError "
@@ -38071,7 +38032,9 @@ def test_w575_p24_the_scatter_closes_on_each_row_it_reproduced(client):
     # ── FU-332 — no docstring claims a post-quantum operation this repository cannot perform ───
     #  Asserted on the CLAIM, not the phrase: the file legitimately says the wallets are NOT
     #  PQC-secured, and a substring check on "PQC-secured" fired on that denial.
-    _cg = (_root / "products/capital_fund/adapters/crypto_gateway.py").read_text(encoding="utf-8")
+    #  W673 - the package was archived as a reversible move (Owner ruling 2026-10-12); the docstrings are
+    #  read where the file now lives.
+    _cg = (_root / "_archive/products/capital_fund/adapters/crypto_gateway.py").read_text(encoding="utf-8")
     _docs = " ".join(_ast575.get_docstring(n) or ""
                      for n in _ast575.walk(_ast575.parse(_cg))
                      if isinstance(n, (_ast575.Module, _ast575.ClassDef, _ast575.FunctionDef,
@@ -38089,20 +38052,17 @@ def test_w575_p24_the_scatter_closes_on_each_row_it_reproduced(client):
 
     # ── FU-346 — the capital vault imports with no managed infrastructure configured ───────────
     import importlib as _il575
-    _vault = _il575.import_module("products.capital_fund.core.vault")
-    assert hasattr(_vault, "CapitalVault") and hasattr(_vault, "_db"), dir(_vault)
-    _vsrc = (_root / "products/capital_fund/core/vault.py").read_text(encoding="utf-8")
+    #  W673 - the package was archived as a reversible move (Owner ruling 2026-10-12), so nothing imports
+    #  the vault and this leg no longer does either. The two source facts that made the import safe are
+    #  held on the archived file, so a restore that brings back the module-scope client goes red here.
+    assert not (_root / "products" / "capital_fund").exists(), (
+        "the package is back in the live tree - restore the import leg this round replaced")
+    _vsrc = (_root / "_archive/products/capital_fund/core/vault.py").read_text(encoding="utf-8")
     _code = "\n".join(l.split("#", 1)[0] for l in _vsrc.splitlines())
     assert "\ndb = firestore.client()" not in "\n" + _code, (
-        "the Firestore client is acquired at MODULE SCOPE again, so importing this file depends on "
-        "live managed infrastructure and no suite can reach it")
-    #  and the lazy accessor REFUSES rather than initialising anything — P4.4 is the Owner's switch
-    try:
-        _vault._db()
-    except RuntimeError as _e:
-        assert "owner-gated" in str(_e) and "nothing here initialises it" in str(_e), str(_e)[:200]
-    except Exception:                                    # noqa: BLE001
-        raise AssertionError("_db() failed with something other than its stated refusal") from None
+        "the Firestore client is acquired at MODULE SCOPE again in the archived vault")
+    assert "\ndef _db():" in "\n" + _code and "nothing here initialises it" in _vsrc, (
+        "the lazy accessor, or its stated refusal, is gone from the archived vault")
 
     # ── FU-276 — every gateway call site with a user in scope threads it ───────────────────────
     #  COMPUTED, not a hand-kept list: the 71 sites with no user in scope are deliberately
@@ -50130,6 +50090,7 @@ def test_w651_every_gateway_call_says_what_the_person_wrote_or_is_named_as_havin
         ("products.py", "run_reactor_sim"): "a domain, a label and parameter values; no sentence a person wrote",
         ("transformation.py", "assess"): "composed from computed realisation figures",
         ("native_ai.py", "evaluate_model"): "the fixed probe set",
+        ("native_ai.py", "_baseline_record"): "the pinned public and held-out case sets; no person typed a prompt",
         ("ceo_generate.py", "debug_creation"): "a posted blueprint object, not prose the person wrote",
     }
     _root = _pl.Path(__file__).resolve().parents[1] / "agentic_core"
@@ -56720,3 +56681,1996 @@ def test_w672_the_capital_fund_refuses_an_amount_that_is_not_a_number(client):
     assert _j.dumps(_after).count("NaN") == 0, "a value that is not a number reached the fund's own figures"
     assert client.get("/api/v1/cca").json()["total"] == _holds_before, (
         "a refused amount was filed at Change Control")
+
+
+def _p3d_r8_model_claims(roots, suffixes=(".py", ".ts", ".tsx")):
+    """AN INSTRUMENT WITH A STATED SCOPE (P3.32 clause 3). Flags a sentence shaped like a claim that a model's
+    insides were examined or changed, in the files under `roots`. A hit whose surrounding text negates it is
+    counted separately and NOT cleared silently. A word list may FLAG, never CLEAR: zero flagged means "no
+    flagged phrase in N files", not "no surface over-claims". It is never pointed at integration_tests."""
+    import pathlib
+    import re
+    claims = [
+        r"\b(?:read|reads|reading|inspect\w*|compar\w*|alter\w*|steer\w*|patch\w*)\s+(?:the\s+|a\s+|its\s+|each\s+)?(?:model(?:'s|s)?\s+)?(?:own\s+)?(?:activations?|hidden\s+states?|internal\s+states?|residual\s+stream|attention\s+heads?)\b",
+        r"\b(?:activations?|hidden\s+states?|internal\s+states?|embeddings?|weights)\s+(?:of\s+the\s+model\s+)?(?:were|was|are|is)\s+(?:read|inspected|compared|altered|steered|adjusted|updated|analysed|analyzed)\b",
+        r"\bfine-?tun(?:ed|es|ing)\b",
+        r"\b(?:embedding|latent)\s+(?:similarity|analysis|space|representation)s?\b",
+        r"\binterpretab\w+",
+    ]
+    negators = ("nothing", " not ", "never", " no ", "cannot", "neither", "n't", "without", "none ")
+    rx = [re.compile(p, re.I) for p in claims]
+    examined, flagged, negated = 0, [], []
+    for root in roots:
+        for fp in sorted(pathlib.Path(root).rglob("*")):
+            if (not fp.is_file() or fp.suffix not in suffixes
+                    or "node_modules" in fp.parts or "__pycache__" in fp.parts):
+                continue
+            examined += 1
+            flat = " ".join(fp.read_text(encoding="utf-8", errors="replace").split())
+            for r in rx:
+                for m in r.finditer(flat):
+                    window = " " + flat[max(0, m.start() - 220):m.end() + 60].lower() + " "
+                    row = (fp.as_posix(), m.group(0))
+                    (negated if any(k in window for k in negators) else flagged).append(row)
+    return {"files_examined": examined, "flagged": flagged, "negated": negated}
+
+
+def test_p3d_r8_a_baseline_is_pinned_held_out_on_demand_and_can_be_re_read(client, monkeypatch, tmp_path):
+    """Plan item P3.32, round 8 (Owner rulings 2026-10-11).
+
+    THE PROPERTIES: a case-set version is pinned to its digest and a set edited under its version is REFUSED
+    with nothing asked of a model; a new version with its own digest is accepted; the held-out cases live in
+    their own file, are pinned the same way, and occur in no text file the repository holds; a baseline is a
+    record per serving tier, the floor included, run only when asked, with every reply kept so a failed case
+    can be re-read and the serving identity beside it; a record is reproducible only from the versions and
+    identity it recorded, and says so when it is not; and no surface here claims evidence above behaviour.
+
+    Every leg asserts its precondition first and drives the state both ways. The two stores this test writes
+    (the baseline store, the model lifecycle record) are restored byte-for-byte in `finally`."""
+    import hashlib
+    import inspect
+    import json
+    import pathlib
+    import agentic_core.api.native_ai as _na
+    from agentic_core.ai.native import model_resource as _mr
+
+    _repo = pathlib.Path(__file__).resolve().parents[1]
+    _bl_store, _lc_store = pathlib.Path(_na._baseline_store()), pathlib.Path(_mr._lifecycle_path())
+    _snap = {p: (p.read_bytes() if p.exists() else None) for p in (_bl_store, _lc_store)}
+    _real_complete = _na.orchestrator.complete
+    _calls = []
+
+    def _serve(reply_for, served_by):
+        async def _complete(prompt, agent="assistant", timeout=30.0, prefer_external=False, prefer="auto", **_kw):
+            _calls.append(prefer)
+            return {"output": reply_for(prompt), "served_by": served_by(prefer), "is_external": False}
+        return _complete
+
+    def _spy():
+        async def _complete(prompt, agent="assistant", timeout=30.0, prefer_external=False, prefer="auto", **_kw):
+            _calls.append(prefer)
+            return await _real_complete(prompt, agent=agent, timeout=timeout, prefer=prefer)
+        return _complete
+
+    def _stored():
+        return json.loads(_bl_store.read_text(encoding="utf-8")) if _bl_store.exists() else []
+
+    def _evals(model):
+        return [e for e in _mr.lifecycle_state().get("evaluations", []) if e.get("model") == model]
+
+    def _run(tier):
+        return client.post("/api/v1/native-ai/baseline/run", json={"tier": tier})
+
+    try:
+        # == 1. THE PINS: a recorded version keeps the digest written beside it ===========================
+        assert _na._EVAL_PROBE_SET_HISTORY.get("2") == "4917359cd4051532", (
+            "the digest recorded for public probe set version 2 was altered; a recorded version never changes")
+        assert _na._HELDOUT_HISTORY.get("1") == "763a1d22466ec97b", (
+            "the digest recorded for held-out set version 1 was altered; a recorded version never changes")
+        _st = _na._probe_set_state()
+        assert _st["ok"] is True and _st["digest"] == _na._EVAL_PROBE_SET_HISTORY[_na._EVAL_PROBE_SET_VERSION], (
+            "the probe set in the tree is not the one its version number names", _st)
+        _held = _na._load_heldout()
+        assert _held["ok"] is True and _held["digest"] == _na._HELDOUT_HISTORY[_held["version"]], _held
+        assert pathlib.Path(_na._heldout_path()).is_file()
+
+        # == 2. AN EDIT UNDER AN OLD VERSION IS REFUSED, AND NOTHING IS ASKED OF A MODEL =================
+        _model = "p3d-r8-probe"
+        _probes = _na._EVAL_PROBES
+        _edited = [dict(p) for p in _probes]
+        _edited[0]["prompt"] = _edited[0]["prompt"] + " Be brief."
+        monkeypatch.setattr(_na.orchestrator, "complete",
+                            _serve(lambda p: "## Risks - 60 ready", lambda prefer: prefer))
+        _n_eval, _n_bl = len(_evals(_model)), len(_stored())
+        assert client.post("/api/v1/native-ai/lifecycle/evaluate", json={"model": _model}).status_code == 200, (
+            "precondition: with the pinned set an evaluation is accepted")
+        assert len(_evals(_model)) == _n_eval + 1
+        _calls.clear()
+        monkeypatch.setattr(_na, "_EVAL_PROBES", _edited)
+        assert _na._probe_set_state()["ok"] is False
+        _ref = client.post("/api/v1/native-ai/lifecycle/evaluate", json={"model": _model})
+        assert _ref.status_code == 409 and "new version, never an edit" in _ref.text and "Nothing was run" in _ref.text, (
+            "a probe edited under its version number was evaluated as if it were the recorded set",
+            _ref.status_code, _ref.text[:300])
+        _refb = _run("native")
+        assert _refb.status_code == 409 and "Nothing was run" in _refb.text, (_refb.status_code, _refb.text[:300])
+        assert _calls == [] and len(_evals(_model)) == _n_eval + 1 and len(_stored()) == _n_bl, (
+            "a refused run asked a model something or left a record", _calls)
+        #    a version with NO pinned digest is refused too ...
+        monkeypatch.setattr(_na, "_EVAL_PROBE_SET_VERSION", "p3d-r8-next")
+        _nov = client.post("/api/v1/native-ai/lifecycle/evaluate", json={"model": _model})
+        assert _nov.status_code == 409 and "no pinned digest" in _nov.text, (_nov.status_code, _nov.text[:300])
+        assert _calls == []
+        #    ... and the same edit AS A NEW VERSION with its own digest is accepted (the guard must not
+        #    fail on success: adding a version is the permitted way to change the set)
+        _d_new = hashlib.sha256(json.dumps(_edited, sort_keys=True).encode("utf-8")).hexdigest()[:16]
+        monkeypatch.setattr(_na, "_EVAL_PROBE_SET_HISTORY", {**_na._EVAL_PROBE_SET_HISTORY, "p3d-r8-next": _d_new})
+        _okv = client.post("/api/v1/native-ai/lifecycle/evaluate", json={"model": _model})
+        assert _okv.status_code == 200, (_okv.status_code, _okv.text[:300])
+        assert _okv.json()["probe_set"] == {"version": "p3d-r8-next", "digest": _d_new}, _okv.json()["probe_set"]
+        assert _okv.json()["probe_set_pinned"] is True
+        monkeypatch.undo()
+        assert _na._probe_set_state()["ok"] is True
+
+        # == 3. THE HELD-OUT FILE: pinned the same way; edited or missing, it refuses ====================
+        _doc = json.loads(pathlib.Path(_na._heldout_path()).read_text(encoding="utf-8"))
+        _cases = _doc["cases"]
+        _pub_ids = {p["id"] for p in _na._EVAL_PROBES}
+        assert len(_cases) >= 2 and len({c["id"] for c in _cases}) == len(_cases)
+        assert not (_pub_ids & {c["id"] for c in _cases}), "a held-out case shares an id with a public probe"
+        for _c in _cases:
+            assert _c["marker"].lower() not in _c["prompt"].lower(), (
+                "a held-out marker is in its own prompt, so a reply that repeats the prompt passes it", _c["id"])
+        assert sum(1 for p in _na._EVAL_PROBES if p["control"]) == 1, "the public set lost its control"
+        _calls.clear()
+        monkeypatch.setattr(_na.orchestrator, "complete", _serve(lambda p: "x", lambda prefer: prefer))
+        _tampered = tmp_path / "heldout_edited.json"
+        _tampered.write_text(json.dumps({**_doc, "cases": [{**_cases[0], "marker": _cases[0]["marker"] + "!"}]
+                                         + _cases[1:]}), encoding="utf-8")
+        _n_bl = len(_stored())
+        monkeypatch.setattr(_na, "_heldout_path", lambda: _tampered)
+        _h1 = _run("native")
+        assert _h1.status_code == 409 and "edited under version" in _h1.text, (_h1.status_code, _h1.text[:300])
+        monkeypatch.setattr(_na, "_heldout_path", lambda: tmp_path / "absent.json")
+        _h2 = _run("native")
+        assert _h2.status_code == 409 and "not present" in _h2.text, (_h2.status_code, _h2.text[:300])
+        assert _calls == [] and len(_stored()) == _n_bl, ("a refused baseline asked a model or left a record", _calls)
+        monkeypatch.undo()
+
+        # == 4. NO HELD-OUT PROMPT IS IN ANY TEXT FILE THE REPOSITORY HOLDS - and the check can fail ======
+        #    FAIL FIRST, on a planted copy outside the tree: the instrument must see what it is for.
+        _plant = tmp_path / "planted"
+        _plant.mkdir()
+        (_plant / "a_prompt_template.md").write_text(
+            "Use this when testing:\n\n   " + _cases[-1]["prompt"].upper().replace(" ", "  \n ") + "\n", encoding="utf-8")
+        (_plant / "public_only.py").write_text("P = " + json.dumps(_na._EVAL_PROBES[0]["prompt"]), encoding="utf-8")
+        _seen = _na.heldout_exposure([_plant])
+        assert [(pathlib.Path(h["file"]).name, h["case"]) for h in _seen["hits"]] == [
+            ("a_prompt_template.md", _cases[-1]["id"])], (
+            "the exposure check did not find a held-out prompt planted in a file, or flagged a public one", _seen)
+        assert _seen["files_examined"] == 2
+        #    THEN the repository, with the scope stated. The held-out file itself is excluded BY PATH and named.
+        _top_skip = {"node_modules", "venv", ".venv", "data", "logs", "vectors", ".git"}
+        _roots = [p for p in sorted(_repo.iterdir()) if p.name not in _top_skip and not p.name.startswith(".")]
+        _exp = _na.heldout_exposure(_roots, return_paths=True)
+        assert _exp["hits"] == [], ("a held-out case is shown in a file the repository holds", _exp["hits"][:5])
+        assert _exp["cases_searched"] == len(_cases) and _exp["files_examined"] >= 200, (
+            "the scan examined too little to mean anything", _exp["files_examined"], _exp["cases_searched"])
+        _paths = {pathlib.Path(p).resolve() for p in _exp["paths"]}
+        assert pathlib.Path(__file__).resolve() in _paths, "this test file was not among the files examined"
+        assert (_repo / "agentic_core" / "api" / "native_ai.py").resolve() in _paths
+        assert [pathlib.Path(x).resolve() for x in _exp["excluded"]] == [pathlib.Path(_na._heldout_path()).resolve()], (
+            "the only file excluded from the scan must be the held-out file itself", _exp["excluded"])
+        assert not [s for s in _exp["skipped"] if "integration_tests" in s["file"]], _exp["skipped"][:3]
+
+        # == 5. THE FLOOR'S BASELINE: on demand, a record, every reply kept ==============================
+        _calls.clear()
+        monkeypatch.setattr(_na.orchestrator, "complete", _spy())
+        _n_bl = len(_stored())
+        assert client.get("/api/v1/native-ai/baseline").status_code == 200
+        assert client.get("/api/v1/native-ai/lifecycle").status_code == 200
+        assert client.get("/api/v1/native-ai/status").status_code == 200
+        assert _calls == [] and len(_stored()) == _n_bl, ("a READ ran a baseline or asked a model", _calls)
+        _fl = _run("native")
+        assert _fl.status_code == 200, (_fl.status_code, _fl.text[:300])
+        _rec = _fl.json()
+        _n_cases = len(_na._EVAL_PROBES) + len(_cases)
+        assert _calls == ["native"] * _n_cases, ("the floor baseline did not ask the floor each case once", _calls)
+        assert _rec["tier"] == "native" and _rec["trigger"] == "on_demand" and _rec["evidence_level"] == "behaviour"
+        assert _rec["served_target"] is True and len(_rec["cases"]) == _n_cases, _rec["established"]
+        assert sorted(c["case"] for c in _rec["cases"] if c["set"] == "heldout") == sorted(c["id"] for c in _cases)
+        assert sum(_rec["counts"].values()) == _n_cases and _rec["counts"]["not_read"] == 0, _rec["counts"]
+        for _row in _rec["cases"]:
+            assert _row["on_target"] is True and isinstance(_row["passed"], bool), _row
+            assert _row["reply_chars"] >= len(_row["reply_excerpt"]) and len(_row["reply_sha256"]) == 64, _row
+            if not _row["reply_truncated"] and not _row.get("reply_withheld"):
+                assert hashlib.sha256(_row["reply_excerpt"].encode("utf-8")).hexdigest() == _row["reply_sha256"], (
+                    "the stored hash is not the hash of the stored reply", _row["case"])
+        assert _rec["case_sets"] == {
+            "public": {"version": _na._EVAL_PROBE_SET_VERSION, "digest": _na._eval_probe_digest(),
+                       "cases": len(_na._EVAL_PROBES)},
+            "heldout": {"version": _held["version"], "digest": _held["digest"], "cases": len(_cases)}}, _rec["case_sets"]
+        assert _na._FLOOR_IDENTITY and _rec["serving"]["identity"] == _na._FLOOR_IDENTITY, _rec["serving"]
+        assert _rec["serving"]["identity_kind"] == "source_sha256" and "not a judgement" in _rec["basis"]
+        #    what the record SAYS, replies set aside (a reply is the tier's text, not the platform's statement)
+        _said = json.dumps({**_rec, "cases": [{k: v for k, v in c.items() if k != "reply_excerpt"}
+                                              for c in _rec["cases"]]}).lower()
+        for _claim in ("activation", "embedding", "latent", "hidden state", "weights", "fine-tun"):
+            assert _claim not in _said, ("a baseline record names a level of evidence nothing here reaches", _claim)
+        #    no route hands a held-out PROMPT back
+        _lst = client.get("/api/v1/native-ai/baseline").json()
+        _one = client.get(f"/api/v1/native-ai/baseline/{_rec['run_id']}")
+        assert _one.status_code == 200 and _one.json() == _rec, "the stored record is not the record that was returned"
+        for _body in (_fl.text, json.dumps(_lst), client.get("/api/v1/native-ai/evidence-levels").text):
+            _flat = " ".join(_body.lower().split())
+            for _c in _cases:
+                assert " ".join(_c["prompt"].lower().split())[:48] not in _flat, (
+                    "a route returned a held-out prompt", _c["id"])
+        _tier = {t["tier"]: t for t in _lst["tiers"]}
+        assert _tier["native"]["latest_run_id"] == _rec["run_id"] and _lst["runs"][0]["run_id"] == _rec["run_id"], _lst["tiers"]
+        assert "Nothing schedules" in _lst["trigger"] and len(_stored()) == _n_bl + 1
+        assert client.get("/api/v1/native-ai/baseline/bl-no-such").status_code == 404
+        #    the floor against itself: reproducible is CHECKED, not asserted. Whether the floor gives
+        #    byte-identical text twice is reported by the record either way; what must hold is that the
+        #    verdict matches the hashes it was read from.
+        _again = client.post(f"/api/v1/native-ai/baseline/{_rec['run_id']}/reproduce")
+        assert _again.status_code == 200, (_again.status_code, _again.text[:300])
+        _rp = _again.json()
+        _then = {(c["set"], c["case"]): c["reply_sha256"] for c in _rec["cases"]}
+        _same = all(_then[(c["set"], c["case"])] == c["reply_sha256"] for c in _rp["cases"])
+        assert _rp["reproduction"]["reproduced"] is _same and _rp["reproduction_of"] == _rec["run_id"], _rp["reproduction"]
+        monkeypatch.undo()
+
+        # == 6. A LOCAL TIER, with no model installed: the record, the failed case, the identity ==========
+        _t = "ollama:p3d-r8"
+
+        def _answers(wrong=()):
+            def _reply(prompt):
+                for _p in _na._EVAL_PROBES:
+                    if prompt == _p["prompt"]:
+                        if _p["control"]:
+                            return "ready"
+                        return "no marker here" if _p["id"] in wrong else f"reply with {_p['marker']} in it"
+                for _c in _cases:
+                    if prompt == _c["prompt"]:
+                        return "no marker here" if _c["id"] in wrong else f"reply with {_c['marker']} in it"
+                return "unknown case"
+            return _reply
+
+        monkeypatch.setattr(_na, "_local_model_digest", lambda name: "sha-A")
+        monkeypatch.setattr(_na.orchestrator, "complete", _serve(_answers(wrong=("reasoning",)), lambda prefer: prefer))
+        _lr = _run(_t)
+        assert _lr.status_code == 200, (_lr.status_code, _lr.text[:300])
+        _loc = _lr.json()
+        assert _loc["served_target"] is True and _loc["counts"] == {"passed": _n_cases - 1, "failed": 1, "not_read": 0}, _loc["counts"]
+        _failed = next(c for c in _loc["cases"] if c["case"] == "reasoning")
+        assert _failed["passed"] is False and _failed["reply_excerpt"] == "no marker here", (
+            "a failed case is not kept as a result that can be re-read", _failed)
+        assert client.get(f"/api/v1/native-ai/baseline/{_loc['run_id']}").json()["cases"] == _loc["cases"]
+        assert _loc["serving"]["identity"] == "sha-A" and _loc["serving"]["identity_kind"] == "runtime_digest", _loc["serving"]
+        #    the control the other way: a tier that says the marker regardless FAILS it
+        monkeypatch.setattr(_na.orchestrator, "complete",
+                            _serve(lambda p: p + " ## Risks - 60", lambda prefer: prefer))
+        _echo = _run(_t).json()
+        assert next(c for c in _echo["cases"] if c["control"])["passed"] is False, "an echo passed the control"
+        assert all(c["passed"] is False for c in _echo["cases"] if c["set"] == "heldout"), (
+            "a reply that repeats the prompt passed a held-out case", [c["case"] for c in _echo["cases"] if c["passed"]])
+        #    A HELD-OUT CASE STAYS HELD OUT WHEN THE TIER REPEATS IT: hash and length kept, text withheld -
+        #    and a public case's reply, repeated or not, is kept
+        for _row in _echo["cases"]:
+            if _row["set"] == "heldout":
+                assert _row["reply_excerpt"] == "" and _row["reply_withheld"] and _row["reply_chars"] > 48, _row
+            else:
+                assert _row["reply_excerpt"].endswith("## Risks - 60") and "reply_withheld" not in _row, _row
+        _flat_echo = " ".join(json.dumps(_echo).lower().split())
+        for _c in _cases:
+            assert " ".join(_c["prompt"].lower().split())[:48] not in _flat_echo, (
+                "a baseline record carries a held-out prompt inside a reply", _c["id"])
+        assert all("reply_withheld" not in c for c in _loc["cases"]), "a reply that repeats nothing was withheld"
+        #    REPRODUCE: same replies -> reproduced; one reply changed -> not, and the case is named
+        monkeypatch.setattr(_na.orchestrator, "complete", _serve(_answers(wrong=("reasoning",)), lambda prefer: prefer))
+        _r1 = client.post(f"/api/v1/native-ai/baseline/{_loc['run_id']}/reproduce")
+        assert _r1.status_code == 200 and _r1.json()["reproduction"]["reproduced"] is True, _r1.text[:300]
+        monkeypatch.setattr(_na.orchestrator, "complete", _serve(_answers(wrong=("structure",)), lambda prefer: prefer))
+        _r2 = client.post(f"/api/v1/native-ai/baseline/{_loc['run_id']}/reproduce").json()["reproduction"]
+        assert _r2["reproduced"] is False and sorted(_r2["different"]) == ["reasoning", "structure"], _r2
+        #    refused, with nothing asked: the identity changed, or the case sets are no longer the recorded ones
+        _calls.clear()
+        _n_bl = len(_stored())
+        monkeypatch.setattr(_na, "_local_model_digest", lambda name: "sha-B")
+        _r3 = client.post(f"/api/v1/native-ai/baseline/{_loc['run_id']}/reproduce")
+        assert _r3.status_code == 409 and "sha-A" in _r3.text and "sha-B" in _r3.text, (_r3.status_code, _r3.text[:300])
+        monkeypatch.setattr(_na, "_local_model_digest", lambda name: "sha-A")
+        monkeypatch.setattr(_na, "_EVAL_PROBES", _edited)
+        monkeypatch.setattr(_na, "_EVAL_PROBE_SET_VERSION", "p3d-r8-next")
+        monkeypatch.setattr(_na, "_EVAL_PROBE_SET_HISTORY", {**_na._EVAL_PROBE_SET_HISTORY, "p3d-r8-next": _d_new})
+        _r4 = client.post(f"/api/v1/native-ai/baseline/{_loc['run_id']}/reproduce")
+        assert _r4.status_code == 409 and "only from the versions it recorded" in _r4.text, (_r4.status_code, _r4.text[:300])
+        assert _calls == [] and len(_stored()) == _n_bl, ("a refused reproduction asked a model or left a record", _calls)
+        monkeypatch.setattr(_na, "_EVAL_PROBES", _probes)
+        monkeypatch.setattr(_na, "_EVAL_PROBE_SET_VERSION", "2")
+        #    NO IDENTITY: the run is recorded and SAYS so; reproducing it is refused as not establishable
+        monkeypatch.setattr(_na, "_local_model_digest", lambda name: None)
+        monkeypatch.setattr(_na.orchestrator, "complete", _serve(_answers(), lambda prefer: prefer))
+        _anon = _run(_t).json()
+        assert _anon["serving"]["identity"] is None and "NOT RECORDED" in _anon["serving"]["identity_basis"], _anon["serving"]
+        _calls.clear()
+        _r5 = client.post(f"/api/v1/native-ai/baseline/{_anon['run_id']}/reproduce")
+        assert _r5.status_code == 409 and "CANNOT BE ESTABLISHED" in _r5.text and _calls == [], (_r5.status_code, _r5.text[:300])
+        #    THE TIER DID NOT SERVE: a record, every case not read, nothing established about the tier
+        monkeypatch.setattr(_na.orchestrator, "complete", _serve(_answers(), lambda prefer: "native"))
+        _ns = _run(_t).json()
+        assert _ns["served_target"] is False and _ns["counts"] == {"passed": 0, "failed": 0, "not_read": _n_cases}, _ns["counts"]
+        assert _ns["established"].startswith("NOT ESTABLISHED") and all(c["passed"] is None for c in _ns["cases"]), _ns["established"]
+        assert all(c["reply_excerpt"] for c in _ns["cases"]), "the replies of a run that was not served were dropped"
+        #    not an owned tier: refused, nothing asked
+        _calls.clear()
+        for _bad in ("auto", "local", "anthropic", "openai", "ollama:", ""):
+            assert _run(_bad).status_code == 422, _bad
+        assert _calls == []
+        #    the per-tier list: both tiers named, each with its own latest record
+        _tiers = {t["tier"]: t for t in client.get("/api/v1/native-ai/baseline").json()["tiers"]}
+        assert _tiers[_t]["latest_run_id"] == _ns["run_id"] and _tiers[_t]["serves_now"] is False, _tiers[_t]
+        assert _tiers["native"]["serves_now"] is True and _tiers["native"]["latest_run_id"], _tiers["native"]
+
+        # == 7. THE EVALUATE ROUTE keeps each reply too, and what its readers compare is untouched ========
+        monkeypatch.setattr(_na.orchestrator, "complete",
+                            _serve(lambda p: p + "\n- 60 ## Risks", lambda prefer: prefer))
+        _ev = client.post("/api/v1/native-ai/lifecycle/evaluate", json={"model": _model}).json()
+        assert _ev["probe_set"] == {"version": _na._EVAL_PROBE_SET_VERSION, "digest": _na._eval_probe_digest()}, _ev["probe_set"]
+        assert _ev["score"] == 1.0 and _ev["marker_hits"] == 3 and _ev["control"]["marker_absent"] is False
+        for _row in _ev["probes"] + [_ev["control"]]:
+            assert _row["reply_excerpt"].endswith("- 60 ## Risks") and len(_row["reply_sha256"]) == 64, _row
+        assert _ev["serving"]["tier"] == f"ollama:{_model}" and _ev["serving"]["identity"] is None, _ev["serving"]
+        monkeypatch.undo()
+
+        # == 8. ON DEMAND ONLY: nothing in the organism's beat or the startup path names a baseline run ===
+        _beat = sorted((_repo / "agentic_core" / "organism").glob("*.py")) + [_repo / "agentic_core" / "app_mvp.py"]
+        assert len(_beat) >= 2 and (_repo / "agentic_core" / "organism" / "heartbeat.py") in _beat
+        for _f in _beat:
+            _src = _f.read_text(encoding="utf-8", errors="replace")
+            for _name in ("run_baseline", "reproduce_baseline", "_baseline_record", "native-ai/baseline"):
+                assert _name not in _src, ("a baseline is reachable from the beat or the startup path", _f.name, _name)
+        #    and nothing that DECIDES reads a baseline: promotion does not open the store
+        for _fn in (_na.promote_model, _na.retire_model, _na.reinstate_model):
+            assert "baseline" not in inspect.getsource(_fn).lower(), ("a lifecycle decision reads a baseline", _fn.__name__)
+
+        # == 9. CLAUSE 3: every route here is placed at a level, none above behaviour ====================
+        assert _na._unclassified_routes() == [], ("a route of the native-AI router states no evidence level",
+                                                  _na._unclassified_routes())
+        assert _na._unclassified_routes(["/status", "/p3d-r8-new-route"]) == ["/p3d-r8-new-route"], (
+            "a route in neither table is not reported")
+        assert _na._unclassified_routes(["/status"]) == []
+        _lv = client.get("/api/v1/native-ai/evidence-levels").json()
+        assert {s["level"] for s in _lv["surfaces"]} == {"configuration", "behaviour"} == set(_lv["levels"]), _lv["levels"]
+        assert _lv["highest_level"] == "behaviour" and _lv["unclassified"] == []
+        assert {s["path"] for s in _lv["surfaces"]} | {s["path"] for s in _lv["not_model_statements"]} == {
+            r.path for r in _na.router.routes}, "the inventory and the router's routes are not the same set"
+        #    the phrase scan: FAIL FIRST on a planted claim outside the tree, then the stated scope
+        _pl = tmp_path / "claims"
+        _pl.mkdir()
+        (_pl / "over.tsx").write_text("<p>The model's activations were read and compared across prompts.</p>", encoding="utf-8")
+        (_pl / "honest.py").write_text('B = "Nothing here inspects a model\'s internal state."', encoding="utf-8")
+        _planted = _p3d_r8_model_claims([_pl])
+        assert [pathlib.Path(f).name for f, _ in _planted["flagged"]] == ["over.tsx"] and len(_planted["negated"]) == 1, (
+            "the claim scan does not flag a planted claim, or flags a sentence that denies one", _planted)
+        _scan = _p3d_r8_model_claims([_repo / "agentic_core" / "api", _repo / "agentic_core" / "ai",
+                                      _repo / "apps" / "workstation-superapp" / "src"])
+        assert _scan["files_examined"] >= 150, ("the claim scan examined too little to mean anything", _scan["files_examined"])
+        assert _scan["flagged"] == [], (
+            f"a sentence shaped like a claim about a model's insides, in {_scan['files_examined']} files examined "
+            f"({len(_scan['negated'])} matching sentence(s) deny it and are not counted)", _scan["flagged"][:5])
+        _page = _code_only((_repo / "apps/workstation-superapp/src/pages/developers/NativeAI.tsx").read_text(encoding="utf-8"))
+        assert ">activation {" not in _page and 'data-testid="signal-response-figure"' in _page and ">Hill response {" in _page, (
+            "the Hill figure is still labelled as an activation")
+        assert "no model was read to produce it" in _page
+        assert _page.count("setBlErr(errorMessage(e))") == 2, "a failed baseline read or run is not shown on the page"
+        for _need in ('data-testid="behaviour-baseline"', "'/api/v1/native-ai/baseline/run'", "{b.established}",
+                      "{b.serving.identity_basis}", "{c.reply_excerpt}", "{c.reply_withheld}", "c.passed === false ? 'FAILED'",
+                      "{blErr && <p role=\"alert\"", "loadBaselines();\n  }, []);"):
+            assert _need in _page, ("the baseline does not reach the page", _need)
+    finally:
+        monkeypatch.undo()
+        for _p, _b in _snap.items():
+            if _b is None:
+                if _p.exists():
+                    _p.unlink()
+            else:
+                _p.write_bytes(_b)
+
+
+def test_p3d_r9_a_stand_in_is_labelled_a_run_is_checked_on_the_page_and_an_edit_keeps_the_model(client, monkeypatch):
+    """Plan item P3.31, round 9: clauses 5, 6 and 7 where a person meets them.
+
+    THE PROPERTIES: the stage ceiling is enforced on /swarm/run before anything runs, for an ad-hoc and for a
+    saved cascade, and a run at the ceiling still runs; a stand-in is named as one on its own row, at the
+    top of the run, in the saved record and in a verification, and a run without one says there was none;
+    a verification says what was attempted, what was composed and not attempted, and NOT KNOWN for a run
+    recorded before that was kept; a stage's saved model survives the edit the page sends, and is lost by
+    the edit the page USED to send; a wrong endpoint declaration is carried on a proposal without stopping a
+    resource the fabric runs in-process; and each of these reaches the page's source.
+
+    Every leg asserts its precondition first. Compositions and cascades this test makes are deleted in
+    `finally`; the run records it causes are left, as every other test's are."""
+    import pathlib
+    import agentic_core.api.instrument_cell as _cell
+    import agentic_core.api.resource_fabric as _fab
+    import agentic_core.config as _cfg
+    from agentic_core.ai.native import orchestrator as _orch
+
+    _src = pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+
+    def _page(rel):
+        return _code_only((_src / rel).read_text(encoding="utf-8"))
+
+    _made_comps, _made_swarms = [], []
+
+    def _compose(name, ids, area):
+        _m = client.post("/api/v1/resources/compose", json={"name": name, "resource_ids": ids, "usage_area": area})
+        assert _m.status_code in (200, 201), _m.text[:300]
+        _cid = _m.json().get("id") or (_m.json().get("composition") or {}).get("id")
+        assert _cid, _m.json()
+        _made_comps.append(_cid)
+        return _cid
+
+    def _run_comp(cid):
+        _r = client.post(f"/api/v1/resources/compositions/{cid}/run", json={"objective": "read the organism"})
+        assert _r.status_code == 200, _r.text[:300]
+        _rec = next(h for h in client.get("/api/v1/resources/compositions/runs", params={"limit": 10}).json()["runs"]
+                    if h["run_id"] == _r.json()["run_id"])
+        return _r.json(), _rec
+
+    try:
+        # == 1. THE CEILING ON /swarm/run, BEFORE ANYTHING RUNS =========================================
+        _real_swarm = _orch.swarm
+        _swarm_calls = []
+
+        async def _counting(agent, stages, **kw):
+            _swarm_calls.append(len(stages))
+            return await _real_swarm(agent, stages, **kw)
+        monkeypatch.setattr(_orch, "swarm", _counting)
+        _cap = _cell.MAX_STAGES
+        assert _cap >= 2, "the ceiling is too low for this leg to drive both sides"
+
+        def _stages(n):
+            return [{"role": f"s{i}", "instruction": "Say one short thing."} for i in range(n)]
+        _at = client.post("/api/v1/resources/swarm/run", json={"stages": _stages(_cap), "context": "c"})
+        assert _at.status_code == 200 and _swarm_calls == [_cap], (
+            "precondition: a cascade AT the ceiling runs", _at.status_code, _at.text[:200], _swarm_calls)
+        _swarm_calls.clear()
+        _over = client.post("/api/v1/resources/swarm/run", json={"stages": _stages(_cap + 1), "context": "c"})
+        assert _over.status_code == 422 and "Nothing was run" in _over.text and str(_cap) in _over.text, (
+            "a cascade over the ceiling was run on /swarm/run", _over.status_code, _over.text[:300])
+        assert _swarm_calls == [], ("a refused cascade reached the runner", _swarm_calls)
+        #    a SAVED cascade over the ceiling: saving is not refused (the ceiling is a rule about runs), running is
+        _def = client.post("/api/v1/resources/swarm/define", json={"name": "p3d r9 long", "stages": _stages(_cap + 1)})
+        assert _def.status_code == 200, _def.text[:300]
+        _long = _def.json()["id"]
+        _made_swarms.append(_long)
+        _sr = client.post("/api/v1/resources/swarm/run", json={"swarm_id": _long})
+        assert _sr.status_code == 422 and "Nothing was run" in _sr.text and _swarm_calls == [], (_sr.status_code, _swarm_calls)
+        #    the other way, on the same saved cascade: raise the ceiling and it runs
+        monkeypatch.setattr(_cell, "MAX_STAGES", _cap + 1)
+        _sr2 = client.post("/api/v1/resources/swarm/run", json={"swarm_id": _long})
+        assert _sr2.status_code == 200 and _swarm_calls == [_cap + 1], (_sr2.status_code, _sr2.text[:200], _swarm_calls)
+        monkeypatch.setattr(_cell, "MAX_STAGES", _cap)
+        #    an unknown cascade is still "not found": the ceiling does not answer for a cascade that is not there
+        assert client.post("/api/v1/resources/swarm/run", json={"swarm_id": "swarm-nope"}).status_code == 404
+        monkeypatch.undo()
+
+        # == 2. A STAND-IN IS NAMED AS ONE: on its row, on the run, in the record, in a verification ======
+        _reads = [r["id"] for r in _fab._REGISTRY
+                  if _cell.equivalents(r["id"]) and r["id"] not in _fab._READ_SIDE_EFFECTS]
+        assert _reads, "no status read has a declared equivalent, so a stand-in cannot be driven"
+        _victim = _reads[0]
+        _stand = [e for e in _cell.equivalents(_victim) if e not in _fab._READ_SIDE_EFFECTS][0]
+        _quiet = "studio"          # composed with no series configured, its handler runs nothing: no row
+        assert _fab._BY_ID[_quiet]["reconfigurable_params"].get("series"), "the 'not attempted' probe changed shape"
+        _area = next(a for a in _fab._BY_ID[_victim]["usable_in"] if a in _fab._BY_ID[_quiet]["usable_in"])
+        _real_handler = _fab._run_real_resource_handler
+        _fail = set()
+
+        async def _handler(rid, config, objective, domain):
+            if rid in _fail:
+                return {"resource": rid, "error": "driven failure"}
+            return await _real_handler(rid, config, objective, domain)
+        monkeypatch.setattr(_fab, "_run_real_resource_handler", _handler)
+        _cid = _compose("p3d r9 stand-in probe", [_victim, _quiet], _area)
+
+        #    (a) NOTHING FAILS: no stand-in, and the run SAYS there was none
+        _ok, _ok_rec = _run_comp(_cid)
+        assert [x["resource"] for x in _ok["real_resource_runs"]] == [_victim], (
+            "precondition: with nothing failing only the composed read has a row", _ok["real_resource_runs"])
+        assert _ok["stand_ins"] == [] and _ok_rec["stand_ins"] == [] and "no stand-in ran" in _ok["stand_ins_basis"], _ok["stand_ins_basis"]
+        assert not any("alternative_for" in x or "stand_in_label" in x for x in _ok_rec["real_resources"]), _ok_rec["real_resources"]
+        assert _ok_rec["composed"] == [_victim, _quiet], _ok_rec.get("composed")
+
+        #    (b) THE READ FAILS: one stand-in, named everywhere
+        _fail.add(_victim)
+        _run, _rec = _run_comp(_cid)
+        _rows = {x["resource"]: x for x in _run["real_resource_runs"]}
+        assert set(_rows) == {_victim, _stand} and _rows[_stand]["alternative_for"] == _victim, _rows
+        _label = _rows[_stand]["stand_in_label"]
+        assert _label.startswith("STAND-IN: ") and _stand in _label and _victim in _label and "not a resource this composition holds" in _label, _label
+        assert _run["stand_ins"] == [{"for": _victim, "resource": _stand, "outcome": _rows[_stand]["outcome"], "label": _label}], _run["stand_ins"]
+        assert _run["stand_ins_basis"].startswith("1 of the 2 resource row(s)") and "it was not composed" in _run["stand_ins_basis"], _run["stand_ins_basis"]
+        assert "stand_in_label" not in _rows[_victim] and _rows[_victim]["alternative"]["tried"] == _stand
+        #        ... and it TRAVELS WITH THE SAVED RUN
+        _saved = {x["resource"]: x for x in _rec["real_resources"]}
+        assert _saved[_stand]["stand_in_label"] == _label and _saved[_stand]["alternative_for"] == _victim, _saved
+        assert _rec["stand_ins"] == _run["stand_ins"] and _rec["stand_ins_basis"] == _run["stand_ins_basis"]
+        assert _rec["composed"] == [_victim, _quiet], "the stand-in was filed as a composed resource"
+        #        ... and a VERIFICATION reads it as a stand-in, and says what was and was not attempted
+        _crit = [{"kind": "resource_outcome", "resource": _stand, "is": _rows[_stand]["outcome"]},
+                 {"kind": "resource_outcome", "resource": _victim, "is": "read"},
+                 {"kind": "resource_outcome", "resource": _quiet, "is": "produced"}]
+        _v = client.post("/api/v1/resources/cell/verify", json={"run_id": _run["run_id"], "criteria": _crit})
+        assert _v.status_code == 200, _v.text[:300]
+        _v = _v.json()
+        assert [c["state"] for c in _v["criteria"]] == ["met", "unmet", "not_assessed"], _v["criteria"]
+        assert _v["criteria"][0]["evidence"]["alternative_for"] == _victim and "STAND-IN" in _v["criteria"][0]["basis"], _v["criteria"][0]
+        assert f"not evidence about {_victim}" in _v["criteria"][0]["basis"]
+        assert _v["criteria"][1]["evidence"]["alternative"]["tried"] == _stand and "STAND-IN" not in _v["criteria"][1]["basis"]
+        assert _v["attempted"] == [_victim] and _v["not_attempted"] == [_quiet], (_v["attempted"], _v["not_attempted"])
+        assert [(s["for"], s["resource"], s["label"]) for s in _v["stand_ins"]] == [(_victim, _stand, _label)], _v["stand_ins"]
+        assert _v["all_met"] is False and "Not attempted: it was composed" in _v["attempt_basis"]
+        _v_ok = client.post("/api/v1/resources/cell/verify", json={"run_id": _ok["run_id"], "criteria": _crit[1:2]}).json()
+        assert _v_ok["stand_ins"] == [] and _v_ok["criteria"][0]["state"] == "met" and "alternative_for" not in _v_ok["criteria"][0]["evidence"], _v_ok
+        #    (c) A READ FAILS AND NOTHING STANDS IN (its only equivalent is in the run): said, not left off
+        _cid2 = _compose("p3d r9 no-alternative probe", [_victim, _stand], _fab._BY_ID[_victim]["usable_in"][0])
+        _none, _none_rec = _run_comp(_cid2)
+        assert _none["stand_ins"] == [] and _none["stand_ins_basis"].startswith("no stand-in ran. 1 status read(s) failed"), _none["stand_ins_basis"]
+        assert {x["resource"]: x for x in _none["real_resource_runs"]}[_victim]["alternative"]["tried"] is None
+        monkeypatch.undo()
+        #    (d) A RUN RECORDED BEFORE `composed` WAS KEPT: not attempted is NOT KNOWN, never an empty list
+        _legacy = {"run_id": "cr-p3d-legacy", "composition_id": "c-x", "owner_id": _rec.get("owner_id"),
+                   "real_resources": [{"resource": _victim, "outcome": "read"}], "qms_gate_passed": None}
+        _real_strict = _cfg.read_json_strict
+        monkeypatch.setattr(_cfg, "read_json_strict", lambda path, missing, expect=None: (
+            [_legacy] if str(path).replace("\\", "/").endswith("composition_runs.json")
+            else _real_strict(path, missing, expect)))
+        _vl = client.post("/api/v1/resources/cell/verify", json={"run_id": "cr-p3d-legacy", "criteria": _crit[1:2]})
+        monkeypatch.undo()
+        assert _vl.status_code == 200, _vl.text[:300]
+        assert _vl.json()["not_attempted"] is None and "NOT KNOWN" in _vl.json()["attempt_basis"] and _vl.json()["attempted"] == [_victim], _vl.json()
+
+        # == 3. A STAGE'S SAVED MODEL SURVIVES THE EDIT THE PAGE SENDS ==================================
+        _d = client.post("/api/v1/resources/swarm/define", json={"name": "p3d r9 models", "stages": [
+            {"role": "a", "instruction": "one"},
+            {"role": "b", "instruction": "two", "model": "native"},
+            {"role": "c", "instruction": "three", "model": "ollama:p3d-r9"}]})
+        assert _d.status_code == 200, _d.text[:300]
+        _sid = _d.json()["id"]
+        _made_swarms.append(_sid)
+        _got = client.get(f"/api/v1/resources/swarm/{_sid}").json()["stages"]
+        assert [s.get("model") for s in _got] == [None, "native", "ollama:p3d-r9"], ("precondition: the API keeps the model", _got)
+        #    what the designer sends NOW: each stage as it was loaded, model included, one instruction edited
+        _sent = [dict(s) for s in _got]
+        _sent[0]["instruction"] = "one, edited"
+        _put = client.put(f"/api/v1/resources/swarm/{_sid}", json={"name": "p3d r9 models", "context": "", "stages": _sent})
+        assert _put.status_code == 200, _put.text[:300]
+        _after = client.get(f"/api/v1/resources/swarm/{_sid}").json()["stages"]
+        assert [s.get("model") for s in _after] == [None, "native", "ollama:p3d-r9"] and _after[0]["instruction"] == "one, edited", _after
+        #    what it sent BEFORE (two fields a stage): the route replaces the list whole, so the choice is gone.
+        #    This is the loss; the page legs below are what stop the page causing it.
+        _old = [{"role": s["role"], "instruction": s["instruction"]} for s in _after]
+        assert client.put(f"/api/v1/resources/swarm/{_sid}", json={"stages": _old}).status_code == 200
+        assert [s.get("model") for s in client.get(f"/api/v1/resources/swarm/{_sid}").json()["stages"]] == [None, None, None], (
+            "the reconfigure route no longer replaces the stage list whole - re-read what the page must send")
+        #    only owned tiers are ever offered: the selector's list is this route's
+        _tiers = client.get("/api/v1/native-ai/models").json()["tiers"]
+        assert _tiers and all(t["id"] in ("auto", "native", "local") or t["id"].startswith("ollama:") for t in _tiers), _tiers
+
+        # == 4. A WRONG ENDPOINT DECLARATION IS CARRIED, AND DOES NOT STOP AN IN-PROCESS RESOURCE =========
+        _tag = _fab._BY_ID[_victim]["capabilities"][0]
+        _p0 = client.post("/api/v1/resources/cell/propose", json={"objective": "x", "required_capabilities": [_tag]}).json()
+        _chosen = _p0["selection"]["selected"][0]
+        assert _chosen["availability"]["endpoint_state"] == "served", ("precondition", _chosen["availability"])
+        _real_served = _cell._served
+        _gone = _fab._BY_ID[_chosen["id"]]["endpoint"]
+        monkeypatch.setattr(_cell, "_served", lambda app: {k: v for k, v in (_real_served(app) or {}).items() if k != _gone})
+        _p1 = client.post("/api/v1/resources/cell/propose", json={"objective": "x", "required_capabilities": [_tag]}).json()
+        _c1 = next(s for s in _p1["selection"]["selected"] if s["id"] == _chosen["id"])
+        assert _c1["availability"]["state"] == "available" and _c1["availability"]["endpoint_state"] == "not_served", _c1["availability"]
+        assert _gone in _c1["availability"]["endpoint_basis"]
+        _defects = client.get("/api/v1/resources/cell/availability").json()["declaration_defects"]
+        assert _chosen["id"] in [d["id"] for d in _defects], _defects
+        monkeypatch.undo()
+
+        # == 5. THE PAGES (SOURCE LEGS - nothing here renders a page) ====================================
+        _icp = _page("components/InstrumentCellPanel.tsx")
+        assert "'/api/v1/resources/cell/verify'" in _icp and "'/api/v1/resources/compositions/runs?limit=10'" in _icp, (
+            "the panel does not call what clause 5 exposes")
+        _fn = _icp[_icp.index("const verify = async () => {"):_icp.index("return (")]
+        assert _fn.index("const id = runId;") < _fn.index("await apiJson<VerifyReply>"), "the selection is read after the await"
+        assert "body: { run_id: id, criteria }" in _fn and "run_id: runId" not in _fn
+        #  W673 - the request that CARRIES the criteria must be the verify route. A second verify call was
+        #  added beside the first (the kept-proposal check), so "the route is named somewhere in the file"
+        #  stayed true when this call was pointed at another route: the blind for it was vacuous.
+        _call = _fn[:_fn.index("body: { run_id: id, criteria }")]
+        assert _call[_call.rindex("apiJson<VerifyReply>("):].startswith(
+            "apiJson<VerifyReply>('/api/v1/resources/cell/verify'"), (
+            "the check that sends a person's own criteria does not call the verify route")
+        assert "setVErr(errorMessage(e))" in _fn and "{vErr && <p role=\"alert\"" in _icp and "{runsErr && <p role=\"alert\"" in _icp, (
+            "a failed verification or run listing is not shown")
+        assert "{asText(row.criterion)}" in _icp and "asText(row.evidence)" in _icp and "{row.basis}" in _icp
+        assert "{row.criterion}" not in _icp and "{row.evidence}" not in _icp, "an object is drawn as a React child"
+        assert "not_assessed: 'not assessed'" in _icp and "{verdict.all_met_basis}" in _icp
+        assert 'data-testid="cell-attempted"' in _icp and "verdict.not_attempted == null ? 'not known for this run'" in _icp
+        assert 'data-testid="cell-stand-in"' in _icp and "{s.label}" in _icp
+        assert 'data-testid="cell-endpoint-defect"' in _icp and "s.availability.endpoint_state === 'not_served'" in _icp
+        _rfp = _page("pages/synthesis/ResourceFabric.tsx")
+        _live = _rfp[_rfp.index("real-runs-heading"):_rfp.index("typeof rr.viable === 'boolean'")]
+        assert "{rr.alternative_for && (" in _live and "stand-in for {rr.alternative_for} — not composed by you" in _live, (
+            "the live run draws a stand-in like a resource the person composed")
+        assert _live.index("{rr.alternative_for && (") < _live.index("run-stand-in-${rr.resource}")
+        assert "{rr.alternative && (" in _live and "'nothing was tried in its place'" in _live and "{rr.alternative.basis}" in _live
+        assert 'data-testid="real-runs-stand-ins"' in _live and "{runResult.stand_ins_basis ?? ''}" in _live
+        _hist = _rfp[_rfp.index("history-outcome-${rr.resource}"):_rfp.index("h.plan_binding?.result")]
+        assert "rr.alternative_for ? `stand-in for ${rr.alternative_for} (not composed): ` : ''" in _hist, (
+            "the run history draws a stand-in like a resource the person composed")
+        assert "rr.alternative.tried ? ` · ${rr.alternative.tried} tried once in its place` : ' · nothing tried in its place'" in _hist
+        _nai = _page("pages/developers/NativeAI.tsx")
+        assert "interface Stage { role: string; instruction: string; model?: string }" in _nai
+        assert "...(s.model ? { model: s.model } : {}) })));" in _nai, "an edit loads a cascade without its stages' models"
+        assert "c.stages.map(s => ({ role: s.role, instruction: s.instruction }))" not in _nai
+        assert 'data-testid="stage-model"' in _nai and "onChange={e => setStageModel(i, e.target.value)}" in _nai
+        _opts = _nai[_nai.index("const stageModelOptions"):_nai.index("const [editingId")]
+        assert "modelTiers" in _opts and "saved && !base.some(o => o.id === saved)" in _opts, (
+            "a saved model that is not listed now is not kept in the selector")
+        for _ext in ("anthropic", "openai", "claude", "gpt"):
+            assert _ext not in _opts.lower(), ("the designer offers an external provider", _ext)
+        _ck = _page("pages/enterprise/VSBCockpit.tsx")
+        _ed = _ck[_ck.index("const EditCascade"):_ck.index('data-testid="cascade-edit-saved"')]
+        assert "...(st.model ? { model: String(st.model) } : {}) })));" in _ed, "the Cockpit's editor loads a cascade without its stages' models"
+        assert "body: JSON.stringify({ stages })" in _ed and 'data-testid="cascade-edit-stage-model"' in _ed and "asks for {st.model}" in _ed
+    finally:
+        monkeypatch.undo()
+        for _c in _made_comps:
+            client.delete(f"/api/v1/resources/compositions/{_c}")
+        for _s in _made_swarms:
+            client.delete(f"/api/v1/resources/swarm/{_s}")
+
+
+def test_p3d_r10_a_declared_need_is_checked_and_an_undeclared_one_reads_not_declared(client, monkeypatch):
+    """Plan item P3.31, clauses 1 and 2, first slice (round 10).
+
+    THE PROPERTIES: a registration that declares nothing reads NOT DECLARED and is counted "not checked",
+    never "available"; an empty declaration is a statement and reads met; each kind of declared need is
+    checked at the call and reads met or unmet as the thing it names is or is not there; a resource with an
+    unmet declared need is never proposed and the proposal says which need; a proposed resource that declares
+    nothing is named as such; a malformed declaration is a registry defect; and `state` and `counts` keep the
+    meaning the W640 guard holds them to.
+
+    Every leg asserts its precondition first and drives the state both ways. Nothing is stored."""
+    import pathlib
+    import agentic_core.api.instrument_cell as _cell
+    import agentic_core.api.resource_fabric as _fab
+
+    _declared = [r["id"] for r in _fab._REGISTRY if r.get("needs") is not None]
+    _silent = [r["id"] for r in _fab._REGISTRY if r.get("needs") is None]
+    assert _declared, "no registration declares a need, so nothing below can be driven"
+
+    def _kinds(rid):
+        return [n["kind"] for n in _fab._BY_ID[rid]["needs"]]
+
+    def _with(kind):
+        _hit = [i for i in _declared if kind in _kinds(i)
+                and _cell.availability(i, client.app)["state"] == "available"]
+        assert _hit, f"no available registration declares a {kind} need, so that kind cannot be driven"
+        return _hit[0]
+
+    # == 1. THE REGISTRY: what is declared is readable; a malformed declaration is a defect ==============
+    assert _cell.registry_defects(_fab._REGISTRY) == []
+    _good = dict(_fab._BY_ID[_declared[0]])
+    for _bad in ("a sentence", [{"kind": "telepathy"}], [{"kind": "module", "module": "m"}],
+                 [{"kind": "package"}], [{"kind": "config", "param": "p3d-not-a-parameter"}], ["not a need"]):
+        _d = _cell.registry_defects([{**_good, "needs": _bad}])
+        assert len(_d) == 1 and _good["id"] in _d[0], ("a malformed declaration is not exactly one defect", _bad, _d)
+    assert _cell.registry_defects([{**_good, "needs": []}]) == [], "an empty declaration is a statement, not a defect"
+    for _rid in _declared:
+        for _n in _fab._BY_ID[_rid]["needs"]:
+            assert _n["kind"] in _cell._NEED_KINDS and _n.get("why"), (_rid, _n)
+            if _n["kind"] == "config":
+                assert _n["param"] in _fab._BY_ID[_rid]["reconfigurable_params"], (_rid, _n)
+
+    # == 2. NOT DECLARED READS AS NOT DECLARED - never as available =====================================
+    _av = client.get("/api/v1/resources/cell/availability").json()
+    _rows = {r["id"]: r for r in _av["resources"]}
+    assert _av["needs_declared"] == len(_declared) and sum(_av["needs_counts"].values()) == _av["total"] == len(_fab._REGISTRY)
+    assert sum(_av["checked_counts"].values()) == _av["total"]
+    assert _av["needs_counts"].get("not_declared", 0) == len(_silent), _av["needs_counts"]
+    assert f"{len(_declared)} of {len(_fab._REGISTRY)} registration(s) declare" in _av["needs_basis"], _av["needs_basis"]
+    for _rid in _silent:
+        _r = _rows[_rid]
+        assert _r["needs_state"] == "not_declared" and _r["needs_declared"] is False and _r["needs"] == [], _r
+        assert _r["checked"] != "available", ("a resource that declares nothing is counted available", _rid)
+        assert "NOT DECLARED" in _r["needs_basis"]
+    #    `state` and `counts` keep the meaning the W640 guard holds: a handler branch, and nothing else
+    _real = _cell._handler_ids()
+    for _rid, _r in _rows.items():
+        assert (_r["state"] == "available") == (_rid in _real or _rid in _cell._RUNNER_OWNED), (_rid, _r["state"])
+        if _r["state"] != "available":
+            assert _r["checked"] != "available", _r
+    assert sum(_av["counts"].values()) == _av["total"]
+    #    DRIVEN on one silent registration: give it an EMPTY declaration and it is checked and met; take it
+    #    away and it is not declared again
+    if _silent:
+        _one = next(i for i in _silent if _rows[i]["state"] == "available")
+        monkeypatch.setitem(_fab._BY_ID[_one], "needs", [])
+        _e = _cell.availability(_one, client.app)
+        assert _e["needs_state"] == "met" and _e["needs_declared"] is True and _e["checked"] == "available", _e
+        assert _cell.contract(_one)["required"] == [] and _cell.contract(_one)["needs_declared"] is True
+        monkeypatch.undo()
+        _b = _cell.availability(_one, client.app)
+        assert _b["needs_state"] == "not_declared" and _b["checked"] == "not_checked", _b
+        _c = _cell.contract(_one)
+        assert _c["required"] is None and _c["needs"] is None and "NOT DECLARED" in _c["required_basis"], _c
+        assert "REQUIRES is not declared" in _c["inputs_basis"]
+
+    #    AND ON A REGISTRATION BUILT HERE, so this holds when every real registration has declared: one built
+    #    without `needs` carries no declaration at all (the builder does not default it to "needs nothing"),
+    #    and with a handler it is still not "available"
+    _probe = _fab._R("p3d-r10-silent", "P3D probe", "digital_resource", "probe", "a probe", ["p3d probe capability"],
+                     {}, "/api/v1/p3d-r10-silent", ["synthesis"])
+    assert "needs" not in _probe, ("a registration that declares nothing is given a declaration by the builder", _probe.get("needs"))
+    monkeypatch.setitem(_fab._BY_ID, "p3d-r10-silent", _probe)
+    assert _cell.needs_check("p3d-r10-silent")["state"] == "not_declared"
+    _np = _cell.availability("p3d-r10-silent", client.app)
+    assert _np["state"] == "prompt_stage_only" and _np["checked"] == "unavailable" and _np["needs_state"] == "not_declared", _np
+    monkeypatch.setattr(_cell, "_handler_ids", lambda: set(_real) | {"p3d-r10-silent"})
+    _hp = _cell.availability("p3d-r10-silent", client.app)
+    assert _hp["state"] == "available" and _hp["checked"] == "not_checked" and "NOT DECLARED" in _hp["checked_basis"], (
+        "a resource with a handler and no declaration is counted available", _hp)
+    monkeypatch.setitem(_fab._BY_ID, "p3d-r10-silent", {**_probe, "needs": []})
+    assert _cell.availability("p3d-r10-silent", client.app)["checked"] == "available", "an empty declaration is a statement"
+    monkeypatch.undo()
+    assert "p3d-r10-silent" not in _fab._BY_ID
+
+    # == 3. A MODULE NEED: there, met; not importable, unmet - and then never proposed ==================
+    _m = _with("module")
+    _mod = next(n for n in _fab._BY_ID[_m]["needs"] if n["kind"] == "module")
+    _a0 = _cell.availability(_m, client.app)
+    assert _a0["needs_state"] == "met" and _a0["checked"] == "available", ("precondition: its needs are met here", _a0)
+    assert getattr(__import__(_mod["module"], fromlist=[_mod["attr"]]), _mod["attr"]), "the declared entry point is not there"
+    _tag = next((t for t in _fab._BY_ID[_m]["capabilities"]
+                 if not any(_cell._covers(t, r) for r in _fab._REGISTRY if r["id"] != _m)), None)
+    assert _tag, "every capability of this resource is also declared by another, so its exclusion cannot be isolated"
+    _p0 = _cell.select([_tag], client.app)
+    assert [s["id"] for s in _p0["selected"]] == [_m] and _p0["uncovered"] == [], ("precondition: it is proposed", _p0)
+    _real_import = _cell._import_attr
+
+    def _missing(module, attr):
+        if module == _mod["module"]:
+            raise ImportError("driven: not importable")
+        return _real_import(module, attr)
+    monkeypatch.setattr(_cell, "_import_attr", _missing)
+    _a1 = _cell.availability(_m, client.app)
+    assert _a1["needs_state"] == "unmet" and _a1["checked"] == "unavailable" and _a1["state"] == "available", _a1
+    assert f"{_mod['module']}.{_mod['attr']}" in _a1["needs_basis"] and "driven: not importable" in _a1["needs_basis"], _a1["needs_basis"]
+    _p1 = _cell.select([_tag], client.app)
+    assert _p1["selected"] == [] and _p1["uncovered"] == [_cell._norm(_tag)], (
+        "a resource with an unmet declared need was proposed", _p1["selected"], _p1["uncovered"])
+    _ex = next(e for e in _p1["excluded"] if e["id"] == _m)
+    assert _ex["because"].startswith("unavailable: a declared need is not met") and _mod["module"] in _ex["because"], _ex
+    _api = client.post("/api/v1/resources/cell/propose", json={"objective": "x", "required_capabilities": [_tag]}).json()
+    assert _m not in [s["id"] for s in _api["selection"]["selected"]] and _m in [e["id"] for e in _api["selection"]["excluded"]]
+    monkeypatch.undo()
+    assert _cell.availability(_m, client.app)["needs_state"] == "met"
+    assert _m not in [e["id"] for e in _cell.select([_tag], client.app)["excluded"]]
+
+    # == 4. A COMPLETION NEED: the floor meets it and SAYS it is the floor; nothing owned, unmet ==========
+    _c = _with("completion")
+    monkeypatch.setattr(_cell, "_completion_order", lambda: ["native"])
+    _n1 = next(n for n in _cell.needs_check(_c)["needs"] if n["kind"] == "completion")
+    assert _n1["met"] is True and _n1["served_first"] == "native" and "WITHOUT a model" in _n1["basis"], _n1
+    monkeypatch.setattr(_cell, "_completion_order", lambda: ["ollama", "native"])
+    _n2 = next(n for n in _cell.needs_check(_c)["needs"] if n["kind"] == "completion")
+    assert _n2["met"] is True and _n2["served_first"] == "ollama" and "WITHOUT a model" not in _n2["basis"], _n2
+    for _order in ([], ["anthropic"], ["openai", "anthropic"]):
+        monkeypatch.setattr(_cell, "_completion_order", lambda _o=_order: list(_o))
+        assert _cell.needs_check(_c)["state"] == "unmet", ("an external provider, or nothing, met an owned-tier need", _order)
+        assert _cell.availability(_c, client.app)["checked"] == "unavailable"
+
+    def _unreadable():
+        raise RuntimeError("driven")
+    monkeypatch.setattr(_cell, "_completion_order", _unreadable)
+    _nc = _cell.availability(_c, client.app)
+    assert _nc["needs_state"] == "not_checked" and _nc["checked"] == "not_checked", (
+        "a need that could not be read was answered as met or as unmet", _nc)
+    monkeypatch.undo()
+    assert _cell.needs_check(_c)["state"] == "met", "with the real selection order the floor meets it - no model is needed"
+
+    # == 5. A PACKAGE NEED is optional: absent, it is SAID and the resource is still available ==========
+    _pk = _with("package")
+    monkeypatch.setattr(_cell, "_package_present", lambda name: False)
+    _k0 = _cell.needs_check(_pk)
+    _absent = [n for n in _k0["needs"] if n["kind"] == "package"]
+    assert _k0["state"] == "met" and all(n["met"] is False and n["optional"] is True for n in _absent), _k0
+    assert "optional and absent" in _k0["basis"] and all(n["needs"] in _k0["basis"] for n in _absent), _k0["basis"]
+    monkeypatch.setattr(_cell, "_package_present", lambda name: True)
+    _k1 = _cell.needs_check(_pk)
+    assert _k1["state"] == "met" and "optional and absent" not in _k1["basis"], _k1["basis"]
+    monkeypatch.undo()
+
+    # == 6. A CONFIG NEED: named per run without a configuration; checked against one ==================
+    _g = _with("config")
+    _param = next(n["param"] for n in _fab._BY_ID[_g]["needs"] if n["kind"] == "config")
+    _placeholder = _fab._BY_ID[_g]["reconfigurable_params"][_param]
+    _q0 = _cell.availability(_g, client.app)
+    assert _q0["needs_per_run"] == [_param] and _q0["needs_state"] == "met" and _param in _q0["needs_basis"], _q0
+    assert _cell.contract(_g)["required"] == [_param] and "`required` lists" in _cell.contract(_g)["inputs_basis"]
+    assert _cell.needs_check(_g, {})["state"] == "unmet"
+    assert _cell.needs_check(_g, {_param: _placeholder})["state"] == "unmet", (
+        "the registry's own placeholder was read as a value the person set")
+    _set = _cell.needs_check(_g, {_param: [{"label": "a", "value": 1, "claim": "c", "confidence": 0.9, "reputation": 0.9}]})
+    assert _set["state"] == "met" and _set["per_run"] == [], _set
+    #    THE HANDLER AGREES WITH EVERY SUCH DECLARATION, both ways: with the parameter unset it runs NOTHING
+    #    (no row), and with ONLY that parameter set it runs. A declaration naming the wrong parameter fails here.
+    import asyncio
+    _values = {"series": [{"label": "a", "value": 1.0}, {"label": "b", "value": 2.0}],
+               "claims": [{"claim": "the sky is blue", "confidence": 0.9, "reputation": 0.9}]}
+    _driven = 0
+    for _rid in _declared:
+        for _n in _fab._BY_ID[_rid]["needs"]:
+            if _n["kind"] != "config":
+                continue
+            #  W673 - a config need this leg cannot drive was SKIPPED, so a declaration naming a parameter
+            #  the handler does not need passed unseen (the blind for it was vacuous). Every declared
+            #  required parameter must be one this leg holds a value for, or the leg fails.
+            assert _n["param"] in _values, (
+                "a registration declares a required parameter this guard has no value to drive it with - "
+                "add one, or the declaration is unchecked against its handler", _rid, _n["param"])
+            assert asyncio.run(_fab._run_real_resource_handler(_rid, {}, "an objective", "general")) is None, (
+                "the handler runs without the parameter the registration declares it requires", _rid, _n["param"])
+            _ran = asyncio.run(_fab._run_real_resource_handler(_rid, {_n["param"]: _values[_n["param"]]}, "an objective", "general"))
+            assert isinstance(_ran, dict) and _ran.get("resource") == _rid, (
+                "with its declared required parameter set the handler still runs nothing", _rid, _n["param"], _ran)
+            _driven += 1
+    assert _driven, "no declared config need could be driven against its handler"
+
+    # == 7. A PROPOSAL NAMES WHAT IT PROPOSES ON THE HANDLER ALONE ======================================
+    if _silent:
+        _s = next(i for i in _silent if _rows[i]["state"] == "available")
+        _stag = _fab._BY_ID[_s]["capabilities"][0]
+        _ps = client.post("/api/v1/resources/cell/propose", json={"objective": "x", "required_capabilities": [_stag]}).json()["selection"]
+        _chosen = [x["id"] for x in _ps["selected"]]
+        assert _ps["needs_not_declared"] == [i for i in _chosen if i in _silent], (_ps["needs_not_declared"], _chosen)
+        assert "none declares what it needs" in _ps["needs_not_declared_basis"]
+        for _x in _ps["selected"]:
+            assert (_x["availability"]["needs_state"] == "not_declared") == (_x["id"] in _silent), _x["availability"]
+            assert _x["availability"]["needs_state"] != "unmet"
+    _pd = client.post("/api/v1/resources/cell/propose", json={"objective": "x", "required_capabilities": [_tag]}).json()["selection"]
+    assert [x["id"] for x in _pd["selected"]] == [_m] and _pd["needs_not_declared"] == [], (
+        "a resource whose needs are declared and met is named as undeclared", _pd["needs_not_declared"])
+
+    # == 8. THE PAGE (SOURCE LEGS - nothing here renders a page) ========================================
+    _icp = _code_only((pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+                       / "components" / "InstrumentCellPanel.tsx").read_text(encoding="utf-8"))
+    for _need in ('data-testid="cell-checked"', "{avail.checked_counts && (", "{avail.needs_basis}",
+                  "not_checked: 'not checked'", "not_declared: 'needs NOT DECLARED'",
+                  'data-testid="cell-needs-unmet"', "{r.needs_basis}",
+                  "{(avail.resources ?? []).filter(r => r.needs_state === 'unmet').length > 0 && (",
+                  "{s.availability.needs_state === 'not_declared' && (",
+                  "{r.needs_state ? ` · ${NEED_WORD[r.needs_state] ?? r.needs_state}` : ''}",
+                  'data-testid="cell-needs-not-declared"',
+                  'data-testid="cell-needs-per-run"'):
+        assert _need in _icp, ("the declared-needs reading does not reach the page", _need)
+    assert "CHECKED_WORD[k] ?? k" in _icp, "a new server word would be drawn blank instead of as itself"
+
+
+def test_lgc_spec_a_kept_proposal_is_immutable_versioned_linked_to_its_run_and_run_again(client, monkeypatch):
+    """Plan item P3.31 - proposed versus executed can be linked, because a proposal can be KEPT.
+
+    THE PROPERTIES, each driven both ways through the real routes with its precondition asserted first:
+      1  keeping records the proposal the cell computes NOW, with a digest that is recomputed here; the same
+         content kept again writes nothing and has the same digest; proposing alone still keeps nothing
+      2  a kept record is never changed: a changed one is the next version with a new digest and a
+         `supersedes` link, the old record is byte-for-byte what it was, and no route edits one
+      3  a run that names a specification carries, computed from its own rows: executed (in the fabric's own
+         outcome words), not attempted with the reason, and attempts the specification did not propose;
+         a run that names none carries None
+      4  a proposed resource that has become unavailable is REPORTED on the replay and nothing is put in its
+         place; the runner's one stand-in rule (a failed status read, once) is the only alternative and its
+         row is never counted as the original
+      5  /cell/verify on such a run reads the criteria kept with THE SPECIFICATION IT NAMES
+    The handler of each resource is stood in for (so no engine or model is needed); the routes, the store,
+    the runner and the selection are the real ones. The specification store and the run store are restored.
+    """
+    import copy
+    import hashlib
+    import inspect
+    import json as _json
+    import pathlib
+    import agentic_core.api.instrument_cell as _cell
+    import agentic_core.api.resource_fabric as _fab
+    from agentic_core.config import data_path
+
+    S = "/api/v1/resources/specifications"
+    _spec_path = pathlib.Path(_fab._spec_store())
+    _runs_path = pathlib.Path(data_path("composition_runs.json"))
+    assert _spec_path == pathlib.Path(data_path("assembly_specifications.json")), _spec_path
+    _held = {p: (p.read_bytes() if p.exists() else None) for p in (_spec_path, _runs_path)}
+    _comps = []
+
+    def _stored():
+        return _json.loads(_spec_path.read_text(encoding="utf-8")) if _spec_path.exists() else []
+
+    def _ids(sel):
+        return [s["id"] for s in sel["selected"]]
+
+    # ── preconditions: a status read with a declared equivalent (A, E), an engine (B), a bystander (Z) ──
+    _reads = [r["id"] for r in _fab._REGISTRY
+              if r["id"] not in _fab._READ_SIDE_EFFECTS and _fab._resource_kind(r["id"]) == "status_read"
+              and [e for e in _cell.equivalents(r["id"]) if e not in _fab._READ_SIDE_EFFECTS]]
+    _a = _tag_a = None
+    for _rid in _reads:
+        for _t in _fab._BY_ID[_rid]["capabilities"]:
+            if _a is None and _ids(_cell.select([_t], client.app)) == [_rid]:
+                _a, _tag_a = _rid, _t
+    assert _a, "no status read with a declared equivalent is proposed alone for one of its own capabilities"
+    _e = [x for x in _cell.equivalents(_a) if x not in _fab._READ_SIDE_EFFECTS][0]
+    _b = _tag_b = None
+    for _r in _fab._REGISTRY:
+        if _r["id"] in (_a, _e, "vsb_org_swarm") or _fab._resource_kind(_r["id"]) != "facility_run":
+            continue
+        for _t in _r["capabilities"]:
+            if _b is None and _ids(_cell.select([_t], client.app)) == [_r["id"]] \
+                    and sorted(_ids(_cell.select([_tag_a, _t], client.app))) == sorted([_a, _r["id"]]):
+                _b, _tag_b = _r["id"], _t
+    assert _b, "no engine is proposed alone for one of its capabilities beside the status read"
+    _z = next((r["id"] for r in _fab._REGISTRY if r["id"] not in (_a, _b, _e, "vsb_org_swarm")
+               and _cell.availability(r["id"], client.app)["state"] == "available"), None)
+    assert _z, "no third available resource, so 'executed and not proposed' cannot be driven"
+    _a_out = _fab._OUTCOME_FOR_KIND[_fab._resource_kind(_a)]
+    _b_out = _fab._OUTCOME_FOR_KIND[_fab._resource_kind(_b)]
+    assert _a_out != "raised" and _b_out != "raised"
+
+    #  each resource's handler is stood in for; everything around it is real
+    _mode, _attempts = {}, []
+
+    async def _driven(rid, config, objective, domain):
+        _attempts.append(rid)
+        if _mode.get(rid) == "raise":
+            return {"resource": rid, "error": "driven failure"}
+        if _mode.get(rid) == "none":
+            return None
+        return {"resource": rid}
+
+    def _compose(name, rids):
+        _m = client.post("/api/v1/resources/compose", json={
+            "name": name, "resource_ids": rids, "usage_area": _fab._BY_ID[_a]["usable_in"][0]})
+        assert _m.status_code in (200, 201), _m.text[:300]
+        _comps.append(_m.json()["id"])
+        return _m.json()["id"]
+
+    def _run(cid, **named):
+        _attempts.clear()
+        return client.post(f"/api/v1/resources/compositions/{cid}/run", json={"objective": "lgc probe", **named})
+
+    def _record(run_id):
+        _h = client.get("/api/v1/resources/compositions/runs", params={"limit": 50}).json()["runs"]
+        return next(x for x in _h if x["run_id"] == run_id)
+
+    try:
+        monkeypatch.setattr(_fab, "_run_real_resource_handler", _driven)
+
+        # ══ 1. KEEPING: the cell's proposal, a recomputed digest, and the same content kept once ═════════
+        _crit2 = [{"kind": "resource_outcome", "resource": _a, "is": _a_out},
+                  {"kind": "resource_outcome", "resource": _b, "is": "raised"},
+                  "the result should read well"]
+        _crit1 = [{"kind": "resource_outcome", "resource": _a, "is": "raised"}]
+        _body = {"objective": "lgc keep probe", "required_capabilities": [_tag_a, _tag_b, "telepathic invoicing"],
+                 "acceptance_criteria": _crit1}
+        _n0 = client.get(S).json()["total"]
+        _runs0 = len(client.get("/api/v1/resources/compositions/runs", params={"limit": 100}).json()["runs"])
+        _p = client.post("/api/v1/resources/cell/propose", json=_body).json()
+        assert _p["saved"] is False and _p["ran"] is False and client.get(S).json()["total"] == _n0, (
+            "proposing kept something: keeping is a separate act", _p.get("saved"))
+        _k1r = client.post(S, json=_body)
+        assert _k1r.status_code == 200, _k1r.text[:300]
+        _k1 = _k1r.json()
+        assert _k1["saved"] is True and _k1["already_saved"] is False and _k1["ran"] is False, _k1
+        assert _k1["version"] == 1 and _k1["supersedes"] is None and _k1["lineage"] == _k1["id"], _k1
+        assert [x["id"] for x in _k1["proposed"]] == _ids(_p["selection"]) and sorted(_ids(_p["selection"])) == sorted([_a, _b]), (
+            "what was kept is not the proposal the cell returns for the same requirements", _k1["proposed"])
+        assert _k1["selection_rule"] == _p["selection"]["method"] and _k1["uncovered"] == ["telepathic invoicing"], _k1
+        assert _k1["acceptance_criteria"] == _crit1 and _k1["objective"] == "lgc keep probe"
+        assert _k1["saved_by"] and _k1["saved_by"] == _k1["owner_id"] and str(_k1["saved_at"]).endswith("Z"), _k1
+        for _x in _k1["proposed"]:
+            assert _x["registration_digest"] and _x["registration_digest"] == _cell.registration_digest(_x["id"]), _x
+        #  the digest is RECOMPUTED here from the content, by the stated rule - never read back and believed
+        _mine = hashlib.sha256(_json.dumps({k: _k1[k] for k in _cell.SPEC_CONTENT_FIELDS}, sort_keys=True,
+                                           separators=(",", ":"), default=str).encode("utf-8")).hexdigest()
+        _raw1 = next(x for x in _stored() if x["id"] == _k1["id"])
+        assert _k1["digest"] == _mine == _cell.specification_digest(_raw1) and _k1["digest_ok"] is True, (
+            "the digest is not the digest of the content", _k1["digest"], _mine)
+        assert not ({"id", "saved_by", "saved_at", "version", "supersedes", "digest"} & set(_cell.SPEC_CONTENT_FIELDS))
+        #  STABLE: the same content kept again writes nothing and answers with the same record
+        _again = client.post(S, json=_body).json()
+        assert _again["saved"] is False and _again["already_saved"] is True, _again
+        assert _again["id"] == _k1["id"] and _again["digest"] == _k1["digest"], (_again["id"], _k1["id"])
+        assert client.get(S).json()["total"] == _n0 + 1 and len([x for x in _stored() if x["digest"] == _k1["digest"]]) == 1
+        #  keeping ran nothing and composed nothing
+        assert _attempts == [] and len(client.get("/api/v1/resources/compositions/runs",
+                                                  params={"limit": 100}).json()["runs"]) == _runs0
+        #  refusals are plain strings and keep nothing
+        for _bad, _says in (({"objective": "x"}, "required_capabilities"),
+                            ({"objective": " ", "required_capabilities": [_tag_a]}, "an objective is required"),
+                            ({"objective": "x", "required_capabilities": ["telepathic invoicing"]}, "no available resource covers"),
+                            ({"objective": "x", "required_capabilities": [_tag_a, _tag_b], "max_stages": 1}, "the limit is 1"),
+                            ({"objective": "x", "required_capabilities": [_tag_a], "max_stages": 0}, "max_stages must be between")):
+            _rb = client.post(S, json=_bad)
+            assert _rb.status_code == 422 and isinstance(_rb.json()["detail"], str), (_bad, _rb.status_code, _rb.text[:200])
+            assert _says in _rb.json()["detail"] and "Nothing was kept" in _rb.json()["detail"], (_bad, _rb.json()["detail"])
+        assert client.get(S).json()["total"] == _n0 + 1
+
+        # ══ 2. IMMUTABLE: a change is a NEW VERSION, and the old record is what it was ════════════════════
+        _bytes_before = _spec_path.read_bytes()
+        for _verb in (client.put, client.patch):
+            _no = _verb(f"{S}/{_k1['id']}", json={"objective": "edited in place"})
+            assert _no.status_code == 405, ("a kept specification can be edited in place", _no.status_code)
+        assert client.delete(f"{S}/{_k1['id']}").status_code == 405, "a kept specification can be removed"
+        assert _spec_path.read_bytes() == _bytes_before
+        _k2r = client.post(S, json={**_body, "acceptance_criteria": _crit2, "supersedes": _k1["id"]})
+        assert _k2r.status_code == 200, _k2r.text[:300]
+        _k2 = _k2r.json()
+        assert _k2["saved"] is True and _k2["version"] == 2 and _k2["supersedes"] == _k1["id"], _k2
+        assert _k2["id"] != _k1["id"] and _k2["digest"] != _k1["digest"] and _k2["lineage"] == _k1["lineage"], _k2
+        assert next(x for x in _stored() if x["id"] == _k1["id"]) == _raw1, "keeping a new version changed the old record"
+        assert "superseded_by" not in _raw1 and "is_latest" not in _raw1, "what superseded a record was written onto it"
+        _g1 = client.get(f"{S}/{_k1['id']}").json()
+        _g2 = client.get(f"{S}/{_k2['id']}").json()
+        assert _g1["superseded_by"] == _k2["id"] and _g1["is_latest"] is False and _g1["digest_ok"] is True, _g1
+        assert _g2["superseded_by"] is None and _g2["is_latest"] is True, _g2
+        assert [(v["version"], v["id"]) for v in _g2["versions"]] == [(1, _k1["id"]), (2, _k2["id"])] == [
+            (v["version"], v["id"]) for v in _g1["versions"]], _g2["versions"]
+        _twice = client.post(S, json={**_body, "objective": "a third thing", "supersedes": _k1["id"]})
+        assert _twice.status_code == 409 and _k2["id"] in _twice.json()["detail"] and "Nothing was kept" in _twice.json()["detail"], _twice.text[:200]
+        _same = client.post(S, json={**_body, "acceptance_criteria": _crit2, "supersedes": _k2["id"]})
+        assert _same.status_code == 409 and "Nothing was kept" in _same.json()["detail"], _same.text[:200]
+        assert client.post(S, json={**_body, "supersedes": "spec-none"}).status_code == 404
+        assert client.get(S).json()["total"] == _n0 + 2
+        #  the declared limit REFUSES a new one and discards none (driven by lowering it to what is kept now)
+        _all_before = _stored()
+        monkeypatch.setattr(_fab, "_SPEC_CAP", len(_all_before))
+        _full = client.post(S, json={**_body, "objective": "one past the limit"})
+        assert _full.status_code == 409 and "Nothing was kept" in _full.json()["detail"] and _stored() == _all_before, (
+            _full.status_code, _full.text[:200])
+        monkeypatch.setattr(_fab, "_SPEC_CAP", len(_all_before) + 50)
+
+        # ══ 3. A RUN THAT NAMES A SPECIFICATION SAYS WHAT WAS PROPOSED AND WHAT WAS EXECUTED ══════════════
+        _c1 = _compose("lgc probe - what was proposed", [_a, _b])
+        _c2 = _compose("lgc probe - something else", [_a, _z])
+        #  the other way FIRST: a run that names nothing carries no link, in the response and on the record
+        _plain = _run(_c1)
+        assert _plain.status_code == 200, _plain.text[:300]
+        _plain = _plain.json()
+        assert _plain["specification"] is None and _record(_plain["run_id"])["specification"] is None, (
+            "a run that names no specification carries one", _plain["specification"])
+        _r1 = _run(_c1, specification_id=_k2["id"], specification_digest=_k2["digest"])
+        assert _r1.status_code == 200, _r1.text[:300]
+        _r1 = _r1.json()
+        _l1 = _r1["specification"]
+        _rows1 = {x["resource"]: x for x in _r1["real_resource_runs"]}
+        assert _attempts == [_a, _b] and set(_rows1) == {_a, _b}, (_attempts, sorted(_rows1))
+        assert _l1["specification_id"] == _k2["id"] and _l1["specification_digest"] == _k2["digest"] and _l1["version"] == 2, _l1
+        assert sorted(_l1["proposed"]) == sorted([_a, _b]) and _l1["refused"] is False
+        assert {x["resource"]: x["outcome"] for x in _l1["executed"]} == {_a: _rows1[_a]["outcome"], _b: _rows1[_b]["outcome"]} == {
+            _a: _a_out, _b: _b_out}, ("executed does not carry the run's own outcome words", _l1["executed"])
+        assert all(x["outcome"] in _fab._OUTCOME_PHRASE for x in _l1["executed"]), "a second outcome vocabulary"
+        assert _l1["not_attempted"] == [] and _l1["not_in_specification"] == [] and _l1["unavailable_at_run"] == [], _l1
+        assert _record(_r1["run_id"])["specification"] == _l1, "the saved record and the response disagree"
+        #  a composition that is NOT what was proposed: one proposed resource is absent, one attempt was not proposed
+        _r3 = _run(_c2, specification_id=_k1["id"]).json()
+        _l3 = _r3["specification"]
+        assert _l3["version"] == 1 and _l3["specification_digest"] == _k1["digest"], "the digest on the link was typed, not read"
+        assert [x["resource"] for x in _l3["executed"]] == [_a], _l3["executed"]
+        assert [(x["resource"], x["why"]) for x in _l3["not_attempted"]] == [(_b, "not_composed")] and _l3["not_attempted"][0]["basis"], _l3
+        assert [(x["resource"], x["composed"]) for x in _l3["not_in_specification"]] == [(_z, True)], _l3["not_in_specification"]
+        #  the reason table, on the function the route calls (one composed resource whose handler ran nothing)
+        _now_ok = [{"id": i, "available": True, "because": "x"} for i in (_a, _b)]
+        _lk = _fab._specification_link(_raw1, _now_ok, [_a, _b], [{"resource": _a, "outcome": _a_out}], None)
+        assert [(x["resource"], x["why"]) for x in _lk["not_attempted"]] == [(_b, "no_handler_ran")], _lk["not_attempted"]
+        #  a stand-in's row is never read as its own resource having been executed
+        _lk2 = _fab._specification_link({**_raw1, "proposed": [{"id": _a}, {"id": _e}]}, [], [_a, _e],
+                                        [{"resource": _a, "outcome": "raised"},
+                                         {"resource": _e, "outcome": _a_out, "alternative_for": _a}], None)
+        assert [x["resource"] for x in _lk2["executed"]] == [_a] and [x["resource"] for x in _lk2["not_attempted"]] == [_e], (
+            "a stand-in's row was counted as that resource executed", _lk2["executed"])
+        #  REFUSED before anything ran: nothing proposed is listed as executed, and each says why
+        import agentic_core.ai.gateway as _gw
+        _real_gate = _gw.console_pre_gate
+        monkeypatch.setattr(_gw, "console_pre_gate", lambda agent: {"refused_reason": "driven refusal"})
+        _rf = _run(_c1, specification_id=_k2["id"]).json()
+        assert _rf.get("refused") is True and _attempts == [], (_rf.get("refused"), _attempts)
+        assert _rf["specification"]["executed"] == [] and _rf["specification"]["refused"] is True
+        assert sorted((x["resource"], x["why"]) for x in _rf["specification"]["not_attempted"]) == sorted(
+            [(_a, "refused"), (_b, "refused")]) and "driven refusal" in _rf["specification"]["not_attempted"][0]["basis"]
+        _rfn = _run(_c1).json()          # the same refusal with no specification named carries no link
+        assert _rfn.get("refused") is True and "specification" not in _rfn, sorted(_rfn)
+        monkeypatch.setattr(_gw, "console_pre_gate", _real_gate)
+        #  naming a specification wrongly refuses BEFORE anything runs, in a plain string
+        for _named, _code in (({"specification_id": _k2["id"], "specification_digest": _k1["digest"]}, 409),
+                              ({"specification_id": "spec-none"}, 404),
+                              ({"specification_digest": _k2["digest"]}, 422)):
+            _bad = _run(_c1, **_named)
+            assert _bad.status_code == _code and "Nothing was run" in _bad.json()["detail"] and _attempts == [], (
+                _named, _bad.status_code, _bad.text[:200], _attempts)
+        #  a record edited underneath its digest is not the specification that was kept: read says so, a run refuses
+        _good = _spec_path.read_bytes()
+        _t = _stored()
+        next(x for x in _t if x["id"] == _k2["id"])["objective"] = "edited underneath"
+        _spec_path.write_text(_json.dumps(_t), encoding="utf-8")
+        try:
+            assert client.get(f"{S}/{_k2['id']}").json()["digest_ok"] is False, "an edited record still reads as the one kept"
+            _tam = _run(_c1, specification_id=_k2["id"])
+            assert _tam.status_code == 409 and "Nothing was run" in _tam.json()["detail"] and _attempts == [], _tam.text[:200]
+        finally:
+            _spec_path.write_bytes(_good)
+        assert client.get(f"{S}/{_k2['id']}").json()["digest_ok"] is True
+
+        # ══ 4. REPLAY: UNAVAILABLE NOW IS REPORTED, AND NOTHING IS PUT IN ITS PLACE ══════════════════════
+        _g = client.get(f"{S}/{_k2['id']}").json()
+        assert _g["unavailable_now"] == [] and all(x["available"] for x in _g["availability_now"]), (
+            "the precondition: every proposed resource is available before one is taken away", _g["availability_now"])
+        assert _g["replay"]["send"] == {"specification_id": _k2["id"], "specification_digest": _k2["digest"]}
+        _by_c = {c["id"]: c for c in _g["replay"]["compositions"]}
+        assert _by_c[_c1]["missing"] == [] and _by_c[_c1]["extra"] == [], _by_c[_c1]
+        assert _by_c[_c2]["missing"] == [_b] and _by_c[_c2]["extra"] == [_z], _by_c[_c2]
+        _real_av = _cell.availability
+
+        def _taken_away(rid, app=None):
+            _o = _real_av(rid, app)
+            return {**_o, "state": "prompt_stage_only", "reason": "driven: its branch was taken away"} if rid == _b else _o
+
+        monkeypatch.setattr(_cell, "availability", _taken_away)
+        _mode[_b] = "none"                       # a resource with no branch returns nothing
+        _gone = client.get(f"{S}/{_k2['id']}").json()
+        assert [x["id"] for x in _gone["unavailable_now"]] == [_b] and "driven" in _gone["unavailable_now"][0]["because"], _gone["unavailable_now"]
+        assert _b not in _ids(_cell.select([_tag_a, _tag_b], client.app)), "the re-check and the selection use different rules"
+        _r4 = _run(_c1, specification_id=_k2["id"], specification_digest=_k2["digest"]).json()
+        _l4 = _r4["specification"]
+        assert [x["id"] for x in _l4["unavailable_at_run"]] == [_b], _l4["unavailable_at_run"]
+        assert [(x["resource"], x["why"]) for x in _l4["not_attempted"]] == [(_b, "unavailable")] and "driven" in _l4["not_attempted"][0]["basis"], _l4
+        assert [x["resource"] for x in _l4["executed"]] == [_a] and _l4["not_in_specification"] == [], _l4
+        assert set(_attempts) <= {_a, _b} and {x["resource"] for x in _r4["real_resource_runs"]} == {_a}, (
+            "something ran in the place of the unavailable resource", _attempts)
+        assert _r4["stand_ins"] == [] and "Nothing was put in the place" in _l4["basis"], _l4["basis"]
+        assert client.get(S).json()["total"] == _n0 + 2, "a replay kept or changed a specification"
+        monkeypatch.setattr(_cell, "availability", _real_av)
+        _mode.clear()
+        #  THE ONE ALTERNATIVE THE FABRIC HAS: a failed status read gets its declared equivalent, once - listed
+        #  as a stand-in, never as the original; an engine that raises gets nothing
+        _mode[_a] = _mode[_b] = "raise"
+        _r5 = _run(_c1, specification_id=_k2["id"]).json()
+        _l5 = _r5["specification"]
+        assert _attempts == [_a, _e, _b], ("not exactly the composed resources and one stand-in", _attempts)
+        _ex5 = {x["resource"]: x for x in _l5["executed"]}
+        assert _ex5[_a]["outcome"] == "raised" and _ex5[_a]["stand_in"]["tried"] == _e, _ex5[_a]
+        assert _ex5[_b]["outcome"] == "raised" and "stand_in" not in _ex5[_b], _ex5[_b]
+        assert [(x["resource"], x.get("alternative_for")) for x in _l5["not_in_specification"]] == [(_e, _a)], _l5
+        assert "stand-in" in _l5["basis"] and "Nothing was put in the place" not in _l5["basis"], _l5["basis"]
+        _mode.clear()
+
+        # ══ 5. VERIFY READS THE CRITERIA KEPT WITH THE SPECIFICATION THE RUN NAMES ═══════════════════════
+        _v = client.post("/api/v1/resources/cell/verify", json={"run_id": _r1["run_id"]})
+        assert _v.status_code == 200, _v.text[:300]
+        _v = _v.json()
+        assert _v["criteria_source"] == "specification" and [r["criterion"] for r in _v["criteria"]] == _crit2, _v["criteria"]
+        assert [r["state"] for r in _v["criteria"]] == ["met", "unmet", "not_assessed"] and _v["all_met"] is False, _v["criteria"]
+        assert _v["criteria"] == _cell.assess(_crit2, _record(_r1["run_id"]))["criteria"]
+        #  THAT specification, not the latest of its line: the run that named version 1 is read against version 1
+        _v3 = client.post("/api/v1/resources/cell/verify", json={"run_id": _r3["run_id"]}).json()
+        assert [r["criterion"] for r in _v3["criteria"]] == _crit1 and [r["state"] for r in _v3["criteria"]] == ["unmet"], _v3["criteria"]
+        #  criteria stated in the request keep their meaning, and the kept ones are still read beside them
+        _own = [{"kind": "resource_outcome", "resource": _b, "is": _b_out}]
+        _vo = client.post("/api/v1/resources/cell/verify", json={"run_id": _r1["run_id"], "criteria": _own}).json()
+        assert _vo["criteria_source"] == "request" and [r["state"] for r in _vo["criteria"]] == ["met"] and _vo["all_met"] is True, _vo
+        assert _vo["specification"]["specification_id"] == _k2["id"] and _vo["specification"]["criteria_read"] is True
+        assert [r["state"] for r in _vo["specification"]["criteria"]] == ["met", "unmet", "not_assessed"], _vo["specification"]
+        assert client.post("/api/v1/resources/cell/verify", json={"run_id": _r1["run_id"], "criteria": []}).json()["all_met"] is False
+        #  a run that names no specification: stated criteria as before, and none stated is refused
+        _vp = client.post("/api/v1/resources/cell/verify", json={"run_id": _plain["run_id"], "criteria": _own}).json()
+        assert _vp["specification"] is None and _vp["criteria_source"] == "request" and [r["state"] for r in _vp["criteria"]] == ["met"], _vp
+        _vn = client.post("/api/v1/resources/cell/verify", json={"run_id": _plain["run_id"]})
+        assert _vn.status_code == 422 and isinstance(_vn.json()["detail"], str) and "Nothing was assessed" in _vn.json()["detail"], _vn.text[:200]
+        #  a kept record edited after the run is NOT read as that run's criteria
+        _t = _stored()
+        next(x for x in _t if x["id"] == _k2["id"])["acceptance_criteria"] = _own
+        _spec_path.write_text(_json.dumps(_t), encoding="utf-8")
+        try:
+            _ve = client.post("/api/v1/resources/cell/verify", json={"run_id": _r1["run_id"]})
+            assert _ve.status_code == 409 and "Nothing was assessed" in _ve.json()["detail"], (_ve.status_code, _ve.text[:200])
+            _vq = client.post("/api/v1/resources/cell/verify", json={"run_id": _r1["run_id"], "criteria": _own}).json()
+            assert _vq["specification"]["criteria_read"] is False and _vq["specification"]["criteria"] is None, _vq["specification"]
+        finally:
+            _spec_path.write_bytes(_good)
+
+        # ══ 6. SOURCE LEGS (nothing here renders a page) ══════════════════════════════════════════════════
+        _src = inspect.getsource(_cell)
+        for _call in ("_run_real_resource(", "run_composition(", "_save_compositions(", "atomic_write_json(", "store_lock("):
+            assert _call not in _src, ("the cell runs or writes something", _call)
+        _fsrc = inspect.getsource(_fab)
+        assert _fsrc.count("atomic_write_json(_spec_store(), rows)") == 1, "more than one writer of the specification store"
+        for _route in ('@router.put("/specifications', '@router.patch("/specifications', '@router.delete("/specifications'):
+            assert _route not in _fsrc, ("a route that changes or removes a kept specification", _route)
+        _icp = (pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+                / "components" / "InstrumentCellPanel.tsx").read_text(encoding="utf-8")
+        for _need in ('data-testid="cell-keep"', 'data-testid="cell-specifications"', 'data-testid="cell-spec-versions"',
+                      'data-testid="cell-spec-now"', 'data-testid="cell-proposed-vs-executed"',
+                      'data-testid="cell-not-attempted"', 'data-testid="cell-not-in-specification"',
+                      'data-testid="cell-unavailable-at-run"', 'data-testid="cell-criteria-source"',
+                      "{specErr && <p role=\"alert\"", "<ProposedVsExecuted link={pickedRun.specification} />",
+                      "specification_id: spec.id, specification_digest: spec.digest",
+                      "{x.resource} ({x.why})", "{verdict.criteria_source_basis}"):
+            assert _need in _icp, ("the kept specification does not reach the page", _need)
+        _fn = _icp[_icp.index("const runSpec = async () => {"):_icp.index("const verifyKept = async () => {")]
+        assert _fn.index("const cid = specComp;") < _fn.index("await apiJson<ReplayReply>") and "setSpecErr(errorMessage(e))" in _fn
+        assert "compositions/${encodeURIComponent(cid)}/run" in _fn, "a replay does not go through the composition run route"
+        assert "{replay.final}" not in _icp and "asText(replay.final" in _icp, "an object is drawn as a React child"
+    finally:
+        monkeypatch.undo()
+        for _cid in _comps:
+            client.delete(f"/api/v1/resources/compositions/{_cid}")
+        for _p_, _b_ in _held.items():
+            if _b_ is None:
+                if _p_.exists():
+                    _p_.unlink()
+            else:
+                _p_.write_bytes(_b_)
+
+
+def test_lgc_path_an_appraisal_files_nothing_says_so_and_change_control_decides(client, monkeypatch):
+    """Plan item P3.30 - ONE PATH, DRIVEN THROUGH THE REAL ROUTES AS FAR AS IT GOES:
+    appraisal -> a change -> Change Control's decision -> implementation -> the changed state -> the next
+    appraisal. Each hand-off is asserted where it exists, and the first one that does not exist is NAMED.
+
+      1  EXISTS   an appraisal is returned (GET /method/appraise)
+      2  ABSENT   nothing keeps an appraisal and nothing turns one into a change. THIS IS THE FIRST ABSENT
+                  HAND-OFF, and it stays absent: an appraisal must never authorise or apply a change. What is
+                  asserted is that the appraisal files nothing AND SAYS SO, with the route a person uses next
+      3  EXISTS   a person files a change; Change Control attaches the appraisal of the scope it declares
+      4  EXISTS   Change Control decides, and implementing applies the change
+      5  (the product does not re-read the changed state; THIS TEST does, so the rest of the path is driven)
+      6  the next appraisal reads the change record's status as Change Control holds it - and says what
+         that does not establish
+    The live lever the test moves and every record it files are restored.
+    """
+    import json as _json
+    import pathlib
+    import agentic_core.api.change_control as _cc
+    import agentic_core.api.method as _m
+    import agentic_core.organism.reconfiguration as _rc
+
+    A = "/api/v1/method/appraise"
+    _store = pathlib.Path(_cc._CCA_STORE)
+    _root = pathlib.Path(__file__).resolve().parents[1]
+
+    def _ids():
+        return sorted(p.stem for p in _store.glob("*.json"))
+
+    def _carrying(scope):
+        """Read here, record by record, independently of the code under test."""
+        out = {}
+        for p in _store.glob("*.json"):
+            try:
+                c = _json.loads(p.read_text(encoding="utf-8"))
+            except ValueError:
+                continue
+            sa = c.get("scope_appraisal") if isinstance(c, dict) else None
+            s = str(sa.get("scope") or "") if isinstance(sa, dict) else ""
+            if s and c.get("cca_id") and _cc._valid_cca_id(p.stem) and (s == scope or s.startswith(scope + ".")):
+                out[c["cca_id"]] = c
+        return out
+
+    def _filed_since(before):
+        """The ids that appeared since `before` - except the organism's own immune reflex, the one filer that
+        acts without a request (the heartbeat may engage it at any moment, and it is not what is driven here)."""
+        out = []
+        for i in sorted(set(_ids()) - set(before)):
+            c = _cc._load_change(i) or {}
+            if c.get("change_type") != "immune_reconfiguration":
+                out.append(i)
+        return out
+
+    # ── preconditions ───────────────────────────────────────────────────────────────────────────────────
+    _reg = _json.loads((_root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))
+    _cited = _scope = None
+    for _row in _reg["items"]:
+        for _f in (_row.get("files") or []):
+            if _cited is None and _row.get("status") == "open" and str(_f).startswith("agentic_core/"):
+                _slot = _m.appraise_scope_for([_f]).get("slot")
+                if _slot:
+                    _cited, _scope = _f, _slot
+    assert _cited and _scope, ("no open row cites a file under agentic_core/ that points at a plan item, so no "
+                               "change can be given a scope and the path cannot be driven")
+    _served = {f"{m} {r.path}" for r in client.app.routes
+               for m in (getattr(r, "methods", None) or ()) if getattr(r, "path", None)}
+    _cfg_files = [pathlib.Path(_rc._CONFIG_STORE), pathlib.Path(_rc._CONFIG_HISTORY)]
+    _held = {p: (p.read_bytes() if p.exists() else None) for p in _cfg_files}
+    _mine = []
+    _bad_file = _store / "lgc-path-unreadable.json"
+    _real_ho = _m._appraisal_hand_off
+    _calls = []
+
+    def _counted(scope):
+        _calls.append(scope)
+        return _real_ho(scope)
+
+    try:
+        monkeypatch.setattr(_m, "_appraisal_hand_off", _counted)
+        from agentic_core.config import data_path as _dp
+        _names0 = {x.name for x in pathlib.Path(_dp()).iterdir()}
+        _before = _ids()
+        _c0 = _carrying(_scope)
+
+        # ══ 1. EXISTS - an appraisal is returned, and its readings are what they were ════════════════════
+        _r0 = client.get(A, params={"scope": _scope})
+        assert _r0.status_code == 200, _r0.text[:300]
+        _a0 = _r0.json()
+        assert len(_a0["faculties"]) == _a0["structures"]["faculties"] and "hand_off" not in _a0["faculties"], (
+            "the hand-off statement was added as a faculty", sorted(_a0["faculties"]))
+
+        # ══ 2. THE FIRST HAND-OFF THAT DOES NOT EXIST: AN APPRAISAL IS CONSUMED BY NOTHING ═══════════════
+        assert _filed_since(_before) == [] and set(_before) <= set(_ids()), (
+            "FIRST ABSENT HAND-OFF (appraisal -> change): an appraisal filed or removed a Change Control "
+            "record by itself. An appraisal never authorises or applies a change; Change Control decides",
+            _filed_since(_before))
+        _kept_now = sorted(n for n in ({x.name for x in pathlib.Path(_dp()).iterdir()} - _names0) if "apprais" in n.lower())
+        assert _kept_now == [], ("the appraisal says it is not kept, and a store for it appeared", _kept_now)
+        _h0 = _a0["hand_off"]
+        assert _h0["kept"] is False and _h0["authorises"] is False, (
+            "FIRST ABSENT HAND-OFF: the appraisal does not say that it is not kept and authorises nothing", _h0)
+        assert _h0["kept_basis"] and _h0["authorises_basis"] and _h0["not_established"], _h0
+        #  the route a person uses next is NAMED, and it is one this application serves
+        assert _h0["next_route"] == "POST /api/v1/cca/submit" and _h0["next_route"] in _served, _h0["next_route"]
+        assert len(_h0["method_filers"]) == 3 and all(x in _served for x in _h0["method_filers"]), _h0["method_filers"]
+        #  and what it says about what became of it is COMPUTED from the Change Control store
+        _cs0 = _h0["changes_carrying_this_scope"]
+        assert _cs0["count"] == len(_c0) and _cs0["records_listed"] == min(len(_c0), 50), (_cs0["count"], len(_c0))
+        assert {x["cca_id"] for x in _cs0["records"]} <= set(_c0) and sum(_cs0["by_status"].values()) == len(_c0)
+        assert (f"{len(_c0)} Change Control record(s)" in _h0["statement"]) if _c0 else (
+            "no Change Control record carries" in _h0["statement"]), _h0["statement"]
+        assert _calls == [_scope]
+        #  the readings alone, when asked: no scan of the change store, and the field says so by being None
+        _plain = client.get(A, params={"scope": _scope, "hand_off": "false"}).json()
+        assert _plain["hand_off"] is None and _calls == [_scope] and _plain["faculties"]["reflection"] == _a0["faculties"]["reflection"]
+        assert _filed_since(_before) == []
+
+        # ══ 3. EXISTS - a PERSON files a change, and Change Control attaches the scope's appraisal ═══════
+        _cur = client.get("/api/v1/organism/config").json()["config"]["gateway"]["rpm_limit"]
+        _new = int(_cur) + 1
+        _sub = client.post("/api/v1/cca/submit", json={
+            "title": "lgc path probe", "description": "a governed lever change filed by a person after an appraisal",
+            "rationale": "the path from an appraisal to a decided, applied change is driven end to end",
+            "affected_systems": [_cited], "submitted_by": "lgc_path_probe",
+            "config_change": {"section": "gateway", "key": "rpm_limit", "value": _new}})
+        assert _sub.status_code == 200, _sub.text[:300]
+        _sub = _sub.json()
+        _mine.append(_sub["cca_id"])
+        _sa = _sub["scope_appraisal"]
+        assert _sa["scope"] == _scope and sorted(_sa["faculties"]) == ["extrospection", "reasoning", "reflection"], _sa
+        assert _sa["faculties"]["reflection"] == _a0["faculties"]["reflection"], (
+            "the appraisal a reviewer is shown with the change is not the reading the appraisal route gives")
+        assert "not a verdict" in _sa["not_a_gate"] and "hand_off" not in _sa, sorted(_sa)
+        assert _calls == [_scope], "filing a change scanned the whole change store for the appraisal's own statement"
+        #  a change no open row points at carries no scope, so it is not counted below
+        _un = client.post("/api/v1/cca/submit", json={
+            "title": "lgc path unscoped probe", "description": "a change whose affected systems no open row names",
+            "rationale": "a change with no inferred scope is not counted under any appraisal",
+            "affected_systems": ["agentic_core/no_such_area_lgc"], "submitted_by": "lgc_path_probe"}).json()
+        _mine.append(_un["cca_id"])
+        assert _un["scope_appraisal"]["scope"] is None
+        #  the appraisal's statement now counts exactly the one record that carries this scope, as it stands
+        _h1 = _real_ho(_scope)
+        _rec1 = client.get(f"/api/v1/cca/{_sub['cca_id']}").json()
+        _e1 = [x for x in _h1["changes_carrying_this_scope"]["records"] if x["cca_id"] == _sub["cca_id"]]
+        assert _h1["changes_carrying_this_scope"]["count"] == len(_c0) + 1 and len(_e1) == 1, (
+            _h1["changes_carrying_this_scope"]["count"], len(_c0))
+        assert _e1[0]["status"] == _rec1["status"] and _e1[0]["scope"] == _scope and _e1[0]["implementation_effect"] is None, _e1
+        assert f"{len(_c0) + 1} Change Control record(s)" in _h1["statement"], _h1["statement"]
+        #  and an appraisal of ANOTHER scope does not count it
+        _other = "P2" if not _scope.startswith("P2") else "P3"
+        _ho = _real_ho(_other)
+        assert _sub["cca_id"] not in [x["cca_id"] for x in _ho["changes_carrying_this_scope"]["records"]], _other
+        assert _ho["changes_carrying_this_scope"]["count"] == len(_carrying(_other))
+
+        # ══ 4. EXISTS - CHANGE CONTROL DECIDES, and implementing applies the change ══════════════════════
+        assert _rec1["status"] in ("approved", "submitted"), _rec1["status"]
+        if _rec1["status"] != "approved":
+            _rv = client.post(f"/api/v1/cca/{_sub['cca_id']}/review",
+                              json={"override_decision": "approved", "owner_decision_acknowledged": True})
+            assert _rv.status_code == 200, _rv.text[:300]
+        _imp = client.post(f"/api/v1/cca/{_sub['cca_id']}/implement")
+        assert _imp.status_code == 200, _imp.text[:300]
+        _imp = _imp.json()
+        assert _imp["status"] == "implemented" and _imp["applied"]["new_value"] == _new, _imp
+
+        # ══ 5. THE CHANGED STATE, read by THIS TEST (the product does not re-read it after implementing) ══
+        assert client.get("/api/v1/organism/config").json()["config"]["gateway"]["rpm_limit"] == _new, (
+            "the change Change Control implemented is not in the state it was filed to change")
+
+        # ══ 6. BACK INTO THE NEXT APPRAISAL - which reads the record as Change Control holds it ══════════
+        assert _filed_since(_before) == sorted(_mine), ("a record nobody filed here appeared", _filed_since(_before))
+        _a2 = client.get(A, params={"scope": _scope}).json()
+        assert _filed_since(_before) == sorted(_mine), "the next appraisal filed a record"
+        _h2 = _a2["hand_off"]
+        _e2 = [x for x in _h2["changes_carrying_this_scope"]["records"] if x["cca_id"] == _sub["cca_id"]]
+        assert len(_e2) == 1 and _e2[0]["status"] == "implemented" and _e2[0]["implementation_effect"] == "applied", _e2
+        assert _h2["changes_carrying_this_scope"]["count"] == len(_c0) + 1
+        assert _h2["changes_carrying_this_scope"]["by_status"].get("implemented", 0) >= 1
+        assert _h2["kept"] is False and _h2["authorises"] is False and "nothing re-reads the changed state" in _h2["not_established"]
+
+        # ══ 7. AN UNREAD RECORD IS UNREAD, NEVER NONE ════════════════════════════════════════════════════
+        _u0 = _h2["records_unreadable"]
+        _bad_file.write_text("{", encoding="utf-8")
+        _h3 = _real_ho(_scope)
+        assert _h3["records_unreadable"] == _u0 + 1 and "could not be read" in _h3["statement"], _h3["statement"]
+        assert _h3["changes_carrying_this_scope"]["count"] == len(_c0) + 1 and _h3["records_read"] == _h2["records_read"]
+        _bad_file.unlink()
+        assert _real_ho(_scope)["records_unreadable"] == _u0
+
+        class _Unreadable:
+            def glob(self, pattern):
+                raise OSError("driven: the store cannot be listed")
+
+        monkeypatch.setattr(_cc, "_CCA_STORE", _Unreadable())
+        _h4 = _real_ho(_scope)
+        monkeypatch.setattr(_cc, "_CCA_STORE", _store)
+        assert _h4["changes_carrying_this_scope"] is None and "NOT KNOWN" in _h4["statement"], _h4
+        assert _h4["kept"] is False and _h4["next_route"] == "POST /api/v1/cca/submit"
+    finally:
+        monkeypatch.undo()
+        if _bad_file.exists():
+            _bad_file.unlink()
+        for _p_, _b_ in _held.items():                   # the live lever and its history, as they were
+            if _b_ is None:
+                if _p_.exists():
+                    _p_.unlink()
+            else:
+                _p_.write_bytes(_b_)
+        for _cid in _mine:
+            _f_ = _store / f"{_cid}.json"
+            if _f_.exists():
+                _f_.unlink()
+
+
+def test_pay_an_owner_payout_is_held_for_a_person_and_pays_the_accounts_recorded_owner(client, monkeypatch, tmp_path):
+    """OWNER RULINGS 2026-10-12 on the owner-payout path.
+
+    R1 - the request's `owner` field is gone: the payee is the owner recorded on the account, a request that
+    still sends the field is refused, and a never-accrued account's status echoes no caller's name.
+    R2 - every payout is HELD for a person's decision at Change Control, with no threshold: request -> held
+    (nothing paid) -> approved -> the same request again pays once -> the approval is spent.
+    R3 - a paid payout leaves an audit event, its entry names the requester and the change that released it,
+    and the 200-entry cut of the history is disclosed.
+
+    Every leg DRIVES its state. The owner-payments store is this test's own (tmp_path); every Change Control
+    record the test files is removed at the end. Virtual WST only.
+    """
+    import json
+    import pathlib
+    import uuid
+    from agentic_core.api import change_control as _cc
+    from agentic_core.api import economy as _ec
+    from agentic_core.api._strict_models import STRICT_INSTRUCTION_MODELS as _strict
+    from agentic_core.auth import core as _auth
+    from agentic_core.economy import governance as _gv
+    from agentic_core.economy import owner_payments as _op
+    from agentic_core.gaas import v5 as _g5
+
+    # -- 0. PRECONDITIONS, and a store of this test's own -------------------------------------------------
+    assert _auth.auth_enabled() is False, "this test drives the shipped single-user mode"
+    assert _cc._TIER_MAP["economy_material"] == "CRITICAL", "the hold's type is no longer decided only explicitly"
+    assert _op.REAL_MONEY_ENABLED is False, "real-money rails must stay off"
+    monkeypatch.setattr(_gv, "MATERIALITY_WST", 250000.0)       # driven: every amount below is far under it
+    _store = tmp_path / "owner_payments.json"
+    monkeypatch.setattr(_op, "_STORE", _store)
+    monkeypatch.setattr(_op, "_PENDING", tmp_path / "owner_accruals_pending.json")
+    _tag = uuid.uuid4().hex[:6]
+    _vid, _bare, _none = f"pay-guard-{_tag}", f"pay-guard-noowner-{_tag}", f"pay-guard-never-{_tag}"
+    _big, _full = f"pay-guard-big-{_tag}", f"pay-guard-full-{_tag}"
+    _op.accrue(_vid, 100.0, "Amina Guard", memo="guard seed", simulated=False)
+    _op.accrue(_bare, 20.0, "", memo="guard seed", simulated=False)        # an account whose owner is empty
+
+    def _acct(v):
+        return _op._read().get(v)
+
+    def _snap(v):
+        _a = _acct(v)
+        return (_a["accrued"], _a["paid_out"], len(_a["entries"]))
+
+    def _holds(v):
+        _t = _gv.PAYOUT_HOLD_TITLE_PREFIX + v
+        return {x["cca_id"] for x in _cc._list_changes() if x.get("title") == _t}
+
+    def _ask(v, amount, **extra):
+        return client.post("/api/v1/economy/owner-payments/payout", json={"vsb_id": v, "amount": amount, **extra})
+
+    def _decide(cid, verdict):
+        return client.post(f"/api/v1/cca/{cid}/review", json={
+            "override_decision": verdict, "admin_decision_for_critical": True, "reviewer_notes": "pay guard"})
+
+    def _row(v, cid):
+        _s = client.get(f"/api/v1/economy/owner-payments?vsb_id={v}")
+        assert _s.status_code == 200, _s.text[:300]
+        assert isinstance(_s.json()["payout_requests"], list), ("the payout requests were not read", _s.json())
+        return next(r for r in _s.json()["payout_requests"] if r["cca_id"] == cid)
+
+    _seen, _audit = [], {"fails": False}
+    _real_log = _g5.UEGLogger.log
+
+    def _spy(self, ev, *a, **k):
+        if isinstance(ev, dict) and ev.get("type") == "economy.owner_payout":
+            if _audit["fails"]:
+                raise RuntimeError("driven")
+            _seen.append(dict(ev))
+        return _real_log(self, ev, *a, **k)
+    monkeypatch.setattr(_g5.UEGLogger, "log", _spy)
+
+    assert _holds(_vid) == set() and _holds(_bare) == set(), "a payout hold for a fresh probe id already exists"
+    assert _snap(_vid) == (100.0, 0.0, 1), _snap(_vid)
+    try:
+        # -- 1. A REQUEST IS HELD: a change exists, nothing was paid, the entries are unchanged ------------
+        _s0 = _snap(_vid)
+        _r1 = _ask(_vid, 40)
+        assert _r1.status_code == 200, ("a payout request was refused instead of held", _r1.status_code, _r1.text[:300])
+        _j1 = _r1.json()
+        assert _j1["status"] == "held" and _j1["applied"] is False, ("a request was not answered as held", _j1)
+        assert _j1["paid_wst"] == 0 and _j1["requested_wst"] == 40.0, ("a held request reports a paid amount", _j1)
+        assert _j1["remaining_balance_wst"] == 100.0, ("a held request reports a lower balance", _j1)
+        assert _j1["real_money_moved"] is False and _j1["real_money_rails"] == "DISABLED", _j1
+        _cid = _j1["cca_id"]
+        assert _cid and _holds(_vid) == {_cid}, ("no change was filed for the request, or more than one", _holds(_vid))
+        assert _j1["governance"]["basis"].startswith("HELD, NOT PAID") and _cid in _j1["governance"]["basis"], (
+            "the held answer does not say HELD, NOT PAID with the Change Control id", _j1["governance"])
+        assert "NOT PAID" in _j1["status_label"], _j1["status_label"]
+        assert _snap(_vid) == _s0, ("a request that was only held changed the account", _s0, _snap(_vid))
+        _c1 = _cc._load_change(_cid)
+        assert _c1["change_type"] == "economy_material" and _cc.effective_tier(_c1) == "CRITICAL", _c1
+        assert _c1["status"] == "submitted" and _c1["vsb_id"] == _vid, _c1
+        assert _c1["title"] == _gv.PAYOUT_HOLD_TITLE_PREFIX + _vid and _c1["submitted_by"] == "economy:payout", _c1
+        assert _c1["est_distributable_wst"] == 40.0 and "no threshold lets one pass" in _c1["description"], _c1
+        assert "materiality threshold" not in _c1["description"], "a threshold is stated for a class that has none"
+        _pr = _c1["payout_request"]
+        assert _pr["requested_by"] == "single-user-mode" and _pr["requested_by_verified"] is False, _pr
+        assert _pr["payee"] == "Amina Guard" and _pr["balance_at_request_wst"] == 100.0 and _pr["amount_wst"] == 40.0, _pr
+        assert _j1["governance"]["request_recorded"] == "recorded", _j1["governance"]
+        #    the payee is the account's recorded owner, and the answer says on what basis
+        assert _j1["payee"] == "Amina Guard" and _j1["payee_recorded"] is True, ("the held answer does not name the payee", _j1)
+        assert "the account's recorded owner" in _j1["payee_basis"], _j1["payee_basis"]
+        #    asked again while undecided: the same hold, and still nothing paid
+        _again = _ask(_vid, 40).json()
+        assert _again["cca_id"] == _cid and _again["status"] == "held" and _snap(_vid) == _s0, (
+            "asking again while undecided filed a second hold or paid", _again)
+        assert _gv.unreleasable_reason(_cc._load_change(_cid)) is None, (
+            "a live payout hold reads as one no action can release", _gv.unreleasable_reason(_cc._load_change(_cid)))
+        assert _seen == [], ("a payout audit event was written for a request that paid nothing", _seen)
+        assert _row(_vid, _cid)["state"] == "held" and _row(_vid, _cid)["amount_wst"] == 40.0, _row(_vid, _cid)
+
+        # -- 2. REFUSED BEFORE ANY HOLD IS FILED ---------------------------------------------------------
+        _h0 = _holds(_vid) | _holds(_none)
+        _over = _ask(_vid, 100.01)
+        assert _over.status_code == 400 and "Insufficient balance" in _over.json()["detail"], (_over.status_code, _over.text[:300])
+        assert "Nothing was filed" in _over.json()["detail"], "the over-balance refusal does not say nothing was filed"
+        _never = _ask(_none, 1)
+        assert _never.status_code == 400 and "Insufficient balance" in _never.json()["detail"], (
+            "a payout from an account that never accrued was not refused", _never.status_code, _never.text[:300])
+        assert _ask(_vid, 0).status_code == 422 and _ask(_vid, -5).status_code == 422, "a non-positive amount was accepted"
+        _tiny = _ask(_vid, 0.004)                                   # rounds to nothing at two decimal places
+        assert _tiny.status_code == 400 and "must be positive" in _tiny.json()["detail"], (_tiny.status_code, _tiny.text[:300])
+        _hdr = {"Content-Type": "application/json"}
+        for _raw in ('{"vsb_id": "%s", "amount": Infinity}' % _vid, '{"vsb_id": "%s", "amount": NaN}' % _vid):
+            _nf = client.post("/api/v1/economy/owner-payments/payout", content=_raw, headers=_hdr)
+            assert _nf.status_code == 422, ("a non-finite amount was accepted", _raw, _nf.status_code)
+        #    a request that still SENDS `owner` is refused naming the field - not dropped, and nothing is filed
+        _typed = _ask(_vid, 40, owner="Somebody Else")
+        assert _typed.status_code == 422 and "owner" in _typed.text, (
+            "a request that sends a payee name was accepted, or its refusal does not name the field",
+            _typed.status_code, _typed.text[:300])
+        assert "owner" not in _ec.PayoutRequest.model_fields, "the payout request still declares an owner field"
+        assert _ec.PayoutRequest.model_config.get("extra") == "forbid", "the payout request drops undeclared fields"
+        assert "agentic_core.api.economy:PayoutRequest" in _strict, "the strict-model list does not name the payout request"
+        assert _holds(_vid) | _holds(_none) == _h0, ("a refused request filed a hold", _holds(_vid) | _holds(_none))
+        assert _snap(_vid) == _s0 and _acct(_none) is None, "a refused request changed or created an account"
+        assert _cc._load_change(_cid)["est_distributable_wst"] == 40.0, "a refused request re-bound the open hold's amount"
+
+        # -- 3. APPROVE, THEN THE SAME REQUEST AGAIN: paid once, to the recorded owner -------------------
+        _ok = _decide(_cid, "approved")
+        assert _ok.status_code == 200, _ok.text[:300]
+        assert _cc._load_change(_cid)["status"] == "approved" and _cc.approval_source(_cc._load_change(_cid)) == "admin_override", (
+            "the explicit approval was not recorded as an explicit decision", _cc._load_change(_cid).get("decision_source"))
+        assert _snap(_vid) == _s0, "approving paid the payout by itself"
+        assert _row(_vid, _cid)["state"] == "approved_not_applied", _row(_vid, _cid)
+        assert "request the same payout again" in _row(_vid, _cid)["state_label"], _row(_vid, _cid)["state_label"]
+        _p = _ask(_vid, 40)
+        assert _p.status_code == 200, _p.text[:300]
+        _jp = _p.json()
+        assert _jp["status"] == "paid" and _jp["applied"] is True and _jp["cca_id"] == _cid, ("the approved payout was not paid", _jp)
+        assert _jp["paid_wst"] == 40.0 and _jp["remaining_balance_wst"] == 60.0, ("the payout is not exactly the amount", _jp)
+        assert _jp["payee"] == "Amina Guard" and _jp["payee_recorded"] is True, ("the paid answer does not name the payee", _jp)
+        assert "the account's recorded owner" in _jp["payee_basis"], ("the paid answer does not say on what basis", _jp["payee_basis"])
+        assert _jp["real_money_moved"] is False, _jp
+        assert _snap(_vid) == (100.0, 40.0, 2), ("the account did not move by exactly one payout", _snap(_vid))
+        _e = _acct(_vid)["entries"][-1]
+        assert _e["type"] == "payout_virtual" and _e["amount_wst"] == 40.0 and _e["id"] == _jp["entry_id"], _e
+        assert _e["requested_by"] == "single-user-mode" and _e["requested_by_verified"] is False, (
+            "the entry does not name who requested the payout", _e)
+        assert _e["cca_id"] == _cid and _e["consume_id"], ("the entry does not name the change that released it", _e)
+        assert _e["payee"] == "Amina Guard", ("the entry does not name the payee", _e)
+        assert [x["type"] for x in _seen] == ["economy.owner_payout"], ("no audit event, or more than one", _seen)
+        assert _seen[0]["cca_id"] == _cid and _seen[0]["amount_wst"] == 40.0 and _seen[0]["vsb_id"] == _vid, _seen
+        assert _seen[0]["requested_by"] == "single-user-mode" and _seen[0]["payee"] == "Amina Guard", _seen
+        assert _jp["audit_event"] == "recorded" and _jp["ueg_logged"] is True, ("the answer does not say the audit event landed", _jp)
+        assert _jp["governance"]["decided_by"] == "single-user-mode" and _jp["governance"]["decision_source"] == "admin_override", _jp["governance"]
+        assert _jp["governance"]["basis"].startswith("PAID (VIRTUAL)") and "a name the platform did not check" in _jp["governance"]["basis"], _jp["governance"]
+        _c3 = _cc._load_change(_cid)
+        assert _c3["status"] == "implemented", "the approval was not spent"
+        assert any(x.get("event") == "released_action_ran" for x in _c3["audit_trail"]), "the spent approval does not say its action ran"
+        _r3 = _row(_vid, _cid)
+        assert _r3["state"] == "applied" and _r3["entry_id"] == _jp["entry_id"] and _r3["paid_wst"] == 40.0, _r3
+
+        # -- 4. A THIRD IDENTICAL REQUEST is a NEW held request, never a second payment ------------------
+        _s4 = _snap(_vid)
+        _t = _ask(_vid, 40).json()
+        assert _t["status"] == "held" and _t["cca_id"] not in (None, _cid) and _t["paid_wst"] == 0, (
+            "a spent approval released a second payout", _t)
+        assert _snap(_vid) == _s4 and len(_seen) == 1, ("a third request paid", _snap(_vid), _seen)
+        _cid2 = _t["cca_id"]
+
+        # -- 5. A REJECTION pays nothing, and the same request is answered as rejected -------------------
+        _rj = _decide(_cid2, "rejected")
+        assert _rj.status_code == 200 and _cc._load_change(_cid2)["status"] == "rejected", _rj.text[:300]
+        _a5 = _ask(_vid, 40).json()
+        assert _a5["status"] == "rejected" and _a5["applied"] is False and _a5["cca_id"] == _cid2, ("a rejected payout is not answered as rejected", _a5)
+        assert _a5["paid_wst"] == 0 and _a5["governance"]["basis"].startswith("REJECTED, NOT PAID"), _a5
+        assert _a5["status_label"] == "rejected - nothing was paid", _a5["status_label"]
+        assert _snap(_vid) == _s4 and len(_seen) == 1, ("a rejected payout paid", _snap(_vid))
+        assert _row(_vid, _cid2)["state"] == "rejected", _row(_vid, _cid2)
+
+        # -- 6. THE AMOUNT APPROVED BOUNDS THE AMOUNT PAID: 10 approved does not release 15 --------------
+        _h10 = _ask(_vid, 10).json()
+        assert _h10["status"] == "held" and _h10["cca_id"] not in (None, _cid, _cid2), _h10
+        _cid3 = _h10["cca_id"]
+        assert _decide(_cid3, "approved").status_code == 200
+        _h15 = _ask(_vid, 15).json()
+        assert _h15["status"] == "held" and _h15["paid_wst"] == 0 and _h15["cca_id"] not in (None, _cid3), (
+            "an approval for 10 WST released a payout of 15 WST", _h15)
+        assert _snap(_vid) == _s4, ("a larger request was paid on a smaller approval", _snap(_vid))
+        assert _cc._load_change(_cid3)["status"] != "implemented", "the smaller approval was spent on the larger request"
+        _cid4 = _h15["cca_id"]
+        assert _cc._load_change(_cid4)["est_distributable_wst"] == 15.0, _cc._load_change(_cid4)
+        assert _decide(_cid4, "approved").status_code == 200
+        _p15 = _ask(_vid, 15).json()
+        assert _p15["status"] == "paid" and _p15["paid_wst"] == 15.0 and _p15["remaining_balance_wst"] == 45.0, _p15
+        assert _snap(_vid) == (100.0, 55.0, 3) and len(_seen) == 2, (_snap(_vid), _seen)
+
+        # -- 7. AN APPROVAL IS HANDED BACK WHEN NOTHING WAS DEBITED; an unwritten audit event is said ----
+        _h20 = _ask(_vid, 20).json()
+        assert _h20["status"] == "held", _h20
+        _cid5 = _h20["cca_id"]
+        assert _decide(_cid5, "approved").status_code == 200
+        _real_check = _op.payout_check
+
+        def _raced(v, amount):
+            _f = _real_check(v, amount)
+            _direct = _op.payout(v, 30.0)              # another payout lands between the check and the apply
+            assert _direct["cca_id"] is None and _direct["released_by"].startswith("NOT RELEASED BY CHANGE CONTROL"), _direct
+            return _f
+        monkeypatch.setattr(_op, "payout_check", _raced)
+        _race = _ask(_vid, 20)
+        monkeypatch.setattr(_op, "payout_check", _real_check)
+        assert _race.status_code == 400 and "Insufficient balance" in _race.json()["detail"], (
+            "the balance check under the store's lock did not refuse", _race.status_code, _race.text[:300])
+        assert "was given back" in _race.json()["detail"], ("the refusal does not say the approval was handed back", _race.json())
+        assert _cc._load_change(_cid5)["status"] == "approved", "an approval stayed spent on a payout that was not recorded"
+        assert _snap(_vid) == (100.0, 85.0, 4), ("the refused payout changed the account", _snap(_vid))
+        assert _acct(_vid)["entries"][-1]["cca_id"] is None, "a direct call's entry names a change that did not release it"
+        #    more accrues under ANOTHER name: the recorded owner does not change
+        _op.accrue(_vid, 50.0, "Somebody Else", memo="guard top-up", simulated=False)
+        _audit["fails"] = True                         # the payout's own audit event cannot be written
+        _pa = _ask(_vid, 20).json()
+        _audit["fails"] = False
+        assert _pa["status"] == "paid" and _pa["cca_id"] == _cid5 and _pa["remaining_balance_wst"] == 45.0, _pa
+        assert _pa["payee"] == "Amina Guard", ("a later accrual's name replaced the recorded owner", _pa)
+        assert _pa["audit_event"] == "NOT recorded (RuntimeError)" and _pa["ueg_logged"] is False, (
+            "an audit event that was not written is reported as recorded", _pa)
+        assert "NOT recorded" in _pa["note"] and "is on the constitutional ledger" not in _pa["note"], _pa["note"]
+        assert len(_seen) == 2, _seen
+
+        # -- 8. AN ACCOUNT WITH NO RECORDED OWNER says so; no name is invented ---------------------------
+        _hb = _ask(_bare, 5).json()
+        assert _hb["status"] == "held" and _hb["payee"] is None and _hb["payee_recorded"] is False, _hb
+        assert "records no owner" in _hb["payee_basis"], _hb["payee_basis"]
+        assert _decide(_hb["cca_id"], "approved").status_code == 200
+        _pb = _ask(_bare, 5).json()
+        assert _pb["status"] == "paid" and _pb["payee"] is None and _pb["payee_recorded"] is False, ("a payee was invented", _pb)
+        assert "records no owner" in _pb["governance"]["basis"] and "Rehan" not in json.dumps(_pb), _pb
+        assert _acct(_bare)["entries"][-1]["payee"] is None, _acct(_bare)["entries"][-1]
+
+        # -- 9. THE STATUS OF A NEVER-ACCRUED ACCOUNT echoes no caller's name ----------------------------
+        _sn = client.get(f"/api/v1/economy/owner-payments?vsb_id={_none}&owner=Mallory")
+        assert _sn.status_code == 200, _sn.text[:300]
+        _jn = _sn.json()
+        assert "Mallory" not in _sn.text, "the status of a never-accrued account echoes the name the caller sent"
+        assert _jn["owner"] is None and _jn["account_exists"] is False and _jn["owner_recorded"] is False, _jn
+        assert "no account exists" in _jn["owner_basis"] and _jn["balance_wst"] == 0, _jn
+        assert _acct(_none) is None, "a read created an account"
+        _sv = _op.status(_vid)
+        assert _sv["owner"] == "Amina Guard" and _sv["account_exists"] is True and _sv["owner_recorded"] is True, _sv
+        assert _sv["entries_truncated"] is False and _sv["entries_dropped"] == 0 and "complete" in _sv["entries_history_basis"], _sv
+
+        # -- 10. THE HISTORY CUT IS DISCLOSED ------------------------------------------------------------
+        _all = json.loads(_store.read_text(encoding="utf-8"))
+
+        def _seeded(v, n):
+            return {"vsb_id": v, "owner": "Amina Guard", "currency": "WST", "accrued": float(n), "paid_out": 0.0,
+                    "entries": [{"id": f"s{i:04d}", "type": "accrual", "amount_wst": 1.0, "memo": "seed",
+                                 "at": f"2026-01-01T00:{i // 60:02d}:{i % 60:02d}Z"} for i in range(n)]}
+        _all[_big], _all[_full] = _seeded(_big, 199), _seeded(_full, 200)
+        _store.write_text(json.dumps(_all), encoding="utf-8")
+        _b0 = _op.status(_big)
+        assert _b0["entries_stored"] == 199 and _b0["entries_truncated"] is False and _b0["entries_dropped"] == 0, _b0
+        for _ in range(3):
+            _op.accrue(_big, 1.0, "Amina Guard", memo="guard", simulated=False)
+        _b1 = client.get(f"/api/v1/economy/owner-payments?vsb_id={_big}").json()
+        assert _b1["entries_stored"] == 200 and _b1["entries_dropped"] == 2 and _b1["entries_truncated"] is True, (
+            "entries were dropped and the payload does not say so", {k: _b1.get(k) for k in _b1 if k.startswith("entries_")})
+        assert _b1["entries_history_basis"].startswith("TRUNCATED: 2 older entries were dropped"), _b1["entries_history_basis"]
+        assert _b1["entries_kept_from"] == _acct(_big)["entries"][0]["at"] == "2026-01-01T00:00:02Z", _b1["entries_kept_from"]
+        assert _b1["entries_shown"] == 50 and len(_b1["entries"]) == 50 and _b1["accrued_total_wst"] == 202.0, _b1["entries_shown"]
+        _op.payout(_big, 1.0)                          # a payout's cut is counted the same way
+        assert _op.status(_big)["entries_dropped"] == 3 and len(_acct(_big)["entries"]) == 200, _op.status(_big)["entries_dropped"]
+        _f0 = _op.status(_full)
+        assert _f0["entries_truncated"] is None and _f0["entries_dropped"] is None, (
+            "a full account with no drop count is reported as complete", _f0["entries_history_basis"])
+        assert _f0["entries_history_basis"].startswith("POSSIBLY TRUNCATED"), _f0["entries_history_basis"]
+
+        # -- 11. NOTHING IS PAID WITHOUT AN APPROVAL THE GATE SPENT --------------------------------------
+        _real_gate = _gv._materiality_gate
+        _s11 = _snap(_vid)
+        monkeypatch.setattr(_gv, "_materiality_gate", lambda *a, **k: (None, None))     # a gate that says "proceed"
+        _fc = _ask(_vid, 1)
+        monkeypatch.setattr(_gv, "_materiality_gate", _real_gate)
+        assert _fc.status_code == 503 and "nothing was paid" in _fc.json()["detail"] and _snap(_vid) == _s11, (
+            "a payout was paid with no approval spent for it", _fc.status_code, _fc.text[:300])
+
+        # -- 12. THE HOLD'S TITLE cannot be claimed by a submitted change --------------------------------
+        _imp = client.post("/api/v1/cca/submit", json={
+            "title": _gv.PAYOUT_HOLD_TITLE_PREFIX + _vid, "change_type": "config_minor",
+            "description": "pay guard impersonation probe", "rationale": "pay guard impersonation probe"})
+        assert _imp.status_code == 422 and "reserved" in str(_imp.json()["detail"]), (
+            "a submitted change may carry the payout hold's title", _imp.status_code, _imp.text[:300])
+
+        # -- 13. AN UNREADABLE STORE is refused before anything is filed (W465, unchanged) ----------------
+        _h13 = _holds(_vid)
+        _store.write_text("{not json", encoding="utf-8")
+        _q = _ask(_vid, 1)
+        assert _q.status_code == 503 and "no payout was recorded" in _q.json()["detail"], (_q.status_code, _q.text[:300])
+        assert _holds(_vid) == _h13 and _store.read_text(encoding="utf-8") == "{not json", "an unreadable store was overwritten or a hold filed"
+    finally:
+        for _v in (_vid, _bare, _none, _big, _full):
+            for _id in _holds(_v):
+                _cc._cca_path(_id).unlink(missing_ok=True)
+
+    # -- 14. THE PAGE shows a request as held or rejected, never as paid, and sends no payee name ---------
+    _pg = (pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages"
+           / "enterprise" / "VSBEconomy.tsx").read_text(encoding="utf-8")
+    assert "body: JSON.stringify({ vsb_id: vsbId, amount: payoutAmt })," in _pg, "the page's payout request changed shape"
+    _start = _pg.index("const doPayout = async () => {")
+    _fn = _pg[_start:_pg.index("  return (", _start)]
+    assert "owner:" not in _fn and "owner," not in _fn, "the page's payout request names an owner"
+    assert "if (d.applied === true) {" in _fn and "setPayHold({ status: String(d.status ?? 'held')" in _fn, (
+        "the page reports every answered request as a payout")
+    assert _fn.index("if (d.applied === true) {") < _fn.index("setPayMsg(`Virtual payout applied") < _fn.index("} else {"), (
+        "the page's paid message is not behind the applied check")
+    assert "{payHold && (" in _pg and 'data-testid="owner-payout-held"' in _pg and "— NOT PAID. {payHold.basis}" in _pg
+    assert "{payingOut ? 'Requesting…' : 'Request virtual payout'}" in _pg, "the button still says it records a payout"
+    assert 'data-testid="owner-payout-request-state"' in _pg and "{String(q.state_label ?? q.state)}</span>" in _pg
+    assert "{Array.isArray(pay.payout_requests) && pay.payout_requests.length > 0 && (" in _pg
+    assert "{pay.payout_requests === null && (" in _pg and 'data-testid="owner-payout-requests-unread"' in _pg
+    assert "{pay.entries_truncated !== false && pay.entries_history_basis && (" in _pg, "the page does not show that the history is cut"
+    assert "setPayMsg(''); setPayErr(''); setCloseMsg(''); setCloseErr('');" in _pg and "    setPayHold(null);" in _pg
+
+
+def test_w673_the_capital_fund_product_package_is_archived_and_no_provider_call_precedes_the_money_switch(client):
+    """W673 - OWNER RULING 2026-10-12: products/capital_fund is archived as a reversible move. It was imported
+    by nothing live and held a provider adapter whose charge and payout calls read no real-money switch, and
+    two adapters returning a fixed verified account and a fixed successful settlement. This holds what must
+    stay true afterwards: the package is out of the live tree and whole in the archive, nothing live imports
+    it, the fund the platform SERVES still answers and still has its catalogue card, the archive says how to
+    reverse the move, and no live module imports the provider library without the switch in front of it."""
+    import ast
+    import os
+    import pathlib
+    import re
+
+    _root = pathlib.Path(__file__).resolve().parents[1]
+    _pkg_rel = "products" + "/" + "capital_fund"                    # built from halves: see the import scan
+    _arc = _root / "_archive" / "products" / "capital_fund"
+
+    # -- 1. THE SOURCE IS GONE - the folder, not only its tracked files (the catalogue lists FOLDERS) ---
+    assert not (_root / _pkg_rel).exists(), (
+        "the product package folder is in the live tree. If only __pycache__ is left there, clear it: the "
+        "catalogue reads directories, so this machine and a fresh checkout would disagree")
+
+    # -- 2. THE ARCHIVE HOLDS IT WHOLE - a reversible move, so the adapter is there with its calls in it ---
+    _sg = _arc / "adapters" / "stripe_gateway.py"
+    assert _sg.is_file(), "the archived provider adapter is gone - the move was to be reversible"
+    _sgt = _sg.read_text(encoding="utf-8")
+    assert "Payout.create" in _sgt and "PaymentIntent.create" in _sgt, (
+        "the archived adapter no longer holds the calls it was archived for - it was replaced, not moved")
+    _arc_py = [p for p in _arc.rglob("*.py")]
+    assert len(_arc_py) >= 42, ("the archived package is not whole: 41 files moved and one was already "
+                                "there", len(_arc_py))
+    for _must in ("core/vault.py", "adapters/institutional_banking.py", "adapters/mainnet_settlement.py",
+                  "orchestration/full_autonomy.py"):
+        assert (_arc / _must).is_file(), ("a file of the package did not arrive in the archive", _must)
+
+    # -- 3. NOTHING OUTSIDE THE ARCHIVE IMPORTS IT - a bounded walk of the folders that hold tracked Python ---
+    _dotted = "products" + r"\." + "capital_fund"
+    _imp = re.compile(r"^[ \t]*(?:from|import)[ \t]+" + _dotted + r"\b", re.M)
+    _dyn = re.compile(r"(?:import_module|__import__)\(\s*[\"']" + _dotted)
+    _skip = {"_archive", "node_modules", "venv", ".venv", ".git", "__pycache__", "dist", "build"}
+    _folders = ("agentic_core", "scripts", "integration_tests", "products", "core", "config", "src")
+    _files = [p for p in _root.glob("*.py")]
+    for _top in _folders:
+        for _base, _dirs, _names in os.walk(_root / _top):
+            _dirs[:] = [d for d in _dirs if d not in _skip]
+            _files += [pathlib.Path(_base) / n for n in _names if n.endswith(".py")]
+    assert len(_files) > 400, ("the walk read almost nothing, so finding no importer proves nothing",
+                               len(_files))
+    _importers = []
+    for _f in _files:
+        _t = _f.read_text(encoding="utf-8", errors="replace")
+        for _m in list(_imp.finditer(_t)) + list(_dyn.finditer(_t)):
+            _importers.append(f"{_f.relative_to(_root).as_posix()}:{_t[:_m.start()].count(chr(10)) + 1}")
+    assert not _importers, (
+        "a module outside the archive imports the archived product package - it will raise "
+        "ModuleNotFoundError, or the package has been quietly restored", _importers[:8])
+
+    # -- 4. THE FUND THE PLATFORM SERVES STILL ANSWERS - it is a different module and was not touched ---
+    assert (_root / "agentic_core" / "api" / "capital_fund.py").is_file(), "the LIVE fund module is gone"
+    _st = client.get("/api/v1/fund/status")
+    assert _st.status_code == 200 and isinstance(_st.json(), dict) and _st.json(), (
+        "the live fund's status route does not answer", _st.status_code, _st.text[:200])
+
+    # -- 5. AND ITS CATALOGUE CARD DID NOT LEAVE WITH THE DIRECTORY ---
+    from agentic_core.catalog import api as _cat
+    assert not (_cat.PRODUCTS_DIR / "capital_fund").exists()
+    _rows = client.get("/api/v1/catalog/products").json()["products"]
+    _card = [p for p in _rows if p["slug"] == "capital_fund"]
+    assert len(_card) == 1, ("the live fund's card is listed %d times - it left with the product directory, "
+                             "or is listed twice" % len(_card))
+    assert _card[0]["live"] is True and _card[0]["status"] == "live" and _card[0]["route"] == "/capital", _card[0]
+    assert [p["slug"] for p in _cat.served_products()].count("capital_fund") == 1
+
+    # -- 6. THE ARCHIVE SAYS WHAT MOVED, ON WHOSE RULING, AND HOW TO PUT IT BACK ---
+    _idx = (_root / "_archive" / "README.md").read_text(encoding="utf-8")
+    _head = "## Later moves: " + _pkg_rel + " (2026-10-12)"
+    assert _head in _idx, "the archive's index does not record this move"
+    _entry = _idx[_idx.index(_head):]
+    assert "Owner" in _entry and "2026-10-12" in _entry, "the entry does not say on whose ruling, or when"
+    assert "_archive/" + _pkg_rel in _entry and "real-money switch" in _entry, (
+        "the entry does not say where the package went, or why")
+    assert "git revert" in _entry and 'git mv "$f" "${f#_archive/}"' in _entry, (
+        "the entry does not give the command that reverses the move")
+
+    # -- 7. NO LIVE MODULE IMPORTS THE PROVIDER LIBRARY WITHOUT THE REAL-MONEY SWITCH ---
+    #  The archived adapter imported the library at module scope and called it with no switch read at all.
+    #  The property is stated on the AST of every live module, so the latent path cannot return under
+    #  another name: whoever imports the library also imports REAL_MONEY_ENABLED from the one place it is
+    #  defined and branches on it.
+    _lib = "stri" + "pe"
+    _users = {}
+    for _f in _files:
+        _rel = _f.relative_to(_root).as_posix()
+        if _rel.startswith("integration_tests/"):
+            continue
+        _t = _f.read_text(encoding="utf-8", errors="replace")
+        if _lib not in _t:
+            continue
+        try:
+            _tree = ast.parse(_t)
+        except SyntaxError:
+            continue
+        _imports_lib = any(
+            (isinstance(n, ast.Import) and any(a.name == _lib or a.name.startswith(_lib + ".") for a in n.names))
+            or (isinstance(n, ast.ImportFrom) and (n.module or "").split(".")[0] == _lib and n.level == 0)
+            for n in ast.walk(_tree))
+        if _imports_lib:
+            _users[_rel] = _tree
+    _pay = "agentic_core/api/v310/payments.py"
+    assert _pay in _users, ("the scan did not find the one module known to import the provider library, so "
+                            "it is not looking where the imports are", sorted(_users))
+    for _rel, _tree in _users.items():
+        _reads = any(isinstance(n, ast.ImportFrom) and n.module == "agentic_core.economy.owner_payments"
+                     and any(a.name == "REAL_MONEY_ENABLED" for a in n.names) for n in ast.walk(_tree))
+        _branches = any(isinstance(n, (ast.If, ast.IfExp))
+                        and any(isinstance(x, ast.Name) and x.id == "REAL_MONEY_ENABLED" for x in ast.walk(n.test))
+                        for n in ast.walk(_tree))
+        assert _reads and _branches, (
+            "a live module imports the payment provider's library and does not read the real-money switch",
+            _rel, {"imports_the_switch": _reads, "branches_on_it": _branches})
+    #  and in the module that does it properly, ORDER is the property: the switch is tested before any
+    #  answer that can be "live", and a session is created only after the mode was established
+    _ptree = _users[_pay]
+    _fns = {n.name: n for n in ast.walk(_ptree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))}
+    _mode_fn = _fns["_mode"]
+    _gate = next((n for n in ast.walk(_mode_fn) if isinstance(n, ast.If)
+                  and any(isinstance(x, ast.Name) and x.id == "REAL_MONEY_ENABLED" for x in ast.walk(n.test))), None)
+    assert _gate is not None, "payments._mode no longer tests the real-money switch"
+    assert any(isinstance(n, ast.Return) and isinstance(n.value, ast.Constant) and n.value.value == "live_gated"
+               for n in _gate.body), "the switch no longer answers live_gated when it is off"
+    _live_returns = [n for n in ast.walk(_mode_fn) if isinstance(n, ast.Return) and n.value is not None
+                     and any(isinstance(x, ast.Constant) and x.value == "live" for x in ast.walk(n.value))]
+    assert _live_returns, "payments._mode can no longer answer live at all - this leg has lost its subject"
+    assert all(n.lineno > _gate.lineno for n in _live_returns), (
+        "payments._mode can answer live before it has tested the real-money switch")
+
+    def _first_call(fn, name):
+        return min((n.lineno for n in ast.walk(fn) if isinstance(n, ast.Call)
+                    and isinstance(n.func, ast.Name) and n.func.id == name), default=None)
+
+    _sess = _fns["create_checkout_session"]
+    _m_at, _s_at = _first_call(_sess, "_mode"), _first_call(_sess, "_" + _lib)
+    assert _m_at is not None and _s_at is not None and _m_at < _s_at, (
+        "create_checkout_session reaches the provider library before the mode was established", _m_at, _s_at)
+
+
+def test_w673_the_fund_is_named_capital_fund_wherever_a_person_reads_it(client):
+    """W673 - OWNER RULING 2026-10-12: the name a person reads is "Capital Fund". The old name called a
+    virtual allocation pot sovereign; the report prompt addressed an officer nobody holds."""
+    import pathlib
+    _old = "Sovereign " + "Capital Fund"            # built here so this guard does not match itself
+    _root = pathlib.Path(__file__).resolve().parents[1]
+    _hits = []
+    for _top in ("agentic_core", "apps/workstation-superapp/src"):
+        for _f in (_root / _top).rglob("*"):
+            if _f.suffix not in (".py", ".ts", ".tsx") or "node_modules" in _f.parts or "__pycache__" in _f.parts:
+                continue
+            if _old in _f.read_text(encoding="utf-8", errors="replace"):
+                _hits.append(str(_f.relative_to(_root)))
+    assert _hits == [], ("the old name is still in live code or a page", _hits)
+    #    what the routes answer, not only what the source says
+    _cat = client.get("/api/v1/catalog/products").json()
+    _rows = _cat.get("products") if isinstance(_cat, dict) else _cat
+    _card = next((p for p in _rows if p.get("slug") == "capital_fund"), None)
+    assert _card and _card["name"] == "Capital Fund", ("the catalogue card carries another name", _card and _card.get("name"))
+    _res = client.get("/api/v1/resources").json()
+    _rl = _res.get("resources") if isinstance(_res, dict) else _res
+    _r = next((x for x in _rl if x.get("id") == "capital_fund"), None)
+    assert _r and _r.get("name") == "Capital Fund", ("the fabric resource carries another name", _r and _r.get("name"))
+    import agentic_core.api.capital_fund as _cf
+    _src = pathlib.Path(_cf.__file__).read_text(encoding="utf-8")
+    assert "Chief Investment " + "Officer" not in _src and "a VIRTUAL capital fund (no real money is held or invested)" in _src
+
+
+def test_w673_a_seeded_listing_takes_the_catalogues_current_name(client, monkeypatch, tmp_path):
+    """W673 - found in a browser: the marketplace showed the fund's old name from a listing seeded before the
+    rename. A catalogue-derived listing takes the catalogue's current name and keeps the one it had; a listing
+    a person made is never renamed, whatever its tags say."""
+    import json as _j
+    import agentic_core.api.marketplace as _mk
+    monkeypatch.setattr(_mk, "_LISTINGS_DIR", tmp_path)
+    _seeded = {"id": "s1", "name": "An Older Name For The Fund", "origin": "catalog", "tags": ["capital_fund"],
+               "status": "active", "updated_at": 1.0}
+    _made = {"id": "p1", "name": "My Own Capital Fund Guide", "origin": "user", "tags": ["capital_fund"],
+             "status": "active", "updated_at": 1.0}
+    _same = {"id": "s2", "name": "Capital Fund", "origin": "catalog", "tags": ["capital_fund"], "updated_at": 1.0}
+    for _d in (_seeded, _made, _same):
+        (tmp_path / (_d["id"] + ".json")).write_text(_j.dumps(_d), encoding="utf-8")
+    _out = _mk._rename_seeds_to_the_catalogue()
+    _s = _j.loads((tmp_path / "s1.json").read_text(encoding="utf-8"))
+    assert _s["name"] == "Capital Fund" and _s["previous_names"] == ["An Older Name For The Fund"], _s
+    assert len(_out) == 1 and "An Older Name For The Fund -> Capital Fund" in _out[0], _out
+    assert _j.loads((tmp_path / "p1.json").read_text(encoding="utf-8")) == _made, "a person's own listing was renamed"
+    assert _j.loads((tmp_path / "s2.json").read_text(encoding="utf-8")) == _same, "a listing already current was rewritten"
+    #    a second run changes nothing: the name it had is recorded once
+    assert _mk._rename_seeds_to_the_catalogue() == []
+    assert _j.loads((tmp_path / "s1.json").read_text(encoding="utf-8"))["previous_names"] == ["An Older Name For The Fund"]
+    #    and it runs at start, before seeding: read where the module calls it
+    import pathlib
+    _src = pathlib.Path(_mk.__file__).read_text(encoding="utf-8")
+    assert _src.index("\n_rename_seeds_to_the_catalogue()\n") < _src.index("\n_seed_from_catalog()\n")

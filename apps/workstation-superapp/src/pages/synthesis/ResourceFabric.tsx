@@ -58,6 +58,9 @@ interface HistoryRun {
   // run and an attempt that raised looked the same on the only surface that reads the persisted record.
   real_resources?: { resource: string; endpoint?: string; kind?: string;
                      outcome?: string; outcome_phrase?: string; error?: string | null;
+                     // P3.31 (round 9) - a stand-in's row names what it stood in for; the failed row says what was tried
+                     alternative_for?: string; stand_in_label?: string;
+                     alternative?: { tried: string | null; attempts: number; outcome?: string; basis: string };
                      duration_ms?: number }[];
   plan_binding?: { result?: string; advanced?: boolean; objective_id?: string } | null;
   created_at: string;
@@ -90,6 +93,7 @@ interface CompositionRun {
   final: string; any_external: boolean;
   // W273/W274/W284 — run-time honesty + plan binding surfaced to the Owner
   run_id?: string; commit_ready?: boolean; usage_area_supported?: boolean;
+  stand_ins?: { for: string; resource: string; outcome?: string; label?: string }[]; stand_ins_basis?: string;
   quality_warning?: string | null; run_params_applied?: string[];
   plan_binding?: { result?: string; advanced?: boolean; objective_id?: string; status?: string } | null;
   quality_assurance?: { quality?: { qms_gate_passed?: boolean; document_controlled?: boolean;
@@ -112,6 +116,9 @@ interface CompositionRun {
     // W491 (FU-159) — `ran` was an endpoint label, not evidence a facility ran: eight of these handlers
     // only read state that was already there. The choke point now stamps what actually happened.
     kind?: 'status_read' | 'query' | 'blueprint' | 'facility_run'; kind_phrase?: string;
+    // P3.31 (round 9) - a stand-in's row names what it stood in for; the failed row says what was tried
+    alternative_for?: string; stand_in_label?: string;
+    alternative?: { tried: string | null; attempts: number; outcome?: string; basis: string };
     endpoint?: string; invocation?: string; side_effect?: string;
     // W491 (refutation) — `kind` is what the resource IS; `outcome` is what happened on THIS run
     outcome?: 'produced' | 'read' | 'assessed' | 'specified' | 'narrated' | 'raised' | 'no_calls_ran';   // W656: + narrated
@@ -645,11 +652,13 @@ export const ResourceFabric: React.FC = () => {
                             : rr.outcome === 'raised' || rr.outcome === 'no_calls_ran' ? 'bg-vital/15 text-vital'
                             : rr.outcome ? 'bg-slate-800 text-slate-400'
                             : 'bg-slate-900 text-slate-500'}`}>
+                      {rr.alternative_for ? `stand-in for ${rr.alternative_for} (not composed): ` : ''}
                       {rr.resource}{rr.outcome === 'raised' || rr.outcome === 'no_calls_ran' ? ' (failed)'
                         : rr.outcome === 'read' || rr.outcome === 'assessed' ? ' (read)'
                         : rr.outcome === 'specified' ? ' (blueprint)'
                         : rr.outcome === 'narrated' ? ' (narrative, no engine)'
                         : rr.outcome ? '' : ' (?)'}
+                      {rr.alternative ? (rr.alternative.tried ? ` · ${rr.alternative.tried} tried once in its place` : ' · nothing tried in its place') : ''}
                     </span>
                   ))}
                   {h.plan_binding?.result && (
@@ -812,10 +821,28 @@ export const ResourceFabric: React.FC = () => {
                               </p>
                             );
                           })()}
+                          {(runResult.real_resource_runs || []).some(r => r.alternative_for) && (
+                            <p data-testid="real-runs-stand-ins" className="text-[9px] font-bold text-amber-400">
+                              {(runResult.real_resource_runs || []).filter(r => r.alternative_for).length} of the rows below is a stand-in, not a resource you composed. {runResult.stand_ins_basis ?? ''}
+                            </p>
+                          )}
                           {(runResult.real_resource_runs || []).map((rr, i) => (
                             <div key={i} className="border-t border-aura/10 first:border-t-0 pt-1.5 first:pt-0">
                               <div className="flex flex-wrap items-center gap-1.5">
                                 <span className="text-[9px] font-black uppercase text-white">{rr.resource}</span>
+                                {rr.alternative_for && (
+                                  <span data-testid={`run-stand-in-${rr.resource}`}
+                                        className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400">
+                                    stand-in for {rr.alternative_for} — not composed by you
+                                  </span>
+                                )}
+                                {rr.alternative && (
+                                  <span data-testid={`run-alternative-${rr.resource}`} className="text-[8px] font-bold text-amber-400">
+                                    {rr.alternative.tried
+                                      ? `${rr.alternative.tried} was tried once in its place (${rr.alternative.outcome ?? 'outcome not recorded'})`
+                                      : 'nothing was tried in its place'} — {rr.alternative.basis}
+                                  </span>
+                                )}
                                 {rr.endpoint && <span className="text-[8px] font-mono text-slate-600">{rr.endpoint}</span>}
                                 {rr.error
                                   ? <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-vital/15 text-vital">error</span>

@@ -96,6 +96,73 @@ def _new_account(vsb_id: str, owner: str) -> Dict[str, Any]:
     return {"vsb_id": vsb_id, "owner": owner, "currency": "WST", "accrued": 0.0, "paid_out": 0.0, "entries": []}
 
 
+#  OWNER RULINGS 2026-10-12 (R3) - THE HISTORY IS CUT, AND NOW SAYS SO. An account keeps its last
+#  _KEEP_ENTRIES entries; the cut used to be silent. Retention is NOT changed here: the cut stays, and the
+#  account now counts what it dropped and records where the kept history starts. The running totals
+#  (accrued, paid_out) were never derived from the entries, so they are not affected by a drop.
+_KEEP_ENTRIES = 200
+_SHOWN_ENTRIES = 50
+
+
+def _cut_entries(a: Dict[str, Any]) -> None:
+    """Keep the last _KEEP_ENTRIES entries and RECORD the drop on the account (called under the store lock)."""
+    over = len(a["entries"]) - _KEEP_ENTRIES
+    if over <= 0:
+        return
+    before = a.get("entries_dropped")
+    a["entries_dropped"] = (before if isinstance(before, int) and not isinstance(before, bool) else 0) + over
+    a["entries"] = a["entries"][-_KEEP_ENTRIES:]
+    first = a["entries"][0] if a["entries"] else {}
+    a["entries_kept_from"] = first.get("at") if isinstance(first, dict) else None
+
+
+def _history(a: Dict[str, Any]) -> Dict[str, Any]:
+    """What the stored history covers, computed when read. Three answers, and the third is never given as
+    either of the others: a counted drop (truncated True), a full account with no count (truncated None -
+    entries dropped before drops were counted are not known), and an account below the limit (False)."""
+    stored = len(a["entries"])
+    raw = a.get("entries_dropped")
+    dropped = raw if isinstance(raw, int) and not isinstance(raw, bool) and raw > 0 else 0
+    if dropped:
+        truncated: Any = True
+        basis = (f"TRUNCATED: {dropped} older entr{'y was' if dropped == 1 else 'ies were'} dropped (an account "
+                 f"keeps its last {_KEEP_ENTRIES}); the stored history starts at "
+                 f"{a.get('entries_kept_from') or 'a time that was not recorded'}. The accrued and paid-out totals "
+                 f"are running totals and are not affected; a dropped entry can no longer be listed, and a missed "
+                 f"accrual whose entry was dropped can no longer be recognised as already applied.")
+    elif stored >= _KEEP_ENTRIES:
+        truncated = None
+        basis = (f"POSSIBLY TRUNCATED: the account holds the maximum of {_KEEP_ENTRIES} entries and no drop count "
+                 f"is recorded on it, so whether older entries were dropped before drops were counted is not known.")
+    else:
+        truncated = False
+        basis = (f"complete: all {stored} entr{'y' if stored == 1 else 'ies'} recorded for this account "
+                 f"{'is' if stored == 1 else 'are'} stored (an account keeps at most {_KEEP_ENTRIES})")
+    return {"entries_stored": stored, "entries_shown": min(stored, _SHOWN_ENTRIES),
+            "entries_dropped": (dropped if truncated is not None else None),
+            "entries_kept_from": a.get("entries_kept_from"),
+            "entries_truncated": truncated, "entries_history_basis": basis}
+
+
+def payee_of(a: Any) -> Dict[str, Any]:
+    """OWNER RULING 2026-10-12 (R1) - WHO A PAYOUT IS FOR: the owner RECORDED ON THE ACCOUNT, never a name a
+    request supplies (a typed name can only be wrong). `a` is the stored account, or None when none exists.
+    An account with no owner recorded is said to have none; no name is invented for it."""
+    if not isinstance(a, dict):
+        return {"payee": None, "payee_recorded": False,
+                "payee_basis": ("no account exists for this id - nothing has accrued to it, so no owner is "
+                                "recorded and there is nothing to pay")}
+    owner = a.get("owner")
+    owner = owner.strip() if isinstance(owner, str) else ""
+    if not owner:
+        return {"payee": None, "payee_recorded": False,
+                "payee_basis": ("the account records no owner: a payout reduces its balance and names no payee, "
+                                "because no name is invented for it")}
+    return {"payee": owner, "payee_recorded": True,
+            "payee_basis": ("the account's recorded owner - the name stored on the account when it first "
+                            "accrued, not a name this request supplied")}
+
+
 def _pending_read() -> list:
     """The missed accruals waiting to be applied. A store that cannot be read whole is refused rather than
     answered as empty: answering empty would report the Owner as fully paid while credits are outstanding."""
@@ -232,19 +299,29 @@ def accrue(vsb_id: str, amount: float, owner: str = "Rehan", memo: str = "cycle 
                              # W505 (FU-036) — the reconciliation's idempotence key: a re-applied accrual
                              # carries the pending row's id, so a second attempt can see its own work.
                              **({"ref": ref} if ref else {})})
-        a["entries"] = a["entries"][-200:]
+        _cut_entries(a)
         return json.loads(json.dumps(a))
     return _mutate(change)
 
 
-def status(vsb_id: str, owner: str = "Rehan") -> Dict[str, Any]:
-    """READ-ONLY: the account as stored, or zeros for an account that has never accrued (nothing is created)."""
-    a = _read().get(vsb_id) or _new_account(vsb_id, owner)
+def status(vsb_id: str) -> Dict[str, Any]:
+    """READ-ONLY: the account as stored, or zeros for an account that has never accrued (nothing is created).
+
+    OWNER RULING 2026-10-12 (R1): this took an `owner` argument and answered a never-accrued account with
+    whatever name the caller sent. It takes none now. `owner` is the name stored on the account, or None;
+    `account_exists` and `owner_basis` say which case this is."""
+    stored = _read().get(vsb_id)
+    a = stored or _new_account(vsb_id, None)
     balance = round(a["accrued"] - a["paid_out"], 2)
+    who = payee_of(stored)
     return {
-        "vsb_id": vsb_id, "owner": a.get("owner", owner), "currency": "WST",
+        "vsb_id": vsb_id, "owner": who["payee"], "currency": "WST",
+        "account_exists": stored is not None, "owner_recorded": who["payee_recorded"],
+        "owner_basis": who["payee_basis"],
         "accrued_total_wst": a["accrued"], "paid_out_total_wst": a["paid_out"],
-        "balance_wst": balance, "entries": a["entries"][-50:][::-1],
+        "balance_wst": balance, "entries": a["entries"][-_SHOWN_ENTRIES:][::-1],
+        #  R3 - what the stored history covers, said beside the entries it limits
+        **_history(a),
         # W505 (FU-036) - what the Owner is OWED from accruals that failed. Without this the balance reads as
         # the whole picture while credits sit unapplied in the pending store, which is the same silence the row
         # is about one layer along.
@@ -257,9 +334,43 @@ def status(vsb_id: str, owner: str = "Rehan") -> Dict[str, Any]:
     }
 
 
-def payout(vsb_id: str, amount: float, owner: str = "Rehan") -> Dict[str, Any]:
+def payout_check(vsb_id: str, amount: float) -> Dict[str, Any]:
+    """READ-ONLY (R2): whether a payout of this amount could be paid NOW, asked before anything is filed with
+    Change Control, so nobody is asked to decide a payout that cannot be paid. The store is read first (an
+    unreadable store raises OwnerPaymentsUnavailable whatever the amount); ValueError for a non-finite,
+    non-positive or over-balance amount. It decides nothing about the payout itself: the check that counts is
+    made again by payout(), under the store lock."""
+    a = _read().get(vsb_id)
+    if not math.isfinite(float(amount)):
+        raise ValueError("Payout amount must be a finite number.")
+    amount = round(max(0.0, float(amount)), 2)
+    if amount <= 0:
+        raise ValueError("Payout amount must be positive.")
+    balance = round(a["accrued"] - a["paid_out"], 2) if a else 0.0
+    if amount > balance:
+        raise ValueError(f"Insufficient balance: {balance} WST available, {amount} WST requested.")
+    return {"amount_wst": amount, "balance_wst": balance, "simulated": bool(a.get("simulated")), **payee_of(a)}
+
+
+def paid_changes(vsb_id: str) -> Dict[str, Dict[str, Any]]:
+    """READ-ONLY: the STORED payout entries that name the Change Control record that released them, by that
+    record's id. An entry dropped by the history cut is not here (status() says how many were dropped)."""
+    a = _read().get(vsb_id) or {}
+    return {e["cca_id"]: e for e in (a.get("entries") or [])
+            if isinstance(e, dict) and e.get("type") == "payout_virtual" and e.get("cca_id")}
+
+
+def payout(vsb_id: str, amount: float, *, requested_by: str | None = None,
+           requested_by_verified: bool | None = None, cca_id: str | None = None,
+           consume_id: str | None = None) -> Dict[str, Any]:
     """Record a VIRTUAL payout (reduces the accrued balance). Never moves real funds — rails are disabled. The
-    balance check and the write happen under one lock, so two payouts can never both spend the same balance."""
+    balance check and the write happen under one lock, so two payouts can never both spend the same balance.
+
+    OWNER RULINGS 2026-10-12: it takes no `owner` (R1 - the payee is the owner recorded on the account, read
+    under the lock), and the entry it appends names who requested the payout and the Change Control record
+    whose approval released it (R3). THIS FUNCTION IS NOT THE GATE: the route holds every payout for a
+    person's decision and calls this only with an approval the economy's gate spent. A direct call records
+    `cca_id: None` and says in its answer that no Change Control record released it."""
     if not math.isfinite(float(amount)):
         raise ValueError("Payout amount must be a finite number.")
     amount = round(max(0.0, float(amount)), 2)
@@ -272,15 +383,30 @@ def payout(vsb_id: str, amount: float, owner: str = "Rehan") -> Dict[str, Any]:
         if amount > balance:
             raise ValueError(f"Insufficient balance: {balance} WST available, {amount} WST requested.")
         a["paid_out"] = round(a["paid_out"] + amount, 2)
-        a["entries"].append({"id": uuid.uuid4().hex[:8], "type": "payout_virtual", "amount_wst": amount,
-                             "memo": "virtual payout — no real funds moved (rails disabled)", "at": _now()})
-        a["entries"] = a["entries"][-200:]
+        _who.update(payee_of(a))
+        _entry = {"id": uuid.uuid4().hex[:8], "type": "payout_virtual", "amount_wst": amount,
+                  "memo": "virtual payout — no real funds moved (rails disabled)", "at": _now(),
+                  "payee": _who["payee"],
+                  "requested_by": requested_by, "requested_by_verified": requested_by_verified,
+                  "cca_id": cca_id, "consume_id": consume_id}
+        a["entries"].append(_entry)
+        _who["entry_id"] = _entry["id"]
+        _cut_entries(a)
         _sim658.append(bool(a.get("simulated")))
         return round(a["accrued"] - a["paid_out"], 2)
     _sim658: list = []
+    _who: Dict[str, Any] = {}
     remaining = _mutate(change)
     return {
         "paid_wst": amount, "remaining_balance_wst": remaining,
+        "entry_id": _who.get("entry_id"),
+        "payee": _who.get("payee"), "payee_recorded": bool(_who.get("payee_recorded")),
+        "payee_basis": _who.get("payee_basis"),
+        "requested_by": requested_by, "requested_by_verified": requested_by_verified,
+        "cca_id": cca_id, "consume_id": consume_id,
+        "released_by": (f"Change Control record {cca_id}" if cca_id else
+                        "NOT RELEASED BY CHANGE CONTROL: this payout was recorded by a direct call, not through "
+                        "the payout route"),
         "simulated": bool(_sim658 and _sim658[-1]),
         "real_money_moved": False, "real_money_rails": "DISABLED",
         "note": "Virtual payout recorded. No real money moved — real rails are gated pending Owner "

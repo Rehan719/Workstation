@@ -89,6 +89,8 @@ export const VSBEconomy: React.FC = () => {
   const [payingOut, setPayingOut] = useState(false);
   const [payMsg, setPayMsg] = useState('');
   const [payErr, setPayErr] = useState('');
+  // Owner ruling 2026-10-12 - a payout request that was HELD or REJECTED: nothing was paid, and it says so
+  const [payHold, setPayHold] = useState<{ status: string; cca_id: string | null; basis: string } | null>(null);
 
   // W465 (FU-016) — an error answer used to be stored as the account and shown as 0 WST with a live payout button;
   // the store's own refusal (503: unreadable, never overwritten) is now shown as what it is
@@ -160,6 +162,7 @@ export const VSBEconomy: React.FC = () => {
     setPay(null); setBp(null); setPayLoadErr(''); setBpLoadErr('');
     setCycle(null); setGov(''); setHold(null); setError(''); setSimBasis('');
     setPayMsg(''); setPayErr(''); setCloseMsg(''); setCloseErr('');
+    setPayHold(null);
     loadOwnerPay(); loadBoardPack();
   }, [vsbId]);
 
@@ -271,16 +274,30 @@ export const VSBEconomy: React.FC = () => {
   };
 
   const doPayout = async () => {
-    setPayingOut(true); setPayMsg(''); setPayErr('');
+    setPayingOut(true); setPayMsg(''); setPayErr(''); setPayHold(null);
     try {
       const r = await fetch('/api/v1/economy/owner-payments/payout', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ vsb_id: vsbId, amount: payoutAmt }),
       });
-      const d = await r.json();
-      if (!r.ok) { setPayErr(typeof d.detail === 'string' ? d.detail : `HTTP ${r.status}`); setPayingOut(false); return; }
-      setPayMsg(`Virtual payout recorded — no real money moved. Remaining ${d.remaining_balance_wst.toLocaleString()} WST.`);
-      setPayoutAmt(0); loadOwnerPay();
+      // a refusal's body may be absent or structured (a 422 carries a list): it is never rendered as a child
+      const d = await r.json().catch(() => null);
+      if (!r.ok || !d) {
+        setPayErr(typeof d?.detail === 'string' ? d.detail : `HTTP ${r.status} — the payout request was refused; nothing was paid.`);
+        setPayingOut(false); return;
+      }
+      const left = typeof d.remaining_balance_wst === 'number' ? d.remaining_balance_wst.toLocaleString() : 'not stated';
+      if (d.applied === true) {
+        // PAID: an approval was spent for this payout. Who was paid and on what basis are the server's words.
+        setPayMsg(`Virtual payout applied — released by Change Control ${String(d.cca_id)}. Payee: ${d.payee_recorded ? String(d.payee) : 'none recorded on this account'} (${String(d.payee_basis)}). No real money moved. Remaining ${left} WST. Audit event: ${String(d.audit_event)}.`);
+        setPayoutAmt(0);
+      } else {
+        // HELD or REJECTED: nothing was paid. The amount stays in the box, so the same payout can be requested
+        // again once it is approved at Change Control.
+        setPayHold({ status: String(d.status ?? 'held'), cca_id: d.cca_id ?? null,
+          basis: String(d.governance?.basis ?? d.status_label ?? 'Held — not paid.') });
+      }
+      loadOwnerPay();
     } catch (e: any) { setPayErr(e?.message ?? String(e)); }
     setPayingOut(false);
   };
@@ -465,19 +482,46 @@ export const VSBEconomy: React.FC = () => {
             </div>
             <Button onClick={doPayout} disabled={payingOut || payoutAmt <= 0} className="flex items-center gap-2 bg-highlight text-sovereign text-xs">
               {payingOut ? <Loader2 size={14} className="animate-spin" /> : <Coins size={14} />}
-              {payingOut ? 'Recording…' : 'Record virtual payout'}
+              {payingOut ? 'Requesting…' : 'Request virtual payout'}
             </Button>
           </div>
           <p className="text-[9px] text-amber-400/80 italic mt-2">{pay.note}</p>
           {payMsg && <p className="text-emerald-400 text-[10px] font-bold mt-2 flex items-center gap-1.5"><ShieldCheck size={12} /> {payMsg}</p>}
           {payErr && <p className="text-vital text-[10px] font-bold mt-2 flex items-center gap-1.5"><AlertCircle size={12} /> {payErr}</p>}
+          <p className="text-[9px] text-slate-500 mt-2" data-testid="owner-payout-governed">
+            {'Every payout is held at Change Control for the decision of a person, whatever its amount. A request pays nothing; once it is approved there, request the same amount again to apply it. The payee is the recorded owner of the account: '}
+            {pay.owner_recorded ? String(pay.owner) : 'none is recorded on this account'}.
+          </p>
+          {payHold && (
+            <p role="status" data-testid="owner-payout-held" className="text-amber-400 text-[10px] font-bold mt-2">
+              {payHold.status === 'rejected' ? 'Rejected' : 'Held'} — NOT PAID. {payHold.basis}
+            </p>
+          )}
+          {Array.isArray(pay.payout_requests) && pay.payout_requests.length > 0 && (
+            <div className="mt-3 space-y-1.5" data-testid="owner-payout-requests">
+              <p className="text-[9px] font-black uppercase tracking-widest text-slate-600">Payout requests</p>
+              {pay.payout_requests.slice(0, 6).map((q: any) => (
+                <div key={String(q.cca_id)} data-testid="owner-payout-request" className="flex items-center justify-between p-2 rounded-lg bg-slate-950 border border-slate-900 text-[10px]">
+                  <span data-testid="owner-payout-request-state" className={`font-black ${q.state === 'applied' ? 'text-emerald-400' : q.state === 'rejected' || q.state === 'withdrawn' ? 'text-vital' : 'text-amber-400'}`}>{String(q.state_label ?? q.state)}</span>
+                  <span className="text-slate-400 truncate px-2 flex-1">change {String(q.cca_id)}{q.decided_by ? ` · decided by ${String(q.decided_by)}${q.decided_by_verified ? '' : ' (a name the platform did not check)'}` : ' · not decided'}</span>
+                  <span className="font-mono text-slate-300 shrink-0">{typeof q.amount_wst === 'number' ? q.amount_wst.toLocaleString() : '—'} WST {q.state === 'applied' ? 'paid' : 'requested'}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {pay.payout_requests === null && (
+            <p role="alert" data-testid="owner-payout-requests-unread" className="text-amber-400 text-[10px] font-bold mt-2">{String(pay.payout_requests_basis ?? 'the payout requests could not be read')}</p>
+          )}
+          {pay.entries_truncated !== false && pay.entries_history_basis && (
+            <p data-testid="owner-payments-history-truncated" className="text-[9px] text-amber-400/80 mt-2">{String(pay.entries_history_basis)}</p>
+          )}
           {pay.entries && pay.entries.length > 0 && (
             <div className="mt-4 space-y-1.5">
               <p className="text-[9px] font-black uppercase tracking-widest text-slate-600">Recent entries</p>
               {pay.entries.slice(0, 6).map((e: any) => (
                 <div key={e.id} className="flex items-center justify-between p-2 rounded-lg bg-slate-950 border border-slate-900 text-[10px]">
                   <span className={`font-black uppercase ${e.type === 'accrual' ? 'text-emerald-400' : 'text-amber-400'}`}>{e.type === 'accrual' ? 'accrual' : 'payout (virtual)'}</span>
-                  <span className="text-slate-400 truncate px-2 flex-1">{e.memo}</span>
+                  <span className="text-slate-400 truncate px-2 flex-1">{e.memo}{e.cca_id ? ` · released by change ${String(e.cca_id)} · requested by ${String(e.requested_by ?? 'nobody recorded')}` : ''}</span>
                   <span className="font-mono text-slate-300 shrink-0">{e.amount_wst.toLocaleString()} WST</span>
                 </div>
               ))}

@@ -48,7 +48,9 @@ interface ChatMsg { role: 'you' | 'vsb'; text: string; served_by?: string; is_ex
 // honest way to say so before a request rather than after it.
 const EditCascade: React.FC<{ cascadeId: string; onSaved: () => void }> = ({ cascadeId, onSaved }) => {
   const [open, setOpen] = React.useState(false);
-  const [stages, setStages] = React.useState<{ role: string; instruction: string }[] | null>(null);
+  // P3.31 (round 9, FU-684) - `model` rides with the stage: this editor loaded two fields and its PUT replaces
+  // the stage list whole, so an entity's cascade lost every per-stage model the first time it was edited here.
+  const [stages, setStages] = React.useState<{ role: string; instruction: string; model?: string }[] | null>(null);
   const [busy, setBusy] = React.useState(false);
   const [msg, setMsg] = React.useState<string | null>(null);
   const [err, setErr] = React.useState<string | null>(null);
@@ -59,7 +61,8 @@ const EditCascade: React.FC<{ cascadeId: string; onSaved: () => void }> = ({ cas
       const r = await fetch(`/api/v1/resources/swarm/${cascadeId}`);
       const b = await r.json();
       if (!r.ok) throw new Error(typeof b.detail === 'string' ? b.detail : `HTTP ${r.status}`);
-      setStages((b.stages || []).map((st: any) => ({ role: st.role || '', instruction: st.instruction || '' })));
+      setStages((b.stages || []).map((st: any) => ({ role: st.role || '', instruction: st.instruction || '',
+                                                     ...(st.model ? { model: String(st.model) } : {}) })));
     } catch (e: any) { setErr(e?.message ?? String(e)); }
   };
 
@@ -103,6 +106,12 @@ const EditCascade: React.FC<{ cascadeId: string; onSaved: () => void }> = ({ cas
           <input value={st.instruction} placeholder="instruction"
                  onChange={e => setStages(stages!.map((x, j) => j === i ? { ...x, instruction: e.target.value } : x))}
                  className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-[10px] text-white focus:outline-none focus:border-aura/30" />
+          {st.model && (
+            <span data-testid="cascade-edit-stage-model" className="self-center text-[9px] font-mono text-slate-500"
+                  title="The owned resource this stage asks for. It is kept when you save. Change it in the cascade designer on the Native AI page.">
+              asks for {st.model}
+            </span>
+          )}
           <button type="button" aria-label="Remove this stage"
                   onClick={() => setStages(stages!.filter((_, j) => j !== i))}
                   className="px-2 text-slate-600 hover:text-vital">×</button>

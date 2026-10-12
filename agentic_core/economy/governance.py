@@ -36,6 +36,12 @@ _HOLD_TITLE_PREFIX = "[economy] material distribution — "
 FUND_ENTITY_ID = "sovereign-capital-fund"
 FUND_SOURCE_PREFIX = "fund:"
 FUND_HOLD_TITLE_PREFIX = "[economy] capital fund allocation — "
+#  OWNER RULING 2026-10-12 - AN OWNER PAYOUT IS A GOVERNED ACTION TOO, and like the fund's allocation its
+#  class has NO THRESHOLD: every payout is held for a person's decision, whatever its amount. The actor is
+#  the account (the id that stands where a VSB id stands), there is no counterparty (the payee is the owner
+#  recorded on the account, read when the payout is paid), and one live hold exists per account.
+PAYOUT_SOURCE = "payout"
+PAYOUT_HOLD_TITLE_PREFIX = "[economy] owner payout — "
 
 
 def _now() -> str:
@@ -156,6 +162,9 @@ def _hold_title(vsb_id: str, source: str) -> str:
     if str(source or "").startswith(FUND_SOURCE_PREFIX):
         # FU-794 - one hold per recipient, and the title says who the recipient is
         return FUND_HOLD_TITLE_PREFIX + (str(source).split(":", 1)[1].strip() or "unnamed")
+    if source == PAYOUT_SOURCE:
+        # Owner ruling 2026-10-12 - one hold per account, and the title names the account
+        return PAYOUT_HOLD_TITLE_PREFIX + vsb_id
     return (("[economy] material transfer — " + vsb_id) if source == "transfer"
             else _HOLD_TITLE_PREFIX + vsb_id)
 
@@ -506,6 +515,8 @@ def _source_class(source: str) -> str:
         return "contract"
     if source.startswith(FUND_SOURCE_PREFIX):
         return "fund"                                   # FU-794 - its own class: no cycle or transfer hold matches it
+    if source == PAYOUT_SOURCE:
+        return "payout"                                 # its own class too: it used to fall through to "api"
     return "transfer" if source == "transfer" else ("heartbeat" if source == "heartbeat" else "api")
 
 
@@ -642,11 +653,19 @@ def _describe(vsb_id: str, source: str, est: float, counterparty: Optional[str],
                  + ". Only an explicit decision can approve this.")
     if _source_class(source) == "fund":
         #  FU-794 - its own sentence: the general one below states a threshold this class does not have
-        return (f"Virtual allocation from the Sovereign Capital Fund to {counterparty}: {est} WST. Every "
+        return (f"Virtual allocation from the Capital Fund to {counterparty}: {est} WST. Every "
                 "allocation from the fund is held for the Owner's explicit decision whatever its amount (Owner "
                 "ruling 2026-10-11) - no threshold lets one pass. Held until approved (virtual WST only — no real "
                 "funds). An approval releases ONE allocation to this recipient of at most this amount, applied "
                 "when the allocation is requested again; approving moves nothing by itself. While submitted, "
+                "the amount is kept current." + after)
+    if _source_class(source) == "payout":
+        #  Owner ruling 2026-10-12 - its own sentence, for the same reason as the fund's
+        return (f"Virtual owner payout from the owner-payments account {vsb_id}: {est} WST. Every owner payout "
+                "is held for a person's explicit decision whatever its amount (Owner ruling 2026-10-12) - no "
+                "threshold lets one pass. Held until approved (virtual WST only — no real funds). An approval "
+                "releases ONE payout from this account of at most this amount, paid to the account's recorded "
+                "owner when the payout is requested again; approving pays nothing by itself. While submitted, "
                 "the amount is kept current." + after)
     return (f"{what}: estimated {est} WST ≥ materiality threshold {MATERIALITY_WST} WST. Held until approved "
             "(virtual WST only — no real funds). An approval releases ONE action on the intake recorded on this "
@@ -775,7 +794,9 @@ def _materiality_gate(vsb_id: str, est_distributable: float, source: str,
     #  FU-794 (Owner ruling 2026-10-11) - the capital fund's class has no threshold: an allocation of any
     #  amount is held. Every other class keeps the threshold exactly as it was.
     if est_distributable < MATERIALITY_WST and _source_class(source) != "fund":
-        return None, None
+        #  Owner ruling 2026-10-12 - nor has the owner payout's class a threshold: a payout of any amount is held
+        if _source_class(source) != "payout":
+            return None, None
     try:
         # W463 — the scan and the filing are not atomic: concurrent first requests for the same action each
         # filed a hold. The whole decision for one (VSB, action kind, counterparty) is serialised.

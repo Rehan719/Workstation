@@ -322,6 +322,168 @@ def _eval_probe_digest() -> str:
     return _h.sha256(_j.dumps(_EVAL_PROBES, sort_keys=True).encode("utf-8")).hexdigest()[:16]
 
 
+#  P3.32 (round 8) - A VERSION IS PINNED TO ITS DIGEST, HERE, AND THE TABLE IS APPEND-ONLY. The comment above
+#  said "a guard pins version to digest"; the guard recomputed the digest from the probes it was checking, so
+#  a probe edited WITHOUT a new version number stayed green and two records under one version were no longer
+#  comparable. A change to the set is a new key in this table. An entry already here is never altered: the
+#  guard holds each recorded version to the digest written beside it. (Version "1" was three tuples typed in
+#  the handler; its digest was never recorded and is not invented here.)
+_EVAL_PROBE_SET_HISTORY = {
+    "2": "4917359cd4051532",
+}
+
+
+def _probe_set_state() -> Dict[str, Any]:
+    """Whether the probe set in memory IS the set its version number names. Read at each call."""
+    ver, now = _EVAL_PROBE_SET_VERSION, _eval_probe_digest()
+    pinned = _EVAL_PROBE_SET_HISTORY.get(ver)
+    if pinned is None:
+        return {"ok": False, "version": ver, "digest": now, "pinned": None,
+                "why": (f"probe set version {ver} has no pinned digest, so a record under it would name a "
+                        f"set nothing can check. Add the version and its digest to the history table.")}
+    if pinned != now:
+        return {"ok": False, "version": ver, "digest": now, "pinned": pinned,
+                "why": (f"the probe set was edited under version {ver}: its digest is now {now} and the "
+                        f"digest pinned for that version is {pinned}. A changed case set is a new version, "
+                        f"never an edit.")}
+    return {"ok": True, "version": ver, "digest": now, "pinned": pinned, "why": None}
+
+
+def _require_pinned_probe_set() -> Dict[str, Any]:
+    st = _probe_set_state()
+    if not st["ok"]:
+        raise HTTPException(status_code=409, detail=st["why"] + " Nothing was run and nothing was recorded.")
+    return st
+
+
+#  P3.32 (round 8; Owner ruling 2026-10-11) - THE HELD-OUT CASES. "Held-out" means never shown in any prompt
+#  or document: they live in their own file, are read from it at each call, and are pinned by version to a
+#  digest exactly as the public set is. No route returns a held-out PROMPT; a baseline record carries the
+#  case id, the reply and the verdict. Nothing reads a held-out result to decide anything (promotion,
+#  routing and selection do not open the baseline store).
+_HELDOUT_HISTORY = {
+    "1": "763a1d22466ec97b",
+}
+
+
+def _heldout_path():
+    import pathlib as _pl
+    return _pl.Path(__file__).resolve().parents[1] / "ai" / "native" / "heldout_cases.json"
+
+
+def _heldout_digest(cases) -> str:
+    import hashlib as _h
+    import json as _j
+    return _h.sha256(_j.dumps(cases, sort_keys=True).encode("utf-8")).hexdigest()[:16]
+
+
+def _load_heldout() -> Dict[str, Any]:
+    """The held-out set, read now: {ok, version, digest, cases} or {ok: False, why}. Never a partial set."""
+    import json as _j
+    try:
+        doc = _j.loads(_heldout_path().read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return {"ok": False, "version": None, "digest": None, "cases": [],
+                "why": "the held-out case file is not present, so no held-out case can be run"}
+    except (OSError, ValueError) as e:
+        return {"ok": False, "version": None, "digest": None, "cases": [],
+                "why": f"the held-out case file could not be read ({e.__class__.__name__})"}
+    ver = str((doc or {}).get("version") or "") if isinstance(doc, dict) else ""
+    cases = (doc or {}).get("cases") if isinstance(doc, dict) else None
+    well_formed = (isinstance(cases, list) and cases and all(
+        isinstance(c, dict) and all(isinstance(c.get(k), str) and c.get(k).strip() for k in ("id", "marker", "prompt"))
+        for c in cases) and len({c["id"] for c in cases}) == len(cases))
+    if not ver or not well_formed:
+        return {"ok": False, "version": ver or None, "digest": None, "cases": [],
+                "why": "the held-out case file does not hold a version and a list of {id, marker, prompt} cases"}
+    now, pinned = _heldout_digest(cases), _HELDOUT_HISTORY.get(ver)
+    if pinned is None:
+        return {"ok": False, "version": ver, "digest": now, "cases": [],
+                "why": f"held-out set version {ver} has no pinned digest"}
+    if pinned != now:
+        return {"ok": False, "version": ver, "digest": now, "cases": [],
+                "why": (f"the held-out set was edited under version {ver}: its digest is now {now} and the "
+                        f"digest pinned for that version is {pinned}. A changed case set is a new version, "
+                        f"never an edit.")}
+    return {"ok": True, "version": ver, "digest": now, "cases": cases, "why": None}
+
+
+def _require_heldout() -> Dict[str, Any]:
+    held = _load_heldout()
+    if not held["ok"]:
+        raise HTTPException(status_code=409, detail=held["why"] + " Nothing was run and nothing was recorded.")
+    return held
+
+
+_EXPOSURE_SKIP_DIRS = frozenset({".git", "node_modules", "__pycache__", "venv", ".venv", "dist", "build",
+                                 ".pytest_cache", ".mypy_cache"})
+_EXPOSURE_SUFFIXES = (".py", ".md", ".txt", ".json", ".ts", ".tsx", ".js", ".jsx", ".yaml", ".yml", ".html",
+                      ".toml", ".cfg", ".ini", ".j2", ".jinja", ".prompt", ".csv", ".rst")
+_EXPOSURE_MAX_BYTES = 32 * 1024 * 1024
+
+
+def heldout_exposure(roots, cases=None, return_paths: bool = False) -> Dict[str, Any]:
+    """Every text file under `roots` that contains a held-out case's prompt. AN INSTRUMENT, WITH ITS SCOPE.
+
+    A case is "contained" when the file's text, lower-cased and with runs of whitespace collapsed, holds the
+    whole prompt or its opening or closing 48 characters treated the same way. The held-out file itself is
+    excluded by path and named under `excluded`. What this does NOT see: a paraphrase, a translation, a
+    prompt split across files, a file whose suffix is not in the list, a file over the size limit (named
+    under `skipped`), and anything outside `roots`. Zero hits means "none of these cases was found in N
+    files"; it is not a statement about files this did not open."""
+    import os as _os
+    import pathlib as _pl
+
+    def _n(s: str) -> str:
+        return " ".join(str(s).lower().split())
+
+    if cases is None:
+        cases = _load_heldout().get("cases") or []
+    needles = []
+    for c in cases:
+        p = _n(c.get("prompt", ""))
+        if len(p) < 24:
+            continue                      # too short to search for without matching ordinary prose
+        for frag in {p, p[:48], p[-48:]}:
+            needles.append((c.get("id"), frag))
+    own = _heldout_path().resolve()
+    examined, hits, skipped, excluded, paths = 0, [], [], [], []
+    for root in roots:
+        root = _pl.Path(root)
+        walker = ([(str(root.parent), [], [root.name])] if root.is_file() else _os.walk(root))
+        for dirpath, dirnames, filenames in walker:
+            dirnames[:] = [d for d in dirnames if d not in _EXPOSURE_SKIP_DIRS]
+            for fn in filenames:
+                fp = _pl.Path(dirpath) / fn
+                if not fn.lower().endswith(_EXPOSURE_SUFFIXES):
+                    continue
+                try:
+                    if fp.resolve() == own:
+                        excluded.append(str(fp))
+                        continue
+                    if fp.stat().st_size > _EXPOSURE_MAX_BYTES:
+                        skipped.append({"file": str(fp), "why": "over the size limit"})
+                        continue
+                    text = _n(fp.read_text(encoding="utf-8", errors="replace"))
+                except OSError as e:
+                    skipped.append({"file": str(fp), "why": e.__class__.__name__})
+                    continue
+                examined += 1
+                if return_paths:
+                    paths.append(str(fp))
+                found = sorted({cid for cid, frag in needles if frag in text})
+                for cid in found:
+                    hits.append({"file": str(fp), "case": cid})
+    out = {"files_examined": examined, "cases_searched": len({cid for cid, _ in needles}),
+           "hits": hits, "skipped": skipped, "excluded": excluded,
+           "scope": [str(r) for r in roots],
+           "basis": (f"{len(hits)} occurrence(s) of a held-out prompt in {examined} text file(s) under the "
+                     f"stated roots; {len(skipped)} file(s) could not be examined. A paraphrase is not seen.")}
+    if return_paths:
+        out["paths"] = paths
+    return out
+
+
 _EVAL_BASIS = ("a marker hit means the reply CONTAINS a marker string - it is not a judgement that the reply is "
                "correct. One run per probe, no held-out probe, and the probes are public in the source, so this "
                "is a smoke check of behaviour (evidence level 1: inputs and outputs). Nothing here inspects or "
@@ -335,6 +497,7 @@ async def evaluate_model(req: LifecycleModelRequest):
     serve · non-empty output · requested structure present · latency); when the model cannot
     serve, that is the result — never a fabricated score. Attempts feed the W275 health window."""
     import time as _t
+    _require_pinned_probe_set()            # P3.32 - a set edited under its version is refused, nothing asked
     probes = [(p["id"], p["prompt"], p["marker"]) for p in _EVAL_PROBES if not p["control"]]
     results = []
     served_target = 0
@@ -347,6 +510,8 @@ async def evaluate_model(req: LifecycleModelRequest):
         results.append({"probe": pid, "served_by": r.get("served_by"), "on_target": on_target,
                         "non_empty": bool((r.get("output") or "").strip()),
                         "structure_hit": marker.lower() in (r.get("output") or "").lower(),
+                        #  P3.32 - THE REPLY IS KEPT, so a probe that missed can be re-read
+                        **_reply_record(r.get("output")),
                         "ms": int((_t.time() - _p0) * 1000)})
     can_serve = served_target == len(probes)
     score = (round(sum(1.0 for x in results if x["structure_hit"]) / len(results), 2)
@@ -361,6 +526,7 @@ async def evaluate_model(req: LifecycleModelRequest):
         _on = _cr.get("served_by") == f"ollama:{req.model}"
         control = {"probe": _c["id"], "on_target": _on,
                    "marker_absent": (_c["marker"].lower() not in (_cr.get("output") or "").lower()) if _on else None,
+                   **_reply_record(_cr.get("output")),
                    "basis": ("the reply must NOT contain the structure probe's marker; a model that says it "
                              "regardless fails here" if _on else
                              "the target did not serve the control, so it says nothing either way")}
@@ -371,6 +537,9 @@ async def evaluate_model(req: LifecycleModelRequest):
                   "marker_hits": sum(1 for x in results if x["structure_hit"]) if can_serve else None,
                   "probes_total": len(results), "control": control,
                   "probe_set": {"version": _EVAL_PROBE_SET_VERSION, "digest": _eval_probe_digest()},
+                  #  P3.32 - beside it, never inside it: `probe_set` keeps the two keys its readers compare
+                  "probe_set_pinned": True,
+                  "serving": _serving_identity(f"ollama:{req.model}"),
                   "evidence_level": "behaviour", "basis": _EVAL_BASIS,
                   "probes": results, "at": __import__("time").strftime("%Y-%m-%dT%H:%M:%SZ",
                                                                        __import__("time").gmtime())}
@@ -378,6 +547,367 @@ async def evaluate_model(req: LifecycleModelRequest):
     save_lifecycle(st)
     _ueg_lifecycle("evaluated", req.model, {"can_serve": can_serve, "score": score})
     return evaluation
+
+
+# -- P3.32 (round 8) - THE BEHAVIOURAL BASELINE: PER SERVING TIER, ON DEMAND, A RECORD THAT CAN BE RE-READ --
+#  What it is: the public probe set and the held-out set put to ONE owned serving tier, each reply kept with
+#  its hash, each case ending passed / failed / not read, the whole thing stored with the case-set versions
+#  and whatever identity the tier has. What it is not: a judgement that a reply is correct, a comparison of
+#  two models, or anything about a model's insides. OWNER (2026-10-11): it runs when a person asks for it and
+#  at no other time - nothing in the organism's beat, the startup path or a read route calls it.
+_BASELINE_TIMEOUT_S = 20.0
+_BASELINE_REPLY_KEEP = 600
+_BASELINE_BASIS = ("one run per case against one serving tier. 'passed' means the reply CONTAINS the case's "
+                   "marker string (for the control: does NOT contain it) - it is not a judgement that the "
+                   "reply is correct. A case the tier did not serve is 'not read' and counts as neither. "
+                   "Evidence level 1: inputs and outputs only. Run on demand; nothing schedules it.")
+
+
+def _read_floor_identity():
+    #  READ ONCE, AT IMPORT (the lesson of instrument_cell._HANDLER_IDS): at import the file on disk and the
+    #  loaded engine are the same thing; on a long-running process they need not be.
+    try:
+        import hashlib as _h
+        from agentic_core.ai.native import engine as _engine
+        with open(_engine.__file__, "rb") as _f:
+            return _h.sha256(_f.read().replace(b"\r\n", b"\n")).hexdigest()[:16]
+    except Exception:                                    # noqa: BLE001 - said on the record as not recorded
+        return None
+
+
+_FLOOR_IDENTITY = _read_floor_identity()
+
+
+def _local_model_digest(name: str):
+    """The digest the local runtime reports for a pulled model name, or None. Read, never guessed."""
+    if os.getenv("AI_DISABLE_LOCAL", "").lower() in ("1", "true", "yes"):
+        return None
+    try:
+        import httpx
+        from agentic_core.ai.native.model_resource import _ollama_base
+        r = httpx.get(f"{_ollama_base()}/api/tags", timeout=1.0)
+        if r.status_code != 200:
+            return None
+        for m in (r.json().get("models") or []):
+            n = str(m.get("name") or "")
+            if n == name or n == f"{name}:latest":
+                return m.get("digest") or None
+    except Exception:                                    # noqa: BLE001
+        return None
+    return None
+
+
+def _serving_identity(tier: str) -> Dict[str, Any]:
+    """WHAT a run was served by, as far as that can be known. A name is not an identity: a local tag can be
+    pulled again to a different build, so a run that records only the name cannot be reproduced from it."""
+    settings = {"prefer": tier, "timeout_s": _BASELINE_TIMEOUT_S,
+                "sampling": "not set by this route: the runtime's own defaults apply and are not recorded"}
+    if tier == "native":
+        return {"tier": tier, "kind": "deterministic_floor", "identity": _FLOOR_IDENTITY,
+                "identity_kind": "source_sha256" if _FLOOR_IDENTITY else None,
+                "identity_basis": ("the sha256 of the floor engine's own source file as loaded when this "
+                                   "process started (line endings normalised). It does not cover modules "
+                                   "that file imports" if _FLOOR_IDENTITY else
+                                   "IDENTITY NOT RECORDED: the floor engine's source could not be read"),
+                "settings": {**settings, "sampling": "none: the floor samples nothing"}}
+    dg = _local_model_digest(tier.split(":", 1)[1])
+    return {"tier": tier, "kind": "local_model", "identity": dg,
+            "identity_kind": "runtime_digest" if dg else None,
+            "identity_basis": ("the digest the local runtime reported for this model name at the time of the run"
+                               if dg else
+                               "MODEL IDENTITY NOT RECORDED: the local runtime reported no digest for this "
+                               "name, so this run names a model and not a build of it. A later run under the "
+                               "same name is not known to be the same model"),
+            "settings": settings}
+
+
+def _reply_record(text) -> Dict[str, Any]:
+    """A reply KEPT: a bounded excerpt, its full length, and the hash of the whole of it."""
+    import hashlib as _h
+    t = text if isinstance(text, str) else ""
+    return {"reply_excerpt": t[:_BASELINE_REPLY_KEEP], "reply_chars": len(t),
+            "reply_truncated": len(t) > _BASELINE_REPLY_KEEP,
+            "reply_sha256": _h.sha256(t.encode("utf-8")).hexdigest()}
+
+
+def _withheld_if_repeats(set_name: str, prompt: str, reply) -> Dict[str, Any]:
+    """A HELD-OUT case stays held out even when the tier repeats it back. A reply that contains the case's
+    prompt (whole, or its opening or closing 48 characters, case and spacing ignored) is kept as its hash and
+    length only; the excerpt is withheld and the record says so. A public case's reply is always kept."""
+    if set_name != "heldout":
+        return {}
+
+    def _n(s) -> str:
+        return " ".join(str(s or "").lower().split())
+    p, r = _n(prompt), _n(reply)
+    if p and (p in r or p[:48] in r or p[-48:] in r):
+        return {"reply_excerpt": "",
+                "reply_withheld": ("the reply repeats the held-out prompt, so its text is not kept here; its "
+                                   "hash and length are. Showing it would show the case")}
+    return {}
+
+
+def _baseline_store():
+    from agentic_core.config import data_path
+    return data_path("model_baselines.json")
+
+
+def _baselines_for_write() -> List[Dict[str, Any]]:
+    from agentic_core.config import StoreUnavailable, read_json_strict
+    try:
+        return read_json_strict(_baseline_store(), list, expect=list)
+    except StoreUnavailable as e:
+        raise HTTPException(status_code=503,
+                            detail=f"{e}; no baseline was run and no baseline record was changed") from None
+
+
+def _baseline_tier(tier: str) -> str:
+    t = str(tier or "").strip()
+    if t == "native" or (t.startswith("ollama:") and t.split(":", 1)[1].strip()):
+        return t
+    raise HTTPException(status_code=422, detail=(
+        "a baseline is run against an OWNED serving tier: 'native' (the deterministic floor) or "
+        "'ollama:<name>' (a local model). 'auto' and 'local' name a policy rather than a tier, and an "
+        "external provider is never baselined here. Nothing was run."))
+
+
+def _case_sets(held: Dict[str, Any]) -> Dict[str, Any]:
+    return {"public": {"version": _EVAL_PROBE_SET_VERSION, "digest": _eval_probe_digest(),
+                       "cases": len(_EVAL_PROBES)},
+            "heldout": {"version": held["version"], "digest": held["digest"], "cases": len(held["cases"])}}
+
+
+async def _baseline_record(tier: str, held: Dict[str, Any], serving: Dict[str, Any]) -> Dict[str, Any]:
+    import time as _t
+    import uuid as _u
+    rows: List[Dict[str, Any]] = []
+    for set_name, cases in (("public", _EVAL_PROBES), ("heldout", held["cases"])):
+        for c in cases:
+            _p0 = _t.time()
+            r = await orchestrator.complete(c["prompt"], agent=f"baseline:{tier}", prefer=tier,
+                                            timeout=_BASELINE_TIMEOUT_S)
+            reply = r.get("output") or ""
+            on = r.get("served_by") == tier
+            present = str(c["marker"]).lower() in reply.lower()
+            is_control = bool(c.get("control"))
+            rows.append({"case": c["id"], "set": set_name, "control": is_control,
+                         "served_by": r.get("served_by"), "on_target": on,
+                         "non_empty": bool(reply.strip()), "marker_present": present,
+                         "passed": ((not present) if is_control else present) if on else None,
+                         "passed_basis": (("the control: its reply must NOT contain the marker" if is_control
+                                           else "its reply must contain the marker") if on else
+                                          f"not read: {r.get('served_by')} answered this case, not {tier}, "
+                                          f"so the reply says nothing about {tier}"),
+                         **_reply_record(reply), **_withheld_if_repeats(set_name, c["prompt"], reply),
+                         "ms": int((_t.time() - _p0) * 1000)})
+    counts = {"passed": sum(1 for x in rows if x["passed"] is True),
+              "failed": sum(1 for x in rows if x["passed"] is False),
+              "not_read": sum(1 for x in rows if x["passed"] is None)}
+    served_target = bool(rows) and all(x["on_target"] for x in rows)
+    others = sorted({str(x["served_by"]) for x in rows if not x["on_target"]})
+    return {"run_id": f"bl-{_u.uuid4().hex[:10]}",
+            "at": _t.strftime("%Y-%m-%dT%H:%M:%SZ", _t.gmtime()), "trigger": "on_demand",
+            "tier": tier, "serving": serving, "case_sets": _case_sets(held),
+            "cases": rows, "served_target": served_target, "counts": counts,
+            "established": ((f"what {tier} replied to {len(rows)} case(s) on this run: {counts['passed']} "
+                             f"passed their marker rule and {counts['failed']} did not")
+                            if served_target else
+                            (f"NOT ESTABLISHED for {tier}: {counts['not_read']} of {len(rows)} case(s) were "
+                             f"answered by {', '.join(others) or 'nothing'}. Those replies are kept and say "
+                             f"nothing about {tier}")),
+            "evidence_level": "behaviour", "basis": _BASELINE_BASIS}
+
+
+def _baseline_append(record: Dict[str, Any]) -> None:
+    from agentic_core.config import atomic_write_json, store_lock
+    with store_lock(_baseline_store()):
+        rows = _baselines_for_write()
+        rows.append(record)
+        atomic_write_json(_baseline_store(), rows)       # nothing is dropped: a baseline is evidence
+
+
+class BaselineRequest(BaseModel):
+    tier: str = "native"
+
+
+@router.post("/baseline/run")
+async def run_baseline(req: BaselineRequest):
+    """Run the behavioural baseline against ONE owned serving tier, now, because a person asked.
+
+    Refused before anything is asked of a model: a tier that is not owned (422), a case set edited under
+    its version (409), a held-out file that is missing or edited (409), a baseline store that cannot be
+    read whole (503). A tier that does not SERVE is not a refusal: the run is recorded with every case
+    'not read', because that the tier could not answer is itself the result."""
+    tier = _baseline_tier(req.tier)
+    _require_pinned_probe_set()
+    held = _require_heldout()
+    _baselines_for_write()                               # refuse BEFORE spending a call on a store we cannot write
+    record = await _baseline_record(tier, held, _serving_identity(tier))
+    _baseline_append(record)
+    _ueg_lifecycle("baseline_run", tier, {"run_id": record["run_id"], "served_target": record["served_target"],
+                                          "counts": record["counts"]})
+    return record
+
+
+@router.get("/baseline")
+async def list_baselines(tier: str | None = None, limit: int = 20):
+    """The baseline records, newest first, and - per owned serving tier - whether one exists at all.
+    A read: it runs nothing."""
+    from agentic_core.ai.native.model_resource import local_models
+    from agentic_core.config import read_json_reported
+    _all, _why = read_json_reported(_baseline_store(), [])
+    rows = [r for r in (_all if isinstance(_all, list) else []) if isinstance(r, dict)]
+    owned = ["native"] + [f"ollama:{m}" for m in local_models()]
+    known = owned + sorted({str(r.get("tier")) for r in rows if r.get("tier") and r.get("tier") not in owned})
+    tiers = []
+    for t in known:
+        mine = [r for r in rows if r.get("tier") == t]
+        tiers.append({"tier": t, "serves_now": t in owned, "runs": len(mine),
+                      "latest_run_id": mine[-1].get("run_id") if mine else None,
+                      "basis": ((f"{len(mine)} baseline run(s) recorded; the latest is "
+                                 f"{mine[-1].get('run_id')} at {mine[-1].get('at')}") if mine else
+                                "NO BASELINE has been run for this tier")
+                               + ("" if t in owned else ". This tier is not discovered now")})
+    shown = [r for r in rows if tier is None or r.get("tier") == tier]
+    held = _load_heldout()
+    return {"runs": list(reversed(shown[-max(1, min(int(limit), 100)):])), "total": len(shown), "tiers": tiers,
+            "store_incomplete": _why, "listing_is_incomplete": bool(_why),
+            "listing_basis": ("the baseline store could not be read whole, so runs may be MISSING from this "
+                              "list" if _why else "every baseline run in the store"),
+            "case_sets_now": {"public": _probe_set_state(),
+                              "heldout": {k: held.get(k) for k in ("ok", "version", "digest", "why")}},
+            "trigger": "on demand only: POST /api/v1/native-ai/baseline/run. Nothing schedules a baseline.",
+            "evidence_level": "behaviour", "basis": _BASELINE_BASIS}
+
+
+@router.get("/baseline/{run_id}")
+async def get_baseline(run_id: str):
+    """One baseline record whole - every case with the reply that was given, so a failed case can be re-read."""
+    from agentic_core.config import read_json_reported
+    _all, _why = read_json_reported(_baseline_store(), [])
+    rec = next((r for r in (_all if isinstance(_all, list) else [])
+                if isinstance(r, dict) and r.get("run_id") == run_id), None)
+    if rec is None:
+        raise HTTPException(status_code=404, detail=(
+            f"no baseline run {run_id}" + ("; the store could not be read whole, so it may exist and be "
+                                           "unreadable" if _why else "")))
+    return rec
+
+
+@router.post("/baseline/{run_id}/reproduce")
+async def reproduce_baseline(run_id: str):
+    """Run a recorded baseline AGAIN from the versions it recorded, and say case by case whether the reply
+    was the same. Refused - with nothing run - when it cannot be run from those versions: the case sets in
+    the code are no longer the ones recorded, the record names no serving identity, or the tier's identity
+    now differs. The comparison is of reply hashes; "the same" means byte-identical text."""
+    rec = next((r for r in _baselines_for_write() if isinstance(r, dict) and r.get("run_id") == run_id), None)
+    if rec is None:
+        raise HTTPException(status_code=404, detail=f"no baseline run {run_id}")
+    tier = _baseline_tier(rec.get("tier"))
+    _require_pinned_probe_set()
+    held = _require_heldout()
+    if rec.get("case_sets") != _case_sets(held):
+        raise HTTPException(status_code=409, detail=(
+            f"baseline {run_id} recorded case sets {rec.get('case_sets')} and the code now holds "
+            f"{_case_sets(held)}. It can be reproduced only from the versions it recorded. Nothing was run."))
+    was = (rec.get("serving") or {}).get("identity")
+    serving = _serving_identity(tier)
+    if not was:
+        raise HTTPException(status_code=409, detail=(
+            f"REPRODUCIBILITY CANNOT BE ESTABLISHED for baseline {run_id}: it recorded no serving identity "
+            f"for {tier}, so a second run is not known to be of the same thing. Nothing was run."))
+    if serving.get("identity") != was:
+        raise HTTPException(status_code=409, detail=(
+            f"baseline {run_id} was served by identity {was} and {tier} now reports "
+            f"{serving.get('identity') or 'no identity'}. A run now would be of a different thing. "
+            f"Nothing was run."))
+    record = await _baseline_record(tier, held, serving)
+    then = {(c.get("set"), c.get("case")): c for c in (rec.get("cases") or []) if isinstance(c, dict)}
+    cmp_rows = []
+    for c in record["cases"]:
+        old = then.get((c["set"], c["case"])) or {}
+        cmp_rows.append({"case": c["case"], "set": c["set"],
+                         "same_reply": old.get("reply_sha256") == c["reply_sha256"],
+                         "same_verdict": old.get("passed") == c["passed"]})
+    different = [x["case"] for x in cmp_rows if not x["same_reply"]]
+    record["reproduction_of"] = run_id
+    record["reproduction"] = {
+        "of": run_id, "reproduced": not different, "cases": cmp_rows, "different": different,
+        "basis": ((f"all {len(cmp_rows)} replies are byte-identical to those of {run_id}") if not different else
+                  (f"{len(different)} of {len(cmp_rows)} replies differ from those of {run_id}: "
+                   f"{', '.join(different)}. Same case sets and same recorded identity; the tier did not "
+                   f"give the same text"))}
+    _baseline_append(record)
+    _ueg_lifecycle("baseline_reproduced", tier, {"run_id": record["run_id"], "of": run_id,
+                                                 "reproduced": not different})
+    return record
+
+
+# -- P3.32 clause 3 - WHICH LEVEL OF EVIDENCE EACH SURFACE HERE RESTS ON; NONE ABOVE THE FIRST ---------------
+#  Two levels exist on this platform and no third: "configuration" (what is configured, declared or
+#  reachable - not a statement about behaviour) and "behaviour" (what came back for an input). Every route
+#  of this router is in exactly one of the two tables below; a route added without being placed in one is
+#  reported by `_unclassified_routes()` and fails the guard.
+_EVIDENCE_SURFACES = {
+    "/status": ("configuration", "which resource is listed first and which one served the last recorded completion"),
+    "/resources": ("configuration", "the model resources configured and whether each is reachable"),
+    "/inventory": ("configuration", "what is registered and measured about this machine; each block names its own kind"),
+    "/tiers": ("configuration", "the declared tiers and whether this machine can run each"),
+    "/route": ("configuration", "which tier a request would be sent to, by rule"),
+    "/models": ("configuration", "the local model names the runtime lists"),
+    "/lifecycle": ("configuration", "the promoted default and retired names; its `evaluations` are behaviour records"),
+    "/lifecycle/promote": ("configuration", "a named model is made the default; nothing about it is measured"),
+    "/lifecycle/retire": ("configuration", "a named model is removed from the active list"),
+    "/lifecycle/reinstate": ("configuration", "a named model is returned to the active list"),
+    "/capabilities": ("configuration", "a catalogue of what is built"),
+    "/selfcheck": ("configuration", "whether each backing module imports"),
+    "/lifecycle/evaluate": ("behaviour", "replies to the public probe set, by marker"),
+    "/baseline/run": ("behaviour", "replies to the public and held-out case sets, by marker"),
+    "/baseline": ("behaviour", "the stored baseline records"),
+    "/baseline/{run_id}": ("behaviour", "one stored baseline record with its replies"),
+    "/baseline/{run_id}/reproduce": ("behaviour", "whether a second run gave byte-identical replies"),
+    "/complete": ("behaviour", "one reply and which resource gave it"),
+    "/ensemble": ("behaviour", "several replies and which resource gave each"),
+    "/swarm": ("behaviour", "a chain of replies and which resource gave each"),
+    "/tree": ("behaviour", "a tree of replies and which resource gave each"),
+}
+_NOT_A_MODEL_STATEMENT = {
+    "/homeostasis": "the organism's admission posture, not a statement about a model",
+    "/transduce": "arithmetic on a number the caller supplies (a Hill function); its `activation` field is that function's value, not a reading of a model",
+    "/topology": "graph arithmetic on caller-supplied nodes and edges",
+    "/entropy": "a hash of caller-supplied metadata",
+    "/quorum": "threshold arithmetic over a catalogue count",
+    "/intent": "a regular-expression classifier",
+    "/entailment": "a word-overlap measure",
+    "/consensus": "a vote tally over caller-supplied votes",
+    "/rigor": "statistics over a caller-supplied series",
+    "/validate": "a text-similarity measure against a caller-supplied reference",
+    "/decide": "maximin arithmetic over caller-supplied utilities",
+    "/evidence-levels": "this inventory",
+}
+
+
+def _unclassified_routes(paths=None) -> List[str]:
+    """Routes of this router that are in NEITHER table, and routes that are in both. Empty means none."""
+    if paths is None:
+        paths = sorted({r.path[len(router.prefix):] for r in router.routes if getattr(r, "path", "")})
+    return sorted([p for p in paths if (p in _EVIDENCE_SURFACES) == (p in _NOT_A_MODEL_STATEMENT)])
+
+
+@router.get("/evidence-levels")
+async def evidence_levels():
+    """Which level of evidence each surface of this router rests on. Read-only."""
+    return {"levels": {"configuration": "what is configured, declared or reachable; not a statement about behaviour",
+                       "behaviour": "what came back for an input (level 1). The highest level anything here reaches"},
+            "surfaces": [{"path": router.prefix + p, "level": lv, "rests_on": why}
+                         for p, (lv, why) in sorted(_EVIDENCE_SURFACES.items())],
+            "not_model_statements": [{"path": router.prefix + p, "why": why}
+                                     for p, why in sorted(_NOT_A_MODEL_STATEMENT.items())],
+            "unclassified": _unclassified_routes(),
+            "highest_level": "behaviour",
+            "boundary": ("Level 1 only. The study of a model's insides is not built and not scheduled "
+                         "(Owner, 2026-10-10); no route here does it."),
+            "scope": "the routes of /api/v1/native-ai. Other routers that mention a model are not inventoried here."}
 
 
 @router.post("/lifecycle/promote")

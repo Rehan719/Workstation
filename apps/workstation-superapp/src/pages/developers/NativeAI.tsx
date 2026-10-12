@@ -24,7 +24,9 @@ const CheckpointChip: React.FC<{ c?: Checkpoint }> = ({ c }) => !c ? null : (
     {c.pre_allowed === false ? 'gate: refused' : c.post_compliant === false ? 'gate: output non-compliant' : 'gate: checked'}{c.recorded === false ? ' · NOT recorded' : ''}
   </span>
 );
-interface Stage { role: string; instruction: string }
+// P3.31 (round 9, FU-684) - `model` is the OWNED resource a stage asks for. The API has kept it since W645
+// and this type dropped it, so loading a cascade for edit and saving it again erased every stage's choice.
+interface Stage { role: string; instruction: string; model?: string }
 interface TreeNodeDef { id: string; role: string; depends_on: string[] }
 interface TreeNodeResult extends TreeNodeDef { served_by: string; is_external: boolean; output: string }
 interface TreeGovernance { governed_by: string; qms_passed: boolean | null; qms_basis?: string; qms_coverage_proxy: number; dcms_hash: string; dcms_algo: string; dcms_version: number }
@@ -35,6 +37,27 @@ interface TreeValidation { max_branch_overlap: number; integrated: boolean | nul
   method: string; integrated_basis?: string }
 interface TreeConsensus { reached: boolean; choice: string | null; threshold: number; votes: Record<string, string>; proceed_fraction: number | null; method: string; basis?: string }
 interface TreeSignal { input_strength: number; activation: number; supra_threshold: boolean; k50: number; hill: number; basis: string; method: string }
+// P3.32 (round 8) - a behavioural baseline record. `passed` is three-state: null is "not read" (the tier did
+// not serve that case). `established`, `basis` and `identity_basis` are the server's own sentences.
+interface BaselineCase {
+  case: string; set: string; control: boolean; served_by?: string | null; on_target: boolean;
+  marker_present: boolean; passed: boolean | null; passed_basis?: string;
+  reply_excerpt: string; reply_chars: number; reply_truncated?: boolean; reply_sha256: string;
+  reply_withheld?: string;
+}
+interface BaselineRun {
+  run_id: string; at: string; tier: string; trigger?: string; served_target: boolean;
+  counts: { passed: number; failed: number; not_read: number }; established: string; basis?: string;
+  serving: { identity: string | null; identity_basis: string };
+  case_sets: { public: { version: string; digest: string; cases: number };
+               heldout: { version: string; digest: string; cases: number } };
+  cases: BaselineCase[]; reproduction_of?: string | null;
+  reproduction?: { reproduced: boolean; basis: string } | null;
+}
+interface BaselineList {
+  runs: BaselineRun[]; tiers: { tier: string; latest_run_id: string | null; basis: string }[];
+  listing_is_incomplete?: boolean; listing_basis?: string; basis: string; trigger?: string;
+}
 interface TreeRun {
   goal: string; posture: string; tree: TreeNodeDef[]; levels: string[][];
   node_count: number; parallel_levels: number; max_parallel: number; immune_threat: string;
@@ -192,8 +215,8 @@ function TreeView({ run }: { run: TreeRun }) {
         <div className="mt-2 p-2.5 rounded-xl bg-slate-950 border border-slate-900 flex items-center flex-wrap gap-2" title={run.signal_response.basis}>
           <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Biomimetic signal</span>
           <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${run.signal_response.supra_threshold ? 'bg-emerald-500/15 text-emerald-400' : 'bg-slate-800 text-slate-500'}`}>{run.signal_response.supra_threshold ? 'supra-threshold' : 'sub-threshold'}</span>
-          <span className="text-[8px] font-bold uppercase text-slate-500">activation {Math.round(run.signal_response.activation * 100)}% · K50 {run.signal_response.k50} · Hill {run.signal_response.hill}</span>
-          <span className="text-[8px] text-slate-600">Hill transform of consensus strength — nothing timed</span>
+          <span data-testid="signal-response-figure" className="text-[8px] font-bold uppercase text-slate-500">Hill response {Math.round(run.signal_response.activation * 100)}% · K50 {run.signal_response.k50} · Hill {run.signal_response.hill}</span>
+          <span className="text-[8px] text-slate-600">Hill transform of consensus strength — nothing timed. A function of the vote figure; no model was read to produce it.</span>
         </div>
       )}
       {run.ueg_hash && (
@@ -455,6 +478,22 @@ export const NativeAI: React.FC = () => {
                     probe_set?: { version: string; digest: string } }[];
   } | null>(null);
   const [lcBusy, setLcBusy] = useState('');
+  // P3.32 (round 8) - the behavioural baseline: read on load, RUN only when a person presses the button
+  const [baselines, setBaselines] = useState<BaselineList | null>(null);
+  const [blErr, setBlErr] = useState('');
+  const [blBusy, setBlBusy] = useState('');
+  const [blOpen, setBlOpen] = useState<string | null>(null);
+  const loadBaselines = () =>
+    apiJson<BaselineList>('/api/v1/native-ai/baseline?limit=6').then(d => { setBaselines(d); })
+      .catch(e => { setBaselines(null); setBlErr(errorMessage(e)); });
+  const runBaseline = async (tier: string) => {
+    setBlBusy(tier); setBlErr('');
+    try {
+      await apiJson('/api/v1/native-ai/baseline/run', { method: 'POST', body: { tier } });
+      await loadBaselines();
+    } catch (e) { setBlErr(errorMessage(e)); }
+    setBlBusy('');
+  };
   const loadLifecycle = () =>
     fetch('/api/v1/native-ai/lifecycle').then(r => r.json()).then(setLifecycle).catch(() => {});
   const lifecycleAction = async (action: 'evaluate' | 'promote' | 'retire' | 'reinstate', model: string) => {
@@ -480,6 +519,7 @@ export const NativeAI: React.FC = () => {
       .then(d => setModelTiers(d.tiers || [])).catch(() => {});
     loadCascades();
     loadLifecycle();
+    loadBaselines();
   }, []);
 
   // §6/§7 — native completion with user-selected model tier (auto · native floor · local model(s))
@@ -542,6 +582,18 @@ export const NativeAI: React.FC = () => {
   const setStage = (i: number, k: keyof Stage, v: string) =>
     setStages(s => s.map((st, idx) => (idx === i ? { ...st, [k]: v } : st)));
   const addStage = () => setStages(s => [...s, { role: '', instruction: '' }]);
+  // P3.31 (round 9, FU-684) - "auto" is the absence of a request, so it is stored as no `model` at all
+  const setStageModel = (i: number, v: string) =>
+    setStages(s => s.map((st, idx) => (idx !== i ? st
+      : (v && v !== 'auto' ? { role: st.role, instruction: st.instruction, model: v }
+                           : { role: st.role, instruction: st.instruction }))));
+  // Only what GET /native-ai/models lists is OFFERED (auto, the floor, discovered local models - never an
+  // external provider). A stage's SAVED choice that is not in that list is still shown, so it is not lost.
+  const stageModelOptions = (saved?: string): { id: string; label: string }[] => {
+    const base = (modelTiers.length ? modelTiers : [{ id: 'auto', label: 'Auto', kind: 'policy' }, { id: 'native', label: 'Native floor', kind: 'native' }])
+      .map(t => ({ id: t.id, label: t.label }));
+    return saved && !base.some(o => o.id === saved) ? [...base, { id: saved, label: `${saved} (saved — not listed now)` }] : base;
+  };
   const removeStage = (i: number) => setStages(s => s.filter((_, idx) => idx !== i));
 
   // §7 (W344) — RECONFIGURE from the UI: the PUT reconfigure path (W267) was fully functional
@@ -564,7 +616,9 @@ export const NativeAI: React.FC = () => {
     setEditingId(c.id);
     setName(c.name);
     setDesignContext(c.context ?? '');   // W460 — edit what is saved, not what was last typed
-    setStages(c.stages.map(s => ({ role: s.role, instruction: s.instruction })));
+    // P3.31 (round 9, FU-684) - the saved model comes with the stage. This line kept two fields, and the PUT
+    // below replaces the stage list whole, so a cascade saved WITH per-stage models lost them on its first edit.
+    setStages(c.stages.map(s => ({ role: s.role, instruction: s.instruction, ...(s.model ? { model: s.model } : {}) })));
   };
 
   const saveCascade = async () => {
@@ -939,6 +993,47 @@ export const NativeAI: React.FC = () => {
                   </div>
                 ))}
               </div>
+              <div data-testid="behaviour-baseline" className="mt-3 space-y-1 border-t border-slate-900 pt-2">
+                <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">Behaviour baseline, per serving tier — run when you ask, never on a schedule</p>
+                {blErr && <p role="alert" data-testid="baseline-error" className="text-[9px] font-bold text-vital">{blErr}</p>}
+                {baselines && <p className="text-[9px] text-slate-500">{baselines.basis}</p>}
+                {baselines?.listing_is_incomplete && <p className="text-[9px] font-bold text-amber-400">{baselines.listing_basis}</p>}
+                {(baselines?.tiers ?? []).map(t => (
+                  <div key={t.tier} className="flex flex-wrap items-center gap-2">
+                    <span className="text-[10px] font-mono text-slate-300">{t.tier}</span>
+                    <span data-testid={`baseline-tier-${t.tier}`} className="text-[9px] text-slate-500">{t.basis}</span>
+                    <button type="button" data-testid={`baseline-run-${t.tier}`} onClick={() => runBaseline(t.tier)} disabled={!!blBusy}
+                      className="text-[9px] font-black uppercase px-2 py-0.5 rounded border border-slate-800 text-slate-400 hover:text-aura disabled:opacity-40">
+                      {blBusy === t.tier ? 'running…' : 'run the baseline'}
+                    </button>
+                  </div>
+                ))}
+                {(baselines?.runs ?? []).map(b => (
+                  <div key={b.run_id} data-testid="baseline-record" className="border-t border-slate-900 pt-1">
+                    <p className="text-[9px] text-slate-400">
+                      {b.run_id} · {b.tier} · {b.counts.passed} passed · {b.counts.failed} failed · {b.counts.not_read} not read · public set v{b.case_sets.public.version} ({b.case_sets.public.digest}) · held-out set v{b.case_sets.heldout.version} ({b.case_sets.heldout.digest}) · {b.at}
+                    </p>
+                    <p className="text-[9px] text-slate-500">{b.established}</p>
+                    <p data-testid="baseline-identity" className="text-[9px] text-slate-500">Serving identity: {b.serving.identity ?? 'not recorded'} — {b.serving.identity_basis}</p>
+                    {b.reproduction && <p className="text-[9px] text-slate-500">Re-run of {String(b.reproduction_of ?? '')}: {b.reproduction.basis}</p>}
+                    <button type="button" onClick={() => setBlOpen(blOpen === b.run_id ? null : b.run_id)}
+                      className="text-[9px] text-sky-400 underline underline-offset-2">
+                      {blOpen === b.run_id ? 'hide the replies' : 'read the replies'}
+                    </button>
+                    {blOpen === b.run_id && b.cases.map(c => (
+                      <div key={`${c.set}:${c.case}`} data-testid="baseline-case" className="pl-2 border-l border-slate-800 mt-1">
+                        <p className="text-[9px] text-slate-400">
+                          {c.case} ({c.set}{c.control ? ', control' : ''}) — {c.passed === true ? 'passed' : c.passed === false ? 'FAILED' : 'not read'} · served by {String(c.served_by ?? 'nothing')} · {c.reply_chars} characters{c.reply_truncated ? ', excerpt shown' : ''}
+                        </p>
+                        {c.passed_basis && <p className="text-[9px] text-slate-600">{c.passed_basis}</p>}
+                        {c.reply_withheld
+                          ? <p data-testid="baseline-reply-withheld" className="text-[9px] text-amber-400">{c.reply_withheld}</p>
+                          : <pre className="text-[9px] text-slate-500 whitespace-pre-wrap">{c.reply_excerpt}</pre>}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
               {(lifecycle.evaluations ?? []).length > 0 && (
                 <div className="mt-3 space-y-1">
                   <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">Recent evaluations (honest — no score when the target could not serve)</p>
@@ -1012,6 +1107,12 @@ export const NativeAI: React.FC = () => {
                   <input value={s.instruction} onChange={e => setStage(i, 'instruction', e.target.value)}
                     className="flex-1 text-[11px] bg-slate-950 border border-slate-900 rounded-lg p-2 text-slate-300"
                     placeholder="instruction for this agent…" />
+                  <select value={s.model ?? 'auto'} onChange={e => setStageModel(i, e.target.value)}
+                    aria-label={`Model for stage ${i + 1}`} data-testid="stage-model"
+                    title="Which owned resource this stage asks for. The run reports what actually served it."
+                    className="w-36 text-[11px] bg-slate-950 border border-slate-900 rounded-lg p-2 text-slate-300">
+                    {stageModelOptions(s.model).map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+                  </select>
                   <button onClick={() => removeStage(i)} aria-label={`Remove stage ${i + 1}`} title="Remove stage" className="text-slate-600 hover:text-vital p-1"><Trash2 size={13} /></button>
                 </div>
               ))}
