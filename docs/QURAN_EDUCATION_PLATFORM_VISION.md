@@ -492,10 +492,10 @@ Each feature below carries its scope, its user stories as written in the Develop
 
 ### Feature 14 — Secure Billing, Subscriptions & Donations
 
-**Scope.** All financial transactions handled securely and in a Sharia-compliant manner: freemium and paid subscription tiers via Stripe; institutional billing; **dynamic pricing at cost + 5% for institutions**; Zakat-eligible donation processing; a transparent donor dashboard; and **"Sponsor-a-Student"**.
+**Scope.** All financial transactions handled securely and in a Sharia-compliant manner: **free for individuals and for institutions - no tiers, no subscriptions, no institutional billing** *[OWNER RULING 2026-10-12; before the ruling: "freemium and paid subscription tiers via Stripe; institutional billing; dynamic pricing at cost + 5% for institutions"]*; Zakat-eligible donation processing; a transparent donor dashboard; and **"Sponsor-a-Student"**.
 
 **User stories.**
-- Users can subscribe to freemium or paid tiers with varying feature access.
+- Every feature is open to every user; nothing is behind a tier. *[OWNER RULING 2026-10-12; before the ruling: "Users can subscribe to freemium or paid tiers with varying feature access."]*
 - Institutions can be billed based on seats or usage, with ethical pricing.
 - Users can make Zakat-eligible donations securely.
 - A public donor dashboard shows how funds are allocated and platform impact.
@@ -820,7 +820,7 @@ User model with roles (learner, teacher, admin, parent), `mfaSecret`, `isMfaEnab
 
 ### Phase 3 — Secure & Compliant Billing, Subscriptions & Donations
 *Effort: Medium · Impact: Medium*
-Models: `SubscriptionPlan` (with `complianceTags` e.g. `noRiba`), `UserSubscription`, `DonationFund` (with `isZakatEligible`), `Donation`. Dynamic pricing (usage cost + 5%, riba-free), subscription lifecycle, Stripe wrapper with webhooks (`invoice.payment_succeeded`, `customer.subscription.updated`), refunds. Frontend: plans page, Stripe payment form, billing dashboard, donation page, impact-report stub.
+Models: `DonationFund` (with `isZakatEligible`), `Donation`. No subscription model and no pricing: the platform is free. *[OWNER RULING 2026-10-12; before the ruling the models also named `SubscriptionPlan` and `UserSubscription`, with "Dynamic pricing (usage cost + 5%, riba-free), subscription lifecycle, Stripe wrapper with webhooks, refunds".]* Frontend: plans page, Stripe payment form, billing dashboard, donation page, impact-report stub.
 
 ### Phase 4 — AI Tajwīd Coach (MVP Recitation Analysis Integration)
 *Effort: High · Impact: Critical*
@@ -980,7 +980,7 @@ Governance is described as **led by elected volunteers**, with a Sharia board an
 
 - **100% Donation & Waqf-Backed.**
 - **Free at the point of use for individuals.**
-- **Institutional partnerships at cost + 5%.**
+- **Free for institutions.** *[OWNER RULING 2026-10-12; before the ruling: "Institutional partnerships at cost + 5%."]*
 - **Surplus cap ≤ 5%, with reinvestment.**
 - **Zakat-eligible donation funds**, explicitly marked, with Zakat calculation guidance.
 - **Sponsor-a-Student** — donors fund access for students in underserved regions.

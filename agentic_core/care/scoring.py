@@ -368,9 +368,42 @@ def score_falls(obs: Dict[str, Any]) -> Dict[str, Any]:
 _SCORERS = {"news2": score_news2, "must": score_must, "waterlow": score_waterlow, "falls_risk": score_falls}
 
 
+#  WITHHELD ON ITS OWNER'S TERMS (OWNER RULING 2026-10-12: an instrument whose terms do not allow this use is
+#  withdrawn; the licence is the Owner's question). The scorer stays in the module; nothing reaches it through
+#  compute_score while its id is here. To restore one, remove its entry - and say in the round what was read.
+WITHHELD_ON_TERMS: Dict[str, Dict[str, Any]] = {
+    "must": {"owner": "BAPEN", "page": "https://www.bapen.org.uk/must-and-self-screening/must-toolkit/",
+             "read_on": "2026-10-12", "terms_read": True,
+             "says": ("freely available for non-commercial purposes; for commercial purposes permission must be "
+                      "sought, a licence agreement signed and a licence fee paid"),
+             "why": ("whether a free tool inside a platform that charges for another service is non-commercial "
+                     "is its owner's to say, and the owner has not yet said")},
+    "waterlow": {"owner": "the rights holder of the Waterlow score", "page": None, "read_on": None,
+                 "terms_read": False, "says": None,
+                 "why": ("its owner's terms have NOT been read: the owner's site answered only with a redirect "
+                         "on 2026-10-12, so whether this use is allowed is not known")},
+}
+
+
+def withheld_sentence(tool: str) -> str:
+    w = WITHHELD_ON_TERMS[tool]
+    read = (f"Its owner ({w['owner']}) says, at {w['page']} (read {w['read_on']}): {w['says']}. "
+            if w["terms_read"] else "")
+    return (f"WITHHELD - nothing was computed and nothing was assessed. {read}"
+            f"This score is withheld because {w['why']}. Use the owner's own published tool.")
+
+
 def compute_score(tool: str, obs: Dict[str, Any]) -> Dict[str, Any]:
     """Dispatch by tool id. A tool without a published table returns an honest 'not available'."""
-    fn = _SCORERS.get((tool or "").strip().lower())
+    _id = (tool or "").strip().lower()
+    if _id in WITHHELD_ON_TERMS:
+        return {"tool": _id, "withheld": True, "withheld_basis": dict(WITHHELD_ON_TERMS[_id]), "available": False,
+                "table": None, "components": {}, "total": None, "band": None, "assessed": False,
+                "response": withheld_sentence(_id), "complete": False, "missing": [], "warnings": [],
+                "keys_not_read": sorted(str(k) for k in (obs or {})),
+                "note": "withheld on its owner's terms: no score is computed, so nothing here is a finding about the patient",
+                "basis": "nothing was computed - this score is withheld on its owner's terms"}
+    fn = _SCORERS.get(_id)
     if fn is None:
         #  W655 (ledger v15 R5.4) - NOTHING WAS COMPUTED, so the basis may not say something was; and whether
         #  AI wrote the narrative is said by the narrative's own provenance, not assumed here.

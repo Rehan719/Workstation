@@ -1388,9 +1388,11 @@ offline access to core content; and **digital certifications** for completed mod
 rather than serving a template over sacred text — §11 rule 4 working as designed. Certifications do not
 exist, and must not until A.12.2 is ruled.*
 
-**14 · Secure Billing, Subscriptions & Donations.** Sharia-compliant, riba-free pricing; freemium and paid
-tiers; institutional billing at **cost + 5%**; **Zakat-eligible** donation funds; a transparent donor
-dashboard; and **Sponsor-a-Student**.
+**14 · Donations.** **Free for everyone - individuals and institutions.** No tiers, no subscriptions and no
+institutional billing; **Zakat-eligible** donation funds; a transparent donor dashboard; and
+**Sponsor-a-Student**. *[OWNER RULING 2026-10-12: the Quran platform's only income is donations and the waqf. The words before the
+ruling: "Secure Billing, Subscriptions & Donations. Sharia-compliant, riba-free pricing; freemium and paid
+tiers; institutional billing at cost + 5%".]*
 *Status: not built. §12's VSB economy is the natural home — see A.8, the strongest structural convergence
 between QEP and Workstation.*
 
@@ -1435,8 +1437,10 @@ Carried because it is Owner-authored, durable, and converges with what Workstati
   Justice (*Al-ʿAdl*) · Forgiveness (*Al-Ghaffār*) · Transcendence (*Al-Aḥad*) · Guidance (*Al-Hādī*).
 - **Oversight** — Board of Trustees; a **Sharia Supervisory Council** auditing curricula, AI and content;
   steering committees for Governance & Risk, Ethics & Sharia, Finance & Audit, Impact & Quality.
-- **Finance** — 100% donation and waqf-backed; **free at the point of use** for individuals; institutional
-  partnerships at **cost + 5%**; a **surplus cap of ≤ 5%** with reinvestment; Zakat-eligible funds;
+- **Finance** — 100% donation and waqf-backed; **free at the point of use for individuals and for
+  institutions**; a **surplus cap of ≤ 5%** with reinvestment; Zakat-eligible funds;
+  *[OWNER RULING 2026-10-12: the words before the ruling: "free at the point of use for individuals; institutional partnerships
+  at cost + 5%".]*
   Sponsor-a-Student; a transparent donor dashboard showing allocation and impact.
 - **Compliance intent** — recognised quality, information-security, data-protection and charity-accounting
   standards, with **Sharia compliance paramount**.
@@ -1446,7 +1450,7 @@ Carried because it is Owner-authored, durable, and converges with what Workstati
 **The convergence.** §12's VSB is *already* a hybrid Waqf/Trust/Multinational economic entity with an
 adjustable profit-share waterfall. QEP's governance is not a foreign model needing a parallel economy — it
 is the **most natural possible instance of the one Workstation built**. A QEP VSB would use §12's waterfall
-with a surplus cap, a Zakat-eligible charity channel and free-at-point-of-use individual pricing: an
+with a surplus cap, a Zakat-eligible charity channel and free-at-point-of-use pricing for everyone: an
 economic model that is genuinely *its own* rather than the generic default. The eight-attribute executive
 board maps onto §5's living organisation as a Religion-domain board composition.
 
