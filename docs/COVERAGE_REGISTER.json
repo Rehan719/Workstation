@@ -1,0 +1,544 @@
+{
+ "about": "What a person can do here today, subject by subject, for Law, Education and Care. Built from what was measured and driven on 2026-10-12 (docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md sections 23 to 25). A row changes state only in the round that builds it, and a journey names the test that drives it.",
+ "rows": [
+  {
+   "id": "law-benefits",
+   "domain": "Law",
+   "subject": "Benefits, welfare and social security",
+   "nation": "England",
+   "state": "nothing_built",
+   "today": "nothing here serves this subject"
+  },
+  {
+   "id": "law-work-rights",
+   "domain": "Law",
+   "subject": "Rights at work, pay, dismissal, discrimination",
+   "nation": "England",
+   "state": "nothing_built",
+   "today": "nothing here serves this subject"
+  },
+  {
+   "id": "law-debt",
+   "domain": "Law",
+   "subject": "Debt and money difficulties",
+   "nation": "England",
+   "state": "nothing_built",
+   "today": "nothing here serves this subject"
+  },
+  {
+   "id": "law-consumer",
+   "domain": "Law",
+   "subject": "Consumer rights",
+   "nation": "England",
+   "state": "nothing_built",
+   "today": "nothing here serves this subject"
+  },
+  {
+   "id": "law-housing",
+   "domain": "Law",
+   "subject": "Housing and homelessness",
+   "nation": "England",
+   "state": "nothing_built",
+   "today": "nothing here serves this subject"
+  },
+  {
+   "id": "law-courts",
+   "domain": "Law",
+   "subject": "Courts, civil disputes and going to court",
+   "nation": "England",
+   "state": "nothing_built",
+   "today": "nothing here serves this subject"
+  },
+  {
+   "id": "law-energy",
+   "domain": "Law",
+   "subject": "Energy, utilities and post",
+   "nation": "England",
+   "state": "nothing_built",
+   "today": "nothing here serves this subject"
+  },
+  {
+   "id": "law-health-rights",
+   "domain": "Law",
+   "subject": "Health, disability and social-care rights",
+   "nation": "England",
+   "state": "nothing_built",
+   "today": "nothing here serves this subject"
+  },
+  {
+   "id": "law-tribunal-time-limit",
+   "domain": "Law",
+   "subject": "How long a person has to bring an employment tribunal claim",
+   "nation": "England, Wales, Scotland",
+   "state": "nothing_built",
+   "today": "asked this, the research form returns the question's own words; the calculator is built in a later round"
+  },
+  {
+   "id": "law-urgent-routes",
+   "domain": "Law",
+   "subject": "Somewhere safe tonight, danger from a person, a hearing within days",
+   "nation": "England",
+   "state": "nothing_built",
+   "today": "no route is shown first"
+  },
+  {
+   "id": "law-directory",
+   "domain": "Law",
+   "subject": "Where to go for help from a person",
+   "nation": "England",
+   "state": "nothing_built",
+   "today": "no directory is held"
+  },
+  {
+   "id": "law-research",
+   "domain": "Law",
+   "subject": "A legal question, researched",
+   "nation": "England",
+   "state": "frame",
+   "today": "a form returns an outline of headings filled with the request's own words; nothing is researched, checked or assessed"
+  },
+  {
+   "id": "law-draft",
+   "domain": "Law",
+   "subject": "A contract or policy drafted from a template",
+   "nation": "England",
+   "state": "frame",
+   "today": "a form returns an outline of headings filled with the request's own words; nothing is researched, checked or assessed"
+  },
+  {
+   "id": "law-analyse",
+   "domain": "Law",
+   "subject": "A contract or legal document analysed",
+   "nation": "England",
+   "state": "frame",
+   "today": "a form returns an outline of headings filled with the request's own words; nothing is researched, checked or assessed"
+  },
+  {
+   "id": "law-matter-clerk",
+   "domain": "Law",
+   "subject": "The Owner's one matter: a document assembled only from located lines, with authorities resolved or refused",
+   "nation": "England",
+   "state": "journey",
+   "today": "the Owner can assemble a draft with provenance per particular and approve it",
+   "driven_by": "test_w610_p323_the_legal_specialist_assembles_with_provenance_and_never_invents_a_particular"
+  },
+  {
+   "id": "law-immigration",
+   "domain": "Law",
+   "subject": "Immigration and nationality",
+   "nation": "England",
+   "state": "excluded",
+   "today": "not built",
+   "excluded_by": "Owner ruling 2026-10-12 (advice, 3): information and a route to an authorised person, never advice"
+  },
+  {
+   "id": "law-debt-solutions",
+   "domain": "Law",
+   "subject": "Which debt solution to take",
+   "nation": "England",
+   "state": "excluded",
+   "today": "not built",
+   "excluded_by": "Owner ruling 2026-10-12 (advice, 3): information and a route to an authorised person, never advice"
+  },
+  {
+   "id": "law-family-safety",
+   "domain": "Law",
+   "subject": "Family, children and personal safety",
+   "nation": "England",
+   "state": "excluded",
+   "today": "not built",
+   "excluded_by": "Owner ruling 2026-10-12 (advice, 3): information and a route to an authorised person, never advice"
+  },
+  {
+   "id": "law-criminal",
+   "domain": "Law",
+   "subject": "Criminal matters",
+   "nation": "England",
+   "state": "excluded",
+   "today": "not built",
+   "excluded_by": "Owner ruling 2026-10-12 (advice, 3): information and a route to an authorised person, never advice"
+  },
+  {
+   "id": "law-own-matter",
+   "domain": "Law",
+   "subject": "A person's own saved matter: facts, documents, dates",
+   "nation": "England",
+   "state": "excluded",
+   "today": "not built",
+   "excluded_by": "Owner ruling 2026-10-12 (advice, 2): a person's own matter waits for authentication"
+  },
+  {
+   "id": "law-outcome",
+   "domain": "Law",
+   "subject": "The likely outcome of a claim, or a settlement range",
+   "nation": "England",
+   "state": "excluded",
+   "today": "refused",
+   "excluded_by": "Owner ruling 2026-10-03c and 2026-10-12 (advice, 5): no outcome, probability or confidence anywhere in Law"
+  },
+  {
+   "id": "education-curriculum",
+   "domain": "Education",
+   "subject": "A curriculum outline for a subject and level",
+   "nation": "England",
+   "state": "frame",
+   "today": "a form returns an outline of headings filled with the request's own words; nothing is researched, checked or assessed"
+  },
+  {
+   "id": "education-lesson",
+   "domain": "Education",
+   "subject": "A lesson plan",
+   "nation": "England",
+   "state": "frame",
+   "today": "a form returns an outline of headings filled with the request's own words; nothing is researched, checked or assessed"
+  },
+  {
+   "id": "education-assessment",
+   "domain": "Education",
+   "subject": "A quiz, rubric, exam or project brief",
+   "nation": "England",
+   "state": "frame",
+   "today": "a form returns an outline of headings filled with the request's own words; nothing is researched, checked or assessed"
+  },
+  {
+   "id": "education-feedback",
+   "domain": "Education",
+   "subject": "Feedback on a piece of student work",
+   "nation": "England",
+   "state": "frame",
+   "today": "a form returns an outline of headings filled with the request's own words; nothing is researched, checked or assessed; the criterion and grade sections are withheld"
+  },
+  {
+   "id": "education-early-years",
+   "domain": "Education",
+   "subject": "Early-years and foundational learning",
+   "nation": "England",
+   "state": "nothing_built",
+   "today": "nothing here serves this subject"
+  },
+  {
+   "id": "education-school",
+   "domain": "Education",
+   "subject": "Primary and secondary subject learning, homework, revision",
+   "nation": "England",
+   "state": "nothing_built",
+   "today": "nothing here serves this subject"
+  },
+  {
+   "id": "education-send",
+   "domain": "Education",
+   "subject": "Inclusive education and accessibility support",
+   "nation": "England",
+   "state": "nothing_built",
+   "today": "nothing here serves this subject"
+  },
+  {
+   "id": "education-post-16",
+   "domain": "Education",
+   "subject": "Post-16, technical and vocational pathways",
+   "nation": "England",
+   "state": "nothing_built",
+   "today": "nothing here serves this subject"
+  },
+  {
+   "id": "education-apprenticeships",
+   "domain": "Education",
+   "subject": "Apprenticeships and work-based learning",
+   "nation": "England",
+   "state": "nothing_built",
+   "today": "nothing here serves this subject"
+  },
+  {
+   "id": "education-higher",
+   "domain": "Education",
+   "subject": "University, research and postgraduate study",
+   "nation": "England",
+   "state": "nothing_built",
+   "today": "nothing here serves this subject"
+  },
+  {
+   "id": "education-adult",
+   "domain": "Education",
+   "subject": "Adult and lifelong learning",
+   "nation": "England",
+   "state": "nothing_built",
+   "today": "nothing here serves this subject"
+  },
+  {
+   "id": "education-cpd",
+   "domain": "Education",
+   "subject": "Professional development and workplace training",
+   "nation": "England",
+   "state": "nothing_built",
+   "today": "nothing here serves this subject"
+  },
+  {
+   "id": "education-tutoring",
+   "domain": "Education",
+   "subject": "Tutoring: explanation, practice and revision with a learner",
+   "nation": "England",
+   "state": "nothing_built",
+   "today": "nothing here serves this subject"
+  },
+  {
+   "id": "education-careers",
+   "domain": "Education",
+   "subject": "Careers and progression",
+   "nation": "England",
+   "state": "nothing_built",
+   "today": "nothing here serves this subject"
+  },
+  {
+   "id": "education-provider",
+   "domain": "Education",
+   "subject": "Education-provider and employer services",
+   "nation": "England",
+   "state": "nothing_built",
+   "today": "nothing here serves this subject"
+  },
+  {
+   "id": "education-funding",
+   "domain": "Education",
+   "subject": "Funding, student finance and eligibility",
+   "nation": "England",
+   "state": "nothing_built",
+   "today": "no route is held yet; ruled to be a route to the official page with the date read, never a figure"
+  },
+  {
+   "id": "education-qualifications",
+   "domain": "Education",
+   "subject": "Whether a qualification is regulated",
+   "nation": "England",
+   "state": "nothing_built",
+   "today": "no route is held yet; ruled to be a route to the official page with the date read, never a figure"
+  },
+  {
+   "id": "education-admissions",
+   "domain": "Education",
+   "subject": "Admissions, courses and providers",
+   "nation": "England",
+   "state": "nothing_built",
+   "today": "no route is held yet; ruled to be a route to the official page with the date read, never a figure"
+  },
+  {
+   "id": "education-learner-record",
+   "domain": "Education",
+   "subject": "A learner's goals, work, progress and mastery",
+   "nation": "England",
+   "state": "excluded",
+   "today": "not built",
+   "excluded_by": "Owner ruling 2026-10-12 (education, 5): no learner record before authentication, never a measure of a person"
+  },
+  {
+   "id": "education-certificate",
+   "domain": "Education",
+   "subject": "A certificate, badge or completion record",
+   "nation": "England",
+   "state": "excluded",
+   "today": "not built",
+   "excluded_by": "Owner ruling 2026-10-12 (education, 6): no certificate, badge or completion record"
+  },
+  {
+   "id": "education-children",
+   "domain": "Education",
+   "subject": "Children as users of the tools",
+   "nation": "England",
+   "state": "excluded",
+   "today": "not built",
+   "excluded_by": "Owner ruling 2026-10-12 (education, 4): the tools are for a teacher or an adult learner until the Owner rules on children"
+  },
+  {
+   "id": "education-religious-education",
+   "domain": "Education",
+   "subject": "Religious education as a school subject",
+   "nation": "England",
+   "state": "excluded",
+   "today": "refused on all four forms",
+   "excluded_by": "Owner ruling 2026-10-05b R7 and 2026-10-12 (education, 10): religious teaching content is refused"
+  },
+  {
+   "id": "care-news2",
+   "domain": "Care",
+   "subject": "An early warning score from recorded observations",
+   "nation": "England",
+   "state": "arithmetic",
+   "today": "the score, its band and its components are computed from the published table; missing and implausible readings are said",
+   "driven_by": "test_w457_care_scoring_computes_both_ways"
+  },
+  {
+   "id": "care-must",
+   "domain": "Care",
+   "subject": "A malnutrition screening score",
+   "nation": "England",
+   "state": "excluded",
+   "today": "WITHHELD (W679): nothing is computed; the route answers 409 and says what was read of its owner's terms (free for non-commercial use only)",
+   "excluded_by": "Owner rulings 2026-10-12: an instrument whose terms do not allow this use is withdrawn; no letter is sent; it becomes a route to its owner's own tool once that page is read"
+  },
+  {
+   "id": "care-waterlow",
+   "domain": "Care",
+   "subject": "A pressure-ulcer risk score",
+   "nation": "England",
+   "state": "excluded",
+   "today": "WITHHELD (W679): nothing is computed; the route answers 409 and says what was read of its owner's terms (not read: the owner's site could not be reached)",
+   "excluded_by": "Owner rulings 2026-10-12: an instrument whose terms do not allow this use is withdrawn; no letter is sent; it becomes a route to its owner's own tool once that page is read"
+  },
+  {
+   "id": "care-falls",
+   "domain": "Care",
+   "subject": "A falls risk count",
+   "nation": "England",
+   "state": "excluded",
+   "today": "RETIRED (W677): the route answers 410 with the replacement guideline's page; nothing is counted",
+   "excluded_by": "Owner ruling 2026-10-12 (care, 2): the falls count is retired"
+  },
+  {
+   "id": "care-care-plan",
+   "domain": "Care",
+   "subject": "A care plan",
+   "nation": "England",
+   "state": "frame",
+   "today": "a form returns an outline of headings filled with the request's own words; nothing is researched, checked or assessed"
+  },
+  {
+   "id": "care-handover",
+   "domain": "Care",
+   "subject": "A clinical handover",
+   "nation": "England",
+   "state": "frame",
+   "today": "a form returns an outline of headings filled with the request's own words; nothing is researched, checked or assessed"
+  },
+  {
+   "id": "care-safeguarding",
+   "domain": "Care",
+   "subject": "Adult safeguarding process guidance",
+   "nation": "England",
+   "state": "frame",
+   "today": "a form returns an outline of headings filled with the request's own words; nothing is researched, checked or assessed; the emergency line is the first line of the text"
+  },
+  {
+   "id": "care-dementia",
+   "domain": "Care",
+   "subject": "Dementia care planning",
+   "nation": "England",
+   "state": "frame",
+   "today": "a form returns an outline of headings filled with the request's own words; nothing is researched, checked or assessed"
+  },
+  {
+   "id": "care-mental-health-plan",
+   "domain": "Care",
+   "subject": "A mental-health care plan",
+   "nation": "England",
+   "state": "frame",
+   "today": "a form returns an outline of headings filled with the request's own words; nothing is researched, checked or assessed"
+  },
+  {
+   "id": "care-discharge",
+   "domain": "Care",
+   "subject": "A discharge checklist",
+   "nation": "England",
+   "state": "frame",
+   "today": "a form returns an outline of headings filled with the request's own words; nothing is researched, checked or assessed"
+  },
+  {
+   "id": "care-navigation",
+   "domain": "Care",
+   "subject": "Which service to go to, and how",
+   "nation": "England",
+   "state": "nothing_built",
+   "today": "nothing here serves this subject"
+  },
+  {
+   "id": "care-social-care",
+   "domain": "Care",
+   "subject": "Adult social care, assessments and daily living",
+   "nation": "England",
+   "state": "nothing_built",
+   "today": "nothing here serves this subject"
+  },
+  {
+   "id": "care-carers",
+   "domain": "Care",
+   "subject": "Support for carers",
+   "nation": "England",
+   "state": "nothing_built",
+   "today": "nothing here serves this subject"
+  },
+  {
+   "id": "care-disability",
+   "domain": "Care",
+   "subject": "Disability, equipment and independent living",
+   "nation": "England",
+   "state": "nothing_built",
+   "today": "nothing here serves this subject"
+  },
+  {
+   "id": "care-transitions",
+   "domain": "Care",
+   "subject": "Hospital discharge and transitions between services",
+   "nation": "England",
+   "state": "nothing_built",
+   "today": "nothing here serves this subject"
+  },
+  {
+   "id": "care-end-of-life",
+   "domain": "Care",
+   "subject": "Palliative and end-of-life support",
+   "nation": "England",
+   "state": "nothing_built",
+   "today": "nothing here serves this subject"
+  },
+  {
+   "id": "care-provider",
+   "domain": "Care",
+   "subject": "Care-provider operations and quality",
+   "nation": "England",
+   "state": "nothing_built",
+   "today": "nothing here serves this subject"
+  },
+  {
+   "id": "care-urgent-routes",
+   "domain": "Care",
+   "subject": "An emergency, a mental-health crisis, a serious deterioration",
+   "nation": "England",
+   "state": "nothing_built",
+   "today": "nothing here serves this subject"
+  },
+  {
+   "id": "care-health-information",
+   "domain": "Care",
+   "subject": "Information about a condition, a symptom, a medicine or a treatment",
+   "nation": "England",
+   "state": "excluded",
+   "today": "not built",
+   "excluded_by": "Owner ruling 2026-10-12 (care, 6): no health information is composed; routes only"
+  },
+  {
+   "id": "care-clinical-sections",
+   "domain": "Care",
+   "subject": "Medication, capacity, consent, crisis and risk management in a plan",
+   "nation": "England",
+   "state": "excluded",
+   "today": "still asked for by the care-plan prompt until its round",
+   "excluded_by": "Owner ruling 2026-10-12 (care, 5 and 7): nothing only a clinician may write; no instrument added by a round"
+  },
+  {
+   "id": "care-care-record",
+   "domain": "Care",
+   "subject": "A person's care record",
+   "nation": "England",
+   "state": "excluded",
+   "today": "not built",
+   "excluded_by": "Owner ruling 2026-10-12 (care, 9): no care record of any person before authentication"
+  },
+  {
+   "id": "care-children-safeguarding",
+   "domain": "Care",
+   "subject": "A child's safeguarding concern",
+   "nation": "England",
+   "state": "excluded",
+   "today": "the adult form still accepts it until the tier-2 round",
+   "excluded_by": "Owner ruling 2026-10-12 (care, 4): the form is the adult route for England; a child's concern gets the children's route and nothing composed"
+  }
+ ]
+}

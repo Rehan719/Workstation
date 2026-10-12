@@ -1,0 +1,545 @@
+{
+ "about": "Every authority this platform NAMES, as a row: the publisher's page, the date it was read, who read it, its status and what replaced it. A row is entered by whoever read the page, in a round. Nothing fetches a page on a timer; a row is current for `review_days` after it was read and is shown as not recently checked after that. A name the code uses with no row here fails scripts/sources_check.py.",
+ "review_days": 90,
+ "scan": [
+  {
+   "dir": "agentic_core/api",
+   "ext": [
+    ".py"
+   ]
+  },
+  {
+   "dir": "agentic_core/care",
+   "ext": [
+    ".py"
+   ]
+  },
+  {
+   "dir": "agentic_core/legal",
+   "ext": [
+    ".py",
+    ".json"
+   ]
+  },
+  {
+   "dir": "apps/workstation-superapp/src/pages/domains",
+   "ext": [
+    ".tsx"
+   ]
+  },
+  {
+   "dir": "apps/workstation-superapp/src/lib",
+   "ext": [
+    ".ts"
+   ]
+  }
+ ],
+ "patterns": [
+  "NICE (?:CG|NG|QS)\\d+",
+  "(?:[A-Z][A-Za-z']+ )+Act (?:19|20)\\d{2}",
+  "ISO(?:/IEC)? ?\\d{4,5}(?::\\d{4})?",
+  "NEWS2"
+ ],
+ "rows": [
+  {
+   "id": "nice-cg161",
+   "names": [
+    "NICE CG161"
+   ],
+   "kind": "clinical guideline",
+   "nation": [
+    "England"
+   ],
+   "status": "replaced",
+   "replaced_by": "nice-ng249",
+   "page": "https://www.nice.org.uk/guidance/cg161",
+   "read_on": "2026-10-12",
+   "read_by": "round W676, in a browser",
+   "says": "Published 12 June 2013. The page reads: this guideline has been updated and replaced by NICE guideline NG249.",
+   "named_as_replaced_in": [
+    "agentic_core/care/scoring.py",
+    "agentic_core/api/care.py"
+   ]
+  },
+  {
+   "id": "nice-ng249",
+   "names": [
+    "NICE NG249"
+   ],
+   "kind": "clinical guideline",
+   "nation": [
+    "England"
+   ],
+   "status": "current",
+   "page": "https://www.nice.org.uk/guidance/ng249/chapter/Recommendations",
+   "read_on": "2026-10-12",
+   "read_by": "round W676, in a browser",
+   "says": "Published 29 April 2025. Recommendation 1.1.1: do not use falls risk prediction tools to predict a person's risk of falling."
+  },
+  {
+   "id": "rcp-news2",
+   "names": [
+    "NEWS2"
+   ],
+   "kind": "clinical instrument",
+   "nation": [
+    "England"
+   ],
+   "status": "current",
+   "page": "https://www.rcp.ac.uk/resources/national-early-warning-score-news-2/",
+   "read_on": "2026-10-12",
+   "read_by": "rounds W676 and W678, in a browser",
+   "says": "Active, dated 19 December 2017: six physiological parameters, aggregated, with 2 added for supplemental oxygen. NOT READ: the chart itself. REUSE TERMS READ 2026-10-12: no copyright restriction on NEWS2 provided the stated acknowledgement is given, the material is not modified or amended in any way, and the charts are reproduced in colour."
+  },
+  {
+   "id": "gov-national-curriculum",
+   "names": [],
+   "used_by": [
+    "agentic_core/api/education.py"
+   ],
+   "kind": "public guidance",
+   "nation": [
+    "England"
+   ],
+   "status": "current",
+   "page": "https://www.gov.uk/national-curriculum",
+   "read_on": "2026-10-12",
+   "read_by": "round W676, in a browser",
+   "says": "The national curriculum is used by primary and secondary schools in England; academies and private schools do not have to follow it. The basic curriculum also includes religious education."
+  },
+  {
+   "id": "gov-regulated-qualifications",
+   "names": [],
+   "used_by": [
+    "agentic_core/api/education.py"
+   ],
+   "kind": "public register",
+   "nation": [
+    "England",
+    "Northern Ireland"
+   ],
+   "status": "current",
+   "page": "https://www.gov.uk/find-a-regulated-qualification",
+   "read_on": "2026-10-12",
+   "read_by": "round W676, in a browser",
+   "says": "The register covers qualifications in England and Northern Ireland; Wales and Scotland have their own, named on the page."
+  },
+  {
+   "id": "gov-lle-when-to-apply",
+   "names": [],
+   "used_by": [
+    "agentic_core/api/education.py"
+   ],
+   "kind": "public guidance",
+   "nation": [
+    "England"
+   ],
+   "status": "current",
+   "page": "https://www.gov.uk/apply-for-student-finance-lifelong-learning-entitlement/when-to-apply",
+   "read_on": "2026-10-12",
+   "read_by": "round W676, in a browser",
+   "says": "Applications from the end of October 2026 for courses and modules starting on or after 1 January 2027."
+  },
+  {
+   "id": "care-act-2014",
+   "names": [
+    "Care Act 2014"
+   ],
+   "kind": "statute",
+   "nation": [
+    "England"
+   ],
+   "status": "named_not_read"
+  },
+  {
+   "id": "equality-act-2010",
+   "names": [
+    "Equality Act 2010"
+   ],
+   "kind": "statute",
+   "nation": [
+    "England",
+    "Wales",
+    "Scotland"
+   ],
+   "status": "named_not_read"
+  },
+  {
+   "id": "employment-rights-act-1996",
+   "names": [
+    "Employment Rights Act 1996"
+   ],
+   "kind": "statute",
+   "nation": [
+    "England",
+    "Wales",
+    "Scotland"
+   ],
+   "status": "named_not_read"
+  },
+  {
+   "id": "nice-ng97",
+   "names": [
+    "NICE NG97"
+   ],
+   "kind": "clinical guideline",
+   "nation": [
+    "England"
+   ],
+   "status": "named_not_read"
+  },
+  {
+   "id": "bapen-must-toolkit",
+   "names": [
+    "MUST",
+    "Malnutrition Universal Screening Tool"
+   ],
+   "kind": "clinical instrument",
+   "nation": [
+    "UK"
+   ],
+   "status": "current",
+   "page": "https://www.bapen.org.uk/must-and-self-screening/must-toolkit/",
+   "read_on": "2026-10-12",
+   "read_by": "round W678, in a browser",
+   "says": "Freely available for non-commercial purposes; adapting it needs copyright permission; for commercial purposes permission must be sought, a licence agreement signed and a licence fee paid. NOT READ: the tool's own scoring pages."
+  },
+  {
+   "id": "waterlow-terms",
+   "names": [
+    "Waterlow"
+   ],
+   "kind": "clinical instrument",
+   "nation": [
+    "UK"
+   ],
+   "status": "named_not_read",
+   "page": null,
+   "read_on": null,
+   "read_by": "round W678: the owner's site answered only with a redirect, twice",
+   "says": "NOT READ. Nothing is known here of its reuse terms."
+  },
+  {
+   "id": "gov-report-child-abuse",
+   "names": [
+    "report child abuse",
+    "children's social care"
+   ],
+   "kind": "public guidance",
+   "nation": [
+    "England"
+   ],
+   "status": "current",
+   "page": "https://www.gov.uk/report-child-abuse",
+   "read_on": "2026-10-12",
+   "read_by": "round W677, in a browser",
+   "says": "The route for a concern about a child, as printed by the safeguarding tool. NOT READ: the local-authority pages it links to."
+  },
+  {
+   "id": "lsa-2007-s12",
+   "names": [
+    "Legal Services Act 2007",
+    "reserved legal activity"
+   ],
+   "kind": "statute",
+   "nation": [
+    "England",
+    "Wales"
+   ],
+   "status": "current",
+   "page": "https://www.legislation.gov.uk/ukpga/2007/29/section/12",
+   "read_on": "2026-10-12",
+   "read_by": "round W678, in a browser",
+   "says": "Six reserved legal activities: a right of audience, the conduct of litigation, reserved instrument activities, probate activities, notarial activities, the administration of oaths. 'Legal advice or assistance' is a legal activity and is not among the six. NOT READ: Schedule 2; any later amendment not shown on that page."
+  },
+  {
+   "id": "ofcom-ai-chatbots",
+   "names": [
+    "Online Safety Act",
+    "Ofcom"
+   ],
+   "kind": "public guidance",
+   "nation": [
+    "UK"
+   ],
+   "status": "current",
+   "page": "https://www.ofcom.org.uk/online-safety/illegal-and-harmful-content/ai-chatbots-and-online-regulation-what-you-need-to-know",
+   "read_on": "2026-10-12",
+   "read_by": "round W678, in a browser",
+   "says": "Published 18 December 2025. A chatbot is not covered if it only lets a person interact with the chatbot and no other users, does not search multiple websites or databases, and cannot generate pornographic content; any change is for government and Parliament."
+  },
+  {
+   "id": "ico-childrens-code-3",
+   "names": [
+    "Children's code",
+    "Age appropriate design code"
+   ],
+   "kind": "public guidance",
+   "nation": [
+    "UK"
+   ],
+   "status": "current",
+   "page": "https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/childrens-information/childrens-code-guidance-and-resources/age-appropriate-design-a-code-of-practice-for-online-services/3-age-appropriate-application/",
+   "read_on": "2026-10-12",
+   "read_by": "round W678, in a browser",
+   "says": "Either establish age with a level of certainty appropriate to the risks, or apply the standards in the code to all users instead. NOT READ: the other fourteen standards."
+  },
+  {
+   "id": "ico-ai-human-review",
+   "names": [
+    "ICO",
+    "human review"
+   ],
+   "kind": "public guidance",
+   "nation": [
+    "UK"
+   ],
+   "status": "current",
+   "page": "https://ico.org.uk/for-organisations/advice-and-services/audits/data-protection-audit-framework/toolkits/artificial-intelligence/human-review/",
+   "read_on": "2026-10-12",
+   "read_by": "round W677, in a browser",
+   "says": "Under review because of the Data (Use and Access) Act (no year stated on the page). Reviewers need knowledge, experience, authority and independence to challenge; non-meaningful review is caused by automation bias or a lack of interpretability."
+  },
+  {
+   "id": "dfe-genai-product-safety",
+   "names": [
+    "Generative AI: product safety standards",
+    "Department for Education"
+   ],
+   "kind": "public guidance",
+   "nation": [
+    "England"
+   ],
+   "status": "current",
+   "page": "https://www.gov.uk/government/publications/generative-ai-product-safety-standards/generative-ai-product-safety-standards",
+   "read_on": "2026-10-12",
+   "read_by": "round W678, in a browser",
+   "says": "Updated 19 January 2026; applies to England. Thirteen headings from stated purpose to manipulation. Products are expected not to provide final answers, full solutions or complete worked examples by default. NOT READ: the text under twelve of the thirteen headings; whether the page calls itself non-statutory."
+  },
+  {
+   "id": "dfe-genai-in-education",
+   "names": [
+    "Generative artificial intelligence (AI) in education"
+   ],
+   "kind": "public guidance",
+   "nation": [
+    "England"
+   ],
+   "status": "current",
+   "page": "https://www.gov.uk/government/publications/generative-artificial-intelligence-in-education",
+   "read_on": "2026-10-12",
+   "read_by": "round W677, in a browser",
+   "says": "Published 29 March 2023; last updated 12 August 2025. NOT READ: the document's text."
+  },
+  {
+   "id": "nhs-dcb-applicability",
+   "names": [
+    "DCB0129",
+    "DCB0160",
+    "DCB 0129",
+    "DCB 0160"
+   ],
+   "kind": "public guidance",
+   "nation": [
+    "England"
+   ],
+   "status": "current",
+   "page": "https://digital.nhs.uk/services/clinical-safety/applicability-of-dcb-0129-and-dcb-0160/step-by-step-guidance",
+   "read_on": "2026-10-12",
+   "read_by": "round W678, in a browser",
+   "says": "Last edited 4 August 2022. Six steps, the first asking whether any development or deployment is publicly funded for use in England, the third whether the product influences the real-time or near-real-time direct care of patients or service users; wellbeing and lifestyle capabilities are not health or care services. NOT READ: the guidance under each step; the standards themselves; the 2026 review."
+  },
+  {
+   "id": "law-society-genai",
+   "names": [
+    "Law Society",
+    "Generative AI - the essentials"
+   ],
+   "kind": "public guidance",
+   "nation": [
+    "England",
+    "Wales"
+   ],
+   "status": "current",
+   "page": "https://www.lawsociety.org.uk/topics/ai-and-lawtech/generative-ai-the-essentials",
+   "read_on": "2026-10-12",
+   "read_by": "round W677, in a browser",
+   "says": "Updated 30 June 2026, including reference to the referral of two solicitors to the regulator over incorrect AI-generated information submitted to a court. States that it does not constitute legal advice. NOT READ: the guide beyond its introduction."
+  },
+  {
+   "id": "github-hosted-runners",
+   "names": [
+    "GitHub Actions",
+    "GitHub-hosted runners"
+   ],
+   "kind": "provider terms",
+   "nation": [],
+   "status": "current",
+   "page": "https://docs.github.com/en/actions/reference/runners/github-hosted-runners",
+   "read_on": "2026-10-12",
+   "read_by": "round W679, in a browser",
+   "says": "Use of the standard GitHub-hosted runners is free and unlimited on public repositories; a standard runner for a public repository has 4 processors, 16 GB of memory and 14 GB of storage, on Linux and on Windows. NOT READ: what GitHub keeps of a job's logs and for how long."
+  },
+  {
+   "id": "github-codespaces-billing",
+   "names": [
+    "GitHub Codespaces"
+   ],
+   "kind": "provider terms",
+   "nation": [],
+   "status": "current",
+   "page": "https://docs.github.com/en/billing/concepts/product-billing/github-codespaces",
+   "read_on": "2026-10-12",
+   "read_by": "round W679, in a browser",
+   "says": "Free personal accounts include 15 GB-month of storage and 120 hours of compute a month; use beyond that is billed."
+  },
+  {
+   "id": "nvidia-nim-faq",
+   "names": [
+    "NVIDIA NIM",
+    "NVIDIA API catalog"
+   ],
+   "kind": "provider terms",
+   "nation": [],
+   "status": "current",
+   "page": "https://docs.api.nvidia.com/nim/docs/product",
+   "read_on": "2026-10-12",
+   "read_by": "round W679, in a browser",
+   "says": "Models can be tried in the API catalog; the Developer Program gives access to hosted endpoints and a licence to self-host for research, application development and experimentation; production needs an enterprise licence, with a free 90-day evaluation. NOT READ: any free-credit figure or rate limit; what is kept of a request."
+  },
+  {
+   "id": "google-colab-faq",
+   "names": [
+    "Google Colab",
+    "Colaboratory"
+   ],
+   "kind": "provider terms",
+   "nation": [],
+   "status": "current",
+   "page": "https://research.google.com/colaboratory/faq.html",
+   "read_on": "2026-10-12",
+   "read_by": "round W679, in a browser",
+   "says": "Free of charge to use, including GPUs; resources are not guaranteed and not unlimited and limits fluctuate; a free notebook runs at most 12 hours. NOT READ: what is kept of a notebook's data."
+  },
+  {
+   "id": "kaggle-notebooks",
+   "names": [
+    "Kaggle Notebooks"
+   ],
+   "kind": "provider terms",
+   "nation": [],
+   "status": "current",
+   "page": "https://www.kaggle.com/docs/notebooks",
+   "read_on": "2026-10-12",
+   "read_by": "round W679, in a browser",
+   "says": "CPU sessions with 4 cores and 30 GB of memory; GPU sessions with one P100 or two T4s and 29 GB. NOT READ: the weekly GPU quota; data terms."
+  },
+  {
+   "id": "anthropic-opus-5-5-prompting",
+   "names": [
+    "Prompting Claude Opus 5.5"
+   ],
+   "kind": "provider guidance",
+   "nation": [],
+   "status": "current",
+   "page": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5-5",
+   "read_on": "2026-10-12",
+   "read_by": "round W677, in a browser",
+   "says": "Sections read: unattended agentic runs (treat a text-only end of turn as a report; stop after two or three automatic continuations), user-facing progress updates, marking pasted text with tags carrying one random id, time signals for multi-agent work. NOT READ: the rest of the page."
+  },
+  {
+   "id": "metr-2026-02-uplift-update",
+   "names": [
+    "METR"
+   ],
+   "kind": "research",
+   "nation": [],
+   "status": "current",
+   "page": "https://metr.org/blog/2026-02-24-uplift-update/",
+   "read_on": "2026-10-12",
+   "read_by": "round W677, in a browser",
+   "says": "Dated 24 February 2026. The early-2025 study found tasks took 19% longer with AI (interval +2% to +39%); the later study's data is called an unreliable signal because of selection effects, a lower pay rate and unreliable timing for people running several agents."
+  },
+  {
+   "id": "vaccaro-2024-human-ai",
+   "names": [
+    "Vaccaro",
+    "When combinations of humans and AI are useful"
+   ],
+   "kind": "research",
+   "nation": [],
+   "status": "current",
+   "page": "https://www.nature.com/articles/s41562-024-02024-1",
+   "read_on": "2026-10-12",
+   "read_by": "round W677, in a browser (the abstract)",
+   "says": "Nature Human Behaviour, 28 October 2024. A preregistered meta-analysis of 106 experiments and 370 effect sizes: on average human-AI combinations did worse than the better of the two alone (g = -0.23); losses in deciding, gains in creating content; gains where the human alone was the stronger. NOT READ: the paper beyond its abstract."
+  },
+  {
+   "id": "iso-9001",
+   "names": [
+    "ISO 9001"
+   ],
+   "kind": "standard",
+   "nation": [],
+   "status": "current",
+   "page": "https://www.iso.org/standard/9001",
+   "read_on": "2026-10-12",
+   "read_by": "round W681, in a browser",
+   "says": "ISO 9001:2026, edition 6, published 2026-09, status Published. ISO 9001:2015 and its 2024 amendment are WITHDRAWN. NOT READ: the standard's text (it is sold, and is not reproduced or paraphrased here)."
+  },
+  {
+   "id": "iso-14001",
+   "names": [
+    "ISO 14001"
+   ],
+   "kind": "standard",
+   "nation": [],
+   "status": "current",
+   "page": "https://www.iso.org/standard/14001",
+   "read_on": "2026-10-12",
+   "read_by": "round W681, in a browser",
+   "says": "ISO 14001:2026, edition 4, published 2026-04, status Published. ISO 14001:2015 and its 2024 amendment are WITHDRAWN. NOT READ: the standard's text."
+  },
+  {
+   "id": "iso-iec-27001",
+   "names": [
+    "ISO 27001",
+    "ISO/IEC 27001"
+   ],
+   "kind": "standard",
+   "nation": [],
+   "status": "current",
+   "page": "https://www.iso.org/standard/27001",
+   "read_on": "2026-10-12",
+   "read_by": "round W681, in a browser",
+   "says": "ISO/IEC 27001:2022, edition 3, published 2022-10, status Published, with one amendment. The 2013 edition is WITHDRAWN. NOT READ: the standard's text; the amendment."
+  },
+  {
+   "id": "iso-45001",
+   "names": [
+    "ISO 45001"
+   ],
+   "kind": "standard",
+   "nation": [],
+   "status": "current",
+   "page": "https://www.iso.org/standard/45001",
+   "read_on": "2026-10-12",
+   "read_by": "round W681, in a browser",
+   "says": "ISO 45001:2018, edition 1, published 2018-03, reviewed and confirmed in 2024, with one amendment; its stage reads 'to be revised' and the page says it is expected to be replaced by a draft in the coming months. NOT READ: the standard's text."
+  },
+  {
+   "id": "iso-iec-25010",
+   "names": [
+    "ISO 25010",
+    "ISO/IEC 25010"
+   ],
+   "kind": "standard",
+   "nation": [],
+   "status": "current",
+   "page": "https://www.iso.org/standard/78176.html",
+   "read_on": "2026-10-12",
+   "read_by": "round W681, in a browser",
+   "says": "ISO/IEC 25010:2023, edition 2, published 2023-11, status Published. The 2011 edition is WITHDRAWN. NOT READ: the standard's text."
+  }
+ ]
+}
