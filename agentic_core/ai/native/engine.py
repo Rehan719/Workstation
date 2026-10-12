@@ -35,7 +35,14 @@ _STOPWORDS = {
 def _sections(prompt: str) -> List[str]:
     """Pull the requested output sections (lines that begin with markdown ## headers)."""
     out: List[str] = []
+    _inside = False            # between the marks that delimit a person's supplied material: data, not sections
     for line in prompt.splitlines():
+        _s = line.strip()
+        if _s.startswith("<<<") and _s.endswith(">>>"):
+            _inside = not _s.startswith("<<<END OF ")
+            continue
+        if _inside:
+            continue
         m = re.match(r"^\s*#{2,4}\s*(.+?)\s*$", line)
         if m:
             title = m.group(1).strip()
@@ -271,6 +278,9 @@ _BLOCK_LABELS = ("DOCUMENT", "Patient profile", "Patient observations/data (as r
 
 def _block(prompt: str, label: str, limit: int = 3000) -> str:
     m = re.search(rf"(?m)^{re.escape(label)}\s*:[ \t]*\n?(.*?)(?:\n[ \t]*\n|\Z)", prompt, re.S)
+    if not m:
+        #  W680 - the shared helper hands a person's material over between two marks; the same block, found there
+        m = re.search(rf"(?m)^<<<{re.escape(label)} - [^\n]*>>>\n(.*?)\n<<<END OF SUPPLIED MATERIAL>>>", prompt, re.S)
     return m.group(1).strip()[:limit] if m else ""
 
 

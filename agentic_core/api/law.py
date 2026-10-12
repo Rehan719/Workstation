@@ -21,10 +21,12 @@ from pydantic import BaseModel
 import functools
 
 from agentic_core.api._ai_provenance import ai_text as _ai_text, person_said, disclaimer_for
+from agentic_core.api._ai_provenance import MATERIAL_SLOT      # W680 - a person's material travels as marked data
 
 #  W637 (FU-597) — this router's domain, bound once. Every ai_text call below carries it, so the native floor
 #  prints the real domain instead of "the request named no domain".
 ai_text = functools.partial(_ai_text, domain="law")
+DOCUMENT_LIMIT = 8000          # how much of a pasted document is handed over; the rest is SAID to be unread
 
 router = APIRouter(prefix="/api/v1/law", tags=["law"])
 
@@ -189,8 +191,8 @@ async def analyse_document(req: AnalyseRequest):
         f"Document type: {req.document_type}\n"
         f"Jurisdiction: {req.jurisdiction}\n"
         f"Analysis focus: {req.analysis_focus}\n\n"
-        f"DOCUMENT:\n{req.document_text[:8000]}\n\n"
-        f"{focus_instruction}\n\n"
+        + MATERIAL_SLOT + "\n\n"
+        + f"{focus_instruction}\n\n"
         "Structure your analysis with these sections:\n"
         "## Executive Summary\n"
         "## Key Clauses (table: Clause | Assessment | Risk Level)\n"
@@ -201,8 +203,18 @@ async def analyse_document(req: AnalyseRequest):
         "Be specific, cite clause numbers where present. Use plain English where possible."
     )
 
+    #  W680 - the document is handed to the helper as MATERIAL: marked as data, cut there and the cut RECORDED.
+    #  It was cut at 8,000 characters inside the instruction and the analysis said nothing of it.
     analysis, provenance = await ai_text(prompt, "law_analyst", realm=req.realm,
-        user_text=person_said(req.analysis_focus))
+        user_text=person_said(req.analysis_focus),
+        material=req.document_text, material_label="DOCUMENT", material_limit=DOCUMENT_LIMIT)
+    _mat = (provenance or {}).get("material") or {}
+    if _mat and not _mat.get("read_whole"):
+        #  said in the TEXT, so it travels with a copy, a download and a saved version
+        analysis = ((analysis + "\n\n") if analysis else "") + (
+            f"_ONLY PART OF THE DOCUMENT WAS READ: the first {_mat.get('read_chars'):,} of {_mat.get('chars'):,} "
+            f"characters. Nothing here speaks for the rest - a clause, a schedule or a signature block beyond "
+            f"that point was not read. Analyse the document in parts._")
 
     return {
         "analysis_id": uuid.uuid4().hex[:10],
@@ -210,6 +222,7 @@ async def analyse_document(req: AnalyseRequest):
         "jurisdiction": req.jurisdiction,
         "analysis_focus": req.analysis_focus,
         "analysis": analysis,
+        "document_read": {k: _mat.get(k) for k in ("chars", "read_chars", "read_whole", "basis")} if _mat else None,
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         #  W627 (FU-536) - "AI-generated" analysis is not what the floor produced

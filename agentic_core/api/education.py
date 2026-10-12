@@ -18,6 +18,7 @@ from pydantic import BaseModel
 import functools
 
 from agentic_core.api._ai_provenance import ai_text as _ai_text, person_said, disclaimer_for
+from agentic_core.api._ai_provenance import MATERIAL_SLOT      # W680 - a person's material travels as marked data
 from agentic_core.api._ai_provenance import note_withheld      # P3.30 - the coverage figure follows the text returned
 
 #  W637 (FU-597) — this router's domain, bound once. Every ai_text call below carries it, so the native floor
@@ -252,7 +253,7 @@ async def marking_feedback(req: FeedbackRequest):
         f"Subject: {req.subject}\nLevel: {req.level}\nFeedback tone: {req.tone}\n"
         + (f"Task / question:\n{req.task}\n\n" if req.task else "")
         + (f"Rubric / marking criteria:\n{req.rubric}\n\n" if req.rubric else "")
-        + f"STUDENT WORK:\n{_work[:WORK_LIMIT]}\n\n"
+        + MATERIAL_SLOT + "\n\n"
         "Produce:\n"
         "## Overall Impression (2-3 sentences)\n"
         "## Strengths (specific, with evidence from the work)\n"
@@ -265,8 +266,10 @@ async def marking_feedback(req: FeedbackRequest):
         "not write, and do not penalise for things outside the stated task."
     )
 
+    #  W680 - the work is handed to the helper as MATERIAL: marked as data, cut there and the cut recorded.
     feedback, provenance = await ai_text(prompt, "education_feedback", realm=req.realm,
-        user_text=person_said(req.task, req.subject))
+        user_text=person_said(req.task, req.subject),
+        material=_work, material_label="STUDENT WORK", material_limit=WORK_LIMIT)
 
     #  P3.30 (ledger v13 R5[3]) - ON THE FLOOR THE TWO MARKING SECTIONS ARE WITHHELD. The floor composes the
     #  headings it is given and is told only the task and the subject as the person's words - the student's
