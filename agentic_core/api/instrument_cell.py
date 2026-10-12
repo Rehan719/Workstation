@@ -151,6 +151,10 @@ def _read_handler_ids() -> Optional[set]:
     ids = set(re.findall(r'rid == "([a-z_0-9]+)"', src))
     for group in re.findall(r"rid in \(([^)]*)\)", src):
         ids.update(re.findall(r'"([a-z_0-9]+)"', group))
+    #  the domain forms share ONE branch (`rid in _FORM_BY_ID`): they have a handler exactly when that branch is
+    #  in the source read, and then every registered form has it
+    if "rid in _FORM_BY_ID" in src:
+        ids.update(getattr(_fab, "_FORM_BY_ID", {}))
     return ids
 
 

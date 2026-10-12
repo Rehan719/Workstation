@@ -20139,11 +20139,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W682",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W682: the 25 domain forms are registered resources, each declaring what it needs, and BY THE OWNER'S RULING OF 2026-10-12 the autonomous runner may call them - through each form's own handler and request model, so a composition meets every refusal a person meets; a refused or withheld stage is said to be one. Guard over the registry; 5 blinds driven red. The pages reading their sentences from the registrations is the open register row."
     },
     {
       "id": "FU-1038",

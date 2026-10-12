@@ -122,7 +122,7 @@ interface CompositionRun {
     alternative?: { tried: string | null; attempts: number; outcome?: string; basis: string };
     endpoint?: string; invocation?: string; side_effect?: string;
     // W491 (refutation) — `kind` is what the resource IS; `outcome` is what happened on THIS run
-    outcome?: 'produced' | 'read' | 'assessed' | 'specified' | 'narrated' | 'raised' | 'no_calls_ran';   // W656: + narrated
+    outcome?: 'produced' | 'read' | 'assessed' | 'specified' | 'narrated' | 'raised' | 'no_calls_ran' | 'refused' | 'withheld';   // W656: + narrated
     outcome_phrase?: string;
     // W672 (ledger v16 R4.3) - the genome engine's own statement of whether it encoded anything
     encoded?: boolean | null; fitness_provenance?: string; encoding_note?: string;
@@ -659,7 +659,8 @@ export const ResourceFabric: React.FC = () => {
                             : rr.outcome ? 'bg-slate-800 text-slate-400'
                             : 'bg-slate-900 text-slate-500'}`}>
                       {rr.alternative_for ? `stand-in for ${rr.alternative_for} (not composed): ` : ''}
-                      {rr.resource}{rr.outcome === 'raised' || rr.outcome === 'no_calls_ran' ? ' (failed)'
+                      {rr.resource}{rr.outcome === 'refused' ? ' (refused)' : rr.outcome === 'withheld' ? ' (withheld)'
+                        : rr.outcome === 'raised' || rr.outcome === 'no_calls_ran' ? ' (failed)'
                         : rr.outcome === 'read' || rr.outcome === 'assessed' ? ' (read)'
                         : rr.outcome === 'specified' ? ' (blueprint)'
                         : rr.outcome === 'narrated' ? ' (narrative, no engine)'
@@ -821,7 +822,7 @@ export const ResourceFabric: React.FC = () => {
                                 §7 {rs.length} composed resource(s) invoked in-process ·{' '}
                                 {n('produced')} ran an engine · {n('read', 'assessed')} read existing state ·{' '}
                                 {n('specified')} drafted a blueprint · {n('narrated')} wrote a narrative (no engine) ·{' '}
-                                {n('raised', 'no_calls_ran')} failed
+                                {n('raised', 'no_calls_ran')} failed · {n('refused')} refused · {n('withheld')} withheld
                                 {unknown > 0 ? ` · ${unknown} not recorded` : ''}
                                 {rs.filter(r => r.encoded === false).length > 0
                                   ? ` · ${rs.filter(r => r.encoded === false).length} of those that ran returned defaults (not encoded)` : ''}
@@ -869,6 +870,10 @@ export const ResourceFabric: React.FC = () => {
                                   /* W656 (ledger v15 R4.0) - 'narrated' matched no branch and fell to the emerald "ran" */
                                   ? <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400"
                                           title={rr.outcome_phrase} data-testid={`run-kind-${rr.resource}`}>narrative · no engine ran</span>
+                                  : rr.outcome === 'refused' || rr.outcome === 'withheld'
+                                  /* a form that refused, or whose answer was withheld, matched no branch and would have fallen to "ran" */
+                                  ? <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400"
+                                          title={rr.outcome_phrase} data-testid={`run-kind-${rr.resource}`}>{rr.outcome === 'refused' ? 'refused · nothing produced' : 'withheld · nothing offered'}</span>
                                   : rr.outcome === 'raised' || rr.outcome === 'no_calls_ran'
                                   ? <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-vital/15 text-vital"
                                           title={rr.outcome_phrase} data-testid={`run-kind-${rr.resource}`}>did not run</span>
