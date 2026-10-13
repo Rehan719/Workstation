@@ -79,9 +79,19 @@ def counts(record: Dict[str, Any], today: Optional[_dt.date] = None) -> Dict[str
     elif tier == REVIEWED_BY_AGENT:
         if not str(record.get("checklist") or "").strip() or not (record.get("sources_read") or []):
             return {"counts": False, "why_not": "it names no checklist or no source it read"}
-        if record.get("agent_calibrated") is not True:
-            return {"counts": False, "uncalibrated_agent_review": True,
-                    "why_not": "the agent that reviewed has not been calibrated on planted defects and clean answers"}
+        #  W691 - CALIBRATION IS MEASURED, NEVER TICKED. This used to read a flag on the record, which was
+        #  whatever the person recording it set. It is now read from the agent's own recorded run on the
+        #  discipline's calibration set, re-scored from that run's flags. A flag left on an older record is
+        #  ignored.
+        if not str(record.get("agent") or "").strip():
+            return {"counts": False, "why_not": "it does not name the agent that reviewed"}
+        from agentic_core.api._review_calibration import calibration_of
+        cal = calibration_of(str(record["agent"]), str(record.get("discipline") or "care"))
+        if not cal.get("calibrated"):
+            return {"counts": False, "uncalibrated_agent_review": True, "calibration": cal,
+                    "why_not": ("the agent that reviewed is not calibrated on planted defects and clean answers: "
+                                + str(cal.get("why_not")))}
+        return {"counts": True, "why_not": None, "calibration": cal}
     elif tier == SIGNED_BY_PERSON:
         if not str(record.get("name") or "").strip() or not str(record.get("credential_as_stated") or "").strip():
             return {"counts": False, "why_not": "it carries no name or no credential as the person stated it"}
@@ -124,6 +134,17 @@ def review_statement(tool: str, today: Optional[_dt.date] = None) -> Dict[str, A
         out["basis"] = (f"the highest tier a record supports: {LABEL[tier].lower()}, dated {str(top.get('date'))[:10]}"
                         + (f", by {top['name']} ({top['credential_as_stated']} - as stated; {NOT_VERIFIED})"
                            + f", until {str(top['lapses_on'])[:10]}" if tier == SIGNED_BY_PERSON else ""))
+    #  the reviewing agent's two rates, WITH their counts, beside its review (clause 3) - when it has a run
+    for r, v in judged:
+        cal = v.get("calibration") or {}
+        if r.get("tier") == REVIEWED_BY_AGENT and cal.get("catch_rate") is not None:
+            out["agent_rates"] = {"agent": r.get("agent"), "calibrated": bool(cal.get("calibrated")),
+                                  "caught": cal.get("caught"), "planted_cases": cal.get("planted_cases"),
+                                  "false_alarms": cal.get("false_alarms"), "clean_cases": cal.get("clean_cases"),
+                                  "basis": cal.get("rates_basis"), "bar": cal.get("bar")}
+    if tier == REVIEWED_BY_AGENT and out.get("agent_rates", {}).get("basis"):
+        #  the rates travel IN the sentence every page and download already shows, not only beside it
+        out["basis"] += f"; the reviewing agent's calibration: {out['agent_rates']['basis']}"
     if not_counted:
         out["not_counted"] = not_counted[:5]
         if any(v.get("uncalibrated_agent_review") for _r, v in judged):

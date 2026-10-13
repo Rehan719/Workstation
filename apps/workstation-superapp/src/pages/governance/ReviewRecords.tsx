@@ -11,16 +11,17 @@ import { apiJson, errorMessage } from '../../lib/api';
 interface Rec {
   record_id: string; tool: string; tier: string; date: string; counts: boolean; why_not: string | null;
   entered_by?: string; entered_at?: string; name?: string; credential_as_stated?: string; lapses_on?: string;
-  rule?: string; test?: string; checklist?: string; model?: string; agent_calibrated?: boolean;
+  rule?: string; test?: string; checklist?: string; model?: string; agent?: string;
 }
 interface Listing { records: Rec[]; total: number; counted: number; tools: Record<string, string>; credential_basis: string; basis: string }
 
 const TIERS: { id: string; fields: string[] }[] = [
   { id: 'checked_by_rule', fields: ['rule', 'test'] },
-  { id: 'reviewed_by_workstation_agent', fields: ['checklist', 'sources_read', 'model', 'could_not_check'] },
+  { id: 'reviewed_by_workstation_agent', fields: ['agent', 'checklist', 'sources_read', 'model', 'could_not_check'] },
   { id: 'signed_by_a_qualified_person', fields: ['name', 'credential_as_stated', 'reviewed', 'lapses_on'] },
 ];
 const FIELD_LABEL: Record<string, string> = {
+  agent: 'The agent that reviewed (its calibration is read from its recorded run)',
   rule: 'The rule', test: 'The test that runs it', checklist: 'The checklist used', sources_read: 'Sources read (comma-separated ids)',
   model: 'The model that reviewed', could_not_check: 'What it could not check', name: 'The person’s name',
   credential_as_stated: 'Their credential, as they state it', reviewed: 'What was reviewed', lapses_on: 'Lapses on (YYYY-MM-DD)',
@@ -36,7 +37,6 @@ export const ReviewRecords: React.FC = () => {
   const [tool, setTool] = useState('');
   const [tier, setTier] = useState(TIERS[0].id);
   const [date, setDate] = useState('');
-  const [calibrated, setCalibrated] = useState(false);
   const [values, setValues] = useState<Record<string, string>>({});
 
   const load = () => apiJson<Listing>('/api/v1/review/records')
@@ -53,7 +53,6 @@ export const ReviewRecords: React.FC = () => {
       if (!v) continue;
       body[f] = f === 'sources_read' ? v.split(',').map(s => s.trim()).filter(Boolean) : v;
     }
-    if (tier === 'reviewed_by_workstation_agent') body.agent_calibrated = calibrated;
     try {
       const d = await apiJson<any>('/api/v1/review/record', { method: 'POST', body });
       setSaid(`Recorded. ${d.tool_now_says?.label ?? ''} — ${d.tool_now_says?.basis ?? ''}${d.kept_basis ? ` (${d.kept_basis})` : ''}`);
@@ -84,7 +83,7 @@ export const ReviewRecords: React.FC = () => {
                   <p className="text-[10px] text-slate-300">
                     <span className="font-mono">{r.tool}</span> · {r.tier.replace(/_/g, ' ')} · {r.date}
                     {r.name ? ` · ${r.name}, ${r.credential_as_stated ?? ''} (as stated), until ${r.lapses_on ?? ''}` : ''}
-                    {r.test ? ` · ${r.test}` : ''}{r.model ? ` · ${r.model}` : ''}
+                    {r.test ? ` · ${r.test}` : ''}{r.agent ? ` · ${r.agent}` : ''}{r.model ? ` · ${r.model}` : ''}
                   </p>
                   {!r.counts && r.why_not && (
                     <p data-testid={`review-record-why-not-${r.record_id}`} className="text-[9px] text-amber-400">Does not count: {r.why_not}.</p>
@@ -113,12 +112,6 @@ export const ReviewRecords: React.FC = () => {
               onChange={e => setValues({ ...values, [f]: e.target.value })} className={inputCls} />
           ))}
         </div>
-        {tier === 'reviewed_by_workstation_agent' && (
-          <label className="flex items-center gap-2 text-[10px] text-slate-400 mb-2">
-            <input type="checkbox" checked={calibrated} onChange={e => setCalibrated(e.target.checked)} />
-            The agent that reviewed has been calibrated on planted defects and clean answers
-          </label>
-        )}
         <Button onClick={record} disabled={busy || !tool.trim() || !date.trim()} className="flex items-center gap-1.5 bg-slate-900 text-aura text-[10px]">
           {busy ? <Loader2 size={11} className="animate-spin" /> : <ClipboardCheck size={11} />} Record
         </Button>

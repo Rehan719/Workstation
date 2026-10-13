@@ -46,7 +46,9 @@ class ReviewRecord(BaseModel):
     checklist: Optional[str] = None
     sources_read: Optional[List[str]] = None
     model: Optional[str] = None
-    agent_calibrated: Optional[bool] = None
+    #  W691 - the agent is NAMED; whether it is calibrated is read from its recorded run, never sent here
+    agent: Optional[str] = None
+    discipline: Optional[str] = None
     could_not_check: Optional[str] = None
     # signed by a qualified person
     name: Optional[str] = None
@@ -91,6 +93,57 @@ async def record_review(req: ReviewRecord, user: dict | None = Depends(get_curre
             "kept_basis": ("the review of an agent that has not been calibrated is kept and shown, labelled, and "
                            "does not raise the tool's tier") if kept_though_not_counted else None,
             "tool_now_says": _rt.review_statement(rec["tool"])}
+
+
+class CalibrationRun(BaseModel):
+    model_config = {"extra": "forbid"}
+    agent: str
+    discipline: str = "care"
+    model: str
+    configuration: str                     # "model" or "floor" - what was serving when the agent was run
+    date: str
+    flags: Dict[str, List[str]]            # {case id: the reasons the agent flagged}; a rate is never sent
+
+
+@router.post("/calibration/run")
+async def record_calibration_run(req: CalibrationRun, user: dict | None = Depends(get_current_user)):
+    """Record what a reviewer agent flagged on each case of a calibration set. THE RATES ARE COMPUTED HERE, from
+    the flags and the set; a caller cannot assert one."""
+    from agentic_core.api import _review_calibration as _cal
+    the_set = _cal.load_set(req.discipline)
+    if not the_set:
+        raise HTTPException(status_code=422, detail=f"Not recorded: no calibration set exists for {req.discipline!r}.")
+    if not the_set.get("runnable"):
+        #  refused where the caller receives it: a run on cases that are only described measured nothing
+        raise HTTPException(status_code=409, detail=(
+            "Not recorded: " + str(the_set.get("runnable_basis") or "this calibration set cannot be run yet") + "."))
+    if req.configuration not in _cal.CONFIGURATIONS:
+        raise HTTPException(status_code=422, detail=f"configuration is one of {list(_cal.CONFIGURATIONS)}")
+    if not str(req.agent).strip() or not str(req.model).strip() or _rt._date(req.date) is None:
+        raise HTTPException(status_code=422, detail="Not recorded: a run names its agent, its model and its date.")
+    known = {c["id"] for c in the_set.get("cases") or []}
+    unknown = sorted(set(req.flags) - known)
+    if unknown:
+        raise HTTPException(status_code=422, detail=f"Not recorded: {unknown} are not cases of this set.")
+    run = {"run_id": f"cal-{uuid.uuid4().hex[:10]}", "agent": req.agent.strip(), "discipline": req.discipline,
+           "model": req.model.strip(), "configuration": req.configuration, "date": req.date,
+           "set_version": the_set.get("version"), "flags": req.flags,
+           "entered_by": _entered_by(user), "entered_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+    from agentic_core.config import mutate_json
+
+    def _add(existing):
+        rows = existing if isinstance(existing, list) else []
+        rows.append(run)
+        return rows
+    mutate_json(_cal._runs_path(), _add, list)
+    return {"recorded": True, "run_id": run["run_id"], "score": _cal.score(the_set["cases"], req.flags),
+            "agent_now": _cal.calibration_of(run["agent"], req.discipline)}
+
+
+@router.get("/calibration/{agent}")
+async def calibration_of_agent(agent: str, discipline: str = "care"):
+    from agentic_core.api import _review_calibration as _cal
+    return {"agent": agent, "discipline": discipline, **_cal.calibration_of(agent, discipline)}
 
 
 @router.get("/tier/{tool}")

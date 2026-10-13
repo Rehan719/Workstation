@@ -62972,6 +62972,12 @@ def test_w688_a_tool_states_the_highest_tier_its_records_support_and_unreviewed_
     from agentic_core.api import _review_tier as rt
     store = tmp_path / "review_tier_records.json"
     monkeypatch.setattr(rt, "_path", lambda: store)
+    #  W691 - whether an agent is calibrated is READ FROM ITS RECORDED RUN, not from the record. These legs
+    #  drive both states by naming two agents and fixing what their runs say, in this process only.
+    from agentic_core.api import _review_calibration as _cal691
+    monkeypatch.setattr(_cal691, "calibration_of", lambda agent, discipline="care": (
+        {"calibrated": True, "known": True, "why_not": None} if agent == "reviewer-cal" else
+        {"calibrated": False, "known": True, "why_not": "this agent has never been run on the calibration set"}))
     today = _dt.date(2026, 10, 13)
     T = "care_risk_assess"
 
@@ -62990,9 +62996,9 @@ def test_w688_a_tool_states_the_highest_tier_its_records_support_and_unreviewed_
     assert say([rule])["tier"] == "checked_by_rule"
     assert say([{**rule, "test": ""}])["tier"] == "unreviewed"
     agent = {"tool": T, "tier": "reviewed_by_workstation_agent", "date": "2026-10-05", "checklist": "care checklist v1",
-             "sources_read": ["nice-ng249"], "agent_calibrated": True}
+             "sources_read": ["nice-ng249"], "agent": "reviewer-cal"}
     assert say([rule, agent])["tier"] == "reviewed_by_workstation_agent"
-    uncal = say([rule, {**agent, "agent_calibrated": False}])
+    uncal = say([rule, {**agent, "agent": "reviewer-new"}])
     assert uncal["tier"] == "checked_by_rule", "an uncalibrated agent's review raised the tier"
     assert "does not raise its tier" in uncal["uncalibrated_agent_review"] and uncal["records_not_counted"] == 1
     assert say([{**agent, "sources_read": []}])["tier"] == "unreviewed"
@@ -63073,6 +63079,12 @@ def test_w689_a_review_is_recorded_through_one_door_and_a_short_record_is_refuse
     from agentic_core.api import _review_tier as rt
     store = tmp_path / "review_tier_records.json"
     monkeypatch.setattr(rt, "_path", lambda: store)
+    #  W691 - whether an agent is calibrated is READ FROM ITS RECORDED RUN, not from the record. These legs
+    #  drive both states by naming two agents and fixing what their runs say, in this process only.
+    from agentic_core.api import _review_calibration as _cal691
+    monkeypatch.setattr(_cal691, "calibration_of", lambda agent, discipline="care": (
+        {"calibrated": True, "known": True, "why_not": None} if agent == "reviewer-cal" else
+        {"calibrated": False, "known": True, "why_not": "this agent has never been run on the calibration set"}))
     tool = "care_risk_assess"
     ahead = (_dt.date.today() + _dt.timedelta(days=200)).isoformat()
     behind = (_dt.date.today() - _dt.timedelta(days=1)).isoformat()
@@ -63081,7 +63093,7 @@ def test_w689_a_review_is_recorded_through_one_door_and_a_short_record_is_refuse
     #  1. REFUSED, each in its rule's words, and NOTHING is stored
     for bad, word in (
         ({"tool": tool, "tier": "checked_by_rule", "date": today, "rule": "a withheld score answers its refusal"}, "no test"),
-        ({"tool": tool, "tier": "reviewed_by_workstation_agent", "date": today, "checklist": "care v1", "model": "m", "agent_calibrated": True}, "no source"),
+        ({"tool": tool, "tier": "reviewed_by_workstation_agent", "date": today, "checklist": "care v1", "model": "m", "agent": "reviewer-cal"}, "no source"),
         ({"tool": tool, "tier": "signed_by_a_qualified_person", "date": today, "name": "A. Reviewer", "reviewed": "the tool", "lapses_on": ahead}, "no credential"),
         ({"tool": tool, "tier": "signed_by_a_qualified_person", "date": today, "name": "A. Reviewer", "credential_as_stated": "registered nurse", "reviewed": "the tool", "lapses_on": behind}, "lapsed"),
         ({"tool": tool, "tier": "approved", "date": today}, "not a tier"),
@@ -63093,7 +63105,7 @@ def test_w689_a_review_is_recorded_through_one_door_and_a_short_record_is_refuse
     assert not store.exists(), "a refused record wrote the store"
     #  an agent's review that names no model is refused too; an unknown field is refused, never dropped
     agent = {"tool": tool, "tier": "reviewed_by_workstation_agent", "date": today, "checklist": "care checklist v1",
-             "sources_read": ["nice-ng249"], "agent_calibrated": True, "model": "local-model"}
+             "sources_read": ["nice-ng249"], "agent": "reviewer-cal", "model": "local-model"}
     assert client.post("/api/v1/review/record", json={k: v for k, v in agent.items() if k != "model"}).status_code == 422
     assert client.post("/api/v1/review/record", json={**agent, "score": 9}).status_code == 422
     assert not store.exists()
@@ -63104,7 +63116,7 @@ def test_w689_a_review_is_recorded_through_one_door_and_a_short_record_is_refuse
     assert ok.json()["tool_now_says"]["tier"] == "checked_by_rule"
     assert rt.review_statement(tool)["tier"] == "checked_by_rule" and rt.review_statement("law_research")["tier"] == "unreviewed"
     #  3. AN UNCALIBRATED AGENT'S REVIEW IS KEPT, LABELLED, AND RAISES NOTHING
-    un = client.post("/api/v1/review/record", json={**agent, "agent_calibrated": False})
+    un = client.post("/api/v1/review/record", json={**agent, "agent": "reviewer-new"})
     assert un.status_code == 200 and un.json()["counts"] is False and un.json()["kept_though_not_counted"] is True
     said = client.get(f"/api/v1/review/tier/{tool}").json()
     assert said["tier"] == "checked_by_rule" and "does not raise its tier" in said["uncalibrated_agent_review"]
@@ -63124,7 +63136,7 @@ def test_w689_a_review_is_recorded_through_one_door_and_a_short_record_is_refuse
     #  (the first form of this leg asked only that the list of reasons be non-empty, and a list holding one
     #  None is non-empty - its blind came back vacuous; the reason itself is read)
     _not = [r["why_not"] for r in listed["records"] if not r["counts"]]
-    assert len(_not) == 1 and _not[0] and "not been calibrated" in _not[0], _not
+    assert len(_not) == 1 and _not[0] and "is not calibrated" in _not[0] and "never been run" in _not[0], _not
     assert all(r["why_not"] is None for r in listed["records"] if r["counts"])
     assert "does not verify" in listed["credential_basis"]
     #  6. A STORE THAT CANNOT BE READ: the list refuses, a new record is NOT written over it, no tool reads as reviewed
@@ -63173,8 +63185,10 @@ def test_w690_the_review_records_are_on_the_governance_page_and_every_sentence_i
     #  person meets - the page does not pre-judge a record
     assert "if (!v) continue;" in panel
     #  whether the agent is calibrated is the person's own tick, sent as they set it, never assumed
-    assert "if (tier === 'reviewed_by_workstation_agent') body.agent_calibrated = calibrated;" in panel
-    assert "const [calibrated, setCalibrated] = useState(false);" in panel, "the page starts with the agent ticked as calibrated"
+    #  W691 - whether the reviewing agent is calibrated is no longer the page's to say at all: the tick is gone,
+    #  the agent is named, and the server reads its calibration from its recorded run
+    assert "agent_calibrated" not in panel and "checkbox" not in panel, "the page still lets a person tick an agent as calibrated"
+    assert "fields: ['agent', 'checklist', 'sources_read', 'model', 'could_not_check']" in panel
     #  the page words no verdict of its own (read with comments removed)
     import re as _re
     shown = _re.sub(r"//[^\n]*|\{/\*.*?\*/\}", "", panel, flags=_re.S).lower()
@@ -63185,3 +63199,94 @@ def test_w690_the_review_records_are_on_the_governance_page_and_every_sentence_i
     for tier in rt.ORDER[1:]:
         assert f"id: '{tier}'" in panel, tier
     assert panel.count("{ id: '") == len(rt.ORDER[1:]), "the page offers a tier the server does not have"
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W691 - CALIBRATION IS MEASURED, NEVER TICKED (Owner ruling 2026-10-12, the review cell, clause 3; the bar as
+#  ruled: every planted case flagged for its reason, and at most one false alarm in six clean cases).
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w691_a_reviewer_agent_is_calibrated_by_its_recorded_run_and_never_by_a_tick(client, tmp_path, monkeypatch):
+    import datetime as _dt
+    from agentic_core.api import _review_calibration as cal
+    from agentic_core.api import _review_tier as rt
+    #  THE ARITHMETIC, on a small set made here: 3 planted, 6 clean
+    cases = ([{"id": f"P{i}", "planted": "x", "must_flag": f"reason-{i}"} for i in range(3)]
+             + [{"id": f"K{i}", "planted": None} for i in range(6)])
+    perfect = {f"P{i}": [f"reason-{i}"] for i in range(3)}
+    s = cal.score(cases, perfect)
+    assert s["meets_bar"] is True and s["catch_rate"] == 1.0 and s["false_alarm_rate"] == 0.0
+    assert (s["caught"], s["planted_cases"], s["false_alarms"], s["clean_cases"]) == (3, 3, 0, 6)
+    #  one false alarm in six is within the bar; two are not
+    assert cal.score(cases, {**perfect, "K0": ["anything"]})["meets_bar"] is True
+    assert cal.score(cases, {**perfect, "K0": ["a"], "K1": ["b"]})["meets_bar"] is False
+    #  A FLAG FOR THE WRONG REASON IS A MISS, and is listed as one
+    wrong = cal.score(cases, {**perfect, "P1": ["reason-0"]})
+    assert wrong["meets_bar"] is False and wrong["caught"] == 2 and wrong["flagged_for_the_wrong_reason"] == ["P1"]
+    assert wrong["missed"][0]["must_flag"] == "reason-1"
+    #  a case never shown counts as not flagged; a set with no clean cases cannot meet the bar; no rate without counts
+    assert cal.score(cases, {})["caught"] == 0 and cal.score(cases[:3], perfect)["meets_bar"] is False
+    assert cal.score([], {})["catch_rate"] is None and "3 of 3" in s["basis"] and "0 of 6" in s["basis"]
+    #  "one in six" is a fraction: three clean cases allow none
+    assert cal.score(cases[:6], {**perfect, "K0": ["a"]})["meets_bar"] is False
+
+    #  THE SET IN THE TREE says it cannot be run yet, so NO agent is calibrated - and a run on it is refused
+    the_set = cal.load_set("care")
+    assert the_set and the_set["runnable"] is False and len(the_set["cases"]) == 16
+    assert sum(1 for c in the_set["cases"] if c.get("planted")) == 10
+    runs = tmp_path / "review_calibration_runs.json"
+    monkeypatch.setattr(cal, "_runs_path", lambda: runs)
+    now = cal.calibration_of("care-reviewer")
+    assert now["calibrated"] is False and "cannot be run yet" in now["why_not"]
+    today = _dt.date.today().isoformat()
+    refused = client.post("/api/v1/review/calibration/run", json={"agent": "care-reviewer", "model": "m", "configuration": "model",
+                                                                 "date": today, "flags": {}})
+    assert refused.status_code == 409 and "not written out in full" in refused.json()["detail"] and not runs.exists()
+
+    #  WHEN A SET CAN BE RUN (made to happen here), the run is recorded and the RATES ARE COMPUTED BY THE SERVER
+    runnable = {"version": "t1", "runnable": True, "cases": cases}
+    monkeypatch.setattr(cal, "load_set", lambda d: runnable if d == "care" else None)
+    assert cal.calibration_of("care-reviewer")["why_not"] == "this agent has never been run on the calibration set"
+    body = {"agent": "care-reviewer", "model": "m", "configuration": "model", "date": today, "flags": perfect}
+    for bad in ({**body, "catch_rate": 1.0}, {**body, "configuration": "cloud"}, {**body, "flags": {"ZZ": ["x"]}},
+                {**body, "date": "soon"}, {**body, "discipline": "law"}, {**body, "agent": " "}):
+        r = client.post("/api/v1/review/calibration/run", json=bad)
+        assert r.status_code == 422, (bad, r.status_code, r.text[:160])
+    assert not runs.exists(), "a refused run wrote the store"
+    #  a run with NO MODEL SERVING does not calibrate: the floor cannot review
+    assert client.post("/api/v1/review/calibration/run", json={**body, "configuration": "floor"}).status_code == 200
+    assert cal.calibration_of("care-reviewer")["calibrated"] is False and "floor cannot review" in cal.calibration_of("care-reviewer")["why_not"]
+    ok = client.post("/api/v1/review/calibration/run", json=body)
+    assert ok.status_code == 200 and ok.json()["score"]["meets_bar"] is True and ok.json()["agent_now"]["calibrated"] is True
+    got = client.get("/api/v1/review/calibration/care-reviewer").json()
+    assert got["calibrated"] is True and (got["caught"], got["planted_cases"], got["false_alarms"], got["clean_cases"]) == (3, 3, 0, 6)
+    #  THE STORED VERDICT IS NEVER TRUSTED: the flags are re-scored, so a later, worse run uncalibrates the agent
+    later = (_dt.date.today() + _dt.timedelta(days=1)).isoformat()
+    client.post("/api/v1/review/calibration/run", json={**body, "date": later, "flags": {"P0": ["reason-0"]}})
+    assert cal.calibration_of("care-reviewer")["calibrated"] is False and "did not meet the bar" in cal.calibration_of("care-reviewer")["why_not"]
+    client.post("/api/v1/review/calibration/run", json={**body, "date": (_dt.date.today() + _dt.timedelta(days=2)).isoformat()})
+    assert cal.calibration_of("care-reviewer")["calibrated"] is True
+    #  A RUN ON AN OLDER VERSION OF THE SET does not count for this one
+    runnable["version"] = "t2"
+    stale = cal.calibration_of("care-reviewer")
+    assert stale["calibrated"] is False and "'t1'" in stale["why_not"] and "'t2'" in stale["why_not"]
+    runnable["version"] = "t1"
+
+    #  AND THE TIER FOLLOWS THE RUN: the same review record counts for a calibrated agent and not for another,
+    #  with nothing on the record saying which
+    store = tmp_path / "review_tier_records.json"
+    monkeypatch.setattr(rt, "_path", lambda: store)
+    rec = {"tool": "care_risk_assess", "tier": "reviewed_by_workstation_agent", "date": today, "checklist": "care checklist v1",
+           "sources_read": ["nice-ng249"], "model": "m"}
+    assert client.post("/api/v1/review/record", json={**rec, "agent": "care-reviewer"}).json()["tool_now_says"]["tier"] == "reviewed_by_workstation_agent"
+    said = client.get("/api/v1/review/tier/care_risk_assess").json()
+    assert said["agent_rates"]["agent"] == "care-reviewer" and said["agent_rates"]["caught"] == 3 and said["agent_rates"]["clean_cases"] == 6
+    other = client.post("/api/v1/review/record", json={**rec, "tool": "care_handover", "agent": "someone-new"}).json()
+    assert other["counts"] is False and other["kept_though_not_counted"] is True and other["tool_now_says"]["tier"] == "unreviewed"
+    #  A TICK NO LONGER EXISTS: the old field is refused by the door, and one left on an older record is ignored
+    assert client.post("/api/v1/review/record", json={**rec, "agent": "someone-new", "agent_calibrated": True}).status_code == 422
+    assert rt.counts({**rec, "agent": "someone-new", "agent_calibrated": True})["counts"] is False
+    assert rt.counts({**rec, "agent_calibrated": True})["why_not"] == "it does not name the agent that reviewed"
+    #  an unreadable record of runs: no agent is treated as calibrated
+    runs.write_text("{not json", encoding="utf-8")
+    broken = cal.calibration_of("care-reviewer")
+    assert broken["calibrated"] is False and broken["known"] is False
