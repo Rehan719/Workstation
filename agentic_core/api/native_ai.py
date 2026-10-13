@@ -959,6 +959,7 @@ _NOT_A_MODEL_STATEMENT = {
     "/validate": "a text-similarity measure against a caller-supplied reference",
     "/decide": "maximin arithmetic over caller-supplied utilities",
     "/evidence-levels": "this inventory",
+    "/evidence-levels/routers": "a count of written answer blocks by router file; it describes the source, not a model",
 }
 #  P3.32 clause 3 - these five answer with a RECORD (just made, or stored) that carries its own level
 _LEVEL_IN_RECORD = frozenset({"/lifecycle/evaluate", "/baseline/run", "/baseline", "/baseline/{run_id}",
@@ -1001,14 +1002,33 @@ async def evidence_levels():
                          "(Owner, 2026-10-10); no route here does it."),
             "scope": ("the tables above are the routes of /api/v1/native-ai. Every other router that names "
                       "a model is counted in `routers_naming_a_model`, by written block"),
-            "routers_naming_a_model": _blocks_naming_a_model()}
+            "routers_naming_a_model_route": "GET /api/v1/native-ai/evidence-levels/routers"}
+
+
+@router.get("/evidence-levels/routers")
+def evidence_levels_by_router():
+    """How many written answer blocks in each router file name a resource, and how many state a level.
+
+    A plain function on purpose: it reads and parses source files, which took about two seconds inside the
+    async inventory above and held every other answer of this process while it ran. Here it runs off the
+    event loop, and the count is made once for the process - the source a process runs does not change."""
+    return _blocks_naming_a_model_once()
 
 
 # -- W698 (OWNER RULING 2026-10-13) - "EVERY SURFACE" MEANS EVERY ROUTER THAT NAMES A MODEL; COUNTED HERE -------
-#  Counted by syntax, at the call, over the source this process runs: in each file that declares a router,
+#  Counted by syntax, once for the process, over the source this process runs: in each file that declares a router,
 #  every answer block that carries a `served_by` key, and how many of those also carry an evidence level
 #  (written out, or spread in from the shared statement). It counts WRITTEN BLOCKS, not answers: a block built
 #  by the shared provenance is counted once where it is written, however many routers return it.
+_BLOCKS_COUNTED: Dict[str, Any] = {}
+
+
+def _blocks_naming_a_model_once() -> Dict[str, Any]:
+    if not _BLOCKS_COUNTED:
+        _BLOCKS_COUNTED.update(_blocks_naming_a_model())
+    return dict(_BLOCKS_COUNTED, counted="once for this process, at the first call")
+
+
 def _blocks_naming_a_model() -> Dict[str, Any]:
     import ast
     from pathlib import Path
@@ -1050,7 +1070,7 @@ def _blocks_naming_a_model() -> Dict[str, Any]:
             "this_router": per_marked,
             "basis": (f"{said} of {total} written answer block(s) that name which resource served, across "
                       f"{len(per)} router file(s), carry an evidence level in the block itself. Counted by "
-                      f"syntax at this call. A block is a place in the source, not an answer: the shared "
+                      f"syntax, once for this process. A block is a place in the source, not an answer: the shared "
                       f"provenance is one block and the answers of every router that returns it carry its "
                       f"level. {total - said} block(s) name a resource and state no level"
                       + (f"; {len(unread)} file(s) could not be read and are NOT counted" if unread else "")),

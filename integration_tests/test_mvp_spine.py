@@ -64082,7 +64082,14 @@ def test_w698_an_answer_that_names_a_model_states_its_level_and_a_refusal_states
     assert listed.status_code == 200 and listed.json()["evidence_level"] == "w698: moved in the table", listed.text[:300]
 
     #  6. WHAT REMAINS IS COUNTED, on the route that inventories the levels
-    inv = client.get("/api/v1/native-ai/evidence-levels").json()["routers_naming_a_model"]
+    levels = client.get("/api/v1/native-ai/evidence-levels").json()
+    assert levels["routers_naming_a_model_route"] == "GET /api/v1/native-ai/evidence-levels/routers"
+    assert "routers_naming_a_model" not in levels, "the count is back inside the inventory the page loads"
+    import inspect
+    assert not inspect.iscoroutinefunction(_na.evidence_levels_by_router), (
+        "the count runs on the event loop again, holding every other answer while it reads the source")
+    inv = client.get("/api/v1/native-ai/evidence-levels/routers").json()
+    assert inv["counted"].startswith("once for this process")
     assert inv["blocks_naming_a_model"] == inv["stating_a_level"] + inv["not_stating_a_level"] > 0, inv
     assert inv["blocks_naming_a_model"] == sum(v["blocks_naming_a_model"] for v in inv["files"].values())
     assert inv["stating_a_level"] >= sum(expected.values()) + 1, inv["stating_a_level"]

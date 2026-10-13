@@ -20930,10 +20930,11 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "P3.32",
+      "slot": "P3.30",
       "status": "open",
       "closed_by": null,
-      "note": ""
+      "note": "",
+      "slot_source": "the item it was filed on is done; the open third-phase queue carries it"
     },
     {
       "id": "FU-1071",
@@ -20949,7 +20950,8 @@
       "slot": "P5.1",
       "status": "open",
       "closed_by": null,
-      "note": ""
+      "note": "",
+      "slot_source": "it is a fault of the build job, and the stall of the parallel suite already sits on this item"
     }
   ],
   "routes": [
