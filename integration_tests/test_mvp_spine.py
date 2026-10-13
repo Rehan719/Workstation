@@ -4227,7 +4227,11 @@ def test_cca_twin_prevalidation_gates_major_changes(client):
     if tp.get("verdict") == "not_assessable":
         assert tp.get("source") == "health_gate_not_decidable", tp
         assert "not decidable" in str(tp.get("source_label")), tp
-    assert tp.get("source") in ("twin_marker", "health_gate_default")  # honest provenance
+    #  W707 - this line refused the very state the three lines above admit: with nothing measured the verdict
+    #  is "not_assessable" and its source is the not-decidable gate. It failed whenever the test ran before
+    #  anything had fed the organism's health (alone, or first in a selection), on an untouched main too.
+    if tp.get("verdict") != "not_assessable":
+        assert tp.get("source") in ("twin_marker", "health_gate_default"), tp   # honest provenance
     assert any(a["event"].startswith("twin_prevalidation_") for a in rec["audit_trail"])
     if tp["verdict"] == "pass":
         assert client.post(f"/api/v1/cca/{cid}/implement").status_code == 200
@@ -64702,3 +64706,65 @@ def test_w705_a_sentence_the_cadence_derived_is_not_treated_as_a_strategy_somebo
     prov2 = {"field_sources": {"strategy": "model_composed"}, "templated_fields": []}
     _bp._note_opening(prov2)
     assert "Derived by the planning cadence" not in prov2["opening_written_by"]
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W707 - one cause: a sibling answer says a fact and this one does not. The journey's engine names, the
+#  establish stream's swarm event, and why a change carries no pre-validation verdict.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w707_the_journey_the_stream_and_the_change_record_say_what_their_siblings_say(client):
+    import json
+    import pathlib
+    import uuid as _uuid
+    from agentic_core.api import change_control as _cc
+    from agentic_core.api import genesis as _gn
+    root = pathlib.Path(__file__).resolve().parents[1]
+    tag = _uuid.uuid4().hex[:6]
+
+    #  1. WHAT THE ENGINE NAMES ARE - the function, three ways
+    floor = _gn.engines_used_basis({"native": 5})
+    assert "not one call per name" in floor and "no engine analysed the challenge" in floor, floor
+    model = _gn.engines_used_basis({"ollama:w707": 4, "native": 1})
+    assert "no engine analysed" not in model and "ollama:w707 (4 stage(s))" in model and "native (1 stage(s))" in model, model
+    nothing = _gn.engines_used_basis({})
+    assert "No body stage of this journey was served" in nothing and "no engine analysed" not in nothing
+    #  ... and on the journey's own answer, computed from what served THAT journey
+    j = client.post("/api/v1/genesis/journey", json={"problem": f"w707 {tag} a village bakery cooperative selling bread",
+                                                     "domain": "enterprise"})
+    assert j.status_code == 200, j.text[:300]
+    jj = j.json()
+    assert jj["engines_used_basis"] == _gn.engines_used_basis(jj["ai_provenance"]["body_served_by"]), jj.get("engines_used_basis")
+    journey_src = (root / "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8")
+    assert "{result.engines_used_basis && (" in journey_src and "{result.engines_used_basis}</p>" in journey_src
+    assert journey_src.index("{result.engines_used_basis}</p>") < journey_src.index("{result.engines_used.map(e => ("), "the basis is printed after the chips it explains"
+
+    #  2. THE ESTABLISH STREAM says its swarm is the platform's fixed stages, as the spawn path's event does
+    with client.stream("POST", "/api/v1/genesis/establish/stream", json={
+            "problem": f"w707 {tag} a village bakery cooperative selling bread", "name": f"W707 Stream {tag}",
+            "domain": "enterprise", "ship_output": False}) as r:
+        assert r.status_code == 200
+        events = [json.loads(line[6:]) for line in r.iter_lines() if line.startswith("data: ") and line[6:].strip().startswith("{")]
+    swarm = [e for e in events if e.get("stage") == "swarm"]
+    assert len(swarm) == 1, [e.get("stage") for e in events]
+    assert swarm[0]["data"]["swarm_is_template"] is True and swarm[0]["data"]["cascade_id"], swarm[0]
+    assert "the same for every entity" in swarm[0]["content"] and "nothing was designed for this entity" in swarm[0]["content"]
+
+    #  3. WHY A CHANGE CARRIES NO PRE-VALIDATION VERDICT, on the record that shows one when there is one
+    low, high, done = f"cca-w707low{tag}", f"cca-w707high{tag}", f"cca-w707done{tag}"
+    base = {"title": "w707 guard record", "status": "submitted", "description": "driven by the guard",
+            "submitted_by": "guard", "submitted_at": "2026-10-13T00:00:00Z", "audit_trail": []}
+    _cc._save_change({**base, "cca_id": low, "change_type": "config_major", "impact_tier": "MEDIUM"})
+    _cc._save_change({**base, "cca_id": high, "change_type": "config_major", "impact_tier": "HIGH"})
+    _cc._save_change({**base, "cca_id": done, "change_type": "config_major", "impact_tier": "HIGH",
+                      "twin_prevalidation": {"verdict": "pass", "source": "driven", "simulated_at": "2026-10-13T00:00:00Z"}})
+    a = client.get(f"/api/v1/cca/{low}").json()
+    assert a["prevalidation_basis"].startswith("not run: pre-validation is run for HIGH and CRITICAL changes only") and "MEDIUM" in a["prevalidation_basis"], a.get("prevalidation_basis")
+    assert "a governed live setting" in a["prevalidation_basis"]
+    b = client.get(f"/api/v1/cca/{high}").json()
+    assert b["prevalidation_basis"].startswith("no pre-validation has been run on this HIGH change yet"), b.get("prevalidation_basis")
+    c = client.get(f"/api/v1/cca/{done}").json()
+    assert "prevalidation_basis" not in c and c["twin_prevalidation"]["verdict"] == "pass", sorted(c)
+    assert _cc.prevalidation_basis(None) is None
+    agency = (root / "apps/workstation-superapp/src/pages/enterprise/ChangeControlAgency.tsx").read_text(encoding="utf-8")
+    assert "{detail?.prevalidation_basis && (" in agency and "{detail.prevalidation_basis}" in agency
+    assert 'data-testid="cca-prevalidation-basis"' in agency

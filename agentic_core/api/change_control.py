@@ -410,6 +410,20 @@ def _ratification_decision(c: dict) -> str | None:
     return r.get("decision") if isinstance(r, dict) else None
 
 
+def prevalidation_basis(c: dict):
+    """None when the record carries a pre-validation verdict. Otherwise one sentence saying why it has none:
+    the tier does not call for one, or the tier calls for one and none has been run yet."""
+    if not isinstance(c, dict) or isinstance(c.get("twin_prevalidation"), dict):
+        return None
+    tier = effective_tier(c)
+    if _TIER_RANK[tier] >= _TIER_RANK["HIGH"]:
+        return (f"no pre-validation has been run on this {tier} change yet; one is run when it is reviewed or "
+                f"asked for")
+    return (f"not run: pre-validation is run for HIGH and CRITICAL changes only, and this change is {tier}. "
+            f"Nothing was simulated before it was decided - which includes a change to a governed live "
+            f"setting, because such a change is filed as MEDIUM")
+
+
 def source_inferred(c: dict) -> bool:
     """W701 - True when the record names no source and one is READ from its shape (a record decided before the
     source was kept). One function for every answer that carries `decision_source`: the single record said
@@ -1531,6 +1545,8 @@ async def get_change(cca_id: str):
             # a record decided before W459 carries no decision_source: say what it is read as (approval_source)
             **({"decision_source": approval_source(c), "decision_source_inferred": True}
                if source_inferred(c) else {}),
+            #  W707 - WHY THERE IS NO PRE-VALIDATION VERDICT, said on the record that shows one when there is
+            **({"prevalidation_basis": prevalidation_basis(c)} if prevalidation_basis(c) else {}),
             "awaiting_board_ratification": awaiting_board_ratification(c)}
 
 

@@ -76,6 +76,7 @@ interface CCADetail extends CCARow {
   // W494 (FU-107) - the fallback gate returns not_assessable, and says what it decided on
   twin_prevalidation?: { verdict?: string; source?: string; source_label?: string;
                          method?: string } | null;
+  prevalidation_basis?: string | null;      // W707 - why the record carries no pre-validation verdict
   decision_source?: string | null;
   hold_reason?: string | null;
   recommendation?: { verdict?: string; source?: string } | null;
@@ -339,6 +340,11 @@ function CCACard({ entry, onReview, onImplement, refreshing, actionError }: {
                     )}
                   </span>
                 </div>
+              )}
+              {detail?.prevalidation_basis && (
+                <p className="text-xs font-mono text-white/40" data-testid="cca-prevalidation-basis">
+                  §17.5 pre-validation: {detail.prevalidation_basis}
+                </p>
               )}
               {detail?.twin_prevalidation?.verdict && (
                 <p className="text-xs font-mono text-white/40" data-testid="cca-twin-line">

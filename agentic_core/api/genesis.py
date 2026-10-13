@@ -941,6 +941,9 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         # MJM when its call ran, the gaas.v5 gate (it ran above). DDPIE and BDP were listed and never called.
         "engines_used": ([n.split(" (")[0].title() for (_e, n, _qq) in _selected_lenses(None)] if not _p_cog.get("failed") else [])
                         + (["MJM"] if not _p_mjm.get("failed") else []) + ["gaas.v5"],
+        #  W707 - WHAT THOSE NAMES ARE. The solve route says it beside its own list; the journey showed bare
+        #  chips, which read as engines that had each analysed the challenge - on the floor, none had.
+        "engines_used_basis": engines_used_basis(body_served_by(provenance)),
         "established_vsb": established_vsb,   # §4→§5 — the living VSB enterprise, when establish=True
         # W485 (refutation) — a blocked journey has no deliverable, and saying it delivered
         # "Concept → Commercialisation" is the completion claim in its plainest form.
@@ -1121,6 +1124,19 @@ _ABSENT_BODY = ("Not provided at establishment — no {what} was supplied and no
 # W479 (FU-121 refutation 4) — the journey text the page saves as a deliverable (concept, research, design,
 # operations, commercialisation). A gate certifying that text reads the servers of THESE agents only.
 JOURNEY_BODY_AGENTS = ("genesis_concept", "genesis_research", "genesis_design", "genesis_operations", "genesis_commercial")
+
+
+def engines_used_basis(served: dict) -> str:
+    """What the journey's engine names are, and whether anything analysed anything on this run."""
+    head = ("the lens names are headings named in ONE prompt, MJM is one further call, and gaas.v5 is the gate "
+            "that screened the request - not one call per name. ")
+    names = sorted(str(k) for k in (served or {}))
+    if not names:
+        return head + "No body stage of this journey was served, so the names say what was attempted."
+    if all(n in ("native", "deterministic-floor") for n in names):
+        return head + ("Every stage of this journey was served by the deterministic floor, so the names say what "
+                       "was attempted: no engine analysed the challenge.")
+    return head + "Served by: " + ", ".join(f"{k} ({served[k]} stage(s))" for k in names) + "."
 
 
 def body_served_by(prov: dict, agents: tuple = JOURNEY_BODY_AGENTS) -> dict:
@@ -1817,9 +1833,13 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
         # 5 — the bespoke in-house delivery swarm
         _attach_delivery_swarm(entity, vsb_id, name, req.problem, req.domain, req.concept)
         if entity.get("native_swarm"):
-            yield _event("swarm", "Delivery Swarm Registered",
-                         "Chief → AI CEO → C-Suite → CoE → Build-to-Order, runnable on the owned fabric.",
-                         {"cascade_id": entity["native_swarm"].get("cascade_id")})
+            #  W707 - the stages are the platform's fixed ones, the same for every entity; the spawn path's
+            #  event has said so since W617 and this one did not
+            yield _event("swarm", "Delivery Swarm Registered (the platform's fixed stages)",
+                         "Chief → AI CEO → C-Suite → CoE → Build-to-Order, runnable on the owned fabric. These are "
+                         "the platform's fixed delivery stages, the same for every entity - nothing was designed "
+                         "for this entity at this step.",
+                         {"cascade_id": entity["native_swarm"].get("cascade_id"), "swarm_is_template": True})
 
         # 6 — persist, with the status derived from the facts (W496, FU-100)
         _st, _st_basis = vsb_mod._derived_status(entity)
