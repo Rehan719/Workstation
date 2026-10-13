@@ -25,6 +25,8 @@ from agentic_core.config import data_path
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from agentic_core.api._ai_provenance import (reply_evidence as _reply_evidence,      # W708
+                                             no_reply_evidence as _no_reply_evidence)
 
 from agentic_core.auth.core import get_current_user, request_owner_id, user_can_access
 
@@ -1292,9 +1294,9 @@ def _intel_served(prov) -> dict:
     the same comma-joined form every other resource here uses ('native' = the structured floor). None
     when no call ran (every call failed) — never a silent 'native'."""
     if not isinstance(prov, dict):
-        return {"served_by": None, "is_external": False}
+        return {**_no_reply_evidence(), "served_by": None, "is_external": False}
     keys = sorted((prov.get("served_by") or {}).keys())
-    return {"served_by": ",".join(keys) or None, "is_external": bool(prov.get("any_external")),
+    return {**_reply_evidence(), "served_by": ",".join(keys) or None, "is_external": bool(prov.get("any_external")),
             # (refutation 2) the per-server COUNTS too: a mostly-floor run must not read as a model run
             "served_by_map": dict(prov.get("served_by") or {}),
             "calls": prov.get("calls", 0),
@@ -1437,7 +1439,7 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
             sb = ",".join(sorted(_served.keys())) or None
             comm = j.get("phase_3_commercialisation")
             out = comm if isinstance(comm, str) else (j.get("phase_2_design_development") if isinstance(j.get("phase_2_design_development"), str) else "")
-            return {"resource": "genesis", "ran": "/api/v1/genesis/journey", "served_by": sb,
+            return {**_reply_evidence(sb), "resource": "genesis", "ran": "/api/v1/genesis/journey", "served_by": sb,
                     "served_by_map": _served, "is_external": bool(prov.get("any_external")),
                     "calls": len(_body_calls),
                     "failed_calls": sum(1 for a in _body_calls if _sba.get(a) == "failed"),
@@ -1454,7 +1456,7 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
             _tv = max(_traits.values()) if _traits else None
             _tied = sorted(k for k, v in _traits.items() if v == _tv) if _traits else []
             top = _tied[0] if len(_tied) == 1 else None
-            return {"resource": "genome", "ran": "/api/v1/organism/genome/encode",
+            return {**_reply_evidence(g.get('served_by')), "resource": "genome", "ran": "/api/v1/organism/genome/encode",
                     "genome_id": g.get("genome_id"), "fitness": g.get("fitness_score"),
                     "dominant_trait": top,
                     "dominant_trait_tied": _tied if len(_tied) > 1 else [],
@@ -1711,7 +1713,7 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
                                               #  W641 - the run's objective is the person's; a saved
                                               #  design prompt is not passed off as theirs
                                               user_text=(objective or None))
-            return {"resource": "native_orchestrator", "ran": "/api/v1/native-ai/complete",
+            return {**_reply_evidence(res.get('served_by')), "resource": "native_orchestrator", "ran": "/api/v1/native-ai/complete",
                     "governance_checkpoint": _stage_checkpoint(_agent651, res.get("output")),
                     "served_by": res.get("served_by"), "is_external": res.get("is_external"),
                     "output": (res.get("output") or "")[:600]}
@@ -1725,7 +1727,7 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
             out = (res.get("synthesis") or {}).get("output") or ""
             if not out:
                 out = next((m.get("output", "") for m in members if m.get("output")), "")
-            return {"resource": "native_ensemble", "ran": "/api/v1/native-ai/ensemble",
+            return {**_reply_evidence(), "resource": "native_ensemble", "ran": "/api/v1/native-ai/ensemble",
                     "models_run": res.get("models_run"), "members": len(members),
                     "served_by": ",".join(sorted({str(m.get("served_by")) for m in members if m.get("served_by")})),
                     "output": out[:600]}
@@ -1744,7 +1746,7 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
                 mutation=_cfg_num(cfg.get("mutation"), 0.5, float),
                 iterations=_cfg_num(cfg.get("iterations"), 1, int),
                 scenarios=_csv(cfg.get("scenarios")) or None)
-            return {"resource": "reactor", "ran": "/api/v1/reactor/composite", "served_by": r["served_by"],
+            return {**_reply_evidence(r['served_by']), "resource": "reactor", "ran": "/api/v1/reactor/composite", "served_by": r["served_by"],
                     "sub_facilities": r["sub_facilities"], "generations_run": r["evolution"]["generations_run"],
                     "scenarios_run": r["experimentation"]["scenarios_run"],
                     "studio_dimensions": (r["studio"] or {}).get("dimensions"),
@@ -1761,7 +1763,7 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
                                              product_type=str(cfg.get("product_type") or "business_model"),
                                              domain=domain, description=str(cfg.get("brief") or objective)[:500],
                                              prefer=str(cfg.get("model") or "auto"))
-            return {"resource": "factory", "ran": "/api/v1/factory/produce", "served_by": prod["served_by"],
+            return {**_reply_evidence(prod['served_by']), "resource": "factory", "ran": "/api/v1/factory/produce", "served_by": prod["served_by"],
                     "is_external": prod["is_external"], "product_type": str(cfg.get("product_type") or "business_model"),
                     "output": (prod["output"] or "")[:600]}
         if rid == "resource_optimizer":
@@ -1814,7 +1816,7 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
                                               prefer=str(cfg.get("model") or "auto"),
                                               user_text=(objective or None))   # W651 (FU-675)
             #  W645 (FU-644) - no "ran": the twin's own route is not called here, so it is not named as run
-            return {"resource": "digital_twin", "served_by": res.get("served_by"),
+            return {**_reply_evidence(res.get('served_by')), "resource": "digital_twin", "served_by": res.get("served_by"),
                     "governance_checkpoint": _stage_checkpoint("digital-twin", res.get("output")),
                     "invoked": "orchestrator.complete with a simulator persona - /api/v1/twin/simulate was NOT called",
                     "is_external": bool(res.get("is_external")), "scenario": scenario,
@@ -1826,7 +1828,7 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
                                     spec=str(cfg.get("spec") or objective), domain=domain,
                                     fmt=str(cfg.get("format") or "markdown"),
                                     prefer=str(cfg.get("model") or "auto"))
-            return {"resource": "generator", "ran": "/api/v1/generator/produce",
+            return {**_reply_evidence(g['served_by']), "resource": "generator", "ran": "/api/v1/generator/produce",
                     "artefact_type": g["artefact_type"], "format": g["format"],
                     "served_by": g["served_by"], "is_external": g["is_external"],
                     "output": (g["output"] or "")[:600]}
@@ -1842,7 +1844,7 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
             out = r["stages"].get("solution_concept") or next(iter(r["stages"].values()), "")
             #  W672 - this named the Studio's HTTP route as what ran. What ran is the function above, which
             #  composes the stages and saves no entity; the route is retired and was never called from here.
-            return {"resource": "synthesis_studio", "ran": "run_lab_cascade (the laboratory cascade; no entity is saved)",
+            return {**_reply_evidence(sb), "resource": "synthesis_studio", "ran": "run_lab_cascade (the laboratory cascade; no entity is saved)",
                     "stages_run": r["stages_run"], "served_by": sb, "output": (out or "")[:600]}
         if rid == "studio":
             # the §7 Studio: deterministic 2D/3D analytics + insight over a REAL configured data series.
@@ -1888,7 +1890,7 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
             # W509 (FU-009) — third site of the same credit: stage one stood for the whole nested
             # cascade, and this return feeds the fabric_resource outcome row that routing reads.
             _sb = [str(t.get("served_by")) for t in (res.get("trace") or []) if t.get("served_by")]
-            return {"resource": "native_swarm", "ran": "/api/v1/resources/swarm/run",
+            return {**_reply_evidence(), "resource": "native_swarm", "ran": "/api/v1/resources/swarm/run",
                     "governance_checkpoint": _stage_checkpoint(_agent651, res.get("final")),
                     "stages_run": len(stages), "served_by": (_sb[0] if _sb else "native"),
                     "served_by_all": sorted(set(_sb)) or None,
@@ -2650,7 +2652,7 @@ async def run_composition(cid: str, req: RunCompositionRequest,
             _served[t.get("served_by", "native")] = _served.get(t.get("served_by", "native"), 0) + 1
         _cr_store = data_path("composition_runs.json")
         _cr = read_json_strict(_cr_store, list, expect=list)        # W472 (FU-053) — refused, never replaced
-        _cr.append({
+        _cr.append({**_reply_evidence(_served), 
             "run_id": run_id, "composition_id": cid, "name": comp["name"],
             "owner_id": comp.get("owner_id"),   # §14 (W324) — runs inherit the design's tenant
             "version": comp.get("version", 1), "objective": objective[:200],
@@ -3145,7 +3147,7 @@ async def run_swarm(req: RunSwarmRequest, user: dict | None = Depends(get_curren
     # W509 (FU-009) — what genuinely served each stage, and what each stage ASKED for. A stage whose
     # request was not honoured is visible here rather than silently served by something else.
     _servers = [str(t.get("served_by")) for t in (res.get("trace") or []) if t.get("served_by")]
-    _unhonoured = [{"step": t.get("step"), "requested": t.get("requested_model"),
+    _unhonoured = [{**_reply_evidence(t.get('served_by')), "step": t.get("step"), "requested": t.get("requested_model"),
                     "served_by": t.get("served_by")}
                    for t in (res.get("trace") or [])
                    if t.get("requested_model") and t.get("requested_model") != t.get("served_by")]
@@ -3168,7 +3170,7 @@ async def run_swarm(req: RunSwarmRequest, user: dict | None = Depends(get_curren
     ledger = {"logged": False, "why": "not attempted"}
     try:
         from agentic_core.gaas.v5 import UEGLogger
-        _e = UEGLogger().log({"type": "resource_fabric.swarm.run", "run_id": swarm_run_id,
+        _e = UEGLogger().log({**_reply_evidence(), "type": "resource_fabric.swarm.run", "run_id": swarm_run_id,
                               "swarm_id": req.swarm_id, "name": name, "vsb_id": run_vsb_id,
                               "stages": len(stages), "served_by": sorted(set(_servers)),
                               "any_external": bool(res.get("any_external")), "duration_ms": _ms})
