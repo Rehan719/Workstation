@@ -64500,3 +64500,135 @@ def test_w703_the_business_documents_are_labelled_drafts_that_name_only_what_exi
     }
     for what, text in planted.items():
         assert _w703_faults(text, root, plan_slots, row_ids) != [], f"the check did not find: {what}"
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W704 - THE QURAN FOUNDATION READING SIDE. A reference recitation's audio address and word timings, fetched at
+#  the time of use and never stored; credentials on the server only and never shown. The publisher is a stand-in
+#  here: no real credential is read or used, and no scripture is typed into this test.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w704_a_reference_recitation_is_fetched_for_the_request_never_stored_and_no_credential_is_shown(client, monkeypatch, tmp_path):
+    import dataclasses
+    import json
+    import os
+    import pathlib
+    from agentic_core.config import Settings
+    from agentic_core.religious_domain import quran_foundation as _qf
+    root = pathlib.Path(__file__).resolve().parents[1]
+    FAKE_ID, FAKE_SECRET = "w704-stand-in-id", "w704-stand-in-SECRET-value"
+    calls = []
+
+    class _Resp:
+        def __init__(self, status, body):
+            self.status_code, self._body = status, body
+
+        def json(self):
+            return self._body
+
+    state = {"token_status": 200, "content_status": 200, "issued": 0, "expires_in": 3600}
+
+    class _Client:
+        def __init__(self, *a, **k):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        async def post(self, url, auth=None, data=None, **k):
+            calls.append(("POST", url, {"auth": auth, "data": dict(data or {})}))
+            if state["token_status"] != 200:
+                return _Resp(state["token_status"], {"message": "refused"})
+            state["issued"] += 1
+            return _Resp(200, {"access_token": f"token-{state['issued']}", "expires_in": state["expires_in"]})
+
+        async def get(self, url, params=None, headers=None, **k):
+            calls.append(("GET", url, {"params": dict(params or {}), "headers": dict(headers or {})}))
+            if state["content_status"] != 200:
+                return _Resp(state["content_status"], {"message": "refused"})
+            if url.endswith("/resources/chapter_reciters"):
+                return _Resp(200, {"reciters": [{"id": 7, "name": "A STAND-IN RECITER"}]})
+            return _Resp(200, {"audio_file": {"audio_url": "https://audio.example/stand-in.mp3", "format": "mp3",
+                                              "timestamps": [{"verse_key": "1:1", "timestamp_from": 0, "timestamp_to": 900,
+                                                              "segments": [[1, 0, 400], [2, 400, 900], [3]]}]}})
+
+    monkeypatch.setattr(_qf.httpx, "AsyncClient", _Client)
+    monkeypatch.setattr(_qf, "_token", {"value": None, "expires_at": 0.0, "environment": None})
+
+    #  1. NOT CONFIGURED: the publisher is not asked, and the answer says so
+    monkeypatch.delenv("QURAN_FOUNDATION_CLIENT_ID", raising=False)
+    monkeypatch.delenv("QURAN_FOUNDATION_CLIENT_SECRET", raising=False)
+    monkeypatch.delenv("QURAN_FOUNDATION_ENV", raising=False)
+    src = client.get("/api/v1/qep/recitation/source").json()
+    assert src["configured"] is False and src["stored"] is False and src["listens_to_a_person"] is False, src
+    assert src["environment"] == "prelive" and src["conditions_row"] == "quran-foundation-developer-terms"
+    r = client.get("/api/v1/qep/recitation/audio/1", params={"reciter_id": 7})
+    assert r.status_code == 503 and "not set on this server" in r.json()["detail"] and "no other source" in r.json()["detail"], r.text
+    assert calls == [], "the publisher was asked with no credentials set"
+
+    #  2. CONFIGURED: the token is asked for as the publisher's page says, and the content call carries it
+    monkeypatch.setenv("QURAN_FOUNDATION_CLIENT_ID", FAKE_ID)
+    monkeypatch.setenv("QURAN_FOUNDATION_CLIENT_SECRET", FAKE_SECRET)
+    ok = client.get("/api/v1/qep/recitation/audio/1", params={"reciter_id": 7})
+    assert ok.status_code == 200, ok.text
+    j = ok.json()
+    assert j["audio_url"] == "https://audio.example/stand-in.mp3" and j["stored"] is False and j["assessed"] is False, j
+    assert j["verses"] == [{"verse_key": "1:1", "from_ms": 0, "to_ms": 900,
+                            "words": [{"word": 1, "from_ms": 0, "to_ms": 400}, {"word": 2, "from_ms": 400, "to_ms": 900}]}], j["verses"]
+    assert j["words_timed"] == 2 and j["environment"] == "prelive" and "Quran Foundation" in j["credit"]
+    post, get = calls[0], calls[1]
+    assert post[0] == "POST" and post[1] == "https://prelive-oauth2.quran.foundation/oauth2/token", post[1]
+    assert post[2]["auth"] == (FAKE_ID, FAKE_SECRET) and post[2]["data"] == {"grant_type": "client_credentials", "scope": "content"}
+    assert get[1] == "https://apis-prelive.quran.foundation/content/api/v4/chapter_recitations/7/1" and get[2]["params"] == {"segments": "true"}
+    assert get[2]["headers"] == {"x-auth-token": "token-1", "x-client-id": FAKE_ID}, get[2]["headers"]
+    #  the token is reused while it is good: a second answer asks for content, not for another token
+    n = len(calls)
+    assert client.get("/api/v1/qep/recitation/reciters").json()["reciters"] == [{"id": 7, "name": "A STAND-IN RECITER"}]
+    assert [c[0] for c in calls[n:]] == ["GET"] and state["issued"] == 1, calls[n:]
+    #  ... and replaced before the publisher's stated expiry
+    _qf._token["expires_at"] = 0.0
+    client.get("/api/v1/qep/recitation/reciters")
+    assert state["issued"] == 2 and calls[-1][2]["headers"]["x-auth-token"] == "token-2"
+    #  production only when the Owner sets it
+    monkeypatch.setenv("QURAN_FOUNDATION_ENV", "production")
+    client.get("/api/v1/qep/recitation/reciters")
+    assert calls[-2][1] == "https://oauth2.quran.foundation/oauth2/token" and calls[-1][1].startswith("https://apis.quran.foundation/"), calls[-2:]
+    monkeypatch.setenv("QURAN_FOUNDATION_ENV", "anything-else")
+    assert _qf.environment() == "prelive"
+
+    #  3. NO CREDENTIAL IS SHOWN ANYWHERE: not in an answer, not in a refusal, not in the printed settings
+    shown = [client.get("/api/v1/qep/recitation/source").text, ok.text]
+    state["content_status"] = 401
+    refused = client.get("/api/v1/qep/recitation/audio/1", params={"reciter_id": 7})
+    assert refused.status_code == 502 and "it answered 401" in refused.json()["detail"] and "no other source" in refused.json()["detail"]
+    assert _qf._token["value"] is None, "a token the publisher refused is still held"
+    state.update(content_status=200, token_status=403)
+    denied = client.get("/api/v1/qep/recitation/audio/1", params={"reciter_id": 7})
+    assert denied.status_code == 502 and "did not issue a token" in denied.json()["detail"] and "403" in denied.json()["detail"]
+    shown += [refused.text, denied.text]
+    for text in shown:
+        assert FAKE_SECRET not in text and "token-" not in text, "a credential or a token reached an answer"
+    assert FAKE_ID not in shown[0]
+    fields = {f.name: f for f in dataclasses.fields(Settings)}
+    assert fields["quran_foundation_client_secret"].repr is False and fields["quran_foundation_client_id"].repr is False
+    assert FAKE_SECRET not in repr(Settings()) and FAKE_ID not in repr(Settings())
+
+    #  4. NOTHING IS STORED: the module opens no file and names no store
+    source = (root / "agentic_core/religious_domain/quran_foundation.py").read_text(encoding="utf-8")
+    code = _code_only(source.split('"""', 2)[2])
+    for writer in ("open(", "write_text", "write_bytes", "atomic_write", "data_path", "json.dump", "_cache_write", "logging", "print("):
+        assert writer not in code, f"the reading module can keep or print what it fetched: {writer}"
+
+    #  5. BAD ASKS are refused before the publisher is asked
+    n = len(calls)
+    assert client.get("/api/v1/qep/recitation/audio/115", params={"reciter_id": 7}).status_code == 400
+    assert client.get("/api/v1/qep/recitation/audio/1", params={"reciter_id": 0}).status_code == 422
+    assert len(calls) == n
+
+    #  6. THE SOURCES REGISTER says what uses the source and how each condition is kept
+    row = next(r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]
+               if r["id"] == _qf.SOURCE_ROW)
+    assert "agentic_core/religious_domain/quran_foundation.py" in row["used_by"] and row["how_each_condition_is_kept"]
+    assert all((root / p).exists() for p in row["used_by"])

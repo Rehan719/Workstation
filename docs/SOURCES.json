@@ -576,7 +576,13 @@
    "read_on": "2026-10-12",
    "read_by": "round W683, by the delivery assistant through a fetch that summarises the page",
    "says": "Shown as last updated 2026-10-11. Content includes Quran text, translations, metadata, audio and reflections. Nothing may be cached or stored longer than one week except through the Content Sync route or as a font file or mushaf image; no prepackaged database. Free, donation-funded, paid and advertising-funded apps are allowed; the content may not be sold, sublicensed or redistributed. Building machine-learning models from the content or user data needs written consent. Audio calls need credentials held on a server; production use needs approval.",
-   "not_read": "the privacy guidelines; whether the audio files' own addresses may be fetched without credentials; the terms' full text"
+   "not_read": "the privacy guidelines; whether the audio files' own addresses may be fetched without credentials; the terms' full text",
+   "used_by": [
+    "agentic_core/religious_domain/quran_foundation.py",
+    "agentic_core/religious_domain/api.py"
+   ],
+   "how_each_condition_is_kept": "Nothing fetched is written to disk and each answer is fetched for its request (no copy, nothing kept a week); the credentials are read from the server's environment at the call and are never returned or logged; the answer goes to the caller only (no model is trained); the environment is pre-production unless the Owner sets production, which needs the publisher's approval.",
+   "not_yet_established": "the two content paths are from the publisher's reference pages and had not been called from this machine with real credentials when this row was written"
   },
   {
    "id": "alquran-cloud-terms",
