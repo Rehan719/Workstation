@@ -64939,3 +64939,71 @@ def test_w710_entities_the_swarm_and_genesis_state_the_level_and_a_derived_refre
     j = client.post("/api/v1/genesis/journey", json={"problem": "w710 a village bakery cooperative selling bread", "domain": "enterprise"})
     assert j.status_code == 200, j.text[:300]
     assert '"evidence_level"' in j.text, "no stage of the journey states its level"
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W711 - three external mandates on legal operations and embodied systems, assessed; two items chartered.
+#  The guard holds the charter's boundaries, the assessment's named files and the sources entered for it.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w711_the_two_chartered_items_keep_their_boundaries_and_every_source_says_what_was_not_read():
+    import json
+    import pathlib
+    import re
+    from agentic_core import plan_followups as _fu
+    root = pathlib.Path(__file__).resolve().parents[1]
+    plan = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    items = {i["slot"]: i for i in _fu.plan_items(plan)}
+    assert "P5.18" in items and "P5.19" in items and not items["P5.18"]["done"] and not items["P5.19"]["done"]
+
+    def _charter(slot, nxt):
+        body = plan.split(f"\n {slot} [chartered W711", 1)[1].split(nxt, 1)[0]
+        return " ".join(body.split())
+    agreements = _charter("P5.18", "\n P5.19 [chartered W711")
+    assets = _charter("P5.19", "\n COMPLETE when P5.1")
+    #  the agreements item: what it may never show, what it refuses, and what it does not do
+    for must in ("NOTHING HERE IS LEGAL ADVICE", "never offered as a party to an outside agreement",
+                 "never shown as an incorporation", "an approval is of one exact version",
+                 "never a provider's status", "never taken from a model",
+                 "are refused and routed", "no outcome of a dispute is predicted",
+                 "nothing of it crosses to an outside service",
+                 "no e-signature provider, no real payment, no notice sent to anyone",
+                 "a person's own agreements wait for sign-in",
+                 "after the standing tier-1 findings are fixed and after sign-in"):
+        assert must in agreements, must
+    #  the assets item: nothing connected, six facts never merged, no score
+    for must in ("NOTHING IS CONNECTED AND NOTHING IS CONTROLLED", "SIX FACTS THAT ARE NEVER MERGED",
+                 "no score, percentage or single word of readiness is computed",
+                 "no connection to a device, no command, no telemetry taken in and no teleoperation",
+                 "never offered as evidence of safety", "reads \"not evidenced\"",
+                 "is a separate ruling of the Owner's and is not scheduled"):
+        assert must in assets, must
+    for clause in range(1, 9):
+        assert f"({clause})" in agreements, clause
+    for clause in range(1, 6):
+        assert f"({clause})" in assets, clause
+    for part in ("ACCEPT:", "BOUNDARY:", "SEQUENCE:"):
+        assert part in agreements and part in assets, part
+
+    #  the assessment's section: it exists, and every file it names is in the tree
+    assess = (root / "docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md").read_text(encoding="utf-8")
+    section = assess.split("\n## 31. Addendum (W711)", 1)[1]
+    assert "\n## 32." not in section.split("\n### 31.5", 1)[0]
+    named = re.findall(r"`([A-Za-z0-9_./-]+\.(?:py|json|md))`", section)
+    assert len(named) >= 5 and all((root / n).exists() for n in named), [n for n in named if not (root / n).exists()]
+    for said in ("All of it is DATA", "No citation was found to be invented", "NOT VERIFIED at a primary page",
+                 "REFUSED:", "SEQUENCE, unchanged by this section"):
+        assert said in section, said
+
+    #  the sources entered for it: each a publisher's page, a date, what it says, and what was NOT read
+    rows = {r["id"]: r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+    entered = ("hmlr-practice-guide-8", "lpmpa-1989-s1", "lsa-2007-sch2", "hse-puwer-overview",
+               "frc-frs-102-periodic-review-2024", "si-2026-439-av-passenger-permits", "av-act-implementation-programme",
+               "ec-ai-omnibus-2026", "si-2026-867-machinery", "pram-act-2025", "lawcom-business-tenancies-renewal",
+               "gov-ending-commercial-lease-early", "ico-duaa-2025", "caa-drone-requirements")
+    for rid in entered:
+        r = rows[rid]
+        assert r["page"].startswith("https://") and re.fullmatch(r"\d{4}-\d{2}-\d{2}", r["read_on"]), rid
+        assert len(r["says"]) > 40 and len(r["not_read"]) > 10, (rid, "a row must say what was read and what was not")
+        assert "NOT re-read by a second reader" in r["read_by"], (rid, "one reader's summary is presented as more than that")
+    #  the date the external documents got wrong is recorded as the publisher gives it
+    assert "entered into force on 27 July 2026" in rows["ec-ai-omnibus-2026"]["says"]
