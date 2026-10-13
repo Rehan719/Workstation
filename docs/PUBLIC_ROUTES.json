@@ -17,6 +17,9 @@
   {"method": "GET", "path": "/api/v1/qep/ayah/{surah_number}/{ayah_number}", "decision": "public", "why": "sourced Quran text with its provenance: public reference, free for everyone by ruling"},
   {"method": "GET", "path": "/api/v1/qep/translation/editions", "decision": "public", "why": "the list of named translation editions: public reference"},
   {"method": "GET", "path": "/api/v1/qep/translation/{surah_number}/{ayah_number}", "decision": "public", "why": "a named published translation with its provenance: public reference"},
+  {"method": "GET", "path": "/api/v1/qep/hifz/practice/{surah_number}/{ayah_number}", "decision": "public", "why": "the sourced text of one verse, shown in part for practice; it receives and keeps nothing about a learner"},
+  {"method": "GET", "path": "/api/v1/qep/hifz/practice/{surah_number}/{ayah_number}/next", "decision": "public", "why": "one word of the sourced text at a stated position; it receives and keeps nothing about a learner"},
+  {"method": "GET", "path": "/api/v1/qep/hifz/similar", "decision": "public", "why": "a count of shared wording computed over the sourced text of the surahs named; it keeps nothing"},
   {"method": "GET", "path": "/api/v1/registers/sources", "decision": "public", "why": "the register of sources is published so anyone can check what was read, where and when"},
   {"method": "GET", "path": "/api/v1/registers/coverage", "decision": "public", "why": "the register of what a person can actually complete is published as it stands"}
  ]

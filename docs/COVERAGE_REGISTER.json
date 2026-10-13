@@ -539,6 +539,81 @@
    "state": "excluded",
    "today": "the adult form still accepts it until the tier-2 round",
    "excluded_by": "Owner ruling 2026-10-12 (care, 4): the form is the adult route for England; a child's concern gets the children's route and nothing composed"
+  },
+  {
+   "id": "qep-portion-plan",
+   "domain": "Quran platform",
+   "nation": "any - the sourced text and its practice are the same everywhere",
+   "subject": "A memorisation plan in three tracks - new lesson, recent revision, old revision - set by the learner or a teacher",
+   "state": "journey",
+   "today": "a learner sets a portion in each of three tracks on the Quran page; the platform proposes none, because no source on the method has been read",
+   "driven_by": "test_w684_a_portion_is_set_by_a_person_in_three_tracks_and_the_platform_proposes_none"
+  },
+  {
+   "id": "qep-hidden-verse",
+   "domain": "Quran platform",
+   "nation": "any - the sourced text and its practice are the same everywhere",
+   "subject": "Hidden-verse practice against the sourced text, with the next word on request",
+   "state": "journey",
+   "today": "a learner opens a verse with its words hidden, asks for the next word or the whole verse, and compares for themselves; nothing is told what they recalled",
+   "driven_by": "test_w684_hidden_verse_practice_sends_only_what_is_shown_and_judges_nothing"
+  },
+  {
+   "id": "qep-similar-verses",
+   "domain": "Quran platform",
+   "nation": "any - the sourced text and its practice are the same everywhere",
+   "subject": "Similar verses drilled as pairs",
+   "state": "journey",
+   "today": "a learner names up to three surahs and sees the verses that share wording, side by side, with where each goes on; a count of shared wording, not a scholar's list",
+   "driven_by": "test_w684_similar_verses_are_counted_from_the_fetched_text_and_say_what_they_cover"
+  },
+  {
+   "id": "qep-listen-follow",
+   "domain": "Quran platform",
+   "nation": "any - the sourced text and its practice are the same everywhere",
+   "subject": "Listening to a named reciter with each word highlighted",
+   "state": "nothing_built",
+   "today": "nothing here plays a recitation; the source's terms are read and not yet entered"
+  },
+  {
+   "id": "qep-hear-yourself",
+   "domain": "Quran platform",
+   "nation": "any - the sourced text and its practice are the same everywhere",
+   "subject": "Recording oneself on one's own device and replaying beside the reciter",
+   "state": "nothing_built",
+   "today": "nothing here records"
+  },
+  {
+   "id": "qep-teacher-circle",
+   "domain": "Quran platform",
+   "nation": "any - the sourced text and its practice are the same everywhere",
+   "subject": "A circle with a teacher: enrolment, assigned portions, a note pinned to the word",
+   "state": "nothing_built",
+   "today": "nothing here knows a teacher or a class; it waits on sign-in and on people the Owner names"
+  },
+  {
+   "id": "qep-teacher-attestation",
+   "domain": "Quran platform",
+   "nation": "any - the sourced text and its practice are the same everywhere",
+   "subject": "A teacher's own attestation that a portion was heard",
+   "state": "nothing_built",
+   "today": "nothing here records one; its wording waits on a scholar's review"
+  },
+  {
+   "id": "qep-shared-total",
+   "domain": "Quran platform",
+   "nation": "any - the sourced text and its practice are the same everywhere",
+   "subject": "A circle's shared total and a personal challenge against one's own past",
+   "state": "nothing_built",
+   "today": "nothing here; the ranking of learners is retired by ruling and these replace it after sign-in"
+  },
+  {
+   "id": "qep-judged-event",
+   "domain": "Quran platform",
+   "nation": "any - the sourced text and its practice are the same everywhere",
+   "subject": "A judged event with written criteria and named human judges",
+   "state": "nothing_built",
+   "today": "nothing here; its design waits on a real marking scheme"
   }
  ]
 }

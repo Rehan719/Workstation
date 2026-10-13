@@ -20679,11 +20679,15 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.17",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W684",
       "note": "",
       "slot_source": "the Owner's ruling of 2026-10-12: memorisation practice first",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "a learner can set a portion in each track, practise a hidden verse and see computed pairs on the Quran page; three coverage rows are journeys naming their tests; checked in the browser against the real source. No portions are suggested: no source on the method has been read (the sources row holds that)",
+      "reachability_check": "test_w684_a_portion_is_set_by_a_person_in_three_tracks_and_the_platform_proposes_none"
     },
     {
       "id": "FU-1066",
