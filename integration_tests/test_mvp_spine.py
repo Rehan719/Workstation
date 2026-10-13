@@ -62771,6 +62771,12 @@ def test_the_windows_job_runs_the_same_suite_and_is_advisory_and_gates_nothing()
         "the Windows job is no longer advisory - that is the Owner's step to take after three green rounds, "
         "and when it is taken this line and the plan's count change together")
     assert not lin.get("continue-on-error"), "the gate itself was made advisory"
+    #  W688 - its first run failed four guards for one cause: files checked out with converted line endings. The
+    #  conversion is switched off, and BEFORE the checkout - after it, the files are already converted.
+    _steps = win["steps"]
+    _eol = next((i for i, s in enumerate(_steps) if "core.autocrlf false" in str(s.get("run", ""))), None)
+    _co = next(i for i, s in enumerate(_steps) if str(s.get("uses", "")).startswith("actions/checkout"))
+    assert _eol is not None and _eol < _co, "the Windows job no longer keeps line endings as committed before it checks out"
 
     def runs(job):
         return [" ".join(str(s["run"]).split()) for s in job["steps"] if "run" in s]
@@ -62954,3 +62960,105 @@ def test_w688_a_person_reaches_only_the_plans_of_entities_they_own(client, monke
     monkeypatch.setenv("AUTH_ENABLED", "false")
     assert client.get(f"/api/v1/business-plan?scope={his}").status_code == 200
     assert client.get("/api/v1/business-plan?scope=workstation").status_code == 200
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W688 - OWNER RULING 2026-10-12 (the review cell, first clause): every tool states the highest tier of review
+#  it has reached, nothing reads as a higher tier than its record shows, and with no record it says UNREVIEWED.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w688_a_tool_states_the_highest_tier_its_records_support_and_unreviewed_without_one(tmp_path, monkeypatch):
+    import datetime as _dt
+    import json as _json
+    from agentic_core.api import _review_tier as rt
+    store = tmp_path / "review_tier_records.json"
+    monkeypatch.setattr(rt, "_path", lambda: store)
+    today = _dt.date(2026, 10, 13)
+    T = "care_risk_assess"
+
+    def say(records):
+        store.write_text(_json.dumps(records), encoding="utf-8")
+        return rt.review_statement(T, today=today)
+    #  1. no store, and an empty one: UNREVIEWED, and known to be
+    none = rt.review_statement(T, today=today)
+    assert none["tier"] == "unreviewed" and none["label"] == "Unreviewed" and none["known"] is True
+    assert "no review of this tool is recorded" in none["basis"] and none["records_counted"] == 0
+    assert say([])["tier"] == "unreviewed"
+    #  2. a record for ANOTHER tool is not this tool's
+    rule = {"tool": T, "tier": "checked_by_rule", "date": "2026-10-01", "rule": "a withheld score answers its refusal", "test": "test_x"}
+    assert say([{**rule, "tool": "law_research"}])["tier"] == "unreviewed"
+    #  3. each tier needs what its rule says, and a record that falls short is NOT COUNTED - never read down
+    assert say([rule])["tier"] == "checked_by_rule"
+    assert say([{**rule, "test": ""}])["tier"] == "unreviewed"
+    agent = {"tool": T, "tier": "reviewed_by_workstation_agent", "date": "2026-10-05", "checklist": "care checklist v1",
+             "sources_read": ["nice-ng249"], "agent_calibrated": True}
+    assert say([rule, agent])["tier"] == "reviewed_by_workstation_agent"
+    uncal = say([rule, {**agent, "agent_calibrated": False}])
+    assert uncal["tier"] == "checked_by_rule", "an uncalibrated agent's review raised the tier"
+    assert "does not raise its tier" in uncal["uncalibrated_agent_review"] and uncal["records_not_counted"] == 1
+    assert say([{**agent, "sources_read": []}])["tier"] == "unreviewed"
+    person = {"tool": T, "tier": "signed_by_a_qualified_person", "date": "2026-10-10", "name": "A. Reviewer",
+              "credential_as_stated": "registered nurse", "reviewed": "the risk assessment tool, as built on 2026-10-10",
+              "lapses_on": "2027-10-10"}
+    top = say([rule, agent, person])
+    assert top["tier"] == "signed_by_a_qualified_person" and top["records_counted"] == 3
+    assert "A. Reviewer" in top["basis"] and "as stated" in top["basis"] and "does not verify" in top["basis"]
+    #  a signature that has LAPSED, or carries no credential, no name, or no lapse date, does not count
+    for broken in ({"lapses_on": "2026-10-12"}, {"credential_as_stated": ""}, {"name": " "}, {"lapses_on": None}, {"reviewed": ""}):
+        got = say([rule, agent, {**person, **broken}])
+        assert got["tier"] == "reviewed_by_workstation_agent", (broken, got["tier"])
+        assert got["records_not_counted"] == 1 and got["not_counted"][0]["why_not"], broken
+    #  it lapses the day AFTER its date, not on it
+    assert say([{**person, "lapses_on": "2026-10-13"}])["tier"] == "signed_by_a_qualified_person"
+    #  a tier that is not a tier, and a record with no date, are not counted
+    assert say([{**rule, "tier": "approved"}])["tier"] == "unreviewed"
+    assert say([{**rule, "date": "soon"}])["tier"] == "unreviewed"
+    #  4. A STORE THAT CANNOT BE READ is not known - and is never read as reviewed
+    store.write_text("{not json", encoding="utf-8")
+    bad = rt.review_statement(T, today=today)
+    assert bad["tier"] == "unreviewed" and bad["known"] is False and "could not be read" in bad["basis"]
+    #  no label claims a profession for an agent
+    for label in rt.LABEL.values():
+        for word in ("nurse", "solicitor", "doctor", "lawyer", "teacher", "scholar"):
+            assert word not in label.lower()
+
+
+def test_w688_every_domain_tools_answer_carries_its_review_tier_and_the_page_shows_it(client, monkeypatch):
+    import asyncio as _aio
+    import json as _json
+    from agentic_core.api import _ai_provenance as _ap
+    from agentic_core.api import _review_tier as rt
+    #  THE FLOOR EVERY TOOL PASSES THROUGH: the shared helper's provenance carries the statement for the agent
+    #  it was called for. Driven with a capture in the composer's place.
+    async def _fake(prompt, **kw):
+        return {"output": "## Summary\ncomposed text\n", "served_by": "w688-capture", "is_external": False}
+    monkeypatch.setattr(_ap.gateway, "query_meta", _fake)
+    _text, prov = _aio.new_event_loop().run_until_complete(_ap.ai_text("say something", "law_research"))
+    assert prov["review"]["tier"] == "unreviewed" and prov["review"]["label"] == "Unreviewed", prov.get("review")
+    assert prov["review"]["known"] is True and "no review of this tool is recorded" in prov["review"]["basis"]
+    #  when a record exists for THAT tool the same call says so, and another tool's answer does not
+    monkeypatch.setattr(rt, "_records", lambda: [{"tool": "law_research", "tier": "checked_by_rule", "date": "2026-10-01",
+                                                  "rule": "a filing-shaped document is refused", "test": "test_y"}])
+    _t2, p2 = _aio.new_event_loop().run_until_complete(_ap.ai_text("say something", "law_research"))
+    _t3, p3 = _aio.new_event_loop().run_until_complete(_ap.ai_text("say something", "care_handover"))
+    assert p2["review"]["tier"] == "checked_by_rule" and p3["review"]["tier"] == "unreviewed"
+    #  a failure to compute it is SAID, not left off
+    def _boom(tool, today=None):
+        raise RuntimeError("store gone")
+    monkeypatch.setattr(rt, "review_statement", _boom)
+    _t4, p4 = _aio.new_event_loop().run_until_complete(_ap.ai_text("say something", "law_research"))
+    assert p4["review"]["known"] is False and "could not be computed" in p4["review"]["basis"]
+    monkeypatch.undo()
+    #  THROUGH A REAL ROUTE: a domain tool's answer carries it
+    r = client.post("/api/v1/science/hypothesis", json={"research_question": "does blue light change plant growth?"})
+    assert r.status_code == 200, (r.status_code, r.text[:200])
+    body = r.json()
+    review = (body.get("ai_provenance") or {}).get("review") or {}
+    assert review.get("label") == "Unreviewed" and review.get("tier") == "unreviewed", _json.dumps(body)[:400]
+    #  THE PAGE shows the server's label and sentence where the answer is, gated on there being one, and the
+    #  text a person downloads carries it
+    page = (__import__("pathlib").Path(__file__).resolve().parents[1]
+            / "apps/workstation-superapp/src/components/DomainTool.tsx").read_text(encoding="utf-8")
+    assert "{(effectiveProv as any)?.review?.label && (" in page and 'data-testid="domain-review-tier"' in page
+    assert "{(effectiveProv as any).review.basis}" in page
+    assert "[Review: ${data.ai_provenance.review.label} — ${data.ai_provenance.review.basis}]" in page
+    assert "Unreviewed" not in page, "the page types a tier instead of printing the server's"
