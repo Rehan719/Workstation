@@ -112,18 +112,21 @@ interface PwaManifest {
 //     ranked, and it carries no verification — so the tile says that rather than borrowing another
 //     stage's. Key PRESENCE is not evidence: on a blocked journey `phase_2_design_development` is
 //     present and 133 characters long, holding the "no deliverable" placeholder.
-type RailState = { done: boolean; label: 'verified' | 'ran' | 'not run' | 'not known'; why: string };
+type RailState = { done: boolean; label: 'verified' | 'ran' | 'not ranked' | 'not run' | 'not known'; why: string };
 const railState = (key: string | null, r: JourneyResult | null): RailState => {
   if (!r) return { done: false, label: 'not known', why: 'no journey has been run in this session' };
   if (!key) {
     const ranked = (r.stage_5_model_simulate_rank?.candidates ?? []).length;
+    //  W699 (a RETURNED audit finding) — the sentence said nothing was ranked, in a tooltip, under a lit tile
+    //  chipped "ran". When the server says the candidates are not alternatives the tile is NOT lit and its
+    //  chip says so; the sentence is printed under every chip, so no state's reason lives in a tooltip.
+    if (ranked && r.stage_5_model_simulate_rank?.candidates_are_alternatives === false) {
+      return { done: false, label: 'not ranked',
+               why: `${ranked} candidate text(s) were produced and they are not alternatives (the server found them identical or tied), so nothing was modelled apart or ranked. This stage carries no §10 verification entry.` };
+    }
     return ranked
       ? { done: true, label: 'ran',
-          //  W644 (FU-624) — the server already says when the candidates are NOT alternatives (identical
-          //  texts, a tie); the tile said "modelled and ranked" over them regardless
-          why: (r.stage_5_model_simulate_rank?.candidates_are_alternatives === false
-            ? `${ranked} candidate text(s) were produced and they are not alternatives (the server found them identical or tied), so nothing was modelled apart or ranked. This stage carries no §10 verification entry.`
-            : `${ranked} candidate(s) were modelled and ranked. This stage carries no §10 verification entry, so nothing has been verified about it.`) }
+          why: `${ranked} candidate(s) were modelled and ranked. This stage carries no §10 verification entry, so nothing has been verified about it.` }
       : { done: false, label: 'not run', why: 'no candidates were modelled or ranked on this journey' };
   }
   const v = r.stage_verifications?.[key];
@@ -220,7 +223,7 @@ export const GenesisJourney: React.FC = () => {
   const [vsb, setVsb] = useState<{ vsb_id: string; name: string; dashboard: string; governance?: any;
     name_pending?: boolean; name_source?: string; body_pending?: Record<string, boolean>; initial_ship?: any;
     // W496 (FU-100) — the entity's DERIVED status and the facts it was derived from
-    status?: string; status_basis?: string;
+    status?: string; status_basis?: string; operating_means?: string | null;
     // W573 (M1 R2.0) — the entity has always said whether anything actually tends it; the page just
     // never read it, and ticked "Operate" from the existence of a repo instead.
     living?: { autonomous_cycles?: boolean; autonomous_operation?: string } } | null>(null);
@@ -657,14 +660,17 @@ export const GenesisJourney: React.FC = () => {
                 {/* W573 (M1 R2.3) — what this stage actually did, with the journey's own basis behind
                     it. "ran" and "verified" are not the same claim and neither is "complete". */}
                 {result && (
-                  <span data-testid={`rail-state-${i + 1}`} title={st.why}
+                  <span data-testid={`rail-state-${i + 1}`}
                         className={`inline-block mt-2 text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${
                           st.label === 'verified' ? 'bg-emerald-500/15 text-emerald-400'
                           : st.label === 'ran' ? 'bg-sky-500/15 text-sky-300'
-                          : st.label === 'not run' ? 'bg-amber-500/20 text-amber-400'
+                          : st.label === 'not run' || st.label === 'not ranked' ? 'bg-amber-500/20 text-amber-400'
                           : 'bg-slate-800 text-slate-500'}`}>
                     {st.label}
                   </span>
+                )}
+                {result && (
+                  <p data-testid={`rail-why-${i + 1}`} className="text-[8px] text-slate-500 mt-1 leading-relaxed">{st.why}</p>
                 )}
               </div>
             );
@@ -1127,15 +1133,19 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                     </div>
                   )}
                   {vsb.body_pending && Object.values(vsb.body_pending).some(Boolean) && (
-                    <p className="text-[9px] text-amber-400/80 mt-1" title="the deterministic floor served these stages; their text is not this enterprise's own">
+                    <p className="text-[9px] text-amber-400/80 mt-1" data-testid="genesis-vsb-pending">
                       Pending the owned model: {Object.entries(vsb.body_pending).filter(([, v]) => v).map(([k]) => k).join(' · ')} — the body ships the founder's words plus an honest pending state, never floor scaffold.
+                      {' '}The deterministic floor served these stages; their text is not this enterprise's own.{' '}
+                      <button type="button" data-testid="genesis-vsb-write-sections" className="underline text-amber-300"
+                              onClick={() => navigate(`/vsb-cockpit?vsb=${encodeURIComponent(vsb.vsb_id)}`)}>
+                        Write these sections in the Cockpit →
+                      </button>
                     </p>
                   )}
                   {/* W496 (FU-100) - "operational" was a LITERAL here, printed over entities with four
                       body sections pending, a failed first compliance screen and Self-run off. The
                       backend now derives the status from those facts and sends its basis. */}
-                  <p className="text-[10px] text-slate-500 font-mono" data-testid="genesis-vsb-status"
-                     title={vsb.status_basis || 'the response did not say what this status was derived from'}>
+                  <p className="text-[10px] text-slate-500 font-mono" data-testid="genesis-vsb-status">
                     {/* W505 (FU-158, S3.19) — the gate screened the establish INTENT and domain, never the
                         enterprise's content, so a bare "governance allowed" sat beside a failed compliance
                         screen and read as a clearance. The strip above this page's result already says so;
@@ -1143,8 +1153,13 @@ Document-controlled under the QMS (DCMS) · record ${result.quality_assurance.qu
                     {vsb.vsb_id} · {vsb.status ?? 'status not reported'} · intent gate {vsb.governance?.status ?? 'not reported'}
                     {vsb.governance?.content_screened === false ? ' (the intent only — not this enterprise\'s content)' : ''}
                   </p>
-                  {vsb.status_basis && (
+                  {vsb.status_basis ? (
                     <p className="text-[9px] text-slate-500 mt-1" data-testid="genesis-vsb-status-basis">{vsb.status_basis}</p>
+                  ) : (
+                    <p className="text-[9px] text-slate-600 mt-1" data-testid="genesis-vsb-status-basis-absent">The response did not say what this status was derived from.</p>
+                  )}
+                  {vsb.operating_means && (
+                    <p className="text-[9px] text-slate-500 mt-1" data-testid="genesis-vsb-operating-means">{vsb.operating_means}</p>
                   )}
                   {/* W496 (FU-100) - emerald asserted a healthy outcome; the colour follows the state */}
                   <p className={`text-[10px] font-bold mt-1 ${vsb.status === 'operating' ? 'text-emerald-400' : 'text-slate-400'}`}>

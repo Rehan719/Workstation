@@ -107,9 +107,11 @@ const EditCascade: React.FC<{ cascadeId: string; onSaved: () => void }> = ({ cas
                  onChange={e => setStages(stages!.map((x, j) => j === i ? { ...x, instruction: e.target.value } : x))}
                  className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-[10px] text-white focus:outline-none focus:border-aura/30" />
           {st.model && (
-            <span data-testid="cascade-edit-stage-model" className="self-center text-[9px] font-mono text-slate-500"
-                  title="The owned resource this stage asks for. It is kept when you save. Change it in the cascade designer on the Native AI page.">
+            <span data-testid="cascade-edit-stage-model" className="self-center text-[9px] font-mono text-slate-500">
               asks for {st.model}
+              <span className="block font-sans text-slate-600" data-testid="cascade-edit-stage-model-where">
+                kept when you save; change it in the cascade designer on the Native AI page
+              </span>
             </span>
           )}
           <button type="button" aria-label="Remove this stage"

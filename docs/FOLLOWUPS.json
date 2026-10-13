@@ -16766,11 +16766,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W699",
       "note": "",
       "slot_source": "what a closed tier-3 bundle row left undone; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The bottom line's basis is printed as text under the figure; the tooltip is gone.",
+      "reachability_check": "test_w699_a_reason_is_printed_where_it_is_read_and_never_left_in_a_tooltip"
     },
     {
       "id": "FU-860",
@@ -16856,11 +16860,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W699",
       "note": "",
       "slot_source": "what a closed tier-3 bundle row left undone; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The pending-sections line says in text what the tooltip said and links to the Cockpit's box for this entity.",
+      "reachability_check": "test_w699_a_reason_is_printed_where_it_is_read_and_never_left_in_a_tooltip"
     },
     {
       "id": "FU-865",
@@ -16968,11 +16976,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W699",
       "note": "",
       "slot_source": "what a closed tier-3 bundle row left undone; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Both establish answers carry what operating means, from the one function the read view uses, and the result card prints it; the status basis is text and its absence is said.",
+      "reachability_check": "test_w699_a_reason_is_printed_where_it_is_read_and_never_left_in_a_tooltip"
     },
     {
       "id": "FU-871",
@@ -17283,11 +17295,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W699",
       "note": "",
       "slot_source": "found in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A payout request that is approved and not applied has a button that puts its amount in the request box; the person still presses Request. Virtual units.",
+      "reachability_check": "test_w699_a_reason_is_printed_where_it_is_read_and_never_left_in_a_tooltip"
     },
     {
       "id": "FU-887",
@@ -18373,11 +18389,15 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W699",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Candidates the server says are not alternatives no longer light the tile or chip it as ran: the tile is unlit, chipped not ranked, and every tile's reason is printed under its chip. A returned audit finding.",
+      "reachability_check": "test_w699_a_reason_is_printed_where_it_is_read_and_never_left_in_a_tooltip"
     },
     {
       "id": "FU-943",
@@ -20911,6 +20931,22 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.32",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-1071",
+      "title": "The Windows build job lost a worker to an access violation once",
+      "why": "On 2026-10-13 the Windows suite of pull request 408 ended 820 passed, 1 failed: a worker died with 'Windows fatal exception: access violation' while a registers test ran, and the test was reported failed for the crash. Linux passed on the same commit. The failed job was re-run once. One occurrence is not a rate: record each recurrence here with the test that was running, and read the faulting module from the dump if it happens again before changing anything.",
+      "source": "W699 (found on the build server while merging the rounds before it)",
+      "found": "2026-10-13",
+      "files": [
+        ".github/workflows/spine.yml"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.1",
       "status": "open",
       "closed_by": null,
       "note": ""
