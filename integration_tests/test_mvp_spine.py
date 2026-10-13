@@ -63146,3 +63146,42 @@ def test_w689_a_review_is_recorded_through_one_door_and_a_short_record_is_refuse
     from agentic_core.auth.core import require_admin as _ra
     route = next(r for r in _app.routes if getattr(r, "path", "") == "/api/v1/review/record")
     assert any(getattr(d, "call", None) is _ra for d in route.dependant.dependencies), "the review door is not the administrator's"
+
+
+def test_w690_the_review_records_are_on_the_governance_page_and_every_sentence_is_the_servers():
+    #  REACH: the records of review have a tab on the governance page; the page decides nothing about a record.
+    _root = __import__("pathlib").Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages" / "governance"
+    centre = (_root / "GovernanceCenter.tsx").read_text(encoding="utf-8")
+    panel = (_root / "ReviewRecords.tsx").read_text(encoding="utf-8")
+    assert "import { ReviewRecords } from './ReviewRecords';" in centre
+    assert "{ id: 'review',       name: 'Review',       icon: ClipboardCheck, El: ReviewRecords }," in centre
+    #  the two routes it calls are the two the last round built
+    assert "apiJson<Listing>('/api/v1/review/records')" in panel
+    assert "apiJson<any>('/api/v1/review/record', { method: 'POST', body })" in panel
+    #  each sentence about the records is a field of the answer, printed once
+    for field in ("{listing.basis}", "{listing.credential_basis}", "{r.why_not}"):
+        assert panel.count(field) == 1, field
+    #  why a record does not count shows exactly when it does not count and a reason was given
+    assert "{!r.counts && r.why_not && (" in panel
+    #  a store that cannot be read shows the server's refusal and NO list: the two are separate states
+    assert ".catch(e => { setListing(null); setLoadErr(errorMessage(e)); });" in panel
+    assert "{loadErr && <p data-testid=\"review-records-unread\"" in panel
+    #  a refusal is shown in the route's own words, and what the tool now says is the route's too
+    assert "} catch (e) { setErr(errorMessage(e)); }" in panel and "{err && <p data-testid=\"review-record-refused\"" in panel
+    assert "d.tool_now_says?.label" in panel and "d.tool_now_says?.basis" in panel and "d.kept_basis" in panel
+    #  the page sends only what was typed: an empty field is not sent, so the route's own refusal is what a
+    #  person meets - the page does not pre-judge a record
+    assert "if (!v) continue;" in panel
+    #  whether the agent is calibrated is the person's own tick, sent as they set it, never assumed
+    assert "if (tier === 'reviewed_by_workstation_agent') body.agent_calibrated = calibrated;" in panel
+    assert "const [calibrated, setCalibrated] = useState(false);" in panel, "the page starts with the agent ticked as calibrated"
+    #  the page words no verdict of its own (read with comments removed)
+    import re as _re
+    shown = _re.sub(r"//[^\n]*|\{/\*.*?\*/\}", "", panel, flags=_re.S).lower()
+    for word in ("approved", "verified by", "certified", "qualified reviewer says", "passed review"):
+        assert word not in shown, f"the review page says {word!r}"
+    #  the tiers offered are the three the server knows, by its own ids
+    from agentic_core.api import _review_tier as rt
+    for tier in rt.ORDER[1:]:
+        assert f"id: '{tier}'" in panel, tier
+    assert panel.count("{ id: '") == len(rt.ORDER[1:]), "the page offers a tier the server does not have"

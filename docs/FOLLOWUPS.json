@@ -20755,11 +20755,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.15",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W690",
       "note": "",
       "slot_source": "the review cell item's own clauses 1, 2 and 5",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "a Review tab on the governance page lists every record with whether it counts and why not in the server's words, shows each tool's label, and records one through the route; a short record is refused in the route's words. Checked in the browser on a fresh store",
+      "reachability_check": "test_w690_the_review_records_are_on_the_governance_page_and_every_sentence_is_the_servers"
     }
   ],
   "routes": [
