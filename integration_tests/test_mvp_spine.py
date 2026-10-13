@@ -62757,7 +62757,7 @@ def test_w686_the_read_only_role_is_refused_every_write_and_no_read(client, monk
     assert _aio.new_event_loop().run_until_complete(auth_core.get_current_user(tok))["role"] == "viewer"
 
 
-def test_the_windows_job_runs_the_same_suite_and_is_advisory_and_gates_nothing():
+def test_the_windows_job_runs_the_same_suite_and_is_required():
     #  OWNER RULING 2026-10-12: the suite also runs on Windows on the build server, ADVISORY until three green
     #  rounds. Read as DATA: the workflow is parsed, and the two jobs are compared field by field so they cannot
     #  drift apart while one of them is still only advisory.
@@ -62767,9 +62767,11 @@ def test_the_windows_job_runs_the_same_suite_and_is_advisory_and_gates_nothing()
     assert "backend-windows" in jobs, "the Windows job is gone"
     win, lin = jobs["backend-windows"], jobs["backend"]
     assert win["runs-on"] == "windows-latest" and lin["runs-on"] == "ubuntu-latest"
-    assert win.get("continue-on-error") is True, (
-        "the Windows job is no longer advisory - that is the Owner's step to take after three green rounds, "
-        "and when it is taken this line and the plan's count change together")
+    #  OWNER RULING 2026-10-13 ("make it required", after four green rounds): the job is no longer advisory. A
+    #  failure on Windows fails the run exactly as one on Linux does.
+    assert not win.get("continue-on-error"), (
+        "the Windows job was made advisory again - the Owner ruled it required on 2026-10-13")
+    assert "advisory" not in str(win.get("name", "")).lower(), "the job's name still says it is advisory"
     assert not lin.get("continue-on-error"), "the gate itself was made advisory"
     #  W688 - its first run failed four guards for one cause: files checked out with converted line endings. The
     #  conversion is switched off, and BEFORE the checkout - after it, the files are already converted.
@@ -62786,9 +62788,10 @@ def test_the_windows_job_runs_the_same_suite_and_is_advisory_and_gates_nothing()
         text = "\n".join(str(s["run"]) for s in job["steps"] if "run" in s)
         return sorted(" ".join(l.split("#")[0].split()) for l in text.splitlines() if l.strip().startswith(("pip install", "python -m pip install")))
     assert installs(win) == installs(lin), (installs(win), installs(lin))
-    #  an advisory job gates nothing: no job waits on it
+    #  the two suites run side by side: neither waits on the other, so a failure on one is not hidden by the
+    #  other never starting
     waited_on = {n for j in jobs.values() for n in ([j["needs"]] if isinstance(j.get("needs"), str) else (j.get("needs") or []))}
-    assert "backend-windows" not in waited_on
+    assert "backend-windows" not in waited_on and "backend" not in waited_on
     #  both check out the whole history (the suite walks commits)
     for job in (win, lin):
         co = next(s for s in job["steps"] if str(s.get("uses", "")).startswith("actions/checkout"))
@@ -63290,3 +63293,103 @@ def test_w691_a_reviewer_agent_is_calibrated_by_its_recorded_run_and_never_by_a_
     runs.write_text("{not json", encoding="utf-8")
     broken = cal.calibration_of("care-reviewer")
     assert broken["calibrated"] is False and broken["known"] is False
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W692 - three existing rows with one cause: something is measured, or is not, and no answer said which.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w692_the_perimeter_is_reported_on_a_surface_and_says_what_it_cannot_see(client, monkeypatch):
+    r = client.get("/api/v1/registers/perimeter")
+    assert r.status_code == 200, r.text[:300]
+    p = r.json()
+    assert p["measured"] is True and p["declared_list_present"] is True
+    assert p["route_methods"] == p["ask_who_is_calling"] + p["declared_public"] + p["owed"] + p["undecided"]
+    assert p["ask_who_is_calling"] > 400 and p["undecided"] == 0 and p["passes"] is True
+    assert p["public_that_write"] == 3
+    #  it does NOT claim isolation: the count of routes that ask is said not to be that
+    assert "not a count of routes that isolate" in p["basis"] and "USES the answer" in p["cannot_see"]
+    #  counts only - no address of any route is listed
+    assert "/api/" not in json.dumps({k: v for k, v in p.items() if k not in ("basis", "cannot_see")})
+    #  THE FIGURES ARE THE INSTRUMENT'S, not typed: an undecided route made to happen is counted by the answer
+    import agentic_core.api.registers as _reg
+    _real = _reg._script
+
+    class _Stub:
+        def __init__(self, mod):
+            self._m = mod
+
+        def measure(self):
+            rows, names, has = self._m.measure()
+            return rows + [{"method": "POST", "path": "/made-up", "state": "UNDECIDED", "writes": True,
+                            "module": "agentic_core.api.made_up", "stale_declaration": False}], names, has
+
+        def verdict(self, rows, has, strict=False):
+            return self._m.verdict(rows, has, strict=strict)
+    monkeypatch.setattr(_reg, "_script", lambda name: _Stub(_real(name)))
+    q = client.get("/api/v1/registers/perimeter").json()
+    assert q["undecided"] == 1 and q["passes"] is False and q["route_methods"] == p["route_methods"] + 1
+    #  ... and a route a test added to the shared application is left out, by the module that defines it
+    class _Stub2(_Stub):
+        def measure(self):
+            rows, names, has = self._m.measure()
+            return rows + [{"method": "POST", "path": "/probe", "state": "UNDECIDED", "writes": True,
+                            "module": "integration_tests.test_mvp_spine", "stale_declaration": False}], names, has
+    monkeypatch.setattr(_reg, "_script", lambda name: _Stub2(_real(name)))
+    assert client.get("/api/v1/registers/perimeter").json()["undecided"] == 0
+    #  a measure that cannot be made is refused - never answered as "nothing undecided"
+    def _boom(name):
+        raise RuntimeError("no script")
+    monkeypatch.setattr(_reg, "_script", _boom)
+    assert client.get("/api/v1/registers/perimeter").status_code == 503
+    monkeypatch.undo()
+    #  the answer itself asks who is calling (authentication on in this process only)
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    assert client.get("/api/v1/registers/perimeter").status_code == 401
+    assert client.get("/api/v1/registers/sources").status_code == 200      # the published registers stay open
+
+
+def test_w692_an_endpoint_nothing_verified_is_not_counted_as_checked(tmp_path, monkeypatch, capsys):
+    import importlib.util as _ilu
+    import json as _json
+    _spec = _ilu.spec_from_file_location("_w692_mi", str(__import__("pathlib").Path(__file__).resolve().parents[1] / "scripts" / "method_instruments.py"))
+    mi = _ilu.module_from_spec(_spec)
+    _spec.loader.exec_module(mi)
+    doc = {"lessons": [{"id": "L-W692", "enforced_by": "docs/DELIVERY_METHOD.json",
+                        "entry_points": ["GET /api/v1/health", "POST /api/v1/method/derive"]}], "mechanisms": []}
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "DELIVERY_METHOD.json").write_text(_json.dumps(doc), encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    #  1. the application builds: the path and both endpoints are checked
+    monkeypatch.setattr(mi, "_ROUTES", {"/api/v1/health", "/api/v1/method/derive"})
+    capsys.readouterr()
+    assert mi.main() == 0
+    out = capsys.readouterr().out
+    assert "3 named instrument(s) checked" in out and "NOT VERIFIED" not in out, out
+    #  2. THE APPLICATION COULD NOT BE BUILT: the two endpoints are NOT counted, are named as not verified, and
+    #     the run does not pass
+    monkeypatch.setattr(mi, "_ROUTES", {"__unavailable__"})
+    assert mi.main() == 1, "endpoints nothing verified were reported as resolving"
+    out = capsys.readouterr().out
+    assert "1 named instrument(s) checked" in out, out
+    assert "NOT VERIFIED: 2 named endpoint(s)" in out and "were NOT verified" in out, out
+    assert "every named path, guard and function resolves.\n" not in out
+    #  3. an endpoint that is not a route is still caught when the application builds
+    monkeypatch.setattr(mi, "_ROUTES", {"/api/v1/health"})
+    assert mi.main() == 1 and "ROUTE" in capsys.readouterr().out
+
+
+def test_w692_the_preferences_route_nobody_read_is_retired_and_its_code_is_kept(client, monkeypatch):
+    import agentic_core.api.integration_surface as _is
+    assert _is.USER_PREFERENCES_ROUTE_RETIRED is True
+    r = client.get("/api/v260/user/preferences?user_id=someone-else")
+    assert r.status_code == 410 and "/api/v1/user/profile" in r.json()["detail"] and set(r.json()) == {"detail"}
+    #  the route the refusal points at is really there
+    from agentic_core.app_mvp import app as _app
+    assert any(getattr(x, "path", "") == "/api/v1/user/profile" for x in _app.routes)
+    #  nothing in the pages calls the retired route
+    _src = __import__("pathlib").Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+    callers = [str(f) for f in _src.rglob("*.ts*") if "v260/user/preferences" in f.read_text(encoding="utf-8", errors="ignore")]
+    assert not callers, callers
+    #  the code is kept: with the switch off it answers as before
+    monkeypatch.setattr(_is, "USER_PREFERENCES_ROUTE_RETIRED", False)
+    assert client.get("/api/v260/user/preferences").status_code == 200

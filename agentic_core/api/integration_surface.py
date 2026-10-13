@@ -383,8 +383,18 @@ class Activity(BaseModel):
     detail: str = ""
 
 
+#  W692 - RETIRED, its code kept. The audit named this route as read by nobody; no page and no test calls it.
+#  It answered any caller with the stored preferences of whatever id was sent. A person's preferences are served
+#  by the profile routes, which ask who is calling.
+USER_PREFERENCES_ROUTE_RETIRED = True
+
+
 @router.get("/api/v260/user/preferences")
 async def user_prefs(user_id: str = "default"):
+    if USER_PREFERENCES_ROUTE_RETIRED:
+        raise HTTPException(status_code=410, detail=(
+            "This route is retired: nothing read it, and it answered with the stored preferences of any id sent. "
+            "A person's own profile is served at /api/v1/user/profile, which asks who is calling."))
     p = _store(f"prefs_{user_id}.json")
     if p.exists():
         try:

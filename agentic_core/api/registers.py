@@ -14,7 +14,9 @@ import importlib.util
 import pathlib
 from typing import Any, Dict
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+
+from agentic_core.auth.core import get_current_user
 
 router = APIRouter(prefix="/api/v1/registers", tags=["registers"])
 
@@ -67,3 +69,37 @@ async def coverage(domain: str = "") -> Dict[str, Any]:
             f"what a person can do on this platform."))
     return {"about": d.get("about"), "rows": d["rows"], "by_domain": res["by_domain"], "a_person_can_do": res["a_person_can_do"],
             "problems": res["problems"], "generated": False, "basis": res["basis"]}
+
+
+@router.get("/perimeter", dependencies=[Depends(get_current_user)])
+async def perimeter() -> Dict[str, Any]:
+    """WHO MAY CALL WHAT, MEASURED NOW from the mounted application by the same instrument the suite runs.
+
+    The audit's finding was two things: most routes asked for no caller, and NO SURFACE said so. The first was
+    closed at the mount; this is the second. It reports counts, never a list of addresses, and it says what the
+    measure cannot see - which is the larger half of user isolation: that a route which asks who is calling also
+    checks the record is the caller's."""
+    try:
+        ap = _script("auth_perimeter")
+        rows, names, has_list = ap.measure()
+    except Exception as e:                      # noqa: BLE001
+        raise HTTPException(status_code=503, detail=(
+            f"The perimeter could not be measured ({type(e).__name__}), so nothing can be said here about which "
+            f"routes ask who is calling."))
+    #  a route a test adds to the shared application is not the product's; left out by the module that defines it
+    rows = [r for r in rows if "test_mvp_spine" not in (r.get("module") or "")]
+    by = {s: sum(1 for r in rows if r["state"] == s) for s in ("asks", "public", "OWED", "UNDECIDED")}
+    return {
+        "route_methods": len(rows), "ask_who_is_calling": by["asks"], "declared_public": by["public"],
+        "owed": by["OWED"], "undecided": by["UNDECIDED"],
+        "public_that_write": sum(1 for r in rows if r["state"] == "public" and r["writes"]),
+        "declared_list_present": bool(has_list), "passes": ap.verdict(rows, has_list) == 0,
+        "passes_before_the_switch": ap.verdict(rows, has_list, strict=True) == 0,
+        "caller_dependencies_looked_for": names, "measured": True,
+        "cannot_see": ("that a handler which asks who is calling USES the answer - that the record it reads or "
+                       "changes is the caller's. That is driven separately, group by group, and today only for "
+                       "entities and business plans. Nor what a route does with authentication on beyond what the "
+                       "suite drives"),
+        "basis": ("read from every mounted route's resolved dependencies against docs/PUBLIC_ROUTES.json. A count "
+                  "of routes that ASK is not a count of routes that isolate one person's records from another's"),
+    }
