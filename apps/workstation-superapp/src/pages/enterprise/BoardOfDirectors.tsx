@@ -23,7 +23,7 @@ interface Charter {
 // W464 (FU-012) — a HIGH change a review approved, waiting for the Board (GET /api/v1/board/ratifications)
 interface PendingRatification {
   cca_id: string; title: string; change_type?: string; impact_tier?: string;
-  decision_source?: string; approved_at?: string | null; submitted_by?: string; vsb_id?: string | null;
+  decision_source?: string; decision_source_inferred?: boolean; approved_at?: string | null; submitted_by?: string; vsb_id?: string | null;
   description?: string; review_result?: string;
   twin_prevalidation?: { verdict?: string; source?: string; source_label?: string } | null;
 }
@@ -273,6 +273,9 @@ export const BoardOfDirectors: React.FC = () => {
                 : q.decision_source === 'health_threshold_rule' ? 'the organism-health threshold rule (not the model)'
                 : q.decision_source === 'unrecorded_decision' ? 'a decision made before W459 that recorded no source (read as a review\u2019s)'
                 : q.decision_source}
+              {q.decision_source_inferred && (
+                <span data-testid="ratification-source-inferred"> (read from the record\u2019s shape; the record itself names no source)</span>
+              )}
               {q.approved_at ? ` · ${q.approved_at}` : ''}{q.submitted_by ? ` · submitted by ${q.submitted_by}` : ''}{q.vsb_id ? ` · VSB ${q.vsb_id}` : ''}
             </p>
             <p className="text-[11px] text-slate-500">

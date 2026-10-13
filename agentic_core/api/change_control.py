@@ -292,6 +292,7 @@ def _list_changes(status_filter: str | None = None) -> list[dict]:
                 "decision": c.get("decision"),
                 # W464 (FU-012) — what decided it, and whether the approval still waits for the Board
                 "decision_source": approval_source(c),
+                "decision_source_inferred": source_inferred(c),      # W701 - the list says it as the record does
                 "awaiting_board_ratification": awaiting_board_ratification(c),
                 "board_ratification": _ratification_decision(c),
                 # W463 — a held record (awaiting an explicit decision) and an economy hold's current amount
@@ -407,6 +408,13 @@ def _stamp_effective_tier(fresh: dict) -> None:
 def _ratification_decision(c: dict) -> str | None:
     r = c.get("board_ratification") if isinstance(c, dict) else None
     return r.get("decision") if isinstance(r, dict) else None
+
+
+def source_inferred(c: dict) -> bool:
+    """W701 - True when the record names no source and one is READ from its shape (a record decided before the
+    source was kept). One function for every answer that carries `decision_source`: the single record said
+    this and the two lists beside it showed the same word with nothing to tell a reader it was a reading."""
+    return bool(isinstance(c, dict) and not c.get("decision_source") and approval_source(c))
 
 
 def approval_source(c: dict) -> str | None:
@@ -1522,7 +1530,7 @@ async def get_change(cca_id: str):
             **({"impact_tier_filed": c.get("impact_tier")} if tier != c.get("impact_tier") else {}),
             # a record decided before W459 carries no decision_source: say what it is read as (approval_source)
             **({"decision_source": approval_source(c), "decision_source_inferred": True}
-               if not c.get("decision_source") and approval_source(c) else {}),
+               if source_inferred(c) else {}),
             "awaiting_board_ratification": awaiting_board_ratification(c)}
 
 
@@ -2214,6 +2222,7 @@ def pending_ratifications() -> list[dict]:
         rows.append({"cca_id": c["cca_id"], "title": c.get("title", ""), "change_type": c.get("change_type"),
                      "impact_tier": effective_tier(c), "status": c.get("status"),
                      "decision_source": approval_source(c), "approved_at": approved_at,
+                     "decision_source_inferred": source_inferred(c),     # W701 - and the Board's queue
                      "submitted_by": c.get("submitted_by"), "submitted_at": c.get("submitted_at"),
                      "vsb_id": c.get("vsb_id"), "description": str(c.get("description") or "")[:600],
                      "review_result": str(c.get("review_result") or "")[:1200],

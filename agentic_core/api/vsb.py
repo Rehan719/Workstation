@@ -2303,14 +2303,17 @@ def _derived_status(vsb: dict) -> tuple:
                 + ", ".join(f"{b['stage']} {b['status']}" for b in blk))
     pend = [k for k, v in (vsb.get("body_pending") or {}).items() if v]
     if pend:
+        #  W701 - the sections NOBODY PROVIDED were said only beside `operating`. An entity that is waiting,
+        #  or not operating, has the same absent sections and its basis said nothing of them.
         return ("body pending", f"{len(pend)} body section(s) still await the owned model: "
-                                + ", ".join(sorted(pend)))
+                                + ", ".join(sorted(pend)) + _absent_clause(vsb))
     try:
         from agentic_core.economy.living_vsbs import living_statement
         _live = living_statement()
         if not _live.get("autonomous_cycles"):
             return ("registered - not operating", str(_live.get("autonomous_operation")
-                                                     or "autonomous economy cycles are off"))
+                                                     or "autonomous economy cycles are off")
+                    + _absent_clause(vsb))
     except Exception as e:
         return ("registered - operation unknown",
                 f"the living roster could not be read, so whether anything tends this entity is not "
