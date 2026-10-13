@@ -24,6 +24,8 @@ from agentic_core.config import atomic_write_json, data_path
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
+from agentic_core.api._ai_provenance import reply_evidence as _reply_evidence   # W709
+from agentic_core.api._ai_provenance import no_reply_evidence as _no_reply_evidence   # W709: supplied, not served
 from fastapi.responses import Response
 from pydantic import BaseModel
 
@@ -154,7 +156,7 @@ async def _generate(d_type: str, title: str, brief: str, domain: str,
         # spent W419 removing. Derived from the prompt that was really sent.
         "improved_from_prior": bool(prior.strip()),
         "improvement_focus": _weakest_sections(prior, secs) if prior.strip() else [],
-        "ai_provenance": {
+        "ai_provenance": {**_reply_evidence(meta.get('served_by', 'native')), 
             "posture": "in-house-first",
             "served_by": meta.get("served_by", "native"),
             "is_external": bool(meta.get("is_external")),
@@ -278,7 +280,7 @@ async def produce(req: ProduceRequest, user: dict | None = Depends(get_current_u
                "structure_basis": (("the sections were read from the supplied text's own headings, so its "
                                     "coverage of them is 1.0 by construction; declare the sections it should "
                                     "have and it is measured against those") if _self_derived else None),
-               "ai_provenance": {"served_by": "verbatim-ingest", "is_external": False,
+               "ai_provenance": {**_no_reply_evidence(), "served_by": "verbatim-ingest", "is_external": False,
                                  "source_served_by": req.source_served_by,
                                  "note": "content supplied verbatim by the caller — not regenerated"}}
     else:
@@ -363,7 +365,7 @@ async def list_deliverables(vsb_id: Optional[str] = None,
     rows = [d for d in _load() if user_can_access(_u, d.get("owner_id"))]   # §14 (W320)
     if vsb_id:
         rows = [d for d in rows if d.get("vsb_id") == vsb_id]
-    summaries = [{"id": d["id"], "type": d["type"], "title": d["title"], "vsb_id": d.get("vsb_id"),
+    summaries = [{**_reply_evidence(d.get('ai_provenance', {}).get('served_by')), "id": d["id"], "type": d["type"], "title": d["title"], "vsb_id": d.get("vsb_id"),
                   "versions": len(d.get("versions", [])), "served_by": d.get("ai_provenance", {}).get("served_by"),
                   # W490 (refutation) — without this the ROW badge dropped an opt-in external serve to
                   # emerald "in-house" while the DETAIL pane one level down showed amber "via <token>"
@@ -1126,7 +1128,7 @@ async def regenerate(deliverable_id: str, req: RegenerateRequest,
                 gen = {"content": req.content, "sections": sections or [
                            m.group(1).strip() for m in
                            re.finditer(r"^#{1,2}\s+(.+)$", req.content, flags=re.M)][:24],
-                       "ai_provenance": {"served_by": "verbatim-ingest", "is_external": False,
+                       "ai_provenance": {**_no_reply_evidence(), "served_by": "verbatim-ingest", "is_external": False,
                                          "source_served_by": req.source_served_by,
                                          "note": "refined content supplied verbatim — not regenerated"}}
             else:

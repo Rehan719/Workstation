@@ -59,8 +59,10 @@ def is_refusal(answer: Any) -> bool:
 
 _NO_REPLY_EVIDENCE = {
     "evidence_level": None, "evidence_level_number": None,
-    "evidence_basis": ("NOT SERVED: nothing was asked of a resource for this, so there is no behaviour to state "
-                       "and it carries no level")}
+    #  W709 - it covers a call that was made and did not answer as well as no call at all: either way no
+    #  resource gave a reply, and the first wording ("nothing was asked") was false of a failed call
+    "evidence_basis": ("NOT SERVED: no resource gave a reply for this - nothing was asked, or what was asked did "
+                       "not answer - so there is no behaviour to state and it carries no level")}
 
 
 def no_reply_evidence() -> Dict[str, Any]:
