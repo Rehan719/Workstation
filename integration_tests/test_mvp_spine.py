@@ -6432,7 +6432,9 @@ def test_genesis_journey_establish_seam(client):
     assert r0.json().get("enterprise_operating") is None, "a journey that established nothing reports an operating state"
     _gj644 = _code_only((__import__("pathlib").Path(__file__).resolve().parents[1]
                          / "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8"))
-    assert "candidates_are_alternatives === false\n            ? `${ranked} candidate text(s) were produced and they are not alternatives" in _gj644, (
+    #  W699 - the flag is now read BEFORE the lit state: such a tile is unlit and chipped as not ranked
+    assert ("candidates_are_alternatives === false) {\n      return { done: false, label: 'not ranked'," in _gj644
+            and "candidate text(s) were produced and they are not alternatives" in _gj644), (
         "the rank tile says candidates were modelled and ranked without reading the server's own flag (FU-624)")
 
 
