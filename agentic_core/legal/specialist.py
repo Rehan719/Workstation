@@ -26,8 +26,8 @@ FILING_SHAPED = ("et1_claim", "cease_desist")
 #  Schedule 2). Whether a given deed falls inside that is a qualified person's reading, and none has been made.
 #  Until one is recorded, no deed is composed here. This is a hold and never a statement that a deed is reserved.
 HELD_FOR_A_QUALIFIED_READ = ("partnership_deed",)
-HELD_REASON = ("it is a deed, and preparing certain instruments is reserved to authorised persons by the Legal "
-               "Services Act 2007 (section 12 and Schedule 2). No qualified person has yet read that Schedule "
+HELD_REASON = ("it is a deed, and preparing certain instruments is reserved to authorised persons by the "
+               "Legal Services Act 2007 (section 12 and Schedule 2). No qualified person has yet read that Schedule "
                "for this platform, so no deed is composed here. This is a hold, and says nothing about whether "
                "this particular deed is reserved. A solicitor can prepare one.")
 
