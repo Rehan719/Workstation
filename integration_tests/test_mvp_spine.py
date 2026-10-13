@@ -61443,8 +61443,12 @@ def test_t2_the_memorization_card_names_what_is_not_built(client):
     assert "Flashcards, progress heatmaps and audio looping are not built." in _entry[0], (
         "the live card does not say what of its feature is not built", _entry[0])
     _studio = (_src / "QEPStudio.tsx").read_text(encoding="utf-8")
-    assert not re.search(r"(?i)flashcard|heatmap|audio", _studio), (
-        "the studio now mentions a flashcard, a heatmap or audio: re-read the card's sentence")
+    #  W717 - this guard failed, as designed, when a reference recitation was added, and the card was re-read:
+    #  one verse can be listened to and the card says so; LOOPING is still not built, and neither are the others.
+    assert "A reference recitation of one verse can be listened to." in _entry[0], _entry[0]
+    assert "<audio " in _studio and "listen-reference" in _studio, "the card says a recitation can be listened to and the studio holds none"
+    assert not re.search(r"(?i)flashcard|heatmap|\bloop", _studio), (
+        "the studio now mentions a flashcard, a heatmap or a loop: re-read the card's sentence")
     assert re.search(r"(?i)hifz/review|hifz/schedule", _studio), "precondition: the studio holds the SM-2 review the card calls live"
 
 
