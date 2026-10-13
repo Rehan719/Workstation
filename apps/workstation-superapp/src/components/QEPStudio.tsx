@@ -158,7 +158,7 @@ export const QEPStudio: React.FC = () => {
 
   // ── translation (refuses honestly on floor-only) ──
   const [trText, setTrText] = useState('');
-  const [trResult, setTrResult] = useState<{ translation: string; served_by: string; label: string } | null>(null);
+  const [trResult, setTrResult] = useState<{ translation: string | null; served_by: string; label: string; withheld_note?: string | null } | null>(null);
   const [trRefusal, setTrRefusal] = useState('');
   const runTranslate = async () => {
     setBusy('translate'); setErr(''); setTrResult(null); setTrRefusal('');
@@ -433,7 +433,11 @@ export const QEPStudio: React.FC = () => {
           {trResult && (
             <div className="mt-2 p-3 rounded-xl bg-slate-950 border border-slate-900">
               <Chip tone="ok">served by {trResult.served_by}</Chip>
-              <p className="text-[11px] text-slate-300 mt-1.5 whitespace-pre-wrap">{trResult.translation}</p>
+              {/* W692 (A.12.3) — a model's translation is shown only when a scholar approved it; otherwise the
+                  server's reason is shown, never an empty box under a "served by" chip */}
+              {trResult.translation
+                ? <p data-testid="qep-translation-text" className="text-[11px] text-slate-300 mt-1.5 whitespace-pre-wrap">{trResult.translation}</p>
+                : <p data-testid="qep-translation-withheld" className="text-[11px] text-amber-200/80 mt-1.5">{trResult.withheld_note}</p>}
               <p className="text-[8px] text-slate-600 italic mt-1">{trResult.label}</p>
             </div>
           )}

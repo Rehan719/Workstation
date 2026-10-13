@@ -11,7 +11,7 @@
   {"method": "POST", "path": "/api/v1/auth/refresh", "decision": "public", "why": "it accepts only a signed refresh token and returns a new access token"},
   {"method": "POST", "path": "/api/v1/auth/signup", "decision": "public", "why": "it is refused by its own handler unless the Owner has opened self-serve signup"},
   {"method": "GET", "path": "/api/v1/auth/config", "decision": "public", "why": "the sign-in page must learn whether authentication and signup are on before anyone has a token"},
-  {"method": "GET", "path": "/api/v1/auth/status", "decision": "public", "why": "the mode and whether the sign-in parts are installed; it also gives a COUNT of accounts, which is to be removed before a deploy others can reach"},
+  {"method": "GET", "path": "/api/v1/auth/status", "decision": "public", "why": "the mode and whether the sign-in parts are installed; it gives no count of accounts (removed W693) and nothing about any person"},
   {"method": "GET", "path": "/api/v1/qep/suwar", "decision": "public", "why": "the list of chapters: public reference from a named source"},
   {"method": "GET", "path": "/api/v1/qep/surah/{number}", "decision": "public", "why": "sourced Quran text with its provenance: public reference, free for everyone by ruling"},
   {"method": "GET", "path": "/api/v1/qep/ayah/{surah_number}/{ayah_number}", "decision": "public", "why": "sourced Quran text with its provenance: public reference, free for everyone by ruling"},

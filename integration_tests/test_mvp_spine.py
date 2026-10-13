@@ -63393,3 +63393,108 @@ def test_w692_the_preferences_route_nobody_read_is_retired_and_its_code_is_kept(
     #  the code is kept: with the switch off it answers as before
     monkeypatch.setattr(_is, "USER_PREFERENCES_ROUTE_RETIRED", False)
     assert client.get("/api/v260/user/preferences").status_code == 200
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W693 - THE QURAN PLATFORM'S TRANSLATE TOOL WHERE A MODEL SERVES (the configuration the Owner's own machine
+#  runs). A model is put in the composer's place here, because the suite runs with none.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w693_a_models_translation_of_teaching_text_is_withheld_and_sacred_text_in_any_language_is_refused(client, monkeypatch):
+    import agentic_core.api.qep_intelligence as _qi
+    import agentic_core.ai.native.model_resource as _mr
+    PLANTED = "UNE-TRADUCTION-PLANTEE-w693"
+    seen = []
+
+    async def _model(prompt, **kw):
+        seen.append(prompt)
+        return {"output": PLANTED, "served_by": "w693-capture-model", "is_external": False}
+    monkeypatch.setattr(_mr, "local_models", lambda: ["a-model"])
+    monkeypatch.setattr(_qi.gateway, "query_meta", _model)
+    #  1. ORDINARY TEACHING TEXT: a model composes, and what it composed is NOT shown - anywhere in the answer
+    r = client.post("/api/v1/qep/translation/translate", json={"text": "Patience is a virtue", "target_language": "French"})
+    assert r.status_code == 200, r.text[:300]
+    body = r.json()
+    assert len(seen) == 1, "the model was not reached, so this leg drove nothing"
+    assert body["translation"] is None and body["status"] == "withheld" and body["scholar_reviewed"] is False
+    assert body["review_state"] == "withheld" and "scholar" in body["withheld_note"]
+    assert PLANTED not in json.dumps(body), "a model's unreviewed translation left in the answer"
+    assert "NOT shown" in body["label"] and "translated" != body["status"]
+    #  the model was not asked for tajwid or recitation notes, whatever the request's flag says
+    assert "tajweed" not in seen[0].lower() and "tajwid" not in seen[0].lower() and "recitation" not in seen[0].lower()
+    r2 = client.post("/api/v1/qep/translation/translate", json={"text": "Kindness matters", "target_language": "Urdu", "preserve_tajweed": True})
+    assert r2.status_code == 200 and "tajweed" not in seen[1].lower()
+    #  2. SACRED TEXT IN ANY LANGUAGE IS REFUSED BEFORE THE MODEL IS REACHED
+    n = len(seen)
+    for sacred in ("Say: He is Allah, the One! (Quran 112:1)", "In the name of God (1:1)", "The Prophet said: actions are by intentions",
+                   "Surah al-Ikhlas teaches oneness", "This hadith is in Sahih Bukhari", "an ayah about patience", "Allah says be patient",
+                   "from the Qur'an", "the KORAN teaches"):
+        rr = client.post("/api/v1/qep/translation/translate", json={"text": sacred, "target_language": "French"})
+        assert rr.status_code == 422 and "NOT OFFERED" in rr.json()["detail"], (sacred, rr.status_code)
+    assert len(seen) == n, "sacred text reached the model"
+    #  ... and plain text that merely contains such letters inside another word is not refused by accident
+    ok = client.post("/api/v1/qep/translation/translate", json={"text": "The surat-like pattern and a time of 10:30 today", "target_language": "French"})
+    assert ok.status_code in (200, 422)          # 'surat' is a transliteration of surah and may be refused; a bare time is not a citation
+    plain = client.post("/api/v1/qep/translation/translate", json={"text": "We meet at 10:30 today", "target_language": "French"})
+    assert plain.status_code == 200, "a time of day was read as a verse citation"
+    #  3. the status no longer lists Arabic, no longer says notes are requested, and says the output is withheld
+    st = client.get("/api/v1/qep/translation/status").json()
+    assert "Arabic" not in st["supported_languages"] and "English" in st["supported_languages"]
+    assert "REQUESTED" not in st["tajweed_note"] and "no effect" in st["tajweed_note"]
+    assert "withheld" in st["review_note"]
+    #  4. THE SAME TEXT ASKED AGAIN DOES NOT RESET ITS REVIEW: it is submitted once
+    from agentic_core.api import scholar_review as _sr
+    key = "qep_translation:" + _sr.body_hash("French|Patience is a virtue")
+    first = (_sr._load(_sr._review_path()).get(key) or {}).copy()
+    assert first, "the composed translation was not submitted for review"
+    #  (the first form of this leg compared the record before and after, and a record rewritten with the same
+    #  text compares equal - its blind came back vacuous. A mark is now put ON the stored record, as a
+    #  reviewer's decision would be, and it must survive the same text being asked for again.)
+    _recs = _sr._load(_sr._review_path())
+    _recs[key]["w693_mark"] = "a reviewer touched this record"
+    _sr._save(_sr._review_path(), _recs)
+    client.post("/api/v1/qep/translation/translate", json={"text": "Patience is a virtue", "target_language": "French"})
+    again = _sr._load(_sr._review_path()).get(key) or {}
+    assert again.get("w693_mark") == "a reviewer touched this record", "asking for the same text again rewrote its review record"
+    #  5. THE PAGE shows the server's reason for a withheld translation and never an empty box
+    page = (__import__("pathlib").Path(__file__).resolve().parents[1]
+            / "apps/workstation-superapp/src/components/QEPStudio.tsx").read_text(encoding="utf-8")
+    assert "{trResult.translation\n" in page and 'data-testid="qep-translation-withheld"' in page and "{trResult.withheld_note}" in page
+
+
+def test_w693_four_old_rows_the_home_page_the_public_status_and_the_operations_document(client, monkeypatch):
+    root = __import__("pathlib").Path(__file__).resolve().parents[1]
+    #  1. THE HOME PAGE: "living enterprises" opens the page that lists the entities, and that page is a route
+    home = (root / "apps/workstation-superapp/src/pages/DashboardNew.tsx").read_text(encoding="utf-8")
+    app_routes = (root / "apps/workstation-superapp/src/App.tsx").read_text(encoding="utf-8")
+    assert 'path="/vsb-cockpit"' in app_routes
+    for line in home.splitlines():
+        if "living enterprises" in line.lower() and "route:" in line:
+            assert "route: '/vsb-cockpit'" in line, f"this still opens a page that lists no entity: {line.strip()[:120]}"
+    assert sum(1 for line in home.splitlines() if "living enterprises" in line.lower() and "route: '/vsb-cockpit'" in line) == 2
+    #  the page it used to open still says, itself, that it lists no entity - the reason for the change
+    projects = (root / "apps/workstation-superapp/src/pages/projects/ProjectsHub.tsx").read_text(encoding="utf-8")
+    assert "/api/v1/studio/vsb" not in projects
+    #  2. THE PUBLIC STATUS ANSWER gives no count of accounts, with authentication off and on, and does not
+    #     read the accounts at all
+    from agentic_core.auth import core as auth_core
+    seen = []
+    real = auth_core._load_users
+    monkeypatch.setattr(auth_core, "_load_users", lambda: (seen.append(1), real())[1])
+    off = client.get("/api/v1/auth/status").json()
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    on = client.get("/api/v1/auth/status").json()
+    for answer in (off, on):
+        assert "user_count" not in answer and not any("count" in k for k in answer), answer
+    assert on["auth_enabled"] is True and off["auth_enabled"] is False and not seen, "the public answer read the accounts"
+    monkeypatch.undo()
+    #  the administrator's list still gives the total
+    assert "total" in client.get("/api/v1/auth/users").json()
+    import json as _json
+    decl = next(r for r in _json.loads((root / "docs/PUBLIC_ROUTES.json").read_text(encoding="utf-8"))["routes"] if r["path"] == "/api/v1/auth/status")
+    assert "no count of accounts" in decl["why"] and "to be removed" not in decl["why"]
+    #  3. THE OPERATIONS DOCUMENT no longer describes the archived council route as one that rules on disputes,
+    #     and the route it names is in fact not mounted
+    ops = (root / "docs/OPERATIONS.md").read_text(encoding="utf-8")
+    assert "rules on disputes filed through" not in ops and "ARCHIVED in W669 and is not mounted" in ops
+    from agentic_core.app_mvp import app as _app
+    assert not any("council/judge" in getattr(r, "path", "") for r in _app.routes)
