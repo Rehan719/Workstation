@@ -63995,3 +63995,123 @@ def test_w697_an_appraisal_recommends_from_what_it_counted_and_a_person_sends_on
         assert gate in page and body in page, (gate, body)
     assert "{data.recommendations_basis}" in page and "{data.hand_off.not_established}" in page
     assert "{data.this_cell_never_says}" in page and "onClick={() => send(r.id)}" in page
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W698 - OWNER RULING 2026-10-13: "every surface states its evidence level" means every router that names a
+#  model. Built where most answers pass, a refusal carries no level, and what remains is counted.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w698_an_answer_that_names_a_model_states_its_level_and_a_refusal_states_none(client, monkeypatch):
+    import ast
+    import asyncio
+    import pathlib
+    from agentic_core.api import _ai_provenance as _ap
+    from agentic_core.api import native_ai as _na
+    root = pathlib.Path(__file__).resolve().parents[1]
+
+    #  1. THE ONE STATEMENT, and the refusal's
+    said = _ap.reply_evidence()
+    assert said["evidence_level"] == "behaviour" and said["evidence_level_number"] == 1 and "Level 1" in said["evidence_basis"]
+    none = _ap.reply_evidence(_ap.REFUSAL_GATE)
+    assert none["evidence_level"] is None and none["evidence_level_number"] is None and none["evidence_basis"].startswith("REFUSED")
+    said["evidence_level"] = "changed by a caller"
+    assert _ap.reply_evidence()["evidence_level"] == "behaviour", "one caller's edit reached the next caller's statement"
+    for refusal in ({"refused": True}, {"served_by": _ap.REFUSAL_GATE}, {"output": "[CONSTITUTIONAL REFUSAL] x"},
+                    {"final": "[CONSTITUTIONAL REFUSAL] x"}):
+        assert _ap.is_refusal(refusal), refusal
+    for answer in ({"output": "a reply", "served_by": "native"}, {"refused": False}, {"refused": "yes"}, "text", None):
+        assert not _ap.is_refusal(answer), answer
+
+    #  2. THE SHARED PROVENANCE every domain tool returns carries it - and a refused call carries none
+    async def _replied(*a, **k):
+        return {"output": "a reply", "served_by": "ollama:w698", "is_external": False}
+
+    async def _refused(*a, **k):
+        return {"output": "[CONSTITUTIONAL REFUSAL] w698", "served_by": _ap.REFUSAL_GATE, "is_external": False}
+    monkeypatch.setattr(_ap.gateway, "query_meta", _replied)
+    _, prov = asyncio.run(_ap.ai_text("w698 probe", agent="w698_probe"))
+    assert prov["served_by"] == "ollama:w698" and prov["evidence_level"] == "behaviour" and prov["evidence_level_number"] == 1, prov
+    monkeypatch.setattr(_ap.gateway, "query_meta", _refused)
+    _, prov = asyncio.run(_ap.ai_text("w698 probe", agent="w698_probe"))
+    assert prov["evidence_level"] is None and prov["evidence_basis"].startswith("REFUSED"), prov
+
+    #  3. THE ACCUMULATOR SIX ROUTERS BUILD: no block of that shape is left without the statement, and each
+    #     file still has the blocks this round changed (so the leg cannot pass by the blocks being deleted)
+    expected = {"board": 2, "forge": 1, "genesis": 1, "products": 4, "swarm": 2, "vsb": 3}
+    for name, n in expected.items():
+        tree = ast.parse((root / f"agentic_core/api/{name}.py").read_text(encoding="utf-8"))
+        with_level = bare = 0
+        for d in ast.walk(tree):
+            if not isinstance(d, ast.Dict):
+                continue
+            keys = {k.value for k in d.keys if isinstance(k, ast.Constant)}
+            if keys == {"posture", "served_by", "any_external"}:
+                spread = [v for k, v in zip(d.keys, d.values) if k is None]
+                if any(isinstance(v, ast.Call) and getattr(v.func, "id", "") == "_reply_evidence" for v in spread):
+                    with_level += 1
+                else:
+                    bare += 1
+        assert bare == 0 and with_level >= n, (name, with_level, bare)
+    from agentic_core.api import swarm as _sw
+    assert _sw._reply_evidence is _ap.reply_evidence
+
+    #  4. A REFUSAL RETURNED BY A COMPLETION ROUTE carries no level; an answer still carries the route's
+    from agentic_core.ai import gateway as _gw
+    monkeypatch.setattr(_gw, "console_pre_gate", lambda agent: {"refused_reason": "w698 driven refusal"})
+    r = client.post("/api/v1/native-ai/complete", json={"prompt": "w698", "agent": "w698_probe"})
+    assert r.status_code == 200, r.text[:200]
+    rj = r.json()
+    assert rj["output"].startswith("[CONSTITUTIONAL REFUSAL]") and rj["evidence_level"] is None, rj
+    assert rj["evidence_level_number"] is None and rj["evidence_basis"].startswith("REFUSED"), rj
+    e = client.post("/api/v1/native-ai/ensemble", json={"prompt": "w698", "agent": "w698_probe"})
+    if e.status_code == 200 and e.json().get("refused") is True:
+        assert e.json()["evidence_level"] is None, e.json()
+    monkeypatch.setattr(_gw, "console_pre_gate", lambda agent: None)
+    ok = client.post("/api/v1/native-ai/complete", json={"prompt": "w698 a plain question", "agent": "w698_probe"}).json()
+    if not _ap.is_refusal(ok):
+        assert ok["evidence_level"] == _na._EVIDENCE_SURFACES["/complete"][0] == "behaviour", ok.get("evidence_level")
+
+    #  5. THE THREE RECORD LEVELS ARE READ FROM THE TABLE - none is typed beside its record any more
+    src = (root / "agentic_core/api/native_ai.py").read_text(encoding="utf-8")
+    typed = [n for n in ast.walk(ast.parse(src)) if isinstance(n, ast.Dict) and any(
+        isinstance(k, ast.Constant) and k.value == "evidence_level" and isinstance(v, ast.Constant) and v.value == "behaviour"
+        for k, v in zip(n.keys, n.values))]
+    assert typed == [], [n.lineno for n in typed]
+    monkeypatch.setitem(_na._EVIDENCE_SURFACES, "/baseline", ("w698: moved in the table", "w698"))
+    listed = client.get("/api/v1/native-ai/baseline")
+    assert listed.status_code == 200 and listed.json()["evidence_level"] == "w698: moved in the table", listed.text[:300]
+
+    #  6. WHAT REMAINS IS COUNTED, on the route that inventories the levels
+    levels = client.get("/api/v1/native-ai/evidence-levels").json()
+    assert levels["routers_naming_a_model_route"] == "GET /api/v1/native-ai/evidence-levels/routers"
+    assert "routers_naming_a_model" not in levels, "the count is back inside the inventory the page loads"
+    import inspect
+    assert not inspect.iscoroutinefunction(_na.evidence_levels_by_router), (
+        "the count runs on the event loop again, holding every other answer while it reads the source")
+    inv = client.get("/api/v1/native-ai/evidence-levels/routers").json()
+    assert inv["counted"].startswith("once for this process")
+    assert inv["blocks_naming_a_model"] == inv["stating_a_level"] + inv["not_stating_a_level"] > 0, inv
+    assert inv["blocks_naming_a_model"] == sum(v["blocks_naming_a_model"] for v in inv["files"].values())
+    assert inv["stating_a_level"] >= sum(expected.values()) + 1, inv["stating_a_level"]
+    for name, n in expected.items():
+        assert inv["files"][f"agentic_core/api/{name}.py"]["stating_a_level"] >= n, (name, inv["files"][f"agentic_core/api/{name}.py"])
+    assert inv["files"]["agentic_core/api/_ai_provenance.py"]["stating_a_level"] >= 1
+    assert "agentic_core/api/native_ai.py" not in inv["files"] and inv["this_router"]["level_added_by_the_route_marker"] is True
+    assert f"{inv['stating_a_level']} of {inv['blocks_naming_a_model']}" in inv["basis"] and inv["files_unread"] == []
+    #  RECOUNTED HERE, by a second walk, file by file: a census that called every block stating (or none)
+    #  would agree with its own total and with the ceiling below, and was caught only by this
+    for rel, counted in inv["files"].items():
+        named = stated = 0
+        for d in ast.walk(ast.parse((root / rel).read_text(encoding="utf-8"))):
+            if isinstance(d, ast.Dict) and any(isinstance(k, ast.Constant) and k.value == "served_by" for k in d.keys):
+                named += 1
+                has_key = any(isinstance(k, ast.Constant) and k.value == "evidence_level" for k in d.keys)
+                has_spread = any(k is None and isinstance(v, ast.Call) and "evidence" in getattr(v.func, "id", "")
+                                 for k, v in zip(d.keys, d.values))
+                stated += 1 if (has_key or has_spread) else 0
+        assert (counted["blocks_naming_a_model"], counted["stating_a_level"]) == (named, stated), (rel, counted, named, stated)
+    assert any(v["stating_a_level"] < v["blocks_naming_a_model"] for v in inv["files"].values()), (
+        "no file has a silent block, so the recount above compared nothing that could differ")
+    #  a ceiling measured when the ruling was built: the count of silent blocks may fall, and may not rise
+    assert inv["not_stating_a_level"] <= 91, ("a new answer block names a model and states no evidence level",
+                                              inv["not_stating_a_level"])

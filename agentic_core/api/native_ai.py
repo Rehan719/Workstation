@@ -54,6 +54,11 @@ def _states_level(path: str):
         async def _answer(*args, **kwargs):
             res = await fn(*args, **kwargs)
             if isinstance(res, dict):
+                #  W698 - a refusal returned as an ordinary answer is the platform's own rule speaking. It
+                #  carried the route's level ("behaviour: one reply"), which read as evidence about a model.
+                from agentic_core.api._ai_provenance import is_refusal, reply_evidence, REFUSAL_GATE
+                if is_refusal(res):
+                    return {**reply_evidence(REFUSAL_GATE), **res}
                 return {**_level_statement(path), **res}
             return res
         _answer._states_level = path
@@ -588,7 +593,7 @@ async def evaluate_model(req: LifecycleModelRequest):
                   #  P3.32 - beside it, never inside it: `probe_set` keeps the two keys its readers compare
                   "probe_set_pinned": True,
                   "serving": _serving_identity(f"ollama:{req.model}"),
-                  "evidence_level": "behaviour", "basis": _EVAL_BASIS,
+                  "evidence_level": _EVIDENCE_SURFACES["/lifecycle/evaluate"][0], "basis": _EVAL_BASIS,
                   "probes": results, "at": __import__("time").strftime("%Y-%m-%dT%H:%M:%SZ",
                                                                        __import__("time").gmtime())}
     st["evaluations"].append(evaluation)
@@ -763,7 +768,7 @@ async def _baseline_record(tier: str, held: Dict[str, Any], serving: Dict[str, A
                             (f"NOT ESTABLISHED for {tier}: {counts['not_read']} of {len(rows)} case(s) were "
                              f"answered by {', '.join(others) or 'nothing'}. Those replies are kept and say "
                              f"nothing about {tier}")),
-            "evidence_level": "behaviour", "basis": _BASELINE_BASIS}
+            "evidence_level": _EVIDENCE_SURFACES["/baseline/run"][0], "basis": _BASELINE_BASIS}
 
 
 def _baseline_append(record: Dict[str, Any]) -> None:
@@ -847,7 +852,7 @@ async def list_baselines(tier: str | None = None, limit: int = 20):
                  "reproducibility has been shown for no tier: no stored re-run gave byte-identical replies")
                 + ". A baseline record supports a re-run; only a stored re-run shows one"
                 + ("; the store could not be read whole, so re-runs may be missing from this count" if _why else "")),
-            "evidence_level": "behaviour", "basis": _BASELINE_BASIS}
+            "evidence_level": _EVIDENCE_SURFACES["/baseline"][0], "basis": _BASELINE_BASIS}
 
 
 @router.get("/baseline/{run_id}")
@@ -954,6 +959,7 @@ _NOT_A_MODEL_STATEMENT = {
     "/validate": "a text-similarity measure against a caller-supplied reference",
     "/decide": "maximin arithmetic over caller-supplied utilities",
     "/evidence-levels": "this inventory",
+    "/evidence-levels/routers": "a count of written answer blocks by router file; it describes the source, not a model",
 }
 #  P3.32 clause 3 - these five answer with a RECORD (just made, or stored) that carries its own level
 _LEVEL_IN_RECORD = frozenset({"/lifecycle/evaluate", "/baseline/run", "/baseline", "/baseline/{run_id}",
@@ -994,7 +1000,82 @@ async def evidence_levels():
                                        "files examined, which does not establish that no surface over-claims")},
             "boundary": ("Level 1 only. The study of a model's insides is not built and not scheduled "
                          "(Owner, 2026-10-10); no route here does it."),
-            "scope": "the routes of /api/v1/native-ai. Other routers that mention a model are not inventoried here."}
+            "scope": ("the tables above are the routes of /api/v1/native-ai. Every other router that names "
+                      "a model is counted in `routers_naming_a_model`, by written block"),
+            "routers_naming_a_model_route": "GET /api/v1/native-ai/evidence-levels/routers"}
+
+
+@router.get("/evidence-levels/routers")
+def evidence_levels_by_router():
+    """How many written answer blocks in each router file name a resource, and how many state a level.
+
+    A plain function on purpose: it reads and parses source files, which took about two seconds inside the
+    async inventory above and held every other answer of this process while it ran. Here it runs off the
+    event loop, and the count is made once for the process - the source a process runs does not change."""
+    return _blocks_naming_a_model_once()
+
+
+# -- W698 (OWNER RULING 2026-10-13) - "EVERY SURFACE" MEANS EVERY ROUTER THAT NAMES A MODEL; COUNTED HERE -------
+#  Counted by syntax, once for the process, over the source this process runs: in each file that declares a router,
+#  every answer block that carries a `served_by` key, and how many of those also carry an evidence level
+#  (written out, or spread in from the shared statement). It counts WRITTEN BLOCKS, not answers: a block built
+#  by the shared provenance is counted once where it is written, however many routers return it.
+_BLOCKS_COUNTED: Dict[str, Any] = {}
+
+
+def _blocks_naming_a_model_once() -> Dict[str, Any]:
+    if not _BLOCKS_COUNTED:
+        _BLOCKS_COUNTED.update(_blocks_naming_a_model())
+    return dict(_BLOCKS_COUNTED, counted="once for this process, at the first call")
+
+
+def _blocks_naming_a_model() -> Dict[str, Any]:
+    import ast
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    per: Dict[str, Dict[str, int]] = {}
+    per_marked: Dict[str, Any] = {}
+    unread: List[str] = []
+    for p in sorted(root.rglob("*.py")):
+        try:
+            src = p.read_text(encoding="utf-8")
+            if "APIRouter(" not in src and p.name != "_ai_provenance.py":
+                continue
+            tree = ast.parse(src)
+        except Exception:                                    # noqa: BLE001 - counted as unread, never as none
+            unread.append(p.relative_to(root.parent).as_posix())
+            continue
+        named = stated = 0
+        for n in ast.walk(tree):
+            if not isinstance(n, ast.Dict):
+                continue
+            keys = [k.value for k in n.keys if isinstance(k, ast.Constant)]
+            if "served_by" not in keys:
+                continue
+            named += 1
+            spread = any(k is None and "evidence" in ast.dump(v) for k, v in zip(n.keys, n.values))
+            stated += 1 if ("evidence_level" in keys or spread) else 0
+        if named and p.resolve() == Path(__file__).resolve():
+            #  this router's answers get their level from the route marker above, not from the block: counting
+            #  its blocks as silent would be a false finding, so they are listed apart and left out of the total
+            per_marked = {"blocks_naming_a_model": named, "stating_a_level": stated,
+                          "level_added_by_the_route_marker": True}
+            continue
+        if named:
+            per[p.relative_to(root.parent).as_posix()] = {"blocks_naming_a_model": named, "stating_a_level": stated}
+    total = sum(v["blocks_naming_a_model"] for v in per.values())
+    said = sum(v["stating_a_level"] for v in per.values())
+    return {"files": per, "files_counted": len(per), "blocks_naming_a_model": total, "stating_a_level": said,
+            "not_stating_a_level": total - said, "files_unread": unread,
+            "this_router": per_marked,
+            "basis": (f"{said} of {total} written answer block(s) that name which resource served, across "
+                      f"{len(per)} router file(s), carry an evidence level in the block itself. Counted by "
+                      f"syntax, once for this process. A block is a place in the source, not an answer: the shared "
+                      f"provenance is one block and the answers of every router that returns it carry its "
+                      f"level. {total - said} block(s) name a resource and state no level"
+                      + (f"; {len(unread)} file(s) could not be read and are NOT counted" if unread else "")),
+            "ruling": ("Owner, 2026-10-13: every surface means every router that names a model, counted per "
+                       "router. The count above is what remains.")}
 
 
 @router.post("/lifecycle/promote")

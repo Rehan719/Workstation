@@ -27,6 +27,7 @@ from agentic_core.config import atomic_write_json, data_path
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, HTTPException
+from agentic_core.api._ai_provenance import reply_evidence as _reply_evidence   # W698: the level travels with the record
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
@@ -154,7 +155,7 @@ async def _execute(req: ForgeRunRequest) -> Dict[str, Any]:
     configs = {s.type: s.config for s in req.stages}
 
     # In-house-first AI with provenance: every stage records which OWNED resource served it.
-    provenance: Dict[str, Any] = {"posture": "in-house-first", "served_by": {}, "any_external": False}
+    provenance: Dict[str, Any] = {"posture": "in-house-first", "served_by": {}, "any_external": False, **_reply_evidence()}
 
     async def _q(prompt: str, agent: str) -> str:
         try:

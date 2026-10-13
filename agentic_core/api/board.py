@@ -33,6 +33,7 @@ from agentic_core.config import data_path
 from typing import Any, Dict, List, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
+from agentic_core.api._ai_provenance import reply_evidence as _reply_evidence   # W698: the level travels with the record
 from pydantic import BaseModel
 
 from agentic_core.api._strict_models import STRICT
@@ -820,7 +821,7 @@ async def chief_instruct(req: ChiefInstruction, user: dict | None = Depends(get_
     timelined/resourced action plan to the AI CEO.
     """
     directive_id = f"dir-{uuid.uuid4().hex[:8]}"
-    provenance: Dict[str, Any] = {"posture": "in-house-first", "served_by": {}, "any_external": False}
+    provenance: Dict[str, Any] = {"posture": "in-house-first", "served_by": {}, "any_external": False, **_reply_evidence()}
 
     # 1. The Chief (Owner's digital twin) interprets and represents the Owner faithfully — grounded
     #    in LIVE intelligence (plan progress · operations · prior directives), not just the charter.
@@ -1133,7 +1134,7 @@ async def board_directive(req: BoardDirective, user: dict | None = Depends(get_c
     deterministically, EACH contributes through its own AI call GROUNDED in live readings of the
     systems it owns, and the Chief chairs a synthesis over the directors' ACTUAL inputs — no more
     single-call invented 'Director Inputs'."""
-    provenance: Dict[str, Any] = {"posture": "in-house-first", "served_by": {}, "any_external": False}
+    provenance: Dict[str, Any] = {"posture": "in-house-first", "served_by": {}, "any_external": False, **_reply_evidence()}
     directors = _relevant_directors(req.topic, req.domain)
     director_inputs: Dict[str, Dict[str, str]] = {}
     for d in directors:
