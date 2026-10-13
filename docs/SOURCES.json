@@ -939,6 +939,112 @@
    "read_by": "a research reader of round W711, through a fetch that summarises the page; NOT re-read by a second reader",
    "says": "Undated page: a flyer ID from 100 g, an operator ID from 250 g or from 100 g with a camera, and UK class marks for models placed on the market from 1 January 2026.",
    "not_read": "the March 2026 code itself (its text could not be read); remote identification, which this page does not mention; the specific category for commercial operations"
+  },
+  {
+   "id": "dar-al-ifta-egypt-ai-fatwa-2025",
+   "names": [
+    "Dar al-Ifta ruling on using AI applications to obtain fatwas"
+   ],
+   "kind": "religious ruling",
+   "nation": [
+    "Egypt"
+   ],
+   "status": "current",
+   "page": "https://dar-alifta.org/en/fatwa/details/22255/using-ai-applications-to-obtain-fatwas",
+   "read_on": "2026-10-13",
+   "read_by": "a research reader of round W723, through a fetch that summarises the page; NOT re-read by a second reader",
+   "says": "Dated 2 December 2025. Relying on AI applications to obtain a religious ruling is impermissible; using AI in general is allowed and judged by its purpose; it is not a substitute for a qualified person.",
+   "not_read": "the Arabic original; any later ruling; a reported January 2026 ruling on interpretation of the Quran (news reports only)"
+  },
+  {
+   "id": "lsb-ai-consumer-expectations-2026",
+   "names": [
+    "Legal Services Board research on AI in legal services, consumer expectations and existing standards"
+   ],
+   "kind": "regulator research",
+   "nation": [
+    "England",
+    "Wales"
+   ],
+   "status": "current",
+   "page": "https://legalservicesboard.org.uk/research-2/ai-in-legal-services-consumer-expectations-and-existing-standards",
+   "read_on": "2026-10-13",
+   "read_by": "a research reader of round W723, through a fetch that summarises the page; NOT re-read by a second reader",
+   "says": "Published 10 June 2026. A survey of 1,000 adults names five expectations: a minimum level of accuracy, no consequential action without informed consent, some human oversight, access to redress, protection of personal data. Standards are weakest at identifying vulnerable users, signposting to regulated help and routes to complain.",
+   "not_read": "the two reports themselves; any code, which does not yet exist"
+  },
+  {
+   "id": "tna-find-case-law-permission",
+   "names": [
+    "Find Case Law - when you need permission",
+    "Open Justice Licence"
+   ],
+   "kind": "official guidance",
+   "nation": [
+    "England",
+    "Wales"
+   ],
+   "status": "current",
+   "page": "https://caselaw.nationalarchives.gov.uk/when-you-need-permission",
+   "read_on": "2026-10-13",
+   "read_by": "a research reader of round W723, through a fetch that summarises the page; NOT re-read by a second reader",
+   "says": "Reading, fetching one judgment as needed, quoting, citing and commercial use are free. Automated processing of many judgments - text mining, bulk extraction, a vector database, training a model - needs a licence, which is applied for and free of charge.",
+   "not_read": "the licence text itself; the application form; the nine principles an application is assessed against"
+  },
+  {
+   "id": "legislation-gov-uk-reuse",
+   "names": [
+    "legislation.gov.uk developer terms"
+   ],
+   "kind": "official guidance",
+   "nation": [
+    "UK"
+   ],
+   "status": "current",
+   "page": "https://www.legislation.gov.uk/developer",
+   "read_on": "2026-10-13",
+   "read_by": "a research reader of round W723, through a fetch that summarises the page; NOT re-read by a second reader",
+   "says": "Content is available under the Open Government Licence v3.0 unless a page says otherwise; some material derived from EUR-Lex is reused under a Commission decision; the attribution shown is Crown and database right. The service gives consolidated legislation 'with a few limitations' and links to a fair use policy.",
+   "not_read": "the limitations page; the fair use policy's terms; the pages on addresses and formats (the data address was proved by one request, not read from a page)"
+  },
+  {
+   "id": "acas-reuse-terms",
+   "names": [
+    "Acas website copyright terms"
+   ],
+   "kind": "official guidance",
+   "nation": [
+    "Great Britain"
+   ],
+   "status": "current",
+   "page": "https://www.acas.org.uk/copyright",
+   "read_on": "2026-10-13",
+   "read_by": "a research reader of round W723, through a fetch that summarises the page; NOT re-read by a second reader",
+   "says": "Shown as last reviewed 21 September 2022. Website content is under the Open Government Licence version 3 except where stated; the source must be named and its copyright status acknowledged; logos and third-party material are excluded; pages are not to be framed and no endorsement implied.",
+   "not_read": "the separate terms and conditions page; whether any guidance page marks third-party material"
+  },
+  {
+   "id": "citizens-advice-terms",
+   "names": [
+    "Citizens Advice website terms"
+   ],
+   "kind": "charity terms",
+   "nation": [
+    "England",
+    "Wales"
+   ],
+   "status": "named_not_read"
+  },
+  {
+   "id": "quran-foundation-tafsir-terms",
+   "names": [
+    "Quran Foundation terms for each published commentary"
+   ],
+   "kind": "publisher terms",
+   "nation": [
+    "international"
+   ],
+   "status": "named_not_read"
   }
  ]
 }
