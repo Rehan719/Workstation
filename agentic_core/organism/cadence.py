@@ -53,6 +53,10 @@ SIGNAL_NAME = {STRATEGIC: "market signal", ACTION_PLAN: "KPI trigger"}
 
 #  which field of the plan each layer writes
 PLAN_FIELD = {STRATEGIC: "strategy", ACTION_PLAN: "action_plan"}
+#  W705 - the two things a refresh can write, named apart: a sentence this module derived by rule from the
+#  plan's stored state (nobody composed it), and content a caller handed in with the refresh request
+CADENCE_DERIVED = "cadence_derived"
+CADENCE_SUPPLIED = "cadence_supplied"
 
 #  W620 (FU-492, M2 v8 R3.5) — the cadence said a market signal or KPI trigger "would fire it regardless", and
 #  nothing in this repository observes a market or a KPI: the only producer of a signal is the refresh route's
@@ -299,6 +303,13 @@ def refresh(scope: str, layer: str, *, now: Optional[float] = None, signal: Opti
                                      "overwrite it; the Owner's text stands") if _owner_edited else None)
         if not _owner_edited:
             plan[field] = composed["content"]
+            #  W705 - WHO WROTE THIS FIELD, on the record every reader of the plan already uses. The cadence
+            #  wrote the field and stamped nothing, so a sentence derived by rule from stored state read to
+            #  the page, to the pending list and to the Chief's own prompt as a strategy somebody composed.
+            _prov = plan["provenance"] = dict(plan.get("provenance") or {})
+            _fs = dict(_prov.get("field_sources") or {})
+            _fs[field] = (CADENCE_DERIVED if composed["served_by"] == "deterministic-floor" else CADENCE_SUPPLIED)
+            _prov["field_sources"] = _fs
         plan.setdefault("refreshes", []).append(entry)
         plan["updated_at"] = _stamp(now)
         atomic_write_json(_plan_path(scope), plan)
