@@ -233,6 +233,112 @@ async def derive_lesson(req: DeriveRequest, user: dict | None = Depends(get_curr
                      "rule, an apply, and either an enforcer or a stated reason none exists")}
 
 
+# ── W696 (OWNER RULING 2026-10-13) - A BATCH OF LESSONS IS ONE CHANGE RECORD ───────────────────────────────
+#
+# /derive files one record for each lesson, so a batch of fourteen would put fourteen decisions in front of a
+# person for what is one decision. This files ONE record for the whole batch. It has two uses, kept apart by
+# one field because they are checked in opposite directions:
+#   a PROPOSAL (ruled_by empty)  - every id must be NEW to the method; nothing is in the method until ratified
+#   a RECORD OF A RULING         - every id must already be IN the method carrying that same ruling in its
+#                                  `ratified` field, so a record cannot claim a ruling the method does not show
+# Either way the whole batch is refused, with every fault named, before anything is filed: a record of a
+# batch that is partly wrong would be a record nobody can ratify as it stands.
+_CITED_FILE_RE = re.compile(r"([A-Za-z0-9_./]+[.](?:py|json|jsonl|md|mjs|js))")
+
+
+class AmendmentLesson(BaseModel):
+    id: str
+    group: str
+    rule: str
+    defect: str
+    apply: str
+    enforced_by: Optional[str] = None
+    why_not_enforced: Optional[str] = None
+
+
+class AmendmentRequest(BaseModel):
+    title: str
+    lessons: List[AmendmentLesson]
+    new_groups: List[str] = []
+    ruled_by: str = ""
+
+
+def amendment_faults(method: Dict[str, Any], req: AmendmentRequest) -> List[str]:
+    """Every reason this batch cannot be filed as it stands. Empty means it can."""
+    faults: List[str] = []
+    held = {str(l.get("id")): l for l in method.get("lessons", [])}
+    groups = set(method["about"].get("groups", []))
+    ruled = req.ruled_by.strip()
+    if not req.title.strip():
+        faults.append("the batch has no title")
+    if not req.lessons:
+        faults.append("the batch holds no lessons")
+    for g in req.new_groups:
+        if g in groups and not ruled:
+            faults.append(f"group '{g}' is declared new and is already in the method")
+    seen: set = set()
+    for l in req.lessons:
+        if l.id in seen:
+            faults.append(f"{l.id} appears twice in the batch")
+        seen.add(l.id)
+        if not ruled and l.id in held:
+            faults.append(f"{l.id} is already in the method, so it cannot be proposed as new")
+        if ruled and l.id not in held:
+            faults.append(f"{l.id} is not in the method, so this cannot be the record of a ruling on it")
+        elif ruled and str(held[l.id].get("ratified") or "").strip() != ruled:
+            faults.append(f"{l.id} does not carry this ruling in the method, so the record would claim one "
+                          f"the method does not show")
+        for field in ("rule", "defect", "apply"):
+            if not getattr(l, field).strip():
+                faults.append(f"{l.id} states no {field}")
+        if not (l.enforced_by or "").strip() and not (l.why_not_enforced or "").strip():
+            faults.append(f"{l.id} names neither an enforcer nor the reason there is none")
+        if l.group not in groups and l.group not in req.new_groups:
+            faults.append(f"{l.id} is in group '{l.group}', which the method does not hold and the batch "
+                          f"does not declare")
+        for cited in _CITED_FILE_RE.findall(l.enforced_by or ""):
+            if not cited.startswith("data/") and not (_repo_root() / cited).exists():
+                faults.append(f"{l.id} names an enforcer that is not in the tree: {cited}")
+    return faults
+
+
+@router.post("/amendment")
+async def file_amendment(req: AmendmentRequest, user: dict | None = Depends(get_current_user)):
+    """File ONE change record for a whole batch of lessons. This route never writes the method."""
+    method = _load_method()
+    faults = amendment_faults(method, req)
+    if faults:
+        raise HTTPException(status_code=400, detail={
+            "message": "No change record was filed: the batch is refused whole, and every fault is listed.",
+            "faults": faults, "lessons_in_batch": len(req.lessons)})
+    ruled = req.ruled_by.strip()
+    listing = "; ".join(f"{l.id} [{l.group}] {l.rule.strip()[:140]}" for l in req.lessons)
+    try:
+        from agentic_core.api.change_control import SubmitChangeRequest, submit_change
+        cca = await submit_change(SubmitChangeRequest(
+            title=f"Method amendment, one batch of {len(req.lessons)}: {req.title.strip()[:70]}",
+            change_type="config_minor",
+            description=((f"The record of a batch already ruled on ({ruled}). " if ruled else
+                          "A proposed batch; none of it is in the method until this record is ratified. ")
+                         + f"{len(req.lessons)} lesson(s): {listing}"),
+            rationale=("The method is amended only through the agency that holds it. A batch is one decision, "
+                       "so it is one record."),
+            affected_systems=["delivery_method", "change_control"],
+            submitted_by="method_amendment",
+        ))
+    except Exception as e:                           # noqa: BLE001 - said in the answer's own status, never a 200
+        raise HTTPException(status_code=503, detail={
+            "message": "No change record was filed: Change Control did not accept the submission.",
+            "why": f"{e.__class__.__name__}: {str(e)[:300]}"}) from e
+    return {"change_control": {"submitted": True, "cca_id": cca.get("cca_id"), "status": cca.get("status")},
+            "records_filed": 1, "lessons_in_record": len(req.lessons), "lesson_ids": [l.id for l in req.lessons],
+            "kind": "record_of_a_ruling" if ruled else "proposal",
+            "wrote_the_method": False,
+            "basis": ("one change record carries the whole batch. This route does not write the method: a "
+                      "proposal enters it only after the record is ratified, and a record of a ruling names "
+                      "lessons the method already shows as ruled.")}
+
+
 # ── (c) THE GATE, ARMS-LENGTH ──────────────────────────────────────────────────────────────────────────────
 #
 # Every requirement below is evaluated from the REPO'S OWN ARTEFACTS — the change record, the register, the
@@ -1516,7 +1622,8 @@ def appraise_scope_for(systems: List[str]) -> Dict[str, Any]:
 
 #  P3.30 - the route a person uses to act on an appraisal. Named once; the guard checks it is served.
 _HAND_OFF_ROUTE = "POST /api/v1/cca/submit"
-_METHOD_FILERS = ("POST /api/v1/method/derive", "POST /api/v1/method/breach", "POST /api/v1/method/correct")
+_METHOD_FILERS = ("POST /api/v1/method/derive", "POST /api/v1/method/breach", "POST /api/v1/method/correct",
+                  "POST /api/v1/method/amendment")
 
 
 def _appraisal_hand_off(scope: Optional[str]) -> Dict[str, Any]:
@@ -1542,9 +1649,10 @@ def _appraisal_hand_off(scope: Optional[str]) -> Dict[str, Any]:
                              "systems. Change Control attaches the appraisal of the scope those systems point "
                              "at (`scope_appraisal`, which is never a gate), and a review decides the change"),
         "method_filers": list(_METHOD_FILERS),
-        "method_filers_basis": ("the three method routes that can raise a change, each on a person's request "
-                                "(a confirmed defect, a recorded breach, a proposed correction). None of them "
-                                "reads an appraisal"),
+        #  W696 - the count is computed from the list it describes: a fourth filer made "three" false
+        "method_filers_basis": (f"the {len(_METHOD_FILERS)} method routes that can raise a change, each on a "
+                                f"person's request (a confirmed defect, a recorded breach, a proposed "
+                                f"correction, a batch of lessons). None of them reads an appraisal"),
         "not_established": ("whether an implemented change did what it was filed for. The status and effect "
                             "listed here are Change Control's own record of what it decided and applied; "
                             "nothing re-reads the changed state after implementation, and this appraisal "

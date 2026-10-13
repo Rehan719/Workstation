@@ -19426,11 +19426,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.10",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W696",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The rule that a fix reviews the whole answer is in the method as a correcting lesson, entered with the batch the Owner ruled on 2026-10-13. Filing the one record of that batch on the Owner's own store is registered separately.",
+      "reachability_check": "test_w696_a_batch_of_lessons_is_one_change_record_and_a_faulty_batch_files_none"
     },
     {
       "id": "FU-997",
@@ -20314,11 +20318,15 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.14",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W696",
       "note": "",
       "slot_source": "the Owner chartered this item on 2026-10-12 and these rows are its clauses 1, 3, 4 and 5",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The method's latest lesson now cites W677 (fifteen lessons entered by the Owner's ruling of 2026-10-13), and its learning answer states how many rounds it trails the work, read at the call (18 as this was written).",
+      "reachability_check": "test_w678_the_method_says_how_far_it_trails_the_work"
     },
     {
       "id": "FU-1042",
@@ -20851,6 +20859,23 @@
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "a Review tab on the governance page lists every record with whether it counts and why not in the server's words, shows each tool's label, and records one through the route; a short record is refused in the route's words. Checked in the browser on a fresh store",
       "reachability_check": "test_w690_the_review_records_are_on_the_governance_page_and_every_sentence_is_the_servers"
+    },
+    {
+      "id": "FU-1069",
+      "title": "File the one change record of the ruled batch of lessons on the Owner's own store",
+      "why": "Fifteen lessons entered the method by the Owner's ruling of 2026-10-13. The route that files one record for a whole batch exists and was driven on a test store only; the record on the Owner's store is made when the Owner is at the machine, with the other runs held for that sitting. One call: POST /api/v1/method/amendment with the ruled lessons and ruled_by set to the ruling named on them.",
+      "source": "W696 (the lessons batch as one change record)",
+      "found": "2026-10-13",
+      "files": [
+        "docs/DELIVERY_METHOD.json",
+        "agentic_core/api/method.py"
+      ],
+      "severity": "low",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
     }
   ],
   "routes": [

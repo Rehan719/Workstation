@@ -27,6 +27,7 @@ interface Lesson {
   apply: string;
   enforced_by?: string | null;
   why_not_enforced?: string | null;
+  ratified?: string | null;
 }
 
 interface Mechanism {
@@ -54,6 +55,7 @@ const GROUP_LABEL: Record<string, string> = {
   correcting: 'Correcting',
   delivery: 'Delivery',
   learning: 'Learning',
+  exchange: 'Exchange with a person',
   handover: 'Handover',
 };
 
@@ -239,6 +241,11 @@ export const DeliveryMethod: React.FC = () => {
                   </span>
                 )}
               </p>
+              {l.ratified && (
+                <p className="text-[10px] mt-1 text-slate-400 leading-relaxed" data-testid="lesson-ratified">
+                  <span className="font-black uppercase tracking-widest">Entered by · </span>{l.ratified}
+                </p>
+              )}
             </Card>
           );
         })}

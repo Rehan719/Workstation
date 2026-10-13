@@ -58142,7 +58142,7 @@ def test_lgc_path_an_appraisal_files_nothing_says_so_and_change_control_decides(
         assert _h0["kept_basis"] and _h0["authorises_basis"] and _h0["not_established"], _h0
         #  the route a person uses next is NAMED, and it is one this application serves
         assert _h0["next_route"] == "POST /api/v1/cca/submit" and _h0["next_route"] in _served, _h0["next_route"]
-        assert len(_h0["method_filers"]) == 3 and all(x in _served for x in _h0["method_filers"]), _h0["method_filers"]
+        assert len(_h0["method_filers"]) >= 3 and all(x in _served for x in _h0["method_filers"]), _h0["method_filers"]
         #  and what it says about what became of it is COMPUTED from the Change Control store
         _cs0 = _h0["changes_carrying_this_scope"]
         assert _cs0["count"] == len(_c0) and _cs0["records_listed"] == min(len(_c0), 50), (_cs0["count"], len(_c0))
@@ -63792,3 +63792,111 @@ def test_w695_the_spawn_route_is_retired_behind_a_switch_and_its_code_is_kept(cl
     page = (root / callers[0]).read_text(encoding="utf-8")
     assert page.count("handleSpawn") == 1 and page.count("/api/v1/vsb/spawn") == 1, (
         "something on the Spawn page calls the retired route")
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W696 - OWNER RULING 2026-10-13: a batch of lessons is ONE change record, and the ruled batch is in the method.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w696_a_batch_of_lessons_is_one_change_record_and_a_faulty_batch_files_none(client):
+    import json
+    import pathlib
+    import uuid as _uuid
+    from agentic_core.api import method as _m
+    root = pathlib.Path(__file__).resolve().parents[1]
+    doc = json.loads((root / "docs/DELIVERY_METHOD.json").read_text(encoding="utf-8"))
+    tag = _uuid.uuid4().hex[:6]
+
+    from agentic_core.api import change_control as _cc
+
+    def _records():
+        return [c for c in _cc._list_changes() if "Method amendment, one batch" in str(c.get("title"))]
+
+    def _lesson(i, **over):
+        return {"id": f"M-W696{tag}-{i}", "group": "verification", "rule": f"a driven rule {i}",
+                "defect": f"W696: a driven defect {i}", "apply": f"apply it {i}",
+                "why_not_enforced": "a guard's own probe", **over}
+
+    #  1. A PROPOSAL OF THREE IS ONE RECORD, naming all three, and the method is not written
+    before = len(_records())
+    before_doc = (root / "docs/DELIVERY_METHOD.json").read_bytes()
+    ok = client.post("/api/v1/method/amendment", json={"title": f"guard batch {tag}",
+                                                       "lessons": [_lesson(1), _lesson(2), _lesson(3)]})
+    assert ok.status_code == 200, ok.text[:300]
+    j = ok.json()
+    assert j["records_filed"] == 1 and j["lessons_in_record"] == 3 and j["kind"] == "proposal", j
+    assert j["wrote_the_method"] is False and j["change_control"]["cca_id"], j
+    after = _records()
+    assert len(after) == before + 1, ("a batch of three did not file exactly one record", before, len(after))
+    mine = [c for c in after if c.get("cca_id") == j["change_control"]["cca_id"]]
+    whole = _cc._load_change(j["change_control"]["cca_id"]) or {}
+    assert len(mine) == 1 and all(f"M-W696{tag}-{i}" in str(whole.get("description")) for i in (1, 2, 3)), whole
+    assert (root / "docs/DELIVERY_METHOD.json").read_bytes() == before_doc, "the route wrote the method"
+
+    #  2. A FAULTY BATCH FILES NOTHING AND NAMES EVERY FAULT - one good lesson does not carry the bad ones through
+    held_id = doc["lessons"][0]["id"]
+    bad = client.post("/api/v1/method/amendment", json={"title": f"faulty {tag}", "lessons": [
+        _lesson(4),
+        _lesson(5, rule="   "),
+        _lesson(6, why_not_enforced=None),
+        _lesson(7, group="no-such-group"),
+        _lesson(8, enforced_by="scripts/no_such_instrument_w696.py", why_not_enforced=None),
+        dict(_lesson(9), id=held_id),
+        _lesson(4)]})
+    assert bad.status_code == 400, (bad.status_code, bad.text[:300])
+    faults = " | ".join(bad.json()["detail"]["faults"])
+    for said in ("states no rule", "names neither an enforcer", "no-such-group", "not in the tree: scripts/no_such_instrument_w696.py",
+                 f"{held_id} is already in the method", "appears twice"):
+        assert said in faults, (said, faults)
+    assert len(_records()) == before + 1, "a refused batch filed a record"
+    assert client.post("/api/v1/method/amendment", json={"title": "empty", "lessons": []}).status_code == 400
+
+    #  3. A NEW GROUP MUST BE DECLARED, and a declared one is accepted
+    undeclared = client.post("/api/v1/method/amendment", json={"title": "g", "lessons": [_lesson(10, group=f"g{tag}")]})
+    assert undeclared.status_code == 400
+    declared = client.post("/api/v1/method/amendment", json={"title": f"new group {tag}", "new_groups": [f"g{tag}"],
+                                                             "lessons": [_lesson(10, group=f"g{tag}")]})
+    assert declared.status_code == 200, declared.text[:300]
+
+    #  4. THE RULED BATCH IS IN THE METHOD, whole, and each lesson names the ruling that entered it
+    ruled = [l for l in doc["lessons"] if l.get("ratified")]
+    rulings = {l["ratified"] for l in ruled}
+    assert len(ruled) >= 14 and len(rulings) >= 1, (len(ruled), rulings)
+    assert "exchange" in doc["about"]["groups"] and sum(1 for l in ruled if l["group"] == "exchange") >= 8
+    for l in ruled:
+        assert l["rule"].strip() and l["defect"].strip() and l["apply"].strip(), l["id"]
+        assert (l.get("enforced_by") or "").strip() or (l.get("why_not_enforced") or "").strip(), l["id"]
+    #  nothing about what was found in the Owner's other repositories is in a public tree
+    blob = json.dumps(ruled).lower()
+    for banned in ("private repositor", "service-account", "private key"):
+        assert banned not in blob, banned
+    served = {l["id"]: l for l in client.get("/api/v1/method").json()["lessons"]}
+    assert all(served[l["id"]].get("ratified") == l["ratified"] for l in ruled), "the served lesson drops its ruling"
+
+    #  5. THE RECORD OF A RULING: one record for the whole ruled batch - and it cannot claim a ruling the
+    #     method does not show, nor name a lesson the method does not hold
+    one_ruling = sorted(rulings)[0]
+    batch = [{k: l.get(k) for k in ("id", "group", "rule", "defect", "apply", "enforced_by", "why_not_enforced")}
+             for l in ruled if l["ratified"] == one_ruling]
+    n0 = len(_records())
+    rec = client.post("/api/v1/method/amendment", json={"title": "the ruled batch", "lessons": batch, "ruled_by": one_ruling})
+    assert rec.status_code == 200, rec.text[:400]
+    assert rec.json()["kind"] == "record_of_a_ruling" and rec.json()["lessons_in_record"] == len(batch)
+    assert len(_records()) == n0 + 1
+    wrong = client.post("/api/v1/method/amendment", json={"title": "x", "lessons": batch, "ruled_by": "a ruling nobody made"})
+    assert wrong.status_code == 400 and "does not carry this ruling" in json.dumps(wrong.json())
+    unruled = next(l for l in doc["lessons"] if not l.get("ratified"))
+    mixed = batch[:1] + [{k: unruled.get(k) for k in ("id", "group", "rule", "defect", "apply", "enforced_by", "why_not_enforced")}]
+    assert client.post("/api/v1/method/amendment", json={"title": "x", "lessons": mixed, "ruled_by": one_ruling}).status_code == 400
+    absent = client.post("/api/v1/method/amendment", json={"title": "x", "lessons": [_lesson(11)], "ruled_by": one_ruling})
+    assert absent.status_code == 400 and "is not in the method" in json.dumps(absent.json())
+    assert len(_records()) == n0 + 1, "a refused record of a ruling filed a record"
+
+    #  6. THE PAGE labels the new group and shows the ruling beside the lesson it entered
+    page = (root / "apps/workstation-superapp/src/pages/governance/DeliveryMethod.tsx").read_text(encoding="utf-8")
+    assert "{l.ratified && (" in page and 'data-testid="lesson-ratified"' in page and "{l.ratified}" in page
+    assert "/api/v1/method/amendment" in {getattr(r, "path", "") for r in client.app.routes}
+    assert "POST /api/v1/method/amendment" in _m._METHOD_FILERS
+    #  the sentence that counts the filers is computed from the list it describes
+    ho = _m._appraisal_hand_off("P3.30")
+    assert len(ho["method_filers"]) == len(_m._METHOD_FILERS) >= 4
+    assert f"the {len(ho['method_filers'])} method routes" in ho["method_filers_basis"], ho["method_filers_basis"]
