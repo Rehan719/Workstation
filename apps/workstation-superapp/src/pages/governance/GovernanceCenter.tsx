@@ -5,6 +5,7 @@ import { GovernanceHub } from './GovernanceHub';
 import { ConstitutionalUI } from './ConstitutionalUI';
 import { ComplianceChecker } from './ComplianceChecker';
 import { DeliveryMethod } from './DeliveryMethod';
+import { MethodAppraisal } from './MethodAppraisal';
 import { ReviewRecords } from './ReviewRecords';
 
 // Consolidated Governance & Trust center (§11 live compliance + constitutional gaas) — folds the former
@@ -16,6 +17,7 @@ const TABS = [
   // §P2.10(d) — the delivery method, on the surface the arms-length agency already owns. Beside the
   // constitution on purpose: both are things the platform is held to rather than features it offers.
   { id: 'method',       name: 'Method',       icon: BookOpen,    El: DeliveryMethod },
+  { id: 'appraisal',    name: 'Appraisal',    icon: BookOpen,    El: MethodAppraisal },
   // W690 (Owner ruling 2026-10-12) — the records of review: which tools have been reviewed, by what, and the
   // one form that records a review. Beside the method: both are what the platform is held to.
   { id: 'review',       name: 'Review',       icon: ClipboardCheck, El: ReviewRecords },
