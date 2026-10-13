@@ -5245,6 +5245,12 @@ PHASE P3 — CAPABILITY (Tier 3; delivered_by: build; ESTIMATED ~11 rounds — N
       ranked (nothing here scores a recitation), states its population rather than implying a field of
       competitors, and NAMES a tie instead of passing an arbitrary order off as a ranking. The only
       leaderboard this platform ever had was ten rows from random.randint, deleted in W404]
+      [RULED BY THE OWNER 2026-10-12, built W685 - this item stays done as it was built, and its ranking is
+      RETIRED: the route answers that it is and where a learner's own progress is, and the code is kept
+      behind a switch that this item's own guard still drives. A learner now sees their own two months,
+      this month against last; points follow a recorded review only; a count of days reviewed replaces
+      the count of consecutive days. What replaces a ranking between people - a circle's shared total and a
+      judged event with named human judges - is the fifth-phase item for the four areas, after sign-in.]
       [vision A.6, A.1] QEP composed, not rebuilt. The Religion domain's remaining features are
       built by COMPOSING §6/§7 resources — never a private QEP stack, which is what killed all
       three prior attempts (A.13.1), and never the excluded 2025 stack (A.10). First the two that

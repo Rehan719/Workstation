@@ -8775,7 +8775,12 @@ def test_w438_refuter_pass_findings_stay_fixed(client):
     assert "% measured" in hs["health_basis"]
 
 
-def test_w439_qep_cluster_audited_fixes_hold(client):
+def test_w439_qep_cluster_audited_fixes_hold(client, monkeypatch):
+    #  W685 (OWNER RULINGS 2026-10-12) - explicit awards are refused and the ranking is retired AS SHIPPED; the code
+    #  is kept behind two switches, and this test exercises that kept code with the switches off.
+    import agentic_core.religious_domain.api as _q685
+    monkeypatch.setattr(_q685, "EXPLICIT_AWARDS_REFUSED", False)
+    monkeypatch.setattr(_q685, "LEADERBOARD_RETIRED", False)
     # W439 — the QEP cluster (17 routes) audited before wiring into the Religion domain. Faith
     # content carries the repo's highest honesty bar; this guard pins the load-bearing fixes.
     import uuid as _uuid
@@ -8788,7 +8793,8 @@ def test_w439_qep_cluster_audited_fixes_hold(client):
     assert a["recorded"] is True and a["xp"] == 20
     g = client.get(f"/api/v1/qep/gamification/{UID}").json()
     assert g["xp"] == 20, "the award vanished — the fabricated-recorded fallback is back"
-    assert g["level_basis"] and g["streak_basis"].startswith("consecutive UTC")
+    assert g["level_basis"] and g["days_reviewed_basis"].startswith("distinct UTC days this month")
+    assert "streak_days" not in g and "streak_basis" not in g
 
     # ── uid is a filename: traversal refused at the choke point ─────────────────────────────────
     assert client.post("/api/v1/qep/gamification/award",
@@ -42635,7 +42641,12 @@ def test_w595_p36_language_depth_reaches_the_surfaces_and_labels_what_it_cannot_
             f"reach it", _rel)
 
 
-def test_w596_p39_the_memorisation_surface_and_a_leaderboard_over_recorded_xp(client):
+def test_w596_p39_the_memorisation_surface_and_a_leaderboard_over_recorded_xp(client, monkeypatch):
+    #  W685 (OWNER RULINGS 2026-10-12) - explicit awards are refused and the ranking is retired AS SHIPPED; the code
+    #  is kept behind two switches, and this test exercises that kept code with the switches off.
+    import agentic_core.religious_domain.api as _q685
+    monkeypatch.setattr(_q685, "EXPLICIT_AWARDS_REFUSED", False)
+    monkeypatch.setattr(_q685, "LEADERBOARD_RETIRED", False)
     """P3.9 — QEP composed: the real SM-2 state on screen, and a leaderboard over PERSISTED XP.
 
     Measured before this round: `/hifz/review` already returned `new_efactor` and the
@@ -42754,48 +42765,27 @@ def test_w596_p39_the_memorisation_surface_and_a_leaderboard_over_recorded_xp(cl
         "an uncapped board does not state that nothing was omitted, so a reader cannot distinguish it "
         "from a capped one", _b.get("truncated"), _b.get("population_basis"))
 
-    # ── (2b) AND A READER SEES THE BOARD, ITS FORMULA AND ITS POPULATION ───────────────────────
-    #  "with its formula shown" is shown to a PERSON. The pre-flight caught that no page fetched this
-    #  route at all, which is the same thing the register refused to let P3.6 close with: a formula in a
-    #  payload is not a formula shown.
+    # ── (2b) WHAT A READER SEES IN THE RANKING'S PLACE (W685; OWNER RULING 2026-10-12) ─────────────────
+    #  This leg used to pin the ranking card: its formula, its population, its ties. The Owner retired the
+    #  ranking of learners; the legs above still drive the KEPT code with the switch off. What a reader sees
+    #  now is their own two months, and it is pinned the way the card was: by the gate, not by a field's name.
     _studio39 = (_pl39.Path(__file__).resolve().parents[1]
                  / "apps/workstation-superapp/src/components/QEPStudio.tsx").read_text(encoding="utf-8")
-    assert "/api/v1/qep/leaderboard" in _studio39, (
-        "no page fetches the leaderboard, so its formula and its population are shown to nobody")
-    assert 'data-testid="qep-leaderboard"' in _studio39, "the board is not rendered"
-    assert 'data-testid="qep-leaderboard-formula"' in _studio39, (
-        "the formula is not rendered, so a reader cannot check how the board ranked")
-    assert "board.population_basis" in _studio39, (
-        "the population is not rendered, so a board of two implies a field of competitors")
-    #  the two COUNTS reach the reader as well, not only the sentence: "showing N of M", and the cap
-    #  named when there is one. The pre-flight's standing lead is a key produced and shown to nobody.
-    assert 'data-testid="qep-leaderboard-population"' in _studio39, (
-        "the card does not state how many of how many, so a reader seeing ten names cannot tell whether "
-        "ten is the field or the top of it")
-    assert "board.truncated" in _studio39 and "board.learners_ranked" in _studio39, (
-        "the cap and the ranked population do not reach the page, so the card cannot say which it shows",
-        "board.truncated" in _studio39, "board.learners_ranked" in _studio39)
-    #  and the per-learner history check, which exists precisely because it can DISAGREE with the total.
-    #  NOT a presence check on the field name: this round drove that blind and it came back VACUOUS,
-    #  because a JSX conditional names its field in BOTH the gate and the body - `{gate && <p>{field}</p>}`
-    #  - so disabling the gate leaves the name in the file. The GATE's own comparison is asserted, which
-    #  is the thing a disabled gate loses, and the testid catches deletion of the whole block.
-    assert "r.xp_in_recorded_history !== r.xp" in _studio39, (
-        "the page no longer compares the recorded history against the displayed total, so the two can "
-        "disagree - which they will once history is capped at its last awards - with nothing shown")
-    assert "qep-leaderboard-history-" in _studio39, (
-        "the line that reports a disagreement between a learner's displayed XP and the awards beneath it "
-        "is gone, so the XP shown beside their name cannot be checked")
-    assert 'data-testid="qep-leaderboard-formula-basis"' in _studio39, (
-        "the line saying what is NOT ranked - nothing here scores a recitation - is not rendered, so the "
-        "board reads as a performance ranking on the one surface a learner sees")
-    assert "board.unreadable_basis" in _studio39, (
-        "a learner file that could not be read is silently omitted from the board rather than disclosed")
-    assert "board.not_a_certification" in _studio39, (
-        "the screen does not say a position here is not an attainment")
-    assert "board.ties > 0" in _studio39, (
-        "the tie note is rendered unconditionally or not at all; it must appear exactly when there IS a "
-        "tie, or it is noise on every board")
+    assert "/api/v1/qep/leaderboard" not in _studio39 and "qep-leaderboard" not in _studio39, (
+        "the page still fetches or renders a ranking of learners")
+    assert "{gami?.own_progress && (" in _studio39 and 'data-testid="qep-own-progress"' in _studio39, (
+        "a learner's own progress is not shown where the ranking stood")
+    assert "[gami.own_progress.this_month, gami.own_progress.last_month].map(" in _studio39, (
+        "the two months are not both shown, so 'against last month' compares with nothing")
+    assert _studio39.count("{gami.own_progress.basis}") == 1, (
+        "the sentence saying this compares a learner with their own past and no one else is not the server's")
+    assert "streak" not in _studio39.lower(), "the page still words a streak"
+    assert "title={gami.days_reviewed_basis}>{gami.days_reviewed_this_month} day(s) reviewed this month" in _studio39
+    #  and with the switches AS SHIPPED the route says it is retired and where a learner's own progress is
+    monkeypatch.setattr(_q685, "LEADERBOARD_RETIRED", True)
+    _gone39 = client.get("/api/v1/qep/leaderboard")
+    assert _gone39.status_code == 410 and "/api/v1/qep/gamification/{uid}" in _gone39.json()["detail"]
+    monkeypatch.setattr(_q685, "LEADERBOARD_RETIRED", False)
 
     # ── (3) THE ITEM'S OWN GUARD: NO FIGURE WITHOUT A BASIS, ON THE ROUTES IT TOUCHES ───────────
     #  Driven on the RESPONSE, because a handler's source cannot show what a response carries. A figure is
@@ -47408,7 +47398,12 @@ def test_w630_p226_the_four_v10_tier1_statements_are_true(client, monkeypatch):
             "a floor twin's score still reads as simulated evidence")
 
 
-def test_w631_p227_the_twelve_v10_tier2_shortfalls_are_said(client):
+def test_w631_p227_the_twelve_v10_tier2_shortfalls_are_said(client, monkeypatch):
+    #  W685 (OWNER RULINGS 2026-10-12) - explicit awards are refused and the ranking is retired AS SHIPPED; the code
+    #  is kept behind two switches, and this test exercises that kept code with the switches off.
+    import agentic_core.religious_domain.api as _q685
+    monkeypatch.setattr(_q685, "EXPLICIT_AWARDS_REFUSED", False)
+    monkeypatch.setattr(_q685, "LEADERBOARD_RETIRED", False)
     """W631 (P2.27): FU-546, 547, 548, 551, 552, 553, 554, 555, 556, 557, 558, 559."""
     _fe = lambda p: _code_only(open(f"apps/workstation-superapp/src/{p}", encoding="utf-8").read())
 
@@ -62300,6 +62295,10 @@ def test_w683_every_mounted_route_asks_or_is_declared_public_and_the_strict_chec
     #  THE TREE'S OWN STATE, by the instrument's own rule - never a hand count.
     ap = _w683_perimeter()
     rows, _names, has = ap.measure()
+    #  THE APPLICATION OBJECT IS SHARED BY THE WHOLE RUN, and an earlier test adds a probe route to it. A route
+    #  defined by this test file is not the product's; it is left out by the module that defines it - never by
+    #  its name. (Found by the build server: the guard passed or failed by which test ran first in its worker.)
+    rows = [r for r in rows if "test_mvp_spine" not in (r.get("module") or "")]
     assert has, "docs/PUBLIC_ROUTES.json is gone: no route is declared public on purpose"
     loose = [f"{r['method']} {r['path']}" for r in rows if r["state"] == "UNDECIDED"]
     assert not loose, f"mounted with no caller and declared nowhere - decide each in docs/PUBLIC_ROUTES.json: {loose}"
@@ -62550,3 +62549,84 @@ def test_w684_the_practice_panel_is_on_the_quran_page_and_says_only_what_the_ser
     #  the three routes it calls are the three this round built
     for call in ("/api/v1/qep/hifz/portions/", "/api/v1/qep/hifz/portion'", "/api/v1/qep/hifz/practice/", "/api/v1/qep/hifz/similar?surahs="):
         assert call in panel, call
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W685 - THE QURAN PLATFORM, THREE OF THE OWNER'S RULINGS OF 2026-10-12: only a recorded review awards; a
+#  count of days is a fact, never something to protect; a learner sees their own progress, never a rank.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w685_only_a_recorded_review_awards_and_an_asserted_award_changes_nothing(client, monkeypatch):
+    import uuid as _uuid
+    import agentic_core.religious_domain.api as _q
+    uid = f"w685a-{_uuid.uuid4().hex[:8]}"
+    assert _q.EXPLICIT_AWARDS_REFUSED is True, "the ruling's switch is off as shipped"
+    before = client.get(f"/api/v1/qep/gamification/{uid}").json()
+    r = client.post("/api/v1/qep/gamification/award", json={"uid": uid, "achievement": "daily_review", "xp": 20})
+    assert r.status_code == 409 and "No points were recorded" in r.json()["detail"], r.text
+    assert client.get(f"/api/v1/qep/gamification/{uid}").json()["xp"] == before["xp"] == 0
+    assert not _q._gami_path(uid).exists(), "a refused award wrote the learner's file"
+    #  the earlier refusals still come FIRST, each as itself
+    assert client.post("/api/v1/qep/gamification/award", json={"uid": "../../evil", "achievement": "x"}).status_code == 400
+    assert client.post("/api/v1/qep/gamification/award",
+                       json={"uid": uid, "achievement": "surah_complete", "xp": 5}).status_code == 422
+    #  a RECORDED review still awards - the one path the platform itself observed
+    assert client.post("/api/v1/qep/hifz/schedule", json={"uid": uid, "surah_number": 1, "ayaat_range": [1, 1]}).status_code == 200
+    rev = client.post("/api/v1/qep/hifz/review", json={"uid": uid, "ayah_ref": "1:1", "quality": 4}).json()
+    assert rev["xp_awarded"] == 5
+    assert client.get(f"/api/v1/qep/gamification/{uid}").json()["xp"] == 5
+    #  the kept code still works when the switch is off (it is retired, not removed)
+    monkeypatch.setattr(_q, "EXPLICIT_AWARDS_REFUSED", False)
+    ok = client.post("/api/v1/qep/gamification/award", json={"uid": uid, "achievement": "daily_review", "xp": 20})
+    assert ok.status_code == 200 and ok.json()["recorded"] is True and ok.json()["award_source"] == "caller_asserted"
+
+
+def test_w685_days_reviewed_is_a_count_of_days_and_own_progress_compares_a_learner_with_themselves():
+    import datetime as _dt
+    import agentic_core.religious_domain.api as _q
+    #  the STATE is made to happen: a record written directly, and the clock fixed on both of its readers
+    g = {"uid": "w685-months", "xp": 25, "achievements": ["ayah_review"],
+         "award_days": ["2026-08-30", "2026-09-01", "2026-09-30", "2026-10-01", "2026-10-03"],
+         "history": [{"achievement": "ayah_review", "xp": 5, "source": "hifz_review", "at": d}
+                     for d in ("2026-08-30T10:00:00Z", "2026-09-01T10:00:00Z", "2026-09-30T23:59:59Z",
+                               "2026-10-01T00:00:00Z", "2026-10-03T09:00:00Z")]}
+
+    on = lambda y, m, d: _q._month_counts(g, today=_dt.date(y, m, d))
+    oct13 = on(2026, 10, 13)
+    assert oct13["this_month"] == {"month": "2026-10", "days_reviewed": 2, "awards_recorded": 2}
+    assert oct13["last_month"] == {"month": "2026-09", "days_reviewed": 2, "awards_recorded": 2}
+    assert "no one else" in oct13["basis"]
+    #  a month's first and last day, and the year's turn
+    assert on(2026, 10, 1)["last_month"]["month"] == "2026-09" and on(2026, 10, 31)["this_month"]["month"] == "2026-10"
+    jan = _q._month_counts({**g, "award_days": ["2026-12-31", "2027-01-01"], "history": []}, today=_dt.date(2027, 1, 1))
+    assert jan["this_month"] == {"month": "2027-01", "days_reviewed": 1, "awards_recorded": 0}
+    assert jan["last_month"]["month"] == "2026-12" and jan["last_month"]["days_reviewed"] == 1
+    #  A MISSED DAY CHANGES NOTHING ELSE: the count of days is the count of days, with a gap or without
+    gap = _q._month_counts({**g, "award_days": ["2026-10-01", "2026-10-09"]}, today=_dt.date(2026, 10, 13))
+    run = _q._month_counts({**g, "award_days": ["2026-10-08", "2026-10-09"]}, today=_dt.date(2026, 10, 13))
+    assert gap["this_month"]["days_reviewed"] == run["this_month"]["days_reviewed"] == 2
+    #  and the learner's state carries the same counts, by the same function
+    s = _q._gami_state(g)
+    assert s["own_progress"] == _q._month_counts(g) and s["days_reviewed_this_month"] == s["own_progress"]["this_month"]["days_reviewed"]
+    assert "streak_days" not in s and "streak_basis" not in s
+    #  ... and it is THIS month's count the learner is shown, on whatever day this runs: one review today is one
+    #  day this month and none last month
+    import time as _t685
+    today_utc = _t685.strftime("%Y-%m-%d", _t685.gmtime())
+    s2 = _q._gami_state({**g, "award_days": [today_utc], "history": []})
+    assert s2["days_reviewed_this_month"] == 1 and s2["own_progress"]["last_month"]["days_reviewed"] == 0
+    #  no answer of a learner's state urges them to keep, protect or not lose anything
+    said = json.dumps(s).lower()
+    for word in ("streak", "protect", "don't lose", "do not lose", "keep it up", "keep your"):
+        assert word not in said, word
+
+
+def test_w685_the_ranking_of_learners_is_retired_and_its_code_is_kept(client, monkeypatch):
+    import agentic_core.religious_domain.api as _q
+    assert _q.LEADERBOARD_RETIRED is True, "the ruling's switch is off as shipped"
+    r = client.get("/api/v1/qep/leaderboard")
+    assert r.status_code == 410, r.status_code
+    assert "retired" in r.json()["detail"] and "/api/v1/qep/gamification/{uid}" in r.json()["detail"]
+    assert set(r.json()) == {"detail"}, "the refusal carries something besides its reason - no learner may be listed"
+    monkeypatch.setattr(_q, "LEADERBOARD_RETIRED", False)
+    kept = client.get("/api/v1/qep/leaderboard")
+    assert kept.status_code == 200 and "leaderboard" in kept.json() and kept.json().get("population_basis")

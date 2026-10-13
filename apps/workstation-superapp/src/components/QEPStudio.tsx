@@ -21,7 +21,9 @@ interface CorpusProvenance {
   licence?: string; provenance_basis?: string; basmala?: string | null; basmala_note?: string | null;
 }
 interface HifzProgress { total_ayaat_in_schedule: number; total_ayaat_memorised: number; due_today: number; due_refs: string[]; total_sessions: number; identity_verified?: boolean; identity_basis?: string }
-interface GamiState { xp: number; level: number; level_basis: string; achievements: string[]; streak_days: number; streak_basis: string; awards_recorded: number; scope: string }
+interface MonthCount { month: string; days_reviewed: number; awards_recorded: number }
+interface OwnProgress { this_month: MonthCount; last_month: MonthCount; basis: string }
+interface GamiState { xp: number; level: number; level_basis: string; achievements: string[]; days_reviewed_this_month: number; days_reviewed_basis: string; awards_recorded: number; scope: string; own_progress?: OwnProgress }
 interface Recall { comparable: boolean; reason?: string; text_similarity?: number; similarity_basis?: string; exact_similarity?: number; exact_similarity_basis?: string; missing_rule_markers?: string[]; markers_basis?: string; scope?: string }
 
 const UID = 'local';
@@ -53,14 +55,10 @@ export const QEPStudio: React.FC = () => {
   // constraints) and the translation availability were served but never shown to anyone.
   const [qepStatus, setQepStatus] = useState<any>(null);
   const [trStatus, setTrStatus] = useState<any>(null);
-  const [board, setBoard] = useState<any>(null);
   const loadCore = () => {
     setLoadErrs([]);
     getJson(`/api/v1/qep/hifz/progress/${UID}`, setProgress);
     getJson(`/api/v1/qep/gamification/${UID}`, setGami);
-    //  P3.9 — the leaderboard is FETCHED, because its formula and its population are 'shown' only
-    //  if a reader sees them. The pre-flight caught that no page fetched this route at all.
-    getJson('/api/v1/qep/leaderboard', setBoard);
     getJson('/api/v1/qep/status', setQepStatus);
     fetch('/api/v1/qep/translation/status')
       .then(r => (r.ok ? r.json() : Promise.reject()))
@@ -178,67 +176,22 @@ export const QEPStudio: React.FC = () => {
         <p className="text-amber-400 text-[10px] font-bold">{loadErrs.length} section(s) failed to load — {loadErrs.slice(0, 2).join(' · ')}</p>
       )}
 
-      {/* P3.9 — THE LEADERBOARD, over PERSISTED XP. The only leaderboard this platform ever had was
-          ten rows from random.randint, deleted in W404. Everything shown here is read from the store, and
-          the formula, the population and any tie are shown with it - a board that hides how it ranked
-          implies a competition nobody can check. */}
-      {board && (
-        <Card className="p-4" data-testid="qep-leaderboard">
-          <p className="text-[9px] font-black uppercase tracking-widest text-slate-600 mb-2">leaderboard — recorded XP only</p>
-          {(board.leaderboard || []).length === 0 ? (
-            <p className="text-[10px] text-slate-500">No learner has a recorded award yet, so there is nothing to rank.</p>
-          ) : (
-            <div className="space-y-1">
-              {(board.leaderboard || []).map((r: any) => (
-                <div key={r.uid} className="text-[10px]">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-black text-slate-300">#{r.rank} {r.uid}</span>
-                    <span className="text-slate-500">{r.xp} XP · {r.achievements} achievement(s)</span>
-                  </div>
-                  {/* The running total and the sum of the learner's own recorded history CAN differ —
-                      history keeps the last 500 awards while xp accumulates without limit. When they
-                      differ the displayed XP is no longer checkable against the history beneath it, and
-                      a reader deserves to be told that rather than discovering it. Shown only on a
-                      mismatch: on agreement the figure adds nothing. */}
-                  {typeof r.xp_in_recorded_history === 'number' && r.xp_in_recorded_history !== r.xp && (
-                    <p data-testid={`qep-leaderboard-history-${r.uid}`} className="text-[9px] text-amber-400/80 leading-relaxed">
-                      {r.awards_recorded} award(s) still in history sum to {r.xp_in_recorded_history} XP, not
-                      the {r.xp} shown — history keeps the most recent awards only, so the total above cannot
-                      be checked against it in full.
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-          {/* HOW MANY OF HOW MANY, on the card. The response caps the rows at `limit`, so a reader
-              seeing ten names needs to know whether ten is the field or the top of it — the counts say
-              which, and `truncated` makes the cap a stated fact rather than something inferable only by
-              comparing two numbers. */}
-          <p data-testid="qep-leaderboard-population" className="text-[9px] text-slate-500 mt-2 leading-relaxed">
-            Showing {board.shown} of {board.learners_ranked} learner(s) with a recorded award
-            {board.truncated ? ' — this is the TOP of a larger ranking, not the whole field' : ' — all of them'}.
-          </p>
-          <p data-testid="qep-leaderboard-formula" className="text-[9px] text-slate-500 mt-1 leading-relaxed">
-            {board.formula}. {board.population_basis}
-          </p>
-          {/* the sentence that stops this reading as a performance ranking: nothing here scores a
-              recitation. It is the most important line on the card and it was API-only until the
-              pre-flight said so. */}
-          <p data-testid="qep-leaderboard-formula-basis" className="text-[9px] text-slate-600 mt-1 leading-relaxed">
-            {board.formula_basis}
-          </p>
-          {/* a learner file that could not be read is NOT a learner with no XP, and a board that
-              silently omits them is a board missing people */}
-          {board.unreadable_basis && (
-            <p data-testid="qep-leaderboard-unreadable" className="text-[9px] text-vital mt-1 leading-relaxed">
-              {board.unreadable_basis}
-            </p>
-          )}
-          {board.ties > 0 && (
-            <p data-testid="qep-leaderboard-ties" className="text-[9px] text-amber-400/80 mt-1 leading-relaxed">{board.tie_basis}</p>
-          )}
-          <p className="text-[9px] text-amber-400/80 italic mt-1 leading-relaxed">{board.not_a_certification}</p>
+      {/* W685 (OWNER RULING 2026-10-12) — A LEARNER SEES THEIR OWN PROGRESS, NEVER A RANK. The ranking of learners
+          that stood here is retired (its route answers that it is, and its code is kept). What is shown is this
+          learner's own two months, counted by the server from their own recorded history, with the server's
+          sentence saying so. */}
+      {gami?.own_progress && (
+        <Card className="p-4" data-testid="qep-own-progress">
+          <p className="text-[9px] font-black uppercase tracking-widest text-slate-600 mb-2">your progress — this month against last</p>
+          <div className="grid grid-cols-2 gap-2">
+            {[gami.own_progress.this_month, gami.own_progress.last_month].map((m, i) => (
+              <div key={m.month} data-testid={i === 0 ? 'qep-own-this-month' : 'qep-own-last-month'} className="p-2 rounded-lg border border-slate-900">
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">{i === 0 ? 'this month' : 'last month'} · {m.month}</p>
+                <p className="text-[11px] text-white">{m.days_reviewed} day(s) reviewed · {m.awards_recorded} review(s) recorded</p>
+              </div>
+            ))}
+          </div>
+          <p data-testid="qep-own-progress-basis" className="text-[9px] text-slate-500 mt-2 leading-relaxed">{gami.own_progress.basis}</p>
         </Card>
       )}
 
@@ -266,7 +219,7 @@ export const QEPStudio: React.FC = () => {
         <div className="flex items-center gap-2 flex-wrap">
           <Chip tone="ok" title={gami.level_basis}>level {gami.level}</Chip>
           <Chip tone="ok">{gami.xp} XP</Chip>
-          <Chip tone={gami.streak_days > 0 ? 'ok' : 'dim'} title={gami.streak_basis}>streak {gami.streak_days}d</Chip>
+          <Chip tone="dim" title={gami.days_reviewed_basis}>{gami.days_reviewed_this_month} day(s) reviewed this month</Chip>
           <Chip tone="dim">{gami.awards_recorded} awards recorded</Chip>
           <span className="text-[9px] text-slate-600">{gami.scope}</span>
         </div>

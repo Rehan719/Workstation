@@ -334,6 +334,8 @@ Each feature below carries its scope, its user stories as written in the Develop
 
 ### Feature 4 — Gamified Learning & Competitions
 
+> **OWNER RULINGS 2026-10-12 - read this section with them; its earlier words are kept below as they were written.** The platform does not rank learners against each other: the ranking that was built is retired behind a switch, and a learner sees their own progress, this month against last. Points follow a recorded review only. A count of days reviewed is a fact and is never worded as something to protect, so there are no streaks. Recitation is never scored by the platform (A.9.1). What stands in place of a ranking, after sign-in: a circle's shared total, a personal challenge against one's own past, and a judged event whose organiser writes the criteria and names the human judges - the judges decide, the platform keeps the record, and no placings are published for children by default.
+
 **Scope.** Skill-based recitation and memorisation competitions with global and regional leaderboards, experience points, badges, streaks, and event notifications. Real-time multiplayer sessions. Replay and share options for submitted recitations. Auto-scoring via the AI classifier with a confidence percentage.
 
 **User stories.**
