@@ -539,13 +539,12 @@ async def list_users(_admin: dict = Depends(require_admin)):
 
 @router.get("/status")
 async def auth_status():
-    """Auth system status — safe to call without credentials."""
-    users = _load_users()
+    """Auth system status — safe to call without credentials. It says the mode and whether the sign-in parts
+    are installed; it reads no account and gives no count of them (W693)."""
     return {
         "auth_enabled": auth_enabled(),
         "mode": "multi-user" if auth_enabled() else "single-user",
         "algorithm": _ALGORITHM,
         "access_token_ttl_minutes": _ACCESS_TTL,
-        "user_count": len(users),
         "crypto_deps_installed": _AUTH_DEPS_OK,
     }

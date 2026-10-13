@@ -42,7 +42,8 @@ _STORE.mkdir(parents=True, exist_ok=True)
 _REGISTRY = _STORE / "adaptation_registry.json"
 _MODEL = _STORE / "recommendation_model.json"
 
-_SUPPORTED_LANGUAGES = ["Arabic", "English", "Urdu", "Turkish", "Indonesian", "French", "Malay", "Bengali"]
+#  W692 - Arabic is NOT listed: every Arabic request is refused by ruling, so listing it said the opposite
+_SUPPORTED_LANGUAGES = ["English", "Urdu", "Turkish", "Indonesian", "French", "Malay", "Bengali"]
 
 # W409 — these two seeds carried fidelity 0.94 and 0.89, and the compliance audit graded adaptation
 # fidelity against them. Both numbers were literals, so the control could only ever pass: the audit
@@ -302,12 +303,24 @@ _SACRED_REFUSAL = ("translation of Arabic / Qur'anic text is NOT OFFERED, by rul
                    "AI-composed religious text is withheld until a named scholar approves it (A.12.3).")
 
 
+#  W692 - SACRED TEXT IN ANOTHER LANGUAGE IS STILL SACRED TEXT. An ayah quoted in English, or text that names the
+#  Qur'an, a surah, an ayah or a hadith, was passed to the model because only Arabic script was looked for. This
+#  list may only REFUSE - it never clears anything: text it does not match still goes through the scholar gate.
+import re as _re_w692
+_NAMES_SCRIPTURE_RE = _re_w692.compile(
+    r"\b(qur['’`]?an|koran|surah|surat|sura|ayah|ayat|aya|hadith|hadeeth|ahadith|sunnah|sahih|bukhari|"
+    r"tirmidhi|tafsir|tafseer|the prophet said|allah says|allah said)\b", _re_w692.IGNORECASE)
+_CITES_A_VERSE_RE = _re_w692.compile(r"\(\s*\d{1,3}\s*:\s*\d{1,3}\s*\)")
+
+
 def _is_sacred_source(req: "TranslateRequest") -> bool:
     #  W659 - one definition of "Arabic script" for the platform (it was typed here and again where composed text
     #  is screened)
     from agentic_core.religious_domain.composed_text import ARABIC_SCRIPT_RE
+    text = req.text or ""
     return (str(req.source_language or "").strip().lower() in ("arabic", "ar", "quranic arabic", "classical arabic")
-            or bool(ARABIC_SCRIPT_RE.search(req.text or "")))
+            or bool(ARABIC_SCRIPT_RE.search(text))
+            or bool(_NAMES_SCRIPTURE_RE.search(text)) or bool(_CITES_A_VERSE_RE.search(text)))
 
 
 class TranslateRequest(BaseModel):
@@ -341,9 +354,11 @@ async def translation_status():
         "supported_languages": _SUPPORTED_LANGUAGES,
         "sacred_text": _SACRED_REFUSAL,      # W631 (FU-546) - said before anyone clicks, not only at refusal
         "engine": "in-house-first gateway (owned local model; external accelerants opt-in via AI_ALLOW_EXTERNAL)",
-        "tajweed_note": ("recitation-note annotation is REQUESTED from the model when "
-                         "preserve_tajweed is set — it is a prompt instruction, not a verified "
-                         "capability"),
+        "tajweed_note": ("no tajwid or recitation note is asked of a model: tajwid is not composed here and "
+                         "recitation is never assessed (A.9.1). The request's preserve_tajweed field is accepted "
+                         "and has no effect"),
+        "review_note": ("a model's translation of teaching text is composed religious content: it is withheld "
+                        "until a named scholar approves it, never shown with a caveat (A.12.3)"),
     }
 
 
@@ -359,7 +374,7 @@ async def translation_translate(req: TranslateRequest,
     prompt = (
         f"Translate the following from {req.source_language} to {req.target_language}. "
         "Preserve meaning and scholarly register"
-        + (" and annotate tajweed/recitation notes where relevant" if req.preserve_tajweed else "")
+        #  W692 - no tajwid or recitation note is asked for: not composed, not assessed (A.9.1)
         + f".\n\nText:\n{req.text}\n\nReturn only the translation."
     )
     # W439 — a translation must come from a MODEL. The deterministic native floor composes
@@ -389,15 +404,29 @@ async def translation_translate(req: TranslateRequest,
         raise HTTPException(status_code=503, detail=(
             "the model resource failed to serve and the deterministic floor answered instead — "
             "its output will not be presented as a translation."))
+    #  W692 (A.12.3) - A MODEL'S TRANSLATION OF TEACHING TEXT IS COMPOSED RELIGIOUS CONTENT. It was returned with
+    #  a caveat; a disclaimer is not a review. It passes the same gate the lessons do: shown only when a named
+    #  scholar has approved THIS text, and otherwise withheld with the reason. submit_if_new, never submit - a
+    #  later request for the same text must not reset an approval.
+    from agentic_core.api import scholar_review as _sr
+    _composed = meta.get("output") or ""
+    _key = "qep_translation:" + _sr.body_hash(f"{req.target_language}|{req.text}")
+    _sr.submit_if_new(_key, "qep/translation/translate", _composed,
+                      reference=f"{req.source_language or 'language not stated'} to {req.target_language}")
+    _published, _state, _why = _sr.published_body(_key, _composed)
     return {
         "source_language": req.source_language,
         "target_language": req.target_language,
         "original": req.text,
-        "translation": meta.get("output") or "",
+        "translation": _published,
         "served_by": served_by,
         "is_external": bool(meta.get("is_external")),
-        "status": "translated",
-        "label": "AI-assisted translation — not authoritative; scholarly translations differ and matter",
+        "status": "translated" if _published is not None else "withheld",
+        "review_state": _state,
+        "scholar_reviewed": _state == "approved",
+        "withheld_note": None if _published is not None else _why,
+        "label": ("a model's translation, approved by a named scholar" if _published is not None else
+                  "a model composed a translation and it is NOT shown: it awaits a named scholar's review"),
     }
 
 

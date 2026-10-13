@@ -14463,11 +14463,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W693",
       "note": "",
       "slot_source": "the undone part of an Owner ruling closed in W658",
-      "tier": 3
+      "tier": 3,
+      "because": "already_satisfied",
+      "because_means": "measured as satisfied by an earlier round; nothing was built for it here",
+      "close_note": "read 2026-10-13: GET /api/v1/economy/transfers/intake-sources flags each recorded credit whose sender is not registered now, and the named guard drives it. No page calls the route yet - the flag is reachable by the API only, which is the wider row on routes with no page",
+      "reachability_check": "test_p3a_r2_a_record_holds_what_happened"
     },
     {
       "id": "FU-746",
@@ -17301,11 +17305,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W693",
       "note": "",
       "slot_source": "found in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the operations document says the council route was archived and is not mounted; the guard checks no mounted route carries that address",
+      "reachability_check": "test_w693_four_old_rows_the_home_page_the_public_status_and_the_operations_document"
     },
     {
       "id": "FU-890",
@@ -18142,11 +18150,15 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W693",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "where a model serves, its translation of teaching text now passes the scholar gate and is withheld with the reason until a named scholar approves that text; the model is no longer asked for tajwid or recitation notes; text naming or citing scripture in any language is refused before a model is reached; Arabic is no longer listed as supported. Driven with a model in the composer's place",
+      "reachability_check": "test_w693_a_models_translation_of_teaching_text_is_withheld_and_sacred_text_in_any_language_is_refused"
     },
     {
       "id": "FU-935",
@@ -18283,11 +18295,15 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W693",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the home page's Living Enterprises card and its factory-of-living-enterprises identity both open the page that lists the entities; the Projects page they used to open lists none. Feeding the home activity list from the entity list is a further step and is not done",
+      "reachability_check": "test_w693_four_old_rows_the_home_page_the_public_status_and_the_operations_document"
     },
     {
       "id": "FU-942",
@@ -18789,11 +18805,15 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W693",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the home page's Living Enterprises card and its factory-of-living-enterprises identity both open the page that lists the entities; the Projects page they used to open lists none. Feeding the home activity list from the entity list is a further step and is not done",
+      "reachability_check": "test_w693_four_old_rows_the_home_page_the_public_status_and_the_operations_document"
     },
     {
       "id": "FU-967",
@@ -20021,11 +20041,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W693",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "already_satisfied",
+      "because_means": "measured as satisfied by an earlier round; nothing was built for it here",
+      "close_note": "read 2026-10-13: the score's own warnings say the second oxygen scale was used because the request asked for it and that it applies only where a clinician has prescribed that target, which this code cannot know (care/scoring.py); held by the named guard",
+      "reachability_check": "test_care_a_plan_asks_for_nothing_only_a_clinician_may_write_and_the_oxygen_scale_is_said"
     },
     {
       "id": "FU-1030",
@@ -20138,11 +20162,15 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.10",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W693",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 2
+      "tier": 2,
+      "because": "already_satisfied",
+      "because_means": "measured as satisfied by an earlier round; nothing was built for it here",
+      "close_note": "read 2026-10-13: the floor's section reader skips everything between a person's material marks, and two guards drive a hostile heading inside the material. The callers not yet moved onto the helper still paste headings - that is the row on the eighteen remaining callers",
+      "reachability_check": "test_helper_a_persons_material_is_data_and_every_answer_says_how_much_was_read"
     },
     {
       "id": "FU-1036",
@@ -20676,11 +20704,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P4.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W693",
       "note": "",
       "slot_source": "declared in docs/PUBLIC_ROUTES.json with this caveat",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the public status answer gives no count of accounts and does not read the accounts; the administrator's list still gives the total",
+      "reachability_check": "test_w693_four_old_rows_the_home_page_the_public_status_and_the_operations_document"
     },
     {
       "id": "FU-1064",

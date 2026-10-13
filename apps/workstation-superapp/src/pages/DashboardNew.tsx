@@ -46,7 +46,7 @@ const JOURNEYS = [
 // Each identity links to where it's realised in the product.
 const IDENTITIES = [
   { n: '1', what: 'A service', desc: 'End-to-end AI-mediated Concept → Commercialisation for anybody’s challenge.', route: '/genesis' },
-  { n: '2', what: 'A factory of living enterprises', desc: 'Each output is itself a living VSB IDBO entity, run on the heartbeat levers you enable.', route: '/projects' },
+  { n: '2', what: 'A factory of living enterprises', desc: 'Each output is itself a living VSB IDBO entity, run on the heartbeat levers you enable.', route: '/vsb-cockpit' },
   { n: '3', what: 'A living organisation', desc: 'Chief → Board → AI CEO → C-Suite → CoE → BTO → Build-to-Order.', route: '/ceo' },
   { n: '4', what: 'A reconfigurable resource fabric', desc: 'Engines · reactors · labs · factories + its own AI swarm/models/orchestration.', route: '/resource-fabric' },
   { n: '5', what: 'An economic organism', desc: 'A hybrid Waqf/Trust/Multinational entity (virtual WST; autonomous cycles are opt-in); the living-entities list shows §11 screen status, including never screened.', route: '/economy' },
@@ -56,7 +56,9 @@ const IDENTITIES = [
 const PILLARS = [
   { name: 'Native AI Fabric',       desc: 'Our own swarm · models · orchestration', icon: Cpu,        route: '/native-ai' },
   { name: 'Resource Fabric',        desc: 'Engines · reactors · labs · factories',   icon: Boxes,      route: '/resource-fabric' },
-  { name: 'Living Enterprises',     desc: 'Your VSB IDBO entities & projects',       icon: Building2,  route: '/projects' },
+  // W693 — this card and the identity above it opened the Projects page, which lists no entity and says a
+  // project never becomes one. Both now open the page that lists the entities.
+  { name: 'Living Enterprises',     desc: 'Your VSB IDBO entities',                  icon: Building2,  route: '/vsb-cockpit' },
   { name: 'Governance & Compliance',desc: 'Solution-quality bar · live compliance',  icon: ShieldCheck,route: '/governance-hub' },
   { name: 'Economic Organism',      desc: 'The VSB economy (virtual WST)',           icon: Coins,      route: '/economy' },
   { name: 'Living Organism',        desc: 'The biomimetic body & live vitals',       icon: Activity,   route: '/organism' },
