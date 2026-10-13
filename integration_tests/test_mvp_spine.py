@@ -63062,3 +63062,87 @@ def test_w688_every_domain_tools_answer_carries_its_review_tier_and_the_page_sho
     assert "{(effectiveProv as any).review.basis}" in page
     assert "[Review: ${data.ai_provenance.review.label} — ${data.ai_provenance.review.basis}]" in page
     assert "Unreviewed" not in page, "the page types a tier instead of printing the server's"
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W689 - THE REVIEW CELL'S RECORDS (Owner ruling 2026-10-12, clauses 1, 2, 3 and 5): a review is a record, one
+#  door writes it, and a record that falls short of its tier's rule is refused.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w689_a_review_is_recorded_through_one_door_and_a_short_record_is_refused(client, tmp_path, monkeypatch):
+    import datetime as _dt
+    from agentic_core.api import _review_tier as rt
+    store = tmp_path / "review_tier_records.json"
+    monkeypatch.setattr(rt, "_path", lambda: store)
+    tool = "care_risk_assess"
+    ahead = (_dt.date.today() + _dt.timedelta(days=200)).isoformat()
+    behind = (_dt.date.today() - _dt.timedelta(days=1)).isoformat()
+    today = _dt.date.today().isoformat()
+    assert client.get(f"/api/v1/review/tier/{tool}").json()["tier"] == "unreviewed"
+    #  1. REFUSED, each in its rule's words, and NOTHING is stored
+    for bad, word in (
+        ({"tool": tool, "tier": "checked_by_rule", "date": today, "rule": "a withheld score answers its refusal"}, "no test"),
+        ({"tool": tool, "tier": "reviewed_by_workstation_agent", "date": today, "checklist": "care v1", "model": "m", "agent_calibrated": True}, "no source"),
+        ({"tool": tool, "tier": "signed_by_a_qualified_person", "date": today, "name": "A. Reviewer", "reviewed": "the tool", "lapses_on": ahead}, "no credential"),
+        ({"tool": tool, "tier": "signed_by_a_qualified_person", "date": today, "name": "A. Reviewer", "credential_as_stated": "registered nurse", "reviewed": "the tool", "lapses_on": behind}, "lapsed"),
+        ({"tool": tool, "tier": "approved", "date": today}, "not a tier"),
+        ({"tool": tool, "tier": "checked_by_rule", "date": "soon", "rule": "r", "test": "t"}, "no date"),
+        ({"tool": " ", "tier": "checked_by_rule", "date": today, "rule": "r", "test": "t"}, "names the tool"),
+    ):
+        r = client.post("/api/v1/review/record", json=bad)
+        assert r.status_code == 422 and word in r.json()["detail"], (bad, r.status_code, r.text[:200])
+    assert not store.exists(), "a refused record wrote the store"
+    #  an agent's review that names no model is refused too; an unknown field is refused, never dropped
+    agent = {"tool": tool, "tier": "reviewed_by_workstation_agent", "date": today, "checklist": "care checklist v1",
+             "sources_read": ["nice-ng249"], "agent_calibrated": True, "model": "local-model"}
+    assert client.post("/api/v1/review/record", json={k: v for k, v in agent.items() if k != "model"}).status_code == 422
+    assert client.post("/api/v1/review/record", json={**agent, "score": 9}).status_code == 422
+    assert not store.exists()
+    #  2. A RULE CHECK is recorded, and the tool's own answer changes with it
+    ok = client.post("/api/v1/review/record", json={"tool": tool, "tier": "checked_by_rule", "date": today,
+                                                   "rule": "a withheld score answers its refusal", "test": "test_x"})
+    assert ok.status_code == 200 and ok.json()["recorded"] is True and ok.json()["counts"] is True, ok.text[:200]
+    assert ok.json()["tool_now_says"]["tier"] == "checked_by_rule"
+    assert rt.review_statement(tool)["tier"] == "checked_by_rule" and rt.review_statement("law_research")["tier"] == "unreviewed"
+    #  3. AN UNCALIBRATED AGENT'S REVIEW IS KEPT, LABELLED, AND RAISES NOTHING
+    un = client.post("/api/v1/review/record", json={**agent, "agent_calibrated": False})
+    assert un.status_code == 200 and un.json()["counts"] is False and un.json()["kept_though_not_counted"] is True
+    said = client.get(f"/api/v1/review/tier/{tool}").json()
+    assert said["tier"] == "checked_by_rule" and "does not raise its tier" in said["uncalibrated_agent_review"]
+    #  ... and a calibrated one raises it
+    assert client.post("/api/v1/review/record", json=agent).json()["tool_now_says"]["tier"] == "reviewed_by_workstation_agent"
+    #  4. A PERSON'S SIGNATURE: entered by the administrator, the credential as stated and said to be unverified
+    sig = client.post("/api/v1/review/record", json={"tool": tool, "tier": "signed_by_a_qualified_person", "date": today,
+                                                    "name": "A. Reviewer", "credential_as_stated": "registered nurse",
+                                                    "reviewed": "the risk assessment tool as built today", "lapses_on": ahead})
+    assert sig.status_code == 200, sig.text[:200]
+    top = sig.json()["tool_now_says"]
+    assert top["tier"] == "signed_by_a_qualified_person" and "as stated" in top["basis"] and "does not verify" in top["basis"]
+    #  5. THE LIST shows every record with whether it counts, who entered it, and the tool's label
+    listed = client.get("/api/v1/review/records").json()
+    assert listed["total"] == 4 and listed["counted"] == 3 and listed["tools"] == {tool: "Signed by a qualified person"}
+    assert all(r.get("entered_by") and r.get("entered_at") and r.get("record_id") for r in listed["records"])
+    #  (the first form of this leg asked only that the list of reasons be non-empty, and a list holding one
+    #  None is non-empty - its blind came back vacuous; the reason itself is read)
+    _not = [r["why_not"] for r in listed["records"] if not r["counts"]]
+    assert len(_not) == 1 and _not[0] and "not been calibrated" in _not[0], _not
+    assert all(r["why_not"] is None for r in listed["records"] if r["counts"])
+    assert "does not verify" in listed["credential_basis"]
+    #  6. A STORE THAT CANNOT BE READ: the list refuses, a new record is NOT written over it, no tool reads as reviewed
+    whole = store.read_bytes()
+    store.write_text("{not json", encoding="utf-8")
+    assert client.get("/api/v1/review/records").status_code == 503
+    assert client.get(f"/api/v1/review/tier/{tool}").json()["known"] is False
+    broke = None
+    try:
+        broke = client.post("/api/v1/review/record", json={"tool": tool, "tier": "checked_by_rule", "date": today, "rule": "r", "test": "t"})
+    except Exception as e:                      # the store's own refusal may surface as an exception in the test client
+        broke = e
+    assert not (hasattr(broke, "status_code") and broke.status_code == 200), "a record was written over an unreadable store"
+    assert store.read_text(encoding="utf-8") == "{not json"
+    store.write_bytes(whole)
+    #  7. THE DOOR IS THE ADMINISTRATOR'S: mounted behind the administrator dependency (read from the mounted
+    #  application, where a search of the handler's signature would see only an ordinary caller)
+    from agentic_core.app_mvp import app as _app
+    from agentic_core.auth.core import require_admin as _ra
+    route = next(r for r in _app.routes if getattr(r, "path", "") == "/api/v1/review/record")
+    assert any(getattr(d, "call", None) is _ra for d in route.dependant.dependencies), "the review door is not the administrator's"

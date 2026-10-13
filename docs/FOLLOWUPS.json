@@ -20741,6 +20741,25 @@
       "note": "",
       "slot_source": "the plan item's third clause",
       "tier": 3
+    },
+    {
+      "id": "FU-1068",
+      "title": "No page reaches the review records: a review can be recorded and listed only by calling the route",
+      "why": "The door, the list and each tool's tier answer exist and are guarded; an administrator has no page to record a rule check, an agent's review or a person's signature, or to see which records count and why not. Done when one page lists every tool with its tier and records, shows why a record does not count in the server's words, and records one - with the three kinds refused as the route refuses them.",
+      "source": "W689 (the review cell's records)",
+      "found": "2026-10-13",
+      "files": [
+        "agentic_core/api/review_cell.py",
+        "agentic_core/api/_review_tier.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.15",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the review cell item's own clauses 1, 2 and 5",
+      "tier": 3
     }
   ],
   "routes": [
