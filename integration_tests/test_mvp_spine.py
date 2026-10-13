@@ -65139,3 +65139,59 @@ def test_w714_a_deed_is_held_until_a_qualified_person_has_read_the_schedule(clie
     #  4. the reason is a hold and never a finding about the document
     low = _sp.HELD_REASON.lower()
     assert "this is a hold" in low and "is a reserved" not in low and "unlawful" not in low and "illegal" not in low
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W715 - OWNER RULING 2026-10-13: a change to the delivery method is decided by a person, never by the
+#  low-tier rule. Driven on a healthy organism, where that rule DOES fire for a change that names no method.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w715_a_change_to_the_delivery_method_is_held_for_a_person(client, monkeypatch):
+    import uuid
+    import agentic_core.api.change_control as CC
+    tag = uuid.uuid4().hex[:8]
+    real_ctx = CC.biobus.organism_context
+
+    def _healthy():
+        c = dict(real_ctx())
+        c["composite_health"] = c["composite_health_measured_only"] = 0.95
+        c["composite_health_measured_weight"] = 0.4
+        c.pop("error", None)
+        return c
+    monkeypatch.setattr(CC.biobus, "organism_context", _healthy)
+    monkeypatch.setattr(CC, "_immune_threat", lambda: "NOMINAL")
+
+    def _submit(systems, by="w715-probe"):
+        r = client.post("/api/v1/cca/submit", json={
+            "title": f"w715 probe {tag} {'-'.join(systems)}", "change_type": "config_minor",
+            "description": "A probe of the low-tier rule; nothing is changed by it.",
+            "rationale": "To show which changes the low-tier rule decides by itself.",
+            "affected_systems": systems, "submitted_by": by})
+        assert r.status_code == 200, r.text[:300]
+        return r.json(), client.get(f"/api/v1/cca/{r.json()['cca_id']}").json()
+
+    def _events(rec):
+        return [e.get("event") for e in rec.get("audit_trail") or []]
+
+    #  1. THE CONTROL: on this organism the low-tier rule fires for a change that names no method
+    ans, rec = _submit(["a_page_label"])
+    assert ans["impact_tier"] == "LOW" and ans["health_gate"]["verdict"] == "pass", ans
+    assert {"auto_approved", "auto_approval_proposed"} & set(_events(rec)), ("the low-tier rule did not fire, so the legs below would be idle", _events(rec))
+    assert "held_for_a_person" not in ans and "held_for_a_person" not in rec
+    #  2. THE SAME CHANGE NAMING THE METHOD is held, whoever files it and however the name is written
+    for systems, by in ((["delivery_method", "change_control"], "method_amendment"),
+                        (["change_control", " Delivery_Method "], "somebody-else"),
+                        (["delivery_method"], "system")):
+        ans, rec = _submit(systems, by)
+        assert ans["impact_tier"] == "LOW" and ans["health_gate"]["verdict"] == "pass", ans
+        assert ans["status"] == "submitted" == rec["status"] and not rec.get("decision"), (systems, rec.get("status"), rec.get("decision"))
+        ev = _events(rec)
+        assert "held_method_change" in ev and "auto_approved" not in ev and "auto_approval_proposed" not in ev, ev
+        assert "never approved automatically" in (rec.get("review_result") or ""), rec.get("review_result")
+        assert ans["held_for_a_person"] == rec["held_for_a_person"] and "delivery method" in ans["held_for_a_person"]["why"]
+        assert "withheld_auto_approval" not in rec, "nothing was proposed, so nothing was withheld"
+    #  3. THE METHOD'S OWN ROUTES pass through the same place: every one that files names the method
+    import inspect
+    import agentic_core.api.method as _m
+    src = inspect.getsource(_m)
+    filed = src.count("await submit_change(SubmitChangeRequest(")
+    assert filed >= 4 and src.count('affected_systems=["delivery_method"') == filed, (filed, src.count('affected_systems=["delivery_method"'))

@@ -1044,7 +1044,18 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
                    "is tracked, so the auto-approval is HELD for review rather than granted on absent "
                    "evidence")),
     }
-    if tier == "LOW" and _health_ok and threat in ("NOMINAL", "ELEVATED"):
+    #  W715 (OWNER RULING 2026-10-13) - A CHANGE TO THE DELIVERY METHOD IS DECIDED BY A PERSON. Every method
+    #  route files its change at the low tier, and on a healthy organism the low-tier rule approved it by
+    #  itself - the rules the work is held to were being amended with nobody deciding. Decided here, at the
+    #  one place every submission passes, from the system the change names and never from who filed it.
+    _amends_method = "delivery_method" in [str(s).strip().lower() for s in (req.affected_systems or [])]
+    if _amends_method:
+        change["held_for_a_person"] = {
+            "why": "it changes the delivery method",
+            "basis": ("Owner ruling of 2026-10-13: a change that names the delivery method among the systems "
+                      "it affects is never approved automatically, at any tier or state of health; a person "
+                      "approves or rejects it by review")}
+    if tier == "LOW" and _health_ok and threat in ("NOMINAL", "ELEVATED") and not _amends_method:
         change["status"] = "approved"
         change["decision"] = "auto_approved"
         # W464 — every record says what decided it (the mechanism, named)
@@ -1058,7 +1069,11 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
         #  ledger v17 R3.0 - the "auto-approved" signal is fired BELOW, after the method gate has had its say:
         #  it used to fire here, for an approval the gate then withheld.
     else:
-        if tier == "LOW" and threat in ("HIGH", "CRITICAL"):
+        if tier == "LOW" and _amends_method:
+            change["review_result"] = ("Held for a person: this change names the delivery method, and a change "
+                                       "to the method is never approved automatically (Owner ruling of 2026-10-13).")
+            change["audit_trail"].append({"event": "held_method_change", "ts": now, "by": "change_control"})
+        elif tier == "LOW" and threat in ("HIGH", "CRITICAL"):
             change["review_result"] = (f"Held for review: immune threat {threat} — auto-approval paused "
                                        "while the organism defends itself.")
             change["audit_trail"].append({"event": "held_immune_threat", "ts": now, "by": "biobus",
@@ -1212,6 +1227,8 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
         "scope_appraisal": change.get("scope_appraisal"),
         **({"auto_approval_withheld": change["auto_approval_withheld"]}
            if change.get("auto_approval_withheld") else {}),
+        **({"held_for_a_person": change["held_for_a_person"]}                     # W715
+           if change.get("held_for_a_person") else {}),
         **({"impact_tier_raised_by": change["impact_tier_raised_by"],
             "impact_tier_raised_from": change.get("impact_tier_raised_from"),
             "impact_tier_raised_because": change.get("impact_tier_raised_because")}
