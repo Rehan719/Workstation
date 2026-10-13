@@ -413,12 +413,26 @@ def _is_unset(value: Any) -> bool:
     return not str(value or "").strip() or str(value).strip().startswith(_PENDING_MARK)
 
 
+_CADENCE_DERIVED = "cadence_derived"                  # the stamp organism.cadence writes (CADENCE_DERIVED)
+
+
+def _derived_by_cadence(plan: Dict[str, Any], field: str) -> bool:
+    """W705 - the field holds a sentence the planning cadence derived by rule from stored state. Nobody
+    composed it, so it is still pending composition and a model's text may replace it."""
+    return ((plan.get("provenance") or {}).get("field_sources") or {}).get(field) == _CADENCE_DERIVED
+
+
+def _awaits_composition(plan: Dict[str, Any], field: str) -> bool:
+    return _is_unset(plan.get(field)) or _derived_by_cadence(plan, field)
+
+
 def _pending_fields(plan: Dict[str, Any]) -> List[str]:
     """body_pending as the plan stands: the seeded pending list (Genesis names design/commercialisation/operations
-    too) plus every opening field that is unset — minus any the owner or a model has since filled."""
+    too) plus every opening field that is unset or only derived by the cadence — minus any the owner or a model
+    has since filled."""
     seeded = [f for f in ((plan.get("provenance") or {}).get("body_pending") or []) if isinstance(f, str)]
-    out = [f for f in seeded if f not in _OPENING_FIELDS or _is_unset(plan.get(f))]
-    out += [f for f in _OPENING_FIELDS if _is_unset(plan.get(f)) and f not in out]
+    out = [f for f in seeded if f not in _OPENING_FIELDS or _awaits_composition(plan, f)]
+    out += [f for f in _OPENING_FIELDS if _awaits_composition(plan, f) and f not in out]
     return out
 
 
@@ -524,6 +538,7 @@ def _note_opening(prov: dict) -> None:
     def _of(source: str) -> list:
         return [f for f in _OPENING_FIELDS if fs.get(f) == source]
     owner, cleared, model = _of("owner_supplied"), _of("cleared_by_owner"), _of("model_composed")
+    derived = _of(_CADENCE_DERIVED)
     #  a field establishment templated is still a template only while nothing has written it since
     still = [f for f in birth if fs.get(f, "establish_template") == "establish_template"]
     prov["templated_fields"] = still
@@ -537,6 +552,8 @@ def _note_opening(prov: dict) -> None:
         + (f"Composed by a model ({gen.get('served_by') or 'not recorded'}"
            f"{', ' + str(gen.get('generated_at')) if gen.get('generated_at') else ''}), not by the Owner and "
            f"not a template: {', '.join(model)}. " if model else "")
+        + (f"Derived by the planning cadence from the plan's stored state - a rule's sentence, composed by "
+           f"nobody and still awaiting composition: {', '.join(derived)}. " if derived else "")
         + (f"Still code templates filled from the establish request, not the Chief and not a model: "
            f"{', '.join(still)}." if still else
            "No opening field is a code template any longer."))
@@ -748,7 +765,12 @@ async def generate_plan(req: GenerateRequest, user: dict | None = Depends(_get_c
         + (f"API surface coverage (pillar routers mounted and stores non-empty; this is NOT delivery and "
            f"NOT a measure of how far the vision is delivered): {int(realisation*100)}%\n"
            if realisation is not None else "")
-        + (f"Existing strategy: {plan.get('strategy','')[:300]}\n" if plan.get("strategy") else "")
+        #  W705 - the cadence's derived sentence was handed to the model as "Existing strategy", so the Chief
+        #  was asked to refresh a strategy nobody had written. It is handed over as what it is.
+        + ((f"A sentence the planning cadence derived from stored state (NOT a strategy anyone composed - do "
+            f"not treat it as one): {plan.get('strategy','')[:300]}\n"
+            if _derived_by_cadence(plan, "strategy") else
+            f"Existing strategy: {plan.get('strategy','')[:300]}\n") if plan.get("strategy") else "")
         + (f"Owner context: {req.context}\n" if req.context else "")
         + "\nProduce these sections, each under its own '## ' heading:\n"
         "## Executive Summary (2-3 sentences)\n## Concept (2-3 sentences)\n## Vision (one line)\n"
@@ -785,7 +807,7 @@ async def generate_plan(req: GenerateRequest, user: dict | None = Depends(_get_c
                   else "the owned model was unavailable; nothing was written to the plan")
     else:
         for field, text in sections.items():
-            if text and _is_unset(plan.get(field)):          # empty, or W450's pending marker — never an owner's words
+            if text and _awaits_composition(plan, field):    # empty, W450's marker, or the cadence's derived sentence — never an owner's words
                 plan[field] = text
                 written.append(field)
                 (plan.get("owner_edits") or {}).pop(field, None)   # a model's text is not an owner's edit

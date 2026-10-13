@@ -64632,3 +64632,73 @@ def test_w704_a_reference_recitation_is_fetched_for_the_request_never_stored_and
                if r["id"] == _qf.SOURCE_ROW)
     assert "agentic_core/religious_domain/quran_foundation.py" in row["used_by"] and row["how_each_condition_is_kept"]
     assert all((root / p).exists() for p in row["used_by"])
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W705 - one cause: a sentence the planning cadence DERIVED from stored state was treated as a strategy somebody
+#  composed. The cadence stamps what it wrote, and every reader of the plan reads the stamp.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w705_a_sentence_the_cadence_derived_is_not_treated_as_a_strategy_somebody_composed(client, monkeypatch):
+    import uuid as _uuid
+    from agentic_core.api import business_plan as _bp
+    from agentic_core.organism import cadence as _cad
+    tag = _uuid.uuid4().hex[:6]
+    assert _bp._CADENCE_DERIVED == _cad.CADENCE_DERIVED, "the reader and the writer name the stamp differently"
+
+    def _plan(scope):
+        p = client.get("/api/v1/business-plan", params={"scope": scope}).json()
+        return p.get("plan") or p
+
+    #  1. THE CADENCE STAMPS WHAT IT DERIVES, and the plan still counts the field as awaiting composition
+    scope = f"vsb:w705-{tag}"
+    res = _cad.refresh(scope, "strategic", force=True)
+    assert res["refreshed"] is True and res["entry"]["served_by"] == "deterministic-floor", res.get("basis")
+    stored = _bp._load(scope)
+    assert stored["strategy"] == res["entry"]["content"] and stored["strategy"].strip()
+    assert stored["provenance"]["field_sources"]["strategy"] == "cadence_derived", stored["provenance"].get("field_sources")
+    assert _bp._derived_by_cadence(stored, "strategy") and "strategy" in _bp._pending_fields(stored)
+    assert not _bp._is_unset(stored["strategy"]), "the leg proves nothing if the field is simply empty"
+
+    #  2. THE CHIEF'S MODEL IS HANDED IT AS WHAT IT IS, and a model's text may replace it
+    seen = {}
+
+    async def _model(prompt, **k):
+        seen["prompt"] = prompt
+        return {"output": "## Strategy\nA COMPOSED STRATEGY FROM THE STAND-IN MODEL.\n", "served_by": "ollama:w705", "is_external": False}
+    monkeypatch.setattr(_bp.gateway, "query_meta", _model)
+    g = client.post("/api/v1/business-plan/generate", json={"scope": scope})
+    assert g.status_code == 200, g.text[:300]
+    assert "A sentence the planning cadence derived from stored state (NOT a strategy anyone composed" in seen["prompt"], seen["prompt"][-600:]
+    assert "Existing strategy:" not in seen["prompt"]
+    after = _plan(scope)
+    assert after["strategy"] == "A COMPOSED STRATEGY FROM THE STAND-IN MODEL.", after["strategy"][:200]
+    assert after["provenance"]["field_sources"]["strategy"] == "model_composed"
+    assert "strategy" not in after["provenance"]["body_pending"]
+    #  ... a second generation now sees a strategy somebody composed, and does not replace it
+    g2 = client.post("/api/v1/business-plan/generate", json={"scope": scope})
+    assert g2.status_code == 200 and "Existing strategy: A COMPOSED STRATEGY" in seen["prompt"]
+    assert "strategy" not in g2.json().get("provenance", _plan(scope)["provenance"])["written"]
+
+    #  3. CONTENT A CALLER HANDED TO THE REFRESH is named apart, and is not awaiting composition
+    scope2 = f"vsb:w705b-{tag}"
+    _cad.refresh(scope2, "strategic", force=True, content="A STRATEGY A CALLER SUPPLIED", served_by="a person")
+    p2 = _bp._load(scope2)
+    assert p2["provenance"]["field_sources"]["strategy"] == "cadence_supplied" and "strategy" not in _bp._pending_fields(p2)
+
+    #  4. THE OWNER'S OWN FIELD IS NEITHER OVERWRITTEN NOR RESTAMPED
+    scope3 = f"vsb:w705c-{tag}"
+    client.post("/api/v1/business-plan/set", json={"scope": scope3, "strategy": "W705 THE OWNER'S STRATEGY"})
+    _cad.refresh(scope3, "strategic", force=True)
+    p3 = _bp._load(scope3)
+    _fs3 = ((p3.get("provenance") or {}).get("field_sources") or {})
+    assert p3["strategy"] == "W705 THE OWNER'S STRATEGY" and _fs3.get("strategy") not in ("cadence_derived", "cadence_supplied"), _fs3
+    assert not _bp._derived_by_cadence(p3, "strategy") and "strategy" not in _bp._pending_fields(p3)
+
+    #  5. THE OPENING'S SENTENCE names a derived field as derived, once something recomputes it
+    prov = {"field_sources": {"strategy": "cadence_derived", "concept": "owner_supplied"}, "templated_fields": []}
+    _bp._note_opening(prov)
+    assert "Derived by the planning cadence" in prov["opening_written_by"] and "composed by nobody" in prov["opening_written_by"]
+    assert "strategy" in prov["opening_written_by"].split("Derived by the planning cadence", 1)[1].split(". ", 1)[0]
+    prov2 = {"field_sources": {"strategy": "model_composed"}, "templated_fields": []}
+    _bp._note_opening(prov2)
+    assert "Derived by the planning cadence" not in prov2["opening_written_by"]

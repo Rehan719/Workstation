@@ -16858,11 +16858,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W705",
       "note": "",
       "slot_source": "what a closed tier-3 bundle row left undone; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The Chief's model is handed the cadence's sentence as a derived sentence that nobody composed, and as an existing strategy only when somebody wrote one.",
+      "reachability_check": "test_w705_a_sentence_the_cadence_derived_is_not_treated_as_a_strategy_somebody_composed"
     },
     {
       "id": "FU-864",
@@ -18582,11 +18586,15 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W705",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The cadence stamps the field it writes as derived by the cadence; the plan counts such a field as still awaiting composition, a model's text may replace it, and the opening's sentence names it as derived.",
+      "reachability_check": "test_w705_a_sentence_the_cadence_derived_is_not_treated_as_a_strategy_somebody_composed"
     },
     {
       "id": "FU-951",
