@@ -479,6 +479,9 @@ from agentic_core.api import instrument_cell as instrument_cell_api
 app.include_router(instrument_cell_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 55. Board of Directors — apex governance; Chief = Owner's digital twin, above the AI CEO
+#  W689 - the review cell's records: the one door that writes a review, the administrator's alone
+from agentic_core.api import review_cell as review_cell_api
+app.include_router(review_cell_api.router, dependencies=[_Depends(_require_admin)])
 from agentic_core.api import board as board_api
 app.include_router(board_api.router, dependencies=[_Depends(_require_admin)])   # W505 (P2.6): the Board is the apex governance tier
 

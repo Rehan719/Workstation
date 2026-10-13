@@ -110,7 +110,7 @@ and `npm run build` produces the static `dist/`.
 
 ```
 agentic_core/          — FastAPI backend (the real code)
-  app_mvp.py           — entrypoint; 578 API operations (method+path; 548 distinct paths, /api/ only — the SPA catch-all mounts only when the frontend is built), boots clean
+  app_mvp.py           — entrypoint; 581 API operations (method+path; 551 distinct paths, /api/ only — the SPA catch-all mounts only when the frontend is built), boots clean
   ai/                  — the NATIVE fabric: owned models, orchestration, swarm, memory, homeostasis
   ai/gateway.py        — in-house-first routing (native fabric → optional external providers)
   gaas/v5/             — constitutional interceptor engine + hash-chained UEG audit log
@@ -131,7 +131,7 @@ apps/workstation-superapp/  — Vite + React 18 + TypeScript frontend
                          + domain hubs + all product pages
 ```
 
-> Verified in CI on every push: backend boots clean; **799 integration tests passing / 15 skipped** (full run on the W685 tree, 2026-10-13; the figures above it are recomputed by `scripts/readme_figures.py` and asserted by the suite, so they cannot drift again — this one is dated because a test count is only true of a tree); production
+> Verified in CI on every push: backend boots clean; **807 integration tests passing / 15 skipped** (full run on the W688 tree, 2026-10-13; the figures above it are recomputed by `scripts/readme_figures.py` and asserted by the suite, so they cannot drift again — this one is dated because a test count is only true of a tree); production
 > build (`tsc && vite build`) succeeds.
 
 Data persists under `data/` as atomically-written JSON files.
