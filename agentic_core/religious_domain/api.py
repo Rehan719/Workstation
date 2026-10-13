@@ -629,6 +629,59 @@ _TRANSLATION_LABEL = ("a translation of the meanings by a named translator - not
                       "reading consult qualified scholarship and the Arabic.")
 
 
+#  W704 (the Owner's word of 2026-10-13) - A REFERENCE RECITATION FROM THE QURAN FOUNDATION, READ AND NOT KEPT.
+#  The audio address and the word timings of a licensed reciter, fetched for the request that asks. Nothing here
+#  listens to a person, and nothing is scored, graded or corrected (A.9.1): this is the reciter a person may
+#  play beside their own practice. A source that is not configured, or that refuses, is SAID - no other source
+#  is put in its place.
+@router.get("/recitation/source", dependencies=_ASKS)
+async def recitation_source():
+    """What this deployment may fetch a reference recitation from, and on what conditions. No credential is shown."""
+    from agentic_core.religious_domain import quran_foundation as _qf
+    return _qf.status()
+
+
+def _recitation_refusal(exc: Exception) -> HTTPException:
+    from agentic_core.religious_domain import quran_foundation as _qf
+    if isinstance(exc, _qf.NotConfigured):
+        return HTTPException(status_code=503, detail=(
+            "No reference recitation is served: the Quran Foundation credentials are not set on this server. "
+            "Nothing was fetched and no other source was used in its place."))
+    status = getattr(exc, "status", None)
+    return HTTPException(status_code=502, detail=(
+        f"No reference recitation is served: {exc}"
+        + (f" (it answered {status})" if status else "")
+        + ". Nothing was stored and no other source was used in its place."))
+
+
+@router.get("/recitation/reciters", dependencies=_ASKS)
+async def recitation_reciters():
+    """The reciters the publisher offers whole-chapter audio for, fetched now."""
+    from agentic_core.religious_domain import quran_foundation as _qf
+    try:
+        out = await _qf.chapter_reciters()
+    except (_qf.NotConfigured, _qf.PublisherRefused) as exc:
+        raise _recitation_refusal(exc) from None
+    return {**out, "credit": _qf.CREDIT, "stored": False}
+
+
+@router.get("/recitation/audio/{surah_number}", dependencies=_ASKS)
+async def recitation_audio(surah_number: int, reciter_id: int):
+    """One surah's reference recitation: its audio address and each ayah's and word's timing, fetched now."""
+    if not 1 <= surah_number <= 114:
+        raise HTTPException(status_code=400, detail="Surah number must be 1-114.")
+    if reciter_id < 1:
+        raise HTTPException(status_code=422, detail="reciter_id must be one the publisher lists (GET /api/v1/qep/recitation/reciters).")
+    from agentic_core.religious_domain import quran_foundation as _qf
+    try:
+        out = await _qf.chapter_audio(surah_number, reciter_id)
+    except (_qf.NotConfigured, _qf.PublisherRefused) as exc:
+        raise _recitation_refusal(exc) from None
+    return {**out, "credit": _qf.CREDIT, "stored": False, "environment": _qf.environment(),
+            "assessed": False,
+            "assessed_basis": "a reference recitation to listen to. Nothing here listens to, scores or corrects a person"}
+
+
 @router.get("/translation/editions")
 async def translation_editions():
     """The translation editions this deployment serves, each with the basis it was chosen on."""

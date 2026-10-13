@@ -22,6 +22,11 @@ class Settings:
     anthropic_api_key: str = field(default_factory=lambda: os.getenv("ANTHROPIC_API_KEY", ""), repr=False)
     openai_api_key: str = field(default_factory=lambda: os.getenv("OPENAI_API_KEY", ""), repr=False)
     ollama_base_url: str = field(default_factory=lambda: os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"))
+    #  W704 - the Quran Foundation content API. Both are held on the server only and neither is ever printed;
+    #  the reading module reads them from the environment at the call. Pre-production unless the Owner sets otherwise.
+    quran_foundation_client_id: str = field(default_factory=lambda: os.getenv("QURAN_FOUNDATION_CLIENT_ID", ""), repr=False)
+    quran_foundation_client_secret: str = field(default_factory=lambda: os.getenv("QURAN_FOUNDATION_CLIENT_SECRET", ""), repr=False)
+    quran_foundation_env: str = field(default_factory=lambda: os.getenv("QURAN_FOUNDATION_ENV", "prelive"))
 
     # Auth
     auth_enabled: bool = field(default_factory=lambda: os.getenv("AUTH_ENABLED", "false").lower() == "true")
