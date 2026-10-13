@@ -64120,7 +64120,8 @@ def test_w698_an_answer_that_names_a_model_states_its_level_and_a_refusal_states
         "no file has a silent block, so the recount above compared nothing that could differ")
     #  a ceiling measured when the ruling was built: the count of silent blocks may fall, and may not rise
     #  (91 when the ruling was built in W698; 65 after W708 worked three more files)
-    assert inv["not_stating_a_level"] <= 65, ("a new answer block names a model and states no evidence level",
+    #  (and 53 after W709 worked three more)
+    assert inv["not_stating_a_level"] <= 53, ("a new answer block names a model and states no evidence level",
                                               inv["not_stating_a_level"])
 
 
@@ -64842,3 +64843,55 @@ def test_w708_three_more_files_state_the_level_and_a_block_nothing_served_states
     for rel in files:
         c = inv["files"][rel]
         assert c["stating_a_level"] == c["blocks_naming_a_model"] > 0, (rel, c)
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W709 - the evidence level, three more files (the plan, deliverables, the intelligence engines), and the
+#  no-reply statement made true of a call that failed as well as of no call at all.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w709_three_more_files_state_the_level_and_a_failed_call_states_none(client, monkeypatch):
+    import ast
+    import asyncio
+    import pathlib
+    from agentic_core.api import _ai_provenance as _ap
+    from agentic_core.api import intelligence as _in
+    root = pathlib.Path(__file__).resolve().parents[1]
+    files = ("agentic_core/api/business_plan.py", "agentic_core/api/deliverables.py", "agentic_core/api/intelligence.py")
+
+    #  1. no block that names what served is silent in the three files
+    for rel in files:
+        for d in ast.walk(ast.parse((root / rel).read_text(encoding="utf-8"))):
+            if isinstance(d, ast.Dict):
+                keys = [k.value if isinstance(k, ast.Constant) else None for k in d.keys]
+                if "served_by" in keys:
+                    spreads = [getattr(v.func, "id", "") for k, v in zip(d.keys, d.values) if k is None and isinstance(v, ast.Call)]
+                    assert "evidence_level" in keys or any("evidence" in s for s in spreads), (rel, d.lineno)
+    inv = client.get("/api/v1/native-ai/evidence-levels/routers").json()
+    for rel in files:
+        assert inv["files"][rel]["stating_a_level"] == inv["files"][rel]["blocks_naming_a_model"] > 0, (rel, inv["files"][rel])
+
+    #  2. THE NO-REPLY STATEMENT IS TRUE OF A FAILED CALL: it does not say nothing was asked
+    said = _ap.no_reply_evidence()["evidence_basis"]
+    assert said.startswith("NOT SERVED") and "or what was asked did not answer" in said, said
+
+    #  3. DRIVEN through the one helper every engine stage uses: a reply, an exception, a returned failure, nothing
+    async def _replied(prompt, **k):
+        return {"output": "a placeholder reply", "served_by": "ollama:w709", "is_external": False}
+
+    async def _raised(prompt, **k):
+        raise RuntimeError("w709 driven failure")
+
+    async def _fallback(prompt, **k):
+        return {"output": _in._GATEWAY_FAILURES[0], "served_by": "native", "is_external": False}
+
+    async def _empty(prompt, **k):
+        return {"output": "   ", "served_by": "native", "is_external": False}
+    monkeypatch.setattr(_in.gateway, "query_meta", _replied)
+    text, prov = asyncio.run(_in._staged_query("p", "w709_probe", "W709 stage"))
+    assert text == "a placeholder reply" and prov["failed"] is False and prov["served_by"] == "ollama:w709"
+    assert prov["evidence_level"] == "behaviour" and prov["evidence_level_number"] == 1, prov
+    for failing in (_raised, _fallback, _empty):
+        monkeypatch.setattr(_in.gateway, "query_meta", failing)
+        text, prov = asyncio.run(_in._staged_query("p", "w709_probe", "W709 stage"))
+        assert "did not run" in text and prov["failed"] is True and prov["served_by"] is None, (failing.__name__, prov)
+        assert prov["evidence_level"] is None and prov["evidence_basis"].startswith("NOT SERVED"), (failing.__name__, prov)

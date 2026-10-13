@@ -21049,6 +21049,23 @@
       "closed_by": null,
       "note": "",
       "slot_source": "it is a gap in how a change is decided, found by driving; the open third-phase queue carries it"
+    },
+    {
+      "id": "FU-1074",
+      "title": "The comment-only presence guard pairs an assertion with the file a variable name was LAST given anywhere in the test file",
+      "why": "Seen on the build server on 2026-10-13: a new test at the end of the file named the journey page's source by a variable name an older test uses for a different page, and the guard then judged the older test's assertion against the journey page and failed. The guard reads the test file as one scope. Pair an assertion with the assignment in its own function, so a later test cannot change what an earlier assertion is checked against.",
+      "source": "W709 (found on the build server while merging the round before it)",
+      "found": "2026-10-13",
+      "files": [
+        "integration_tests/test_mvp_spine.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "it is a fault of a guard's own reach, and the suite's reliability rows already sit on this item"
     }
   ],
   "routes": [

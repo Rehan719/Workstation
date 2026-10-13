@@ -26,6 +26,7 @@ from agentic_core.config import atomic_write_json, data_path
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, HTTPException, Depends
+from agentic_core.api._ai_provenance import reply_evidence as _reply_evidence   # W709
 # W505 (P2.6) — owner scoping: the plan is ONE tenant's record, so the principal is stamped rather
 # than taken from the request body. Both helpers are inert in single-user mode.
 from agentic_core.auth.core import auth_enabled as _auth_enabled, get_current_user as _get_current_user
@@ -701,7 +702,7 @@ async def orchestrate_objective(oid: str, req: OrchestrateRequest, user: dict | 
                      "consensus": tree.get("consensus"), "governance": tree.get("governance"),
                      "validation": tree.get("validation"), "signal_response": tree.get("signal_response"),
                      "ueg_hash": tree.get("ueg_hash"), "final": tree.get("final"),
-                     "nodes": [{"id": n.get("id"), "role": n.get("role"),
+                     "nodes": [{**_reply_evidence(n.get('served_by')), "id": n.get("id"), "role": n.get("role"),
                                 "served_by": n.get("served_by"), "is_external": n.get("is_external")}
                                for n in (tree.get("nodes") or [])],
                      "any_external": tree.get("any_external")}}
@@ -794,7 +795,7 @@ async def generate_plan(req: GenerateRequest, user: dict | None = Depends(_get_c
         meta = await gateway.query_meta(prompt, agent="business_plan_chief", augment=False, owner_id=_owner_id,
                                         user_text=(req.context or None))
     except Exception as e:
-        meta = {"output": f"[business_plan_chief unavailable: {e}]", "served_by": "unavailable", "is_external": False}
+        meta = {**_reply_evidence(), "output": f"[business_plan_chief unavailable: {e}]", "served_by": "unavailable", "is_external": False}
     draft = str(meta.get("output") or "")
     sb = str(meta.get("served_by") or "native")
     sections, preamble = parse_chief_draft(draft)
@@ -824,7 +825,7 @@ async def generate_plan(req: GenerateRequest, user: dict | None = Depends(_get_c
     # (refutation) MERGE into the plan's provenance: Genesis' name_source and seeded pending list stay; the
     # opening's served_by describes who wrote what is on screen, so it moves only when this generation wrote
     prov = dict(plan.get("provenance") or {})
-    prov["generation"] = {"served_by": sb, "any_external": bool(meta.get("is_external")), "generated_at": ts,
+    prov["generation"] = {**_reply_evidence(sb), "served_by": sb, "any_external": bool(meta.get("is_external")), "generated_at": ts,
                           "preamble": preamble, "written": written, "objectives_added": added, "reason": reason}
     if written:
         prov["served_by"] = {sb: 1}
@@ -849,7 +850,7 @@ async def generate_plan(req: GenerateRequest, user: dict | None = Depends(_get_c
     except Exception:
         pass
 
-    return {"scope": req.scope, "chief_draft": draft, "objectives_added": added, "written": written,
+    return {**_reply_evidence(sb), "scope": req.scope, "chief_draft": draft, "objectives_added": added, "written": written,
             "served_by": sb, "reason": reason, "provenance": plan["provenance"], "plan": plan}
 
 

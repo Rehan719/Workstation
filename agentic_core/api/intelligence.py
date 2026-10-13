@@ -38,6 +38,8 @@ import re
 import time
 
 from fastapi import APIRouter, HTTPException
+from agentic_core.api._ai_provenance import (reply_evidence as _reply_evidence,      # W709
+                                             no_reply_evidence as _no_reply_evidence)
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -314,12 +316,12 @@ async def _staged_query(prompt: str, agent: str, label: str, said: str | None = 
         #  W640 - `said` is the person's own words for this engine run; every caller names them
         meta = await gateway.query_meta(prompt, agent=agent, augment=False, user_text=(said or None))
     except Exception as e:
-        return f"[{label} did not run — {e}]", {"served_by": None, "is_external": False, "failed": True}
+        return f"[{label} did not run — {e}]", {**_no_reply_evidence(), "served_by": None, "is_external": False, "failed": True}
     out = meta.get("output") or ""
     if not out.strip() or out.lstrip().startswith(_GATEWAY_FAILURES):
         why = out.strip() or "the gateway returned nothing"
-        return f"[{label} did not run — {why}]", {"served_by": None, "is_external": False, "failed": True}
-    return out, {"served_by": meta.get("served_by") or "native",
+        return f"[{label} did not run — {why}]", {**_no_reply_evidence(), "served_by": None, "is_external": False, "failed": True}
+    return out, {**_reply_evidence(), "served_by": meta.get("served_by") or "native",
                  "is_external": bool(meta.get("is_external")), "failed": False}
 
 
@@ -356,7 +358,7 @@ def _provenance_summary(provs: list[dict]) -> dict:
             external.add(k)
     failed = sum(1 for p in provs if p.get("failed"))
     floor = counts.get("native", 0)
-    return {"served_by": counts, "calls": len(provs), "floor_calls": floor, "failed_calls": failed,
+    return {**_reply_evidence(counts), "served_by": counts, "calls": len(provs), "floor_calls": floor, "failed_calls": failed,
             "model_calls": len(provs) - failed - floor,
             "any_external": bool(external), "external_models": sorted(external)}
 
