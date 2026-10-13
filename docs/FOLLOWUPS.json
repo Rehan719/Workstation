@@ -16340,11 +16340,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W692",
       "note": "",
       "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "refuted",
+      "because_means": "the row's premise was measured and did not hold; nothing needed building",
+      "close_note": "refuted as written, read 2026-10-13: the test file sets AI_DISABLE_LOCAL to 1 unless someone has set it otherwise, and the review stores resolve lazily through the test data root the conftest sets and asserts isolated. Only a run with BOTH a model flag set by hand and a data root pointed at real data could write a real store, which is the subject of the row on a test double's rows in the Owner's store"
     },
     {
       "id": "FU-839",
@@ -16861,11 +16864,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W692",
       "note": "",
       "slot_source": "what a closed tier-3 bundle row left undone; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the route exists (GET /api/v260/user/preferences), no page and no test called it, and it answered any caller with the stored preferences of any id. Retired behind a switch with its code kept; the refusal names the profile route, which asks who is calling",
+      "reachability_check": "test_w692_the_preferences_route_nobody_read_is_retired_and_its_code_is_kept"
     },
     {
       "id": "FU-867",
@@ -16951,11 +16958,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W692",
       "note": "",
       "slot_source": "what a closed tier-3 bundle row left undone; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "already_satisfied",
+      "because_means": "measured as satisfied by an earlier round; nothing was built for it here",
+      "close_note": "the Board page's own line is pinned: the guard reads BoardOfDirectors.tsx and asserts the gate on the plan's reason and that it is text; read 2026-10-13 at the page (line 410) and at the guard. The guard reads source, which is the wider row on page guards, not a reason to keep this one open",
+      "reachability_check": "test_w653_the_board_says_who_composed_each_part_from_who_did"
     },
     {
       "id": "FU-872",
@@ -17893,11 +17904,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W692",
       "note": "",
       "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "an endpoint is counted as checked only after the application's routes were read; when the application cannot be built the endpoints are named as not verified and the run does not pass",
+      "reachability_check": "test_w692_an_endpoint_nothing_verified_is_not_counted_as_checked"
     },
     {
       "id": "FU-923",
@@ -19026,11 +19041,15 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W692",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the mount-level gap the audit measured (317 of 572 routes with no caller) was closed in W683; this round adds the surface the row said was missing: GET /api/v1/registers/perimeter reports the instrument's counts live and says a count of routes that ask is not a count of routes that isolate one person's records. Ownership checks beyond entities and business plans ride the perimeter row filed in W683",
+      "reachability_check": "test_w692_the_perimeter_is_reported_on_a_surface_and_says_what_it_cannot_see"
     },
     {
       "id": "FU-979",

@@ -47,13 +47,12 @@ jobs:
         run: python -m pytest integration_tests -q -n 4
 
   backend-windows:
-    #  OWNER RULING 2026-10-12 - the same suite on WINDOWS, the system the Owner's own machine runs. ADVISORY: a
-    #  failure here is shown and does not fail the run (`continue-on-error`). It becomes required - by removing
-    #  that one line - after three rounds running in which it was green, and from then the hour-long full suite
-    #  on the Owner's machine is retired. Until then it is NOT one of the checks a merge waits on.
-    name: Backend on Windows — advisory
+    #  OWNER RULINGS 2026-10-12 and 2026-10-13 - the same suite on WINDOWS, the system the Owner's own machine
+    #  runs. It ran ADVISORY first and was green four rounds running (W688, W689, W690, W691); the Owner then
+    #  made it REQUIRED. A failure here now fails the run, a merge waits on it, and the hour-long full suite on
+    #  the Owner's machine is retired.
+    name: Backend on Windows
     runs-on: windows-latest
-    continue-on-error: true
     timeout-minutes: 75
     steps:
       #  W688 - THE FIRST RUN'S FOUR FAILURES WERE ONE CAUSE: a Windows runner checks files out with their line

@@ -65,7 +65,7 @@ def main() -> int:
               f"reported as resolving in its absence.")
         return 1
     suite = io.open(SUITE, encoding="utf-8").read() if os.path.exists(SUITE) else ""
-    bad, checked = [], 0
+    bad, checked, not_verified = [], 0, 0
     for row in d.get("lessons", []) + d.get("mechanisms", []):
         src = (row.get("enforced_by") or "") + " " + " ".join(row.get("entry_points") or [])
         if not src.strip():
@@ -90,16 +90,22 @@ def main() -> int:
             verb, _, rest = ep.partition(" ")
             if verb not in ("GET", "POST", "PUT", "PATCH", "DELETE") or not rest.startswith("/"):
                 continue
-            checked += 1
             want = re.sub(r"\{[^}]*\}", "{}", rest.split("?")[0])
             known = _routes()
             if "__unavailable__" in known:
-                continue                          # the app could not be built; said above, not reported clean
+                #  the app could not be built, so this endpoint was NOT verified - and it is not counted as
+                #  checked (it used to be: the count was taken before this line)
+                not_verified += 1
+                continue
+            checked += 1
             if want not in known:
                 bad.append((row["id"], "ROUTE", ep))
 
     lessons, mechs = len(d.get("lessons", [])), len(d.get("mechanisms", []))
     print(f"{checked} named instrument(s) checked across {lessons} lesson(s) and {mechs} mechanism(s)")
+    if not_verified:
+        print(f"NOT VERIFIED: {not_verified} named endpoint(s) - the application could not be built, so whether "
+              f"each is a route is not known. This is not a pass for them.")
     if not checked:
         #  FU-671 - with nothing named, "every named path, guard and function resolves" was true of nothing
         print("REFUSING: examined nothing - docs/DELIVERY_METHOD.json names no instrument in any enforced_by "
@@ -109,6 +115,10 @@ def main() -> int:
         print("UNRESOLVED — each of these reads as enforced and may catch nothing:")
         for rid, kind, tok in bad:
             print(f"  {rid:14} {kind:6} {tok}")
+        return 1
+    if not_verified:
+        #  everything that COULD be resolved was; the endpoints could not be looked at, and that is not a pass
+        print("every named path, guard and function resolves; the named endpoints were NOT verified.")
         return 1
     print("every named path, guard and function resolves.")
     print("This does NOT say a guard would catch a breach of its rule - that is a reading of the guard.")
