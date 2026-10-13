@@ -1,94 +1,137 @@
 # Workstation - business model canvas
 
-**DRAFT until the Owner ratifies it.** Nothing here enters the product's own plan as the Owner's words; the
-Owner enters what they agree with through the plan's own edit page (ruling of 2026-10-10).
+**DRAFT until the Owner ratifies it.** It is written from the whole vision
+(`docs/WORKSTATION_IDBO_WHOLE_VISION.md`), which is the Owner's own canon, so that it reads as one story.
+Nothing here enters the product's own plan as the Owner's words; the Owner enters what they agree with through
+the plan's own edit page (ruling of 2026-10-10).
 
-Every statement carries one label:
-**[observed]** true of the tree or a record today, with where to read it ·
-**[owner-defined]** the Owner said or ruled it, with the date ·
-**[inference]** reasoned from the above, not measured ·
-**[hypothesis]** to be tested, with the test that would show it wrong ·
-**[deferred]** decided to be left for later ·
-**[owner decision]** still the Owner's to make.
+**How to read the tags.** Each statement ends with one tag in square brackets:
+[owner-defined] the Owner said it, in the vision or in a ruling ·
+[observed] true of the product today ·
+[inference] reasoned, not measured ·
+[hypothesis] to be tested ·
+[deferred] left for later by decision ·
+[owner decision] still the Owner's to make.
 
-No price, user count, return or partner below is a fact about the market. No customer metric has a value: the
-product keeps no telemetry [observed].
+## In one page
+
+Workstation exists to **democratise working**: to give every person and community the capability that only the
+best-funded governments and the largest companies have had [owner-defined: the vision, sections 2 and 14].
+
+It serves a person in **two ways**. A person can do their own work in a domain with AI-mediated tools. Or a
+person can take one idea all the way from concept to a living enterprise that runs itself
+[owner-defined: the vision, section 3A].
+
+The tools are free. A founder pays once when an enterprise is generated. Each enterprise then shares its
+profit by a fixed split that includes the Owner, its own growth and charity
+[owner-defined: the vision, section 12; ruling of 2026-10-13].
+
+Today it runs on the Owner's machine, with its own AI, in virtual money, with no users but the Owner
+[observed].
 
 ## Mission
 
-The Owner has stated the intention this work serves. By the Owner's decision of 2026-10-13 it is held privately and is not published here [owner-defined]. A mission sentence for publication is the Owner's to write [owner decision].
+- **Democratise working**: the latest scientific, technical, operational, commercial, legal and organisational
+  capability, for everyone [owner-defined: the vision, section 2].
+- **AI-mediate human work** so that it is safer, easier and more effective, with people working *with* AI
+  [owner-defined: the vision, section 2].
+- **Founding ethics, binding in the design**: integrity, compassion, excellence, halal compliance, stewardship
+  and beneficence [owner-defined: the vision, section 2].
+- The Owner has also stated a personal intention for this work. By the Owner's decision of 2026-10-13 it is
+  held privately and is not published here [owner-defined].
 
-## 1. Customer segments - user, buyer, payer and beneficiary named separately
+## 1. Customer segments
 
 - **User, first segment:** individuals and small organisations using the Domain Working tools - Law, Employment
   and Career, Education [owner-defined, 2026-10-10].
-  **Stated as a hypothesis:** such a person will return to a tool that says plainly what served the answer and
-  what was withheld [hypothesis]. *The test that would show it wrong:* of the first invited adults who use a
-  tool once, none uses it a second time within a month.
-- **User, the Quran Education Platform:** an adult studying or memorising; a teacher the Owner names
-  [owner-defined, 2026-10-12]. It stays free [owner-defined, 2026-10-10].
-- **Buyer and payer:** a founder who has an entity generated [owner-defined, 2026-10-13]. Nobody pays for a
-  domain tool [owner-defined].
-- **Beneficiary who does not pay:** a learner; a charitable or non-distributing entity, for which the
-  generation price is waived [owner-defined, 2026-10-13].
-- **Children:** not a segment until a scholar and a safeguarding lead are named [deferred, 2026-10-12].
+- **Users across the six domains:** Religion, Science, Education, Law, Employment and Career, and Care, in four
+  realms - Enterprise, Learning, Developing and Scholarship [owner-defined: the vision, section 3A].
+- **The Quran Education Platform** is the Religion domain's flagship, for an adult studying or memorising and
+  for a teacher the Owner names. It stays free [owner-defined, 2026-10-10 and 2026-10-12].
+- **Buyer and payer:** a founder who has an enterprise generated. Nobody pays for a domain tool
+  [owner-defined, 2026-10-13].
+- **Beneficiary who does not pay:** a learner; a charitable or non-distributing enterprise, for which the
+  generation price is waived; and the causes each enterprise gives to [owner-defined: the vision, section 12].
+- **Children** do not use the tools. That is looked at again only when a scholar and a safeguarding lead are
+  named and sign-in is on [owner-defined, 2026-10-13].
+- People in the first segment will come back to a tool that says plainly what served the answer and what was
+  withheld [hypothesis]. *The test that would show it wrong:* of the first invited adults who use a tool once,
+  none uses it a second time within a month.
 
 ## 2. Value proposition
 
-- Each answer states which resource served it, what level of evidence it rests on and what tier of review it
-  has reached [observed: the shared provenance in `agentic_core/api/_ai_provenance.py`].
+- **Capability on demand, inside a person's own domain**: research, analyse, generate, plan, assess, author,
+  design and review, without having to start an enterprise [owner-defined: the vision, section 3A].
+- **A living enterprise, not a document**: generated end to end, led by a Chief who stands for the founder, and
+  then running, improving and defending itself [owner-defined: the vision, sections 1 and 15].
+- **Its own AI first**: the platform's own models and orchestration; an outside provider is an optional
+  accelerant and never a dependency [owner-defined: the vision, section 6].
+- **Honesty over polish**: never fabricate, and label a simulation as a simulation
+  [owner-defined: the vision, section 15].
+- Each answer says which resource served it, what level of evidence it rests on and what review it has had
+  [observed: `agentic_core/api/_ai_provenance.py`].
 - Religious content the platform composes is withheld until a named scholar approves that exact text
-  [observed: `agentic_core/api/scholar_review.py`; owner-defined, A.12.3].
-- An enterprise is governed from its first day: changes go through Change Control and a Board ratifies the
-  large ones [observed: `agentic_core/api/change_control.py`].
-- What is never offered: a score of a person or of a recitation, a ranking of people, real money moved without
-  the Owner's switch [owner-defined].
-- "Gamified" means personal progress, a circle's shared total and a personal challenge [inference from the
-  rulings above; the wider meaning is an owner decision].
+  [observed: `agentic_core/api/scholar_review.py`].
+- "Gamified" means personal progress, a circle's shared total and a personal challenge. Nobody is ranked and
+  no recitation or person is scored [owner-defined, 2026-10-13].
 
 ## 3. Channels
 
-- A local mosque's group for new Muslims, whose leader asked to be sent information; and a Saturday Quran
+- A local mosque's group for new Muslims, whose leader asked to be sent information, and a Saturday Quran
   school [owner-defined, 2026-10-13; neither has agreed to anything].
 - One channel the Owner already holds is tried before any public launch [hypothesis]. *The test that would show
   it wrong:* the group's leader, shown the product, names no use for it.
 
 ## 4. Customer relationships
 
-- Invited first, then self-serve [owner-defined, the Phase 4 order].
-- A person can see what is waiting on them and why [observed in part; the waiting list is plan item P5.14].
+- Invited first, then self-serve sign-up, each when the Owner turns its switch
+  [owner-defined: the vision, section 14].
+- A person's work is kept in My Work and can be advanced in place; a person brings their own documents, and a
+  PDF is read in the browser and never leaves the machine [owner-defined: the vision, section 3A].
+- A person can see what is waiting on them and why [observed in part; plan item P5.14].
 
 ## 5. Revenue
 
-- GBP 99 once for generating an entity, credited against the first profit share
-  [owner-defined, 2026-10-13; observed as a statement only: `agentic_core/economy/generation_price.py`].
-- Nothing is charged until a reviewer's pass, a solicitor's view on consumer status and the real-money switch
-  [owner-defined]. Today every unit in the product is virtual [observed].
-- A founder will pay once for a governed entity [hypothesis]. *The test that would show it wrong:* of the first
-  founders shown the price before generating, none proceeds.
+- GBP 99 once for generating an enterprise, credited against its first profit share, and waived for a
+  charitable or non-distributing one [owner-defined, 2026-10-13; the statement is at
+  `agentic_core/economy/generation_price.py`].
+- Each enterprise shares what it can distribute, in parts of a hundred: the Owner 20, its own growth 30, a
+  capital fund 20, the projects of its users 15, and charity 15, after reserves
+  [owner-defined: the vision, section 12].
+- All money is virtual until the Owner directs real rails, and nothing is charged before a reviewer's pass and
+  a solicitor's view [owner-defined: the vision, section 12; ruling of 2026-10-13].
+- A founder will pay once for a governed enterprise [hypothesis]. *The test that would show it wrong:* of the
+  first founders shown the price before generating, none proceeds.
 
 ## 6. Key resources
 
-- The platform; a local model on the Owner's machine [observed]; the register of sources
-  [observed: `docs/SOURCES.json`]; the Owner, full time [owner-defined, 2026-10-13].
-- A named scholar; a safeguarding lead; a solicitor; an accountant - none engaged [observed].
+- The platform as one living organism, with its own AI, its resource fabric and its organisation from Chief to
+  Build-to-Order [owner-defined: the vision, sections 3, 5 and 7].
+- A local model on the Owner's machine [observed]; the register of sources [observed: `docs/SOURCES.json`].
+- The Owner, full time [owner-defined, 2026-10-13].
+- A named scholar, a safeguarding lead, a solicitor and an accountant: none is engaged yet [observed].
 
 ## 7. Key activities
 
-- Keeping every claim measured, and saying NOT MEASURED where it is not [observed: `docs/FOLLOWUPS.json`,
-  `docs/DELIVERY_METHOD.json`].
-- Walking the Owner's first endeavours by hand: the meal service first [owner-defined, 2026-10-12].
+- Take a person's challenge from concept to commercialisation: understand, research, design, model, simulate,
+  rank, establish, deliver [owner-defined: the vision, section 4].
+- Verify, test and validate before anything is delivered [owner-defined: the vision, section 15].
+- Keep every claim measured, and say NOT MEASURED where it is not [observed: `docs/FOLLOWUPS.json`].
+- Walk the Owner's own first endeavours by hand, the meal service first [owner-defined, 2026-10-12].
 
 ## 8. Key partners
 
-- None is held [observed]. Asked of, by letters drafted and not sent: a data publisher and an audio publisher
-  for permission; a developer account at a Quran data foundation [owner decision to send].
+- None is held today [observed].
+- Asked of, by letters drafted and not yet sent: a data publisher and an audio publisher for permission
+  [owner decision to send].
+- A developer account at a Quran data foundation is open, on its test service [observed, 2026-10-13].
 
 ## 9. Cost structure
 
-- To start: no cost is preferred [owner-defined, 2026-10-13]. No bill has been entered, so no cost has a figure
-  [observed]. What would have one: hosting beyond a free tier, a domain, a scholar's honorarium, a solicitor's
-  view.
+- To start, no cost is preferred [owner-defined, 2026-10-13].
+- No bill has been entered, so no cost has a figure [observed].
+- What would carry one: hosting beyond a free tier, a domain name, a scholar's honorarium, a solicitor's view
+  [inference].
 
 ## Three hypotheses to test first
 
