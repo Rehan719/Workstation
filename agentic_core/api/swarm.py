@@ -19,6 +19,7 @@ from pathlib import Path
 from agentic_core.config import data_path
 
 from fastapi import APIRouter, HTTPException, Depends
+from agentic_core.api._ai_provenance import reply_evidence as _reply_evidence   # W698: the level travels with the record
 # W505 (P2.6) - owner scoping on the cascade: a scope naming a VSB must belong to the principal.
 from agentic_core.auth.core import get_current_user
 from pydantic import BaseModel
@@ -122,7 +123,7 @@ async def delegate_task(req: DelegateRequest):
     # §5×§6 (W282) — /delegate joins the W268+ standard the cascade set: every call records
     # provenance + a real operational-excellence row, the synthesis is QMS-gated, and the run
     # registers its honest cognitive demand with the homeostatic controller.
-    provenance: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False}
+    provenance: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False, **_reply_evidence()}
 
     async def _dq(prompt: str, agent: str) -> str:
         _t0 = time.time()
@@ -455,7 +456,7 @@ async def cascade_orchestration(req: CascadeRequest,
 
     # In-house-first AI with provenance — the whole CEO→C-Suite→CoE cascade records which OWNED
     # resource served each tier (proves the org cascade runs on Workstation's own fabric).
-    provenance: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False}
+    provenance: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False, **_reply_evidence()}
 
     # §5 DEVELOP (W269) — the PREVIOUS cycle's Development Actions are APPLIED this cycle: each tier's
     # prompt carries the development action its managing tier set last run (persisted by the appraisal

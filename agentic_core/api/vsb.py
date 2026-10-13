@@ -30,6 +30,7 @@ from pathlib import Path
 from agentic_core.config import atomic_write_json, data_path
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from agentic_core.api._ai_provenance import reply_evidence as _reply_evidence   # W698: the level travels with the record
 from fastapi.responses import StreamingResponse, HTMLResponse
 from pydantic import BaseModel
 
@@ -981,7 +982,7 @@ async def generate_vsb_website(vsb_id: str, user: dict | None = Depends(get_curr
     _refuse_gated(vsb, "website")   # W452 (refuter F3) — the ship's parts honour the gate as the ship does
     name, challenge, domain = vsb.get("name"), vsb.get("challenge", ""), vsb.get("domain", "enterprise")
     concept = _blueprint(vsb)["concept"]     # W301 - canonical accessor (both shapes)
-    prov: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False}
+    prov: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False, **_reply_evidence()}
     #  W670 (ledger v16 R2.8) - WHICH PATH EACH BLOCK OF COPY TOOK: "composed" (a model's text, accepted) or
     #  "frame" (the entity's own problem statement in a fixed sentence). It was decided below and recorded nowhere.
     copy_basis: dict = {}
@@ -1817,7 +1818,7 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
                    "generation": vsb.get("generation", 0), "domain": vsb.get("domain"),
                    "realm": vsb.get("realm"), "governance": (vsb.get("governance") or {}).get("status")}
 
-    prov: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False}
+    prov: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False, **_reply_evidence()}
     # §17.5 invariant 1 (W343, FU-276) — the caller's identity reaches the memory layer, or what
     # they asked for is stored where even they cannot recall it.
     _owner_id = user.get("username") if isinstance(user, dict) else None
@@ -3169,7 +3170,7 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
         # W450 (P1.2, refuter F1) — this seam stored the floor's marker/headings frame as the CEO
         # specification and shipped it in ORGANISATION.md, the app's Org tab and the board pack. The
         # same rule as Genesis establish: a floor-served field is an honest pending state.
-        _spawn_prov: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False}
+        _spawn_prov: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False, **_reply_evidence()}
         try:
             # §17.5 invariant 1 (W343, FU-276) — the caller's identity reaches the memory layer, or what they asked for is stored where even they cannot recall it.
             _owner_id = user.get("username") if isinstance(user, dict) else None

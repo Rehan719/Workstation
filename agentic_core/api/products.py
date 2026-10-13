@@ -17,6 +17,7 @@ import uuid
 from typing import AsyncIterator, Literal, Optional
 
 from fastapi import APIRouter, HTTPException
+from agentic_core.api._ai_provenance import reply_evidence as _reply_evidence   # W698: the level travels with the record
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -441,7 +442,7 @@ async def incubator_evolve(req: EvolveTournamentRequest) -> TournamentResult:
     temperature = min(max(req.temperature, 0.0), 1.0)
     mutation = min(max(req.mutation, 0.0), 1.0)
     tournament_id = uuid.uuid4().hex[:10]
-    prov: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False}
+    prov: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False, **_reply_evidence()}
 
     def _record(meta: dict) -> None:
         sb = meta.get("served_by", "native")
@@ -548,7 +549,7 @@ async def reactor_experiment(req: ExperimentRequest) -> ExperimentResult:
     if not scenarios:
         raise HTTPException(status_code=400, detail="Provide at least one 'what-if' scenario.")
     eid = uuid.uuid4().hex[:10]
-    prov: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False}
+    prov: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False, **_reply_evidence()}
 
     def _record(meta: dict) -> str:
         sb = meta.get("served_by", "native")
@@ -634,7 +635,7 @@ async def petri_culture(req: PetriRequest) -> PetriResult:
         raise HTTPException(status_code=400, detail="Provide a specimen (idea/hypothesis) to culture.")
     passages = max(1, min(3, int(req.iterations)))
     cid = uuid.uuid4().hex[:10]
-    prov: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False}
+    prov: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False, **_reply_evidence()}
 
     def _record(meta: dict) -> None:
         sb = meta.get("served_by", "native")
@@ -749,7 +750,7 @@ async def reactor_studio(req: StudioRequest) -> StudioResult:
     _min_stat = (f"min {_vmin} (tied across {', '.join(p.label for p in _mins)})"
                  if len(_mins) > 1 else f"min {pmin.label} ({_vmin})")
 
-    prov: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False}
+    prov: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False, **_reply_evidence()}
     insight = ""
     if req.insight:
         meta = await gateway.query_meta(

@@ -18,6 +18,7 @@ import uuid as _uuid        # P3.1 — the journey mints its own id; the only ot
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, HTTPException
+from agentic_core.api._ai_provenance import reply_evidence as _reply_evidence   # W698: the level travels with the record
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
@@ -322,7 +323,7 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
 
     # In-house-first AI with provenance: the synthesis stages record which OWNED resource
     # served them (this local _q shadows the module helper for the journey's stages).
-    provenance: Dict[str, Any] = {"posture": "in-house-first", "served_by": {}, "any_external": False}
+    provenance: Dict[str, Any] = {"posture": "in-house-first", "served_by": {}, "any_external": False, **_reply_evidence()}
 
     # §17.1 (W427) — REALM REACHES THE PROMPT. Until now `req.realm` was validated, stored on the
     # entity, echoed in the response and named in an evidence string — and appeared in NONE of the

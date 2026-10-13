@@ -17848,11 +17848,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W698",
       "note": "",
       "slot_source": "found in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A refusal returned as an ordinary answer by a native-AI route now carries no level and says it was refused before any resource was asked; the shared provenance does the same for a refused call.",
+      "reachability_check": "test_w698_an_answer_that_names_a_model_states_its_level_and_a_refusal_states_none"
     },
     {
       "id": "FU-917",
@@ -17866,11 +17870,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W698",
       "note": "",
       "slot_source": "found in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The evaluation, baseline record and baseline listing read their level from the table; no level is typed beside a record, and a table entry moved in the guard moves the answer.",
+      "reachability_check": "test_w698_an_answer_that_names_a_model_states_its_level_and_a_refusal_states_none"
     },
     {
       "id": "FU-918",
@@ -17902,11 +17910,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W698",
       "note": "",
       "slot_source": "found in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Ruled by the Owner on 2026-10-13: every router that names a model. Counted per router by syntax on the evidence-levels route; the shared provenance and the accumulator six routers build now state the level. The measured remainder is registered as its own row.",
+      "reachability_check": "test_w698_an_answer_that_names_a_model_states_its_level_and_a_refusal_states_none"
     },
     {
       "id": "FU-920",
@@ -20881,6 +20893,24 @@
       "severity": "low",
       "owner_gated": true,
       "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": ""
+    },
+    {
+      "id": "FU-1070",
+      "title": "91 written answer blocks in 35 router files name which resource served and state no evidence level",
+      "why": "Measured by GET /api/v1/native-ai/evidence-levels (routers_naming_a_model) when the Owner's ruling of 2026-10-13 was built: 14 of 105 blocks state a level in the block. The largest: resource_fabric 15, products 5 of 9 silent, catalog/bto 6, orchestrator 7, business_plan 4, deliverables 4, intelligence 4. Work them per file by spreading the shared statement into each block that reports a reply, and classify the blocks that are configuration and not a reply. The guard holds a ceiling of 91 that may fall and may not rise.",
+      "source": "W698 (the evidence level on every router that names a model)",
+      "found": "2026-10-13",
+      "files": [
+        "agentic_core/api/native_ai.py",
+        "agentic_core/api/_ai_provenance.py",
+        "agentic_core/api/resource_fabric.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.32",
       "status": "open",
       "closed_by": null,
       "note": ""

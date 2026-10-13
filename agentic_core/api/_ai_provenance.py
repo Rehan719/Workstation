@@ -32,6 +32,36 @@ FLOOR_NOTE = ("Composed by the native floor, not by a model: the headings are a 
               "safeguarding assessment was performed - read it as an outline to work from, not as an answer.")
 
 
+#  W698 (OWNER RULING 2026-10-13) - EVERY ROUTER THAT NAMES A MODEL STATES ITS EVIDENCE LEVEL. Two levels exist
+#  on this platform and no third (the native-AI router's table says which of its routes rest on which). A record
+#  of which resource gave a reply is the first level: what came back for an input. It is said HERE, once, in the
+#  words every answer carries - the shared provenance below adds it, and the accumulator six routers build adds
+#  it - so a router cannot name a model and leave the level out by forgetting.
+REFUSAL_GATE = "constitutional_policy_gate"
+_REPLY_EVIDENCE = {
+    "evidence_level": "behaviour", "evidence_level_number": 1,
+    "evidence_basis": ("what came back for this input, and which resource gave it. Level 1 - inputs and outputs "
+                       "only; the highest level anything here reaches, and not a measurement of the resource "
+                       "beyond this answer")}
+_REFUSAL_EVIDENCE = {
+    "evidence_level": None, "evidence_level_number": None,
+    "evidence_basis": ("REFUSED BEFORE ANY RESOURCE WAS ASKED: this is the platform's own rule answering, so it "
+                       "is evidence about no model and carries no level")}
+
+
+def is_refusal(answer: Any) -> bool:
+    """A constitutional refusal returned as an ordinary answer. It is recognised by what the gate itself writes."""
+    if not isinstance(answer, dict):
+        return False
+    return (answer.get("refused") is True or answer.get("served_by") == REFUSAL_GATE
+            or str(answer.get("output") or answer.get("final") or "").startswith("[CONSTITUTIONAL REFUSAL]"))
+
+
+def reply_evidence(served_by: Any = None) -> Dict[str, Any]:
+    """The evidence level of an answer a resource gave - or, for a refusal, the statement that there is none."""
+    return dict(_REFUSAL_EVIDENCE if served_by == REFUSAL_GATE else _REPLY_EVIDENCE)
+
+
 def is_floor_served(served_by: Any) -> bool:
     return str(served_by or "native").startswith("native")
 
@@ -215,7 +245,9 @@ async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
                                   #  floor-served answer.
                                   "profile_applied": res.get("profile_applied"),
                                   "profile_state": res.get("profile_state"),
-                                  "profile_basis": res.get("profile_basis")}
+                                  "profile_basis": res.get("profile_basis"),
+                                  #  W698 - the level of evidence this answer is, or that a refusal is none
+                                  **reply_evidence(served_by)}
     if _material is not None:
         provenance["material"] = _material          # how much was read of how much, on every answer
     #  W688 (OWNER RULING 2026-10-12, the review cell's first clause) - THE TIER OF REVIEW THIS TOOL HAS REACHED,
