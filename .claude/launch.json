@@ -55,6 +55,15 @@
       ],
       "port": 8031,
       "autoPort": false
+    },
+    {
+      "name": "Backend sign-in check (fresh store, sign-in on :8032)",
+      "runtimeExecutable": "venv\\Scripts\\python.exe",
+      "runtimeArgs": [
+        "scripts/boot_signin_check_backend.py"
+      ],
+      "port": 8032,
+      "autoPort": false
     }
   ]
 }
