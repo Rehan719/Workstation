@@ -1623,7 +1623,7 @@ def appraise_scope_for(systems: List[str]) -> Dict[str, Any]:
 #  P3.30 - the route a person uses to act on an appraisal. Named once; the guard checks it is served.
 _HAND_OFF_ROUTE = "POST /api/v1/cca/submit"
 _METHOD_FILERS = ("POST /api/v1/method/derive", "POST /api/v1/method/breach", "POST /api/v1/method/correct",
-                  "POST /api/v1/method/amendment")
+                  "POST /api/v1/method/amendment", "POST /api/v1/method/appraise/recommend")
 
 
 def _appraisal_hand_off(scope: Optional[str]) -> Dict[str, Any]:
@@ -1641,9 +1641,9 @@ def _appraisal_hand_off(scope: Optional[str]) -> Dict[str, Any]:
         "kept_basis": ("this appraisal is a reading made at this call. The route writes nothing, so it is "
                        "not stored and no later appraisal can read this one"),
         "authorises": False,
-        "authorises_basis": ("this route files, approves and applies nothing, and nothing reads an appraisal "
-                             "in order to file a change. The method's own filers act on a person's request and "
-                             "only SUBMIT; Change Control decides"),
+        "authorises_basis": ("this route files, approves and applies nothing. A person may send one of its "
+                             "recommendations, and that route appraises the scope again and SUBMITS one "
+                             "record; the method's other filers also only submit. Change Control decides"),
         "next_route": _HAND_OFF_ROUTE,
         "next_route_basis": ("to act on this reading a person files a change there, naming the affected "
                              "systems. Change Control attaches the appraisal of the scope those systems point "
@@ -1652,7 +1652,9 @@ def _appraisal_hand_off(scope: Optional[str]) -> Dict[str, Any]:
         #  W696 - the count is computed from the list it describes: a fourth filer made "three" false
         "method_filers_basis": (f"the {len(_METHOD_FILERS)} method routes that can raise a change, each on a "
                                 f"person's request (a confirmed defect, a recorded breach, a proposed "
-                                f"correction, a batch of lessons). None of them reads an appraisal"),
+                                f"correction, a batch of lessons, one recommendation of an appraisal). "
+                                f"One of them reads an appraisal, and it appraises the scope again at the "
+                                f"call and files what that reading says"),
         "not_established": ("whether an implemented change did what it was filed for. The status and effect "
                             "listed here are Change Control's own record of what it decided and applied; "
                             "nothing re-reads the changed state after implementation, and this appraisal "
@@ -1887,7 +1889,114 @@ async def appraise(scope: Optional[str] = None, hand_off: bool = True,
     #  nothing, and the change records that carry an appraisal of this scope are read from Change
     #  Control's own store. None when the caller asked for the readings alone (hand_off=false).
     out["hand_off"] = _appraisal_hand_off(scope) if hand_off else None
+    #  W697 - what the readings recommend, derived at this call; sent one at a time by a person, never by the cell
+    out["recommendations"] = appraisal_recommendations(out)
+    out["recommendations_basis"] = _RECOMMENDATIONS_BASIS
+    out["recommendation_route"] = "POST /api/v1/method/appraise/recommend"
     return out
+
+
+# ── W697 (OWNER RULING 2026-10-13) - AN APPRAISAL'S FINDINGS BECOME RECOMMENDATIONS A PERSON CAN SEND ───────
+#
+# The cell made readings and nothing consumed them. A recommendation here is DERIVED, never composed: each one
+# is a fixed sentence over figures one faculty counted at this call, it names that faculty, and it exists only
+# while the figure behind it is non-zero. The cell files nothing by itself. A person sends ONE recommendation,
+# by its id, and the route appraises the scope AGAIN and files what the reading says now - a sentence a client
+# sent is never filed, and a finding that has since gone is refused instead of being filed from memory.
+_REGISTER_DOC = "docs/FOLLOWUPS.json"
+_PLAN_DOC = "docs/FABLE_DELIVERY_PROMPT.md"
+
+
+def _some(ids: List[Any], limit: int = 8) -> str:
+    shown = ", ".join(str(i) for i in ids[:limit])
+    return shown + (f" and {len(ids) - limit} more" if len(ids) > limit else "")
+
+
+def appraisal_recommendations(appraisal: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """What the readings of THIS appraisal recommend. Empty when no counted finding calls for an act."""
+    f = appraisal.get("faculties") or {}
+    recs: List[Dict[str, Any]] = []
+
+    def _add(rid: str, faculty: str, ids: Any, sentence: str, systems: List[str]) -> None:
+        ids = [i for i in (ids or []) if i]
+        if ids:
+            recs.append({"id": rid, "from_faculty": faculty, "count": len(ids), "subjects": ids[:50],
+                         "recommendation": sentence.format(n=len(ids), ids=_some(ids)),
+                         "affected_systems": systems,
+                         "rests_on": str((f.get(faculty) or {}).get("basis") or "")[:400]})
+
+    _add("name-the-source-round", "attribution", (f.get("attribution") or {}).get("rows_with_no_source_round"),
+         "Name the round that found each of {n} open row(s) that names none: {ids}. A row with no source round "
+         "cannot be re-measured.", [_REGISTER_DOC])
+    _add("name-the-files", "recognition", (f.get("recognition") or {}).get("rows_citing_no_file"),
+         "Name the files on {n} open row(s) that cite none: {ids}. A row citing no file is invisible to every "
+         "check that matches a row against a change.", [_REGISTER_DOC])
+    #  the forecaster reads the WHOLE plan, so its unsized items are narrowed here to the scope appraised:
+    #  a recommendation about one item's scope does not list another phase's items
+    _scope = str(appraisal.get("scope") or "")
+    _in_scope = (lambda i: True) if _scope in ("", "the whole plan") else (
+        lambda i: str(i) == _scope or str(i).startswith(_scope + "."))
+    _add("size-the-items", "foresight",
+         [i for i in ((f.get("foresight") or {}).get("items_never_sized") or []) if _in_scope(i)],
+         "Size {n} plan item(s) that have never been sized: {ids}. A forecast over an unsized item projects "
+         "from nothing.", [_PLAN_DOC])
+    _add("file-a-row", "introspection", (f.get("introspection") or {}).get("items_in_scope_with_no_row"),
+         "File a register row for {n} open plan item(s) that have none: {ids}. An item with no row has no "
+         "recorded next step.", [_REGISTER_DOC, _PLAN_DOC])
+    _ext = f.get("extrospection") or {}
+    _add("re-read-changed-rows", "extrospection",
+         [str(c.get("id") or c.get("row") or c) if isinstance(c, dict) else str(c) for c in (_ext.get("candidates") or [])],
+         "Re-read {n} open row(s) naming a file a later round changed: {ids}. Each is a candidate for "
+         "re-reading and none is closed by this; whether a row still holds is a reading of the code it names.",
+         [_REGISTER_DOC])
+    return recs
+
+
+_RECOMMENDATIONS_BASIS = (
+    "each recommendation is a fixed sentence over what one faculty counted at this call, and is listed only "
+    "while that count is above zero. Nothing here is composed by a model, ranked or weighted. The cell files "
+    "nothing: a person sends one recommendation, the scope is appraised again, and Change Control decides.")
+
+
+class RecommendRequest(BaseModel):
+    scope: Optional[str] = None
+    recommendation_id: str
+
+
+@router.post("/appraise/recommend")
+async def send_recommendation(req: RecommendRequest, user: dict | None = Depends(get_current_user)):
+    """A person sends ONE recommendation of an appraisal to Change Control. Files one record; applies nothing."""
+    appraisal = await appraise(scope=req.scope, hand_off=False, user=user)
+    now = {r["id"]: r for r in appraisal_recommendations(appraisal)}
+    rec = now.get(req.recommendation_id)
+    if rec is None:
+        raise HTTPException(status_code=409, detail={
+            "message": ("No change record was filed: appraised again just now, this scope gives no such "
+                        "recommendation. Either the finding behind it has gone or the id was never one."),
+            "scope": appraisal["scope"], "recommendations_now": sorted(now)})
+    try:
+        from agentic_core.api import change_control as _cc
+        cca = await _cc.submit_change(_cc.SubmitChangeRequest(
+            title=f"Appraisal recommendation ({appraisal['scope']}): {rec['id']}"[:120],
+            change_type="config_minor",
+            description=(f"{rec['recommendation']} Read by the Appraisal Cell's {rec['from_faculty']} faculty "
+                         f"over {appraisal['scope']} when this was sent. The reading rests on: {rec['rests_on']}"),
+            rationale=("Sent by a person from an appraisal. The cell recommends and files nothing by itself; "
+                       "this record is Change Control's to decide, and approving it applies nothing."),
+            affected_systems=list(rec["affected_systems"]),
+            submitted_by="appraisal_recommendation",
+        ), principal=_cc._actor(user, "appraisal_recommendation"))
+    except HTTPException:
+        raise
+    except Exception as e:                           # noqa: BLE001 - said in the answer's own status, never a 200
+        raise HTTPException(status_code=503, detail={
+            "message": "No change record was filed: Change Control did not accept the submission.",
+            "why": f"{e.__class__.__name__}: {str(e)[:300]}"}) from e
+    return {"change_control": {"submitted": True, "cca_id": cca.get("cca_id"), "status": cca.get("status")},
+            "records_filed": 1, "recommendation": rec, "scope": appraisal["scope"],
+            "applied": False,
+            "basis": ("one change record was filed from the reading as it stands now. Nothing was applied and "
+                      "nothing is approved by sending: Change Control decides the record.")}
 
 
 # ── THE TEMPORAL SPINE (W512) — retrospection ↔ observation ↔ prospection ───────────────────────────────────

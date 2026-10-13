@@ -16427,11 +16427,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W697",
       "note": "",
       "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The cell's counted findings are listed as recommendations on the appraisal, each a fixed sentence over one faculty's figures. A person sends one by a button; the route appraises again, files one change record and applies nothing. Owner ruling 2026-10-13.",
+      "reachability_check": "test_w697_an_appraisal_recommends_from_what_it_counted_and_a_person_sends_one_to_change_control"
     },
     {
       "id": "FU-843",
@@ -17649,11 +17653,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W697",
       "note": "",
       "slot_source": "found in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The Governance centre has an Appraisal tab that requests the appraisal over a scope and renders its readings, its hand-off and its recommendations, every sentence the server's.",
+      "reachability_check": "test_w697_an_appraisal_recommends_from_what_it_counted_and_a_person_sends_one_to_change_control"
     },
     {
       "id": "FU-907",

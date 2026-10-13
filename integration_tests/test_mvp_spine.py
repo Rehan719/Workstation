@@ -63900,3 +63900,98 @@ def test_w696_a_batch_of_lessons_is_one_change_record_and_a_faulty_batch_files_n
     ho = _m._appraisal_hand_off("P3.30")
     assert len(ho["method_filers"]) == len(_m._METHOD_FILERS) >= 4
     assert f"the {len(ho['method_filers'])} method routes" in ho["method_filers_basis"], ho["method_filers_basis"]
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W697 - OWNER RULING 2026-10-13: an appraisal's findings become recommendations a person can send to Change
+#  Control. Derived from counted figures, sent one at a time by a person, and never applied by the cell.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w697_an_appraisal_recommends_from_what_it_counted_and_a_person_sends_one_to_change_control(client, monkeypatch):
+    import json
+    import pathlib
+    from agentic_core.api import change_control as _cc
+    from agentic_core.api import method as _m
+    root = pathlib.Path(__file__).resolve().parents[1]
+
+    def _filed():
+        return [c for c in _cc._list_changes() if str(c.get("title")).startswith("Appraisal recommendation (")]
+
+    #  1. DERIVED, NOT COMPOSED - driven on stated figures: nothing counted, nothing recommended
+    empty = {"scope": "P9", "faculties": {"attribution": {"rows_with_no_source_round": []},
+                                          "recognition": {"rows_citing_no_file": []},
+                                          "foresight": {"items_never_sized": []},
+                                          "introspection": {"items_in_scope_with_no_row": []},
+                                          "extrospection": {"candidates": []}}}
+    assert _m.appraisal_recommendations(empty) == []
+    assert _m.appraisal_recommendations({"scope": "P9", "faculties": {}}) == []
+    full = {"scope": "P7.2", "faculties": {
+        "attribution": {"rows_with_no_source_round": ["FU-A"], "basis": "the attribution basis"},
+        "recognition": {"rows_citing_no_file": ["FU-B", "FU-C"]},
+        "foresight": {"items_never_sized": ["P7.2", "P7.2.1", "P7.20", "P8.1"]},
+        "introspection": {"items_in_scope_with_no_row": ["P7.2"]},
+        "extrospection": {"candidates": [{"id": "FU-D"}, {"id": "FU-E"}, {"id": "FU-F"}]}}}
+    got = {r["id"]: r for r in _m.appraisal_recommendations(full)}
+    assert sorted(got) == ["file-a-row", "name-the-files", "name-the-source-round", "re-read-changed-rows", "size-the-items"]
+    assert got["name-the-source-round"]["count"] == 1 and "FU-A" in got["name-the-source-round"]["recommendation"]
+    assert got["name-the-source-round"]["rests_on"] == "the attribution basis"
+    assert got["name-the-files"]["count"] == 2 and got["re-read-changed-rows"]["subjects"] == ["FU-D", "FU-E", "FU-F"]
+    #  the forecaster reads the whole plan: only the appraised scope's unsized items are recommended
+    assert got["size-the-items"]["subjects"] == ["P7.2", "P7.2.1"], got["size-the-items"]["subjects"]
+    whole = {r["id"]: r for r in _m.appraisal_recommendations(dict(full, scope="the whole plan"))}
+    assert whole["size-the-items"]["count"] == 4
+    for r in got.values():
+        assert r["from_faculty"] in full["faculties"] and r["affected_systems"] and f"{r['count']} " in r["recommendation"]
+        assert all((root / s).exists() for s in r["affected_systems"]), r["affected_systems"]
+
+    #  2. ON THE APPRAISAL ITSELF, computed from that appraisal's own figures
+    a = client.get("/api/v1/method/appraise", params={"scope": "P3.30"})
+    assert a.status_code == 200, a.text[:200]
+    aj = a.json()
+    assert aj["recommendations"] == _m.appraisal_recommendations(aj), "the listed recommendations are not the derived ones"
+    assert aj["recommendations_basis"] and aj["recommendation_route"] == "POST /api/v1/method/appraise/recommend"
+    assert "/api/v1/method/appraise/recommend" in {getattr(r, "path", "") for r in client.app.routes}
+    ho = aj["hand_off"]
+    assert ho["authorises"] is False and "POST /api/v1/method/appraise/recommend" in ho["method_filers"]
+    assert f"the {len(ho['method_filers'])} method routes" in ho["method_filers_basis"]
+
+    #  3. A PERSON SENDS ONE: one record, carrying the sentence as read NOW, and nothing is applied
+    fixed = [dict(got["name-the-files"])]
+    monkeypatch.setattr(_m, "appraisal_recommendations", lambda _a: fixed)
+    n0 = len(_filed())
+    ok = client.post("/api/v1/method/appraise/recommend", json={
+        "scope": "P3.30", "recommendation_id": "name-the-files",
+        "recommendation": "W697-A-SENTENCE-THE-CLIENT-SENT", "affected_systems": ["agentic_core/api/vsb.py"]})
+    assert ok.status_code == 200, ok.text[:400]
+    j = ok.json()
+    assert j["records_filed"] == 1 and j["applied"] is False and j["change_control"]["cca_id"], j
+    assert len(_filed()) == n0 + 1, "sending one recommendation did not file exactly one record"
+    rec = _cc._load_change(j["change_control"]["cca_id"])
+    assert fixed[0]["recommendation"] in rec["description"] and "recognition" in rec["description"], rec["description"][:300]
+    assert "W697-A-SENTENCE-THE-CLIENT-SENT" not in json.dumps(rec), "a sentence the client sent was filed"
+    assert rec["affected_systems"] == fixed[0]["affected_systems"], rec["affected_systems"]
+    assert rec["status"] != "implemented" and rec.get("implementation_effect") != "applied", (rec["status"], rec.get("implementation_effect"))
+    assert rec.get("submitted_by"), rec
+
+    #  4. A FINDING THAT HAS GONE IS REFUSED, not filed from memory - and so is an id that was never one
+    gone = client.post("/api/v1/method/appraise/recommend", json={"scope": "P3.30", "recommendation_id": "size-the-items"})
+    assert gone.status_code == 409 and gone.json()["detail"]["recommendations_now"] == ["name-the-files"], gone.text[:300]
+    assert "No change record was filed" in gone.json()["detail"]["message"]
+    monkeypatch.setattr(_m, "appraisal_recommendations", lambda _a: [])
+    assert client.post("/api/v1/method/appraise/recommend", json={"scope": "P3.30", "recommendation_id": "name-the-files"}).status_code == 409
+    assert len(_filed()) == n0 + 1, "a refused recommendation filed a record"
+
+    #  5. THE PAGE: reached from a tab, every sentence the server's, the button sends the id alone, and each
+    #     gate and its body are both present
+    gov = (root / "apps/workstation-superapp/src/pages/governance/GovernanceCenter.tsx").read_text(encoding="utf-8")
+    assert "El: MethodAppraisal }" in gov and "import { MethodAppraisal } from './MethodAppraisal';" in gov
+    page = (root / "apps/workstation-superapp/src/pages/governance/MethodAppraisal.tsx").read_text(encoding="utf-8")
+    assert "body: { scope: asked || null, recommendation_id: id }" in page, "the button sends more than the id"
+    for gate, body in (("{data.recommendations.length === 0 ? (", 'data-testid="appraisal-no-recommendations"'),
+                       ("{data.recommendations.map(r => (", "{r.recommendation}"),
+                       ("{data.hand_off && (", "{data.hand_off.statement}"),
+                       ("{sent[r.id] && ", "{sent[r.id]}</p>"),
+                       ("{sendErr[r.id] && ", "{sendErr[r.id]}</p>"),
+                       ("{err && ", 'data-testid="appraisal-unavailable"')):
+        assert gate in page and body in page, (gate, body)
+    assert "{data.recommendations_basis}" in page and "{data.hand_off.not_established}" in page
+    assert "{data.this_cell_never_says}" in page and "onClick={() => send(r.id)}" in page
