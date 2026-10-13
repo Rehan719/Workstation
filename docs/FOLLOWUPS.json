@@ -11880,11 +11880,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W707",
       "note": "",
       "slot_source": "both are tier-3 by their refuter's own tiering, and P3.30 owns tier-3 findings",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The journey's answer says what its engine names are and whether anything analysed anything on that run, computed from what served it, and the page prints it over the chips; the establish stream's swarm event says the stages are the platform's fixed ones and carries the template flag.",
+      "reachability_check": "test_w707_the_journey_the_stream_and_the_change_record_say_what_their_siblings_say"
     },
     {
       "id": "FU-620",
@@ -16942,11 +16946,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W707",
       "note": "",
       "slot_source": "what a closed tier-3 bundle row left undone; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A change record with no pre-validation verdict says why: its tier does not call for one (which includes a governed live setting, filed as MEDIUM), or none has been run yet. The Agency page prints it. Whether a live setting SHOULD be pre-validated remains the Owner's.",
+      "reachability_check": "test_w707_the_journey_the_stream_and_the_change_record_say_what_their_siblings_say"
     },
     {
       "id": "FU-868",

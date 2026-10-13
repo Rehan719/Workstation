@@ -67,6 +67,7 @@ interface JourneyResult {
     biomimetic?: { immune?: { health?: number }; circadian?: string; layers?: string[]; self?: string };
   };
   engines_used: string[];
+  engines_used_basis?: string;
   deliverable: string;
   status: string;
 }
@@ -978,6 +979,9 @@ export const GenesisJourney: React.FC = () => {
               </h3>
             </div>
             <p className="text-sm text-slate-300 leading-relaxed">{result.deliverable}</p>
+            {result.engines_used_basis && (
+              <p className="text-[10px] text-slate-500 leading-relaxed mt-4" data-testid="journey-engines-basis">{result.engines_used_basis}</p>
+            )}
             <div className="flex flex-wrap items-center gap-2 mt-4">
               {result.engines_used.map(e => (
                 <span key={e} className="px-2 py-0.5 rounded-md bg-highlight/10 text-highlight text-[9px] font-black uppercase tracking-wider">{e}</span>
