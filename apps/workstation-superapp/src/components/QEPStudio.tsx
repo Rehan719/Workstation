@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { BookOpen, Brain, Loader2, Sparkles, Trophy, Languages, CheckCircle2 } from 'lucide-react';
 import { apiJson, errorMessage } from '../lib/api';
@@ -114,8 +114,60 @@ export const QEPStudio: React.FC = () => {
     try { setMeaning(await apiJson(`/api/v1/qep/translation/${ms}/${ma}`)); } catch (e) { setErr(errorMessage(e)); }
     setBusy('');
   };
+  //  W717 (OWNER RULING 2026-10-13) - a REFERENCE recitation to listen to, the words lighting as it plays.
+  //  Fetched only when asked for, played from the publisher's own address and never stored. Nothing here
+  //  listens to the learner, and nothing here assesses anyone.
+  type ListenVerse = { verse_key: string; from_ms: number; to_ms: number; words: { word: number; from_ms: number; to_ms: number }[] };
+  type Listen = { audio_url: string; reciter_id: number; credit?: string; environment?: string; assessed_basis?: string; verses: ListenVerse[] };
+  const [reciters, setReciters] = useState<{ id: number; name: string }[] | null>(null);
+  const [reciterId, setReciterId] = useState<number | null>(null);
+  const [listen, setListen] = useState<Listen | null>(null);
+  const [listenRefusal, setListenRefusal] = useState('');
+  const [litWord, setLitWord] = useState<number | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const listenVerse = listen && reviewRef ? listen.verses.find(v => v.verse_key === reviewRef) ?? null : null;
+  const shownWords = reviewAyah ? reviewAyah.text_arabic.trim().split(/\s+/) : [];
+  //  the words light ONLY when the publisher times as many words as the text shown has; otherwise the
+  //  recitation still plays and the page says why nothing lights
+  const wordsLight = !!listenVerse && listenVerse.words.length === shownWords.length;
+  const startListening = async (chosen?: number) => {
+    if (!reviewRef) return;
+    setBusy('listen'); setListenRefusal(''); setLitWord(null);
+    try {
+      let list = reciters;
+      if (!list) {
+        list = ((await apiJson('/api/v1/qep/recitation/reciters')).reciters ?? []) as { id: number; name: string }[];
+        setReciters(list);
+      }
+      //  the default is chosen by the publisher's own name for the reciter, never by a number typed here
+      const id = chosen ?? reciterId ?? (list.find(r => /husar/i.test(r.name)) ?? list[0])?.id;
+      if (id == null) { setListen(null); setListenRefusal('The publisher lists no reciter, so nothing can be played.'); setBusy(''); return; }
+      setReciterId(id);
+      const [ls] = reviewRef.split(':');
+      setListen(await apiJson(`/api/v1/qep/recitation/audio/${ls}?reciter_id=${id}`));
+    } catch (e) { setListen(null); setListenRefusal(errorMessage(e)); }
+    setBusy('');
+  };
+  const onAudioReady = () => { if (audioRef.current && listenVerse) audioRef.current.currentTime = listenVerse.from_ms / 1000; };
+  //  found by driving it: after the verse ended, play did nothing, because the position was already past
+  //  the verse. Play always begins the verse again unless it is part-way through it.
+  const onAudioPlay = () => {
+    const a = audioRef.current;
+    if (!a || !listenVerse) return;
+    const ms = a.currentTime * 1000;
+    if (ms < listenVerse.from_ms || ms >= listenVerse.to_ms - 50) a.currentTime = listenVerse.from_ms / 1000;
+  };
+  const onAudioTime = () => {
+    const a = audioRef.current;
+    if (!a || !listenVerse) return;
+    const ms = a.currentTime * 1000;
+    if (ms >= listenVerse.to_ms) { a.pause(); setLitWord(null); return; }   // one verse, then it stops
+    const i = listenVerse.words.findIndex(w => ms >= w.from_ms && ms < w.to_ms);
+    setLitWord(i >= 0 ? i : null);
+  };
   const openReview = async (ref: string) => {
     setReviewRef(ref); setReviewAyah(null); setReviewResult(null); setRecall(null); setRecallText(''); setMeaning(null);
+    setListen(null); setListenRefusal(''); setLitWord(null);
     const [s, a] = ref.split(':');
     try { setReviewAyah(await apiJson(`/api/v1/qep/ayah/${s}/${a}`)); } catch (e) { setErr(errorMessage(e)); }
   };
@@ -305,10 +357,43 @@ export const QEPStudio: React.FC = () => {
           </div>
           {reviewRef && reviewAyah && (
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
-              <p className="text-xl text-white leading-loose font-arabic mb-2" dir="rtl">{reviewAyah.text_arabic}</p>
+              {/* W717 - the same fetched text in both branches: split on spaces and joined with spaces, never altered */}
+              <p className="text-xl text-white leading-loose font-arabic mb-2" dir="rtl">
+                {wordsLight
+                  ? shownWords.map((w, i) => <span key={i} data-testid={litWord === i ? 'listen-word-lit' : undefined} className={litWord === i ? 'text-aura' : undefined}>{w}{' '}</span>)
+                  : reviewAyah.text_arabic}
+              </p>
               <p data-testid="review-provenance" className="text-[9px] text-slate-500 mb-2" title={reviewAyah.provenance_basis || undefined}>
                 {reviewAyah.source ?? 'source not stated'} · edition {reviewAyah.edition ?? 'not stated'} · {reviewAyah.riwayah ? `riwayah ${reviewAyah.riwayah}` : 'riwayah not declared'}
               </p>
+              <div data-testid="listen-reference" className="mb-2">
+                <button type="button" onClick={() => startListening()} disabled={busy === 'listen'}
+                  className="text-[9px] font-bold text-sky-400 hover:text-sky-300 underline underline-offset-2">
+                  {busy === 'listen' ? 'Fetching…' : 'Listen to a reference recitation'}
+                </button>
+                {reciters && reciters.length > 1 && (
+                  <select aria-label="Reciter" value={reciterId ?? ''} onChange={e => startListening(Number(e.target.value))}
+                    className="ml-2 text-[9px] bg-slate-900 border border-slate-800 rounded text-slate-300">
+                    {reciters.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                  </select>
+                )}
+                {listenRefusal && <p data-testid="listen-refusal" className="text-[9px] text-amber-300/90 mt-1">{listenRefusal}</p>}
+                {listen && !listenVerse && (
+                  <p data-testid="listen-no-timing" className="text-[9px] text-amber-300/90 mt-1">
+                    The publisher gives no timing for {reviewRef}, so this verse cannot be played by itself.
+                  </p>
+                )}
+                {listen && listenVerse && (
+                  <>
+                    <audio ref={audioRef} src={listen.audio_url} controls preload="none"
+                      onLoadedMetadata={onAudioReady} onPlay={onAudioPlay} onTimeUpdate={onAudioTime} className="mt-1 w-full h-8" />
+                    <p data-testid="listen-basis" className="text-[9px] text-slate-500 mt-1">
+                      {listen.credit}{listen.environment ? ` · ${listen.environment} service` : ''} · {listen.assessed_basis}
+                      {!wordsLight && ` · The words do not light: the publisher times ${listenVerse.words.length} word(s) and the text shown has ${shownWords.length}.`}
+                    </p>
+                  </>
+                )}
+              </div>
               {/* W640 — a SOURCED translation of the meanings, shown only when asked for, in its own block
                   under its own label: the translator, the year, the licence basis and the server's statement
                   that it is not the Qur'an all travel with the words. Never composed by a model. */}

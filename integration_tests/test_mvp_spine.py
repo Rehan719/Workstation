@@ -61411,8 +61411,12 @@ def test_t2_the_memorization_card_names_what_is_not_built(client):
     assert "Flashcards, progress heatmaps and audio looping are not built." in _entry[0], (
         "the live card does not say what of its feature is not built", _entry[0])
     _studio = (_src / "QEPStudio.tsx").read_text(encoding="utf-8")
-    assert not re.search(r"(?i)flashcard|heatmap|audio", _studio), (
-        "the studio now mentions a flashcard, a heatmap or audio: re-read the card's sentence")
+    #  W717 - this guard failed, as designed, when a reference recitation was added, and the card was re-read:
+    #  one verse can be listened to and the card says so; LOOPING is still not built, and neither are the others.
+    assert "A reference recitation of one verse can be listened to." in _entry[0], _entry[0]
+    assert "<audio " in _studio and "listen-reference" in _studio, "the card says a recitation can be listened to and the studio holds none"
+    assert not re.search(r"(?i)flashcard|heatmap|\bloop", _studio), (
+        "the studio now mentions a flashcard, a heatmap or a loop: re-read the card's sentence")
     assert re.search(r"(?i)hifz/review|hifz/schedule", _studio), "precondition: the studio holds the SM-2 review the card calls live"
 
 
@@ -65210,3 +65214,63 @@ def test_w715_a_change_to_the_delivery_method_is_held_for_a_person(client, monke
     src = inspect.getsource(_m)
     filed = src.count("await submit_change(SubmitChangeRequest(")
     assert filed >= 4 and src.count('affected_systems=["delivery_method"') == filed, (filed, src.count('affected_systems=["delivery_method"'))
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W717 - OWNER RULING 2026-10-13: in memorisation practice a learner may LISTEN to a reference recitation of
+#  the verse being revised, the words lighting as it plays. Nothing listens to the learner; nothing is assessed.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w717_a_reference_recitation_is_listened_to_and_nothing_listens_to_the_learner(client, monkeypatch):
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    studio_src = _code_only((root / "apps/workstation-superapp/src/components/QEPStudio.tsx").read_text(encoding="utf-8"))
+    flat = " ".join(studio_src.split())
+    handler = flat.split("const startListening", 1)[1].split("const onAudioReady", 1)[0]
+    block = flat.split('data-testid="listen-reference"', 1)[1].split("{!meaning && (", 1)[0]
+
+    #  1. FETCHED ONLY WHEN ASKED FOR: both calls live in the click handler and nowhere else on the page
+    assert "/api/v1/qep/recitation/reciters" in handler and "/api/v1/qep/recitation/audio/" in handler
+    assert flat.count("/api/v1/qep/recitation/") == 2, "a recitation call was added outside the handler"
+    assert "onClick={() => startListening()}" in block
+    #  2. THE DEFAULT RECITER IS CHOSEN BY THE PUBLISHER'S OWN NAME, never by a number typed into the page
+    assert "/husar/i.test(r.name)" in handler and not re.search(r"reciter_id=\d", flat) and not re.search(r"setReciterId\(\d", flat)
+    assert "onChange={e => startListening(Number(e.target.value))}" in block, "the learner cannot choose a reciter"
+    #  3. ONE VERSE, THEN IT STOPS; the words light only when the publisher's count matches the text shown
+    assert "if (ms >= listenVerse.to_ms) { a.pause();" in flat
+    #     ...and play begins the verse again (driven in the browser: after the verse ended, play did nothing)
+    assert "if (ms < listenVerse.from_ms || ms >= listenVerse.to_ms - 50) a.currentTime = listenVerse.from_ms / 1000;" in flat
+    assert "onPlay={onAudioPlay}" in block
+    assert "const wordsLight = !!listenVerse && listenVerse.words.length === shownWords.length;" in flat
+    assert "{wordsLight ? shownWords.map(" in flat and ": reviewAyah.text_arabic} </p>" in flat
+    assert "The words do not light: the publisher times" in block
+    #     the text shown is the fetched text, split on spaces and never rewritten
+    assert "const shownWords = reviewAyah ? reviewAyah.text_arabic.trim().split(/\\s+/) : [];" in flat
+    #  4. WHAT IT IS travels with it: the credit, the service, and the server's own statement that nothing is assessed
+    for said in ("{listen.credit}", "{listen.assessed_basis}", "listen.environment"):
+        assert said in block, said
+    #  5. A REFUSAL IS SHOWN, and a verse with no timing says so in place of playing the whole chapter
+    assert "setListenRefusal(errorMessage(e))" in handler and "{listenRefusal}" in block
+    assert "{listen && !listenVerse && (" in block and "cannot be played by itself" in block
+    #  6. NOTHING LISTENS, RECORDS OR ASSESSES
+    for banned in ("getusermedia", "mediarecorder", "speechrecognition"):
+        assert banned not in flat.lower(), banned
+    for banned in ("score", "grade", "accuracy", "mistake", "correct"):
+        assert banned not in (handler + block).lower(), banned
+    #  7. THE SERVER'S SIDE OF THE SAME WORDS: a refusal reaches the page as a sentence, and an answer says it assesses nothing
+    from agentic_core.religious_domain import quran_foundation as _qf
+
+    async def _not_configured(*a, **k):
+        raise _qf.NotConfigured("w717: no credentials in this leg")
+    monkeypatch.setattr(_qf, "chapter_audio", _not_configured)
+    r = client.get("/api/v1/qep/recitation/audio/1?reciter_id=7")
+    assert r.status_code == 503 and isinstance(r.json()["detail"], str) and "No reference recitation is served" in r.json()["detail"]
+
+    async def _one_verse(chapter, reciter_id):
+        return {"chapter": chapter, "reciter_id": reciter_id, "audio_url": "https://audio.invalid/w717.mp3", "format": "mp3",
+                "verses": [{"verse_key": "1:1", "from_ms": 0, "to_ms": 900, "words": [{"word": 1, "from_ms": 0, "to_ms": 900}]}],
+                "verses_timed": 1, "words_timed": 1}
+    monkeypatch.setattr(_qf, "chapter_audio", _one_verse)
+    ok = client.get("/api/v1/qep/recitation/audio/1?reciter_id=7").json()
+    assert ok["assessed"] is False and ok["stored"] is False and "Nothing here listens to, scores or corrects a person" in ok["assessed_basis"]
+    assert ok["verses"][0]["verse_key"] == "1:1" and ok["credit"] == _qf.CREDIT and ok["environment"]
