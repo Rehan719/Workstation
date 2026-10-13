@@ -65007,3 +65007,99 @@ def test_w711_the_two_chartered_items_keep_their_boundaries_and_every_source_say
         assert "NOT re-read by a second reader" in r["read_by"], (rid, "one reader's summary is presented as more than that")
     #  the date the external documents got wrong is recorded as the publisher gives it
     assert "entered into force on 27 July 2026" in rows["ec-ai-omnibus-2026"]["says"]
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W712 - two questions the Owner had deferred, resolved on the Owner's instruction of 2026-10-13, each on the
+#  cautious side: what each unchecked constraint is to a reply, and that children do not use the tools.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w712_each_unchecked_constraint_says_what_it_is_to_a_reply_and_children_do_not_use_the_tools():
+    import asyncio
+    import json
+    import pathlib
+    from agentic_core.avatars.core.clearance_chain import ConstitutionalClearanceChain
+    from agentic_core.validation import constitutional_validators as _cv
+    from agentic_core.validation.omni_enforcement_pattern_supreme import OmniEnforcementPatternSupreme
+    root = pathlib.Path(__file__).resolve().parents[1]
+
+    #  1. EVERY UNCHECKED CONSTRAINT HAS ONE LINE, and no assessed one does
+    unchecked = set(_cv.NO_INSTRUMENT) | {"thermodynamic_accountability"}
+    assert set(_cv.REPLY_DISPOSITION) == unchecked and len(unchecked) == 16, sorted(set(_cv.REPLY_DISPOSITION) ^ unchecked)
+    assert not (set(_cv.REPLY_DISPOSITION) & set(_cv.ASSESSING) - {"thermodynamic_accountability"})
+    kinds = {}
+    for name, (kind, reason) in _cv.REPLY_DISPOSITION.items():
+        assert kind in (_cv.NOT_OF_A_REPLY, _cv.DECLARED_NOT_CHECKED, _cv.AWAITS_INPUT) and len(reason) > 20, name
+        kinds.setdefault(kind, []).append(name)
+    assert len(kinds[_cv.NOT_OF_A_REPLY]) == 10 and len(kinds[_cv.DECLARED_NOT_CHECKED]) == 5 and kinds[_cv.AWAITS_INPUT] == ["thermodynamic_accountability"], {k: len(v) for k, v in kinds.items()}
+    #  the three that must never become a score all BEAR ON A REPLY and stay said on every reply
+    assert set(_cv.NEVER_A_SCORE) <= set(kinds[_cv.DECLARED_NOT_CHECKED])
+    #  a name nobody decided is never treated as not applying
+    split = _cv.reply_disposition(["lob_fixpoint", "statistical_rigor", "thermodynamic_accountability", "a_constraint_added_later"])
+    assert split["undecided"] == ["a_constraint_added_later"] and split[_cv.NOT_OF_A_REPLY] == ["lob_fixpoint"], split
+    assert split[_cv.DECLARED_NOT_CHECKED] == ["statistical_rigor"] and split[_cv.AWAITS_INPUT] == ["thermodynamic_accountability"]
+    assert "the Owner may change any line" in split["basis"] and "nothing is removed from the constitution" in split["basis"]
+
+    #  2. THE PATTERN'S OWN ANSWER: the three lists it always gave are unchanged, and the split is beside them
+    pattern = OmniEnforcementPatternSupreme({"fail_on_missing_validator": False}, None)
+    _cv.register_all(pattern)
+    res = pattern.validate("a plain reply with nothing wrong in it")
+    d = res.details
+    assert res.passed is None and len(d["unassessable"]) == 16 and len(d["no_instrument"]) == 15, (len(d["unassessable"]), len(d["no_instrument"]))
+    assert d["input_absent"] == ["thermodynamic_accountability"] and len(d["assessed"]) == 3, d["input_absent"]
+    to = d["to_a_reply"]
+    assert sorted(to[_cv.NOT_OF_A_REPLY] + to[_cv.DECLARED_NOT_CHECKED] + to[_cv.AWAITS_INPUT]) == sorted(d["unassessable"]) and to["undecided"] == []
+    assert len(to[_cv.NOT_OF_A_REPLY]) == 10 and len(to[_cv.DECLARED_NOT_CHECKED]) == 5
+
+    #  3. GATE 6 SAYS IT, on the record a reply carries - and still names every unchecked constraint
+    class _UEG:
+        async def log_event(self, *a, **k):
+            return None
+
+    class _Orch:
+        async def consult(self, emission, ids):
+            return {"status": "SCREENED_NO_REFUSAL", "coverage": {"screened_by": ["p"], "coverage_limit": "p"}}
+
+        async def process_engine(self, eid, emission, ctx):
+            return {"niyyah": {"result": {"ratified": True}}, "tawazun": {"result": {"balanced": True}},
+                    "tafakkur": {"result": {"assessable": True, "stable": True, "drift": 0.0, "threshold": 0.1}}}.get(eid, {})
+
+        async def verify_output(self, emission):
+            return {"verified": True}
+
+    chain = ConstitutionalClearanceChain(_UEG(), _Orch())
+    chain.enforcement = pattern
+    out = asyncio.run(chain.validate_emission({"id": "e712", "text": "a plain reply with nothing wrong in it"}, {}))
+    g6 = out.gates[5]
+    assert out.passed is True and g6["verdict"] == "cleared", (out.reason, g6)
+    basis = g6["basis"]
+    assert "16 NOT CHECKED" in basis and all(n in basis for n in d["unassessable"]), "an unchecked constraint is no longer named"
+    assert "5 bear on a reply and nothing checks them" in basis and "10 are not properties of a reply" in basis and "1 await an input" in basis, basis[-400:]
+    for n in to[_cv.DECLARED_NOT_CHECKED]:
+        assert n in basis.split("bear on a reply and nothing checks them", 1)[1], n
+    assert g6["coverage"]["to_a_reply"] == to and g6["coverage"]["not_checked"] == d["unassessable"]
+    #  a pattern that gives no split is split by the gate itself, never left unsaid
+    class _Enf:
+        def validate(self, text):
+            return type("R", (), {"passed": None, "violation": None, "basis": "probe", "details": {
+                "assessed": ["zero_placeholder"], "unassessable": ["lob_fixpoint", "statistical_rigor", "a_new_one"],
+                "no_instrument": ["lob_fixpoint", "statistical_rigor", "a_new_one"], "input_absent": []}})()
+    chain2 = ConstitutionalClearanceChain(_UEG(), _Orch())
+    chain2.enforcement = _Enf()
+    g = asyncio.run(chain2.validate_emission({"id": "e712b", "text": "a plain reply"}, {})).gates[5]
+    assert "1 have no decision recorded (a_new_one)" in g["basis"], g["basis"][-300:]
+
+    #  4. CHILDREN: the plan holds the rule and the conditions, the row is not waiting, and the pages say who they are for
+    plan = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    still = " ".join(plan.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0].split())
+    assert "THEY MAY NOT" in still and "nothing lifts by itself" in still, "the rule on children is not in the plan"
+    for cond in ("sign-in is on", "a safeguarding lead is named", "a scholar is named", "the regulator's code for children's data has been read"):
+        assert cond in still, cond
+    assert "TO DECIDE LATER: whether children may" not in still and "which of the 16 unchecked constitutional" not in still
+    assert "RESOLVED on 2026-10-13 on the Owner's instruction" in still and "Nothing was removed from the constitution" in still
+    from agentic_core.api import education as _edu
+    assert _edu.FOR_WHOM == "For a teacher or an adult learner."
+    qep_src = _code_only((root / "apps/workstation-superapp/src/pages/domains/QEPReligionHub.tsx").read_text(encoding="utf-8"))
+    said = qep_src.split('data-testid="qep-for-whom">', 1)[1].split("</p>", 1)[0]
+    assert "For adults." in said and "not offered to children" in said and "the Owner's decision" in said, said
+    rows = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    assert rows["FU-473"]["status"] == "done" and rows["FU-1032"]["status"] == "done"

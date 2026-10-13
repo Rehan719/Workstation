@@ -10,6 +10,11 @@ class SupremeValidationResult(ValidationResult):
     phase: int = 0
     timestamp: str = ""
 
+def _reply_disposition(names):
+    from agentic_core.validation.constitutional_validators import reply_disposition
+    return reply_disposition(names)
+
+
 class OmniEnforcementPatternSupreme(UniversalEnforcementPattern):
     def __init__(self, constraint_config: Dict[str, Any], context: Any):
         super().__init__(constraint_config, context)
@@ -67,7 +72,10 @@ class OmniEnforcementPatternSupreme(UniversalEnforcementPattern):
             return ValidationResult(
                 passed=None, violation=None,
                 details={"assessed": assessed, "unassessable": unassessable,
-                         "no_instrument": no_instrument, "input_absent": input_absent},
+                         "no_instrument": no_instrument, "input_absent": input_absent,
+                         #  W712 - what each unchecked constraint IS to a reply; added beside the three
+                         #  lists above, which keep their meaning for every reader
+                         "to_a_reply": _reply_disposition(unassessable)},
                 basis=(f"NOT CLEARED: {len(assessed)} of {_total} declared constraint(s) were assessed "
                        f"and passed. {len(no_instrument)} have NO INSTRUMENT in this repository and each "
                        f"says so by name; {len(input_absent)} {'HAS' if len(input_absent) == 1 else 'HAVE'} an instrument that was not given its "

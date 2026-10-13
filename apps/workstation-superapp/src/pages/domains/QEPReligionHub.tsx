@@ -18,6 +18,13 @@ export const QEPReligionHub: React.FC = () => {
           {/* W625 (FU-538, M2 v9 R5.5) — "Advanced AI Flagship • v1.0" headed a hub where most of A.6's fifteen features are
               absent, and the hub never said so. The header now says what stage it is at and where the state of each is. */}
           <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]" data-testid="qep-hub-stage">Quran Education Platform • in development — a few features live; <a href="/religion?tab=qep" data-testid="qep-roadmap-link" className="underline underline-offset-2">the roadmap on the Religion hub (its QEP tab)</a> states each one's state</p>
+          {/* W712 - WHO IT IS FOR, said where a person reads it. Resolved 2026-10-13 on the Owner's instruction: children do
+              not use these tools. The rule is looked at again only when sign-in is on, a safeguarding lead and a scholar
+              are named and the code for children's data has been read; then the Owner rules. */}
+          <p className="text-[10px] text-slate-400 mt-1 leading-relaxed" data-testid="qep-for-whom">
+            For adults. These tools are not offered to children: that waits on a named scholar, a named safeguarding
+            lead and sign-in, and then on the Owner's decision.
+          </p>
         </div>
         <div className="flex gap-2 p-1 rounded-2xl bg-slate-900 border border-slate-800 flex-wrap shrink-0">
            {[

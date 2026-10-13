@@ -8838,10 +8838,14 @@
       "severity": "medium",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W712",
       "note": "ADDED W637 for the review, not decided here: SEVEN declared constraints in config/constraints/absolute_constraints.yaml name an enforcer that does not exist - five name a MultiSigCouncil (lines 12, 57, 67, 99-100, 130; the module was unreachable and was archived on the Owner's ruling of 2026-10-09) and two name 'Nemoclaw' (lines 11, 16; no such runtime is in the tree). Whether those constraints stand, and what enforces them, is this review's question.",
-      "slot_source": "W607: the Owner chose to review the 16 unchecked constitutional constraints LATER (FU-472, choice 3). Which declared constraints apply to an avatar reply is a constitutional decision, so it is the Owner's."
+      "slot_source": "W607: the Owner chose to review the 16 unchecked constitutional constraints LATER (FU-472, choice 3). Which declared constraints apply to an avatar reply is a constitutional decision, so it is the Owner's.",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Resolved on the Owner's instruction of 2026-10-13. Each of the sixteen has one recorded line: ten are not properties of a reply, five bear on a reply and every reply goes on saying nothing checks them, one awaits an input. Nothing is removed from the constitution, no check is weakened, and the Owner may change any line.",
+      "reachability_check": "test_w712_each_unchecked_constraint_says_what_it_is_to_a_reply_and_children_do_not_use_the_tools"
     },
     {
       "id": "FU-474",
@@ -20236,11 +20240,15 @@
       "severity": "low",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W712",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Resolved on the Owner's instruction of 2026-10-13, on the cautious side: children do not use the Education or Quran tools. It is a standing rule in the plan with the four conditions under which the Owner looks at it again; the Education answers and the Quran page say who the tools are for.",
+      "reachability_check": "test_w712_each_unchecked_constraint_says_what_it_is_to_a_reply_and_children_do_not_use_the_tools"
     },
     {
       "id": "FU-1033",
