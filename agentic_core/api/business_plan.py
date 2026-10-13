@@ -310,21 +310,52 @@ def _roadmap(plan: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def caller_may_reach(user: dict | None, scope: str) -> bool:
+    """WHOSE PLAN IT IS. With authentication off, or for an administrator, every scope is reachable (the
+    single-user behaviour, unchanged). Otherwise a scope is reachable only when it is an entity the caller
+    owns. The platform's own plan (`workstation`) is the administrator's. A scope that is no entity at all is
+    not reachable by an ordinary account: there is nobody it could belong to."""
+    #  A handler called directly from code receives the framework's dependency marker in `user`, not a person
+    #  (the trap change control documents at its own submit core). On a real request with authentication on the
+    #  dependency always yields a person or refuses, so "not a dict" can only mean an in-process call.
+    if not _auth_enabled() or not isinstance(user, dict):
+        return True
+    if user.get("role") == "admin":
+        return True
+    if str(scope or "") == "workstation":
+        return False
+    try:
+        from agentic_core.api.vsb import _load_vsb
+        from agentic_core.auth.core import user_can_access
+        entity = _load_vsb(scope)
+    except Exception:                       # noqa: BLE001 - an entity that cannot be read is not shown to be theirs
+        return False
+    return bool(entity) and user_can_access(user, entity.get("owner_id"))
+
+
+def _reach_or_404(user: dict | None, scope: str) -> None:
+    """Refused as NOT FOUND, never as forbidden: a 403 would confirm that the plan exists."""
+    if not caller_may_reach(user, scope):
+        raise HTTPException(status_code=404, detail=f"No plan for {scope}.")
+
+
 @router.get("")
-async def get_plan(scope: str = "workstation"):
+async def get_plan(scope: str = "workstation", user: dict | None = Depends(_get_current_user)):
+    _reach_or_404(user, scope)
     plan = _load_or_503(scope)
     plan["roadmap"] = _roadmap(plan)   # living, derived — integrated into the plan, not persisted
     return plan
 
 
 @router.get("/roadmap")
-async def get_roadmap(scope: str = "workstation"):
+async def get_roadmap(scope: str = "workstation", user: dict | None = Depends(_get_current_user)):
     """The Chief's living delivery roadmap for this scope (time-phased objectives + trajectory)."""
+    _reach_or_404(user, scope)
     return _roadmap(_load_or_503(scope))
 
 
 @router.get("/list")
-async def list_plans():
+async def list_plans(user: dict | None = Depends(_get_current_user)):
     _STORE.mkdir(parents=True, exist_ok=True)
     # W488 (refutation) — A PLAN THAT CANNOT BE READ IS LISTED AS UNREADABLE, NEVER DROPPED.
     # The refusal added above covers every scoped route; this one still did its own tolerant read inside
@@ -347,6 +378,9 @@ async def list_plans():
                    "note": "this plan exists and could not be read whole; nothing was overwritten"}
             plans.append(row)
             unreadable.append(row)
+    #  W688 - a person is listed only the plans they may reach; the counts are over what is listed
+    plans = [r for r in plans if caller_may_reach(user, str(r.get("scope") or ""))]
+    unreadable = [r for r in unreadable if caller_may_reach(user, str(r.get("scope") or ""))]
     return {"plans": plans, "total": len(plans), "readable_total": len(plans) - len(unreadable),
             "unreadable_total": len(unreadable),
             "counts_cover": "the plans listed as readable only" if unreadable else "every plan listed"}
@@ -386,6 +420,7 @@ class SetPlanRequest(BaseModel):
 async def set_plan(req: SetPlanRequest, user: dict | None = Depends(_get_current_user)):
     """Chief/Board set the plan's constitutional + strategic layers — the owner-edit surface (W471: wired
     from BusinessPlan.tsx; an owner's edit is recorded per field and lifts the field out of 'pending')."""
+    _reach_or_404(user, req.scope)
     plan = _load_or_503(req.scope)
     # W505 (P2.6) — the owner is STAMPED, not claimed. This route rewrites the plan's executive summary,
     # vision, mission and strategy and re-stamped `owner` from the request body, with no auth dependency: any
@@ -498,7 +533,8 @@ class ObjectiveRequest(BaseModel):
 
 
 @router.post("/objective")
-async def add_objective(req: ObjectiveRequest):
+async def add_objective(req: ObjectiveRequest, user: dict | None = Depends(_get_current_user)):
+    _reach_or_404(user, req.scope)
     plan = _load_or_503(req.scope)
     obj = {
         "id": f"obj-{uuid.uuid4().hex[:8]}",
@@ -519,7 +555,8 @@ class ReviewRequest(BaseModel):
 
 
 @router.post("/objective/{oid}/review")
-async def review_objective(oid: str, req: ReviewRequest):
+async def review_objective(oid: str, req: ReviewRequest, user: dict | None = Depends(_get_current_user)):
+    _reach_or_404(user, req.scope)
     plan = _load_or_503(req.scope)
     for obj in plan["objectives"]:
         if obj["id"] == oid:
@@ -538,10 +575,11 @@ class OrchestrateRequest(BaseModel):
 
 
 @router.post("/objective/{oid}/orchestrate")
-async def orchestrate_objective(oid: str, req: OrchestrateRequest):
+async def orchestrate_objective(oid: str, req: OrchestrateRequest, user: dict | None = Depends(_get_current_user)):
     """The Chief delivers an objective via the autonomous in-house workflow TREE — grounded in the VSB +
     plan, governed (VBS QMS/DCMS · validation · minimax · swarm consensus · biomimetic signal) and sealed
     into the UEG provenance chain. The run is recorded as an auditable review on the objective."""
+    _reach_or_404(user, req.scope)
     plan = _load_or_503(req.scope)
     obj = next((o for o in plan["objectives"] if o["id"] == oid), None)
     if not obj:
@@ -670,8 +708,9 @@ class GenerateRequest(BaseModel):
 
 
 @router.post("/generate")
-async def generate_plan(req: GenerateRequest):
+async def generate_plan(req: GenerateRequest, user: dict | None = Depends(_get_current_user)):
     """Chief-mediated AI generation/refresh of the living business plan from org state + vision."""
+    _reach_or_404(user, req.scope)
     plan = _load_or_503(req.scope)
     # Ground in the live vision realisation where available.
     realisation = None
@@ -771,7 +810,8 @@ async def generate_plan(req: GenerateRequest):
 
 
 @router.get("/progress")
-async def progress(scope: str = "workstation"):
+async def progress(scope: str = "workstation", user: dict | None = Depends(_get_current_user)):
+    _reach_or_404(user, scope)
     plan = _load_or_503(scope)
     objs = plan["objectives"]
     if not objs:

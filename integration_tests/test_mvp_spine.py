@@ -62787,3 +62787,170 @@ def test_the_windows_job_runs_the_same_suite_and_is_advisory_and_gates_nothing()
     for job in (win, lin):
         co = next(s for s in job["steps"] if str(s.get("uses", "")).startswith("actions/checkout"))
         assert (co.get("with") or {}).get("fetch-depth") == 0
+
+
+def test_price_of_generating_an_entity_is_stated_once_and_nothing_is_charged(client, monkeypatch):
+    #  OWNER RULING 2026-10-13: ninety-nine pounds once, credited against the first profit share, waived for a
+    #  non-distributing entity - and NOTHING charged until three things exist.
+    from agentic_core.economy import generation_price as gp
+    r = client.get("/api/v1/genesis/price")
+    assert r.status_code == 200, r.text
+    p = r.json()
+    assert p["price_gbp"] == gp.PRICE_GBP == 99 and str(gp.PRICE_GBP) in p["price_basis"]
+    assert p["credited_against_first_profit_share"] is True and p["waived"] is False
+    assert p["charged_now"] is False and p["charged_now_gbp"] == 0 and p["this_answer_charges"] is False
+    assert p["chargeable"] is False and len(p["conditions"]) == 3
+    assert [c["met"] for c in p["conditions"]] == [False, False, False], p["conditions"]
+    assert "0 of 3 exist today" in p["not_charged_basis"]
+    #  a charitable or non-distributing entity is shown the waiver and no credit (there is nothing to credit)
+    w = client.get("/api/v1/genesis/price?non_distributing=true").json()
+    assert w["price_gbp"] == 0 and w["waived"] is True and w["waived_basis"] and w["credited_against_first_profit_share"] is False
+    #  THE THIRD CONDITION IS READ, NOT ASSUMED - and even with it on, the other two keep the price unchargeable,
+    #  and this answer still charges nothing. (The switch is patched in THIS process only; it is never set.)
+    from agentic_core.economy import owner_payments as _op
+    assert _op.REAL_MONEY_ENABLED is False, "the real-money switch is on in the tree - that is the Owner's alone"
+    monkeypatch.setattr(_op, "REAL_MONEY_ENABLED", True)
+    on = gp.statement()
+    assert [c["met"] for c in on["conditions"]] == [False, False, True] and on["chargeable"] is False
+    assert "1 of 3 exist today" in on["not_charged_basis"] and on["charged_now"] is False
+    monkeypatch.undo()
+    #  the module posts nothing: it imports no payment provider and no ledger writer
+    _src = __import__("pathlib").Path(gp.__file__).read_text(encoding="utf-8")
+    for forbidden in ("stripe", "ledger.record", "post_entry", "requests.", "httpx"):
+        assert forbidden not in _src.lower(), f"the price module reaches for {forbidden}"
+    #  THE FIGURE IS WRITTEN ONCE: no page and no other module types it beside the word pounds
+    _root = __import__("pathlib").Path(__file__).resolve().parents[1]
+    panel = (_root / "apps/workstation-superapp/src/components/GenerationPrice.tsx").read_text(encoding="utf-8")
+    assert "99" not in panel, "the page types the price instead of reading it"
+    for field in ("{price.price_basis}", "{price.not_charged_basis}", "{price.credit_basis}"):
+        assert panel.count(field) == 1, field
+    assert "{!price.charged_now && (" in panel and "{price.credited_against_first_profit_share && (" in panel
+    journey = (_root / "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8")
+    assert "<GenerationPrice />" in journey
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W687 - OWNER RULING 2026-10-12: the Quran platform's SHARED recommendation weights change only through a
+#  change record. One caller's request proposes and applies nothing.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w687_the_shared_weights_change_only_through_a_change_record(client, monkeypatch):
+    import agentic_core.api.qep_intelligence as _qi
+    from agentic_core.organism import reconfiguration as _rc
+    before = client.get("/api/v1/qep/xai/explanations").json()["model_weights"]
+    assert before["weights_source"] in ("the defaults", "the governed setting qep_recommendation.weights"), before
+    model_file_before = _qi._MODEL.read_bytes() if _qi._MODEL.exists() else None
+    #  1. ONE CALL PROPOSES AND APPLIES NOTHING
+    r = client.post("/api/v1/qep/recommendation/update", json={"ease_weight": 0.5, "interval_weight": 0.3, "quality_weight": 0.2})
+    assert r.status_code == 200, r.text
+    p = r.json()
+    assert p["status"] == "proposed, not applied" and p["applied"] is False and p["cca_id"], p
+    assert "unchanged" in p["basis"]
+    after = client.get("/api/v1/qep/xai/explanations").json()["model_weights"]
+    assert {k: after[k] for k in ("ease_weight", "interval_weight", "quality_weight")} == \
+           {k: before[k] for k in ("ease_weight", "interval_weight", "quality_weight")}, "one call changed the shared weights"
+    assert (_qi._MODEL.read_bytes() if _qi._MODEL.exists() else None) == model_file_before, "the model file was written"
+    from agentic_core.api.change_control import _load_change
+    rec = _load_change(p["cca_id"])
+    assert rec and rec.get("status") != "implemented", rec.get("status") if rec else None
+    assert (rec.get("config_change") or {}).get("section") == "qep_recommendation"
+    #  2. the weights are still refused when they do not sum to one - before anything is filed
+    bad = client.post("/api/v1/qep/recommendation/update", json={"ease_weight": 0.9, "interval_weight": 0.9, "quality_weight": 0.9})
+    assert bad.status_code == 422
+    #  3. THE KEY IS GOVERNED BECAUSE IT HAS A READER: a direct write is refused and pointed at the agency
+    assert ("qep_recommendation", "weights") in _rc._GOVERNED_KEYS
+    direct = client.post("/api/v1/organism/config/update", json={"section": "qep_recommendation", "key": "weights", "value": "0.1,0.1,0.8"})
+    assert direct.status_code == 409, (direct.status_code, direct.text[:200])
+    #  4. WHEN THE SETTING CHANGES - which only an implemented record does - the readers use it
+    monkeypatch.setattr(_rc, "_load_config", lambda: {"qep_recommendation": {"weights": "0.5,0.3,0.2"}})
+    used = _qi.shared_weights()
+    assert (used["ease_weight"], used["interval_weight"], used["quality_weight"]) == (0.5, 0.3, 0.2)
+    assert used["weights_source"] == "the governed setting qep_recommendation.weights"
+    #  5. A STORED VALUE THE READER CANNOT USE IS NOT USED, and the answer says so
+    for unusable in ("abc", "0.9,0.9,0.9", "0.5,0.5", "1.5,-0.3,-0.2", ""):
+        monkeypatch.setattr(_rc, "_load_config", lambda v=unusable: {"qep_recommendation": {"weights": v}})
+        w = _qi.shared_weights()
+        assert w["weights_source"] == "the defaults" and "not used" in w["weights_basis"], (unusable, w)
+        assert (w["ease_weight"], w["interval_weight"], w["quality_weight"]) == (0.4, 0.35, 0.25)
+    assert _qi.parse_weights("0.4,0.35,0.25") == {"ease_weight": 0.4, "interval_weight": 0.35, "quality_weight": 0.25}
+    #  6. THE PAGE says what happened in the server's words, and no longer says it saved anything
+    _card = (__import__("pathlib").Path(__file__).resolve().parents[1]
+             / "apps/workstation-superapp/src/components/qep/QEPIntelligence.tsx").read_text(encoding="utf-8")
+    assert "setMsg(`${d.status} — ${d.basis} Change record ${d.cca_id ?? 'not filed'}" in _card
+    assert "Weights persisted" not in _card and "Save weights" not in _card and "Propose weights" in _card
+    assert "{xai?.model_weights?.weights_source && (" in _card and "{xai.model_weights.weights_basis}" in _card
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W688 - the business-plan routes check WHOSE PLAN IT IS. Authentication is on in this test process only.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w688_a_person_reaches_only_the_plans_of_entities_they_own(client, monkeypatch):
+    from agentic_core.auth import core as auth_core
+    import agentic_core.api.business_plan as _bp
+    if not auth_core._AUTH_DEPS_OK:
+        import pytest as _pytest
+        _pytest.skip("auth crypto deps not installed")
+    users = auth_core._load_users()
+    for uname, role in (("amina-688", "user"), ("bilal-688", "user"), ("owner-688", "admin")):
+        users[uname] = {"user_id": uname, "username": uname, "hashed_password": auth_core._pwd_ctx.hash("pw-" + uname),
+                        "role": role, "created_at": "2026-01-01T00:00:00Z", "api_keys": []}
+    auth_core._save_users(users)
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+
+    def _hdr(u):
+        r = client.post("/api/v1/auth/token", data={"username": u, "password": "pw-" + u})
+        assert r.status_code == 200, r.text
+        return {"Authorization": f"Bearer {r.json()['access_token']}"}
+    amina, bilal, owner = _hdr("amina-688"), _hdr("bilal-688"), _hdr("owner-688")
+
+    def _entity(h, name):
+        r = client.post("/api/v1/genesis/establish", json={"problem": f"{name} problem", "domain": "enterprise", "name": name,
+                                                            "concept": "c", "design": "d", "commercialisation": "m"}, headers=h)
+        assert r.status_code == 200 and r.json().get("vsb_id"), r.text[:300]
+        return r.json()["vsb_id"]
+    hers, his = _entity(amina, "AminaPlanCo"), _entity(bilal, "BilalPlanCo")
+
+    def calls(scope, oid="obj-none"):
+        return [
+            ("GET", f"/api/v1/business-plan?scope={scope}", None),
+            ("GET", f"/api/v1/business-plan/roadmap?scope={scope}", None),
+            ("GET", f"/api/v1/business-plan/progress?scope={scope}", None),
+            ("POST", "/api/v1/business-plan/set", {"scope": scope, "vision": "v"}),
+            ("POST", "/api/v1/business-plan/objective", {"scope": scope, "title": "t", "kpi": "k", "timeline": "q1"}),
+            ("POST", f"/api/v1/business-plan/objective/{oid}/review", {"scope": scope, "progress_pct": 10}),
+            ("POST", f"/api/v1/business-plan/objective/{oid}/orchestrate", {"scope": scope}),
+            ("POST", "/api/v1/business-plan/generate", {"scope": scope}),
+        ]
+    #  NOT HERS: every one of the routes answers NOT FOUND - never forbidden, which would confirm the plan exists
+    for method, url, body in calls(his):
+        r = client.request(method, url, json=body, headers=amina)
+        assert r.status_code == 404 and r.json()["detail"] == f"No plan for {his}.", (method, url, r.status_code, r.text[:160])
+    #  the platform's own plan is the administrator's
+    for h in (amina, bilal):
+        assert client.get("/api/v1/business-plan?scope=workstation", headers=h).status_code == 404
+    assert client.get("/api/v1/business-plan?scope=workstation", headers=owner).status_code == 200
+    #  a scope that is no entity at all belongs to nobody an ordinary account could be
+    assert client.get("/api/v1/business-plan?scope=no-such-entity-688", headers=amina).status_code == 404
+    #  HERS: the reads answer, and an objective is added to HER plan
+    for method, url, body in calls(hers)[:3]:
+        r = client.request(method, url, json=body, headers=amina)
+        assert r.status_code == 200, (method, url, r.status_code, r.text[:160])
+    added = client.post("/api/v1/business-plan/objective", json={"scope": hers, "title": "hers", "kpi": "k", "timeline": "q1"}, headers=amina)
+    assert added.status_code == 200, added.text[:200]
+    assert any(o.get("title") == "hers" for o in _bp._load(hers)["objectives"])
+    assert not any(o.get("title") == "t" for o in _bp._load(his)["objectives"]), "her refused call wrote his plan"
+    #  the list shows each person their own and the administrator everything
+    def listed(h):
+        return {p["scope"] for p in client.get("/api/v1/business-plan/list", headers=h).json()["plans"]}
+    assert hers in listed(amina) and his not in listed(amina) and "workstation" not in listed(amina)
+    assert his in listed(bilal) and hers not in listed(bilal)
+    assert {hers, his} <= listed(owner)
+    got = client.get("/api/v1/business-plan/list", headers=amina).json()
+    assert got["total"] == len(got["plans"]), "the count is over more than is listed"
+    #  a direct call from code, with no person, reaches a plan (the in-process callers are unchanged)
+    import asyncio as _aio
+    assert _aio.new_event_loop().run_until_complete(_bp.get_plan(his))["scope"] == his
+    assert _bp.caller_may_reach(None, his) is True and _bp.caller_may_reach(object(), his) is True
+    #  with authentication off - the configuration that runs today - every scope answers as before
+    monkeypatch.setenv("AUTH_ENABLED", "false")
+    assert client.get(f"/api/v1/business-plan?scope={his}").status_code == 200
+    assert client.get("/api/v1/business-plan?scope=workstation").status_code == 200

@@ -6,7 +6,8 @@
  * the class-kills had no witness. This panel shows them verbatim:
  *   • XAI: the REAL MemorizationEngine's next-review computation with display-weight
  *     attribution, the basis lines shown prominently (they are the honesty).
- *   • Recommendation weights: owner-tunable, live sum readout, the 422 contract shown verbatim.
+ *   • Recommendation weights: SHARED by every learner, so a change is PROPOSED through a change record and
+ *     never applied by this page (W687, Owner ruling 2026-10-12); live sum readout, the 422 shown verbatim.
  *   • Adaptation registry + execute: blueprints recorded, never "installed"; fidelity is the
  *     model's self-declared figure or "unmeasured" — never a flattering constant.
  *   • Compliance audit: green only on true, red on false, amber "NOT ESTABLISHED" on null —
@@ -66,7 +67,9 @@ const QEPIntelligence: React.FC = () => {
       });
       const d = await r.json();
       if (!r.ok) { setErr(typeof d.detail === 'string' ? d.detail : `HTTP ${r.status}`); setBusy(''); return; }
-      setMsg('Weights persisted — they feed the XAI attributions and the compliance audit\'s normalisation check.');
+      //  W687 (OWNER RULING 2026-10-12) - nothing was applied: the shared weights change only through a change
+      //  record. The sentence is the server's own, with the record's id and its state.
+      setMsg(`${d.status} — ${d.basis} Change record ${d.cca_id ?? 'not filed'}${d.change_status ? ` (${d.change_status})` : ''}.`);
       loadAll();
     } catch (e: any) { setErr(e?.message ?? String(e)); }
     setBusy('');
@@ -140,7 +143,11 @@ const QEPIntelligence: React.FC = () => {
       {/* Recommendation weights */}
       <Card className="p-5">
         <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2 mb-1"><Scale size={13} /> Recommendation model weights</h3>
-        <p className="text-[9px] text-slate-600 mb-3">The persisted display-attribution weights. They must sum to ~1.0 — the compliance audit grades exactly this contract.</p>
+        <p className="text-[9px] text-slate-600 mb-1">The display-attribution weights shared by every learner. They must sum to ~1.0 — the compliance audit grades exactly this contract.</p>
+        {/* W687 — where the weights in use came from and how they change, in the server's words */}
+        {xai?.model_weights?.weights_source && (
+          <p data-testid="qep-weights-source" className="text-[9px] text-slate-500 mb-3">In use: {xai.model_weights.weights_source} — {xai.model_weights.weights_basis}.</p>
+        )}
         {/* P3.30 r6 (ledger v16 R1.13) - the heading says "model"; this says what is held, counted from it */}
         <p className="text-[9px] text-amber-400/80 mb-3" data-testid="qep-recommendation-model-basis">
           What is called the model here is {Object.keys(weights ?? {}).length} stored number(s). Nothing is trained on them and
@@ -158,7 +165,7 @@ const QEPIntelligence: React.FC = () => {
           ))}
           <span className={`text-[10px] font-black uppercase tracking-widest ${Math.abs(wSum - 1.0) < 0.05 ? 'text-emerald-400' : 'text-amber-400'}`}>sum {wSum.toFixed(2)}</span>
           <Button onClick={saveWeights} disabled={busy === 'weights'} className="flex items-center gap-1.5 bg-slate-800 text-white text-[10px]">
-            {busy === 'weights' ? <Loader2 size={12} className="animate-spin" /> : <ShieldCheck size={12} />} Save weights
+            {busy === 'weights' ? <Loader2 size={12} className="animate-spin" /> : <ShieldCheck size={12} />} Propose weights
           </Button>
         </div>
         {msg && <p className="text-emerald-400 text-[10px] font-bold mt-2 flex items-center gap-1.5"><ShieldCheck size={12} /> {msg}</p>}

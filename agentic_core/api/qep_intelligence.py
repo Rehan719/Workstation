@@ -93,6 +93,39 @@ def _save(path: Path, data: Any) -> None:
 
 # ── Explainability (XAI) ──────────────────────────────────────────────────────
 
+_DEFAULT_WEIGHTS = {"ease_weight": 0.4, "interval_weight": 0.35, "quality_weight": 0.25}
+
+
+def parse_weights(value) -> dict | None:
+    """'ease,interval,quality' -> the three weights, or None when the value is not three numbers in 0..1 that
+    sum to about one. A change record can carry any string, so the READER decides what it will use."""
+    try:
+        parts = [float(x) for x in str(value).split(",")]
+    except (TypeError, ValueError):
+        return None
+    if len(parts) != 3 or any(not 0.0 <= x <= 1.0 for x in parts) or abs(sum(parts) - 1.0) >= 0.05:
+        return None
+    return {"ease_weight": parts[0], "interval_weight": parts[1], "quality_weight": parts[2]}
+
+
+def shared_weights() -> dict:
+    """The shared weights AS GOVERNED, with where they came from. A stored value this reader cannot use is
+    not used: the defaults stand and the answer says so."""
+    try:
+        from agentic_core.organism.reconfiguration import _load_config
+        stored = ((_load_config().get("qep_recommendation") or {}).get("weights"))
+    except Exception:                       # noqa: BLE001 - the setting could not be read; the defaults stand, said
+        stored = None
+    parsed = parse_weights(stored) if stored is not None else None
+    if parsed:
+        return {**parsed, "weights_source": "the governed setting qep_recommendation.weights",
+                "weights_basis": "changed only through a change record (review, approval, implementation)"}
+    return {**_DEFAULT_WEIGHTS, "weights_source": "the defaults",
+            "weights_basis": ("the governed setting could not be read, or holds a value that is not three numbers "
+                              "in 0..1 summing to about one, so it is not used" if stored is not None else
+                              "no governed value is stored")}
+
+
 class RecommendationUpdate(BaseModel):
     ease_weight: float = Field(default=0.4, ge=0.0, le=1.0)
     interval_weight: float = Field(default=0.35, ge=0.0, le=1.0)
@@ -108,7 +141,7 @@ async def xai_explanations(ease_factor: float = Query(default=2.5, ge=1.3, le=3.
     Feature-attributed explanation of *why* the SM-2 engine scheduled a hifz
     review as it did. Real XAI over the actual scheduling inputs QEP uses.
     """
-    model = _load(_MODEL, {"ease_weight": 0.4, "interval_weight": 0.35, "quality_weight": 0.25})
+    model = shared_weights()
     # W439 — the "why the engine scheduled it" answer must come from THE ENGINE: the old
     # next_interval_days here was a parallel approximation (interval x ease) that disagreed with
     # the real SM-2 (which updates the efactor first and branches on repetition count) while
@@ -232,14 +265,31 @@ async def recommendation_update(req: RecommendationUpdate,
         raise HTTPException(status_code=422,
                             detail=f"weights must sum to ~1.0 (got {round(total, 3)}) — the "
                                    f"compliance audit grades exactly this")
-    model = {
-        "ease_weight": req.ease_weight,
-        "interval_weight": req.interval_weight,
-        "quality_weight": req.quality_weight,
-        "updated_at": time.time(),
-    }
-    _save(_MODEL, model)
-    return {"status": "updated", "model_weights": model}
+    #  W687 (OWNER RULING 2026-10-12) - THIS ROUTE PROPOSES AND APPLIES NOTHING. The weights are shared by every
+    #  learner, so one caller may not change them: a change record is filed carrying the proposed value, and
+    #  the weights change only when that record is approved and implemented.
+    proposed = f"{req.ease_weight},{req.interval_weight},{req.quality_weight}"
+    from agentic_core.api.change_control import ConfigChangeSpec, SubmitChangeRequest, submit_change
+    try:
+        from agentic_core.api.change_control import _actor
+        who = _actor(user, "qep_recommendation")
+    except Exception:                       # noqa: BLE001 - the submitter's name could not be resolved; said as such
+        who = "qep_recommendation"
+    cca = await submit_change(SubmitChangeRequest(
+        title="Quran platform: shared recommendation weights",
+        change_type="config_major",
+        description=(f"Proposed shared display weights (ease, interval, quality): {proposed}. They are shared by "
+                     f"every learner. Current: {shared_weights()}."),
+        rationale="A setting shared by every learner changes only through a change record (Owner ruling 2026-10-12).",
+        affected_systems=["qep_intelligence"],
+        submitted_by=who,
+        config_change=ConfigChangeSpec(section="qep_recommendation", key="weights", value=proposed),
+    ), principal=who)
+    return {"status": "proposed, not applied", "applied": False, "proposed_weights": proposed,
+            "cca_id": cca.get("cca_id"), "change_status": cca.get("status"),
+            "model_weights": shared_weights(),
+            "basis": ("the weights in use are unchanged. They change when this change record is approved and "
+                      "implemented, and not before")}
 
 
 # ── Translation ───────────────────────────────────────────────────────────────
@@ -468,7 +518,7 @@ async def compliance_audit():
     results: any failure makes it false, and unchecked controls make it null rather than true.
     """
     registry = _migrate_registry(_load(_REGISTRY, list(_DEFAULT_ADAPTATIONS)))
-    model = _load(_MODEL, {"ease_weight": 0.4, "interval_weight": 0.35, "quality_weight": 0.25})
+    model = shared_weights()
 
     # only figures with provenance count — a legacy number nobody declared grades nothing
     # W444 — 'model-self-declared' must be true of the figure's source: floor-served ('native')

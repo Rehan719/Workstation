@@ -80,6 +80,12 @@ _DEFAULT_CONFIG: dict[str, Any] = {
         "immune_quarantine":    False,   # containment: no half-open probes while set
         "evolution_auto_apply": False,   # auto-apply approved evolution proposals
     },
+    #  W687 (OWNER RULING 2026-10-12) - the Quran platform's SHARED display weights: ease, interval, quality,
+    #  one value because the three must sum to one. It has a reader (below), so it is governed: it changes only
+    #  through a change record.
+    "qep_recommendation": {
+        "weights": "0.4,0.35,0.25",
+    },
     "last_updated": None,
     "updated_by": "system",
 }
@@ -91,6 +97,7 @@ _CONSUMERS: dict[tuple[str, str], str] = {
     ("organism", "metabolic_throttle"): "organism.heartbeat — evolve tick suppressed at low ATP (W310)",
     ("organism", "immune_quarantine"): "self_healing — OPEN circuits contained, no half-open probes (W318)",
     ("organism", "evolution_auto_apply"): "organism.heartbeat — post-approval auto-apply (W310/W346)",
+    ("qep_recommendation", "weights"): "qep_intelligence — the explanation's display weights and the audit's sum check (W687)",
 }
 
 # Wired live levers are GOVERNED: they change runtime behaviour, so they route through the CCA

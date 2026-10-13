@@ -16467,11 +16467,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P4.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W687",
       "note": "",
       "slot_source": "ruled by the Owner on 2026-10-11: fixed in one authentication-readiness round after P5 and before the final audit",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "with authentication on, an anonymous call is refused at the mount (W683) and a signed-in person reaching a plan that is not theirs is answered not found on all nine business-plan routes; the list shows each person their own; driven with two people and one entity each",
+      "reachability_check": "test_w688_a_person_reaches_only_the_plans_of_entities_they_own"
     },
     {
       "id": "FU-846",
@@ -20548,11 +20552,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.16",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W687",
       "note": "",
       "slot_source": "the Owner's rulings of 2026-10-12 chartered this item",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the Owner set the price on 2026-10-13: 99 pounds once, credited against the first profit share, waived for a non-distributing entity; one module holds it and the generation journey's page says, in the server's words, that nothing is charged and which three things must exist first. The credit itself rides the platform-fee row",
+      "reachability_check": "test_price_of_generating_an_entity_is_stated_once_and_nothing_is_charged"
     },
     {
       "id": "FU-1059",
