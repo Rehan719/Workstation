@@ -16272,11 +16272,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W694",
       "note": "",
       "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "read at its lines 2026-10-13 and written as built: the vision's status note names its measures and each is looked up in the suite; the Mode 2 note says what the Board module says; the finance card reads routes exist, no page yet",
+      "reachability_check": "test_w694_the_visions_status_names_tests_that_exist_and_a_card_with_routes_is_not_called_planned"
     },
     {
       "id": "FU-835",
@@ -16706,11 +16710,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W694",
       "note": "",
       "slot_source": "what a closed tier-3 bundle row left undone; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "read at its lines 2026-10-13 and written as built: the vision's status note names its measures and each is looked up in the suite; the Mode 2 note says what the Board module says; the finance card reads routes exist, no page yet",
+      "reachability_check": "test_w694_the_visions_status_names_tests_that_exist_and_a_card_with_routes_is_not_called_planned"
     },
     {
       "id": "FU-858",
@@ -16724,11 +16732,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W694",
       "note": "",
       "slot_source": "what a closed tier-3 bundle row left undone; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "read at its lines 2026-10-13 and written as built: the vision's status note names its measures and each is looked up in the suite; the Mode 2 note says what the Board module says; the finance card reads routes exist, no page yet",
+      "reachability_check": "test_w694_the_visions_status_names_tests_that_exist_and_a_card_with_routes_is_not_called_planned"
     },
     {
       "id": "FU-859",
@@ -17729,11 +17741,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W694",
       "note": "",
       "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the table of reads that are not free names all four handlers that read the organism context; the guard walks the handler's own source for every branch that makes the call, so a fifth cannot be added without its row",
+      "reachability_check": "test_w694_a_read_that_is_not_free_says_so_for_every_handler_that_makes_it_and_genesis_is_called_with_nobody"
     },
     {
       "id": "FU-913",
@@ -17747,11 +17763,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W694",
       "note": "",
       "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the composed Genesis journey is called with user=None; driven with a capture in the journey's place",
+      "reachability_check": "test_w694_a_read_that_is_not_free_says_so_for_every_handler_that_makes_it_and_genesis_is_called_with_nobody"
     },
     {
       "id": "FU-914",

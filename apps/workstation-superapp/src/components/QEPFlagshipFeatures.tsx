@@ -47,7 +47,9 @@ export const QEPFlagshipFeatures: React.FC = () => {
     { id: 'analytics', name: 'Growth Analytics', icon: LineChart, color: 'text-vital', desc: 'Your memorisation review counts are real, from your own records. Fluency, accuracy and consistency are NOT measured, so they are reported empty.' },
     { id: 'credentials', name: 'Certifications', icon: Award, color: 'text-aura', kind: 'refused', desc: 'Not offered, by ruling: QEP issues no certificate in its own name (Appendix A.12.2). A record of completion, which states that it is not a credential, is defined for when courses exist. No course exists yet, so none is issued today.' },
     { id: 'offline', name: 'Offline Access', icon: WifiOff, color: 'text-highlight', desc: 'Planned: learn without connectivity — no offline sync and no service worker exist yet.' },
-    { id: 'finance', name: 'Islamic Finance', icon: CreditCard, color: 'text-aura', desc: 'Virtual WST only: a Zakat-designated or Sponsor-a-Student contribution is recorded by its route and shown in the donor statement. No screen sends one yet, and no real payment rails are enabled (Owner-gated). The platform rules on nobody\'s Zakat obligation.' },
+    // W694 — this card's routes exist and no page sends to them. It read "planned" on its chip and "not yet
+    // built" in its panel, which is untrue of the routes; `routes_only` says exactly what exists.
+    { id: 'finance', name: 'Islamic Finance', icon: CreditCard, color: 'text-aura', kind: 'routes_only', desc: 'Virtual WST only: a Zakat-designated or Sponsor-a-Student contribution is recorded by its route and shown in the donor statement. No screen sends one yet, and no real payment rails are enabled (Owner-gated). The platform rules on nobody\'s Zakat obligation.' },
     { id: 'assistant', name: 'AI Assistant', icon: MessageCircle, color: 'text-vital', desc: 'Planned: conversational guidance — no reasoning resource is wired here, so no answer is produced. A ruling belongs to a qualified scholar.' },
     { id: 'swarm', name: 'Swarm Learning', icon: Share2, color: 'text-aura', desc: 'Planned: AI-coordinated group pacing — not implemented; nothing writes a study swarm yet.' },
     // W663 (FU-694, ledger v15) - the register on this page was four areas shorter than Appendix A's, and the
@@ -88,7 +90,7 @@ export const QEPFlagshipFeatures: React.FC = () => {
               {/* W439 — the CheckCircle success tick on selection signalled completion for
                   unbuilt modules; a selection is not a success */}
               {/* W630 (FU-544) — the chip reads the card's own kind: a ratified refusal is 'not offered', never 'planned' */}
-              <span data-testid="qep-feature-chip" className={`text-[7px] font-black uppercase px-1.5 py-0.5 rounded ${(f as any).kind === 'refused' ? 'bg-slate-700/40 text-slate-300' : ((f as any).kind === 'live' || f.id === 'memorization') ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>{(f as any).kind === 'refused' ? 'not offered' : ((f as any).kind === 'live' || f.id === 'memorization') ? 'live' : 'planned'}</span>
+              <span data-testid="qep-feature-chip" className={`text-[7px] font-black uppercase px-1.5 py-0.5 rounded ${(f as any).kind === 'refused' ? 'bg-slate-700/40 text-slate-300' : ((f as any).kind === 'live' || f.id === 'memorization') ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>{(f as any).kind === 'refused' ? 'not offered' : (f as any).kind === 'routes_only' ? 'routes exist · no page yet' : ((f as any).kind === 'live' || f.id === 'memorization') ? 'live' : 'planned'}</span>
             </div>
             <h3 className="text-lg font-black text-white mb-2">{f.name}</h3>
             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-relaxed">{f.desc}</p>
@@ -116,7 +118,7 @@ export const QEPFlagshipFeatures: React.FC = () => {
                       <h3 className="text-3xl font-black text-white uppercase tracking-tighter">
                         {features.find(f => f.id === activeFeature)?.name} Module
                       </h3>
-                      <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest">{activeKind === 'live' ? 'LIVE — use the QEP studio above' : activeKind === 'refused' ? 'Not offered — a ratified boundary, not a backlog item' : 'Not yet built — nothing was run'}</p>
+                      <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest">{activeKind === 'live' ? 'LIVE — use the QEP studio above' : activeKind === 'refused' ? 'Not offered — a ratified boundary, not a backlog item' : activeKind === 'routes_only' ? 'Its routes exist — no page sends to them yet' : 'Not yet built — nothing was run'}</p>
                     </div>
                   </div>
                   <Button variant="outline" onClick={() => setActiveFeature(null)}>Minimize</Button>
@@ -127,6 +129,8 @@ export const QEPFlagshipFeatures: React.FC = () => {
                     ? `This module IS live in the QEP studio rendered above this roadmap: ${features.find(f => f.id === activeFeature)?.desc ?? ''} `
                     : activeKind === 'refused'
                       ? `This is not a module waiting to be built. ${features.find(f => f.id === activeFeature)?.desc ?? ''} `
+                      : activeKind === 'routes_only'
+                        ? `Its routes exist and no page reaches them. ${features.find(f => f.id === activeFeature)?.desc ?? ''} `
                       : 'This module is described in the platform plan but has no backend yet, so no result can be shown — a fabricated one would be worse than none. '} The capabilities that ARE live for this
                   domain are the AI-mediated domain tools on this page, the{' '}
                   <a href="/native-ai" className="text-aura underline underline-offset-2">Native AI fabric</a>, and{' '}

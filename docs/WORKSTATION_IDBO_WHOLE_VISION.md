@@ -926,7 +926,11 @@ honesty), P3.3 (the cadence generators).*
 - **Mode 2** — Expert → **Digital-Twin human node** (24/7 expertise without the expert present). *This is
   the basis of the Chief = the founder's digital twin.* **SCOPED BY OWNER RULING 2026-10-05b (R6): Mode 2
   means the OWNER'S OWN twin node, delivered W587 — the Chief is a twin built from the Owner's record, or
-  it says plainly that it is a role.** A twin of any OTHER named human expert is a later item and requires
+  it says plainly that it is a role.** *(STATUS AS BUILT, read W694 in `agentic_core/api/board.py`: "built from
+  the Owner's record" means the Chief is a standing charter plus the Owner's recorded instructions and
+  decisions, handed to it as material when it composes. No twin MODEL is trained and none exists. It is counted
+  a twin only when at least one instruction or decision of the Owner's is recorded for the scope; with none it
+  is a role and says so.)* A twin of any OTHER named human expert is a later item and requires
   **that expert's consent**: a digital twin of a named person raises consent and likeness questions a
   build may not settle on their behalf, whereas the Owner's own twin carries the Owner's consent by
   construction. *Prior status (W446, ledger R3.8/R3.4), kept as history: no expert twin node existed and
@@ -974,6 +978,16 @@ customer delivery: nothing gates any delivery on KPIs (OWNER RULING P3.0 — bui
 > delivery* was built, narrowly, on the Owner's ruling of 2026-10-05: `kpi_release_gate` in
 > `agentic_core/api/business_plan.py`, read by `agentic_core/api/marketplace.py` before an entity's listing is
 > released. Composing a deliverable is not gated.
+>
+> **STATUS AS BUILT, corrected W694 (the two lines the note above left unmeasured).** *Torch optionality* now
+> HOLDS: the platform boots with torch absent, driven by
+> `test_w506_p27_the_platform_boots_with_torch_absent`. *User isolation - the organism's control perimeter* has
+> moved in one half only. Every mounted route now ASKS who is calling or is declared public with a reason
+> (`scripts/auth_perimeter.py`, `docs/PUBLIC_ROUTES.json`, reported live at
+> `GET /api/v1/registers/perimeter`; driven by
+> `test_w683_every_mounted_route_asks_or_is_declared_public_and_the_strict_check_passes`). That a route which
+> asks also checks the record is the caller's is driven for entities and business plans only; the rest is not
+> held, and the perimeter's own answer says a count of routes that ask is not a count of routes that isolate.
 
 **16.1 Reconciliation addendum — Rounds 3–7 (W241–W331), reconciled 2026-08-23.**
 The W331 fidelity walk verified ~34 §16–§18 claims accurate and corrected 25; the load-bearing
