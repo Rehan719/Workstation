@@ -16168,11 +16168,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W700",
       "note": "",
       "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Venture credits keep the same fifty listed rows transfers keep; the ids that refuse a replay are not cut, and a replay of a dropped row is still refused.",
+      "reachability_check": "test_w700_a_cut_is_never_silent_uneven_or_relied_on_by_a_later_check"
     },
     {
       "id": "FU-829",
@@ -17197,11 +17201,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W700",
       "note": "",
       "slot_source": "found while verifying an external audit and not done in this round",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The references of entries dropped by the cut are kept on the account, and the reconcile reads them: a missed accrual already applied is recognised after its entry is gone, and is not applied twice.",
+      "reachability_check": "test_w700_a_cut_is_never_silent_uneven_or_relied_on_by_a_later_check"
     },
     {
       "id": "FU-882",
@@ -18427,11 +18435,15 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W700",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The board and the handed-over value are written whole inside their json fences, so they parse at any size; a verdict's reason is written whole on one line.",
+      "reachability_check": "test_w700_a_cut_is_never_silent_uneven_or_relied_on_by_a_later_check"
     },
     {
       "id": "FU-945",
@@ -20952,6 +20964,24 @@
       "closed_by": null,
       "note": "",
       "slot_source": "it is a fault of the build job, and the stall of the parallel suite already sits on this item"
+    },
+    {
+      "id": "FU-1072",
+      "title": "One repository test stalled twice inside a keyword selection and passes on its own",
+      "why": "On 2026-10-13 test_stale_repo_loop_closes_and_records_honestly stalled twice (the eight-minute watchdog fired, with the test waiting in a heartbeat beat) in a local run selected by keyword with one and with two workers, and passed alone in 59 seconds on the same tree. So an earlier test of that selection leaves something a beat then waits on; which one is not established. Drive it by bisecting the selection before changing anything.",
+      "source": "W700 (found while running this round's guard families)",
+      "found": "2026-10-13",
+      "files": [
+        "integration_tests/test_mvp_spine.py",
+        "agentic_core/organism/heartbeat.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "it is a stall of the suite, and the parallel suite's stall already sits on this item"
     }
   ],
   "routes": [
