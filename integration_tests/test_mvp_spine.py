@@ -64406,3 +64406,97 @@ def test_w702_a_scholars_queue_is_capped_per_tool_and_nothing_is_dropped_to_make
     blob = json.dumps(secrets[0]).lower()
     for banned in ("private repositor", "service-account", "private key", "three ", "payment"):
         assert banned not in blob, banned
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W703 - WORKSTATION'S OWN BUSINESS CASE, WRITTEN DOWN, EVERY STATEMENT LABELLED: the canvas and the plan.
+#  Each is a DRAFT until the Owner ratifies it; everything it names exists; nothing is stated as a market fact.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def _w703_faults(text, root, plan_slots, row_ids):
+    """Every reason a business document cannot stand as written. Empty means none."""
+    import re
+    labels = ("[observed", "[owner-defined", "[inference", "[hypothesis", "[deferred", "[owner decision")
+    faults = []
+    if "DRAFT until the Owner ratifies it" not in text.split("\n## ", 1)[0]:
+        faults.append("it does not open by saying it is a draft until the Owner ratifies it")
+    for path in re.findall(r"`([A-Za-z0-9_./-]+\.(?:py|json|md|yml|tsx))`", text):
+        if not (root / path).exists():
+            faults.append(f"it names a file that is not in the tree: {path}")
+    for slot in re.findall(r"plan item (P\d+\.\d+)", text):
+        if slot not in plan_slots:
+            faults.append(f"it names a plan item that does not exist: {slot}")
+    for rid in re.findall(r"row (FU-\d+)", text):
+        if rid not in row_ids:
+            faults.append(f"it names a register row that does not exist: {rid}")
+    #  a statement is a bullet, with the lines that continue it; each carries a label or the plan item it rests on
+    body = text.split("\n## ", 1)[1] if "\n## " in text else ""
+    for block in re.split(r"\n(?=- |\d+\. )", body):
+        first = block.strip().split("\n", 1)[0]
+        if not re.match(r"(- |\d+\. )", first):
+            continue
+        said = block.split("\n\n", 1)[0].split("\n## ", 1)[0]
+        if not any(l in said for l in labels) and "[plan item" not in said and "hypothesis of block" not in said:
+            faults.append(f"a statement carries no label: {first[:70]}")
+    #  a money figure stands only inside a statement the Owner ruled. The WHOLE STATEMENT is read - the first
+    #  version looked 400 characters ahead of the line and so passed on whatever happened to follow it
+    for block in re.split(r"\n(?=- |\d+\. |\n)", text):
+        if re.search(r"\b(GBP|USD|EUR)\s*\d|[£$€]\s*\d", block) and "[owner-defined" not in block:
+            faults.append(f"a money figure is stated with no ruling behind it: {block.strip()[:70]}")
+    for line in text.splitlines():
+        if re.search(r"\b\d[\d,]*\s+(users|customers|subscribers|learners)\b", line):
+            faults.append(f"a count of people is stated as a fact: {line.strip()[:70]}")
+    return faults
+
+
+def test_w703_the_business_documents_are_labelled_drafts_that_name_only_what_exists():
+    import json
+    import pathlib
+    from agentic_core import plan_followups as _fu
+    root = pathlib.Path(__file__).resolve().parents[1]
+    plan_slots = {i["slot"] for i in _fu.plan_items((root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8"))}
+    row_ids = {r["id"] for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    docs = sorted((root / "docs/business").glob("*.md"))
+    names = [d.name for d in docs]
+    assert "BUSINESS_MODEL_CANVAS.md" in names and "BUSINESS_PLAN.md" in names, names
+    for d in docs:
+        text = d.read_text(encoding="utf-8")
+        assert _w703_faults(text, root, plan_slots, row_ids) == [], (d.name, _w703_faults(text, root, plan_slots, row_ids))
+        assert len([b for b in text.split("\n- ") if "[" in b]) >= 10, (d.name, "too few labelled statements to be a document")
+
+    canvas = (root / "docs/business/BUSINESS_MODEL_CANVAS.md").read_text(encoding="utf-8")
+    #  the nine blocks; user, buyer, payer and beneficiary apart; the ruled first segment as a hypothesis with its test
+    for n, block in enumerate(("Customer segments", "Value proposition", "Channels", "Customer relationships", "Revenue",
+                               "Key resources", "Key activities", "Key partners", "Cost structure"), 1):
+        assert f"## {n}. {block}" in canvas, block
+    for who in ("**User, first segment:**", "**Buyer and payer:**", "**Beneficiary who does not pay:**"):
+        assert who in canvas, who
+    flat = " ".join(canvas.split())                      # a sentence may wrap; the words are what is asserted
+    assert "Law, Employment and Career, Education [owner-defined, 2026-10-10]" in flat
+    assert flat.count("[hypothesis]") >= 3 and flat.count("*The test that would show it wrong:*") >= 3
+    assert "## Three hypotheses to test first" in canvas
+    plan = (root / "docs/business/BUSINESS_PLAN.md").read_text(encoding="utf-8")
+    order = ["## Executive summary", "## Concept", "## Vision", "## Mission", "## Strategy", "## Aims", "## Objectives",
+             "## Roadmap", "## Operating model", "## Costs", "## Risks", "## What must be true before launch"]
+    at = [plan.index(h) for h in order]
+    assert at == sorted(at), "the plan is not in the canon's order"
+    objectives = plan.split("## Objectives", 1)[1].split("## Roadmap", 1)[0]
+    tied = [ln.split("|")[2].strip() for ln in objectives.splitlines() if ln.startswith("| ") and "---" not in ln and "Plan item" not in ln]
+    assert len(tied) >= 5 and all(t in plan_slots for t in tied), ("an objective is tied to no plan item that exists", tied)
+    #  the mission is the Owner's and is not published: both documents say so, and neither supplies one
+    for text in (canvas, plan):
+        assert "held privately" in text and "is not published here" in text
+
+    #  THE CHECK ITSELF, DRIVEN: each fault it exists to find is planted in a copy and found
+    good = "# T\n\n**DRAFT until the Owner ratifies it.**\n\n## One\n\n- A true thing [observed: `docs/FOLLOWUPS.json`].\n"
+    assert _w703_faults(good, root, plan_slots, row_ids) == []
+    planted = {
+        "not a draft": good.replace("**DRAFT until the Owner ratifies it.**", "Final."),
+        "a missing file": good.replace("docs/FOLLOWUPS.json", "docs/NO_SUCH_FILE_W703.json"),
+        "a missing plan item": good + "- Another [plan item P99.9].\n",
+        "a missing row": good + "- Another [observed; row FU-999999].\n",
+        "no label": good + "- A statement with nothing behind it.\n",
+        "a price as fact": good + "- It costs GBP 50 a month [observed].\n",
+        "a count of people": good + "- It has 300 users [observed].\n",
+    }
+    for what, text in planted.items():
+        assert _w703_faults(text, root, plan_slots, row_ids) != [], f"the check did not find: {what}"
