@@ -410,18 +410,38 @@ def _ratification_decision(c: dict) -> str | None:
     return r.get("decision") if isinstance(r, dict) else None
 
 
+def sets_governed_lever(c: dict) -> bool:
+    """W718 - True when the record carries a config change that resets the configuration or sets a key a live
+    consumer reads. Read from the payload, never from the tier or the type: one definition for the review,
+    the implement gate, the admin bar and the sentence a reader is shown."""
+    spec = c.get("config_change") if isinstance(c, dict) else None
+    if not isinstance(spec, dict) or not spec:
+        return False
+    from agentic_core.organism.reconfiguration import _GOVERNED_KEYS
+    return bool(spec.get("reset")) or (spec.get("section"), spec.get("key")) in _GOVERNED_KEYS
+
+
+#  W718 (OWNER RULING 2026-10-13) - WHAT THE CHECK IS. Nothing here can simulate a change. With no twin model
+#  the pre-validation is the platform's own health gate, and its record says "The proposed change was NOT
+#  simulated". This sentence travels with every refusal so nobody is told a simulation stands behind it.
+HEALTH_CHECK_IS = ("The check reads the platform's own measured health and immune threat; it does not "
+                   "simulate the change")
+
+
 def prevalidation_basis(c: dict):
     """None when the record carries a pre-validation verdict. Otherwise one sentence saying why it has none:
-    the tier does not call for one, or the tier calls for one and none has been run yet."""
+    nothing calls for one, or one is called for and none has been run yet."""
     if not isinstance(c, dict) or isinstance(c.get("twin_prevalidation"), dict):
         return None
     tier = effective_tier(c)
     if _TIER_RANK[tier] >= _TIER_RANK["HIGH"]:
         return (f"no pre-validation has been run on this {tier} change yet; one is run when it is reviewed or "
                 f"asked for")
-    return (f"not run: pre-validation is run for HIGH and CRITICAL changes only, and this change is {tier}. "
-            f"Nothing was simulated before it was decided - which includes a change to a governed live "
-            f"setting, because such a change is filed as MEDIUM")
+    if sets_governed_lever(c):
+        return (f"no health check has been run on this change yet; it sets a governed live setting, so one is "
+                f"run when it is approved or asked for, and it is not applied without one. {HEALTH_CHECK_IS}")
+    return (f"not run: pre-validation is run for HIGH and CRITICAL changes and for a change to a governed live "
+            f"setting; this change is {tier} and sets none. Nothing was checked before it was decided")
 
 
 def source_inferred(c: dict) -> bool:
@@ -1929,7 +1949,10 @@ async def review_change(cca_id: str, req: ReviewDecision,
     tp = None
     # W464 — not for an economy hold: its implement path returns before the §17.5 check and the gate never reads the
     # verdict, so every Sanctum vote paid for a model call whose FAIL was shown in red on a record that then released
-    if decision == "approved" and tier in ("HIGH", "CRITICAL") and c.get("change_type") != "economy_material":
+    #  W718 (OWNER RULING 2026-10-13) - and a change that sets a governed live setting, whatever its tier: such a
+    #  change is filed MEDIUM, so it was approved and applied with nothing checked first.
+    if (decision == "approved" and (tier in ("HIGH", "CRITICAL") or sets_governed_lever(c))
+            and c.get("change_type") != "economy_material"):
         tp = await _twin_prevalidate(c)
 
     def _decide(fresh: dict) -> None:
@@ -2123,21 +2146,24 @@ def _implement_locked(cca_id: str, force: bool, principal: str, verified: bool,
                 "note": f"This economy record can never be released by running an action ({why}), so it was retired "
                         "(withdrawn) — nothing was distributed or transferred.",
                 "_retired": {"why": why, "vsb_id": c.get("vsb_id"), "record": c}}
-    _spec = c.get("config_change") or {}
-    if _spec and not is_admin:
-        from agentic_core.organism.reconfiguration import _GOVERNED_KEYS
-        if _spec.get("reset") or (_spec.get("section"), _spec.get("key")) in _GOVERNED_KEYS:
-            raise HTTPException(status_code=403, detail=(
-                "Only an admin may implement a change to a governed live lever (or a config reset) — "
-                "the same bar as the immune reflex that applies those levers."))
+    _governed = sets_governed_lever(c)                # W718 - one definition (it was spelled out here)
+    if _governed and not is_admin:
+        raise HTTPException(status_code=403, detail=(
+            "Only an admin may implement a change to a governed live lever (or a config reset) — "
+            "the same bar as the immune reflex that applies those levers."))
 
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    if effective_tier(c) in ("HIGH", "CRITICAL"):     # W464 — the effective tier (a re-tiered type needs it too)
+    _major = effective_tier(c) in ("HIGH", "CRITICAL")   # W464 — the effective tier (a re-tiered type needs it too)
+    #  W718 (OWNER RULING 2026-10-13) - a governed live setting is not applied without the check either. The
+    #  immune reflex does not pass here: it applies its lever through the reconfiguration core directly.
+    if _major or _governed:
         tp = c.get("twin_prevalidation")
         if not tp:
             raise HTTPException(status_code=409, detail=(
-                "§17.5 invariant: this MAJOR change has no recorded pre-validation. "
-                f"Run POST /api/v1/cca/{cca_id}/twin-prevalidate first."))
+                ("§17.5 invariant: this MAJOR change has no recorded pre-validation. " if _major else
+                 "This change sets a governed live setting and no health check has been recorded for it. ")
+                + f"Run POST /api/v1/cca/{cca_id}/twin-prevalidate first."
+                + ("" if _major else f" {HEALTH_CHECK_IS}.")))
         if tp.get("verdict") != "pass" and not force:
             c["audit_trail"].append({"event": "implement_blocked_twin_fail", "ts": now,
                                      "by": principal, "by_verified": verified,
@@ -2146,7 +2172,13 @@ def _implement_locked(cca_id: str, force: bool, principal: str, verified: bool,
             raise HTTPException(status_code=409, detail=(
                 "§17.5 invariant: the pre-validation FAILED "
                 f"({tp.get('source_label') or tp.get('source')}). Implementation blocked; an admin may "
-                "override with ?force=true."))
+                "override with ?force=true."
+                #  W718 - said in plain words for the two cases a person will actually meet
+                + (" The platform has measured nothing about its own health yet, so nothing could be assessed: "
+                   "use it for a moment and run the check again."
+                   if tp.get("verdict") == "not_assessable" else "")
+                + (f" {HEALTH_CHECK_IS}." if tp.get("source") != "twin_marker" else "")
+                + ("" if auth_enabled() else " Sign-in is off, so every caller counts as an admin here.")))
         if tp.get("verdict") != "pass" and force:
             # W459 — was "twin_fail_overridden_by_owner": an authorship claim the route never read
             c["audit_trail"].append({"event": "twin_fail_overridden", "ts": now,
