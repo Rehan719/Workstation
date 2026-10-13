@@ -1,9 +1,9 @@
 # Workstation - business model canvas
 
-**DRAFT until the Owner ratifies it.** It is written from the whole vision
+**Ratified by the Owner on 2026-10-13**, whole and without change. It is written from the whole vision
 (`docs/WORKSTATION_IDBO_WHOLE_VISION.md`), which is the Owner's own canon, so that it reads as one story.
-Nothing here enters the product's own plan as the Owner's words; the Owner enters what they agree with through
-the plan's own edit page (ruling of 2026-10-10).
+A change to this text from here on needs the Owner's word. Ratifying it did not enter it into the product's own
+plan; the Owner enters that through the plan's own edit page (ruling of 2026-10-10).
 
 **How to read the tags.** Each statement ends with one tag in square brackets:
 [owner-defined] the Owner said it, in the vision or in a ruling ·

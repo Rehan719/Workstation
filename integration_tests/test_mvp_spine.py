@@ -64425,8 +64425,14 @@ def _w703_faults(text, root, plan_slots, row_ids):
     import re
     labels = ("[observed", "[owner-defined", "[inference", "[hypothesis", "[deferred", "[owner decision")
     faults = []
-    if "DRAFT until the Owner ratifies it" not in text.split("\n## ", 1)[0]:
-        faults.append("it does not open by saying it is a draft until the Owner ratifies it")
+    #  W716 - the Owner ratified both documents on 2026-10-13. A document opens by saying which it is: a draft,
+    #  or ratified by the Owner on a stated date. One that says neither, or both, cannot stand.
+    opening = text.split("\n## ", 1)[0]
+    is_draft = "DRAFT until the Owner ratifies it" in opening
+    is_ratified = bool(re.search(r"\*\*Ratified by the Owner on 20\d\d-\d\d-\d\d\*\*", opening))
+    if is_draft == is_ratified:
+        faults.append("it does not open by saying it is a draft until the Owner ratifies it"
+                      if not is_draft else "it opens by saying it is both a draft and ratified")
     for path in re.findall(r"`([A-Za-z0-9_./-]+\.(?:py|json|md|yml|tsx))`", text):
         if not (root / path).exists():
             faults.append(f"it names a file that is not in the tree: {path}")
@@ -64493,12 +64499,21 @@ def test_w703_the_business_documents_are_labelled_drafts_that_name_only_what_exi
     #  the mission is the Owner's and is not published: both documents say so, and neither supplies one
     for text in (canvas, plan):
         assert "held privately" in text and "is not published here" in text
+    #  W716 - both were ratified by the Owner on 2026-10-13 ("I ratify the canvas and the plan."). Each says so,
+    #  says a later change needs the Owner's word, and does not say it entered the product's own plan.
+    for text in (canvas, plan):
+        opening = " ".join(text.split("\n## ", 1)[0].split())
+        assert "**Ratified by the Owner on 2026-10-13**" in opening and "DRAFT" not in opening, opening[:200]
+        assert "needs the Owner's word" in opening and "did not enter it into the product's own plan" in opening
 
     #  THE CHECK ITSELF, DRIVEN: each fault it exists to find is planted in a copy and found
     good = "# T\n\n**DRAFT until the Owner ratifies it.**\n\n## One\n\n- A true thing [observed: `docs/FOLLOWUPS.json`].\n"
     assert _w703_faults(good, root, plan_slots, row_ids) == []
     planted = {
         "not a draft": good.replace("**DRAFT until the Owner ratifies it.**", "Final."),
+        "both a draft and ratified": good.replace("**DRAFT until the Owner ratifies it.**",
+                                                  "**DRAFT until the Owner ratifies it.** **Ratified by the Owner on 2026-10-13**"),
+        "ratified with no date": good.replace("**DRAFT until the Owner ratifies it.**", "**Ratified by the Owner**"),
         "a missing file": good.replace("docs/FOLLOWUPS.json", "docs/NO_SUCH_FILE_W703.json"),
         "a missing plan item": good + "- Another [plan item P99.9].\n",
         "a missing row": good + "- Another [observed; row FU-999999].\n",
