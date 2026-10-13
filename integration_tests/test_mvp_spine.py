@@ -94,6 +94,33 @@ def _code_only(text):
     return "\n".join(ln for ln in t.splitlines() if not ln.lstrip().startswith(("//", "#")))
 
 
+#  W718 - a change to a governed live setting is applied only after the platform's own health has been read
+#  and found good. A test that takes such a change through, and is about something else, states the health it
+#  runs under instead of inheriting whatever the tests before it left measured.
+def _measured_healthy():
+    """A context in which the organism reads as measured healthy and under no threat. Restores on exit."""
+    import contextlib
+
+    @contextlib.contextmanager
+    def _held():
+        import agentic_core.api.change_control as _cc_h
+        real = _cc_h.biobus.organism_context
+
+        def _ctx():
+            c = dict(real())
+            c["composite_health"] = c["composite_health_measured_only"] = 0.95
+            c["composite_health_measured_weight"] = 0.4
+            c["immune"] = {**(c.get("immune") or {}), "threat_level": "NOMINAL"}
+            c.pop("error", None)
+            return c
+        _cc_h.biobus.organism_context = _ctx
+        try:
+            yield
+        finally:
+            _cc_h.biobus.organism_context = real
+    return _held()
+
+
 def _string_constants(src):
     """Every string constant in a Python source, implicit concatenation JOINED, f-string text parts included.
     The text a module can actually emit, which a comment can never satisfy."""
@@ -4298,9 +4325,10 @@ def test_cca_immune_reconfigurator(client):
             "title": f"Reset {lever}", "description": "test cleanup — restore default",
             "submitted_by": "test_suite",
             "config_change": {"section": "organism", "key": lever, "value": False}}).json()
-        if sub["status"] != "approved":
-            client.post(f"/api/v1/cca/{sub['cca_id']}/review", json={"override_decision": "approved", "owner_decision_acknowledged": True})
-        assert client.post(f"/api/v1/cca/{sub['cca_id']}/implement").status_code == 200
+        with _measured_healthy():                   # W718 - the cleanup states the health it runs under
+            if sub["status"] != "approved":
+                client.post(f"/api/v1/cca/{sub['cca_id']}/review", json={"override_decision": "approved", "owner_decision_acknowledged": True})
+            assert client.post(f"/api/v1/cca/{sub['cca_id']}/implement").status_code == 200
 
 
 def test_vbs_living_systems_integrated_in_house(client):
@@ -8646,9 +8674,10 @@ def test_w438_organism_cluster_audited_fixes_hold(client):
         "title": "W438 guard: rpm", "description": "governed lever change",
         "config_change": {"section": "gateway", "key": "rpm_limit", "value": "27"}}).json()
     assert sub["impact_tier"] == "MEDIUM", "a governed lever was tiered as a minor tweak"
-    if sub["status"] != "approved":
-        client.post(f"/api/v1/cca/{sub['cca_id']}/review", json={"override_decision": "approved", "owner_decision_acknowledged": True})
-    imp = client.post(f"/api/v1/cca/{sub['cca_id']}/implement").json()
+    with _measured_healthy():                       # W718 - a governed setting waits on the health check
+        if sub["status"] != "approved":
+            client.post(f"/api/v1/cca/{sub['cca_id']}/review", json={"override_decision": "approved", "owner_decision_acknowledged": True})
+        imp = client.post(f"/api/v1/cca/{sub['cca_id']}/implement").json()
     assert imp["status"] == "implemented" and imp["applied"]["new_value"] == 27, (
         "implement marked without applying, or the string '27' was not coerced")
     cfg = client.get("/api/v1/organism/config").json()
@@ -8660,9 +8689,10 @@ def test_w438_organism_cluster_audited_fixes_hold(client):
     rst = client.post("/api/v1/cca/submit", json={
         "title": "W438 guard: reset", "description": "restore defaults",
         "config_change": {"reset": True}}).json()
-    if rst["status"] != "approved":
-        client.post(f"/api/v1/cca/{rst['cca_id']}/review", json={"override_decision": "approved", "owner_decision_acknowledged": True})
-    assert client.post(f"/api/v1/cca/{rst['cca_id']}/implement").status_code == 200
+    with _measured_healthy():                       # W718
+        if rst["status"] != "approved":
+            client.post(f"/api/v1/cca/{rst['cca_id']}/review", json={"override_decision": "approved", "owner_decision_acknowledged": True})
+        assert client.post(f"/api/v1/cca/{rst['cca_id']}/implement").status_code == 200
     cfg2 = client.get("/api/v1/organism/config").json()["config"]
     assert cfg2["gateway"]["max_tokens"] == 4096 and cfg2["gateway"]["rpm_limit"] == 20, (
         "reset restored mutated values while labelling them defaults (the aliasing bug is back)")
@@ -10701,11 +10731,12 @@ def test_w459_cca_identity_and_override_gate_both_ways(client, monkeypatch):
         lever = _submit(user_h, title="W459 governed lever", change_type="config_minor",
                         config_change={"section": "organism", "key": "metabolic_throttle", "value": False}).json()
         assert lever["impact_tier"] == "MEDIUM"
-        assert client.post(f"/api/v1/cca/{lever['cca_id']}/review", headers=admin_h, json={}).json()["decision"] == "approved"
-        refused = client.post(f"/api/v1/cca/{lever['cca_id']}/implement", headers=user_h)
-        assert refused.status_code == 403 and "governed live lever" in refused.json()["detail"]
-        assert _rec(lever["cca_id"], admin_h)["status"] == "approved"
-        assert client.post(f"/api/v1/cca/{lever['cca_id']}/implement", headers=admin_h).status_code == 200
+        with _measured_healthy():                   # W718 - a governed setting waits on the health check
+            assert client.post(f"/api/v1/cca/{lever['cca_id']}/review", headers=admin_h, json={}).json()["decision"] == "approved"
+            refused = client.post(f"/api/v1/cca/{lever['cca_id']}/implement", headers=user_h)
+            assert refused.status_code == 403 and "governed live lever" in refused.json()["detail"]
+            assert _rec(lever["cca_id"], admin_h)["status"] == "approved"
+            assert client.post(f"/api/v1/cca/{lever['cca_id']}/implement", headers=admin_h).status_code == 200
         # a config RESET is a governed act too (it flips every wired lever) — refused to a non-admin;
         # it is approved but deliberately never implemented here
         rst = _submit(user_h, title="W459 config reset", change_type="config_minor",
@@ -58201,11 +58232,12 @@ def test_lgc_path_an_appraisal_files_nothing_says_so_and_change_control_decides(
 
         # ══ 4. EXISTS - CHANGE CONTROL DECIDES, and implementing applies the change ══════════════════════
         assert _rec1["status"] in ("approved", "submitted"), _rec1["status"]
-        if _rec1["status"] != "approved":
-            _rv = client.post(f"/api/v1/cca/{_sub['cca_id']}/review",
-                              json={"override_decision": "approved", "owner_decision_acknowledged": True})
-            assert _rv.status_code == 200, _rv.text[:300]
-        _imp = client.post(f"/api/v1/cca/{_sub['cca_id']}/implement")
+        with _measured_healthy():                   # W718 - a governed setting waits on the health check
+            if _rec1["status"] != "approved":
+                _rv = client.post(f"/api/v1/cca/{_sub['cca_id']}/review",
+                                  json={"override_decision": "approved", "owner_decision_acknowledged": True})
+                assert _rv.status_code == 200, _rv.text[:300]
+            _imp = client.post(f"/api/v1/cca/{_sub['cca_id']}/implement")
         assert _imp.status_code == 200, _imp.text[:300]
         _imp = _imp.json()
         assert _imp["status"] == "implemented" and _imp["applied"]["new_value"] == _new, _imp
@@ -64777,7 +64809,8 @@ def test_w707_the_journey_the_stream_and_the_change_record_say_what_their_siblin
     _cc._save_change({**base, "cca_id": done, "change_type": "config_major", "impact_tier": "HIGH",
                       "twin_prevalidation": {"verdict": "pass", "source": "driven", "simulated_at": "2026-10-13T00:00:00Z"}})
     a = client.get(f"/api/v1/cca/{low}").json()
-    assert a["prevalidation_basis"].startswith("not run: pre-validation is run for HIGH and CRITICAL changes only") and "MEDIUM" in a["prevalidation_basis"], a.get("prevalidation_basis")
+    #  (W718 - retargeted: a governed live setting is now checked too, so the sentence says which two cases are)
+    assert a["prevalidation_basis"].startswith("not run: pre-validation is run for HIGH and CRITICAL changes and for") and "MEDIUM" in a["prevalidation_basis"], a.get("prevalidation_basis")
     assert "a governed live setting" in a["prevalidation_basis"]
     b = client.get(f"/api/v1/cca/{high}").json()
     assert b["prevalidation_basis"].startswith("no pre-validation has been run on this HIGH change yet"), b.get("prevalidation_basis")
@@ -65270,3 +65303,116 @@ def test_w717_a_reference_recitation_is_listened_to_and_nothing_listens_to_the_l
     ok = client.get("/api/v1/qep/recitation/audio/1?reciter_id=7").json()
     assert ok["assessed"] is False and ok["stored"] is False and "Nothing here listens to, scores or corrects a person" in ok["assessed_basis"]
     assert ok["verses"][0]["verse_key"] == "1:1" and ok["credit"] == _qf.CREDIT and ok["environment"]
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W718 - OWNER RULING 2026-10-13: a change to a governed live setting is checked before it is applied. What
+#  the check IS travels with it: the platform's own measured health, never a simulation of the change.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w718_a_governed_live_setting_is_not_applied_without_the_health_check(client):
+    import contextlib
+    import uuid
+    import agentic_core.api.change_control as CC
+    tag = uuid.uuid4().hex[:6]
+
+    @contextlib.contextmanager
+    def _health(measured, threat="NOMINAL"):
+        real = CC.biobus.organism_context
+
+        def _ctx():
+            c = dict(real())
+            c["composite_health_measured_only"] = measured
+            c["composite_health"] = 0.9 if measured is None else measured     # the blend is never what decides
+            c["composite_health_measured_weight"] = 0.0 if measured is None else 0.4
+            c["immune"] = {**(c.get("immune") or {}), "threat_level": threat}
+            c.pop("error", None)
+            return c
+        CC.biobus.organism_context = _ctx
+        try:
+            yield
+        finally:
+            CC.biobus.organism_context = real
+
+    def _cfg(section, key):
+        return client.get("/api/v1/organism/config").json()["config"][section][key]
+
+    def _file(section, key, value):
+        r = client.post("/api/v1/cca/submit", json={"title": f"w718 {tag} {key}", "description": "a probe of the health check",
+                                                    "rationale": "driven by the guard", "submitted_by": "w718-probe",
+                                                    "config_change": {"section": section, "key": key, "value": value}})
+        assert r.status_code == 200, r.text[:300]
+        return r.json()["cca_id"]
+
+    def _approve(cid):
+        r = client.post(f"/api/v1/cca/{cid}/review", json={"override_decision": "approved", "owner_decision_acknowledged": True})
+        assert r.status_code == 200, r.text[:300]
+        return client.get(f"/api/v1/cca/{cid}").json()
+
+    start = _cfg("gateway", "rpm_limit")
+    try:
+        #  1. UNHEALTHY: approved, checked at approval, NOT applied; an admin may force it and the trail says so
+        with _health(0.2):
+            cid = _file("gateway", "rpm_limit", start + 3)
+            before = client.get(f"/api/v1/cca/{cid}").json()
+            assert before["impact_tier"] == "MEDIUM" and CC.sets_governed_lever(before) is True
+            assert before["prevalidation_basis"].startswith("no health check has been run on this change yet") and CC.HEALTH_CHECK_IS in before["prevalidation_basis"]
+            rec = _approve(cid)
+            tp = rec["twin_prevalidation"]
+            assert tp["verdict"] == "fail" and tp["source"] == "health_gate_default" and "NOT simulated" in tp["method"], tp
+            assert "prevalidation_basis" not in rec
+            no = client.post(f"/api/v1/cca/{cid}/implement")
+            assert no.status_code == 409 and "pre-validation FAILED" in no.json()["detail"] and CC.HEALTH_CHECK_IS in no.json()["detail"], no.text[:300]
+            assert "simulat" not in no.json()["detail"].replace(CC.HEALTH_CHECK_IS, ""), "the refusal speaks of a simulation"
+            assert _cfg("gateway", "rpm_limit") == start, "a governed setting was applied on an unhealthy organism"
+            forced = client.post(f"/api/v1/cca/{cid}/implement?force=true")
+            assert forced.status_code == 200 and forced.json()["applied"]["new_value"] == start + 3, forced.text[:300]
+            assert "twin_fail_overridden" in [e.get("event") for e in client.get(f"/api/v1/cca/{cid}").json()["audit_trail"]]
+        #  2. NOTHING MEASURED: not assessable is never a pass, and the refusal says what to do in plain words
+        with _health(None):
+            cid = _file("gateway", "rpm_limit", start + 5)
+            assert _approve(cid)["twin_prevalidation"]["verdict"] == "not_assessable"
+            no = client.post(f"/api/v1/cca/{cid}/implement")
+            assert no.status_code == 409 and "measured nothing about its own health yet" in no.json()["detail"], no.text[:300]
+            assert _cfg("gateway", "rpm_limit") == start + 3
+        #  3. HEALTHY BUT UNDER THREAT is not a pass either
+        with _health(0.95, threat="HIGH"):
+            cid = _file("gateway", "rpm_limit", start + 6)
+            assert _approve(cid)["twin_prevalidation"]["verdict"] == "fail"
+            assert client.post(f"/api/v1/cca/{cid}/implement").status_code == 409 and _cfg("gateway", "rpm_limit") == start + 3
+        #  4. HEALTHY: checked, passed, applied
+        with _health(0.95):
+            cid = _file("gateway", "rpm_limit", start + 7)
+            assert _approve(cid)["twin_prevalidation"]["verdict"] == "pass"
+            ok = client.post(f"/api/v1/cca/{cid}/implement")
+            assert ok.status_code == 200 and _cfg("gateway", "rpm_limit") == start + 7, ok.text[:300]
+            #  5. A RECORD APPROVED WITH NO CHECK ON IT (one decided before this rule) is not applied until one is run
+            cid = _file("gateway", "rpm_limit", start + 8)
+            _approve(cid)
+            CC._update_change(cid, lambda fresh: fresh.pop("twin_prevalidation", None))
+            no = client.post(f"/api/v1/cca/{cid}/implement")
+            assert no.status_code == 409 and "no health check has been recorded" in no.json()["detail"] and f"/api/v1/cca/{cid}/twin-prevalidate" in no.json()["detail"], no.text[:300]
+            assert "MAJOR" not in no.json()["detail"] and _cfg("gateway", "rpm_limit") == start + 7
+            assert client.post(f"/api/v1/cca/{cid}/twin-prevalidate").json()["twin_prevalidation"]["verdict"] == "pass"
+            assert client.post(f"/api/v1/cca/{cid}/implement").status_code == 200 and _cfg("gateway", "rpm_limit") == start + 8
+        #  6. THE CONTROL: a setting nothing reads back is not governed, is not checked, and is applied as before
+        with _health(0.2):
+            tokens = _cfg("gateway", "max_tokens")
+            cid = _file("gateway", "max_tokens", tokens + 1)
+            rec = _approve(cid)
+            assert CC.sets_governed_lever(rec) is False and "twin_prevalidation" not in rec, sorted(rec)
+            assert "sets none" in rec["prevalidation_basis"]
+            assert client.post(f"/api/v1/cca/{cid}/implement").status_code == 200 and _cfg("gateway", "max_tokens") == tokens + 1
+            back = _file("gateway", "max_tokens", tokens)
+            _approve(back)
+            assert client.post(f"/api/v1/cca/{back}/implement").status_code == 200
+        #  7. the predicate reads the payload and nothing else
+        assert CC.sets_governed_lever({"config_change": {"reset": True}}) is True
+        assert CC.sets_governed_lever({"impact_tier": "CRITICAL", "change_type": "config_major"}) is False
+        assert CC.sets_governed_lever(None) is False and CC.sets_governed_lever({"config_change": {}}) is False
+    finally:
+        with _health(0.95):                                    # leave the setting as it was found
+            if _cfg("gateway", "rpm_limit") != start:
+                cid = _file("gateway", "rpm_limit", start)
+                _approve(cid)
+                client.post(f"/api/v1/cca/{cid}/implement")
+    assert _cfg("gateway", "rpm_limit") == start
