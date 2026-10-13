@@ -64736,9 +64736,9 @@ def test_w707_the_journey_the_stream_and_the_change_record_say_what_their_siblin
     assert j.status_code == 200, j.text[:300]
     jj = j.json()
     assert jj["engines_used_basis"] == _gn.engines_used_basis(jj["ai_provenance"]["body_served_by"]), jj.get("engines_used_basis")
-    page = (root / "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8")
-    assert "{result.engines_used_basis && (" in page and "{result.engines_used_basis}</p>" in page
-    assert page.index("{result.engines_used_basis}</p>") < page.index("{result.engines_used.map(e => ("), "the basis is printed after the chips it explains"
+    journey_src = (root / "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8")
+    assert "{result.engines_used_basis && (" in journey_src and "{result.engines_used_basis}</p>" in journey_src
+    assert journey_src.index("{result.engines_used_basis}</p>") < journey_src.index("{result.engines_used.map(e => ("), "the basis is printed after the chips it explains"
 
     #  2. THE ESTABLISH STREAM says its swarm is the platform's fixed stages, as the spawn path's event does
     with client.stream("POST", "/api/v1/genesis/establish/stream", json={
