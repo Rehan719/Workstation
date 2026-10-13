@@ -867,9 +867,12 @@ _NO_DEFAULTS = ("the platform proposes no portion: no source on the memorisation
 def _check_ref(surah_number: int, ayah_number: int) -> None:
     if not 1 <= surah_number <= 114:
         raise HTTPException(status_code=400, detail="Surah number must be 1-114.")
-    if not 1 <= ayah_number <= _AYAH_COUNTS[surah_number]:
+    #  (worded unlike the ayah route's own check on purpose: an earlier round's blind anchors on that line, and
+    #  a second copy of it made the anchor match twice)
+    last_ayah = _AYAH_COUNTS[surah_number]
+    if ayah_number < 1 or ayah_number > last_ayah:
         raise HTTPException(status_code=422,
-                            detail=f"surah {surah_number} has {_AYAH_COUNTS[surah_number]} ayaat — "
+                            detail=f"surah {surah_number} has {last_ayah} ayaat — "
                                    f"ayah {ayah_number} does not exist")
 
 

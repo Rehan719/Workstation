@@ -62300,6 +62300,10 @@ def test_w683_every_mounted_route_asks_or_is_declared_public_and_the_strict_chec
     #  THE TREE'S OWN STATE, by the instrument's own rule - never a hand count.
     ap = _w683_perimeter()
     rows, _names, has = ap.measure()
+    #  THE APPLICATION OBJECT IS SHARED BY THE WHOLE RUN, and an earlier test adds a probe route to it. A route
+    #  defined by this test file is not the product's; it is left out by the module that defines it - never by
+    #  its name. (Found by the build server: the guard passed or failed by which test ran first in its worker.)
+    rows = [r for r in rows if "test_mvp_spine" not in (r.get("module") or "")]
     assert has, "docs/PUBLIC_ROUTES.json is gone: no route is declared public on purpose"
     loose = [f"{r['method']} {r['path']}" for r in rows if r["state"] == "UNDECIDED"]
     assert not loose, f"mounted with no caller and declared nowhere - decide each in docs/PUBLIC_ROUTES.json: {loose}"
