@@ -266,16 +266,43 @@ def _streak_days(award_days: list) -> int:
     return streak
 
 
+#  OWNER RULINGS 2026-10-12 - a learner is shown THEIR OWN progress, never a rank among others, and a count of
+#  days is a fact, never something to protect.
+LEADERBOARD_RETIRED = True          # the ranking's code is kept below this switch
+EXPLICIT_AWARDS_REFUSED = True      # until sign-in exists, points follow a recorded review only
+
+
+def _month_counts(g: dict, today=None) -> dict:
+    """This month and last, from the learner's OWN recorded history: awards recorded and distinct days."""
+    import datetime as _dt
+    today = today or _dt.datetime.now(_dt.timezone.utc).date()      # `today` is an argument so a guard can fix the day
+    this = today.strftime("%Y-%m")
+    last = (today.replace(day=1) - _dt.timedelta(days=1)).strftime("%Y-%m")
+    days = [str(d) for d in (g.get("award_days") or [])]
+    hist = [h for h in (g.get("history") or []) if isinstance(h, dict)]
+
+    def _of(month: str) -> dict:
+        return {"days_reviewed": len({d for d in days if d.startswith(month)}),
+                "awards_recorded": sum(1 for h in hist if str(h.get("at") or "").startswith(month))}
+    return {"this_month": {"month": this, **_of(this)}, "last_month": {"month": last, **_of(last)},
+            "basis": ("counted from this learner's own recorded history, in UTC months. It compares a learner "
+                      "with their own past and with no one else. The history keeps its latest 500 entries, so "
+                      "a month with more than that reads low; the days are counted from the list of days, "
+                      "which is not cut")}
+
+
 def _gami_state(g: dict) -> dict:
     xp = int(g.get("xp", 0))
+    _months = _month_counts(g)
     return {
+        "days_reviewed_this_month": _months["this_month"]["days_reviewed"],
+        "days_reviewed_basis": "distinct UTC days this month with at least one recorded award; a missed day changes nothing else",
+        "own_progress": _months,
         "uid": g["uid"],
         "xp": xp,
         "level": 1 + xp // _XP_PER_LEVEL,
         "level_basis": f"1 + xp // {_XP_PER_LEVEL}",
         "achievements": g.get("achievements", []),
-        "streak_days": _streak_days(g.get("award_days", [])),
-        "streak_basis": "consecutive UTC days with >= 1 recorded award, ending today or yesterday",
         "awards_recorded": len(g.get("history", [])),
         "scope": "recorded awards only — nothing here is estimated",
     }
@@ -1181,6 +1208,12 @@ async def award_xp(req: AwardRequest):
         raise HTTPException(status_code=422, detail=(
             f"'{req.achievement}' claims memorisation or completion, which only the platform's own review path "
             f"records - an explicit award may not assert it"))
+    _safe_uid(req.uid)          # an id that is not an id is still refused AS that (400), before the ruling's 409
+    if EXPLICIT_AWARDS_REFUSED:
+        #  refused BEFORE anything is written, where the caller receives it
+        raise HTTPException(status_code=409, detail=(
+            "No points were recorded. Points follow a recorded review; an award a caller asserts is not accepted "
+            "until sign-in exists (the Owner's ruling of 2026-10-12)."))
     state = _award(req.uid, req.achievement, req.xp, source="explicit_award")
     return {"recorded": True, "achievement": req.achievement, "xp_awarded": req.xp, "award_source": "caller_asserted",
             "award_basis": "an explicit award records what the CALLER asserted; the platform did not observe it",
@@ -1198,6 +1231,10 @@ async def qep_leaderboard(limit: int = 20):
     the POPULATION is stated: these are the learners who have a recorded award, not a field of
     competitors, and a board of two says it ranks two. A tie is named rather than silently broken.
     """
+    if LEADERBOARD_RETIRED:
+        raise HTTPException(status_code=410, detail=(
+            "The ranking of learners is retired by the Owner's ruling of 2026-10-12: a learner is shown their own "
+            "progress, this month against last, at /api/v1/qep/gamification/{uid} - never a rank among others."))
     rows = []
     unreadable = []
     for p in sorted(_GAMI_STORE.glob("*.json")):

@@ -222,7 +222,7 @@ const QuranCompetitions = () => (
              Appendix A.9.1 rules that recitation is never scored, so it is not planned: it is refused. */}
          <TournamentCard title="Ramadan Global (preview)" tier="Expert" players={0} status="PLANNED" />
          <TournamentCard title="Linguistic Roots (preview)" tier="Novice" players={0} status="PLANNED" />
-         <TournamentCard title="Recitation contests" tier="Not offered" players={0} status="REFUSED (A.9.1)" />
+         <TournamentCard title="Machine-scored recitation contests" tier="Not offered" players={0} status="REFUSED (A.9.1)" />
       </div>
    </div>
 );
@@ -254,6 +254,6 @@ const TournamentCard = ({ title, tier, players, status }: any) => (
      </div>
      <h4 className="text-xl font-black text-white uppercase tracking-tight mb-2">{title}</h4>
      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{tier} • {players} Participants</p>
-     <Button onClick={() => toast(status === 'PLANNED' ? 'No tournament exists yet - this card is a preview, not a fixture. The live XP leaderboard is on the Memorization tab.' : 'Recitation is never scored (Appendix A.9.1), so no recitation contest is run or ranked. The live XP leaderboard is on the Memorization tab.')} variant="outline" className="w-full mt-8 text-[9px] uppercase font-black">View Leaderboard</Button>
+     <Button onClick={() => toast(status === 'PLANNED' ? 'No tournament exists yet - this card is a preview, not a fixture. Your own progress, this month against last, is on the Memorization tab.' : 'Recitation is never scored (Appendix A.9.1), so no recitation contest is run or ranked by the platform. Judged events with named human judges are planned, after sign-in; none exists yet.')} variant="outline" className="w-full mt-8 text-[9px] uppercase font-black">What exists today</Button>
   </Card>
 );
