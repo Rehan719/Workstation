@@ -26,6 +26,7 @@ from agentic_core.auth.core import get_current_user, request_owner_id
 from agentic_core.api.intelligence import _ai_cognitive_prime_meta, _ai_mjm_lifecycle_meta, _usable, _selected_lenses
 from agentic_core.gaas.v5 import UnifiedConstitutionalInterceptorV16Omega, UEGLogger
 from agentic_core.api.vsb import _public_prose, _gate_block_reason, _gates_blocking, _LIFECYCLE_STAGE_IDS
+from agentic_core.api.vsb import _operating_means
 from agentic_core.api import develop_artefact as _develop
 from agentic_core.taxonomy import (PRODUCT_LABELS, REALM_LABELS, normalise_product,
                                    normalise_realm, realm_directive)
@@ -1694,6 +1695,7 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
         # §4.8 (W496, FU-100) - the entity's own derived status and the facts behind it, not a literal
         "status": entity.get("status"),
         "status_basis": entity.get("status_basis"),
+        "operating_means": _operating_means(entity),     # W699 - what the word means, or None when it is not said
         "dashboard": f"/api/v1/vsb/{vsb_id}",
         "governance": entity["governance"],
         "initial_ship": initial_ship,   # §4 (W302) — the body shipped at birth (or honestly not)
@@ -1921,6 +1923,7 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
                      f"{name} is registered. {entity.get('status_basis') or ''}".strip(), {
             "vsb_id": vsb_id, "name": name, "status": entity.get("status"),
             "status_basis": entity.get("status_basis"),
+            "operating_means": _operating_means(entity),     # W699 - the streamed answer says it too
             "name_source": name_source, "name_pending": name_source == "slug",   # W450
             "body_pending": body_pending, "body_absent": body_absent,
             "dashboard": f"/api/v1/vsb/{vsb_id}",

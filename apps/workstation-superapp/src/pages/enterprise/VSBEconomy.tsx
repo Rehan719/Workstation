@@ -505,6 +505,12 @@ export const VSBEconomy: React.FC = () => {
                   <span data-testid="owner-payout-request-state" className={`font-black ${q.state === 'applied' ? 'text-emerald-400' : q.state === 'rejected' || q.state === 'withdrawn' ? 'text-vital' : 'text-amber-400'}`}>{String(q.state_label ?? q.state)}</span>
                   <span className="text-slate-400 truncate px-2 flex-1">change {String(q.cca_id)}{q.decided_by ? ` · decided by ${String(q.decided_by)}${q.decided_by_verified ? '' : ' (a name the platform did not check)'}` : ' · not decided'}</span>
                   <span className="font-mono text-slate-300 shrink-0">{typeof q.amount_wst === 'number' ? q.amount_wst.toLocaleString() : '—'} WST {q.state === 'applied' ? 'paid' : 'requested'}</span>
+                  {q.state === 'approved_not_applied' && typeof q.amount_wst === 'number' && (
+                    <button type="button" data-testid="owner-payout-request-refill" onClick={() => setPayoutAmt(q.amount_wst)}
+                            className="ml-2 shrink-0 underline text-amber-400">
+                      put {q.amount_wst.toLocaleString()} WST in the request box
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -774,7 +780,10 @@ export const VSBEconomy: React.FC = () => {
               <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
                 <p className="text-[8px] font-black uppercase tracking-widest text-slate-600 mb-1">P&L · this period</p>
                 {/* W624 (FU-540) — the bottom line is the surplus AFTER distributions, and says so */}
-                <p className="text-sm font-black text-white" title={bp.statements.profit_and_loss?.net_profit_basis}>{(bp.statements.profit_and_loss?.net_profit_wst ?? 0).toLocaleString()} WST <span className="text-[9px] text-slate-500">surplus after distributions</span></p>
+                <p className="text-sm font-black text-white">{(bp.statements.profit_and_loss?.net_profit_wst ?? 0).toLocaleString()} WST <span className="text-[9px] text-slate-500">surplus after distributions</span></p>
+                {bp.statements.profit_and_loss?.net_profit_basis && (
+                  <p className="text-[9px] text-slate-500 leading-relaxed" data-testid="pnl-net-basis">{bp.statements.profit_and_loss.net_profit_basis}</p>
+                )}
                 {bp.statements.profit_and_loss?.operating_result_before_distributions_wst != null && (
                   <p className="text-[9px] text-slate-400" data-testid="pnl-operating">before distributions: {bp.statements.profit_and_loss.operating_result_before_distributions_wst.toLocaleString()} WST · distributed {(bp.statements.profit_and_loss.distributions_wst ?? 0).toLocaleString()} WST</p>
                 )}

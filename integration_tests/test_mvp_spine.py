@@ -6432,7 +6432,9 @@ def test_genesis_journey_establish_seam(client):
     assert r0.json().get("enterprise_operating") is None, "a journey that established nothing reports an operating state"
     _gj644 = _code_only((__import__("pathlib").Path(__file__).resolve().parents[1]
                          / "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8"))
-    assert "candidates_are_alternatives === false\n            ? `${ranked} candidate text(s) were produced and they are not alternatives" in _gj644, (
+    #  W699 - the flag is now read BEFORE the lit state: such a tile is unlit and chipped as not ranked
+    assert ("candidates_are_alternatives === false) {\n      return { done: false, label: 'not ranked'," in _gj644
+            and "candidate text(s) were produced and they are not alternatives" in _gj644), (
         "the rank tile says candidates were modelled and ranked without reading the server's own flag (FU-624)")
 
 
@@ -64115,3 +64117,79 @@ def test_w698_an_answer_that_names_a_model_states_its_level_and_a_refusal_states
     #  a ceiling measured when the ruling was built: the count of silent blocks may fall, and may not rise
     assert inv["not_stating_a_level"] <= 91, ("a new answer block names a model and states no evidence level",
                                               inv["not_stating_a_level"])
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W699 - one cause: a reason shown only in a hover tooltip, or a control missing beside a sentence that tells
+#  a person to do something by hand. The first leg is a finding the audit recorded as RETURNED.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w699_a_reason_is_printed_where_it_is_read_and_never_left_in_a_tooltip(client, monkeypatch):
+    import pathlib
+    import uuid as _uuid
+    from agentic_core.api import vsb as _vsb
+    root = pathlib.Path(__file__).resolve().parents[1]
+    pages = root / "apps/workstation-superapp/src/pages"
+    journey = (pages / "synthesis/GenesisJourney.tsx").read_text(encoding="utf-8")
+    economy = (pages / "enterprise/VSBEconomy.tsx").read_text(encoding="utf-8")
+    cockpit = (pages / "enterprise/VSBCockpit.tsx").read_text(encoding="utf-8")
+
+    #  1. THE RETURNED FINDING - candidates that are not alternatives do not light the tile or chip it "ran"
+    fn = journey.split("const railState = (", 1)[1].split("\n};", 1)[0]
+    refusal = fn.split("candidates_are_alternatives === false) {", 1)[1].split("}\n", 1)[0]
+    assert "done: false" in refusal and "label: 'not ranked'" in refusal and "nothing was modelled apart or ranked" in refusal, refusal[:300]
+    after = fn.split("candidates_are_alternatives === false) {", 1)[1].split("}\n", 1)[1]
+    assert "candidates_are_alternatives" not in after.split("const v = r.stage_verifications", 1)[0], (
+        "the lit branch still decides on the alternatives flag, so the tile can be lit over it")
+    assert fn.index("candidates_are_alternatives === false) {") < fn.index("label: 'ran'"), "the refusal is read after the lit state"
+    assert "'not ranked'" in journey.split("type RailState =", 1)[1].split("\n", 1)[0]
+    assert "st.label === 'not run' || st.label === 'not ranked' ? 'bg-amber-500/20" in journey
+    #  ... and every tile's reason is printed under its chip; none is carried by a tooltip
+    assert "data-testid={`rail-why-${i + 1}`}" in journey and "{st.why}</p>" in journey
+    assert "title={st.why}" not in journey
+    chip = journey.split("data-testid={`rail-state-${i + 1}`}", 1)[1].split(">", 1)[0]
+    assert "title=" not in chip, chip[:200]
+
+    #  2. THE RESULT CARD: the status's basis, what "operating" means, and where to write a pending section
+    status = journey.split('data-testid="genesis-vsb-status"', 1)[1].split(">", 1)[0]
+    assert "title=" not in status, status[:200]
+    for gate, body in (("{vsb.status_basis ? (", "{vsb.status_basis}</p>"),
+                       ("{vsb.operating_means && (", "{vsb.operating_means}</p>")):
+        assert gate in journey and body in journey, (gate, body)
+    assert 'data-testid="genesis-vsb-status-basis-absent"' in journey
+    pending = journey.split('data-testid="genesis-vsb-pending"', 1)[1].split("</p>", 1)[0]
+    assert "title=" not in pending.split(">", 1)[0] and "their text is not this enterprise's own" in pending
+    assert 'data-testid="genesis-vsb-write-sections"' in pending and "navigate(`/vsb-cockpit?vsb=${encodeURIComponent(vsb.vsb_id)}`)" in pending
+    assert "new URLSearchParams(window.location.search).get('vsb')" in cockpit, "the Cockpit no longer opens the entity the link names"
+
+    #  3. THE SERVER SAYS IT ON THE ESTABLISH ANSWER - driven both ways through the one function
+    r = client.post("/api/v1/genesis/establish", json={
+        "problem": f"w699 {_uuid.uuid4().hex[:6]} a village bakery cooperative selling bread", "name": "W699 Reason Probe",
+        "domain": "enterprise", "ship_output": False})
+    assert r.status_code == 200, r.text[:300]
+    j = r.json()
+    assert "operating_means" in j, sorted(j)[:30]
+    assert j["operating_means"] == _vsb._operating_means({"status": j["status"]}), (j["status"], j["operating_means"])
+    assert _vsb._operating_means({"status": "established"}) is None
+    means = _vsb._operating_means({"status": _vsb.OPERATING_STATUS})
+    assert means and "does not mean customers are being served" in means
+    from agentic_core.api import genesis as _gn
+    assert _gn._operating_means is _vsb._operating_means
+    import inspect
+    assert inspect.getsource(_gn).count('"operating_means": _operating_means(entity)') == 2, (
+        "the blocking and the streamed establish answers do not both carry it")
+
+    #  4. THE ECONOMY PAGE: the bottom line's basis is text, and an approved payout can be put back in the box
+    line = economy.split("W624 (FU-540)", 1)[1].split("surplus after distribut", 1)[0]
+    assert "<p className=" in line and "title=" not in line, line[:300]
+    assert "{bp.statements.profit_and_loss?.net_profit_basis && (" in economy and 'data-testid="pnl-net-basis"' in economy
+    assert "{bp.statements.profit_and_loss.net_profit_basis}</p>" in economy
+    refill = economy.split('data-testid="owner-payout-request-refill"', 1)
+    assert len(refill) == 2 and "q.state === 'approved_not_applied' && typeof q.amount_wst === 'number' && (" in refill[0][-200:]
+    assert "onClick={() => setPayoutAmt(q.amount_wst)}" in refill[1][:120], "the button does something other than fill the box"
+    from agentic_core.api import economy as _eco
+    assert "approved_not_applied" in _eco.PAYOUT_STATE_LABELS and "request the same payout again" in _eco.PAYOUT_STATE_LABELS["approved_not_applied"]
+
+    #  5. THE COCKPIT: where to change a stage's resource is text beside it
+    model = cockpit.split('data-testid="cascade-edit-stage-model"', 1)[1].split("</span>\n            </span>", 1)[0]
+    assert "title=" not in model.split(">", 1)[0] and 'data-testid="cascade-edit-stage-model-where"' in model
+    assert "change it in the cascade designer on the Native AI page" in model
