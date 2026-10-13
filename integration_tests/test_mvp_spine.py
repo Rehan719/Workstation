@@ -63498,3 +63498,99 @@ def test_w693_four_old_rows_the_home_page_the_public_status_and_the_operations_d
     assert "rules on disputes filed through" not in ops and "ARCHIVED in W669 and is not mounted" in ops
     from agentic_core.app_mvp import app as _app
     assert not any("council/judge" in getattr(r, "path", "") for r in _app.routes)
+
+
+def test_w694_a_read_that_is_not_free_says_so_for_every_handler_that_makes_it_and_genesis_is_called_with_nobody(monkeypatch):
+    #  Two old rows, one cause: a fabric handler does something its registration's row does not say.
+    import ast as _ast
+    import asyncio as _aio
+    import inspect as _inspect
+    import agentic_core.api.resource_fabric as _fab
+    #  1. COMPUTED FROM THE HANDLER'S OWN SOURCE, never a list typed here: every `rid == "<id>"` branch whose body
+    #     calls organism_context() must have a row in the table that says the read is not free.
+    src = _inspect.getsource(_fab._run_real_resource_handler)
+    tree = _ast.parse(__import__("textwrap").dedent(src))
+    calling = set()
+    for node in _ast.walk(tree):
+        if not isinstance(node, _ast.If):
+            continue
+        t = node.test
+        if not (isinstance(t, _ast.Compare) and isinstance(t.left, _ast.Name) and t.left.id == "rid"
+                and len(t.comparators) == 1 and isinstance(t.comparators[0], _ast.Constant)):
+            continue
+        body_calls = [c for stmt in node.body for c in _ast.walk(stmt) if isinstance(c, _ast.Call)
+                      and isinstance(c.func, _ast.Attribute) and c.func.attr == "organism_context"]
+        if body_calls:
+            calling.add(t.comparators[0].value)
+    assert len(calling) >= 4, f"the walk found only {sorted(calling)} - it is not reading the handler"
+    #  THE COST IS SAID IN ONE OF TWO PLACES, by what the resource is: a read or a query says it in the table of
+    #  reads that are not free; an engine run says it in its own declaration of what it persists. (The first
+    #  form of this leg required the table for all four, and the build server showed that listing an engine
+    #  run there overrode its fuller declaration in the resource's contract.)
+    def _says_the_cost(rid):
+        if rid in _fab._READ_SIDE_EFFECTS:
+            return _fab._READ_SIDE_EFFECTS[rid]
+        word, basis = _fab._FACILITY_PERSISTS.get(rid, ("", ""))
+        return basis if word == "side_effect" else ""
+    missing = sorted(r for r in calling if "ATP" not in _says_the_cost(r))
+    assert not missing, f"these handlers read the organism context, which advances the energy simulator, and nothing says so for them: {missing}"
+    #  each is said ONCE: an engine run is not also listed as a read, so its contract carries its own sentence
+    twice = sorted(set(_fab._READ_SIDE_EFFECTS) & set(_fab._FACILITY_PERSISTS))
+    assert not twice, f"declared in both places, so one sentence overrides the other in the contract: {twice}"
+    assert "change_control" in _fab._READ_SIDE_EFFECTS and "nervous_system" in _fab._FACILITY_PERSISTS
+    from agentic_core.api import instrument_cell as _cell694
+    for rid in calling:
+        ct = _cell694.contract(rid)
+        assert ct["persists"] == "side_effect" and "ATP" in ct["persists_basis"], (rid, ct["persists"], ct["persists_basis"])
+    #  2. THE COMPOSED GENESIS JOURNEY IS CALLED WITH NOBODY, not with the framework's dependency marker
+    import agentic_core.api.genesis as _gen
+    got = {}
+
+    async def _capture(req, user="NOT PASSED"):
+        got["user"] = user
+        return {"ai_provenance": {}, "blueprint": "x"}
+    monkeypatch.setattr(_gen, "genesis_journey", _capture)
+    try:
+        _aio.new_event_loop().run_until_complete(
+            _fab._run_real_resource_handler("genesis", {"problem": "a plain problem"}, "an objective", "enterprise"))
+    except Exception:                       # what the handler does with the stand-in's answer is not this leg's subject
+        pass
+    assert "user" in got, "the composed Genesis branch was not reached, so this leg drove nothing"
+    assert got["user"] is None, f"Genesis was called with {type(got['user']).__name__} for its caller, not with nobody"
+
+
+def test_w694_the_visions_status_names_tests_that_exist_and_a_card_with_routes_is_not_called_planned():
+    import re as _re
+    root = __import__("pathlib").Path(__file__).resolve().parents[1]
+    suite = (root / "integration_tests/test_mvp_spine.py").read_text(encoding="utf-8")
+    vision = (root / "docs/WORKSTATION_IDBO_WHOLE_VISION.md").read_text(encoding="utf-8")
+    #  1. THE NOTE NAMES ITS MEASURES, AND EACH EXISTS. A status note that names a test which is gone is the
+    #     fault it was written to correct - so the names are read out of the note itself and looked up.
+    start = vision.index("STATUS AS BUILT, corrected W694")
+    note = vision[start:vision.index("**16.1 Reconciliation addendum", start)]
+    named = _re.findall(r"`(test_[a-z0-9_]+)`", note)
+    assert len(named) >= 2, named
+    for name in named:
+        assert f"def {name}(" in suite, f"the vision's status note names {name}, which is not in the suite"
+    #  it keeps the half that is NOT held, and does not call the perimeter isolation
+    assert "is not a count of routes that isolate" in note and "the rest is not" in note and "held" in note
+    assert "/api/v1/registers/perimeter" in note
+    #  the route and the two files it points at are there
+    from agentic_core.app_mvp import app as _app
+    assert any(getattr(r, "path", "") == "/api/v1/registers/perimeter" for r in _app.routes)
+    assert (root / "scripts/auth_perimeter.py").exists() and (root / "docs/PUBLIC_ROUTES.json").exists()
+    #  2. THE MODE 2 NOTE says what the code says: a role unless an instruction or decision is recorded, and no
+    #     twin model - read against the module it cites
+    assert "No twin MODEL is trained and none exists" in vision and "with none it\n  is a role and says so" in vision
+    board = (root / "agentic_core/api/board.py").read_text(encoding="utf-8")
+    assert "is_twin = (n_i + n_d) > 0" in board and "no twin MODEL is trained" in board
+    #  3. THE FINANCE CARD: its routes exist, so it is not "planned" and its panel does not say "no backend"
+    card = (root / "apps/workstation-superapp/src/components/QEPFlagshipFeatures.tsx").read_text(encoding="utf-8")
+    assert "{ id: 'finance', name: 'Islamic Finance', icon: CreditCard, color: 'text-aura', kind: 'routes_only'," in card
+    assert "(f as any).kind === 'routes_only' ? 'routes exist · no page yet'" in card
+    assert "activeKind === 'routes_only' ? 'Its routes exist — no page sends to them yet'" in card
+    assert "activeKind === 'routes_only'\n" in card and "Its routes exist and no page reaches them." in card
+    #  the routes the card speaks of are really mounted, and nothing in the card enables a payment
+    paths = {getattr(r, "path", "") for r in _app.routes}
+    assert {"/api/v1/qep/contribute/zakat", "/api/v1/qep/contribute/sponsor-a-student"} <= paths
+    assert sum(1 for line in card.splitlines() if "kind: 'routes_only'" in line) == 1, "another card was marked routes-only without its routes being checked here"

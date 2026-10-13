@@ -1419,8 +1419,12 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
             #   research · model/rank · design · operations · commercialisation · gaas gate), bounded:
             #   establish=False so it produces the blueprint WITHOUT spawning a living VSB per run.
             from agentic_core.api.genesis import genesis_journey, JourneyRequest
+            #  W694 - `user=None`, said. Called with no caller, the handler's `user` parameter was the framework's
+            #  dependency marker, not nobody; both of its uses happen to check for a dict, so nothing went wrong -
+            #  by luck of those two checks, not by this call.
             j = await genesis_journey(JourneyRequest(problem=str(cfg.get("problem") or objective), domain=domain,
-                                                     realm=str(cfg.get("realm") or "enterprise"), establish=False))
+                                                     realm=str(cfg.get("realm") or "enterprise"), establish=False),
+                                      user=None)
             prov = j.get("ai_provenance") or {}
             # W479 (refutation 3) — what served it, from the journey: None when nothing did (never a default
             # 'native'); the calls, the failed ones and the external flag, so the learning loop records it truly
@@ -1918,6 +1922,12 @@ _NARRATIVE_RESOURCES = frozenset({"digital_twin"})
 _READ_SIDE_EFFECTS = {
     "metabolic": "reading the organism context advances the ATP simulator (the read is not free)",
     "circadian": "reading the organism context advances the ATP simulator (the read is not free)",
+    #  W694 - four handlers read the organism context. Two are reads and are above. The nervous system is an
+    #  ENGINE RUN and says this cost in its own declaration below (what a facility run persists); listing it
+    #  here too overrode that fuller sentence. Change control is a QUERY, which otherwise reads "nothing was
+    #  persisted" - so its cost is said here. The guard reads the handler's own source for every branch that
+    #  makes the call and requires the cost to be said in one of the two places.
+    "change_control": "reading the organism context advances the ATP simulator (the read is not free)",
 }
 #  P3.31 clause 2 - WHAT A FACILITY RUN PERSISTS, declared only where the engine's own function was read. The
 #  word is the contract's: "records" (it writes a record), "side_effect" (it changes live state and writes no
