@@ -1055,7 +1055,10 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
             "basis": ("Owner ruling of 2026-10-13: a change that names the delivery method among the systems "
                       "it affects is never approved automatically, at any tier or state of health; a person "
                       "approves or rejects it by review")}
-    if tier == "LOW" and _health_ok and threat in ("NOMINAL", "ELEVATED") and not _amends_method:
+    _low_rule_approves = False
+    if tier == "LOW" and _health_ok and threat in ("NOMINAL", "ELEVATED"):
+        _low_rule_approves = not _amends_method      # W715 - never for a change to the method
+    if _low_rule_approves:
         change["status"] = "approved"
         change["decision"] = "auto_approved"
         # W464 — every record says what decided it (the mechanism, named)
