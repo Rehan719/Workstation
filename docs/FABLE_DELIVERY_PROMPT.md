@@ -181,7 +181,9 @@ STILL WITH THE OWNER (the plan marks each "OWNER RULING" — do not choose for t
     on 2026-10-12, as recommended: the meal service is walked first and the atmospheric harvesting venture
     second; a person's acceptance earns only the amount of an accepted contract and a constant never earns;
     new single-user records are stamped as the Owner's once that is driven, and old ones are not rewritten;
-    the folders moved aside stay until the walks and the final audit are done.) THAT IS THE WHOLE LIST.
+    the folders moved aside stay until the walks and the final audit are done.) · FU-1069 (W696), WHEN THE OWNER IS
+    AT THE MACHINE: file the one change record of the batch of lessons ruled on 2026-10-13 on the Owner's own store - one call to the amendment route. The lessons
+    are in the method by that ruling already; the record on a test store proves nothing about the Owner's. THAT IS THE WHOLE LIST.
     RULED 2026-10-09 (W636, on the Owner's machine, after two external assessments were checked against the tree):
     · A STOPPING RULE FOR M1/M2 — the milestone is MET at ZERO standing Tier-1 on TWO CONSECUTIVE runs, each
       stating its coverage and listing the surfaces it did not reach. The series 20 → 18 → 11 → 4 → 4 → 6 had no
