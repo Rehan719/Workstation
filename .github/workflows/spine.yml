@@ -46,6 +46,33 @@ jobs:
         # isolation it relies on was delivered in W507 (FU-249) and has held across every round since.
         run: python -m pytest integration_tests -q -n 4
 
+  backend-windows:
+    #  OWNER RULING 2026-10-12 - the same suite on WINDOWS, the system the Owner's own machine runs. ADVISORY: a
+    #  failure here is shown and does not fail the run (`continue-on-error`). It becomes required - by removing
+    #  that one line - after three rounds running in which it was green, and from then the hour-long full suite
+    #  on the Owner's machine is retired. Until then it is NOT one of the checks a merge waits on.
+    name: Backend on Windows — advisory
+    runs-on: windows-latest
+    continue-on-error: true
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies (the same list the Linux job installs)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+          pip install pytest-xdist==3.8.0
+      - name: Boot check
+        run: python -c "import agentic_core.app_mvp; print('boot ok')"
+      - name: Integration suite
+        run: python -m pytest integration_tests -q -n 4
+
   import-integrity:
     name: Import integrity — no dangling first-party imports
     runs-on: ubuntu-latest

@@ -9,7 +9,7 @@ import { apiJson, errorMessage } from '../lib/api';
 // is told what the learner recalled, and nothing here shows a score, a count of mistakes or a rank.
 
 type Portion = { unit: string; start: number | string; end: number | string; set_by: string; set_at: string } | null;
-interface Portions { tracks: string[]; portions: Record<string, Portion>; tracks_set: number; defaults_basis: string; earlier_portions_kept: number; identity_verified?: boolean }
+interface Portions { tracks: string[]; portions: Record<string, Portion>; tracks_set: number; defaults_basis: string; earlier_portions_kept: number; identity_verified?: boolean; identity_basis?: string }
 interface Hidden { ref: string; shown: string; hidden_words: number; total_words: number; revealed: boolean; text?: string; basis: string; judged_basis: string; source?: string; edition?: string; riwayah?: string | null }
 interface Pair { a: string; b: string; shared_words: number; shared: string; a_continues: string | null; b_continues: string | null; whole_verse_identical: boolean }
 interface Similar { pairs: Pair[]; pairs_found: number; pairs_returned: number; verses_examined: number; verses_not_available: number; complete_for_these_surahs: boolean; basis: string; scholar_reviewed_basis: string }
@@ -82,6 +82,10 @@ export const HifzPractice: React.FC<{ uid: string }> = ({ uid }) => {
       <Card className="p-5">
         <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1 flex items-center gap-2"><ListChecks size={14} /> Your plan — three tracks</h3>
         {plan && <p data-testid="hifz-plan-defaults" className="text-[9px] text-slate-500 mb-3 leading-relaxed">{plan.defaults_basis}</p>}
+        {/* W686 (OWNER RULING 2026-10-12) — whose record this is, in the server's words: the id is typed, not a login */}
+        {plan && plan.identity_verified === false && plan.identity_basis && (
+          <p data-testid="hifz-plan-identity" className="text-[9px] text-amber-300/90 mb-3 leading-relaxed">{plan.identity_basis}</p>
+        )}
         <div className="grid sm:grid-cols-3 gap-2 mb-3">
           {(plan?.tracks ?? []).map(t => {
             const p = plan?.portions[t];

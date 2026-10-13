@@ -16529,11 +16529,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P4.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W686",
       "note": "",
       "slot_source": "ruled by the Owner on 2026-10-11: fixed in one authentication-readiness round after P5 and before the final audit",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the read-only role is refused every write at the caller dependency, by token or by key; driven with authentication on in a test process against every asking route with a writing method the perimeter instrument lists",
+      "reachability_check": "test_w686_the_read_only_role_is_refused_every_write_and_no_read"
     },
     {
       "id": "FU-849",
