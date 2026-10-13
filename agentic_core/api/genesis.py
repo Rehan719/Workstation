@@ -1372,6 +1372,7 @@ def _seed_plan_from_journey(vsb_id: str, name: str, req: "EstablishRequest", ent
                 plan["objectives"].append({
                     "id": f"obj-{_uuid.uuid4().hex[:8]}", "title": _title, "kpi": "", "timeline": "",
                     "owner_role": "AI CEO", "progress_pct": 0, "status": "planned", "reviews": [],
+                    "draft": True, "source": bp_mod.SEEDED_DRAFT_SOURCE,      # W695: a draft does not gate
                     "created_at": _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime()),
                 })
         # §4 (W304) — the journey's operational intelligence seeds a REAL plan objective (only

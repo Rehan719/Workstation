@@ -347,9 +347,26 @@ def payout_check(vsb_id: str, amount: float) -> Dict[str, Any]:
     if amount <= 0:
         raise ValueError("Payout amount must be positive.")
     balance = round(a["accrued"] - a["paid_out"], 2) if a else 0.0
+    if a and a.get("simulated"):
+        #  refused HERE, at the first check, so no hold is filed for a share that can never be paid
+        raise SimulatedShareNotPayable(SIMULATED_NOT_PAID)
     if amount > balance:
         raise ValueError(f"Insufficient balance: {balance} WST available, {amount} WST requested.")
     return {"amount_wst": amount, "balance_wst": balance, "simulated": bool(a.get("simulated")), **payee_of(a)}
+
+
+class PayoutNotReleased(Exception):
+    """OWNER RULING 2026-10-13: a payout is recorded only against an approval record. Raised by payout() itself,
+    so the rule does not depend on a caller remembering it."""
+
+
+class SimulatedShareNotPayable(ValueError):
+    """OWNER RULING 2026-10-13: a simulated entity's accrued share is shown and never paid. A ValueError, so the
+    route answers it as a refusal of the request and files no hold for it."""
+
+
+SIMULATED_NOT_PAID = ("This entity is a simulation, so its accrued share is shown and never paid (the Owner's "
+                      "ruling of 2026-10-13). Nothing was paid and nothing was held for approval.")
 
 
 def paid_changes(vsb_id: str) -> Dict[str, Dict[str, Any]]:
@@ -368,9 +385,16 @@ def payout(vsb_id: str, amount: float, *, requested_by: str | None = None,
 
     OWNER RULINGS 2026-10-12: it takes no `owner` (R1 - the payee is the owner recorded on the account, read
     under the lock), and the entry it appends names who requested the payout and the Change Control record
-    whose approval released it (R3). THIS FUNCTION IS NOT THE GATE: the route holds every payout for a
-    person's decision and calls this only with an approval the economy's gate spent. A direct call records
-    `cca_id: None` and says in its answer that no Change Control record released it."""
+    whose approval released it (R3). The route holds every payout for a person's decision and calls this only
+    with an approval the economy's gate spent.
+
+    OWNER RULINGS 2026-10-13: THIS FUNCTION REFUSES A CALL WITH NO APPROVAL RECORD (it used to record the payout
+    and say that Change Control had not released it - a rule that held only while every caller remembered it),
+    and a SIMULATED entity's share is never paid. Both are checked before anything is written."""
+    if not str(cca_id or "").strip():
+        raise PayoutNotReleased(
+            "No payout was recorded: a payout is recorded only against a Change Control record that approved "
+            "it, and this call named none.")
     if not math.isfinite(float(amount)):
         raise ValueError("Payout amount must be a finite number.")
     amount = round(max(0.0, float(amount)), 2)
@@ -380,6 +404,8 @@ def payout(vsb_id: str, amount: float, *, requested_by: str | None = None,
     def change(d: Dict[str, Any]) -> float:
         a = d.get(vsb_id)
         balance = round(a["accrued"] - a["paid_out"], 2) if a else 0.0
+        if a and a.get("simulated"):
+            raise SimulatedShareNotPayable(SIMULATED_NOT_PAID)      # again under the lock: the first check is not the gate
         if amount > balance:
             raise ValueError(f"Insufficient balance: {balance} WST available, {amount} WST requested.")
         a["paid_out"] = round(a["paid_out"] + amount, 2)
@@ -404,9 +430,7 @@ def payout(vsb_id: str, amount: float, *, requested_by: str | None = None,
         "payee_basis": _who.get("payee_basis"),
         "requested_by": requested_by, "requested_by_verified": requested_by_verified,
         "cca_id": cca_id, "consume_id": consume_id,
-        "released_by": (f"Change Control record {cca_id}" if cca_id else
-                        "NOT RELEASED BY CHANGE CONTROL: this payout was recorded by a direct call, not through "
-                        "the payout route"),
+        "released_by": f"Change Control record {cca_id}",
         "simulated": bool(_sim658 and _sim658[-1]),
         "real_money_moved": False, "real_money_rails": "DISABLED",
         "note": "Virtual payout recorded. No real money moved — real rails are gated pending Owner "

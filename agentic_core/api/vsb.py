@@ -15,7 +15,7 @@ the full intelligence pipeline:
     → Digital Twin (validate the solution model)
     → VSB Entity persisted + dashboard accessible
 
-  POST /api/v1/vsb/spawn         — spawn a new VSB from a challenge
+  POST /api/v1/vsb/spawn         — RETIRED behind SPAWN_ROUTE_RETIRED (Owner ruling 2026-10-13): answers 410
   GET  /api/v1/vsb               — list all spawned VSBs
   GET  /api/v1/vsb/{vsb_id}      — get VSB state and vitals
   POST /api/v1/vsb/{vsb_id}/evolve — trigger evolution cycle
@@ -2904,6 +2904,7 @@ def enrich_vsb_entity(entity: dict, *, owner_id: str = "default", problem: str =
                     plan["objectives"].append({
                         "id": f"obj-{uuid.uuid4().hex[:8]}", "title": _title, "kpi": "", "timeline": "",
                         "owner_role": "AI CEO", "progress_pct": 0, "status": "planned", "reviews": [],
+                        "draft": True, "source": bp_mod.SEEDED_DRAFT_SOURCE,   # W695: a draft does not gate
                         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                     })
             bp_mod._save(plan)
@@ -2992,6 +2993,20 @@ class SpawnRequest(BaseModel):
     entity_type: str = "waqf_ltd_hybrid"   # legal/economic form (see GET /api/v1/economy/entity-types)
 
 
+#  W695 (OWNER RULING 2026-10-13) - THE SPAWN ROUTE IS RETIRED BEHIND A SWITCH, AND ITS CODE IS KEPT.
+#  It was kept in 2026-10-11 as a test and API door, labelled, to be decided after the mid-way audit. No control
+#  on any page calls it, and it creates a registered entity with none of what the Genesis journey asks for. The
+#  retirement is this one constant: while it is True the route answers 410 in the outer handler - before the
+#  stream opens, so the refusal can be received - and nothing is composed, registered or stored. Setting it to
+#  False restores the door exactly as it was. The test suite turns it off for its own process, because the
+#  tests that create entities through this door are what guard the kept code.
+SPAWN_ROUTE_RETIRED = True
+SPAWN_ROUTE_RETIRED_REASON = (
+    "This route is retired (Owner ruling 2026-10-13): an enterprise is established through Genesis. Nothing "
+    "was created. Use the Genesis page (/genesis), or POST /api/v1/genesis/establish. The route's code is "
+    "kept and the retirement is reversible.")
+
+
 @router.post("/spawn")
 async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_user)):
     """
@@ -2999,6 +3014,8 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
     The cognitive cascade, MJM, GaaS gate, and genome encoding happen
     before the AI synthesis cascade begins.
     """
+    if SPAWN_ROUTE_RETIRED:            # read at call time, and before the stream: a 410 after status 200 is lost
+        raise HTTPException(status_code=410, detail=SPAWN_ROUTE_RETIRED_REASON)
     # §17.5 user isolation — with auth enabled the owner is ALWAYS the authenticated user
     # (server-side stamp; a client cannot claim another owner). Single-user mode unchanged.
     from agentic_core.auth.core import request_owner_id
@@ -3260,7 +3277,8 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
             #  kept as a test and API door: no page calls it, and it asks for none of what Genesis asks for.
             "established_through": "spawn_route",
             "established_through_basis": (
-                "created by POST /api/v1/vsb/spawn, a test and API door kept by ruling. It skips what the "
+                "created by POST /api/v1/vsb/spawn, a test and API door that is retired behind a switch and "
+                "answers 410 while the switch is on. It skips what the "
                 "Genesis journey requires: no journey record, no evidence, no review gates before the "
                 "entity exists. An enterprise a person establishes comes through Genesis."),
             "cascade_analysis": _stored_cascade_record(cascade_result),     # P3.30 (R2.14)

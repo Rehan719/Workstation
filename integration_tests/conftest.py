@@ -125,6 +125,18 @@ if "agentic_core.config" in _sys.modules:
 
 
 @pytest.fixture(scope="session", autouse=True)
+def _the_spawn_door_is_open_for_the_tests_that_guard_its_kept_code():
+    """W695 - the spawn route is RETIRED in the product (vsb.SPAWN_ROUTE_RETIRED is True in the source). Its code
+    is kept, and the tests that create entities through it are what guard that code, so this process turns the
+    switch off. The guard of the retirement itself reads the default from the SOURCE and turns the switch back
+    on to drive the 410, so this fixture cannot hide a retirement that was undone."""
+    from agentic_core.api import vsb as _vsb
+    _vsb.SPAWN_ROUTE_RETIRED = False
+    yield
+    _vsb.SPAWN_ROUTE_RETIRED = True
+
+
+@pytest.fixture(scope="session", autouse=True)
 def _assert_store_is_isolated():
     """Fail loudly if the suite is about to write into the REAL data store.
 

@@ -189,6 +189,23 @@ _KPI_GATE_SCOPE = ("This gate applies to a MARKETPLACE LISTING only: shipping th
                    "entities are not gated by it.")
 
 
+#  W695 (OWNER RULING 2026-10-13) - THE THREE OBJECTIVES GIVEN AT ESTABLISHMENT ARE DRAFTS, AND A DRAFT DOES NOT
+#  GATE. They were written by a template with no measure, no route lets a person set a measure on an objective
+#  that exists, and the platform may not invent one - so every entity was refused a listing over three lines
+#  nobody had written. A draft is left out of the count in both directions: it does not block a release and it
+#  does not count as a measured objective either. Once it carries a measure it is an objective like any other.
+SEEDED_DRAFT_TITLES = ("Validate the concept", "Deliver the design", "Launch to market")
+SEEDED_DRAFT_SOURCE = "establish_seed"
+
+
+def is_seeded_draft(o: dict) -> bool:
+    """A template objective nobody has given a measure. The second leg recognises the ones seeded before the
+    marker existed: a seeded title, no measure, and no source (a journey's own objective names its source)."""
+    if str(o.get("kpi") or "").strip() not in ("", _PLATFORM_KPI_PLACEHOLDER):
+        return False
+    return o.get("draft") is True or (str(o.get("title") or "") in SEEDED_DRAFT_TITLES and not o.get("source"))
+
+
 def kpi_release_gate(vsb_id: str) -> dict:
     """§17.5 (R5) — may this entity RELEASE? Shape-complete, and it names what is missing.
 
@@ -210,12 +227,18 @@ def kpi_release_gate(vsb_id: str) -> dict:
                 "detail": (f"the business plan for this entity could not be read "
                            f"({_e.__class__.__name__}), so whether its objectives carry KPIs is NOT "
                            f"KNOWN - which is not the same as their being absent")}
-    objectives = [o for o in (plan.get("objectives") or []) if isinstance(o, dict)]
+    _recorded = [o for o in (plan.get("objectives") or []) if isinstance(o, dict)]
+    objectives = [o for o in _recorded if not is_seeded_draft(o)]
+    _drafts = len(_recorded) - len(objectives)
+    _drafts_said = ((f" {_drafts} draft objective(s) written by the establishment template are not counted: a "
+                     f"draft carries no measure, so it neither blocks a release nor counts towards one.")
+                    if _drafts else "")
     if not objectives:
         return {"ok": False, "reason": "no_objectives", "objectives": 0, "missing": [],
-                "detail": ("this entity has no business-plan objectives recorded, so there is nothing to "
-                           "measure a release against yet. Add an objective with a KPI on the Business "
-                           "Plan before listing. " + _KPI_GATE_SCOPE)}
+                "drafts_not_counted": _drafts,
+                "detail": ("this entity has no business-plan objectives of its own recorded, so there is "
+                           "nothing to measure a release against yet. Add an objective with a KPI on the "
+                           "Business Plan before listing." + _drafts_said + " " + _KPI_GATE_SCOPE)}
     #  W638 (FU-600) — THE PLATFORM'S OWN "NOT SET YET" TEXT IS NOT A KPI. The Chief-instruction fallback
     #  writes this placeholder into the KPI position, and a non-empty test read it as a KPI: the gate released
     #  on a sentence saying no KPI existed. Still a presence test for anything a person wrote.
@@ -224,20 +247,15 @@ def kpi_release_gate(vsb_id: str) -> dict:
                if str(o.get("kpi") or "").strip() in ("", _PLATFORM_KPI_PLACEHOLDER)]
     if missing:
         return {"ok": False, "reason": "kpi_not_set", "objectives": len(objectives), "missing": missing,
+                "drafts_not_counted": _drafts,
                 "detail": ("§17.5 gates release on measurable objectives. "
                            + f"{len(missing)} of {len(objectives)} objective(s) carry no KPI: "
                            + "; ".join(m["title"] or m["id"] for m in missing)
-                           + ". Set a KPI on each before listing. " + _KPI_GATE_SCOPE
-                           + (" These three are the objectives this platform SEEDS at establishment "
-                              "(\"Validate the concept\", \"Deliver the design\", \"Launch to "
-                              "market\") and it does not invent KPIs for them - inventing a measure "
-                              "would be worse than asking for one."
-                              if {str(m.get("title")) for m in missing} >=
-                              {"Validate the concept", "Deliver the design", "Launch to market"}
-                              else ""))}
+                           + ". Set a KPI on each before listing." + _drafts_said + " " + _KPI_GATE_SCOPE)}
     return {"ok": True, "reason": "kpi_set", "objectives": len(objectives), "missing": [],
+            "drafts_not_counted": _drafts,
             "detail": (f"all {len(objectives)} objective(s) carry a KPI. This gate tests PRESENCE, not "
-                       f"whether a KPI is a good one - no instrument here judges that.")}
+                       f"whether a KPI is a good one - no instrument here judges that." + _drafts_said)}
 
 
 def _roadmap(plan: Dict[str, Any]) -> Dict[str, Any]:
