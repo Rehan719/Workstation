@@ -272,6 +272,52 @@ ASSESSING: Dict[str, Any] = {
 }
 
 
+# -- W712 - WHICH OF THE SIXTEEN UNCHECKED CONSTRAINTS IS A PROPERTY OF A REPLY --------------------------------
+#  The Owner deferred this review on 2026-10-06 and asked on 2026-10-13 that it be resolved. It is resolved from
+#  the reasons already written above, one line per constraint, and the Owner may change any line. NOTHING IS
+#  REMOVED FROM THE CONSTITUTION and no check is weakened - none of these sixteen was ever checked. What
+#  changes is what a reply is told: a constraint that is not a property of a reply is no longer listed among
+#  the things the reply "was not checked for", because it could never have been.
+#    not_of_a_reply        - it describes infrastructure, a process over time, a governance arrangement or a
+#                            system that is not built; where it IS evidenced, if anywhere, is said
+#    declared_not_checked  - it does bear on a reply, nothing checks it, and every reply goes on saying so
+#    instrument_awaits_input - an instrument exists and is not handed what it needs
+NOT_OF_A_REPLY = "not_of_a_reply"
+DECLARED_NOT_CHECKED = "declared_not_checked"
+AWAITS_INPUT = "instrument_awaits_input"
+REPLY_DISPOSITION: Dict[str, Tuple[str, str]] = {
+    "edge_first_sovereignty": (NOT_OF_A_REPLY, "it is about where a computation ran, which no text can show"),
+    "biomimetic_fidelity": (NOT_OF_A_REPLY, "fidelity to a biological analogue is not a measurable property of a text"),
+    "genetic_immune_topology_integrity": (NOT_OF_A_REPLY, "it is about the organism's own structure; no standing figure of it exists"),
+    "adversarial_co_evolution": (NOT_OF_A_REPLY, "it names a process over time, not one reply"),
+    "trillion_token_provenance": (NOT_OF_A_REPLY, "it names a quantity over a corpus; a reply's own provenance is carried and enforced separately"),
+    "human_ai_constitutional_co_sovereignty": (NOT_OF_A_REPLY, "it is a governance arrangement, evidenced by Change Control and the Board's ratification"),
+    "oam_qkd_software_only": (NOT_OF_A_REPLY, "no such hardware is present or claimed; it says nothing about a reply"),
+    "federated_consensus": (NOT_OF_A_REPLY, "no federation runs, so there are no peers whose agreement a reply could carry"),
+    "commercial_integrity": (NOT_OF_A_REPLY, "it is about a transaction; money here is virtual, and it is to be reviewed again before the real-money switch"),
+    "lob_fixpoint": (NOT_OF_A_REPLY, "it is a property of a proof system this repository does not implement"),
+    "causal_sovereignty": (DECLARED_NOT_CHECKED, "a reply can make a causal claim, and nothing here can test one"),
+    "legal_precision_hard": (DECLARED_NOT_CHECKED, "a reply can state law, and no verified corpus exists to hold it against"),
+    "statistical_rigor": (DECLARED_NOT_CHECKED, "a reply can report a figure; rigour is never to become a score"),
+    "first_principles_grounding": (DECLARED_NOT_CHECKED, "a reply can argue; whether it rests on first principles is a judgement, never a score"),
+    "sincerity_integrity_loyalty": (DECLARED_NOT_CHECKED, "these are qualities of a person or an intention; no verdict on them is ever passed by this platform"),
+    "thermodynamic_accountability": (AWAITS_INPUT, "the ledger exists and is honest; nothing hands it a metering record for the reply"),
+}
+
+
+def reply_disposition(names) -> Dict[str, Any]:
+    """Split a list of unchecked constraint names by what each is to a reply. A name with no line here is
+    listed as undecided - it is never silently treated as not applying."""
+    out: Dict[str, Any] = {NOT_OF_A_REPLY: [], DECLARED_NOT_CHECKED: [], AWAITS_INPUT: [], "undecided": []}
+    for n in names or []:
+        kind = (REPLY_DISPOSITION.get(n) or ("undecided", ""))[0]
+        out[kind].append(n)
+    out["reasons"] = {n: REPLY_DISPOSITION[n][1] for n in names or [] if n in REPLY_DISPOSITION}
+    out["basis"] = ("resolved on the Owner's instruction of 2026-10-13 from each constraint's own recorded reason; "
+                    "nothing is removed from the constitution and the Owner may change any line")
+    return out
+
+
 def register_all(pattern: Any) -> Dict[str, Any]:
     """Register EVERY declared constraint on an enforcement pattern, and report which is which.
 

@@ -361,6 +361,13 @@ class ConstitutionalClearanceChain:
             _cov6 = {"assessed": _assessed, "not_checked": _unchecked,
                      "no_instrument": list(_det.get("no_instrument") or []),
                      "input_absent": list(_det.get("input_absent") or [])}
+            #  W712 - the review the Owner deferred, resolved 2026-10-13: of those not checked, which bear on a
+            #  reply at all. Read from the pattern's own answer; computed here only when the pattern gave none.
+            _to_reply = _det.get("to_a_reply") if isinstance(_det.get("to_a_reply"), dict) else None
+            if _to_reply is None:
+                from agentic_core.validation.constitutional_validators import reply_disposition
+                _to_reply = reply_disposition(_unchecked)
+            _cov6["to_a_reply"] = _to_reply
             _verdict = "coverage"
         if _verdict not in (True, "coverage"):
             _why = (f"a declared constraint was VIOLATED: {getattr(_enf, 'violation', None)!r}. {_enf_basis}"
@@ -376,7 +383,14 @@ class ConstitutionalClearanceChain:
                 f"cleared BY COVERAGE, not a pass of every declared constraint: {len(_assessed)} assessed and "
                 f"passed ({', '.join(_assessed)}); {len(_unchecked)} NOT CHECKED ({', '.join(_unchecked)}) - "
                 f"{len(_cov6['no_instrument'])} have no instrument and {len(_cov6['input_absent'])} were not "
-                f"given their input"))
+                f"given their input"
+                + (f". Of those not checked, {len(_cov6['to_a_reply']['declared_not_checked'])} bear on a reply "
+                   f"and nothing checks them ({', '.join(_cov6['to_a_reply']['declared_not_checked']) or 'none'}); "
+                   f"{len(_cov6['to_a_reply']['not_of_a_reply'])} are not properties of a reply and could not "
+                   f"have been checked against one; {len(_cov6['to_a_reply']['instrument_awaits_input'])} "
+                   f"await an input"
+                   + (f"; {len(_cov6['to_a_reply']['undecided'])} have no decision recorded "
+                      f"({', '.join(_cov6['to_a_reply']['undecided'])})" if _cov6['to_a_reply']['undecided'] else ""))))
             _rec["coverage"] = _cov6
         else:
             _rec = self._record(key, name, subject, "cleared", _enf_basis or (
