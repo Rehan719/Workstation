@@ -2896,7 +2896,7 @@ def enrich_vsb_entity(entity: dict, *, owner_id: str = "default", problem: str =
             #  template with the Chief's name. Same keys, same meanings as genesis. `concept` is not written
             #  here, so nothing is claimed about it.
             _tpl638 = ["executive_summary", "vision", "mission", "strategy"]
-            plan["provenance"] = {
+            plan["provenance"] = {**_reply_evidence(), 
                 "served_by": (entity.get("ai_provenance") or {}).get("served_by") or None,
                 "body_pending": [k for k, v in (entity.get("body_pending") or {}).items() if v],
                 "name_source": entity.get("name_source"),
@@ -3517,7 +3517,7 @@ async def run_repo_cascade(vsb_id: str, req: RepoCascadeRequest, user: dict | No
         domain=vsb.get("domain", "enterprise"),
         csuite_roles=_csuite, coe_specialisms=_coe,
         scope=vsb_id, objective_id=req.objective_id))
-    summary = {
+    summary = {**_reply_evidence((run.get('ai_provenance') or {}).get('served_by')), 
         "run_id": run.get("run_id"), "mission": run.get("mission"),
         "stored_config_applied": {"csuite_roles": _csuite, "coe_specialisms": _coe,
                                   "note": "empty = balanced default (no stored swarm design)"},

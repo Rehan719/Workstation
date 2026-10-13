@@ -18,6 +18,7 @@ import uuid as _uuid        # P3.1 — the journey mints its own id; the only ot
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, HTTPException
+from agentic_core.api._ai_provenance import no_reply_evidence as _no_reply_evidence   # W710
 from agentic_core.api._ai_provenance import reply_evidence as _reply_evidence   # W698: the level travels with the record
 from pydantic import BaseModel
 
@@ -404,12 +405,12 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         cognitive, _p_cog = await _ai_cognitive_prime_meta(req.problem, req.domain)
         cognitive = _public_prose(cognitive)
     except Exception as e:
-        cognitive, _p_cog = f"[Cognitive lenses did not run — {e}]", {"served_by": None, "is_external": False, "failed": True}
+        cognitive, _p_cog = f"[Cognitive lenses did not run — {e}]", {**_no_reply_evidence(), "served_by": None, "is_external": False, "failed": True}
     try:
         mjm, _p_mjm = await _ai_mjm_lifecycle_meta(req.problem, req.domain, _usable(cognitive, _p_cog))
         mjm = _public_prose(mjm)
     except Exception as e:
-        mjm, _p_mjm = f"[MJM assessment did not run — {e}]", {"served_by": None, "is_external": False, "failed": True}
+        mjm, _p_mjm = f"[MJM assessment did not run — {e}]", {**_no_reply_evidence(), "served_by": None, "is_external": False, "failed": True}
     # (refutation 4 — the invariant) `served_by` counts EVERY served call (what served this journey, shown on its
     # page); `body_served_by` (built at the end, from served_by_agent) holds only the servers of the text a gate
     # certifies. The gates read the body map, so no call outside the body (lens, MJM, candidates, twin) can make
@@ -1370,7 +1371,7 @@ def _seed_plan_from_journey(vsb_id: str, name: str, req: "EstablishRequest", ent
         _concept_is_placeholder = bool((req.concept or "").strip()) and _concept_unset(req.concept)
         if _concept_unset(req.concept):
             _templated.append("concept")
-        plan["provenance"] = {
+        plan["provenance"] = {**_reply_evidence(), 
             "served_by": (entity.get("ai_provenance") or {}).get("served_by") or None,
             "body_pending": [k for k, v in (entity.get("body_pending") or {}).items() if v],
             "name_source": entity.get("name_source"),

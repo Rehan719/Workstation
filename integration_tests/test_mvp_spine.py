@@ -64121,7 +64121,8 @@ def test_w698_an_answer_that_names_a_model_states_its_level_and_a_refusal_states
     #  a ceiling measured when the ruling was built: the count of silent blocks may fall, and may not rise
     #  (91 when the ruling was built in W698; 65 after W708 worked three more files)
     #  (and 53 after W709 worked three more)
-    assert inv["not_stating_a_level"] <= 53, ("a new answer block names a model and states no evidence level",
+    #  (and 45 after W710)
+    assert inv["not_stating_a_level"] <= 45, ("a new answer block names a model and states no evidence level",
                                               inv["not_stating_a_level"])
 
 
@@ -64895,3 +64896,46 @@ def test_w709_three_more_files_state_the_level_and_a_failed_call_states_none(cli
         text, prov = asyncio.run(_in._staged_query("p", "w709_probe", "W709 stage"))
         assert "did not run" in text and prov["failed"] is True and prov["served_by"] is None, (failing.__name__, prov)
         assert prov["evidence_level"] is None and prov["evidence_basis"].startswith("NOT SERVED"), (failing.__name__, prov)
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W710 - the evidence level, three more files (entities, the swarm, Genesis). Two blocks are left silent ON
+#  PURPOSE and the guard names them: a cadence refresh is derived by rule, and calling it a reply would be false.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w710_entities_the_swarm_and_genesis_state_the_level_and_a_derived_refresh_is_not_called_a_reply(client):
+    import ast
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    silent = {}
+    kinds = {"none": 0, "reply": 0}
+    for rel in ("agentic_core/api/vsb.py", "agentic_core/api/swarm.py", "agentic_core/api/genesis.py"):
+        silent[rel] = []
+        for d in ast.walk(ast.parse((root / rel).read_text(encoding="utf-8"))):
+            if not isinstance(d, ast.Dict):
+                continue
+            keys = [k.value if isinstance(k, ast.Constant) else None for k in d.keys]
+            if "served_by" not in keys:
+                continue
+            spreads = [getattr(v.func, "id", "") for k, v in zip(d.keys, d.values) if k is None and isinstance(v, ast.Call)]
+            if "evidence_level" not in keys and not any("evidence" in s for s in spreads):
+                silent[rel].append(keys)
+                continue
+            served = d.values[keys.index("served_by")]
+            if isinstance(served, ast.Constant) and served.value is None:
+                assert "_no_reply_evidence" in spreads and "_reply_evidence" not in spreads, (rel, d.lineno)
+                kinds["none"] += 1
+            elif "_reply_evidence" in spreads:
+                kinds["reply"] += 1
+    assert silent["agentic_core/api/swarm.py"] == [] and silent["agentic_core/api/genesis.py"] == [], silent
+    #  the two left silent are the two views of a cadence refresh, and nothing else
+    left = silent["agentic_core/api/vsb.py"]
+    assert len(left) == 2 and all("refresh_id" in k and "refresh_trigger" in k for k in left), left
+    assert kinds["none"] >= 2 and kinds["reply"] >= 10, kinds
+    inv = client.get("/api/v1/native-ai/evidence-levels/routers").json()
+    assert inv["files"]["agentic_core/api/vsb.py"]["blocks_naming_a_model"] - inv["files"]["agentic_core/api/vsb.py"]["stating_a_level"] == 2
+    for rel in ("agentic_core/api/swarm.py", "agentic_core/api/genesis.py"):
+        assert inv["files"][rel]["stating_a_level"] == inv["files"][rel]["blocks_naming_a_model"], (rel, inv["files"][rel])
+    #  DRIVEN: a journey's answer carries the level on the provenance of each stage that was served
+    j = client.post("/api/v1/genesis/journey", json={"problem": "w710 a village bakery cooperative selling bread", "domain": "enterprise"})
+    assert j.status_code == 200, j.text[:300]
+    assert '"evidence_level"' in j.text, "no stage of the journey states its level"
