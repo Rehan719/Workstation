@@ -8311,11 +8311,15 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W695",
       "note": "",
       "slot_source": "W603: P3.2 closed on its whole bar and no open item routes the Genesis journey. P5.1 drives ONE tenant through that journey from problem to commercial output and reads every stage back, which is where a stage no reader sees and an objective the release gate cannot pass are both measured.",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The three objectives given at establishment are drafts: left out of the release gate's count in both directions, marked by both writers, and recognised on entities seeded earlier. A person's own unmeasured objective still blocks. Owner ruling 2026-10-13.",
+      "reachability_check": "test_w695_a_seeded_objective_is_a_draft_that_neither_blocks_a_release_nor_counts_towards_one"
     },
     {
       "id": "FU-450",
@@ -16441,11 +16445,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W695",
       "note": "",
       "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The spawn route answers 410 behind one constant, before the stream opens, and creates nothing; its code is kept and the suite turns the switch off for the tests that guard it. Owner ruling 2026-10-13.",
+      "reachability_check": "test_w695_the_spawn_route_is_retired_behind_a_switch_and_its_code_is_kept"
     },
     {
       "id": "FU-844",
@@ -17191,11 +17199,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W695",
       "note": "",
       "slot_source": "found in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The payout function refuses a call that names no approval record and writes nothing; a blank approval is refused too. Owner ruling 2026-10-13.",
+      "reachability_check": "test_w695_a_payout_names_its_approval_or_is_not_recorded_and_a_simulated_share_is_never_paid"
     },
     {
       "id": "FU-883",
@@ -17245,11 +17257,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W695",
       "note": "",
       "slot_source": "found in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A simulated entity's accrued share is shown and never paid: refused at the first check so no hold is filed, and again under the lock. Owner ruling 2026-10-13.",
+      "reachability_check": "test_w695_a_payout_names_its_approval_or_is_not_recorded_and_a_simulated_share_is_never_paid"
     },
     {
       "id": "FU-886",

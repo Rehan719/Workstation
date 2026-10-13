@@ -6211,6 +6211,16 @@ def test_economy_owner_payments_virtual(client):
     assert st["accrued_total_wst"] > 0 and st["balance_wst"] > 0
     # BINDING safeguard: real-money rails are disabled
     assert st["real_money_enabled"] is False and st["real_money_rails"] == "DISABLED"
+    #  W695 (OWNER RULING 2026-10-13) - this entity is not registered, so the share its cycle accrued is a
+    #  SIMULATION'S: it is shown above and it is never paid. Its request is refused in those words and nothing is
+    #  held. The held-approved-paid journey below is driven on an account that is not a simulation.
+    _sim_ask = client.post("/api/v1/economy/owner-payments/payout", json={"vsb_id": vid, "amount": 1})
+    assert _sim_ask.status_code == 400 and "never paid" in _sim_ask.json()["detail"], _sim_ask.text
+    assert client.get(f"/api/v1/economy/owner-payments?vsb_id={vid}").json()["balance_wst"] == st["balance_wst"]
+    from agentic_core.economy import owner_payments as _op695
+    vid = f"test-owner-pay-real-{_uuid.uuid4().hex[:10]}"
+    _op695.accrue(vid, 500.0, "Amina Guard", memo="test_economy_owner_payments_virtual", simulated=False)
+    st = client.get(f"/api/v1/economy/owner-payments?vsb_id={vid}").json()
     # a virtual payout reduces the balance and moves NO real funds
     bal = st["balance_wst"]
     #  (Owner ruling 2026-10-12) every payout is HELD for a person's decision: request, approve, request again
@@ -14351,7 +14361,7 @@ def test_w465_owner_payments_are_locked_atomic_and_never_overwrite_an_unreadable
 
     # concurrent accruals all land; concurrent payouts never spend one balance twice
     def accrue_one():
-        op.accrue(vid, 1.0)
+        op.accrue(vid, 1.0, simulated=False)      # W695: a simulated entity's share is never paid, so this account is not one
     ts = [threading.Thread(target=accrue_one) for _ in range(20)]
     [t.start() for t in ts]
     [t.join(timeout=60) for t in ts]
@@ -14360,7 +14370,7 @@ def test_w465_owner_payments_are_locked_atomic_and_never_overwrite_an_unreadable
 
     def pay_two():
         try:
-            op.payout(vid, 2.0)
+            op.payout(vid, 2.0, cca_id="cca-test-concurrency")     # W695: a payout names its approval
             results.append("paid")
         except ValueError:
             results.append("refused")
@@ -40755,12 +40765,14 @@ def test_w586_p37_the_repo_is_reachable_and_an_entity_with_none_says_so(client, 
     #  blocked by a gate it is not about. It satisfies the precondition, and asserts the gate DOES block
     #  without it, which makes the leg stronger than it was.
     _blocked586 = client.post(f"/api/v1/marketplace/listings/from-entity/{_vid586}")
+    #  W695 (Owner ruling 2026-10-13) - the three seeded objectives are DRAFTS and do not gate, so a newborn
+    #  entity is refused for having no objective of its own, and the refusal says the drafts were not counted.
     assert _blocked586.status_code == 409 and \
-        _blocked586.json()["detail"]["reason"] == "kpi_not_set", (
-        "§17.5's KPI gate does not block a release whose objectives carry no KPI",
+        _blocked586.json()["detail"]["reason"] == "no_objectives", (
+        "§17.5's KPI gate does not block a release with no measured objective",
         _blocked586.status_code, _blocked586.text[:200])
-    assert _blocked586.json()["detail"]["missing_kpi"], (
-        "the gate refuses without naming which objectives lack a KPI", _blocked586.text[:200])
+    assert "draft objective(s)" in _blocked586.json()["detail"]["detail"], (
+        "the gate refuses without saying the seeded drafts were left out of the count", _blocked586.text[:300])
     from agentic_core.api import business_plan as _bp586
     _plan586 = _bp586._load(_vid586)
     for _o586 in (_plan586.get("objectives") or []):
@@ -58460,8 +58472,15 @@ def test_pay_an_owner_payout_is_held_for_a_person_and_pays_the_accounts_recorded
 
         def _raced(v, amount):
             _f = _real_check(v, amount)
-            _direct = _op.payout(v, 30.0)              # another payout lands between the check and the apply
-            assert _direct["cca_id"] is None and _direct["released_by"].startswith("NOT RELEASED BY CHANGE CONTROL"), _direct
+            #  W695 (Owner ruling 2026-10-13) - a call with NO approval is refused by the function itself, and
+            #  writes nothing; the racing payout below therefore names an approval of its own
+            try:
+                _op.payout(v, 30.0)
+                raise AssertionError("a payout with no approval record was recorded")
+            except _op.PayoutNotReleased:
+                pass
+            _direct = _op.payout(v, 30.0, cca_id="cca-another-approval")   # another payout lands between the check and the apply
+            assert _direct["cca_id"] == "cca-another-approval" and _direct["released_by"] == "Change Control record cca-another-approval", _direct
             return _f
         monkeypatch.setattr(_op, "payout_check", _raced)
         _race = _ask(_vid, 20)
@@ -58471,7 +58490,8 @@ def test_pay_an_owner_payout_is_held_for_a_person_and_pays_the_accounts_recorded
         assert "was given back" in _race.json()["detail"], ("the refusal does not say the approval was handed back", _race.json())
         assert _cc._load_change(_cid5)["status"] == "approved", "an approval stayed spent on a payout that was not recorded"
         assert _snap(_vid) == (100.0, 85.0, 4), ("the refused payout changed the account", _snap(_vid))
-        assert _acct(_vid)["entries"][-1]["cca_id"] is None, "a direct call's entry names a change that did not release it"
+        assert _acct(_vid)["entries"][-1]["cca_id"] == "cca-another-approval", (
+            "the racing payout's entry does not name the approval it was called with")
         #    more accrues under ANOTHER name: the recorded owner does not change
         _op.accrue(_vid, 50.0, "Somebody Else", memo="guard top-up", simulated=False)
         _audit["fails"] = True                         # the payout's own audit event cannot be written
@@ -58525,7 +58545,7 @@ def test_pay_an_owner_payout_is_held_for_a_person_and_pays_the_accounts_recorded
         assert _b1["entries_history_basis"].startswith("TRUNCATED: 2 older entries were dropped"), _b1["entries_history_basis"]
         assert _b1["entries_kept_from"] == _acct(_big)["entries"][0]["at"] == "2026-01-01T00:00:02Z", _b1["entries_kept_from"]
         assert _b1["entries_shown"] == 50 and len(_b1["entries"]) == 50 and _b1["accrued_total_wst"] == 202.0, _b1["entries_shown"]
-        _op.payout(_big, 1.0)                          # a payout's cut is counted the same way
+        _op.payout(_big, 1.0, cca_id="cca-test-cut")   # a payout's cut is counted the same way
         assert _op.status(_big)["entries_dropped"] == 3 and len(_acct(_big)["entries"]) == 200, _op.status(_big)["entries_dropped"]
         _f0 = _op.status(_full)
         assert _f0["entries_truncated"] is None and _f0["entries_dropped"] is None, (
@@ -63594,3 +63614,181 @@ def test_w694_the_visions_status_names_tests_that_exist_and_a_card_with_routes_i
     paths = {getattr(r, "path", "") for r in _app.routes}
     assert {"/api/v1/qep/contribute/zakat", "/api/v1/qep/contribute/sponsor-a-student"} <= paths
     assert sum(1 for line in card.splitlines() if "kind: 'routes_only'" in line) == 1, "another card was marked routes-only without its routes being checked here"
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W695 - OWNER RULINGS 2026-10-13 on payouts, built at the floor: a payout names the approval that released
+#  it or is not recorded; a simulated entity's share is shown and never paid. Virtual units throughout.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w695_a_payout_names_its_approval_or_is_not_recorded_and_a_simulated_share_is_never_paid(client):
+    import uuid as _uuid
+    from agentic_core.economy import owner_payments as _op
+    real, sim = f"w695-real-{_uuid.uuid4().hex[:6]}", f"w695-sim-{_uuid.uuid4().hex[:6]}"
+    _op.accrue(real, 100.0, "Amina Guard", memo="guard seed", simulated=False)
+    _op.accrue(sim, 100.0, "Amina Guard", memo="guard seed", simulated=True)
+
+    def acct(v):
+        return _op.status(v)
+    #  1. NO APPROVAL, NO PAYOUT - by the function itself, with nothing written
+    before = acct(real)
+    for missing in (None, "", "   "):
+        try:
+            _op.payout(real, 10.0, cca_id=missing)
+            raise AssertionError(f"a payout was recorded with approval {missing!r}")
+        except _op.PayoutNotReleased as e:
+            assert "No payout was recorded" in str(e)
+    try:
+        _op.payout(real, 10.0)
+        raise AssertionError("a payout was recorded by a call that named no approval at all")
+    except _op.PayoutNotReleased:
+        pass
+    after = acct(real)
+    assert after["paid_out_total_wst"] == before["paid_out_total_wst"] and len(after["entries"]) == len(before["entries"]), "a refused payout wrote the account"
+    #  with an approval named, it is recorded, and the entry and the answer name that approval
+    out = _op.payout(real, 10.0, cca_id="cca-w695-approved", requested_by="amina")
+    assert out["paid_wst"] == 10.0 and out["released_by"] == "Change Control record cca-w695-approved"
+    assert "NOT RELEASED" not in json.dumps(out)
+    paid = [e for e in acct(real)["entries"] if e.get("type") == "payout_virtual"]
+    assert paid and paid[-1]["cca_id"] == "cca-w695-approved"
+    assert out["real_money_moved"] is False
+    #  2. A SIMULATED SHARE IS NEVER PAID - at the first check (so no hold is filed) and again under the lock
+    try:
+        _op.payout_check(sim, 5.0)
+        raise AssertionError("the first check passed a simulated entity's payout")
+    except _op.SimulatedShareNotPayable as e:
+        assert "shown and never paid" in str(e)
+    try:
+        _op.payout(sim, 5.0, cca_id="cca-w695-even-if-approved")
+        raise AssertionError("a simulated entity's share was paid against an approval")
+    except _op.SimulatedShareNotPayable:
+        pass
+    s = acct(sim)
+    assert s["paid_out_total_wst"] == 0 and not [e for e in s["entries"] if e.get("type") == "payout_virtual"]
+    #  the share is still SHOWN
+    assert s["accrued_total_wst"] == 100.0
+    #  3. THROUGH THE ROUTE: a simulated entity's request is refused in those words and nothing is held
+    r = client.post("/api/v1/economy/owner-payments/payout", json={"vsb_id": sim, "amount": 5.0})
+    assert r.status_code == 400, (r.status_code, r.text[:200])
+    assert "never paid" in r.text and "held" in r.text.lower()
+    #  ... and a real entity's request is still HELD for a person, not paid
+    h = client.post("/api/v1/economy/owner-payments/payout", json={"vsb_id": real, "amount": 5.0})
+    assert h.status_code == 200 and h.json().get("status") == "held", h.text[:300]
+    assert acct(real)["paid_out_total_wst"] == 10.0
+
+
+def test_w695_a_seeded_objective_is_a_draft_that_neither_blocks_a_release_nor_counts_towards_one(client):
+    """OWNER RULING 2026-10-13: the three objectives an entity is given at establishment are drafts, and a draft
+    does not gate. Driven through the gate and through both writers; a person's own unmeasured objective still
+    blocks, so the gate is not weakened."""
+    import uuid as _uuid
+    from types import SimpleNamespace
+    from agentic_core.api import business_plan as _bp
+    from agentic_core.api import genesis as _gn
+
+    def _obj(title, kpi="", **more):
+        return {"id": f"obj-{_uuid.uuid4().hex[:8]}", "title": title, "kpi": kpi, "timeline": "",
+                "owner_role": "AI CEO", "progress_pct": 0, "status": "planned", "reviews": [], **more}
+
+    def _gate(scope, objectives):
+        plan = _bp._load(scope)
+        plan["objectives"] = objectives
+        _bp._save(plan)
+        return _bp.kpi_release_gate(scope)
+
+    scope = f"vsb-w695d{_uuid.uuid4().hex[:8]}"
+    #  1. an entity seeded BEFORE the marker existed: three seeded titles, no measure, no source
+    old_seeds = [_obj(t) for t in _bp.SEEDED_DRAFT_TITLES]
+    g = _gate(scope, list(old_seeds))
+    assert g["ok"] is False and g["reason"] == "no_objectives" and g["drafts_not_counted"] == 3, g
+    assert g["missing"] == [] and "3 draft objective(s)" in g["detail"], g
+    #  2. the drafts do not BLOCK: one objective of the entity's own, measured, releases it
+    own = _obj("Enrol the first cohort", "30 learners enrolled")
+    g = _gate(scope, old_seeds + [own])
+    assert g["ok"] is True and g["objectives"] == 1 and g["drafts_not_counted"] == 3, g
+    #  3. the gate is not weakened: a person's own unmeasured objective still blocks, and only it is named
+    unmeasured = _obj("Break even")
+    g = _gate(scope, old_seeds + [own, unmeasured])
+    assert g["ok"] is False and g["reason"] == "kpi_not_set" and g["objectives"] == 2, g
+    assert [m["title"] for m in g["missing"]] == ["Break even"], g["missing"]
+    #  4. a draft is a draft only while it has no measure: given one, it is counted like any other
+    measured_seed = dict(old_seeds[0], kpi="ten interviews held")
+    g = _gate(scope, [measured_seed] + old_seeds[1:] + [own])
+    assert g["ok"] is True and g["objectives"] == 2 and g["drafts_not_counted"] == 2, g
+    #  5. a seeded TITLE alone is not enough once the objective names another source ...
+    g = _gate(scope, [_obj(_bp.SEEDED_DRAFT_TITLES[0], source="genesis_journey.operations")])
+    assert g["reason"] == "kpi_not_set" and g["drafts_not_counted"] == 0, g
+    #  ... and the platform's own "not set yet" text on a marked draft is still no measure
+    g = _gate(scope, [_obj("anything", _bp._PLATFORM_KPI_PLACEHOLDER, draft=True)])
+    assert g["reason"] == "no_objectives" and g["drafts_not_counted"] == 1, g
+
+    #  6. BOTH WRITERS MARK WHAT THEY SEED - driven, then read back from the stored plan
+    s1 = f"vsb-w695g{_uuid.uuid4().hex[:8]}"
+    req = SimpleNamespace(owner_id="Rehan", problem="a measured problem statement", commercialisation="",
+                          concept="the Owner's concept", entity_type="waqf_ltd_hybrid", operations="")
+    _gn._seed_plan_from_journey(s1, f"W695 {s1}", req, {"ai_provenance": {}, "body_pending": {}, "name_source": "test"})
+    seeded = _bp._load(s1)["objectives"]
+    assert [o["title"] for o in seeded] == list(_bp.SEEDED_DRAFT_TITLES), [o.get("title") for o in seeded]
+    assert all(o.get("draft") is True and o.get("source") == _bp.SEEDED_DRAFT_SOURCE for o in seeded), seeded
+    assert _bp.kpi_release_gate(s1)["reason"] == "no_objectives"
+
+    from agentic_core.api import vsb as _vsb
+    s2 = f"vsb-w695v{_uuid.uuid4().hex[:8]}"
+    _vsb.enrich_vsb_entity({"id": s2, "vsb_id": s2, "name": f"W695 {s2}"}, owner_id="Rehan",
+                           problem="a measured problem statement", first_screen=False)
+    seeded2 = [o for o in _bp._load(s2).get("objectives") or [] if o.get("title") in _bp.SEEDED_DRAFT_TITLES]
+    assert len(seeded2) == 3 and all(o.get("draft") is True and o.get("source") == _bp.SEEDED_DRAFT_SOURCE
+                                     for o in seeded2), seeded2
+
+    #  7. THROUGH THE ROUTE a listing is still refused for an entity with drafts only, in the first state's words
+    r = client.post("/api/v1/marketplace/listings", json={
+        "name": "W695 draft-gated listing", "description": "a listing the gate must meet", "author": "guard",
+        "category": "tool", "price_wst": 1, "vsb_id": s1})
+    if r.status_code == 409:
+        d = r.json()["detail"]
+        assert d["reason"] == "no_objectives" and d["missing_kpi"] == [] and "draft objective(s)" in d["detail"], d
+    else:
+        assert r.status_code in (400, 403, 404, 422), ("a listing was released for an entity whose only "
+                                                       "objectives are unmeasured drafts", r.status_code, r.text[:200])
+
+
+def test_w695_the_spawn_route_is_retired_behind_a_switch_and_its_code_is_kept(client, monkeypatch):
+    """OWNER RULING 2026-10-13: the entity spawn route is retired behind a switch, with its code kept. The default
+    is read from the SOURCE, because the suite's own fixture turns the switch off for the tests that guard the
+    kept code; the refusal is then driven with the switch on."""
+    import ast
+    import pathlib
+    from agentic_core.api import vsb as _vsb
+    root = pathlib.Path(__file__).resolve().parents[1]
+    tree = ast.parse((root / "agentic_core/api/vsb.py").read_text(encoding="utf-8"))
+    defaults = [n.value.value for n in tree.body if isinstance(n, ast.Assign)
+                and [getattr(t, "id", "") for t in n.targets] == ["SPAWN_ROUTE_RETIRED"]
+                and isinstance(n.value, ast.Constant)]
+    assert defaults == [True], ("the source does not retire the spawn route by default", defaults)
+
+    def _ids():
+        return {e.get("vsb_id") or e.get("id") for e in client.get("/api/v1/vsb").json().get("entities", [])}
+
+    body = {"challenge": "w695 retired door probe", "name": "W695 Retired Door", "domain": "commerce"}
+    monkeypatch.setattr(_vsb, "SPAWN_ROUTE_RETIRED", True)
+    before = _ids()
+    gone = client.post("/api/v1/vsb/spawn", json=body)
+    assert gone.status_code == 410, ("the retired route did not refuse", gone.status_code, gone.text[:200])
+    assert "Nothing was created" in gone.json()["detail"] and "Genesis" in gone.json()["detail"], gone.text[:300]
+    assert _ids() == before, "the retired route registered an entity while refusing"
+    #  refused before the parent check and before the stream: a request that would otherwise answer 409 gets 410
+    assert client.post("/api/v1/vsb/spawn", json=dict(body, parent_vsb="vsb-w695-no-such-parent")).status_code == 410
+    #  THE CODE IS KEPT: with the switch off the door works as it did
+    monkeypatch.setattr(_vsb, "SPAWN_ROUTE_RETIRED", False)
+    back = client.post("/api/v1/vsb/spawn", json=body)
+    assert back.status_code == 200 and "W695 Retired Door" in back.text, (back.status_code, back.text[:200])
+    assert len(_ids() - before) == 1, "the kept route no longer creates its entity"
+    #  NO PAGE CALLS IT - a page that did would now show a person a refusal
+    src = root / "apps/workstation-superapp/src"
+    callers = [p.relative_to(root).as_posix() for p in src.rglob("*.ts*")
+               if "/api/v1/vsb/spawn" in p.read_text(encoding="utf-8")]
+    #  one page names it, in a handler that is kept and that no control calls (its name appears once: its definition)
+    assert callers == ["apps/workstation-superapp/src/pages/enterprise/VSBSpawnStudio.tsx"], (
+        "a page other than the kept Spawn page names the retired spawn route", callers)
+    page = (root / callers[0]).read_text(encoding="utf-8")
+    assert page.count("handleSpawn") == 1 and page.count("/api/v1/vsb/spawn") == 1, (
+        "something on the Spawn page calls the retired route")
