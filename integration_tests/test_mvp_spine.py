@@ -64193,3 +64193,75 @@ def test_w699_a_reason_is_printed_where_it_is_read_and_never_left_in_a_tooltip(c
     model = cockpit.split('data-testid="cascade-edit-stage-model"', 1)[1].split("</span>\n            </span>", 1)[0]
     assert "title=" not in model.split(">", 1)[0] and 'data-testid="cascade-edit-stage-model-where"' in model
     assert "change it in the cascade designer on the Native AI page" in model
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W700 - one cause: a cut or a bound that is silent, uneven, or relied on by a later check.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w700_a_cut_is_never_silent_uneven_or_relied_on_by_a_later_check(client):
+    import ast
+    import json
+    import pathlib
+    import uuid as _uuid
+    from agentic_core.api import vsb as _vsb
+    from agentic_core.economy import owner_payments as _op
+    from agentic_core.economy import transfers as _tr
+    root = pathlib.Path(__file__).resolve().parents[1]
+    tag = _uuid.uuid4().hex[:6]
+
+    #  1. THE ENTITY'S REPOSITORY: a board of any size is written as JSON that parses, whole
+    r = client.post("/api/v1/genesis/establish", json={
+        "problem": f"w700 {tag} a village bakery cooperative selling bread", "name": f"W700 Cut Probe {tag}",
+        "domain": "enterprise", "ship_output": False})
+    assert r.status_code == 200, r.text[:300]
+    vid = r.json()["vsb_id"]
+    ent = dict(_vsb._load_vsb(vid))
+    ent["board"] = {"members": [{"name": f"member {i}", "role": "a seat held for the guard " * 3} for i in range(60)]}
+    assert len(json.dumps(ent["board"], indent=2)) > 4000
+    org = _vsb._build_repo_files(ent)["ORGANISATION.md"]
+    board_block = org.split("## Board\n```json\n", 1)[1].rsplit("\n```", 1)[0]
+    assert json.loads(board_block) == ent["board"], "the board in the repository is not the board, whole"
+    ceo_block = org.split("```json\n", 1)[1].split("\n```", 1)[0]
+    json.loads(ceo_block)
+    #  ... and no verdict's reason is sliced where the compliance record is written
+    tree = ast.parse((root / "agentic_core/api/vsb.py").read_text(encoding="utf-8"))
+    sliced = [n.lineno for n in ast.walk(tree) if isinstance(n, ast.Subscript) and isinstance(n.slice, ast.Slice)
+              and isinstance(n.value, ast.Subscript) and isinstance(n.value.slice, ast.Constant)
+              and n.value.slice.value == "reason" and getattr(n.value.value, "id", "") == "v"]
+    assert sliced == [], ("a verdict's reason is cut where it is written", sliced)
+
+    #  2. VENTURE CREDITS keep the bound transfers keep - and the bound is on the listed rows, never on the
+    #     ids that refuse a replay
+    inv = f"w700-investee-{tag}"
+    refs = [f"w700-{tag}-{i:03d}" for i in range(60)]
+    for ref in refs:
+        out = _tr.credit_venture_intake(inv, 1.0, ref)
+        assert out.get("credited") is True, out
+    rec = _tr._read_pending()[inv]
+    assert len(rec["transfers"]) == 50 and rec["transfers"][-1]["ref"] == refs[-1], len(rec["transfers"])
+    assert round(rec["pending_wst"], 2) == 60.0 and len(rec["credited_ids"]) == 60, (rec["pending_wst"], len(rec["credited_ids"]))
+    for ref in (refs[0], refs[9], refs[-1]):                 # one whose row was dropped, one more, one kept
+        again = _tr.credit_venture_intake(inv, 1.0, ref)
+        assert again["credited"] is False and again["reason"] == "already_credited", again
+    assert round(_tr._read_pending()[inv]["pending_wst"], 2) == 60.0, "a replay of a dropped row credited again"
+
+    #  3. OWNER PAYMENTS: a missed accrual that was applied is still recognised after its entry is cut
+    acct = f"w700-acct-{tag}"
+    row = _op.record_missed(acct, 7.0, "Amina Guard", "a missed cycle share", "driven by the guard")
+    rid = row["id"]
+    _op.accrue(acct, 7.0, "Amina Guard", memo="applied by an attempt that died before clearing", ref=rid, simulated=False)
+    for _ in range(_op._KEEP_ENTRIES):
+        _op.accrue(acct, 1.0, "Amina Guard", memo="later cycle", simulated=False)
+    stored = _op._read()[acct]
+    assert not any((e or {}).get("ref") == rid for e in stored["entries"]), "the entry was not cut, so the leg proves nothing"
+    assert rid in stored["applied_refs_dropped"], stored.get("applied_refs_dropped")
+    before = _op.status(acct)["accrued_total_wst"]
+    out = _op.reconcile_missed(acct)
+    assert [x["id"] for x in out["already_applied"]] == [rid] and out["applied"] == [], out
+    assert _op.status(acct)["accrued_total_wst"] == before, "a missed accrual was applied a second time after its entry was cut"
+    said = json.dumps(_op.status(acct))
+    assert "is still recognised as applied" in said and "(1 on this account)" in said, said[-400:]
+    #  a reference is kept once, however many times the cut runs
+    for _ in range(3):
+        _op.accrue(acct, 1.0, "Amina Guard", memo="later cycle", simulated=False)
+    assert _op._read()[acct]["applied_refs_dropped"].count(rid) == 1

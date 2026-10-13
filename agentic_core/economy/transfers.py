@@ -810,13 +810,16 @@ def credit_venture_intake(investee_id: str, amount: float, ref: str, memo: str =
                     "investee_id": investee_id, "amount_wst": amount,
                     "pending_wst": round(rec.get("pending_wst", 0.0), 2)}
         rec["pending_wst"] = round(rec.get("pending_wst", 0.0) + amount, 2)
-        rec.setdefault("transfers", []).append({
+        #  W700 - the same bound the transfer writer above keeps (the last fifty rows). This writer appended
+        #  without one, so one record grew for ever and the other did not. The bound is on the LISTED rows
+        #  only: `credited_ids` below is what refuses a replay, and it is not cut.
+        rec["transfers"] = (rec.get("transfers") or [])[-49:] + [{
             "ref": ref, "amount_wst": amount, "at": _now(), "kind": "venture_position",
             "memo": memo or "§12 reinvestment - a venture position funding this entity",
             # the fact a reader needs and could not otherwise recover: this credit has NO matching debit
             # here, because the investor's debit was the waterfall distribution that created the position.
             "debit_side": "the investor's user_projects distribution (already posted); no second debit",
-        })
+        }]
         if ref:
             credited.append(ref)
             rec["credited_ids"] = credited
