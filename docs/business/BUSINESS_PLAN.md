@@ -1,10 +1,10 @@
 # Workstation - business plan for Workstation itself
 
-**DRAFT until the Owner ratifies it.** It is written from the whole vision
+**Ratified by the Owner on 2026-10-13**, whole and without change. It is written from the whole vision
 (`docs/WORKSTATION_IDBO_WHOLE_VISION.md`), the Owner's own canon, in the order the vision gives a plan:
-executive summary, concept, vision, mission, strategy, aims, objectives. Nothing here enters the product's own
-plan as the Owner's words; the Owner enters what they agree with through the plan's own edit page (ruling of
-2026-10-10).
+executive summary, concept, vision, mission, strategy, aims, objectives. A change to this text from here on
+needs the Owner's word. Ratifying it did not enter it into the product's own plan; the Owner enters that
+through the plan's own edit page (ruling of 2026-10-10).
 
 **How to read the tags.** Each statement ends with one tag: [owner-defined] the Owner said it, in the vision or
 in a ruling · [observed] true of the product today · [inference] reasoned, not measured · [hypothesis] to be
