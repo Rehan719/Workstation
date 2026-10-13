@@ -184,6 +184,14 @@ async def _q(prompt: str, agent: str, user_text: str | None = None) -> str:
         return f"[{agent} unavailable: {e}]"
 
 
+@router.get("/price")
+async def genesis_price(non_distributing: bool = False):
+    """What generating an entity costs, and what is charged now: nothing (OWNER RULING 2026-10-13). It states;
+    it posts nothing and calls no payment provider."""
+    from agentic_core.economy.generation_price import statement
+    return statement(non_distributing=non_distributing)
+
+
 @router.get("/status")
 async def genesis_status():
     return {

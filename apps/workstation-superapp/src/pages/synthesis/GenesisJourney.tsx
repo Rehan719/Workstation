@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { GenerationPrice } from '../../components/GenerationPrice';
 import { qmsChip, provenanceMapBadge, complianceChip, layerTitle, immuneReading } from '../../lib/api';
 import { REALMS as CANON_REALMS, DOMAINS as CANON_DOMAINS, PRODUCTS, PRODUCT_LABELS } from '../../lib/taxonomy';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -576,6 +577,9 @@ export const GenesisJourney: React.FC = () => {
           gaas.v5 intent gate — a blueprint you can establish as a living VSB.
         </p>
       </header>
+
+      {/* the price of generating an entity, and that nothing is charged yet - in the server's words */}
+      <GenerationPrice />
 
       {/* Whole-journey progress map (§4 / §9) — the full Concept→Commercialisation arc + where you are now.
           Each milestone lights from REAL state (no fabrication): described → explored → established →
