@@ -111,6 +111,12 @@ def _cut_entries(a: Dict[str, Any]) -> None:
         return
     before = a.get("entries_dropped")
     a["entries_dropped"] = (before if isinstance(before, int) and not isinstance(before, bool) else 0) + over
+    #  W700 - the reconcile below recognises a missed accrual as ALREADY APPLIED by finding its reference among
+    #  the entries. Once the entry was cut the reference was gone, and the same accrual could be applied a
+    #  second time. The references of the entries being dropped are kept on the account, outside the cut.
+    _refs = [e.get("ref") for e in a["entries"][:over] if isinstance(e, dict) and e.get("ref")]
+    if _refs:
+        a["applied_refs_dropped"] = [r for r in (a.get("applied_refs_dropped") or []) if r not in _refs] + _refs
     a["entries"] = a["entries"][-_KEEP_ENTRIES:]
     first = a["entries"][0] if a["entries"] else {}
     a["entries_kept_from"] = first.get("at") if isinstance(first, dict) else None
@@ -128,8 +134,9 @@ def _history(a: Dict[str, Any]) -> Dict[str, Any]:
         basis = (f"TRUNCATED: {dropped} older entr{'y was' if dropped == 1 else 'ies were'} dropped (an account "
                  f"keeps its last {_KEEP_ENTRIES}); the stored history starts at "
                  f"{a.get('entries_kept_from') or 'a time that was not recorded'}. The accrued and paid-out totals "
-                 f"are running totals and are not affected; a dropped entry can no longer be listed, and a missed "
-                 f"accrual whose entry was dropped can no longer be recognised as already applied.")
+                 f"are running totals and are not affected; a dropped entry can no longer be listed. The "
+                 f"reference of a dropped accrual is kept ({len(a.get('applied_refs_dropped') or [])} on this "
+                 f"account), so a missed accrual that was applied is still recognised as applied.")
     elif stored >= _KEEP_ENTRIES:
         truncated = None
         basis = (f"POSSIBLY TRUNCATED: the account holds the maximum of {_KEEP_ENTRIES} entries and no drop count "
@@ -228,7 +235,8 @@ def reconcile_missed(vsb_id: str | None = None) -> Dict[str, Any]:
             continue
         rid = row.get("id")
         acct = accounts.get(row.get("vsb_id")) or {}
-        if any((e or {}).get("ref") == rid for e in (acct.get("entries") or [])):
+        if (rid in (acct.get("applied_refs_dropped") or [])
+                or any((e or {}).get("ref") == rid for e in (acct.get("entries") or []))):
             out["already_applied"].append({"id": rid, "amount_wst": row.get("amount_wst")})
             changed = True
             continue

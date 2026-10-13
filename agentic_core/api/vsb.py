@@ -292,9 +292,12 @@ def _build_repo_files(vsb: dict) -> dict:
                             #  W635 (FU-579) - the field holds the commercialisation text the founder gave, not a
                             #  CEO charter; it is labelled as what it is
                             #  ledger v17 R2.1 - the label and the text are derived together, from now
+                            #  W700 - both blocks were cut at 2,000 characters INSIDE a json fence, so a board
+                            #  of any size shipped as text that does not parse and said nothing about it. They
+                            #  are written whole: a repository file is not a line of a prompt.
                             f"{_ceo_handed(vsb)['note']}\n```json\n"
-                            f"{json.dumps(_ceo_handed(vsb)['value'] or {}, indent=2)[:2000]}\n```\n\n"
-                            f"## Board\n```json\n{json.dumps(vsb.get('board') or {}, indent=2)[:2000]}\n```\n")
+                            f"{json.dumps(_ceo_handed(vsb)['value'] or {}, indent=2)}\n```\n\n"
+                            f"## Board\n```json\n{json.dumps(vsb.get('board') or {}, indent=2)}\n```\n")
     f["resources/cascades.json"] = json.dumps({"native_swarm": vsb.get("native_swarm"),
                                                "swarm_config": vsb.get("swarm_config")}, indent=2)[:6000]
     f["compliance/QUALITY.md"] = ("# Compliance & Quality Record\n\nThe living QMS quality record (gate · "
@@ -501,7 +504,9 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
         f"{_q.get('qms_non_conformance_rate') if _q.get('qms_non_conformance_rate') is not None else 'not measured (0 gates run)'}\n"
         f"- Document-control seal: {_q.get('quality_record_hash')}\n\n"
         f"## §11 Compliance ({_comp.get('overall', 'unscreened')})\n"
-        + "".join(f"- {v['framework']}: {v['status']} — {v['reason'][:160]}\n"
+        #  W700 - the reason was cut at 160 characters with no mark, in the file that records why a screen
+        #  failed. It is written whole, on one line.
+        + "".join(f"- {v['framework']}: {v['status']} — {' '.join(str(v['reason']).split())}\n"
                   for v in (_comp.get("verdicts") or []))
         + "\nRe-screened continuously when the organism's auto_compliance beat is enabled (W288).\n")
     written = []
