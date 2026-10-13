@@ -39,7 +39,7 @@ from pathlib import Path
 from agentic_core.config import data_path
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 
@@ -225,10 +225,28 @@ def _user_for_api_key(raw_key: str) -> dict | None:
     return None
 
 
-async def get_current_user(token: Optional[str] = Depends(_oauth2_scheme)) -> dict | None:
+READ_ONLY_ROLE = "viewer"
+READING_METHODS = ("GET", "HEAD", "OPTIONS")
+
+
+def _refuse_a_write_by_a_reader(user: dict, request) -> None:
+    """THE READ-ONLY ROLE, AT THE FLOOR. Every route that asks who is calling passes through the caller
+    dependency, so the refusal lives here and no route has to remember it. A reader may read; anything that is
+    not a reading method is refused before the handler runs. It covers exactly the routes that ask - which the
+    perimeter check keeps at every route that is not declared public."""
+    if request is None or not isinstance(user, dict) or user.get("role") != READ_ONLY_ROLE:
+        return
+    if str(getattr(request, "method", "GET")).upper() not in READING_METHODS:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=(
+            "This account can read and cannot change anything: its role is read-only."))
+
+
+async def get_current_user(token: Optional[str] = Depends(_oauth2_scheme), request: Request = None) -> dict | None:
     """
     Returns the current user dict, or None if auth is disabled.
     Raises 401 if auth is enabled and the token is missing or invalid.
+    `request` is supplied by the framework on a real request; a direct call from code passes none, and then
+    there is no method to judge and nothing is refused here.
     """
     if not auth_enabled():
         return None
@@ -247,6 +265,7 @@ async def get_current_user(token: Optional[str] = Depends(_oauth2_scheme)) -> di
         if not user:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="API key not recognised.",
                                 headers={"WWW-Authenticate": "Bearer"})
+        _refuse_a_write_by_a_reader(user, request)
         return user
 
     payload = _decode_token(token)
@@ -259,6 +278,7 @@ async def get_current_user(token: Optional[str] = Depends(_oauth2_scheme)) -> di
     if not user:
         raise HTTPException(status_code=401, detail="User not found.")
 
+    _refuse_a_write_by_a_reader(user, request)
     return user
 
 

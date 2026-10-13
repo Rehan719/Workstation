@@ -540,6 +540,160 @@
    "read_on": "2026-10-12",
    "read_by": "round W681, in a browser",
    "says": "ISO/IEC 25010:2023, edition 2, published 2023-11, status Published. The 2011 edition is WITHDRAWN. NOT READ: the standard's text."
+  },
+  {
+   "id": "tanzil-text-licence",
+   "names": [
+    "tanzil.net",
+    "Tanzil"
+   ],
+   "kind": "data licence",
+   "nation": [
+    "any"
+   ],
+   "status": "current",
+   "page": "https://tanzil.net/docs/text_license",
+   "read_on": "2026-10-12",
+   "read_by": "round W683, by the delivery assistant through a fetch that summarises the page",
+   "says": "Creative Commons Attribution 3.0 with added conditions: verbatim copies only - changing the text is not allowed; credit the Tanzil Project and link to tanzil.net; keep the copyright notice in copies and derived files. Bundling in an application is allowed on those conditions. The page does not mention commercial use.",
+   "not_read": "the page's exact wording character for character; the Tanzil translations page's separate terms",
+   "used_by": [
+    "agentic_core/religious_domain/api.py"
+   ]
+  },
+  {
+   "id": "quran-foundation-developer-terms",
+   "names": [
+    "Quran Foundation",
+    "quran.com"
+   ],
+   "kind": "provider terms",
+   "nation": [
+    "any"
+   ],
+   "status": "current",
+   "page": "https://api-docs.quran.foundation/legal/developer-terms/",
+   "read_on": "2026-10-12",
+   "read_by": "round W683, by the delivery assistant through a fetch that summarises the page",
+   "says": "Shown as last updated 2026-10-11. Content includes Quran text, translations, metadata, audio and reflections. Nothing may be cached or stored longer than one week except through the Content Sync route or as a font file or mushaf image; no prepackaged database. Free, donation-funded, paid and advertising-funded apps are allowed; the content may not be sold, sublicensed or redistributed. Building machine-learning models from the content or user data needs written consent. Audio calls need credentials held on a server; production use needs approval.",
+   "not_read": "the privacy guidelines; whether the audio files' own addresses may be fetched without credentials; the terms' full text"
+  },
+  {
+   "id": "alquran-cloud-terms",
+   "names": [
+    "alquran.cloud"
+   ],
+   "kind": "provider terms",
+   "nation": [
+    "any"
+   ],
+   "status": "current",
+   "page": "https://alquran.cloud/terms-and-conditions",
+   "read_on": "2026-10-12",
+   "read_by": "one research reader through a fetch that summarises the page; NOT re-read",
+   "says": "Shown as last updated 14 June 2026. No key; a soft limit per address; caching encouraged. Credit Tanzil and Quran Academy, and name translators. Recitations are described as free for non-commercial redistribution. The reader's summary was inconsistent on commercial use.",
+   "not_read": "the page itself by a second reader - re-read before any audio from this source is used",
+   "used_by": [
+    "agentic_core/religious_domain/api.py"
+   ]
+  },
+  {
+   "id": "tarteel-recordings-help",
+   "names": [
+    "Tarteel"
+   ],
+   "kind": "product page",
+   "nation": [
+    "any"
+   ],
+   "status": "current",
+   "page": "https://support.tarteel.ai/en/articles/12414465-who-can-access-my-recordings",
+   "read_on": "2026-10-12",
+   "read_by": "round W683, by the delivery assistant through a fetch that summarises the page",
+   "says": "Recordings are used to train the product's model; only paying users can choose whether to take part; otherwise recordings are not listened to unless shared; a user can delete their recordings.",
+   "not_read": "the product's privacy policy (the page returned no text) and its terms (empty)"
+  },
+  {
+   "id": "tarteel-qul-data",
+   "names": [
+    "Quranic Universal Library",
+    "QUL"
+   ],
+   "kind": "data licence",
+   "nation": [
+    "any"
+   ],
+   "status": "current",
+   "page": "https://qul.tarteel.ai/",
+   "read_on": "2026-10-12",
+   "read_by": "one research reader; NOT re-read",
+   "says": "The library offers mushaf page layouts, recitations with word timings, similar-verse lists, morphology and fonts. Its code repository is under an open licence. NO licence for the DATA was found on any page read.",
+   "not_read": "any terms for the data - none was found. NOT TO BE USED until written permission is held (a letter is drafted for the Owner to send)"
+  },
+  {
+   "id": "kfgqpc-recitations-fonts",
+   "names": [
+    "King Fahd Glorious Qur'an Printing Complex",
+    "KFGQPC"
+   ],
+   "kind": "provider terms",
+   "nation": [
+    "any"
+   ],
+   "status": "named_not_read",
+   "says": "NOT READ. A search summary says recordings are offered for free general use in applications and websites; that is a summary of a page nobody here opened.",
+   "not_read": "everything. NOT TO BE USED until the page is read or written permission is held (a letter is drafted for the Owner to send)",
+   "where_to_read": "https://qurancomplex.gov.sa/"
+  },
+  {
+   "id": "everyayah-audio",
+   "names": [
+    "everyayah.com",
+    "EveryAyah"
+   ],
+   "kind": "data licence",
+   "nation": [
+    "any"
+   ],
+   "status": "current",
+   "page": "https://everyayah.com/",
+   "read_on": "2026-10-12",
+   "read_by": "one research reader; NOT re-read",
+   "says": "No licence, terms or statement of source was found on the home page. The rights in a recitation usually rest with the reciter or the recording company.",
+   "not_read": "any terms - none was found. NOT TO BE USED"
+  },
+  {
+   "id": "cpfair-quran-data",
+   "names": [
+    "quran-align",
+    "quran-tajweed"
+   ],
+   "kind": "data licence",
+   "nation": [
+    "any"
+   ],
+   "status": "current",
+   "page": "https://github.com/cpfair/quran-align",
+   "read_on": "2026-10-12",
+   "read_by": "one research reader; NOT re-read",
+   "says": "Word-timing data files and tajweed annotation data are stated to be under Creative Commons Attribution 4.0. The timings do not license the recordings they were made from.",
+   "not_read": "the licence files themselves; which reciters the timings cover"
+  },
+  {
+   "id": "ico-biometric-voice",
+   "names": [
+    "ICO biometric data guidance"
+   ],
+   "kind": "regulator guidance",
+   "nation": [
+    "England, Wales, Scotland"
+   ],
+   "status": "current",
+   "page": "https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/lawful-basis/biometric-data-guidance-biometric-recognition/key-data-protection-concepts/",
+   "read_on": "2026-10-12",
+   "read_by": "one research reader; NOT re-read",
+   "says": "A voice recording is biometric data only where specific technical processing allows a person to be uniquely identified, and special category only when used to identify. This is the reader's summary and is not legal advice.",
+   "not_read": "the page by a second reader; the children's code standards in full"
   }
  ]
 }

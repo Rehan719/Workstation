@@ -62630,3 +62630,160 @@ def test_w685_the_ranking_of_learners_is_retired_and_its_code_is_kept(client, mo
     monkeypatch.setattr(_q, "LEADERBOARD_RETIRED", False)
     kept = client.get("/api/v1/qep/leaderboard")
     assert kept.status_code == 200 and "leaderboard" in kept.json() and kept.json().get("population_basis")
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W686 - OWNER RULING 2026-10-12: a learner's record on the Quran platform is KEPT and SAID to be unverified,
+#  on every answer that carries a learner's id, by one function.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w686_every_answer_that_carries_a_learners_id_says_the_id_is_not_a_verified_person(client, monkeypatch):
+    import uuid as _uuid
+    import agentic_core.religious_domain.api as _q
+    uid = f"w686-{_uuid.uuid4().hex[:8]}"
+    answers = {
+        "schedule": client.post("/api/v1/qep/hifz/schedule", json={"uid": uid, "surah_number": 1, "ayaat_range": [1, 1]}),
+        "review": client.post("/api/v1/qep/hifz/review", json={"uid": uid, "ayah_ref": "1:1", "quality": 4}),
+        "progress": client.get(f"/api/v1/qep/hifz/progress/{uid}"),
+        "state": client.get(f"/api/v1/qep/gamification/{uid}"),
+        "portion": client.post("/api/v1/qep/hifz/portion", json={"uid": uid, "track": "new_lesson", "unit": "page", "start": 1, "end": 1}),
+        "portions": client.get(f"/api/v1/qep/hifz/portions/{uid}"),
+    }
+    said = set()
+    for name, r in answers.items():
+        assert r.status_code == 200, (name, r.status_code, r.text[:200])
+        body = r.json()
+        assert body.get("uid") == uid, name
+        assert body.get("identity_verified") is False, f"{name} does not say the record is unverified"
+        basis = body.get("identity_basis") or ""
+        assert repr(uid) in basis and "not tied to a verified person" in basis, (name, basis)
+        assert "authentication is off on this deployment" in basis, (name, basis)
+        said.add(basis)
+    assert len(said) == 1, "the six answers word whose record this is differently"
+    assert said == {_q._identity(uid)["identity_basis"]}, "an answer words it itself instead of using the one function"
+    #  THE LIST ABOVE IS CHECKED AGAINST THE MOUNTED ROUTES, so a learner route added later cannot be left out:
+    #  every route of the platform whose path takes a learner's id is one of the routes driven here
+    from agentic_core.app_mvp import app as _app
+    with_uid = sorted(r.path for r in _app.routes if getattr(r, "path", "").startswith("/api/v1/qep/") and "{uid}" in r.path)
+    assert with_uid == ["/api/v1/qep/gamification/{uid}", "/api/v1/qep/hifz/portions/{uid}", "/api/v1/qep/hifz/progress/{uid}"], with_uid
+    #  the one learner route that answers with no id is the refused award, and it carries nothing of a learner
+    refused = client.post("/api/v1/qep/gamification/award", json={"uid": uid, "achievement": "daily_review", "xp": 5})
+    assert refused.status_code == 409 and set(refused.json()) == {"detail"}
+    #  with authentication ON the sentence stops saying it is off (driven in this process only)
+    monkeypatch.setattr(_q, "_auth_on", lambda: True)
+    on = _q._identity(uid)["identity_basis"]
+    assert "authentication is off" not in on and "not tied to a verified person" in on
+    monkeypatch.undo()
+    #  the page shows the server's sentence where the plan is kept, as it already does beside the reviews
+    _root = __import__("pathlib").Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "components"
+    panel = (_root / "HifzPractice.tsx").read_text(encoding="utf-8")
+    assert "{plan && plan.identity_verified === false && plan.identity_basis && (" in panel and panel.count("{plan.identity_basis}") == 1
+    studio = (_root / "QEPStudio.tsx").read_text(encoding="utf-8")
+    assert "{progress.identity_verified === false && progress.identity_basis && (" in studio
+
+
+def test_w686_the_read_only_role_is_refused_every_write_and_no_read(client, monkeypatch):
+    #  DRIVEN over the instrument's own rows, never a list: authentication is on in THIS process only, a reader
+    #  signs in, and every route that asks who is calling is called with the reader's token.
+    import re as _re
+    import importlib.util as _ilu
+    from agentic_core.auth import core as auth_core
+    if not auth_core._AUTH_DEPS_OK:
+        import pytest as _pytest
+        _pytest.skip("auth crypto deps not installed")
+    _spec = _ilu.spec_from_file_location("auth_perimeter_w686", str(__import__("pathlib").Path(__file__).resolve().parents[1] / "scripts" / "auth_perimeter.py"))
+    ap = _ilu.module_from_spec(_spec)
+    _spec.loader.exec_module(ap)
+    users = auth_core._load_users()
+    for uname, role in (("reader-686", "viewer"), ("writer-686", "user")):
+        users[uname] = {"user_id": uname, "username": uname, "hashed_password": auth_core._pwd_ctx.hash("pw-" + uname),
+                        "role": role, "created_at": "2026-01-01T00:00:00Z", "api_keys": []}
+    auth_core._save_users(users)
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+
+    def _token(u):
+        r = client.post("/api/v1/auth/token", data={"username": u, "password": "pw-" + u})
+        assert r.status_code == 200, r.text
+        return {"Authorization": f"Bearer {r.json()['access_token']}"}
+    reader, writer = _token("reader-686"), _token("writer-686")
+    rows, _names, _has = ap.measure()
+    asking = [r for r in rows if r["state"] == "asks"]
+    writes = [r for r in asking if r["writes"]]
+    reads = [r for r in asking if not r["writes"]]
+    assert len(writes) > 150 and len(reads) > 150, (len(writes), len(reads))
+    READ_ONLY = "its role is read-only"
+    let_through = []
+    for r in writes:
+        got = client.request(r["method"], _re.sub(r"\{[^}]+\}", "x", r["path"]), headers=reader)
+        if got.status_code != 403 or READ_ONLY not in got.text:
+            let_through.append(f"{r['method']} {r['path']} -> {got.status_code}")
+    assert not let_through, f"a reader's write was not refused as read-only: {let_through[:25]}"
+    #  ... and no READ is refused for being a reader's (an administrator-only read is still 403, in its own words)
+    #  THE READS ARE NOT ALL CALLED: with a valid token a read route really runs, and some of them stream or do
+    #  slow work (the first form of this leg hung the run on one). The rule is one function, so it is driven
+    #  directly for every reading method, and three ordinary reads are made through real requests.
+    reader_user = auth_core._get_user("reader-686")
+
+    class _Req:
+        def __init__(self, method):
+            self.method = method
+    for method in auth_core.READING_METHODS:
+        auth_core._refuse_a_write_by_a_reader(reader_user, _Req(method))          # raises nothing
+        auth_core._refuse_a_write_by_a_reader(reader_user, _Req(method.lower()))
+    assert {r["method"] for r in reads} <= set(auth_core.READING_METHODS), "an asking route counted as a read uses a method the rule refuses"
+    assert not ({r["method"] for r in writes} & set(auth_core.READING_METHODS))
+    wrongly = []
+    for path in ("/api/v1/auth/me", "/api/v1/plan/state", "/api/v1/qep/gamification/reader-686"):
+        got = client.get(path, headers=reader)
+        if got.status_code != 200 or READ_ONLY in got.text:
+            wrongly.append(f"GET {path} -> {got.status_code}")
+    assert not wrongly, f"a reader was refused a READ: {wrongly}"
+    #  an ordinary account's write is not refused by this rule
+    w = client.post("/api/v1/auth/api-key", headers=writer)
+    assert w.status_code == 200 and READ_ONLY not in w.text
+    #  a reader's own key is the same reader: it reads, and its write is refused the same way
+    users = auth_core._load_users()
+    import secrets as _secrets
+    raw_key = f"{auth_core.API_KEY_MARK}{_secrets.token_hex(24)}"
+    users["reader-686"]["api_keys"].append({"key_id": "k686", "key_prefix": raw_key[:auth_core.API_KEY_PREFIX_LEN],
+                                           "hashed_key": auth_core._pwd_ctx.hash(raw_key), "created_at": "2026-01-01T00:00:00Z"})
+    auth_core._save_users(users)
+    by_key = {"Authorization": f"Bearer {raw_key}"}
+    assert client.get("/api/v1/auth/me", headers=by_key).json()["role"] == "viewer"
+    refused = client.post("/api/v1/auth/api-key", headers=by_key)
+    assert refused.status_code == 403 and READ_ONLY in refused.text
+    #  a direct call from code, with no request, has no method to judge and refuses nothing
+    import asyncio as _aio
+    tok = reader["Authorization"].split(" ", 1)[1]
+    assert _aio.new_event_loop().run_until_complete(auth_core.get_current_user(tok))["role"] == "viewer"
+
+
+def test_the_windows_job_runs_the_same_suite_and_is_advisory_and_gates_nothing():
+    #  OWNER RULING 2026-10-12: the suite also runs on Windows on the build server, ADVISORY until three green
+    #  rounds. Read as DATA: the workflow is parsed, and the two jobs are compared field by field so they cannot
+    #  drift apart while one of them is still only advisory.
+    import yaml as _yaml
+    wf = _yaml.safe_load((__import__("pathlib").Path(__file__).resolve().parents[1] / ".github" / "workflows" / "spine.yml").read_text(encoding="utf-8"))
+    jobs = wf["jobs"]
+    assert "backend-windows" in jobs, "the Windows job is gone"
+    win, lin = jobs["backend-windows"], jobs["backend"]
+    assert win["runs-on"] == "windows-latest" and lin["runs-on"] == "ubuntu-latest"
+    assert win.get("continue-on-error") is True, (
+        "the Windows job is no longer advisory - that is the Owner's step to take after three green rounds, "
+        "and when it is taken this line and the plan's count change together")
+    assert not lin.get("continue-on-error"), "the gate itself was made advisory"
+
+    def runs(job):
+        return [" ".join(str(s["run"]).split()) for s in job["steps"] if "run" in s]
+    assert runs(win)[-1] == runs(lin)[-1] == "python -m pytest integration_tests -q -n 4", (runs(win)[-1], runs(lin)[-1])
+
+    def installs(job):
+        text = "\n".join(str(s["run"]) for s in job["steps"] if "run" in s)
+        return sorted(" ".join(l.split("#")[0].split()) for l in text.splitlines() if l.strip().startswith(("pip install", "python -m pip install")))
+    assert installs(win) == installs(lin), (installs(win), installs(lin))
+    #  an advisory job gates nothing: no job waits on it
+    waited_on = {n for j in jobs.values() for n in ([j["needs"]] if isinstance(j.get("needs"), str) else (j.get("needs") or []))}
+    assert "backend-windows" not in waited_on
+    #  both check out the whole history (the suite walks commits)
+    for job in (win, lin):
+        co = next(s for s in job["steps"] if str(s.get("uses", "")).startswith("actions/checkout"))
+        assert (co.get("with") or {}).get("fetch-depth") == 0

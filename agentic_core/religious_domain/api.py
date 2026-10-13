@@ -163,6 +163,19 @@ def _auth_on() -> bool:
         return False
 
 
+def _identity(uid: str) -> dict:
+    """WHOSE RECORD THIS IS, said on EVERY answer that carries a learner's id (OWNER RULING 2026-10-12: the
+    record is kept, and said to be unverified; it is offered to no one else until sign-in exists, and is then
+    the learner's to export and delete). One function, so no answer can say it differently or not at all."""
+    return {
+        "identity_verified": False,
+        "identity_basis": (f"this record is keyed by the id the caller sent ({uid!r}). It is not tied to a "
+                           f"verified person: no identity is checked on these routes"
+                           + ("" if _auth_on() else ", and authentication is off on this deployment")
+                           + ". Anyone who sends the same id reads and writes the same record."),
+    }
+
+
 def _hifz_path(uid: str) -> Path:
     return _HIFZ_STORE / f"{_safe_uid(uid)}.json"
 
@@ -725,6 +738,7 @@ async def hifz_schedule(req: HifzScheduleRequest):
         _save_hifz(req.uid, hifz)
     return {
         "uid": req.uid,
+        **_identity(req.uid),
         "surah_number": req.surah_number,
         "ayaat_scheduled": len(schedule),
         "schedule": schedule,
@@ -837,6 +851,7 @@ async def hifz_review(req: HifzReviewRequest):
 
     return {
         "uid": req.uid,
+        **_identity(req.uid),
         "ayah_ref": req.ayah_ref,
         "quality": req.quality,
         "new_interval_days": new_interval,
@@ -871,11 +886,8 @@ async def hifz_progress(uid: str):
         "progress_matrix": hifz.get("cards", {}),
         #  W648 (FU-627; Owner ruling 2026-10-09 late: no workaround is built, the page says so) - WHOSE
         #  RECORD THIS IS. It is keyed by the id the caller sent, and no identity is checked on these routes.
-        "identity_verified": False,
-        "identity_basis": (f"this record is keyed by the id the caller sent ({uid!r}). It is not tied to a "
-                           f"verified person: no identity is checked on these routes"
-                           + ("" if _auth_on() else ", and authentication is off on this deployment")
-                           + ". Anyone who sends the same id reads and writes the same record."),
+        #  W686 - said by the one function every learner answer uses.
+        **_identity(uid),
     }
 
 
@@ -1005,7 +1017,7 @@ async def hifz_set_portion(req: PortionRequest):
         portions[req.track] = entry
         _save_hifz(req.uid, hifz)
     return {"uid": req.uid, "track": req.track, "portion": entry, "proposed_by_platform": False,
-            "defaults_basis": _NO_DEFAULTS, "identity_verified": False,
+            "defaults_basis": _NO_DEFAULTS, **_identity(req.uid),
             "set_by_basis": "who set this is what the caller stated; no identity is checked on these routes"}
 
 
@@ -1018,7 +1030,7 @@ async def hifz_portions(uid: str):
             "tracks_set": sum(1 for t in _practice.TRACKS if portions.get(t)),
             "proposed_by_platform": False, "defaults_basis": _NO_DEFAULTS,
             "earlier_portions_kept": len(hifz.get("portion_history") or []),
-            "identity_verified": False}
+            **_identity(uid)}
 
 
 # ── Tajweed ───────────────────────────────────────────────────────────────────
@@ -1181,7 +1193,7 @@ async def get_gamification(uid: str):
     (get_learner_state/award_achievement), so it ALWAYS fell to a zeros dict: every learner read
     xp 0, level 1, streak 0 forever, whatever they had done. State now comes from the persisted
     award store, and every derived figure (level, streak) carries its formula."""
-    return _gami_state(_load_gami(uid))
+    return {**_gami_state(_load_gami(uid)), **_identity(uid)}
 
 
 _RESERVED_ACHIEVEMENT_PREFIXES = ("hafiz", "hifz", "surah_complete", "ayah_memorised", "ayah_memorized",
