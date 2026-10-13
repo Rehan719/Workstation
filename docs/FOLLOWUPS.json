@@ -20950,7 +20950,8 @@
       "slot": "P5.1",
       "status": "open",
       "closed_by": null,
-      "note": ""
+      "note": "",
+      "slot_source": "it is a fault of the build job, and the stall of the parallel suite already sits on this item"
     }
   ],
   "routes": [
