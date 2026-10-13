@@ -702,8 +702,9 @@ async def orchestrate_objective(oid: str, req: OrchestrateRequest, user: dict | 
                      "consensus": tree.get("consensus"), "governance": tree.get("governance"),
                      "validation": tree.get("validation"), "signal_response": tree.get("signal_response"),
                      "ueg_hash": tree.get("ueg_hash"), "final": tree.get("final"),
-                     "nodes": [{**_reply_evidence(n.get('served_by')), "id": n.get("id"), "role": n.get("role"),
-                                "served_by": n.get("served_by"), "is_external": n.get("is_external")}
+                     "nodes": [{"id": n.get("id"), "role": n.get("role"),
+                                "served_by": n.get("served_by"), "is_external": n.get("is_external"),
+                                **_reply_evidence(n.get("served_by"))}
                                for n in (tree.get("nodes") or [])],
                      "any_external": tree.get("any_external")}}
 

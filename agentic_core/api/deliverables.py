@@ -25,6 +25,7 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from agentic_core.api._ai_provenance import reply_evidence as _reply_evidence   # W709
+from agentic_core.api._ai_provenance import no_reply_evidence as _no_reply_evidence   # W709: supplied, not served
 from fastapi.responses import Response
 from pydantic import BaseModel
 
@@ -279,7 +280,7 @@ async def produce(req: ProduceRequest, user: dict | None = Depends(get_current_u
                "structure_basis": (("the sections were read from the supplied text's own headings, so its "
                                     "coverage of them is 1.0 by construction; declare the sections it should "
                                     "have and it is measured against those") if _self_derived else None),
-               "ai_provenance": {**_reply_evidence(), "served_by": "verbatim-ingest", "is_external": False,
+               "ai_provenance": {**_no_reply_evidence(), "served_by": "verbatim-ingest", "is_external": False,
                                  "source_served_by": req.source_served_by,
                                  "note": "content supplied verbatim by the caller — not regenerated"}}
     else:
@@ -1127,7 +1128,7 @@ async def regenerate(deliverable_id: str, req: RegenerateRequest,
                 gen = {"content": req.content, "sections": sections or [
                            m.group(1).strip() for m in
                            re.finditer(r"^#{1,2}\s+(.+)$", req.content, flags=re.M)][:24],
-                       "ai_provenance": {**_reply_evidence(), "served_by": "verbatim-ingest", "is_external": False,
+                       "ai_provenance": {**_no_reply_evidence(), "served_by": "verbatim-ingest", "is_external": False,
                                          "source_served_by": req.source_served_by,
                                          "note": "refined content supplied verbatim — not regenerated"}}
             else:
