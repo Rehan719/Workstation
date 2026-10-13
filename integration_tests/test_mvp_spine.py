@@ -64319,3 +64319,88 @@ def test_w701_the_list_says_what_the_single_record_says(client, monkeypatch):
     monkeypatch.setattr(_lv, "living_statement", lambda: {"autonomous_cycles": True})
     status, basis = _vsb._derived_status({"body_pending": {}, "body_absent": none_given})
     assert status == _vsb.OPERATING_STATUS and "None of its body was ever provided" in basis
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W702 - OWNER RULING 2026-10-13 (evening): a scholar's review queue is capped at twenty items per tool. A new
+#  item past the cap is not queued and the caller is told; nothing waiting, approved or rejected is dropped.
+#  Every body here is a placeholder token - no scripture is typed into a test.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w702_a_scholars_queue_is_capped_per_tool_and_nothing_is_dropped_to_make_room(client, monkeypatch):
+    import json
+    import pathlib
+    import uuid as _uuid
+    from agentic_core.api import religion as _rel
+    from agentic_core.api import scholar_review as _sr
+    root = pathlib.Path(__file__).resolve().parents[1]
+    tag = _uuid.uuid4().hex[:6]
+    surf = f"w702-surface-{tag}"
+    assert _sr.QUEUE_CAP == 20
+
+    def _mine(prefix):
+        return {k: r for k, r in _sr._load(_sr._review_path()).items() if k.startswith(prefix)}
+
+    #  1. THE CAP: twenty are queued, the twenty-first is not, and it is told why
+    keys = [f"{surf}-item-{i:02d}" for i in range(_sr.QUEUE_CAP)]
+    for k in keys:
+        assert _sr.submit(k, surf, f"PLACEHOLDER BODY {k}")["state"] == _sr.IN_REVIEW
+    over = _sr.submit(f"{surf}-item-over", surf, "PLACEHOLDER BODY over")
+    assert over["state"] == _sr.NOT_QUEUED and over["queued"] is False and over["queue"] == surf, over
+    assert "the limit is 20 per tool" in over["why"] and "Nothing was dropped to make room" in over["why"], over["why"]
+    stored = _mine(surf)
+    assert sorted(stored) == sorted(keys) and all(r["state"] == _sr.IN_REVIEW for r in stored.values()), sorted(stored)
+    assert _sr.submit_if_new(f"{surf}-item-over-2", surf, "PLACEHOLDER BODY over 2")["state"] == _sr.NOT_QUEUED
+    #  an item already in the store may always be written again: the cap is on NEW items
+    again = _sr.submit(keys[0], surf, "PLACEHOLDER BODY rewritten")
+    assert again["state"] == _sr.IN_REVIEW and len(_mine(surf)) == _sr.QUEUE_CAP
+    #  the gate's own status reports it
+    gs = _sr.gate_status()
+    assert gs["queue_cap_per_tool"] == 20 and gs["queues_full"].get(surf) == 20, gs["queues_full"]
+
+    #  2. THE REFUSAL IS SAID WHERE THE CALLER RECEIVES IT - with a scholar on the roster, the reason is the queue
+    monkeypatch.setattr(_sr, "roster_is_empty", lambda: False)
+    body, state, why = _sr.published_body(f"{surf}-item-over", "PLACEHOLDER BODY over")
+    assert body is None and state == "withheld" and "the review queue is full" in why and surf in why, why
+    monkeypatch.undo()
+
+    #  3. ANOTHER QUEUE IS NOT AFFECTED, and a tool named in the key is its own queue
+    other = f"w702-other-{tag}"
+    assert _sr.submit(f"{other}-item", other, "PLACEHOLDER BODY other")["state"] == _sr.IN_REVIEW
+    assert _sr.queue_of(f"{surf}:tool_a:abc", surf) == f"{surf}:tool_a" and _sr.queue_of(f"{surf}-x", surf) == surf
+    assert _sr.queue_of("elsewhere:tool_a:abc", surf) == surf
+    tooled = f"w702-tooled-{tag}"
+    for i in range(_sr.QUEUE_CAP):
+        assert _sr.submit(f"{tooled}:tool_a:{i:02d}", tooled, f"PLACEHOLDER {i}")["state"] == _sr.IN_REVIEW
+    assert _sr.submit(f"{tooled}:tool_a:over", tooled, "PLACEHOLDER over")["state"] == _sr.NOT_QUEUED
+    assert _sr.submit(f"{tooled}:tool_b:00", tooled, "PLACEHOLDER b")["state"] == _sr.IN_REVIEW, "one tool's full queue closed another's"
+
+    #  4. A DECISION FREES A PLACE, AND THE DECIDED ITEM STAYS - nothing is dropped
+    recs = _sr._load(_sr._review_path())
+    recs[keys[1]]["state"] = _sr.REJECTED
+    recs[keys[2]]["state"] = _sr.APPROVED
+    _sr._save(_sr._review_path(), recs)
+    assert surf not in _sr.queues_full()
+    for n in ("new-1", "new-2"):
+        assert _sr.submit(f"{surf}-item-{n}", surf, f"PLACEHOLDER BODY {n}")["state"] == _sr.IN_REVIEW
+    assert _sr.submit(f"{surf}-item-new-3", surf, "PLACEHOLDER BODY new 3")["state"] == _sr.NOT_QUEUED
+    after = _mine(surf)
+    assert after[keys[1]]["state"] == _sr.REJECTED and after[keys[2]]["state"] == _sr.APPROVED and len(after) == _sr.QUEUE_CAP + 2
+
+    #  5. THE RESEARCH TOOLS SAY IT, even with no scholar on the roster (where the gate's reason is the roster's)
+    monkeypatch.setattr(_sr, "QUEUE_CAP", 1)
+    tool = f"w702tool{tag}"
+    first = _rel._scholar_gated(tool, "## One\nPLACEHOLDER first reply", "a placeholder ask", (), {"served_by": "ollama:w702"})
+    second = _rel._scholar_gated(tool, "## One\nPLACEHOLDER second reply", "a placeholder ask", (), {"served_by": "ollama:w702"})
+    assert first[0] == "" and second[0] == "", "model-composed text was shown without a scholar's approval"
+    assert "It is in the review queue" in first[3] and "Not queued for scholarly review" not in first[3], first[3]
+    assert "It is not awaiting review" in second[3] and "Not queued for scholarly review" in second[3], second[3]
+    assert "the limit is 1 per tool" in second[3], second[3]
+    monkeypatch.undo()
+
+    #  6. THE LESSON ON SECRETS IS IN THE METHOD, reworded: it names no place a key was found
+    doc = json.loads((root / "docs/DELIVERY_METHOD.json").read_text(encoding="utf-8"))
+    secrets = [l for l in doc["lessons"] if l["rule"].startswith("A secret is never pasted")]
+    assert len(secrets) == 1 and secrets[0]["group"] == "session" and "evening" in secrets[0]["ratified"], secrets
+    blob = json.dumps(secrets[0]).lower()
+    for banned in ("private repositor", "service-account", "private key", "three ", "payment"):
+        assert banned not in blob, banned
