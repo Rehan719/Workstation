@@ -14377,11 +14377,15 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.6",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W703",
       "note": "",
       "slot_source": "the Owner asked 2026-10-10 for this work to be added to the plan",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The canvas is written under docs/business: nine blocks, every statement labelled, user, buyer, payer and beneficiary apart, the ruled first segment as a hypothesis with its test, three hypotheses. It is a draft until the Owner ratifies it, and the mission is the Owner's and is not published.",
+      "reachability_check": "test_w703_the_business_documents_are_labelled_drafts_that_name_only_what_exists"
     },
     {
       "id": "FU-741",
@@ -14395,11 +14399,15 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.6",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W703",
       "note": "",
       "slot_source": "the Owner asked 2026-10-10 for this work to be added to the plan",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The plan for Workstation itself is written in the canon's order with costs, risks and what must be true before launch; every objective is tied to a plan item that exists and none carries a figure. A draft until the Owner ratifies it.",
+      "reachability_check": "test_w703_the_business_documents_are_labelled_drafts_that_name_only_what_exists"
     },
     {
       "id": "FU-742",
