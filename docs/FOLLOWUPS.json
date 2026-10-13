@@ -17456,11 +17456,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W706",
       "note": "",
       "slot_source": "found in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "performed_not_assessable",
+      "because_means": "the work was performed and its answer is NOT ASSESSABLE, with a basis",
+      "close_note": "The row's basis had decayed: a local model is installed on the Owner's machine. A baseline was run there on 2026-10-13 at the Owner's word (bl-0df99fb1d1, ollama:llama3.2:latest, served by the local model itself): 4 of 7 cases passed their marker rule, 3 did not, none unread."
     },
     {
       "id": "FU-894",
@@ -20813,11 +20816,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P4.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W706",
       "note": "",
       "slot_source": "found by the round that mounted the routers behind the caller question",
-      "tier": 2
+      "tier": 2,
+      "because": "performed_not_assessable",
+      "because_means": "the work was performed and its answer is NOT ASSESSABLE, with a basis",
+      "close_note": "Driven on 2026-10-13 with sign-in on for one process on a fresh scratch store and a signed-in session: 73 pages visited, 194 data calls over 99 routes seen by the browser, none refused for want of a token (an anonymous call to the same server was refused 401; the recorder was checked with two planted failures). NOT covered: tabs other than each page's first, anything behind a button, and a store with data in it."
     },
     {
       "id": "FU-1063",
@@ -20957,9 +20963,12 @@
       "severity": "low",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
-      "note": ""
+      "status": "done",
+      "closed_by": "W706",
+      "note": "",
+      "because": "performed_not_assessable",
+      "because_means": "the work was performed and its answer is NOT ASSESSABLE, with a basis",
+      "close_note": "Filed on the Owner's own store on 2026-10-13 at the Owner's word: one change record (cca-7e872bace9) naming the fifteen ruled lessons; Change Control recorded it as approved by its low-impact rule, and nothing was applied."
     },
     {
       "id": "FU-1070",
@@ -21014,6 +21023,24 @@
       "closed_by": null,
       "note": "",
       "slot_source": "it is a stall of the suite, and the parallel suite's stall already sits on this item"
+    },
+    {
+      "id": "FU-1073",
+      "title": "A method amendment is approved by the low-impact rule, with no person deciding",
+      "why": "Seen on the Owner's store on 2026-10-13: the one record of the ruled batch of lessons was filed as a minor configuration change and Change Control approved it at once by its low-impact rule. For a record of a ruling the Owner already made that is harmless. A PROPOSED batch files the same way, so lessons nobody has ruled on would be recorded as approved without a person. The derive route files the same change type. Decide whether a method amendment needs a person, and give it a change type whose tier holds it for one.",
+      "source": "W706 (the runs on the Owner's machine)",
+      "found": "2026-10-13",
+      "files": [
+        "agentic_core/api/method.py",
+        "agentic_core/api/change_control.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "it is a gap in how a change is decided, found by driving; the open third-phase queue carries it"
     }
   ],
   "routes": [
