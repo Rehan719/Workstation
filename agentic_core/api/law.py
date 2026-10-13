@@ -128,7 +128,10 @@ async def matter_bundle():
 @router.get("/templates")
 async def list_templates():
     """Return available legal document templates."""
+    from agentic_core.legal.specialist import HELD_REASON as _held_reason, held_for_a_qualified_read as _held
     return {"templates": _TEMPLATES, "total": len(_TEMPLATES),
+            #  W714 - which of these the generator refuses, and why, said beside the list and not inside a row
+            "held": {"templates": [t["id"] for t in _TEMPLATES if _held(t["id"])], "reason": _held_reason},
             #  Each template's own `jurisdiction` says what that template is FOR, which is legitimately
             #  per-template. THE MATTER's jurisdiction is a different fact with one home and a basis,
             #  published here so a reader can see which is which and where the second came from.
@@ -309,6 +312,13 @@ async def generate_document(req: GenerateRequest):
             f"the clerk at POST /api/v1/law/matter/assemble: every particular comes from a located line of a "
             f"document or is left blank, every authority is resolved or refused, and the result is a draft "
             f"until it is approved. Nothing here is legal advice."))
+    #  W714 (OWNER RULING 2026-10-13) - a deed is held until a qualified person has read the Schedule. Refused
+    #  here, before anything is composed, so the page and the resource runner receive the same answer.
+    from agentic_core.legal.specialist import HELD_REASON as _held_reason, held_for_a_qualified_read as _held
+    if _held(req.template_id):
+        raise HTTPException(status_code=409, detail=(
+            f"'{req.template_id}' is held and is not generated here: {_held_reason} "
+            f"Nothing here is legal advice."))
     base_prompt = _TEMPLATE_PROMPTS.get(
         req.template_id,
         f"Draft a comprehensive {req.template_id.replace('_', ' ')} agreement under {req.jurisdiction} law. "
