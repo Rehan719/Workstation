@@ -969,7 +969,7 @@ async def cascade_orchestration(req: CascadeRequest,
             from agentic_core.vbs.quality import floor_served as _floor615
             _dev_sb = _served_by_agent.get(f"appraise_{_k}")
             if _action and not _floor615(_dev_sb):
-                _prior_dev[_k] = {"action": _action, "run_id": run_id, "served_by": _dev_sb,
+                _prior_dev[_k] = {**_reply_evidence(_dev_sb), "action": _action, "run_id": run_id, "served_by": _dev_sb,
                                   "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
             # §5 (W281) — accumulate the tier's persistent identity from this run's REAL appraisal
             _prev_id = _tier_ident.get(_k) or {}
@@ -1113,7 +1113,7 @@ async def cascade_orchestration(req: CascadeRequest,
     ueg_hash = None
     try:
         from agentic_core.ueg.registry import ueg_ledger
-        ueg_hash = await ueg_ledger.log_event("org_cascade", {
+        ueg_hash = await ueg_ledger.log_event("org_cascade", {**_reply_evidence(provenance['served_by']), 
             "run_id": run_id, "mission": req.mission[:200], "domain": req.domain,
             "tiers": ["chief", "board", "ceo", "csuite", "coe", "bto", "build_to_order"],
             "served_by": provenance["served_by"], "any_external": provenance["any_external"],
@@ -1216,7 +1216,7 @@ async def cascade_orchestration(req: CascadeRequest,
     try:
         _runs_store = data_path("org_cascade_runs.json")
         _runs = read_json_strict(_runs_store, list, expect=list)    # W472 (FU-053) — refused, never replaced
-        _runs.append({
+        _runs.append({**_reply_evidence(provenance['served_by']), 
             "run_id": run_id, "mission": req.mission[:200], "domain": req.domain,
             "csuite_engaged": selected, "appraisals": appraisals,
             "csuite_requested": _roles_requested, "csuite_not_run": _roles_not_run,       # W660 (FU-715)
