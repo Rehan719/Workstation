@@ -4,7 +4,8 @@
 (`docs/WORKSTATION_IDBO_WHOLE_VISION.md`), the Owner's own canon, in the order the vision gives a plan:
 executive summary, concept, vision, mission, strategy, aims, objectives. A change to this text from here on
 needs the Owner's word. Ratifying it did not enter it into the product's own plan; the Owner enters that
-through the plan's own edit page (ruling of 2026-10-10).
+through the plan's own edit page (ruling of 2026-10-10). Changed once since, with the Owner's word, on
+2026-10-14: the line on the name, under Risks.
 
 **How to read the tags.** Each statement ends with one tag: [owner-defined] the Owner said it, in the vision or
 in a ruling · [observed] true of the product today · [inference] reasoned, not measured · [hypothesis] to be
@@ -122,8 +123,10 @@ Each is the Owner's to accept or refuse [owner decision]:
 - A small local model: answers are limited by it [observed].
 - Religious content withheld until reviewed: a slower product, by ruling [owner-defined].
 - No income until the last switch [inference].
-- The name: its first word is common in computing, and the official registers have not been read
-  [observed that none has been read; the rest is inference].
+- The name is Workstation IDBO [owner-defined, 2026-10-14]. Companies House and the UK and EU trade mark
+  registers were read: no company and no identical mark was found, and the one similar live mark in two of
+  the four classes of interest belongs to a pet-products business [observed, 2026-10-14]. No clearance
+  opinion has been obtained, no mark has been applied for, and no domain is held [observed].
 
 ## What must be true before launch
 

@@ -15794,11 +15794,15 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.7",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W725",
       "note": "",
       "slot_source": "the Owner asked on 2026-10-11 that this work be added to the plan; it is the item chartered for it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Companies House and the UK and EU trade mark registers were read on 2026-10-13 and 14 (the UK and EU registers through the Owner's own browser); the Owner chose Workstation IDBO on 2026-10-14; the two ratified documents say what was read and that no clearance opinion, mark or domain is held. The US register was not read.",
+      "reachability_check": "test_w725_the_ratified_documents_name_the_platform_and_claim_no_protection_that_is_not_held"
     },
     {
       "id": "FU-809",

@@ -3,7 +3,8 @@
 **Ratified by the Owner on 2026-10-13**, whole and without change. It is written from the whole vision
 (`docs/WORKSTATION_IDBO_WHOLE_VISION.md`), which is the Owner's own canon, so that it reads as one story.
 A change to this text from here on needs the Owner's word. Ratifying it did not enter it into the product's own
-plan; the Owner enters that through the plan's own edit page (ruling of 2026-10-10).
+plan; the Owner enters that through the plan's own edit page (ruling of 2026-10-10). Changed once since, with
+the Owner's word, on 2026-10-14: the line on the name, under Key resources.
 
 **How to read the tags.** Each statement ends with one tag in square brackets:
 [owner-defined] the Owner said it, in the vision or in a ruling ·
@@ -109,6 +110,9 @@ Today it runs on the Owner's machine, with its own AI, in virtual money, with no
   Build-to-Order [owner-defined: the vision, sections 3, 5 and 7].
 - A local model on the Owner's machine [observed]; the register of sources [observed: `docs/SOURCES.json`].
 - The Owner, full time [owner-defined, 2026-10-13].
+- The name, Workstation IDBO [owner-defined, 2026-10-14]. Companies House and the UK and EU trade mark
+  registers were read and no identical mark was found; no clearance opinion has been obtained and no mark or
+  domain is held [observed, 2026-10-14].
 - A named scholar, a safeguarding lead, a solicitor and an accountant: none is engaged yet [observed].
 
 ## 7. Key activities

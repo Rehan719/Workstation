@@ -65477,3 +65477,30 @@ def test_w723_quote_do_not_compose_is_chartered_with_its_boundaries_and_its_sour
         assert r["status"] == "named_not_read" and "read_on" not in r and "says" not in r, (rid, "a row not read carries a reading")
     assert "free of charge" in rows["tna-find-case-law-permission"]["says"] and "vector database" in rows["tna-find-case-law-permission"]["says"]
     assert "impermissible" in rows["dar-al-ifta-egypt-ai-fatwa-2025"]["says"]
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W725 - OWNER RULING 2026-10-14: the name is Workstation IDBO. The two ratified documents say so in one line
+#  each, changed with the Owner's word, and claim nothing that was not done.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w725_the_ratified_documents_name_the_platform_and_claim_no_protection_that_is_not_held():
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    for rel, where in (("docs/business/BUSINESS_MODEL_CANVAS.md", "under Key resources"),
+                       ("docs/business/BUSINESS_PLAN.md", "under Risks")):
+        text = (root / rel).read_text(encoding="utf-8")
+        flat = " ".join(text.split())
+        assert "Workstation IDBO [owner-defined, 2026-10-14]" in flat, rel
+        #  what was read, and what was NOT done, travel with the name
+        assert "Companies House and the UK and EU trade mark registers were read" in flat, rel
+        assert "no clearance opinion has been obtained" in flat.lower(), rel
+        assert ("no mark or domain is held" in flat) or ("no mark has been applied for, and no domain is held" in flat), rel
+        #  a ratified text was changed: the document says so, when, on whose word, and where
+        opening = " ".join(text.split("\n## ", 1)[0].split())
+        assert f"Changed once since, with the Owner's word, on 2026-10-14: the line on the name, {where}." in opening, opening[-200:]
+        assert "**Ratified by the Owner on 2026-10-13**" in opening
+        #  nothing is claimed that is not held, and the stale sentence is gone
+        low = flat.lower()
+        for claim in ("registered trade mark", "is trade marked", "trademarked", "the name is protected", "cleared for use"):
+            assert claim not in low, (rel, claim)
+        assert "the official registers have not been read" not in flat, rel
