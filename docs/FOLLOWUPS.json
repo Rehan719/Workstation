@@ -18417,11 +18417,15 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W701",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The sections nobody provided are said in the basis of body pending and registered - not operating as well as operating; no new status value was added.",
+      "reachability_check": "test_w701_the_list_says_what_the_single_record_says"
     },
     {
       "id": "FU-944",
@@ -20489,11 +20493,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W701",
       "note": "",
       "slot_source": "found by a dated read of the Owner's store in W678; the area has no routed owner",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The change list and the Board's ratification queue carry the same flag the single record carries when a decision's source is read from the record's shape; one function decides it for all three, and the Board's page prints it.",
+      "reachability_check": "test_w701_the_list_says_what_the_single_record_says"
     },
     {
       "id": "FU-1048",

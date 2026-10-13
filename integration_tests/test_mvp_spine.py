@@ -64265,3 +64265,59 @@ def test_w700_a_cut_is_never_silent_uneven_or_relied_on_by_a_later_check(client)
     for _ in range(3):
         _op.accrue(acct, 1.0, "Amina Guard", memo="later cycle", simulated=False)
     assert _op._read()[acct]["applied_refs_dropped"].count(rid) == 1
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W701 - one cause: the single-record answer says a fact and the list beside it does not.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w701_the_list_says_what_the_single_record_says(client, monkeypatch):
+    import pathlib
+    import uuid as _uuid
+    from agentic_core.api import change_control as _cc
+    from agentic_core.api import vsb as _vsb
+    root = pathlib.Path(__file__).resolve().parents[1]
+    tag = _uuid.uuid4().hex[:8]
+
+    #  1. WHAT DECIDED A CHANGE - a record decided before its source was kept, and one that names its source
+    old_id, new_id = f"cca-w701old{tag}", f"cca-w701new{tag}"
+    base = {"title": "w701 guard record", "change_type": "config_major", "impact_tier": "HIGH", "status": "approved",
+            "decision": "approved", "description": "driven by the guard", "submitted_by": "guard",
+            "submitted_at": "2026-10-13T00:00:00Z", "audit_trail": []}
+    _cc._save_change({**base, "cca_id": old_id})
+    _cc._save_change({**base, "cca_id": new_id, "decision_source": "model_decision_marker"})
+    assert _cc.source_inferred(_cc._load_change(old_id)) is True and _cc.source_inferred(_cc._load_change(new_id)) is False
+    assert _cc.source_inferred({"status": "submitted"}) is False and _cc.source_inferred(None) is False
+    #  the single record (the answer that already said it)
+    one = client.get(f"/api/v1/cca/{old_id}").json()
+    assert one["decision_source"] == "unrecorded_decision" and one["decision_source_inferred"] is True, one
+    assert "decision_source_inferred" not in client.get(f"/api/v1/cca/{new_id}").json()
+    #  the list
+    listed = {c["cca_id"]: c for c in _cc._list_changes("approved")}
+    assert listed[old_id]["decision_source"] == "unrecorded_decision" and listed[old_id]["decision_source_inferred"] is True
+    assert listed[new_id]["decision_source"] == "model_decision_marker" and listed[new_id]["decision_source_inferred"] is False
+    served = {c["cca_id"]: c for c in client.get("/api/v1/cca/approved").json()["changes"]}
+    assert served[old_id]["decision_source_inferred"] is True and served[new_id]["decision_source_inferred"] is False
+    #  the Board's queue
+    queue = {c["cca_id"]: c for c in client.get("/api/v1/board/ratifications").json()["pending"]}
+    assert queue[old_id]["decision_source_inferred"] is True and queue[new_id]["decision_source_inferred"] is False, (
+        queue.get(old_id), queue.get(new_id))
+    board = (root / "apps/workstation-superapp/src/pages/enterprise/BoardOfDirectors.tsx").read_text(encoding="utf-8")
+    assert "{q.decision_source_inferred && (" in board and 'data-testid="ratification-source-inferred"' in board
+    assert "the record itself names no source" in board
+
+    #  2. AN ENTITY'S STATUS names the sections nobody provided, whichever status it reads
+    from agentic_core.economy import living_vsbs as _lv
+    monkeypatch.setattr(_lv, "living_statement", lambda: {"autonomous_cycles": False, "autonomous_operation": "cycles are off (driven)"})
+    none_given = {k: True for k in _vsb._BODY_STAGE_ORDER}
+    status, basis = _vsb._derived_status({"body_pending": {}, "body_absent": none_given})
+    assert status == "registered - not operating" and basis.startswith("cycles are off (driven)"), (status, basis)
+    assert "None of its body was ever provided" in basis, basis
+    status, basis = _vsb._derived_status({"body_pending": {"design": True}, "body_absent": {"concept": True}})
+    assert status == "body pending" and "1 of its 4 body sections were never provided (concept)" in basis, (status, basis)
+    #  ... and nothing is added when every section was provided: the clause is a fact, not a suffix
+    status, basis = _vsb._derived_status({"body_pending": {}, "body_absent": {k: False for k in _vsb._BODY_STAGE_ORDER}})
+    assert status == "registered - not operating" and basis == "cycles are off (driven)", basis
+    #  the value keeps its meaning for its readers: no new status was introduced to carry the fact
+    monkeypatch.setattr(_lv, "living_statement", lambda: {"autonomous_cycles": True})
+    status, basis = _vsb._derived_status({"body_pending": {}, "body_absent": none_given})
+    assert status == _vsb.OPERATING_STATUS and "None of its body was ever provided" in basis
