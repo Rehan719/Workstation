@@ -56,6 +56,11 @@ jobs:
     continue-on-error: true
     timeout-minutes: 75
     steps:
+      #  W688 - THE FIRST RUN'S FOUR FAILURES WERE ONE CAUSE: a Windows runner checks files out with their line
+      #  endings converted, and this tree's guards read bytes (the Owner's own machine has the conversion off, so
+      #  the same suite passes there). The conversion is switched off BEFORE the checkout, to match that machine.
+      - name: Keep line endings as committed (as on the Owner's machine)
+        run: git config --global core.autocrlf false
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0

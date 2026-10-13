@@ -218,6 +218,16 @@ async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
                                   "profile_basis": res.get("profile_basis")}
     if _material is not None:
         provenance["material"] = _material          # how much was read of how much, on every answer
+    #  W688 (OWNER RULING 2026-10-12, the review cell's first clause) - THE TIER OF REVIEW THIS TOOL HAS REACHED,
+    #  on the provenance every domain router returns, so no router can leave it out. With no record it says
+    #  UNREVIEWED. A failure to read it is said as not known; it is never left off and never read as reviewed.
+    try:
+        from agentic_core.api._review_tier import review_statement
+        provenance["review"] = review_statement(agent)
+    except Exception as _e_tier:                    # noqa: BLE001 - said, never swallowed into silence
+        provenance["review"] = {"tier": "unreviewed", "label": "Unreviewed", "known": False,
+                                "basis": f"the tier of review could not be computed ({type(_e_tier).__name__}); "
+                                         "it is treated as unreviewed"}
     #  W627 (FU-536) - every domain tool's floor output said so only through a badge, while its headings
     #  ('Relevant Law', 'Who to Notify', 'Target Range') and a static "AI-generated" disclaimer described
     #  research, guidance and marking that did not happen. The note rides the provenance EVERY domain router

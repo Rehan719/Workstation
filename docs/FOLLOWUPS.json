@@ -20462,11 +20462,15 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.15",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W688",
       "note": "",
       "slot_source": "the Owner's rulings of 2026-10-12 chartered this item",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "every domain tool's answer carries the tier of review its tool has reached, from one function on the shared helper's provenance; with no record it says unreviewed; a record that falls short of its tier's rule is not counted; the page shows the server's label and sentence and the downloaded text carries it. No door writes a record yet - that is the next clauses' work",
+      "reachability_check": "test_w688_every_domain_tools_answer_carries_its_review_tier_and_the_page_shows_it"
     },
     {
       "id": "FU-1054",

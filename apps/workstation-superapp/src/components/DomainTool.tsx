@@ -101,6 +101,8 @@ const withDisclosures = (body: string, data: any): string =>
   + (data?.screen_note ? `\n\n[${data.screen_note}]` : '')
   + (data?.floor_note ? `\n\n[${data.floor_note}]` : '')
   + (!data?.floor_note && data?.ai_provenance?.floor_note ? `\n\n[${data.ai_provenance.floor_note}]` : '')
+  // W688 (Owner ruling 2026-10-12) — the tier of review travels with the text a person keeps, as the floor note does
+  + (data?.ai_provenance?.review?.label ? `\n\n[Review: ${data.ai_provenance.review.label} — ${data.ai_provenance.review.basis}]` : '')
   // REL (Owner ruling 2026-10-11) — the scholar gate's statement travels with the text a person keeps, exactly as
   // the floor note does: why a model's answer is withheld, or who approved the text that is shown
   + (typeof data?.review_note === 'string' && data.review_note ? `\n\n[${data.review_note}]` : '')
@@ -378,6 +380,14 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
               {echoBasisOf(result) && (
                 <span data-testid="domain-compliance-echo" className="block normal-case tracking-normal font-normal mt-1">{echoBasisOf(result)}</span>
               )}
+            </p>
+          )}
+          {/* W688 (Owner ruling 2026-10-12) — the tier of review this tool has reached, in the server's words,
+              where the answer is. With no record the server says there is none, and that is what shows. */}
+          {(effectiveProv as any)?.review?.label && (
+            <p data-testid="domain-review-tier" className="text-[10px] text-slate-400 leading-relaxed border border-slate-800 rounded-lg p-2">
+              <span className="font-black uppercase tracking-widest text-[9px] text-slate-300">Review: {(effectiveProv as any).review.label}</span>
+              {' — '}{(effectiveProv as any).review.basis}.
             </p>
           )}
           {/* W627 (FU-536) — floor output says what was NOT done, where the output is, not only in a badge */}
