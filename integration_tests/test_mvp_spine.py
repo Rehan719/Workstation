@@ -60655,7 +60655,8 @@ def test_law_a_filing_shaped_document_has_one_door_and_no_prompt_claims_a_role_o
         assert len(_sent) == _n, f"{_tid}: a prompt was sent before the refusal"
     #    the clerk's door still opens for the same template, and an ordinary template is still generated
     assert client.post("/api/v1/law/matter/assemble", json={"template_id": _sp.FILING_SHAPED[0]}).status_code == 200
-    for _tid in [t["id"] for t in _law._TEMPLATES if t["id"] not in _sp.FILING_SHAPED]:
+    #    (W714 - a held deed is no longer an ordinary template; its refusal has its own test)
+    for _tid in [t["id"] for t in _law._TEMPLATES if t["id"] not in _sp.FILING_SHAPED and not _sp.held_for_a_qualified_read(t["id"])]:
         _r = client.post("/api/v1/law/generate", json={"template_id": _tid})
         assert _r.status_code == 200 and _r.json()["document"] == "w-law captured", (_tid, _r.text[:200])
     client.post("/api/v1/law/research", json={"question": "w-law probe: how long do I have?", "area_of_law": "employment"})
@@ -65103,3 +65104,38 @@ def test_w712_each_unchecked_constraint_says_what_it_is_to_a_reply_and_children_
     assert "For adults." in said and "not offered to children" in said and "the Owner's decision" in said, said
     rows = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
     assert rows["FU-473"]["status"] == "done" and rows["FU-1032"]["status"] == "done"
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W714 - OWNER RULING 2026-10-13: a deed is held until a qualified person has read the Schedule.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w714_a_deed_is_held_until_a_qualified_person_has_read_the_schedule(client, monkeypatch):
+    import agentic_core.api.law as _law
+    from agentic_core.legal import specialist as _sp
+    sent = []
+
+    async def _capture(prompt, agent, **kw):
+        sent.append(agent)
+        return "w714 captured", {"served_by": "native", "floor_note": "w714: captured, nothing composed"}
+    monkeypatch.setattr(_law, "ai_text", _capture)
+    #  1. the listed template, and a deed under a spelling the list never held, are refused before anything is composed
+    assert "partnership_deed" in {t["id"] for t in _law._TEMPLATES}, "the listed deed is gone, so the first leg would be idle"
+    for tid in ("partnership_deed", "deed_of_trust", "Trust-Deed", "DEED", "deed of gift"):
+        r = client.post("/api/v1/law/generate", json={"template_id": tid, "parties": {"a": "A Person"}})
+        assert r.status_code == 409, (tid, r.status_code, r.text[:200])
+        d = r.json()["detail"]
+        assert isinstance(d, str) and "is held and is not generated here" in d and "Schedule 2" in d, d
+        assert "says nothing about whether" in d and "A solicitor can prepare one" in d and "Nothing here is legal advice" in d, d
+    assert sent == [], "a prompt was sent for a held deed"
+    #  2. the hold is on the kind, never on a substring: an ordinary template still generates
+    for tid in ("nda", "indeed_agreement"):
+        assert _sp.held_for_a_qualified_read(tid) is False, tid
+        r = client.post("/api/v1/law/generate", json={"template_id": tid})
+        assert r.status_code == 200 and r.json()["document"] == "w714 captured", (tid, r.text[:200])
+    assert sent == ["law_generator", "law_generator"], sent
+    #  3. the list says which it refuses and why, beside the rows
+    held = client.get("/api/v1/law/templates").json()["held"]
+    assert held["templates"] == ["partnership_deed"] and held["reason"] == _sp.HELD_REASON, held
+    #  4. the reason is a hold and never a finding about the document
+    low = _sp.HELD_REASON.lower()
+    assert "this is a hold" in low and "is a reserved" not in low and "unlawful" not in low and "illegal" not in low

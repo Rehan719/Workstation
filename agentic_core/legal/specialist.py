@@ -21,6 +21,22 @@ from typing import Any, Dict, List
 from agentic_core.config import atomic_write_json, data_path, read_json_strict, store_lock
 
 FILING_SHAPED = ("et1_claim", "cease_desist")
+#  W714 (OWNER RULING 2026-10-13) - A DEED IS HELD UNTIL A QUALIFIED PERSON HAS READ THE SCHEDULE. Preparing
+#  certain instruments is an activity reserved to authorised persons (Legal Services Act 2007, section 12 and
+#  Schedule 2). Whether a given deed falls inside that is a qualified person's reading, and none has been made.
+#  Until one is recorded, no deed is composed here. This is a hold and never a statement that a deed is reserved.
+HELD_FOR_A_QUALIFIED_READ = ("partnership_deed",)
+HELD_REASON = ("it is a deed, and preparing certain instruments is reserved to authorised persons by the "
+               "Legal Services Act 2007 (section 12 and Schedule 2). No qualified person has yet read that Schedule "
+               "for this platform, so no deed is composed here. This is a hold, and says nothing about whether "
+               "this particular deed is reserved. A solicitor can prepare one.")
+
+
+def held_for_a_qualified_read(template_id: Any) -> bool:
+    """True for a template named as held, and for ANY id that names a deed - the generator composes a
+    document for an id it has never seen, so the hold is on the kind and never only on one spelling."""
+    tid = str(template_id or "").strip().lower()
+    return tid in HELD_FOR_A_QUALIFIED_READ or "deed" in re.split(r"[^a-z]+", tid)
 NOT_LEGAL_ADVICE = ("Nothing here is legal advice. This platform assembles and cites as a clerk would; it is "
                     "never counsel, and it never forecasts an outcome.")
 _CORPUS = pathlib.Path(__file__).resolve().parents[2] / "knowledge" / "Law" / "EmploymentTribunal"
