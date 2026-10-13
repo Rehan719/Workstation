@@ -21066,6 +21066,94 @@
       "closed_by": null,
       "note": "",
       "slot_source": "it is a fault of a guard's own reach, and the suite's reliability rows already sit on this item"
+    },
+    {
+      "id": "FU-1075",
+      "title": "No record of an agreement with an outside party exists: the first slice of the agreements item",
+      "why": "The only contract object is a service contract between two entities of this platform in virtual units. Build clauses 1 and 2 as one driven slice on made-up parties: a party as a real person or registered body with where it was read, and an agreement record whose drafted, reviewed, approved, executed, in-force and ended states are separate facts, an approval bound to one exact version.",
+      "source": "W711 (three external mandates on legal operations and embodied systems, assessed)",
+      "found": "2026-10-13",
+      "files": [
+        "agentic_core/api/economy.py",
+        "agentic_core/api/law.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.18",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "chartered with the item in this round"
+    },
+    {
+      "id": "FU-1076",
+      "title": "The Law tool offers a Partnership Deed template, and whether preparing a deed for someone is reserved has not been settled",
+      "why": "Read on 2026-10-13: Schedule 2 of the Legal Services Act 2007 reserves preparing certain instruments and excludes an agreement not intended to be executed as a deed. The generate route lists a partnership deed among its ten templates and refuses only the two filing-shaped ones. Whether this template falls inside the reserved activity is a question of law for a qualified person, and is a hypothesis here, read and not established. Until it is settled the cautious course is to refuse the template as the filing-shaped ones are refused; that is the Owner's to decide.",
+      "source": "W711 (three external mandates on legal operations and embodied systems, assessed)",
+      "found": "2026-10-13",
+      "files": [
+        "agentic_core/api/law.py",
+        "agentic_core/legal/specialist.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.18",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "chartered with the item in this round; it is the item's fourth clause met in existing code"
+    },
+    {
+      "id": "FU-1077",
+      "title": "Authorities the legal-operations brief names that have not been read at their publishers",
+      "why": "Not read at all: the Companies Act 2006 execution rule, the unfair contract terms and consumer rights legislation, the lifting-equipment regulations, and the consumer-credit and regulated-hire regime (which decides whether comparing finance products may be offered). Read by one reader through a summarising fetch only, and not re-read: the fourteen rows entered on 2026-10-13. No clause of the item that states what the law requires may be built on a source in either state.",
+      "source": "W711 (three external mandates on legal operations and embodied systems, assessed)",
+      "found": "2026-10-13",
+      "files": [
+        "docs/SOURCES.json"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.18",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "chartered with the item in this round; it is the item's eighth clause"
+    },
+    {
+      "id": "FU-1078",
+      "title": "No record of a physical asset exists: the first slice of the physical-assets item",
+      "why": "Build clauses 1 and 2 on a made-up asset: an asset record tied to an agreement record, and the six facts kept apart - right to use, permission of place, the maker's conformity evidence, the user's safety evidence, insurance, a named person's declaration of readiness - each as attached evidence with who, when and a lapse date, and no score computed from them. Nothing is connected or controlled.",
+      "source": "W711 (three external mandates on legal operations and embodied systems, assessed)",
+      "found": "2026-10-13",
+      "files": [
+        "agentic_core/api/integration_surface.py",
+        "agentic_core/api/digital_twin.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.19",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "chartered with the item in this round"
+    },
+    {
+      "id": "FU-1079",
+      "title": "Two sources for the physical-assets item could not be opened at their publishers",
+      "why": "The EU machinery regulation's application date (secondary pages agree on 20 January 2027) and the current editions of four ISO robot-safety standards were not readable at the publishers' own pages on 2026-10-13. Also not found: any primary source permitting a robot on a public footway. Each is entered as not read; none may be stated as fact in an answer.",
+      "source": "W711 (three external mandates on legal operations and embodied systems, assessed)",
+      "found": "2026-10-13",
+      "files": [
+        "docs/SOURCES.json"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.19",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "chartered with the item in this round; it is the item's third clause"
     }
   ],
   "routes": [

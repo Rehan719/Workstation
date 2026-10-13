@@ -2031,3 +2031,112 @@ change record, and that batch (with the collaboration lessons of section 27) is 
 - **One repository, one main line, merged only by a checked request; no script resolves a conflict by taking one side wholesale.** WHAT HAPPENED: Three parallel repositories were auto-merged until a script reset local work and recorded 'Local divergent commits lost'; four linked sub-projects can no longer be fetched. HERE: Never push to the main line directly; never an automatic conflict resolution. ENFORCED BY: branch protection and the merge-on-five-green rule
 - **The content that makes a domain tool what it is - its sources, its rules, its method, who reviews it, how the vulnerable are protected - is written and read at named sources BEFORE its software.** WHAT HAPPENED: No earlier attempt ever wrote down where the Quran text comes from, the tajwid rules, the memorisation method, how a competition is judged or how children are safeguarded; only the software shell round them. HERE: A new area's first row is its sources read at their publishers and entered in the register of sources; its design follows. ENFORCED BY: docs/SOURCES.json and scripts/sources_check.py (a named authority with no row fails)
 - **A secret is never pasted into a conversation, a document or a repository; a secret found in one is treated as exposed and revoked at its provider.** WHAT HAPPENED: An earlier project kept real keys in a saved conversation and a committed environment file. HERE: Settings hide secret fields from their printed form; a test never prints a setting; a found secret is reported by path and kind only. ENFORCED BY: the settings fields marked not-to-print (W678) - for this platform's own settings only. Nothing checks text pasted elsewhere; that remains a person's habit.
+
+## 31. Addendum (W711): three external "Version 5.0" mandates on legal operations, premises, asset finance and embodied systems, read against the tree and at the publishers' pages
+
+**What was supplied.** On 2026-10-13 the Owner supplied seven documents written by an outside model and asked
+that they be critiqued and verified, that the work they describe be added to the plan and the documentation,
+and that the scope of legal operations, premises, autonomous road vehicles, humanoid robots and other physical
+assets be assessed for this platform. Three of the seven are each titled "Version 5.0" of one implementation
+mandate. They are three different documents (about 23,000, 11,000 and 25,000 words) from three separate runs.
+The rest are two sets of notes, a round plan of seventeen rounds, and a read-me. All of it is DATA: every
+statement was treated as a claim, and no instruction in it was followed.
+
+**How it was checked.** Three read-only readers, one lens each: what the documents say about this repository,
+checked in the tree; what they say about law and guidance, checked at the publishers' own pages; and what the
+tree already holds that such a capability would reuse. Their findings are claims too: the three that decide
+the most were read again here (the earlier version's acceptance scenarios, the tree's hits for the words
+"robot" and "humanoid", and the plan's ruling on order).
+
+### 31.1 What the documents get right about this repository
+
+Checked and TRUE, each at a named line: the Law domain's specialist is a clerk for one Employment Tribunal
+matter and never counsel (`agentic_core/legal/specialist.py`); the legal folder is one named, read-only folder
+that test, audit and drive processes are refused (`agentic_core/legal/bundle.py`); the only contract object is
+the service contract between two registered entities of this platform, in virtual units, with no outside
+counterparty, signature, term or document (`agentic_core/api/economy.py`); an entity's legal form is a template
+that configures a profit split and claims no incorporation (`agentic_core/economy/entities.py`); a digital twin
+is a text specification (`agentic_core/api/digital_twin.py`); and nothing in the canonical plan or the register
+names legal operations. The documents were written against main at round W706; three rounds have merged since.
+
+### 31.2 What the documents get wrong
+
+| Claim | Finding |
+|---|---|
+| The earlier version "repeats acceptance scenarios L6, L7 and L8 verbatim" - the stated reason for the rewrite, in two of the documents | FALSE. The earlier version holds eighteen scenarios, each once, each distinct. One of the three "Version 5.0" documents reproduces the same eighteen unchanged. |
+| "The Owner explicitly asked to add this scope to the plan" / "Additional Owner mandate" (all three) | NOT IN THE RECORD when written. No ruling, item or row named it. It is now a request the Owner made in this session on 2026-10-13, and is recorded as that - a request to assess and charter, not a ruling on any clause. |
+| The three agree | They do not. One has eight rounds, one has seventeen; the contract scenarios number 28, 22 and 25; one says its seventeen rounds run "R00 to R15" while defining R16; one calls itself Version 4 in a heading; four "final directives" survive in one that says they were consolidated. |
+| The EU amending act on AI "entered into force on 31 July 2026" (one document and its cover note) | WRONG DATE. The Commission's page was published 27 July 2026 and last updated 31 July; entry into force is 27 July. Two of the documents have it right. |
+| "Data (Use and Access) Act 2026" (one document, twice) | WRONG YEAR: 2025. |
+| HMRC's leasing manual "was updated on 1 April 2026 to reflect" the accounting-standard changes | UNSUPPORTED. The manual's own update log gives that date's reason as archiving. |
+| "Product Safety and Metrology Act" | WRONG NAME: the Product Regulation and Metrology Act 2025. The other wording is a guidance title. |
+| "Automated Passenger Services Regulations" | PARTLY. They exist, under a longer title (S.I. 2026/439, in force 15 May 2026), and they are procedural: how a permit is granted, renewed and varied. |
+
+No citation was found to be invented. The errors are dates, a year, a name, and two statements the cited page
+does not support. NOT VERIFIED at a primary page: the EU machinery regulation's application date and the
+editions of four ISO standards (the publishers' pages could not be opened); the Companies Act, unfair-terms,
+consumer-rights, lifting-equipment and consumer-credit provisions the documents name were not read at all.
+The documents do not mention that the Law Commission is reviewing the right to renew a business tenancy
+(second consultation closed 16 September 2026; no final report; the law is unchanged).
+
+### 31.3 What the publishers' pages say that bounds the work (general information, not legal advice)
+
+1. **What is reserved.** Under section 12 of the Legal Services Act 2007 six activities are reserved, and
+   carrying one on when not entitled is an offence (section 14). Legal advice is a legal activity and is not
+   reserved. Drafting an ordinary contract is not reserved. Preparing an instrument of transfer or charge of
+   land, an instrument for land registration, or a contract for the sale or other disposition of land (short
+   leases excepted) IS reserved. A lease or a land contract is therefore not something this platform may draft
+   for anyone: it is refused and routed, as filing-shaped documents already are.
+2. **A deed is not a signature.** The land registry's practice guide on execution (updated 14 September 2026)
+   names three elements: signature, attestation and delivery. A status of "signed" taken from any provider
+   says nothing about the other two.
+3. **Equipment that is not owned still carries duties.** The safety regulator's page on work equipment puts
+   duties on those who own, operate or have control of it, owned or not. A lease of a robot establishes a right
+   to use it and nothing about whether it may be operated.
+4. **A lease's accounting is not its label.** The reporting standard's periodic review has a principal
+   effective date of 1 January 2026 and changes how a lessee accounts for a lease. Which regime an entity
+   reports under decides the treatment.
+5. **Self-driving on a road.** The Act's full authorisation regime is planned for 2027 on the programme's own
+   page, and no primary page was found saying it operates. What exists is a permit for an automated passenger
+   service, granted by the Secretary of State. For a robot on a pavement no primary source permitting it was
+   found. A private business has, as read, no general route to put either on a public road or footway.
+6. **A robot in a workplace.** The health and safety Act with the work-equipment regulations, the lifting
+   regulations where it lifts, the supply regulations on the maker's side (amended from 20 January 2027 by
+   S.I. 2026/867), and data-protection law where its cameras capture people. No regime specific to humanoid
+   robots was found; the regulator's guidance on collaborative robots is announced and not published.
+
+### 31.4 What the tree already has that this would reuse, and what is absent
+
+REUSABLE AS IT STANDS: the review tiers and review records; the register of sources and its check; the
+hash-versioned document register; deliverable versions; the hash-chained ledger; Change Control's tiers with
+the Board's ratification; the review gates that hold a lifecycle step for a person; the cadence's due-date
+predicate; the legal folder's containment and its locate-or-leave-blank assembly; the handling of a person's
+document as data with its truncation stated; the ownership checks; and the refusal of filing-shaped documents.
+
+VIRTUAL OR SIMULATED ONLY: service contracts between entities; entity legal forms; owner payouts; the listed
+devices and their telemetry; digital twins.
+
+ABSENT: any record of an agreement with an outside party; parties, signatories and signing authority;
+execution evidence; obligations, dates, notices and reminders; premises and lease records; hire, lease and
+finance records; any register of a physical asset; safety, permission and insurance evidence for one. The
+words robot, vehicle, drone, premises and insurance appear nowhere in the code (the only hits are a font name).
+
+### 31.5 What is taken, what is refused, and why
+
+TAKEN, as two chartered items in the fifth phase: the documents' central distinctions, each of which survives
+checking - an entity of this platform is not a legal person; an internal virtual contract is not an agreement;
+approval is of one exact version; a provider's "signed" is not execution; a date is never taken from a model's
+memory; a signed lease is not permission to operate; a simulation is not readiness; and legal right, permission
+of place, the maker's conformity, the user's safety evidence, insurance and operational readiness are six
+separate facts that are never merged into one score.
+
+REFUSED: the seventeen-round and eight-round programmes as written (they would start a programme out of the
+order the Owner ruled, and one of them would begin the standing milestone on the document's word); every
+instruction to copy the documents into `docs/` (they are assessed here, and the three disagree); any
+connection to a device, vehicle or robot, any command, telemetry or teleoperation; any e-signature provider;
+any drafting of a lease, land contract or deed; any comparison of named finance products, until the
+consumer-credit regime has been read; and any statement of what is lawful that does not name a row of the
+register of sources and the date it was read.
+
+SEQUENCE, unchanged by this section: the standing tier-1 findings are fixed before the fifth phase begins
+(Owner ruling 2026-10-12), and a person's own agreements wait for sign-in, as a person's own matter does.
