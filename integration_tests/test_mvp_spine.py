@@ -65008,7 +65008,7 @@ def test_w711_the_two_chartered_items_keep_their_boundaries_and_every_source_say
         body = plan.split(f"\n {slot} [chartered W711", 1)[1].split(nxt, 1)[0]
         return " ".join(body.split())
     agreements = _charter("P5.18", "\n P5.19 [chartered W711")
-    assets = _charter("P5.19", "\n COMPLETE when P5.1")
+    assets = _charter("P5.19", "\n P5.20 [chartered W723")       # W723 - the next item now follows it
     #  the agreements item: what it may never show, what it refuses, and what it does not do
     for must in ("NOTHING HERE IS LEGAL ADVICE", "never offered as a party to an outside agreement",
                  "never shown as an incorporation", "an approval is of one exact version",
@@ -65416,3 +65416,60 @@ def test_w718_a_governed_live_setting_is_not_applied_without_the_health_check(cl
                 _approve(cid)
                 client.post(f"/api/v1/cca/{cid}/implement")
     assert _cfg("gateway", "rpm_limit") == start
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W723 - OWNER RULING 2026-10-13: the options for a scholar's review and a qualified legal review, researched,
+#  five recommendations accepted. Chartered as one item whose boundaries are held here; documents only.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w723_quote_do_not_compose_is_chartered_with_its_boundaries_and_its_sources_say_what_was_not_read():
+    import json
+    import pathlib
+    import re
+    from agentic_core import plan_followups as _fu
+    root = pathlib.Path(__file__).resolve().parents[1]
+    plan = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    items = {i["slot"]: i for i in _fu.plan_items(plan)}
+    assert "P5.20" in items and not items["P5.20"]["done"]
+    body = " ".join(plan.split("\n P5.20 [chartered W723", 1)[1].split("\n COMPLETE when P5.1", 1)[0].split())
+    #  what no automated check may ever be called, and what stays as the Owner ruled it
+    for must in ("NOTHING HERE MAKES AN AI A SCHOLAR OR A SOLICITOR",
+                 "is ever called a certificate, an approval or a review by a person",
+                 "MAY REFUSE AND NEVER APPROVES",
+                 "What the platform composes stays withheld until a named scholar approves it",
+                 "ONLY a work whose terms of reuse were read at its publisher and entered as a row",
+                 "NO index, bulk fetch or vector store of judgments exists until the publisher's licence",
+                 "compared character for character", "is removed and the answer says it was removed and why",
+                 "may route, never clear", "are linked and never copied",
+                 "it never approves, never releases and never changes the text",
+                 "nothing is \"certified\"", "no outside model is called"):
+        assert must in body, must
+    for clause in range(1, 9):
+        assert f"({clause})" in body, clause
+    for part in ("MEASURED FIRST:", "ACCEPT:", "BOUNDARY:", "SEQUENCE:"):
+        assert part in body, part
+    #  the five expectations are named as the regulator names them, and "NOT MET" is an allowed answer
+    for said in ("accuracy", "no action without consent", "human oversight", "redress", "data protection", "NOT MET"):
+        assert said in body, said
+
+    #  the assessment's section says what was read and what was only found, and proposes no approval by a machine
+    assess = (root / "docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md").read_text(encoding="utf-8")
+    section = " ".join(assess.split("\n## 32. Addendum (W723)", 1)[1].split())
+    for said in ("What was read at its publisher", "found in search results only, and is NOT relied on until read",
+                 "never presents one as either", "QUOTE AND NOT COMPOSE", "What is deliberately not proposed",
+                 "An automated review that approves religious content"):
+        assert said in section, said
+
+    #  the sources: a read row says what it says and what was not read; a row not read claims no page was read
+    rows = {r["id"]: r for r in json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))["rows"]}
+    for rid in ("dar-al-ifta-egypt-ai-fatwa-2025", "lsb-ai-consumer-expectations-2026", "tna-find-case-law-permission",
+                "legislation-gov-uk-reuse", "acas-reuse-terms"):
+        r = rows[rid]
+        assert r["status"] == "current" and r["page"].startswith("https://") and re.fullmatch(r"\d{4}-\d{2}-\d{2}", r["read_on"]), rid
+        assert len(r["says"]) > 40 and len(r["not_read"]) > 10, rid
+        assert "NOT re-read by a second reader" in r["read_by"], rid
+    for rid in ("citizens-advice-terms", "quran-foundation-tafsir-terms"):
+        r = rows[rid]
+        assert r["status"] == "named_not_read" and "read_on" not in r and "says" not in r, (rid, "a row not read carries a reading")
+    assert "free of charge" in rows["tna-find-case-law-permission"]["says"] and "vector database" in rows["tna-find-case-law-permission"]["says"]
+    assert "impermissible" in rows["dar-al-ifta-egypt-ai-fatwa-2025"]["says"]

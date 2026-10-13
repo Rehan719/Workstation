@@ -21162,6 +21162,57 @@
       "closed_by": null,
       "note": "",
       "slot_source": "chartered with the item in this round; it is the item's third clause"
+    },
+    {
+      "id": "FU-1080",
+      "title": "No statute provision or official guidance is shown word for word: the first slice of the quote-do-not-compose item",
+      "why": "Build clauses 1, 3 and 6: one provision fetched from its publisher on request and shown verbatim with publisher, address, version date, extent, the publisher's list of changes not yet applied, and the licence line; a fidelity check that refuses on one differing character; and one page of where regulated and free help is, names and links only. Proved by hand on 2026-10-13 with one request; a hand-made sample drives the tests, which never call the live site.",
+      "source": "W723 (the options for a scholar's review and a qualified legal review, researched; five recommendations accepted by the Owner on 2026-10-13)",
+      "found": "2026-10-13",
+      "files": [
+        "agentic_core/api/law.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.20",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "Owner ruling 2026-10-13: the five recommendations, built in this order"
+    },
+    {
+      "id": "FU-1081",
+      "title": "The terms on which a published commentary may be shown have not been read for any work",
+      "why": "The Quran Foundation test service lists six commentaries, one in English, and states no licence for the work; the foundation's developer terms as recorded do not name commentary. No commentary is shown until the terms page has been re-read for it and, if silent, the foundation has answered. Clause 2 waits on this.",
+      "source": "W723 (the options for a scholar's review and a qualified legal review, researched; five recommendations accepted by the Owner on 2026-10-13)",
+      "found": "2026-10-13",
+      "files": [
+        "docs/SOURCES.json"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.20",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "Owner ruling 2026-10-13: only a work whose terms were read is shown"
+    },
+    {
+      "id": "FU-1082",
+      "title": "A question asking for a ruling on a person's own case is answered like any other",
+      "why": "Clause 5: recognise a request for a religious ruling or for advice on a live dispute, do not answer it as one, route it to people and show the published material that bears on it. The recognition is a screen: it may route and never clears. With it, the self-assessment against the regulator's five expectations as rows (clause 7).",
+      "source": "W723 (the options for a scholar's review and a qualified legal review, researched; five recommendations accepted by the Owner on 2026-10-13)",
+      "found": "2026-10-13",
+      "files": [
+        "agentic_core/api/law.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.20",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "Owner ruling 2026-10-13: the five recommendations"
     }
   ],
   "routes": [

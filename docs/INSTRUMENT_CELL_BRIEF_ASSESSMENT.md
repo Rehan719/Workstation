@@ -2140,3 +2140,45 @@ register of sources and the date it was read.
 
 SEQUENCE, unchanged by this section: the standing tier-1 findings are fixed before the fifth phase begins
 (Owner ruling 2026-10-12), and a person's own agreements wait for sign-in, as a person's own matter does.
+
+## 32. Addendum (W723) - a scholar's review and a qualified legal review: the options, researched
+
+The Owner asked on 2026-10-13 for the options to be researched widely and recommended, for the free adult
+Domain tools, in line with what the platform already is. Five recommendations were put and all five accepted.
+This section records what was read, what was only found in search results, and what follows.
+
+### What was read at its publisher (each a row in the register of sources)
+
+- A ruling of Egypt's Dar al-Ifta dated 2 December 2025: relying on AI applications to obtain a religious
+  ruling is impermissible; using AI in general is allowed and is judged by its purpose; it is not a
+  substitute for a qualified person. The ruling does not address general religious information.
+- Research published by the Legal Services Board on 10 June 2026: people expect five things of an AI legal
+  tool - a minimum level of accuracy, no consequential action without informed consent, some human oversight,
+  access to redress, and protection of personal data. Existing standards are weakest at identifying
+  vulnerable users, at pointing people to regulated or specialist help, and at routes to complain. No code
+  exists; a voluntary one is proposed.
+- The National Archives' page on reusing court judgments: reading, fetching one judgment as needed, quoting
+  and citing are free, commercial use included; any automated processing of many judgments - indexing, text
+  mining, a vector store, training - needs a licence that is applied for, assessed, and free of charge.
+
+### What was found in search results only, and is NOT relied on until read
+
+That statute text and one official employment-guidance site are reusable under the Open Government Licence;
+that an advice charity's pages may not be copied; that a Quran data foundation's service lists published
+commentaries (the terms of each work were not found); that the two best-known English commentaries are sold
+commercially; that a hadith site issues keys on request; that two AI-delivered law firms have been authorised
+with named solicitors accountable; a Court of Appeal decision of 2026 on who carries responsibility for
+litigation tasks; an advisory sandbox run with the legal regulators; and one open-source assistant that
+answers only from retrieved sources with citations (its developers' own account).
+
+### What follows
+
+No option makes an automated system a scholar or a solicitor, and the platform never presents one as either.
+What its own AI can do is shrink what needs a person, check what can be checked, and route the rest. The
+largest change is to QUOTE AND NOT COMPOSE: published scholarship and enacted law shown word for word, with
+their source, were reviewed by their authors. Chartered as plan item P5.20, eight clauses.
+
+### What is deliberately not proposed
+
+An automated review that approves religious content; copying an advice charity's pages or a commercially
+published commentary; an index of judgments before the licence is granted; the word "certified" anywhere.
