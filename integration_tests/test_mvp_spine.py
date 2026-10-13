@@ -63523,12 +63523,25 @@ def test_w694_a_read_that_is_not_free_says_so_for_every_handler_that_makes_it_an
         if body_calls:
             calling.add(t.comparators[0].value)
     assert len(calling) >= 4, f"the walk found only {sorted(calling)} - it is not reading the handler"
-    missing = sorted(calling - set(_fab._READ_SIDE_EFFECTS))
-    assert not missing, f"these handlers read the organism context, which advances the energy simulator, and their rows do not say so: {missing}"
+    #  THE COST IS SAID IN ONE OF TWO PLACES, by what the resource is: a read or a query says it in the table of
+    #  reads that are not free; an engine run says it in its own declaration of what it persists. (The first
+    #  form of this leg required the table for all four, and the build server showed that listing an engine
+    #  run there overrode its fuller declaration in the resource's contract.)
+    def _says_the_cost(rid):
+        if rid in _fab._READ_SIDE_EFFECTS:
+            return _fab._READ_SIDE_EFFECTS[rid]
+        word, basis = _fab._FACILITY_PERSISTS.get(rid, ("", ""))
+        return basis if word == "side_effect" else ""
+    missing = sorted(r for r in calling if "ATP" not in _says_the_cost(r))
+    assert not missing, f"these handlers read the organism context, which advances the energy simulator, and nothing says so for them: {missing}"
+    #  each is said ONCE: an engine run is not also listed as a read, so its contract carries its own sentence
+    twice = sorted(set(_fab._READ_SIDE_EFFECTS) & set(_fab._FACILITY_PERSISTS))
+    assert not twice, f"declared in both places, so one sentence overrides the other in the contract: {twice}"
+    assert "change_control" in _fab._READ_SIDE_EFFECTS and "nervous_system" in _fab._FACILITY_PERSISTS
+    from agentic_core.api import instrument_cell as _cell694
     for rid in calling:
-        assert "ATP" in _fab._READ_SIDE_EFFECTS[rid]
-    #  ... and a resource that reads at a cost is never offered as an automatic stand-in for another
-    assert {"nervous_system", "change_control"} <= set(_fab._READ_SIDE_EFFECTS)
+        ct = _cell694.contract(rid)
+        assert ct["persists"] == "side_effect" and "ATP" in ct["persists_basis"], (rid, ct["persists"], ct["persists_basis"])
     #  2. THE COMPOSED GENESIS JOURNEY IS CALLED WITH NOBODY, not with the framework's dependency marker
     import agentic_core.api.genesis as _gen
     got = {}

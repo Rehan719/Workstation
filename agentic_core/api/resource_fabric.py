@@ -1922,10 +1922,11 @@ _NARRATIVE_RESOURCES = frozenset({"digital_twin"})
 _READ_SIDE_EFFECTS = {
     "metabolic": "reading the organism context advances the ATP simulator (the read is not free)",
     "circadian": "reading the organism context advances the ATP simulator (the read is not free)",
-    #  W694 - two more handlers read the organism context and were not listed: the table named two of four.
-    #  The guard now reads the handler's own source for every branch that makes this call, so a fifth cannot
-    #  be added without its row.
-    "nervous_system": "reading the organism context advances the ATP simulator (the read is not free)",
+    #  W694 - four handlers read the organism context. Two are reads and are above. The nervous system is an
+    #  ENGINE RUN and says this cost in its own declaration below (what a facility run persists); listing it
+    #  here too overrode that fuller sentence. Change control is a QUERY, which otherwise reads "nothing was
+    #  persisted" - so its cost is said here. The guard reads the handler's own source for every branch that
+    #  makes the call and requires the cost to be said in one of the two places.
     "change_control": "reading the organism context advances the ATP simulator (the read is not free)",
 }
 #  P3.31 clause 2 - WHAT A FACILITY RUN PERSISTS, declared only where the engine's own function was read. The
