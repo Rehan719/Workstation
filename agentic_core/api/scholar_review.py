@@ -101,9 +101,48 @@ def add_scholar(scholar_id: str, name: str, credential: str, added_by: str) -> D
 
 
 # ── the queue ─────────────────────────────────────────────────────────────────────────────────────
+#  W702 (OWNER RULING 2026-10-13) - A SCHOLAR'S QUEUE IS CAPPED, PER TOOL. Every differently worded reply a model
+#  composes is a new item, so one busy tool could put hundreds of items in front of a named scholar. Past the
+#  cap a NEW item is not queued and the caller is told so; nothing approved, rejected or already waiting is ever
+#  dropped to make room, and an item already in the store may always be written again.
+QUEUE_CAP = 20
+NOT_QUEUED = "not_queued"
+
+
+def queue_of(content_key: str, surface: str) -> str:
+    """The queue an item counts towards: its surface - or surface and tool, where the key names a tool as its
+    second segment (`surface:tool:...`), as the research tools' keys do."""
+    parts = str(content_key).split(":")
+    return f"{surface}:{parts[1]}" if len(parts) >= 3 and parts[0] == surface else str(surface)
+
+
+def queues_full(recs: Optional[Dict[str, Any]] = None) -> Dict[str, int]:
+    """Each queue holding QUEUE_CAP or more items IN REVIEW, with its count. Empty when none is full."""
+    recs = _load(_review_path()) if recs is None else recs
+    counts: Dict[str, int] = {}
+    for key, r in recs.items():
+        if isinstance(r, dict) and r.get("state") == IN_REVIEW:
+            q = queue_of(key, str(r.get("surface") or ""))
+            counts[q] = counts.get(q, 0) + 1
+    return {q: n for q, n in sorted(counts.items()) if n >= QUEUE_CAP}
+
+
+def _full_sentence(full: Dict[str, int]) -> str:
+    return ("the review queue is full (" + "; ".join(f"{n} items await a scholar on {q}" for q, n in full.items())
+            + f"; the limit is {QUEUE_CAP} per tool), so new items are not being queued. Nothing was dropped to "
+              "make room")
+
+
 def submit(content_key: str, surface: str, body: str, reference: str = "") -> Dict[str, Any]:
     """Record a composed item as awaiting review. Submitting never approves anything."""
     recs = _load(_review_path())
+    if content_key not in recs:
+        _full = queues_full(recs)
+        _q = queue_of(content_key, surface)
+        if _q in _full:
+            return {"content_key": content_key, "surface": surface, "reference": reference,
+                    "body_hash": body_hash(body), "state": NOT_QUEUED, "queued": False, "queue": _q,
+                    "why": "Not queued for scholarly review: " + _full_sentence({_q: _full[_q]}) + "."}
     rec = {
         "content_key": content_key,
         "surface": surface,
@@ -200,8 +239,15 @@ def published_body(content_key: str, body: str) -> Tuple[Optional[str], str, str
             "before it is shown to a person using a research tool or asking for a rewrite (Owner ruling "
             "2026-10-11), and no scholar is on the roster yet. "
             "A disclaimer is not a review, so nothing is shown in its place."))
-    rec = _load(_review_path()).get(content_key)
+    _recs = _load(_review_path())
+    rec = _recs.get(content_key)
     if not rec:
+        _full = queues_full(_recs)
+        if _full:
+            #  W702 - the refusal is said where the caller receives it: the item is not in the queue, and why
+            return (None, "withheld", (
+                "This is not in the review queue, and " + _full_sentence(_full) + ". It is withheld rather "
+                "than shown with a caveat."))
         return (None, "withheld", (
             "This has not been submitted for scholarly review, so it is withheld rather than shown with a "
             "caveat."))
@@ -233,6 +279,8 @@ def gate_status() -> Dict[str, Any]:
         "roster_is_empty": roster_is_empty(),
         "items": len(recs),
         "by_state": by_state,
+        "queue_cap_per_tool": QUEUE_CAP,
+        "queues_full": queues_full(recs),
         "basis": (
             "Approval requires a reviewer recorded on the scholar roster; there is no trust score a "
             "caller can assert. With an empty roster NOTHING can be approved and every learner-facing "

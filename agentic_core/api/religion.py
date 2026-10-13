@@ -149,6 +149,9 @@ def _scholar_gated(tool: str, composed: str, asked: str, headings: tuple, proven
             "roster has approved that exact text, and nothing is shown in its place. "
             + ("It is in the review queue, awaiting a named scholar's review. " if queued else
                "It is not awaiting review. ")
+            #  W702 - a full queue is said here too: with no scholar on the roster the reason below is the
+            #  roster's, and the fact that this item was not even queued would otherwise go unsaid
+            + ((str(rec.get("why")) + " ") if rec.get("state") == _sr.NOT_QUEUED else "")
             + why)
     return "", names, {"state": "in_review" if awaiting else "withheld", "basis": why, "content_key": key}, note
 

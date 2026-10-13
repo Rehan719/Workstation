@@ -1074,6 +1074,16 @@
       "enforced_by": null,
       "why_not_enforced": "Whether a fix read the whole answer is visible only to whoever reads the fix. A guard over the whole payload can be looked for; the reading cannot.",
       "ratified": "the Owner's ruling of 2026-10-13, as one batch"
+    },
+    {
+      "id": "M-SESS-12",
+      "group": "session",
+      "rule": "A secret is never pasted into a conversation, a document or a repository. One found in any of them is treated as exposed and is revoked at its provider.",
+      "defect": "Earlier work (2024-2025): real-shaped credentials were found in a saved conversation and in a committed environment file. Blanking them at the tip of a branch leaves every one in the history, so each had to be treated as exposed.",
+      "apply": "Settings hide secret fields from their printed form; a test never prints a setting; a found secret is reported by path and kind only, never by value; revoking it is its owner's act.",
+      "enforced_by": null,
+      "why_not_enforced": "The settings fields marked not-to-print cover this platform's own settings. Nothing scans pasted text or another repository; that remains a person's habit.",
+      "ratified": "the Owner's ruling of 2026-10-13 (evening), reworded as ruled"
     }
   ],
   "mechanisms": [
