@@ -64119,7 +64119,8 @@ def test_w698_an_answer_that_names_a_model_states_its_level_and_a_refusal_states
     assert any(v["stating_a_level"] < v["blocks_naming_a_model"] for v in inv["files"].values()), (
         "no file has a silent block, so the recount above compared nothing that could differ")
     #  a ceiling measured when the ruling was built: the count of silent blocks may fall, and may not rise
-    assert inv["not_stating_a_level"] <= 91, ("a new answer block names a model and states no evidence level",
+    #  (91 when the ruling was built in W698; 65 after W708 worked three more files)
+    assert inv["not_stating_a_level"] <= 65, ("a new answer block names a model and states no evidence level",
                                               inv["not_stating_a_level"])
 
 
@@ -64768,3 +64769,76 @@ def test_w707_the_journey_the_stream_and_the_change_record_say_what_their_siblin
     agency = (root / "apps/workstation-superapp/src/pages/enterprise/ChangeControlAgency.tsx").read_text(encoding="utf-8")
     assert "{detail?.prevalidation_basis && (" in agency and "{detail.prevalidation_basis}" in agency
     assert 'data-testid="cca-prevalidation-basis"' in agency
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W708 - the evidence level, three more files. A block that names what served states its level in the block;
+#  a block whose server is None because NOTHING WAS ASKED states that there is none.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w708_three_more_files_state_the_level_and_a_block_nothing_served_states_none(client):
+    import ast
+    import pathlib
+    from agentic_core.api import _ai_provenance as _ap
+    from agentic_core.api import native_ai as _na
+    root = pathlib.Path(__file__).resolve().parents[1]
+
+    #  1. THE THIRD STATEMENT: nothing was asked, so there is no level - and it is not the refusal's sentence
+    none = _ap.no_reply_evidence()
+    assert none["evidence_level"] is None and none["evidence_level_number"] is None and none["evidence_basis"].startswith("NOT SERVED")
+    assert none["evidence_basis"] != _ap.reply_evidence(_ap.REFUSAL_GATE)["evidence_basis"]
+    none["evidence_level"] = "changed by a caller"
+    assert _ap.no_reply_evidence()["evidence_level"] is None, "one caller's edit reached the next caller's statement"
+
+    #  2. IN EACH OF THE THREE FILES no block that names what served is silent, and each kind is the right one
+    files = ("agentic_core/api/resource_fabric.py", "agentic_core/catalog/bto.py", "agentic_core/api/products.py")
+    seen = {"none": 0, "reply": 0}
+    for rel in files:
+        tree = ast.parse((root / rel).read_text(encoding="utf-8"))
+        for d in ast.walk(tree):
+            if not isinstance(d, ast.Dict):
+                continue
+            keys = [k.value if isinstance(k, ast.Constant) else None for k in d.keys]
+            if "served_by" not in keys:
+                continue
+            spreads = [getattr(v.func, "id", "") for k, v in zip(d.keys, d.values) if k is None and isinstance(v, ast.Call)]
+            assert "evidence_level" in keys or any("evidence" in s for s in spreads), (rel, d.lineno, "names what served and states no level")
+            served = d.values[keys.index("served_by")]
+            if isinstance(served, ast.Constant) and served.value is None:
+                #  nothing was asked: calling it "behaviour" would say a reply exists
+                assert "_no_reply_evidence" in spreads and "_reply_evidence" not in spreads, (rel, d.lineno, spreads)
+                seen["none"] += 1
+            elif "_reply_evidence" in spreads:
+                assert "_no_reply_evidence" not in spreads, (rel, d.lineno, spreads)
+                seen["reply"] += 1
+    assert seen["none"] >= 4 and seen["reply"] >= 20, seen
+
+    #  3. DRIVEN: the statement is on the answer a route returns, and it is the reply's
+    from agentic_core.catalog import bto as _bto
+    from agentic_core.api import products as _pr
+    from agentic_core.api import resource_fabric as _rf
+    for mod in (_bto, _rf):
+        assert mod._reply_evidence is _ap.reply_evidence and mod._no_reply_evidence is _ap.no_reply_evidence
+    assert _pr._reply_evidence is _ap.reply_evidence
+    import asyncio
+    from agentic_core.ai.native import orchestrator as _orch
+    _real = _orch.complete
+    try:
+        async def _replied(prompt, **k):
+            return {"output": "a placeholder reply", "served_by": "ollama:w708", "is_external": False}
+
+        async def _refused(prompt, **k):
+            return {"output": "[CONSTITUTIONAL REFUSAL] w708", "served_by": _ap.REFUSAL_GATE, "is_external": False}
+        _orch.complete = _replied
+        a = asyncio.run(_pr.run_reactor_sim("general", {}, "w708"))
+        assert a["served_by"] == "ollama:w708" and a["evidence_level"] == "behaviour" and a["evidence_level_number"] == 1, a
+        _orch.complete = _refused
+        b = asyncio.run(_pr.run_reactor_sim("general", {}, "w708"))
+        assert b["served_by"] == _ap.REFUSAL_GATE and b["evidence_level"] is None and b["evidence_basis"].startswith("REFUSED"), b
+    finally:
+        _orch.complete = _real
+
+    #  4. THE CENSUS agrees, file by file: all of each file's blocks now state a level
+    inv = client.get("/api/v1/native-ai/evidence-levels/routers").json()
+    for rel in files:
+        c = inv["files"][rel]
+        assert c["stating_a_level"] == c["blocks_naming_a_model"] > 0, (rel, c)

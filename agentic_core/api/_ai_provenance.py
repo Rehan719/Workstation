@@ -57,6 +57,18 @@ def is_refusal(answer: Any) -> bool:
             or str(answer.get("output") or answer.get("final") or "").startswith("[CONSTITUTIONAL REFUSAL]"))
 
 
+_NO_REPLY_EVIDENCE = {
+    "evidence_level": None, "evidence_level_number": None,
+    "evidence_basis": ("NOT SERVED: nothing was asked of a resource for this, so there is no behaviour to state "
+                       "and it carries no level")}
+
+
+def no_reply_evidence() -> Dict[str, Any]:
+    """W708 - for a block whose `served_by` is None because no call was made. Calling that "behaviour" would
+    say a reply exists; this says none does."""
+    return dict(_NO_REPLY_EVIDENCE)
+
+
 def reply_evidence(served_by: Any = None) -> Dict[str, Any]:
     """The evidence level of an answer a resource gave - or, for a refusal, the statement that there is none."""
     return dict(_REFUSAL_EVIDENCE if served_by == REFUSAL_GATE else _REPLY_EVIDENCE)

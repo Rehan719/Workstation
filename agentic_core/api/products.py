@@ -109,7 +109,7 @@ async def run_reactor_sim(domain: str = "general", params: Optional[dict] = None
     from agentic_core.ai.native import orchestrator
     prompt = _reactor_prompt(domain, params or {}, label)
     res = await orchestrator.complete(prompt, agent="reactor", prefer=prefer)
-    return {"output": res.get("output", "") or "", "served_by": res.get("served_by", "native"),
+    return {**_reply_evidence(res.get('served_by', 'native')), "output": res.get("output", "") or "", "served_by": res.get("served_by", "native"),
             "is_external": bool(res.get("is_external")), "run_id": uuid.uuid4().hex[:12]}
 
 
@@ -175,7 +175,7 @@ async def run_factory_produce(name: str, product_type: str = "business_model", d
     prompt = _factory_prompt(name, product_type, domain, description)
     res = await orchestrator.complete(prompt, agent="factory", prefer=prefer,
                                       user_text=(chr(10).join(x for x in (name, description) if isinstance(x, str) and x.strip()) or None))   # W641
-    return {"output": res.get("output", "") or "", "served_by": res.get("served_by", "native"),
+    return {**_reply_evidence(res.get('served_by', 'native')), "output": res.get("output", "") or "", "served_by": res.get("served_by", "native"),
             "is_external": bool(res.get("is_external")), "run_id": uuid.uuid4().hex[:12]}
 
 
@@ -262,7 +262,7 @@ async def run_generator(artefact_type: str, spec: str, domain: str = "general",
               f"Specification:\n{spec}")
     res = await orchestrator.complete(prompt, agent="generator", prefer=prefer,
                                       user_text=(spec or None))   # W641 - the specification typed
-    return {"artefact_type": artefact_type, "format": fmt, "output": res.get("output", "") or "",
+    return {**_reply_evidence(res.get('served_by', 'native')), "artefact_type": artefact_type, "format": fmt, "output": res.get("output", "") or "",
             "served_by": res.get("served_by", "native"), "is_external": bool(res.get("is_external")),
             "run_id": uuid.uuid4().hex[:12]}
 
@@ -956,7 +956,7 @@ async def intelligence_forecasts() -> dict:
     _fr = await gateway.query_meta(prompt, agent="intelligence", augment=False)
     forecast_text = _fr.get("output", "")
 
-    result = {
+    result = {**_reply_evidence(_fr.get('served_by')), 
         "forecast": forecast_text,
         "served_by": _fr.get("served_by"),
         "is_external": bool(_fr.get("is_external")),
@@ -1024,7 +1024,7 @@ async def run_reactor_composite(subject: str, domain: str = "general", variants:
                  getattr(studio, "ai_provenance", None) if studio else None):
         if isinstance(prov, dict):
             served.update((prov.get("served_by") or {}).keys())
-    return {
+    return {**_reply_evidence(), 
         "reactor": "composite",
         "subject": subject,
         "served_by": ",".join(sorted(s for s in served if s)) or "native",

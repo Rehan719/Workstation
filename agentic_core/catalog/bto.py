@@ -3,6 +3,8 @@ import uuid
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter
+from agentic_core.api._ai_provenance import (reply_evidence as _reply_evidence,      # W708
+                                             no_reply_evidence as _no_reply_evidence)
 from pydantic import BaseModel
 
 from agentic_core.catalog.api import catalogue_counts, list_products, not_served_reason, served_products
@@ -158,7 +160,7 @@ async def build_to_order(request: BTOBuildRequest):
                 # this handler dropped it, so a build carried no record of what served it. The provenance
                 # existed one layer up and died here.
                 _prov = (d.get("ai_provenance") or {}) if isinstance(d, dict) else {}
-                built.append({"slug": p["slug"], "name": p["name"],
+                built.append({**_reply_evidence(_prov.get('served_by')), "slug": p["slug"], "name": p["name"],
                               "deliverable_id": d.get("id") if isinstance(d, dict) else None,
                               "served_by": _prov.get("served_by"),
                               "is_external": bool(_prov.get("is_external")),
@@ -172,7 +174,7 @@ async def build_to_order(request: BTOBuildRequest):
             except Exception as e:
                 # a build that raised was served by nothing: stated, not left absent (a missing key reads as
                 # "not recorded", and "the call raised" is a different and stronger fact)
-                built.append({"slug": p["slug"], "name": p["name"], "status": "FAILED",
+                built.append({**_no_reply_evidence(), "slug": p["slug"], "name": p["name"], "status": "FAILED",
                               "served_by": None, "is_external": False,
                               "served_by_basis": "the produce call raised, so nothing served this entry",
                               "error": str(e)[:160]})
@@ -189,7 +191,7 @@ async def build_to_order(request: BTOBuildRequest):
         _sb = b.get("served_by")
         if _sb:
             _served_map[str(_sb)] = _served_map.get(str(_sb), 0) + 1
-    _bto_provenance = {
+    _bto_provenance = {**_reply_evidence(), 
         "served_by": _served_map or None,
         "any_external": any(b.get("is_external") for b in built),
         "entries_with_no_server": sum(1 for b in built if not b.get("served_by")),
@@ -205,7 +207,7 @@ async def build_to_order(request: BTOBuildRequest):
                            f"unassessed → {request.entity_name}", 0.7)
     except Exception:
         pass
-    return {"entity_name": request.entity_name, "objective": objective, "domain": request.domain,
+    return {**_reply_evidence(_bto_provenance['served_by']), "entity_name": request.entity_name, "objective": objective, "domain": request.domain,
             "requested": request.product_resources, "built": built,
             #  W660 (FU-717) - a slug that matches nothing is in neither `built` nor a NOT_BUILT row
             "unknown_slugs": [s for s in request.product_resources if s not in slug_index],
@@ -260,7 +262,7 @@ async def configure_bto(request: BTOConfigureRequest):
     _components = {kind: _build_component(kind) for kind in request.components}
     _unknown_components = [k for k, v in _components.items() if (v or {}).get("status") == "Unknown component"]
     _unknown_slugs = [s for s in request.product_resources if s not in slug_index]
-    blueprint = {
+    blueprint = {**_no_reply_evidence(), 
         "blueprint_id": str(uuid.uuid4()),
         "entity_name": request.entity_name,
         "timestamp": datetime.datetime.utcnow().isoformat(),
@@ -283,7 +285,7 @@ async def configure_bto(request: BTOConfigureRequest):
         # when the provenance is perfectly well known — there is none, because nothing served this.
         "served_by": None,
         "is_external": False,
-        "ai_provenance": {
+        "ai_provenance": {**_no_reply_evidence(), 
             "posture": "deterministic",
             "served_by": None,
             "is_external": False,
