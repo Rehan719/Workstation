@@ -16493,7 +16493,14 @@ def test_w470_catalogue_honesty_one_registry_live_counts_and_no_dead_flagship_ta
     assert body["count"] == len(products) >= 12 and all(p["status"] in ("live", "source", "legacy") for p in products)
     assert body["counts"] == catalog.catalogue_counts(products)          # the API says the honest numbers itself
     by_slug = {p["slug"]: p for p in products}
+    #  W731 - three of the six legacy archives (Employment, Law, Science) held only the Owner's own papers and were
+    #  moved out of this public repository, so they are no longer registered directories. The three that remain
+    #  are still legacy; the three moved must not be listed again.
+    _moved731 = {"Employment", "Law", "Science"}
     for slug in ("Care", "Education", "Employment", "Law", "Religion", "Science"):
+        if slug in _moved731:
+            assert slug not in by_slug and not (pathlib.Path(__file__).resolve().parents[1] / "products" / slug).exists(), slug
+            continue
         p = by_slug[slug]
         assert p["status"] == "legacy" and p["route"] is None and p["live"] is False, p
         assert p["category"] == "Legacy archive" and "not a served product" in " ".join(p["features"]), p
@@ -16503,7 +16510,7 @@ def test_w470_catalogue_honesty_one_registry_live_counts_and_no_dead_flagship_ta
             assert p["route"] is None, p
     counts = catalog.catalogue_counts(products)
     assert counts["registered"] == len(products) and counts["live"] + counts["source"] + counts["legacy"] == len(products)
-    assert 0 < counts["live"] < counts["registered"] and counts["legacy"] == 6, counts
+    assert 0 < counts["live"] < counts["registered"] and counts["legacy"] == len(catalog.LEGACY_ARCHIVES - _moved731), counts   # W731: three moved
     assert set(catalog.LEGACY_ARCHIVES) == {"Care", "Education", "Employment", "Law", "Religion", "Science"}
     assert not (set(catalog.LEGACY_ARCHIVES) & set(catalog.ROUTE_OVERRIDES)), "a legacy archive must never route"
     # the SDK/source pointers open nothing: no route in any metadata.json is honoured as live without a served page
