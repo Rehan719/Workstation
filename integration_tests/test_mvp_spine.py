@@ -65648,3 +65648,131 @@ def test_w724_a_statute_provision_is_shown_word_for_word_and_help_is_a_list_of_l
     hub_src = _code_only((root / "apps/workstation-superapp/src/pages/domains/LawHub.tsx").read_text(encoding="utf-8"))
     assert "<StatutePanel />" in hub_src
     assert not re.search(r"served_by|ai_provenance", panel_src), "the panel presents the publisher's text as a model's"
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W726 - OWNER RULING 2026-10-14: one action enters the Owner's ratified plan into the platform's own plan,
+#  recorded as entered from the ratified document - and refused while sign-in is off.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w726_one_action_enters_the_ratified_plan_and_the_record_says_how(client, monkeypatch):
+    import json as _json
+    import pathlib
+    from agentic_core.api import business_plan as _bp
+    from agentic_core.api import ratified_plan as _rp
+    from agentic_core.auth import core as auth_core
+    root = pathlib.Path(__file__).resolve().parents[1]
+
+    #  1. THE DOCUMENT AS READ: the Owner's words, section for section; an unmeasured objective carries no measure
+    shown = _rp.preview(root)
+    assert shown["ratified_on"] == "2026-10-13" and shown["document_faults"] == [], shown["document_faults"]
+    assert set(shown["fields"]) == {"executive_summary", "concept", "vision", "mission", "strategy"}
+    assert all(len(v) > 80 for v in shown["fields"].values())
+    assert "held privately" in shown["fields"]["mission"] and "is not published here" in shown["fields"]["mission"]
+    doc = " ".join((root / _rp.DOCUMENT).read_text(encoding="utf-8").split())
+    for field, text in shown["fields"].items():
+        for line in text.splitlines():
+            assert " ".join(line.split()) in doc, (field, "a line is entered that the document does not hold", line[:80])
+    assert len(shown["aims"]) >= 4 and len(shown["objectives"]) >= 5
+    for o in shown["objectives"]:
+        assert o["source"] == "ratified document" and o["plan_item"].startswith("P")
+        assert (o["kpi"] == "") == o["measure_as_ratified"].upper().startswith("NOT MEASURED"), o
+    assert "Risks" in shown["not_entered"] and "has no place for it" in shown["canvas"]
+
+    #  2. A DRAFT IS NOT ENTERED, and a document missing a section says which
+    made = tmp = None
+    import tempfile
+    tmp = pathlib.Path(tempfile.mkdtemp())
+    (tmp / "docs/business").mkdir(parents=True)
+    real = (root / _rp.DOCUMENT).read_text(encoding="utf-8")
+    (tmp / _rp.DOCUMENT).write_text(real.replace("**Ratified by the Owner on 2026-10-13**", "**DRAFT until the Owner ratifies it.**"), encoding="utf-8")
+    made = _rp.preview(tmp)
+    assert made["ratified_on"] is None and any("ratified" in f for f in made["document_faults"]), made["document_faults"]
+    (tmp / _rp.DOCUMENT).write_text(real.replace("## Vision", "## Outlook"), encoding="utf-8")
+    assert any("'Vision'" in f for f in _rp.preview(tmp)["document_faults"])
+
+    #  3. SIGN-IN OFF: the preview says why not, and entering writes nothing
+    assert auth_core.auth_enabled() is False
+    pv = client.get("/api/v1/business-plan/ratified/preview").json()
+    assert pv["can_enter"] is False and "sign-in is off" in pv["cannot_because"] and pv["sha256"] == shown["sha256"]
+    before = _json.dumps(_bp._load(_bp.RATIFIED_SCOPE), sort_keys=True)
+    off = client.post("/api/v1/business-plan/ratified/enter", json={"sha256": shown["sha256"]})
+    assert off.status_code == 409 and "Nothing was entered" in off.json()["detail"] and "sign-in is off" in off.json()["detail"]
+    assert _json.dumps(_bp._load(_bp.RATIFIED_SCOPE), sort_keys=True) == before, "the plan was written with sign-in off"
+
+    #  4. SIGN-IN ON (the suite's own users, in its own store): only the administrator, only the document shown
+    users_before = _json.loads(_json.dumps(auth_core._load_users()))
+    users = auth_core._load_users()
+    for uname, pw, role in (("w726-user", "pw-user-726", "user"), ("w726-admin", "pw-admin-726", "admin")):
+        users[uname] = {"user_id": uname, "username": uname, "hashed_password": auth_core._pwd_ctx.hash(pw),
+                        "role": role, "created_at": "2026-01-01T00:00:00Z", "api_keys": []}
+    auth_core._save_users(users)
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    plan_before = _json.loads(before)
+    try:
+        def _hdr(u, p):
+            r = client.post("/api/v1/auth/token", data={"username": u, "password": p})
+            assert r.status_code == 200, r.text
+            return {"Authorization": f"Bearer {r.json()['access_token']}"}
+        user_h, admin_h = _hdr("w726-user", "pw-user-726"), _hdr("w726-admin", "pw-admin-726")
+        assert client.get("/api/v1/business-plan/ratified/preview").status_code == 401
+        assert client.get("/api/v1/business-plan/ratified/preview", headers=user_h).status_code == 404
+        assert client.post("/api/v1/business-plan/ratified/enter", headers=user_h, json={"sha256": shown["sha256"]}).status_code == 404
+        #  the rule's OWN test of who may enter, driven directly: an ordinary account never reaches it through a
+        #  route (the plan is not found for them, above), so a blind removing it stayed green until this leg
+        may, why = _bp._may_enter_ratified({"username": "w726-user", "role": "user"}, shown)
+        assert may is False and "only the platform's administrator" in why, (may, why)
+        assert _bp._may_enter_ratified(None, shown)[0] is False and _bp._may_enter_ratified("not a person", shown)[0] is False
+        assert _bp._may_enter_ratified({"username": "w726-admin", "role": "admin"}, shown) == (True, None)
+        pv = client.get("/api/v1/business-plan/ratified/preview", headers=admin_h).json()
+        assert pv["can_enter"] is True and pv["cannot_because"] is None
+        wrong = client.post("/api/v1/business-plan/ratified/enter", headers=admin_h, json={"sha256": "0" * 64})
+        assert wrong.status_code == 409 and "has changed since the preview" in wrong.json()["detail"]
+        assert _json.dumps(_bp._load(_bp.RATIFIED_SCOPE), sort_keys=True) == before
+
+        ok = client.post("/api/v1/business-plan/ratified/enter", headers=admin_h, json={"sha256": shown["sha256"]})
+        assert ok.status_code == 200, ok.text[:300]
+        plan = _bp._load(_bp.RATIFIED_SCOPE)
+        for f, text in shown["fields"].items():
+            assert plan[f] == text.strip(), (f, "the field is not the document's text")
+            assert plan["owner_edits_by"][f] == "w726-admin", plan["owner_edits_by"].get(f)
+        assert plan["aims"] == shown["aims"]
+        mine = [o for o in plan["objectives"] if o.get("source") == "ratified document"]
+        assert len(mine) == len(shown["objectives"]) and all(not _bp.is_seeded_draft(o) for o in mine)
+        stamp = plan["entered_from_ratified_document"]
+        assert stamp["sha256"] == shown["sha256"] and stamp["ratified_on"] == "2026-10-13" and stamp["by_verified"] is True
+        assert stamp["entered_by"] == "w726-admin" and "was not typed field by field" in stamp["basis"]
+        assert "has no place for it" in stamp["canvas"] and "Risks" in stamp["not_entered"]
+        #  entering twice adds nothing twice and moves no timestamp
+        edits1, at1 = dict(plan["owner_edits"]), stamp["entered_at"]
+        again = client.post("/api/v1/business-plan/ratified/enter", headers=admin_h, json={"sha256": shown["sha256"]}).json()
+        plan2 = _bp._load(_bp.RATIFIED_SCOPE)
+        assert again["objectives_added"] == 0 and len(plan2["objectives"]) == len(plan["objectives"])
+        assert plan2["owner_edits"] == edits1 and plan2["entered_from_ratified_document"]["entered_at"] == at1
+        #  a later hand edit is seen at the read, never stored as a state
+        client.post("/api/v1/business-plan/set", headers=admin_h, json={"scope": "workstation", "vision": "w726 a later edit by hand"})
+        pv2 = client.get("/api/v1/business-plan/ratified/preview", headers=admin_h).json()
+        assert pv2["edited_since"] == ["vision"] and "edited_since" not in _bp._load(_bp.RATIFIED_SCOPE)["entered_from_ratified_document"]
+    finally:
+        monkeypatch.setenv("AUTH_ENABLED", "false")
+        auth_core._save_users(users_before)
+        _bp._save(plan_before)                               # the suite's own store is left as it was found
+    assert auth_core.auth_enabled() is False
+
+
+def test_w726_the_page_shows_the_preview_first_and_enters_only_what_was_shown():
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    entry_src = _code_only((root / "apps/workstation-superapp/src/components/RatifiedPlanEntry.tsx").read_text(encoding="utf-8"))
+    flat = " ".join(entry_src.split())
+    #  nothing is fetched until asked for, and nothing is written from the preview
+    assert "useEffect" not in flat
+    assert flat.count("/api/v1/business-plan/ratified/enter") == 1 and "body: { sha256: shown.sha256 }" in flat
+    #  the confirm button exists only where the server says it may be entered; otherwise the server's reason
+    assert "{shown.can_enter ?" in flat and "{shown.cannot_because}" in flat
+    #  what is left out, and how it was entered, are said on the page
+    for drawn in ("{shown.not_entered.join(', ')}", "{shown.canvas}", "{shown.already_entered.basis}", "{refusal}",
+                  "ratified by the Owner on ${shown.ratified_on}", "'NOT ratified'"):
+        assert drawn in flat, drawn
+    opening_src = _code_only((root / "apps/workstation-superapp/src/components/PlanOpening.tsx").read_text(encoding="utf-8"))
+    assert "{scope === 'workstation' && <RatifiedPlanEntry onEntered={onSaved} />}" in " ".join(opening_src.split()), \
+        "the entry is offered on a plan that is not the platform's own"

@@ -21,6 +21,7 @@ import React, { useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Crown, PenLine, CheckCircle2, Loader2 } from 'lucide-react';
 import { provenanceMapBadge } from '../lib/api';
+import { RatifiedPlanEntry } from './RatifiedPlanEntry';
 
 export interface PlanProvenanceShape {
   served_by?: Record<string, number> | null;
@@ -186,6 +187,8 @@ export const PlanOpening: React.FC<Props> = ({ plan, scope, onSaved, fields = AB
         </Card>
       )}
 
+      {/* W726 - the platform's own plan may be entered from the Owner's ratified document, by one action */}
+      {scope === 'workstation' && <RatifiedPlanEntry onEntered={onSaved} />}
       {edit && (
         <Card className="p-6 border-highlight/40" data-testid="plan-owner-edit">
           <div className="flex items-center gap-2 mb-3">
