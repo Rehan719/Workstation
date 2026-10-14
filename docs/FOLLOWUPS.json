@@ -16696,11 +16696,15 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W730",
       "note": "",
       "slot_source": "found while closing the bundle rows and not done",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The alignment and anomaly engines return NOT ASSESSED with no figure and the reason beside it, where each returned one fixed figure for any input; read before the change: the cascade, the two cognitive routes and the spawn record are the only readers, and the fabric's cognitive resource runs the lens prompt rather than these engines. A census over the cognitive package holds fixed score, alignment and confidence figures at zero.",
+      "reachability_check": "test_w730_no_engine_returns_a_figure_nothing_computes"
     },
     {
       "id": "FU-855",
@@ -16834,11 +16838,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W730",
       "note": "",
       "slot_source": "what a closed tier-3 bundle row left undone; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The cascade route no longer carries either figure: both engines return none, the cascade's basis counts which said not assessed, and the single-engine route says which this one did.",
+      "reachability_check": "test_w730_no_engine_returns_a_figure_nothing_computes"
     },
     {
       "id": "FU-862",

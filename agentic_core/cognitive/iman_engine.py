@@ -4,6 +4,17 @@ from agentic_core.consultation.interface import ConsultationRequest, Consultatio
 from agentic_core.consultation.constitutional_screen import screen as _constitutional_screen
 from agentic_core.cognitive.model_path import floor_basis, serve
 
+def _marker(res: Dict) -> str:
+    """The floor's answer, from what the check returned: a refusal with its reason, a figure only when one
+    was computed, and otherwise that nothing was assessed (W730 - this said `Alignment: 0.0` for a refusal)."""
+    if res.get("status") == "REJECTED":
+        return f"Alignment: rejected ({res.get('reason')})"
+    _v = res.get("alignment")
+    if isinstance(_v, (int, float)) and not isinstance(_v, bool):
+        return f"Alignment: {_v}"
+    return "Alignment: not assessed - nothing here computes one"
+
+
 class ImanEngine:
     def __init__(self, ueg=None):
         self.ueg = ueg
@@ -12,7 +23,11 @@ class ImanEngine:
     async def validate_values(self, action: Dict, sulfur_metrics: Optional[Dict] = None):
         if sulfur_metrics and sulfur_metrics.get("error_rate", 0.01) > 0.05:
             return {"status": "REJECTED", "reason": "High toxicity"}
-        return {"status": "SUCCESS", "alignment": 0.99}
+        #  W730 (FU-854) - this returned one fixed alignment for any action. Nothing here computes one,
+        #  so the key stays (a reader indexing it does not break) and holds None, with the reason beside it.
+        return {"status": "NOT_ASSESSED", "alignment": None,
+                "alignment_basis": ("NOT ASSESSED: nothing here computes an alignment - this engi"
+                                    "ne has no instrument for one, so it returns no figure rather than a fixed one")}
 
     async def consult(self, request: ConsultationRequest) -> ConsultationResponse:
         """Standardized Mushawara consultation implementation."""
@@ -27,7 +42,7 @@ class ImanEngine:
             engine="iman",
             #  the model's text when one served, and the engine's own marker when none did —
             #  never a blend, so a reader is not left guessing which they are looking at
-            answer=(_text if _text else f"Alignment: {res.get('alignment', 0.0)}"),
+            answer=(_text if _text else _marker(res)),
             # P3.12 - the bar permits a REFUSAL instead of a computed value, and a required numeric
             # field is what forced the invention. None means nothing computed it.
             confidence=None,
