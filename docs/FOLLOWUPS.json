@@ -17626,11 +17626,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W728",
       "note": "",
       "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Every writer of the composition store reads it whole or refuses with 503 and writes nothing; every write is atomic and inside the store's lock; the update re-reads inside the lock after its simulation, so nothing added or removed meanwhile is lost or brought back.",
+      "reachability_check": "test_w728_a_saved_composition_is_never_lost_to_a_store_that_could_not_be_read"
     },
     {
       "id": "FU-902",
