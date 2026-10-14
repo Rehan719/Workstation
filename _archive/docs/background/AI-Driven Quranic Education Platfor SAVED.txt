@@ -1126,10 +1126,10 @@ Create a root .env.example:
 NODE_ENV=development
 PORT_FRONTEND=3000
 PORT_BACKEND=4000
-DB_POSTGRES_URL=postgres://postgres:password@postgres:5432/quran_db
-MONGO_URI=mongodb://mongo:27017/ai_quran
-REDIS_URL=redis://redis:6379
-GOOGLE_APPLICATION_CREDENTIALS=/path/to/google-credentials.json
+DB_POSTGRES_URL=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
+MONGO_URI=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
+REDIS_URL=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
+GOOGLE_APPLICATION_CREDENTIALS=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
 OPENAI_API_KEY=
 DEEPGRAM_API_KEY=
 
@@ -1323,8 +1323,8 @@ env
 CopyEdit
 
 # Authentication JWT Secrets
-JWT_SECRET=40a28efb671d162a46fa97961fc73751492854dd311aba4b79647289ae79e7ee9ed1b895d9867afd09a7d0068f485fdebc02f24369e6f506308597ee55e1ff6cdd3fa98a756dc831af56ab7bb8f607e46eabf7b3ff948d2ba4d203cf6849c690cafecc2780083227a9b0302dc070f6a8af5606a5966722f1dd1fea5276c93f1f241a4d12b0e825b1707cc611a609396675323af1207233bd30fb5bed193be5127891444b38eada1e01ed269cc18468c1b4330eaf32234b32a34bd8479d043db9b3f3ec799ca947cc3a744b52d8c24e5381bd5c01917c5e499e26e3ec5a6e80b0e9e40c518945a51fdd181c0f8cc4042573bf208b7109ccd0641c5fe3065d3619
-JWT_REFRESH_SECRET=y9cec46b8722e2fd7a01838446d978b11511be1b515084d5d2df3c3663d9c9e2cf94d56f593582a8caec1d6c6d808a2cfde494ab80edbf78f8107fef000e79a2f0da2a4e7b65af04dafbe25cf90a59486ca85761c0565b0a0dc5f544c51bc89f0d9a2d1c5b80bba231eeecfea95704db0c2237a7a3e5b94077e03ee8ed782b637ff95f185bc4ef8160849b14d377fb102ad5248187415ade6597f0f4958a5465fdb01e2ca02407f602a670242666585c9985f8ab6a95ba9159e23519fd95247e3db923deb63545a5d5e035f6bebdf946a8a25fb70c4e9438c45a2c60bee1275cb7f42430fa06f9b0897dc2e2f58223923a89e797e596cdbb5a01b832019beaef8
+JWT_SECRET=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
+JWT_REFRESH_SECRET=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
 
 # Environment & Ports
 NODE_ENV=development
@@ -1335,14 +1335,14 @@ REACT_APP_API_URL=http://localhost:3000/api
 STRIPE_API_URL=http://localhost:3000/api/stripe
 
 # API Keys
-OPENAI_API_KEY=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
-DEEPGRAM_API_KEY=d666b7143f1aa2abfac44a9947df339d7a165cbe
+OPENAI_API_KEY=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
+DEEPGRAM_API_KEY=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
 
 # MongoDB Atlas Connection
-MONGODB_URI=mongodb+srv://rehan34m34:ysC8waXHQTUpXjpW@cluster0.pirld.mongodb.net/
+MONGODB_URI=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
 
 # Firebase Configuration
-FIREBASE_API_KEY=AIzaSyAkmR5QaaCfEprjnDgn1BJkSwd7EGauULA
+FIREBASE_API_KEY=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
 FIREBASE_AUTH_DOMAIN=quran-recitation-ai-4fa56.firebaseapp.com
 FIREBASE_PROJECT_ID=quran-recitation-ai-4fa56
 FIREBASE_STORAGE_BUCKET=quran-recitation-ai-4fa56.firebasestorage.app
@@ -1351,28 +1351,28 @@ FIREBASE_APP_ID=1:610675334910:web:735adf3b9e3d2faf784faf
 FIREBASE_MEASUREMENT_ID=G-CBHLNRHEKE
 
 # Google reCAPTCHA
-RECAPTCHA_SITE_KEY=6LdrUMUqAAAAAJsdXk-54Jrn44m51VegDarTsdLC
-RECAPTCHA_SECRET_KEY=6LdrUMUqAAAAABfiiqPFmMoqgLSkAcr2k_7GV18r
-REACT_APP_RECAPTCHA_SITE_KEY=6LdrUMUqAAAAAJsdXk-54Jrn44m51VegDarTsdLC
-REACT_APP_RECAPTCHA_SECRET_KEY=6LdrUMUqAAAAABfiiqPFmMoqgLSkAcr2k_7GV18r
+RECAPTCHA_SITE_KEY=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
+RECAPTCHA_SECRET_KEY=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
+REACT_APP_RECAPTCHA_SITE_KEY=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
+REACT_APP_RECAPTCHA_SECRET_KEY=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
 
 # Google Cloud Project
 GOOGLE_PROJECT_ID=quran-recitation-ai-444501
-GOOGLE_APPLICATION_CREDENTIALS="C:/Users/rehan/OneDrive/Desktop/Quran-Education-AI-Platform/config/google-credentials.json"
+GOOGLE_APPLICATION_CREDENTIALS=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
 GOOGLE_BUCKET_NAME=quraneducationaiplatform
 GOOGLE_REDIRECT_URI=http://localhost:3000/oauth/google/callback
 
 # Email SMTP
 EMAIL=rehan34m34@gmail.com
-EMAIL_PASSWORD=Whoareyou123
+EMAIL_PASSWORD=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
 
 # Google OAuth2 Credentials
-GOOGLE_CLIENT_ID=211497681171-rfp6l2vcgng7jfot56i93qqd79dvkva5.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=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
+GOOGLE_CLIENT_ID=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
+GOOGLE_CLIENT_SECRET=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
 
 # Stripe API
-STRIPE_SECRET_KEY=sk_live_<REDACTED_W354_ROTATE_AT_STRIPE>
-STRIPE_WEBHOOK_SECRET=whsec_<REDACTED_W354_ROTATE_AT_STRIPE>
+STRIPE_SECRET_KEY=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
+STRIPE_WEBHOOK_SECRET=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
 
 # GCP Cloud SQL Configuration
 DB_CONNECTION=mysql
@@ -1380,7 +1380,7 @@ DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_DATABASE=quran_education_db
 DB_USERNAME=root
-DB_PASSWORD=Whoareyou123+=
+DB_PASSWORD=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
 DB_SYNC=true
 
 
@@ -10634,14 +10634,14 @@ export default function App() {
 
 Add or update these in both your backend .env (and frontend .env prefixed with VITE_):
 
-MONGODB_URI=your_mongo_uri
-OPENAI_API_KEY=your_openai_key
-SWARM_API_KEY=your_swarm_key
-GCP_API_KEY=your_gcp_key
-AZURE_PREDICT_API_KEY=your_azure_predict_key
-AZURE_EMOTION_API_KEY=your_azure_emotion_key
-GOOGLE_API_KEY=your_google_key
-ADAPTIVE_API_KEY=your_adaptive_key
+MONGODB_URI=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
+OPENAI_API_KEY=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
+SWARM_API_KEY=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
+GCP_API_KEY=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
+AZURE_PREDICT_API_KEY=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
+AZURE_EMOTION_API_KEY=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
+GOOGLE_API_KEY=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
+ADAPTIVE_API_KEY=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
 
 
 
@@ -13051,9 +13051,9 @@ Ensure these in your .env files:
 
 Backend .env:
 
-MONGODB_URI=<your MongoDB connection string>
-PERSPECTIVE_API_KEY=<your Perspective API Key>
-JWT_SECRET=<your JWT secret>
+MONGODB_URI=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
+PERSPECTIVE_API_KEY=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
+JWT_SECRET=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
 
 
 Frontend .env (if using Vite proxy):
@@ -21576,11 +21576,11 @@ npm install axios howler ioredis kafkajs mongoose express body-parser jsonwebtok
 
 Environment variables:
 
-MONGODB_URI=<your MongoDB URI>
-REDIS_URL=<your Redis URI>
+MONGODB_URI=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
+REDIS_URL=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
 KAFKA_BROKER=<your Kafka broker list>
-JWT_SECRET=<your JWT secret>
-HF_API_TOKEN=<your Hugging Face API token>
+JWT_SECRET=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
+HF_API_TOKEN=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
 
 
 Start infrastructure:
@@ -28844,8 +28844,8 @@ CopyEdit
 
 NODE_ENV=production
 DB_HOST=<database_url>
-JWT_SECRET=<your_secret_key>
-STRIPE_SECRET_KEY=<stripe_key>
+JWT_SECRET=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
+STRIPE_SECRET_KEY=<REDACTED-2026-10-14: a credential was pasted here; it is revoked at its provider>
 
 
 Run the application:
