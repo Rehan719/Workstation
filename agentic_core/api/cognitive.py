@@ -374,6 +374,10 @@ async def run_single_engine(req: SingleEngineRequest):
         # got undefined on this path. Every branch now carries ran, result, answer and note.
         "ran": True,
         "answer": None,
-        "note": ("a cascade engine ran its mapped method. It returns a fixed marker rather than computing "
-                 "(P3.12): the six foundational engines have no path to a model (FU-275)"),
+        #  W730 - two of the six now return NOT ASSESSED and no figure; the note says which this one did
+        "note": (("a cascade engine ran its mapped method. It has no instrument for its quantity, so it returned "
+                  "NOT ASSESSED and no figure rather than a fixed one")
+                 if isinstance(result, dict) and result.get("status") == "NOT_ASSESSED" else
+                 ("a cascade engine ran its mapped method. It returns a fixed marker rather than computing "
+                  "(P3.12): the six foundational engines have no path to a model (FU-275)")),
     }

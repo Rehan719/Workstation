@@ -4,6 +4,17 @@ from agentic_core.consultation.interface import ConsultationRequest, Consultatio
 from agentic_core.consultation.constitutional_screen import screen as _constitutional_screen
 from agentic_core.cognitive.model_path import floor_basis, serve
 
+def _marker(res: Dict) -> str:
+    """The floor's answer, from what the check returned: an alert with its reason, a figure only when one
+    was computed, and otherwise that nothing was assessed (W730 - this said `Threat Score: 1.0` for an alert)."""
+    if res.get("status") == "ALERT":
+        return f"Threat Score: alert ({res.get('reason')})"
+    _v = res.get("threat_score")
+    if isinstance(_v, (int, float)) and not isinstance(_v, bool):
+        return f"Threat Score: {_v}"
+    return "Threat Score: not assessed - nothing here computes one"
+
+
 class HoshiyariEngine:
     def __init__(self, ueg=None):
         self.ueg = ueg
@@ -12,7 +23,11 @@ class HoshiyariEngine:
     async def detect_anomalies(self, stream: Any, oxygen_metrics: Optional[Dict] = None):
         if oxygen_metrics and oxygen_metrics.get("load", 0.8) > 0.95:
             return {"status": "ALERT", "reason": "Hypoxia"}
-        return {"status": "SUCCESS", "threat_score": 0.01}
+        #  W730 (FU-861) - this returned one fixed threat score for any stream. Nothing here computes one,
+        #  so the key stays (a reader indexing it does not break) and holds None, with the reason beside it.
+        return {"status": "NOT_ASSESSED", "threat_score": None,
+                "threat_score_basis": ("NOT ASSESSED: nothing here computes a threat score - this en"
+                                       "gine has no instrument for one, so it returns no figure rather than a fixed one")}
 
     async def consult(self, request: ConsultationRequest) -> ConsultationResponse:
         """Standardized Mushawara consultation implementation."""
@@ -27,7 +42,7 @@ class HoshiyariEngine:
             engine="hoshiyari",
             #  the model's text when one served, and the engine's own marker when none did —
             #  never a blend, so a reader is not left guessing which they are looking at
-            answer=(_text if _text else f"Threat Score: {res.get('threat_score', 1.0)}"),
+            answer=(_text if _text else _marker(res)),
             # P3.12 - the bar permits a REFUSAL instead of a computed value, and a required numeric
             # field is what forced the invention. None means nothing computed it.
             confidence=None,

@@ -54065,18 +54065,24 @@ def test_p3a_r2_a_record_holds_what_happened(client, monkeypatch):
 
     def _num(v):
         return isinstance(v, (int, float)) and not isinstance(v, bool)
-    #    THE PRECONDITION the withholding rests on: the two engines return one figure whatever they are handed.
-    #    If this goes red an engine has started computing, and _stored_cascade_record must stop nulling it.
+    #    W730 (FU-854, FU-861) - RETARGETED. This leg's precondition was that the two engines returned one figure
+    #    whatever they were handed. They now return NOT ASSESSED and no figure, which is asserted here for two
+    #    different problems. The record's withholding is still driven, by a PLANTED numeric report: a figure could
+    #    come back from a model path, and the record's copy must still drop it.
     _c1 = _ensure_loop().run_until_complete(_vsb._cascade.execute_cascade({"problem": "a village bakery"}))
     _c2 = _ensure_loop().run_until_complete(_vsb._cascade.execute_cascade(
         {"problem": "an orbital debris tracking consortium", "domain": "science", "scope": "concept"}))
-    assert _num(_c1["alignment"]["alignment"]) and _num(_c1["alerts"]["threat_score"]), _c1
-    assert _c1["alignment"] == _c2["alignment"] and _c1["alerts"] == _c2["alerts"], (
-        "an engine returned different figures for different problems: it computes now, so the record must keep it",
-        _c1["alignment"], _c2["alignment"], _c1["alerts"], _c2["alerts"])
-    _kept = _vsb._stored_cascade_record(_c1)
-    assert _num(_c1["alignment"]["alignment"]), "the live cascade report was changed by making the record's copy"
+    for _c in (_c1, _c2):
+        assert _c["alignment"]["alignment"] is None and _c["alignment"]["status"] == "NOT_ASSESSED", _c["alignment"]
+        assert _c["alerts"]["threat_score"] is None and _c["alerts"]["status"] == "NOT_ASSESSED", _c["alerts"]
+    _planted = {**_c1, "alignment": {"status": "SUCCESS", "alignment": 0.5},
+                "alerts": {"status": "SUCCESS", "threat_score": 0.5}}
+    _kept = _vsb._stored_cascade_record(_planted)
+    assert _num(_planted["alignment"]["alignment"]), "the live cascade report was changed by making the record's copy"
     assert _kept["alignment"]["alignment"] is None and _kept["engines_ran"] == _c1["engines_ran"], _kept
+    assert _kept["figures_withheld"] == ["alignment.alignment", "alerts.threat_score"], _kept["figures_withheld"]
+    assert "2 figure(s) the cascade returned are not kept" in _kept["figures_withheld_basis"], _kept["figures_withheld_basis"]
+    assert "fixed return" in _kept["alignment"]["status_basis"] and "fixed return" in _kept["alerts"]["status_basis"]
     assert _vsb._stored_cascade_record({"alignment": {"alignment": True}})["figures_withheld"] == [], "a flag is not a figure"
     assert _vsb._stored_cascade_record("not a report") == "not a report"
 
@@ -54094,9 +54100,9 @@ def test_p3a_r2_a_record_holds_what_happened(client, monkeypatch):
         "the entity record holds an alignment figure no engine computed", _ca.get("alignment"))
     assert _ca["alerts"]["threat_score"] is None and "NOT ASSESSED" in _ca["alerts"]["threat_score_basis"], (
         "the entity record holds a threat figure no engine computed", _ca.get("alerts"))
-    assert "fixed return" in _ca["alignment"]["status_basis"] and "fixed return" in _ca["alerts"]["status_basis"]
-    assert _ca["figures_withheld"] == ["alignment.alignment", "alerts.threat_score"], _ca["figures_withheld"]
-    assert "2 figure(s) the cascade returned are not kept" in _ca["figures_withheld_basis"], _ca["figures_withheld_basis"]
+    #    W730 - the engines return no figure now, so the record has nothing to withhold, and says so
+    assert _ca["alignment"]["status"] == "NOT_ASSESSED" and _ca["alerts"]["status"] == "NOT_ASSESSED", _ca
+    assert _ca["figures_withheld"] == [] and "nothing was withheld" in _ca["figures_withheld_basis"], _ca["figures_withheld_basis"]
     assert not [k for sec in ("alignment", "alerts") for k, v in _ca[sec].items() if _num(v)], (
         "a numeric figure is still on the record under one of the two engine sections", _ca["alignment"], _ca["alerts"])
     assert len(_ca["engines_ran"]) == 6 and _ca["status"] == "completed", ("the rest of the report was lost", _ca)
@@ -65954,3 +65960,78 @@ def test_w728_a_saved_composition_is_never_lost_to_a_store_that_could_not_be_rea
             store.unlink(missing_ok=True)
         else:
             store.write_bytes(before)
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W730 - TWO ENGINES STOP RETURNING A FIGURE NOTHING COMPUTES. The alignment and anomaly engines returned one
+#  fixed figure for any input; they now return NOT ASSESSED and no figure, and each surface that shows them
+#  says so: the engine's own floor answer, the cascade's report and basis, and the single-engine route.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w730_no_engine_returns_a_figure_nothing_computes(client, monkeypatch):
+    import ast
+    import pathlib
+    import re
+    import agentic_core.cognitive.hoshiyari_engine as _ho
+    import agentic_core.cognitive.iman_engine as _im
+    from agentic_core.consultation.interface import ConsultationRequest
+    _loop = _ensure_loop()
+
+    #  1. THE SOURCE, for two different inputs: no figure, the key still present, the reason beside it
+    for _probe in ({"query": "a village bakery"}, {"goals": ["an orbital debris consortium"], "n": 7}):
+        _a = _loop.run_until_complete(_im.ImanEngine().validate_values(_probe))
+        _t = _loop.run_until_complete(_ho.HoshiyariEngine().detect_anomalies(_probe))
+        assert _a["status"] == "NOT_ASSESSED" and "alignment" in _a and _a["alignment"] is None, _a
+        assert _t["status"] == "NOT_ASSESSED" and "threat_score" in _t and _t["threat_score"] is None, _t
+        assert _a["alignment_basis"].startswith("NOT ASSESSED") and _t["threat_score_basis"].startswith("NOT ASSESSED")
+
+    #  2. THE FLOOR'S ANSWER comes from what the check returned - driven with no model, not read off the ambient
+    async def _no_model(engine, prompt, **kw):
+        return None, {"served_by": None, "basis": "no tier above the floor could serve (W730 test)"}
+    monkeypatch.setattr(_im, "serve", _no_model)
+    monkeypatch.setattr(_ho, "serve", _no_model)
+    _ri = _loop.run_until_complete(_im.ImanEngine().consult(ConsultationRequest(engine="iman", query="w730")))
+    _rh = _loop.run_until_complete(_ho.HoshiyariEngine().consult(ConsultationRequest(engine="hoshiyari", query="w730")))
+    assert _ri.answer == "Alignment: not assessed - nothing here computes one", _ri.answer
+    assert _rh.answer == "Threat Score: not assessed - nothing here computes one", _rh.answer
+    #     a refusal says it refused (these said `Alignment: 0.0` and `Threat Score: 1.0`), and a computed figure
+    #     would still be shown
+    assert _im._marker({"status": "REJECTED", "reason": "High toxicity"}) == "Alignment: rejected (High toxicity)"
+    assert _ho._marker({"status": "ALERT", "reason": "Hypoxia"}) == "Threat Score: alert (Hypoxia)"
+    assert _im._marker({"status": "SUCCESS", "alignment": 0.4}) == "Alignment: 0.4"
+    assert _ho._marker({"status": "SUCCESS", "threat_score": 0.4}) == "Threat Score: 0.4"
+    monkeypatch.undo()
+
+    #  3. THE CASCADE ROUTE: no figure in its report, and its basis COUNTS which engines said not assessed
+    _body = client.post("/api/v1/cognitive/cascade", json={"problem": "w730 a village bakery", "include_mjm": False}).json()
+    _cas = _body["cascade"]
+    assert _cas["alignment"]["alignment"] is None and _cas["alerts"]["threat_score"] is None, (_cas["alignment"], _cas["alerts"])
+    assert "2 returned NOT ASSESSED with no figure (hoshiyari, iman)" in _cas["status_basis"], _cas["status_basis"]
+    assert "the other 4 return a fixed marker" in _cas["status_basis"], _cas["status_basis"]
+    assert "Each returns a fixed" not in _cas["status_basis"], _cas["status_basis"]
+
+    #  4. THE SINGLE-ENGINE ROUTE says which this engine did; an engine that still returns a marker keeps its note
+    for _eid in ("iman", "hoshiyari"):
+        _r = client.post("/api/v1/cognitive/engine", json={"engine_id": _eid, "input": "w730"}).json()
+        assert _r["result"]["status"] == "NOT_ASSESSED", _r
+        assert "returned NOT ASSESSED and no figure" in _r["note"], _r["note"]
+    _aq = client.post("/api/v1/cognitive/engine", json={"engine_id": "aqal", "input": "w730"}).json()
+    assert "returns a fixed marker rather than computing" in _aq["note"], _aq["note"]
+
+    #  5. A CENSUS that holds it: no `return {...}` in agentic_core/cognitive puts a numeric LITERAL under a key
+    #     that names a score, an alignment or a confidence
+    _root = pathlib.Path(__file__).resolve().parents[1] / "agentic_core" / "cognitive"
+    _key = re.compile(r"score|alignment|confidence", re.I)
+    _fixed = []
+    for _p in sorted(_root.rglob("*.py")):
+        for _fn in ast.walk(ast.parse(_p.read_text(encoding="utf-8"))):
+            if not isinstance(_fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            for _n in ast.walk(_fn):
+                if isinstance(_n, ast.Return) and isinstance(_n.value, ast.Dict):
+                    for _k, _v in zip(_n.value.keys, _n.value.values):
+                        if (isinstance(_k, ast.Constant) and isinstance(_k.value, str) and _key.search(_k.value)
+                                and isinstance(_v, ast.Constant) and isinstance(_v.value, (int, float))
+                                and not isinstance(_v.value, bool)):
+                            _fixed.append(f"{_p.name}:{_n.lineno} {_fn.name} {_k.value}")
+    assert len(list(_root.rglob("*.py"))) >= 10, "the census read too few files to mean anything"
+    assert _fixed == [], ("a cognitive function returns a fixed figure under a score/alignment/confidence key", _fixed)

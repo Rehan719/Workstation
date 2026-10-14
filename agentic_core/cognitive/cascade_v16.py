@@ -55,9 +55,16 @@ class UltimateCognitiveCascade:
             # W531 — this said "fully_integrated", a superlative over six engines that each return a fixed
             # marker. What happened is that six calls completed; integration is not something this measured.
             "status": "completed",
-            "status_basis": (f"{len(engines_ran)} engine call(s) completed in sequence. Each returns a fixed "
-                            "marker rather than computing (P3.12), so this reports completion and not "
-                            "analysis, and nothing here measures integration"),
+            #  W730 - computed from what the calls returned: two engines now say NOT ASSESSED and return no
+            #  figure, and the sentence that every engine returns a fixed marker stopped being true.
+            "status_basis": (lambda _na: (
+                f"{len(engines_ran)} engine call(s) completed in sequence. "
+                + (f"{len(_na)} returned NOT ASSESSED with no figure ({', '.join(_na)}); " if _na else "")
+                + (f"the other {len(engines_ran) - len(_na)} return a fixed marker rather than computing (P3.12), "
+                   if len(engines_ran) > len(_na) else "")
+                + "so this reports completion and not analysis, and nothing here measures integration"))(
+                    [_n for _n, _r in (("hoshiyari", alerts), ("iman", final_alignment))
+                     if isinstance(_r, dict) and _r.get("status") == "NOT_ASSESSED"]),
         }
 
         await self.ueg.log_minimisation_event("cognitive_cascade_completed", {"problem": str(problem)})
