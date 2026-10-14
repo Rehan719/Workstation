@@ -65998,12 +65998,17 @@ def test_w732_the_public_tree_holds_no_privacy_exposure(client, tmp_path, monkey
     _man = json.loads((_dest / _res["manifest"]).read_text(encoding="utf-8"))
     assert _man["files"][0]["sha256"] == hashlib.sha256(b"private paper\r\n").hexdigest()
     assert not (_g / "papers" / "p.txt").exists() and "papers/p.txt" not in _git("ls-files").stdout
-    for _bad_dest, _target in ((_g / "inside", ["n.txt"]), (tmp_path / "elsewhere", ["no/such/"])):
+    #     the refusals, each on a CLEAN tracked file so nothing else can be what stops the move (a first cut used a
+    #     file with local changes, which git rm refuses by itself - so the inside-the-repository refusal went untested)
+    (_g / "keep.txt").write_text("kept\n", encoding="utf-8")
+    assert _git("add", "keep.txt").returncode == 0 and _git("commit", "-q", "--no-verify", "-m", "k").returncode == 0
+    for _bad_dest, _target in ((_g / "inside", ["keep.txt"]), (tmp_path / "elsewhere", ["no/such/"])):
         try:
             _mover.move(_g, _bad_dest, _target, apply=True)
             raise AssertionError(("the move accepted", _bad_dest, _target))
         except SystemExit:
             pass
+    assert "keep.txt" in _git("ls-files").stdout and not (_g / "inside").exists(), "a refused move changed something"
 
     #  6. THE PLATFORM'S OWN ROUTE: the same scan, and a deployment that cannot scan says NOT CHECKED
     _body = client.get("/api/v1/compliance/privacy-exposure").json()
