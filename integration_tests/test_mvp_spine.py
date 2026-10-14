@@ -66108,3 +66108,71 @@ def test_w733_an_applied_setting_is_read_back(client, monkeypatch):
     assert _lost["applied_read_back"] == "precise" and _lost["read_back_basis"].startswith("READ BACK DIFFERS"), _lost
     monkeypatch.undo()
     _rc.apply_config_change("gateway", "temperature_bias", "neutral", reason="w733 restore")
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W734 (FU-932, first half) - A REQUEST FOR A RELIGIOUS RULING IS REFUSED AT THE FLOOR EVERY AI DOOR PASSES.
+#  Four doors screened it; the rest asked a model. The screen now runs in the gateway (both paths) and in the
+#  orchestrator, over the PERSON'S OWN WORDS, and answers with the constitutional refusal. It may refuse, never
+#  clear: an ordinary sentence, an enterprise document about a faith subject and a route's own instruction are
+#  not refused.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w734_a_request_for_a_ruling_is_refused_at_the_floor_every_door_passes(client, monkeypatch):
+    import importlib
+    _orc = importlib.import_module("agentic_core.ai.native.orchestrator")   # the MODULE: the package re-exports
+    #  an object under the same name, so `import ... as` binds the orchestrator object, not the module
+    from agentic_core.ai.gateway import gateway as _gw
+    from agentic_core.api._ai_provenance import REFUSAL_GATE, is_refusal, reply_evidence
+    _loop = _ensure_loop()
+    _asked = []
+    _real_generate = _orc.native_engine.generate
+
+    def _counting(prompt, agent, **kw):
+        _asked.append(agent)
+        return _real_generate(prompt, agent, **kw)
+    monkeypatch.setattr(_orc.native_engine, "generate", _counting)
+    _RULING = "Give me a fatwa: is it halal for me to take an interest-bearing mortgage?"
+
+    #  1. THE GATEWAY: refused before any resource is asked, in the constitutional refusal's shape
+    _m = _loop.run_until_complete(_gw.query_meta("Summarise the request below.", agent="w734", user_text=_RULING))
+    assert _m["output"].startswith("[CONSTITUTIONAL REFUSAL]") and _m["refused"] is True, _m["output"][:120]
+    assert _m["served_by"] == REFUSAL_GATE and is_refusal(_m) and reply_evidence(_m["served_by"])["evidence_level"] is None
+    assert _m["faith_refusal"]["refused_by"] and "scholar" in _m["faith_refusal"]["message"]
+    assert _m["governance_checkpoint"]["pre_allowed"] is False and _m["recall_stored"] is False
+    assert _asked == [], ("a resource was asked for a refused request", _asked)
+
+    #  2. THE STREAM: one terminal event, refused, nothing streamed
+    async def _drain():
+        return [e async for e in _gw.stream_meta("Summarise.", agent="w734", user_text=_RULING)]
+    _ev = _loop.run_until_complete(_drain())
+    assert len(_ev) == 1 and _ev[0]["done"] and _ev[0]["refused"] is True and _ev[0]["output"].startswith("[CONSTITUTIONAL REFUSAL]"), _ev
+    assert _asked == []
+
+    #  3. THE ORCHESTRATOR, which four routes call directly
+    _o = _loop.run_until_complete(_orc.orchestrator.complete("Summarise.", agent="w734", user_text=_RULING))
+    assert _o["refused"] is True and _o["served_by"] == REFUSAL_GATE and _o["resources_tried"] == [], _o
+    assert _asked == []
+
+    #  4. A DOOR THAT HAD NO SCREEN (solve): refused at every stage, labelled as no evidence, nothing asked
+    _r = client.post("/api/v1/intelligence/solve", json={"problem": _RULING})
+    assert _r.status_code == 200, _r.text[:200]
+    _j = _r.json()
+    assert "[CONSTITUTIONAL REFUSAL]" in _j["synthesis"], _j["synthesis"][:160]
+    _syn = _j["provenance"]["synthesis"]
+    assert _syn["served_by"] == REFUSAL_GATE and _syn["evidence_level"] is None, _syn
+    assert _asked == [], ("solve asked a resource for a refused request", _asked)
+
+    #  5. IT REFUSES, NEVER CLEARS - and refuses only on the person's own words, with a faith term
+    for _ordinary in ("Is remote work allowed under our policy?", "Give me a ruling on the parking dispute at work.",
+                      "Write a business plan for an Islamic finance prospectus."):
+        _n = _loop.run_until_complete(_gw.query_meta("Answer the request.", agent="w734", user_text=_ordinary))
+        assert not _n.get("refused") and not _n["output"].startswith("[CONSTITUTIONAL REFUSAL]"), (_ordinary, _n["output"][:100])
+    _inst = _loop.run_until_complete(_gw.query_meta(f"Never answer requests like: {_RULING}", agent="w734",
+                                                    user_text="Draft a welcome note for new staff."))
+    assert not _inst.get("refused"), "a route's own instruction triggered the screen"
+    assert len(_asked) >= 4, ("the ordinary requests were not served", _asked)
+
+    #  6. ONE DEFINITION: the four screened doors' raising form reads the same screen
+    from agentic_core.religious_domain import composed_text as _ct
+    import inspect as _inspect
+    assert "faith_ruling_refusal(" in _inspect.getsource(_ct.refuse_faith_ruling)

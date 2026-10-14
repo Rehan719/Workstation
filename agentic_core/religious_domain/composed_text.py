@@ -50,15 +50,16 @@ COVERAGE = ("a phrase screen over what was asked and a script test over what was
             "script was not checked for anything else")
 
 
-def refuse_faith_ruling(text: Any, what: str) -> None:
-    """Raise 409 when the person's text asks for a religious ruling or a theological proof. Returns None
-    otherwise - which is NOT a clearance. Raised as an HTTPException so a route places it where it can be
-    received: as its first statement, never inside an except-pass and never after a stream has started."""
-    from fastapi import HTTPException
+def faith_ruling_refusal(text: Any, what: str) -> Dict[str, Any] | None:
+    """W734 - the refusal as DATA, or None (which is NOT a clearance). For the floor every AI door passes (the
+    gateway and the orchestrator), which must answer rather than raise: it is called outside requests too.
+    The same two gates and the same faith-term condition as refuse_faith_ruling, which now calls this."""
+    if not str(text or "").strip():
+        return None
     from agentic_core.gaas.v5 import horizon_guardrails as _hg
     hits = [g for g in (_hg.religious_ruling_gate(text), _hg.theological_proof_gate(text)) if g.get("escalate")]
     if not hits:
-        return
+        return None
     #  ON A GENERAL ROUTE THE GATE ALONE IS TOO WIDE. Its patterns were written for the Horizon membrane, where
     #  every request is a person's own question: "is ... allowed", "ruling on", "verdict about". On a general
     #  route those are ordinary enterprise sentences - "is remote work allowed under the policy", "summarise the
@@ -68,13 +69,23 @@ def refuse_faith_ruling(text: Any, what: str) -> None:
     low = " " + re.sub(r"[^a-z0-9']+", " ", str(text or "").lower()) + " "
     faith = sorted(t for t in FAITH_CONTEXT_TERMS if f" {t} " in low)
     if not faith:
-        return
-    raise HTTPException(status_code=409, detail={
+        return None
+    return {
         "message": (f"Not done: this {what} asks for a religious ruling or a theological proof, which no AI on "
                     f"this platform gives. A qualified scholar is the route for that question."),
         "refused_by": [g.get("gate") for g in hits],
         "coverage": COVERAGE,
-    })
+    }
+
+
+def refuse_faith_ruling(text: Any, what: str) -> None:
+    """Raise 409 when the person's text asks for a religious ruling or a theological proof. Returns None
+    otherwise - which is NOT a clearance. Raised as an HTTPException so a route places it where it can be
+    received: as its first statement, never inside an except-pass and never after a stream has started."""
+    _ref = faith_ruling_refusal(text, what)
+    if _ref:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=409, detail=_ref)
 
 
 def withheld_record(passages: int) -> Dict[str, Any]:
