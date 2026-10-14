@@ -17710,11 +17710,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W733",
       "note": "",
       "slot_source": "found in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The single write path for a setting (apply_config_change, which every caller passes) reads the store back after the write through the reader every consumer uses, and records applied_read_back, read_back_matches and a basis beside new_value; a write that did not hold is said.",
+      "reachability_check": "test_w733_an_applied_setting_is_read_back"
     },
     {
       "id": "FU-906",
@@ -19345,11 +19349,15 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W733",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A nonconformance a person reports opens a defect in the quality system's durable loop, owned by the caller and marked person_reported, before anything is composed; it is listed, corrected and re-verified there; it is not a gate run, so the non-conformance rate does not move, and it is counted apart. The prompt claims no role.",
+      "reachability_check": "test_w733_a_reported_nonconformance_is_kept_as_a_defect"
     },
     {
       "id": "FU-987",
@@ -21262,6 +21270,23 @@
       "closed_by": null,
       "note": "",
       "slot_source": "the register clean-up item: a ruled defect class with no row"
+    },
+    {
+      "id": "FU-1084",
+      "title": "The settings store is read tolerantly as the base of every write",
+      "why": "reconfiguration._load_config returns the defaults when the store cannot be parsed, and apply_config_change writes that back under the lock with one change applied, so a store that failed to read once loses every other setting (the class W728 fixed for compositions). Found in W733 while adding the read-back.",
+      "source": "W733",
+      "found": "2026-10-14",
+      "files": [
+        "agentic_core/organism/reconfiguration.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.40",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2
     }
   ],
   "routes": [
