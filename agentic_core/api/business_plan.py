@@ -871,3 +871,90 @@ async def progress(scope: str = "workstation", user: dict | None = Depends(_get_
             "objectives_detail": [{"id": o["id"], "title": o["title"], "kpi": o["kpi"],
                                    "timeline": o["timeline"], "owner_role": o["owner_role"],
                                    "progress_pct": o["progress_pct"], "status": o["status"]} for o in objs]}
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W726 (OWNER RULING 2026-10-14) - ONE ACTION ENTERS THE OWNER'S RATIFIED PLAN. The Owner ratified a business
+#  plan document; entering it section by section through the edit form is one long copy. This reads the
+#  ratified document, shows exactly what would be entered, and enters it on one action of the Owner's - and
+#  the record says that is what happened. It refuses while sign-in is off: with no principal, "who pressed
+#  this" would be a label the caller typed.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+RATIFIED_SCOPE = "workstation"
+
+
+def _may_enter_ratified(user: Any, shown: Dict[str, Any]) -> tuple:
+    if shown.get("document_faults"):
+        return False, "the document cannot be entered: " + "; ".join(shown["document_faults"])
+    if not _auth_enabled():
+        return False, ("sign-in is off, so nobody can be recorded as having entered this. Nothing is written "
+                       "until sign-in is on")
+    if not isinstance(user, dict) or user.get("role") != "admin":
+        return False, "only the platform's administrator may enter the platform's own plan"
+    return True, None
+
+
+class EnterRatifiedRequest(BaseModel):
+    sha256: str
+
+
+@router.get("/ratified/preview")
+def ratified_preview(user: dict | None = Depends(_get_current_user)):
+    """What the Owner's ratified plan document would enter, field by field. Writes nothing."""
+    from agentic_core.api import ratified_plan as _rp
+    _reach_or_404(user, RATIFIED_SCOPE)
+    shown = _rp.preview(_REPO_ROOT)
+    can, why = _may_enter_ratified(user, shown)
+    plan = _load_or_503(RATIFIED_SCOPE)
+    stamp = plan.get("entered_from_ratified_document")
+    edited = ([f for f in shown["fields"] if (plan.get(f) or "").strip() != shown["fields"][f].strip()]
+              if isinstance(stamp, dict) and stamp.get("sha256") == shown["sha256"] else None)
+    return {**shown, "scope": RATIFIED_SCOPE, "can_enter": can, "cannot_because": why,
+            "already_entered": stamp,
+            **({"edited_since": edited,
+                "edited_since_basis": "fields whose text now differs from the document's, compared at this read"}
+               if edited is not None else {})}
+
+
+@router.post("/ratified/enter")
+async def ratified_enter(req: EnterRatifiedRequest, user: dict | None = Depends(_get_current_user)):
+    """Enter the ratified document into the platform's own plan, on one action of the Owner's."""
+    from agentic_core.api import ratified_plan as _rp
+    _reach_or_404(user, RATIFIED_SCOPE)
+    shown = _rp.preview(_REPO_ROOT)
+    can, why = _may_enter_ratified(user, shown)
+    if not can:
+        raise HTTPException(status_code=409, detail=f"Nothing was entered: {why}.")
+    if req.sha256 != shown["sha256"]:
+        raise HTTPException(status_code=409, detail=(
+            "Nothing was entered: the document has changed since the preview you were shown. Read the "
+            "preview again and confirm that one."))
+    await set_plan(SetPlanRequest(scope=RATIFIED_SCOPE, owner=str(user.get("username") or ""),
+                                  aims=list(shown["aims"]), **shown["fields"]), user)
+    plan = _load_or_503(RATIFIED_SCOPE)
+    have = {(o.get("title"), o.get("source")) for o in plan.get("objectives") or []}
+    added = 0
+    for o in shown["objectives"]:
+        if (o["title"], o["source"]) in have:
+            continue                                   # entering twice adds nothing twice
+        plan.setdefault("objectives", []).append({
+            "id": f"obj-{uuid.uuid4().hex[:8]}", "title": o["title"], "kpi": o["kpi"], "timeline": o["timeline"],
+            "owner_role": o["owner_role"], "progress_pct": 0, "status": "planned", "reviews": [],
+            "source": o["source"], "plan_item": o["plan_item"], "measure_as_ratified": o["measure_as_ratified"],
+            "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
+        added += 1
+    ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    first = plan.get("entered_from_ratified_document") if isinstance(plan.get("entered_from_ratified_document"), dict) else None
+    plan["entered_from_ratified_document"] = {
+        "document": shown["document"], "sha256": shown["sha256"], "ratified_on": shown["ratified_on"],
+        "changed_since_ratification": shown["changed_since"],
+        "entered_at": (first or {}).get("entered_at") if (first or {}).get("sha256") == shown["sha256"] else ts,
+        "entered_by": plan.get("owner"), "by_verified": True,
+        "basis": (f"ratified by the Owner on {shown['ratified_on']}; entered from that document by one action "
+                  f"of the Owner's, on the Owner's instruction of 2026-10-14. The text was not typed field by "
+                  f"field"),
+        "not_entered": list(shown["not_entered"]), "canvas": shown["canvas"]}
+    _save(plan)
+    return {"entered": True, "objectives_added": added, "stamp": plan["entered_from_ratified_document"],
+            "fields": {f: plan.get(f) for f in shown["fields"]}, "aims": plan.get("aims")}

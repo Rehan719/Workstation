@@ -21229,6 +21229,23 @@
       "closed_by": null,
       "note": "",
       "slot_source": "Owner ruling 2026-10-13: the five recommendations"
+    },
+    {
+      "id": "FU-1083",
+      "title": "About seventy-five prompts in twelve files still open with a role claim, and only three domains are guarded against it",
+      "why": "Counted on 2026-10-14 by a search for the opening words over agentic_core: intelligence.py 21, v290/ceo_generate.py 13, projects/api.py 8, management_systems.py 7, avatars/api.py 4, products.py 4, digital_twin.py 3 and five more files. The Owner ruled out a role claim in any prompt; guards exist for the Law, Education and Care prompts only. A search gives sites, not instances: capture each prompt AS SENT through the gateway, reword by a script file, and hold every agent's prompt with one guard.",
+      "source": "W726 (found while preparing the engines-and-records cluster)",
+      "found": "2026-10-14",
+      "files": [
+        "agentic_core/api/intelligence.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the register clean-up item: a ruled defect class with no row"
     }
   ],
   "routes": [
