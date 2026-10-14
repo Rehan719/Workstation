@@ -363,3 +363,65 @@ async def generate_document(req: GenerateRequest):
             #  P3.23 — the not-legal-advice statement is on EVERY response a person reads, not only the matter's
             "Nothing here is legal advice."),
     }
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W724 (plan item P5.20, clauses 1, 3 and 6) - ONE PROVISION OF AN ACT, WORD FOR WORD, and where help is.
+#  Nothing below composes, and no model is called. A person's question never reaches these routes: only the
+#  address of the provision does.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+@router.get("/statute/{kind}/{year}/{number}/section/{section}")
+async def statute_provision(kind: str, year: str, number: str, section: str):
+    """One provision, fetched from its publisher now and returned word for word. Not advice."""
+    from agentic_core.legal import statute as _st
+    try:
+        return await _st.provision(kind, year, number, section)
+    except _st.NotAnAddress as exc:
+        raise HTTPException(status_code=422, detail=f"That does not name a provision: {exc}. Nothing was fetched.") from None
+    except _st.PublisherRefused as exc:
+        status = getattr(exc, "status", None)
+        raise HTTPException(status_code=502, detail=(
+            f"No provision is shown: {exc}" + (f" (it answered {status})" if status else "")
+            + ". Nothing was composed in its place.")) from None
+
+
+#  Each entry is a NAME, an ADDRESS and one line of OUR OWN saying who it is for. No sentence of any linked
+#  site is copied. Every address was opened once on 2026-10-13 and resolved; two bodies whose pages refused
+#  an automated visit are not listed until a person has opened them.
+HELP_FROM_A_PERSON = (
+    {"name": "Find legal advice (GOV.UK)", "link": "https://www.gov.uk/find-legal-advice",
+     "for_what": "finding a solicitor, a legal adviser or free advice in England and Wales"},
+    {"name": "Check if you can get legal aid (GOV.UK)", "link": "https://www.gov.uk/legal-aid/check-legal-aid",
+     "for_what": "seeing whether the cost of advice or representation may be met"},
+    {"name": "Citizens Advice", "link": "https://www.citizensadvice.org.uk/",
+     "for_what": "free, independent advice on work, money, housing and consumer problems"},
+    {"name": "Acas", "link": "https://www.acas.org.uk/",
+     "for_what": "free advice on rights at work, and conciliation before a tribunal claim"},
+    {"name": "Law Centres Network", "link": "https://www.lawcentres.org.uk/",
+     "for_what": "free legal help from a local law centre, where one serves the area"},
+    {"name": "Advicenow", "link": "https://www.advicenow.org.uk/",
+     "for_what": "plain guides for a person handling a legal problem themselves"},
+    {"name": "Advocate", "link": "https://weareadvocate.org.uk/",
+     "for_what": "free help from a volunteer barrister, for those who cannot pay and cannot get legal aid"},
+    {"name": "LawWorks", "link": "https://www.lawworks.org.uk/legal-advice-individuals",
+     "for_what": "free legal advice clinics run by volunteer solicitors"},
+)
+
+
+@router.get("/help")
+def help_from_a_person():
+    """Where regulated and free legal help is, what this platform is not, and how to complain. Links only."""
+    return {
+        "regulated_and_free_help": [dict(h) for h in HELP_FROM_A_PERSON],
+        "this_platform_is_not": [
+            "a solicitor, a barrister or any regulated legal services provider",
+            "a source of legal advice: it shows published law word for word and labels what its own AI composes",
+            "able to tell you whether a provision applies to your situation",
+        ],
+        "to_complain": ("To complain about an answer here, tell the Owner of this platform what you asked, what "
+                        "you were shown and what was wrong with it. This platform is not a regulated provider, "
+                        "so no ombudsman or regulator handles complaints about it."),
+        "basis": ("Names and addresses only: nothing is copied from any of these sites, and none of them "
+                  "endorses this platform. Each address resolved when it was opened on 2026-10-13."),
+        "composed": False,
+    }

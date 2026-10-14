@@ -1045,6 +1045,142 @@
     "international"
    ],
    "status": "named_not_read"
+  },
+  {
+   "id": "help-gov-find-legal-advice",
+   "names": [
+    "Find legal advice (GOV.UK)"
+   ],
+   "kind": "a link to help from a person",
+   "nation": [
+    "England",
+    "Wales"
+   ],
+   "status": "current",
+   "page": "https://www.gov.uk/find-legal-advice",
+   "read_on": "2026-10-13",
+   "read_by": "round W724, by one request to the address on 2026-10-13; the page's content was NOT read",
+   "says": "The address resolved (status 200) when opened. It is listed as a place a person may go; nothing of the page is quoted or relied on.",
+   "not_read": "the page's content; whether the body covers Scotland or Northern Ireland; its opening hours and eligibility rules"
+  },
+  {
+   "id": "help-gov-check-legal-aid",
+   "names": [
+    "Check if you can get legal aid (GOV.UK)"
+   ],
+   "kind": "a link to help from a person",
+   "nation": [
+    "England",
+    "Wales"
+   ],
+   "status": "current",
+   "page": "https://www.gov.uk/legal-aid/check-legal-aid",
+   "read_on": "2026-10-13",
+   "read_by": "round W724, by one request to the address on 2026-10-13; the page's content was NOT read",
+   "says": "The address resolved (status 200) when opened. It is listed as a place a person may go; nothing of the page is quoted or relied on.",
+   "not_read": "the page's content; whether the body covers Scotland or Northern Ireland; its opening hours and eligibility rules"
+  },
+  {
+   "id": "help-citizens-advice",
+   "names": [
+    "Citizens Advice home page"
+   ],
+   "kind": "a link to help from a person",
+   "nation": [
+    "England",
+    "Wales"
+   ],
+   "status": "current",
+   "page": "https://www.citizensadvice.org.uk/",
+   "read_on": "2026-10-13",
+   "read_by": "round W724, by one request to the address on 2026-10-13; the page's content was NOT read",
+   "says": "The address resolved (status 200) when opened. It is listed as a place a person may go; nothing of the page is quoted or relied on.",
+   "not_read": "the page's content; whether the body covers Scotland or Northern Ireland; its opening hours and eligibility rules"
+  },
+  {
+   "id": "help-acas",
+   "names": [
+    "Acas home page"
+   ],
+   "kind": "a link to help from a person",
+   "nation": [
+    "England",
+    "Wales"
+   ],
+   "status": "current",
+   "page": "https://www.acas.org.uk/",
+   "read_on": "2026-10-13",
+   "read_by": "round W724, by one request to the address on 2026-10-13; the page's content was NOT read",
+   "says": "The address resolved (status 200) when opened. It is listed as a place a person may go; nothing of the page is quoted or relied on.",
+   "not_read": "the page's content; whether the body covers Scotland or Northern Ireland; its opening hours and eligibility rules"
+  },
+  {
+   "id": "help-law-centres-network",
+   "names": [
+    "Law Centres Network home page"
+   ],
+   "kind": "a link to help from a person",
+   "nation": [
+    "England",
+    "Wales"
+   ],
+   "status": "current",
+   "page": "https://www.lawcentres.org.uk/",
+   "read_on": "2026-10-13",
+   "read_by": "round W724, by one request to the address on 2026-10-13; the page's content was NOT read",
+   "says": "The address resolved (status 200) when opened. It is listed as a place a person may go; nothing of the page is quoted or relied on.",
+   "not_read": "the page's content; whether the body covers Scotland or Northern Ireland; its opening hours and eligibility rules"
+  },
+  {
+   "id": "help-advicenow",
+   "names": [
+    "Advicenow home page"
+   ],
+   "kind": "a link to help from a person",
+   "nation": [
+    "England",
+    "Wales"
+   ],
+   "status": "current",
+   "page": "https://www.advicenow.org.uk/",
+   "read_on": "2026-10-13",
+   "read_by": "round W724, by one request to the address on 2026-10-13; the page's content was NOT read",
+   "says": "The address resolved (status 200) when opened. It is listed as a place a person may go; nothing of the page is quoted or relied on.",
+   "not_read": "the page's content; whether the body covers Scotland or Northern Ireland; its opening hours and eligibility rules"
+  },
+  {
+   "id": "help-advocate",
+   "names": [
+    "Advocate home page"
+   ],
+   "kind": "a link to help from a person",
+   "nation": [
+    "England",
+    "Wales"
+   ],
+   "status": "current",
+   "page": "https://weareadvocate.org.uk/",
+   "read_on": "2026-10-13",
+   "read_by": "round W724, by one request to the address on 2026-10-13; the page's content was NOT read",
+   "says": "The address resolved (status 200) when opened. It is listed as a place a person may go; nothing of the page is quoted or relied on.",
+   "not_read": "the page's content; whether the body covers Scotland or Northern Ireland; its opening hours and eligibility rules"
+  },
+  {
+   "id": "help-lawworks-individuals",
+   "names": [
+    "LawWorks legal advice for individuals"
+   ],
+   "kind": "a link to help from a person",
+   "nation": [
+    "England",
+    "Wales"
+   ],
+   "status": "current",
+   "page": "https://www.lawworks.org.uk/legal-advice-individuals",
+   "read_on": "2026-10-13",
+   "read_by": "round W724, by one request to the address on 2026-10-13; the page's content was NOT read",
+   "says": "The address resolved (status 200) when opened. It is listed as a place a person may go; nothing of the page is quoted or relied on.",
+   "not_read": "the page's content; whether the body covers Scotland or Northern Ireland; its opening hours and eligibility rules"
   }
  ]
 }

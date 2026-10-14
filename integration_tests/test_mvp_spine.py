@@ -65504,3 +65504,147 @@ def test_w725_the_ratified_documents_name_the_platform_and_claim_no_protection_t
         for claim in ("registered trade mark", "is trade marked", "trademarked", "the name is protected", "cleared for use"):
             assert claim not in low, (rel, claim)
         assert "the official registers have not been read" not in flat, rel
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W724 - plan item P5.20, clauses 1, 3 and 6: ONE PROVISION OF AN ACT, WORD FOR WORD, FROM ITS PUBLISHER; a
+#  fidelity check that can fail; and where help from a person is. No test calls the publisher: a hand-made
+#  sample in the publisher's shape is read, and the network is replaced.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w724_a_statute_provision_is_shown_word_for_word_and_help_is_a_list_of_links(client, monkeypatch):
+    import asyncio
+    import pathlib
+    import re
+    import httpx
+    import agentic_core.api.law as _law
+    from agentic_core.legal import statute as _st
+    root = pathlib.Path(__file__).resolve().parents[1]
+    sample = (root / "integration_tests/fixtures/statute_sample_a.xml").read_text(encoding="utf-8")
+    assert "It is not law and quotes none" in sample, "the sample must be a made-up provision, never the publisher's text"
+
+    #  1. READ AS THE PUBLISHER STRUCTURED IT: every part in order with its level and number; nothing invented
+    out = _st.parse(sample, "7")
+    assert [(p["level"], p["number"]) for p in out["parts"]] == [(1, "7"), (2, "1"), (2, "2"), (3, "a"), (3, "b")], out["parts"]
+    assert out["parts"][1]["text"] == "WORDS-ONE of the first part marked up, then a comma."      # inline mark-up adds no space
+    assert out["heading"] == "A made-up heading." and out["version_dated"] == "2099-01-02" and out["extent"] == "E+W"
+    sent = re.sub(r"<[^>]+>", "", sample)                    # the publisher's words with its mark-up taken away
+    for p in out["parts"]:
+        for word in p["text"].split():
+            assert word in sent, ("a word is shown that the publisher did not send", word)
+    assert "WORDS-A the first limb, or" in sent and out["parts"][3]["text"] == "WORDS-A the first limb, or"
+    #  2. THE PUBLISHER'S OWN LIST OF CHANGES NOT YET APPLIED: this section, and a RANGE that includes it;
+    #     never a neighbour whose number merely starts the same
+    listed = [e["AffectedProvisions"] for e in out["changes_not_yet_applied_to_this_provision"]]
+    assert listed == ["s. 7(2)(a)", "ss. 6-8"] and out["changes_not_yet_applied_count"] == 2, listed
+    assert out["changes_not_yet_applied_across_the_act"] == 4
+    assert "2 listed for this provision: the text may not be the law as it now stands" in out["changes_basis"]
+    for sec, prov, want in (("7", "s. 70(1)", False), ("7", "s. 7A", False), ("7A", "s. 7A", True), ("9", "ss. 6-8", False),
+                            ("7", "ss. 6–8", True), ("7", "Sch. 1 para. 7", False), ("112", "s. 111(2)(a), s. 112", True)):
+        assert _st.touches(sec, prov) is want, (sec, prov)
+    clean = _st.parse(sample.replace('AffectedProvisions="s. 7(2)(a)"', 'AffectedProvisions="s. 90"').replace('"ss. 6-8"', '"ss. 60-80"'), "7")
+    assert clean["changes_not_yet_applied_count"] == 0 and "NONE is listed for this provision" in clean["changes_basis"]
+
+    #  3. THE FIDELITY CHECK CAN FAIL: one character, and it does
+    assert _st.fidelity(out["parts"], out["sha256"])["matches"] is True
+    one_off = [dict(p) for p in out["parts"]]
+    one_off[1]["text"] = one_off[1]["text"].replace("comma", "coma")
+    f = _st.fidelity(one_off, out["sha256"])
+    assert f["matches"] is False and "DOES NOT MATCH" in f["basis"] and "It checks the copy, not the law" in f["basis"]
+    assert "an automated check by this platform" in f["basis"], "the check is not said to be automated"
+
+    #  4. NOTHING A CALLER TYPES REACHES THE ADDRESS UNCHECKED
+    assert _st.address("ukpga", "2099", "1", "7") == "https://www.legislation.gov.uk/ukpga/2099/1/section/7"
+    for bad in (("ukpga", "2099", "1", "7/../x"), ("http", "2099", "1", "7"), ("ukpga", "99", "1", "7"), ("ukpga", "2099", "0", "7"),
+                ("ukpga", "2099", "1", "7 7"), ("ukpga", "2099", "1", ""), ("ukpga", "2099", "1e3", "7"), ("ukpga", "2099", "1", "7?x=1")):
+        try:
+            _st.address(*bad)
+        except _st.NotAnAddress:
+            continue
+        raise AssertionError(f"an address was built from {bad}")
+    #  5. AN ANSWER THAT IS NOT ONE PROVISION IS REFUSED, never shown in part
+    for broken in ("<not xml", "<Legislation xmlns='http://www.legislation.gov.uk/namespaces/legislation'/>",
+                   sample.replace("</P1group>", "</P1group><P1group><Title>second</Title></P1group>")):
+        try:
+            _st.parse(broken, "7")
+        except _st.PublisherRefused:
+            continue
+        raise AssertionError("a broken answer was read as a provision")
+
+    #  6. THE FETCH, WITH THE NETWORK REPLACED: one request, to the publisher's own host, and each failure a refusal
+    seen = []
+
+    class _Resp:
+        def __init__(self, status, text, host="www.legislation.gov.uk"):
+            self.status_code, self.text, self.url = status, text, httpx.URL(f"https://{host}/x")
+
+    class _Client:
+        answer = _Resp(200, sample)
+
+        def __init__(self, *a, **k):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        async def get(self, url):
+            seen.append(url)
+            if isinstance(type(self).answer, Exception):
+                raise type(self).answer
+            return type(self).answer
+    monkeypatch.setattr(_st.httpx, "AsyncClient", _Client)
+    got = asyncio.new_event_loop().run_until_complete(_st.provision("ukpga", "2099", "1", "7"))
+    assert seen == ["https://www.legislation.gov.uk/ukpga/2099/1/section/7/data.xml"], seen
+    assert got["composed"] is False and got["stored"] is False and got["publisher"] == "legislation.gov.uk"
+    assert got["address"] == "https://www.legislation.gov.uk/ukpga/2099/1/section/7" and "Open Government Licence v3.0" in got["licence"]
+    assert got["fidelity"]["checked"] is True and got["fidelity"]["matches"] is True and "not advice" in got["what_this_is"]
+    assert "served_by" not in got and "evidence_level" not in got, "a quoted provision is presented as a resource's reply"
+    for answer, needle in ((_Resp(404, ""), "no such provision"), (_Resp(500, ""), "did not return the provision"),
+                           (_Resp(200, sample, host="example.org"), "somewhere other than the publisher"),
+                           (httpx.ConnectTimeout("w724"), "could not be reached")):
+        _Client.answer = answer
+        try:
+            asyncio.new_event_loop().run_until_complete(_st.provision("ukpga", "2099", "1", "7"))
+        except _st.PublisherRefused as exc:
+            assert needle in str(exc), (needle, str(exc))
+            continue
+        raise AssertionError(f"shown despite: {needle}")
+
+    #  7. THE ROUTE: the same words reach a person, a refusal is a sentence, and NO MODEL IS CALLED
+    async def _no_model(*a, **k):
+        raise AssertionError("a model was called to show a provision")
+    monkeypatch.setattr(_law, "ai_text", _no_model)
+    _Client.answer = _Resp(200, sample)
+    r = client.get("/api/v1/law/statute/ukpga/2099/1/section/7")
+    assert r.status_code == 200 and r.json()["parts"] == out["parts"] and r.json()["sha256"] == out["sha256"], r.text[:300]
+    bad = client.get("/api/v1/law/statute/ukpga/2099/1/section/7x")
+    assert bad.status_code == 422 and isinstance(bad.json()["detail"], str) and "Nothing was fetched" in bad.json()["detail"]
+    _Client.answer = _Resp(404, "")
+    gone = client.get("/api/v1/law/statute/ukpga/2099/1/section/8")
+    assert gone.status_code == 502 and isinstance(gone.json()["detail"], str) and "Nothing was composed in its place" in gone.json()["detail"]
+
+    #  8. WHERE HELP IS: names and addresses, one line of our own each, and nothing copied
+    h = client.get("/api/v1/law/help").json()
+    assert h["composed"] is False and len(h["regulated_and_free_help"]) >= 6
+    for e in h["regulated_and_free_help"]:
+        assert set(e) == {"name", "link", "for_what"} and e["link"].startswith("https://"), e
+        assert len(e["for_what"]) <= 110 and len(e["name"]) <= 60, ("an entry carries a paragraph", e)
+    assert len({e["link"] for e in h["regulated_and_free_help"]}) == len(h["regulated_and_free_help"])
+    assert "not a regulated provider" in h["to_complain"] and "nothing is copied" in h["basis"] and "none of them endorses" in h["basis"]
+    assert any("regulated legal services provider" in s for s in h["this_platform_is_not"])
+
+    #  9. THE PAGE: fetched only when asked; the block that must travel with the text is drawn; refusals shown
+    panel_src = _code_only((root / "apps/workstation-superapp/src/components/StatutePanel.tsx").read_text(encoding="utf-8"))
+    flat = " ".join(panel_src.split())
+    assert "useEffect" not in flat, "the panel fetches without being asked"
+    assert flat.count("/api/v1/law/statute/") == 1 and flat.count("/api/v1/law/help") == 1
+    for drawn in ("{got.what_this_is}", "{got.publisher}", "{got.address}", "{got.version_dated ?? 'not stated'}", "{got.extent ?? 'not stated'}",
+                  "{got.changes_basis}", "{got.fidelity.basis}", "{got.licence}", "{refusal}", "{helpRefusal}", "{help.to_complain}"):
+        assert drawn in flat, drawn
+    for banned in ("advice for you", "this means", "you should", "in summary"):
+        assert banned not in flat.lower(), banned
+    hub_src = _code_only((root / "apps/workstation-superapp/src/pages/domains/LawHub.tsx").read_text(encoding="utf-8"))
+    assert "<StatutePanel />" in hub_src
+    assert not re.search(r"served_by|ai_provenance", panel_src), "the panel presents the publisher's text as a model's"

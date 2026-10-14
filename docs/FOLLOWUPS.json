@@ -21057,10 +21057,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W715",
       "note": "",
-      "slot_source": "it is a gap in how a change is decided, found by driving; the open third-phase queue carries it"
+      "slot_source": "it is a gap in how a change is decided, found by driving; the open third-phase queue carries it",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A change that names the delivery method among the systems it affects is never approved by the low-tier rule; it is held for a person and the record and the answer say why (round W715, merged).",
+      "reachability_check": "test_w715_a_change_to_the_delivery_method_is_held_for_a_person"
     },
     {
       "id": "FU-1074",
@@ -21110,10 +21114,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.18",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W714",
       "note": "",
-      "slot_source": "chartered with the item in this round; it is the item's fourth clause met in existing code"
+      "slot_source": "chartered with the item in this round; it is the item's fourth clause met in existing code",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The Owner ruled the cautious course on 2026-10-13 and it is built: the generator refuses the listed partnership deed and any id naming a deed, and says it is a hold and not a finding (round W714, merged). The reading of Schedule 2 by a qualified person is still to be made; the hold's own reason says so and it is the condition for lifting it.",
+      "reachability_check": "test_w714_a_deed_is_held_until_a_qualified_person_has_read_the_schedule"
     },
     {
       "id": "FU-1077",
@@ -21179,10 +21187,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.20",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W724",
       "note": "",
-      "slot_source": "Owner ruling 2026-10-13: the five recommendations, built in this order"
+      "slot_source": "Owner ruling 2026-10-13: the five recommendations, built in this order",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "One provision of an Act is fetched from legislation.gov.uk on request and shown word for word with publisher, address, version date, extent, the publisher's list of changes not yet applied and the licence; a fidelity check refuses on one differing character; one list of where regulated and free help is, names and links only. Driven in the browser on a scratch store with one real request. Official guidance and a judgment on request are not built in this slice.",
+      "reachability_check": "test_w724_a_statute_provision_is_shown_word_for_word_and_help_is_a_list_of_links"
     },
     {
       "id": "FU-1081",
