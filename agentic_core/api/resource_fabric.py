@@ -1088,6 +1088,9 @@ _BY_ID = {r["id"]: r for r in _REGISTRY}
 
 
 def _load_compositions() -> List[Dict[str, Any]]:
+    """FOR READING ONLY. Tolerant: a store that cannot be read is shown as empty to a list or a lookup.
+    NO WRITER MAY USE THIS (W728): a writer handed [] for a store that failed to read once would write back
+    a file holding only its own row. Writers use `_compositions_for_write` inside `_compositions_lock`."""
     if _STORE.exists():
         try:
             return json.loads(_STORE.read_text(encoding="utf-8"))
@@ -1096,9 +1099,26 @@ def _load_compositions() -> List[Dict[str, Any]]:
     return []
 
 
+def _compositions_lock():
+    from agentic_core.config import store_lock
+    return store_lock(_STORE)
+
+
+def _compositions_for_write() -> List[Dict[str, Any]]:
+    """The saved compositions, WHOLE, or a 503 - never an empty list for a store that could not be read."""
+    from agentic_core.config import StoreUnavailable, read_json_strict
+    try:
+        return read_json_strict(_STORE, list, expect=list)
+    except StoreUnavailable as exc:
+        raise HTTPException(status_code=503, detail=(
+            f"The saved compositions could not be read ({exc}), so nothing was written. The store is left "
+            f"exactly as it is.")) from None
+
+
 def _save_compositions(rows: List[Dict[str, Any]]) -> None:
+    from agentic_core.config import atomic_write_json
     _STORE.parent.mkdir(parents=True, exist_ok=True)
-    _STORE.write_text(json.dumps(rows, indent=2), encoding="utf-8")
+    atomic_write_json(_STORE, rows)
 
 
 async def _omnimedia_live_sentence() -> str:
@@ -1212,7 +1232,7 @@ async def update_composition(cid: str, req: UpdateCompositionRequest,
     name/usage-area/resources/params in place. The edit is RE-MODELLED + RE-SIMULATED (so
     commit_ready reflects the CURRENT design), the version bumps, identity (id + created_at) is
     preserved, and the reconfiguration is UEG-logged."""
-    rows = _load_compositions()
+    rows = _compositions_for_write()
     comp = next((c for c in rows if c["id"] == cid), None)
     if not comp:
         raise HTTPException(status_code=404, detail=f"Composition {cid} not found.")
@@ -1230,13 +1250,22 @@ async def update_composition(cid: str, req: UpdateCompositionRequest,
     for k, v in (req.config or {}).items():
         cfg.setdefault(k, {}).update(v or {})
     resolved, model, qa, commit_ready = await _simulate_configuration(name, rids, usage_area, cfg)
-    comp.update({
-        "name": name, "usage_area": usage_area, "resources": resolved, "model": model,
-        "quality_assurance": qa, "commit_ready": commit_ready,
-        "version": int(comp.get("version", 1)) + 1,
-        "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-    })
-    _save_compositions(rows)
+    #  W728 - the simulation above awaits, so the rows read before it may be stale by now. The write reads
+    #  the store again, whole, inside the lock, and changes THAT row; a composition removed meanwhile is not
+    #  brought back.
+    with _compositions_lock():
+        rows = _compositions_for_write()
+        comp = next((c for c in rows if c["id"] == cid), None)
+        if not comp:
+            raise HTTPException(status_code=404, detail=(
+                f"Composition {cid} was removed while it was being re-simulated. Nothing was written."))
+        comp.update({
+            "name": name, "usage_area": usage_area, "resources": resolved, "model": model,
+            "quality_assurance": qa, "commit_ready": commit_ready,
+            "version": int(comp.get("version", 1)) + 1,
+            "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        })
+        _save_compositions(rows)
     try:
         from agentic_core.gaas.v5 import UEGLogger
         UEGLogger().log({"type": "resource_fabric.composition.reconfigured", "composition_id": cid,
@@ -1249,13 +1278,14 @@ async def update_composition(cid: str, req: UpdateCompositionRequest,
 @router.delete("/compositions/{cid}")
 async def delete_composition(cid: str, user: dict | None = Depends(get_current_user)):
     """§7 (W273) — complete the composition lifecycle: retire a saved design (UEG-logged)."""
-    rows = _load_compositions()
+    rows = _compositions_for_write()
     target = next((c for c in rows if c["id"] == cid), None)
     if not target:
         raise HTTPException(status_code=404, detail=f"Composition {cid} not found.")
     _require_design_access(target, user, "Composition", cid)   # §14 (W324)
-    keep = [c for c in rows if c["id"] != cid]
-    _save_compositions(keep)
+    with _compositions_lock():                                   # W728 - whole read, inside the lock
+        keep = [c for c in _compositions_for_write() if c["id"] != cid]
+        _save_compositions(keep)
     try:
         from agentic_core.gaas.v5 import UEGLogger
         UEGLogger().log({"type": "resource_fabric.composition.deleted", "composition_id": cid})
@@ -3344,9 +3374,10 @@ async def compose(req: ComposeRequest, user: dict | None = Depends(get_current_u
         "rerunnable": True,
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
-    rows = _load_compositions()
-    rows.append(composition)
-    _save_compositions(rows)
+    with _compositions_lock():                                   # W728 - whole read, inside the lock
+        rows = _compositions_for_write()
+        rows.append(composition)
+        _save_compositions(rows)
 
     try:
         from agentic_core.organism.biobus import biobus

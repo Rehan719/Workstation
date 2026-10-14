@@ -65866,3 +65866,91 @@ def test_w727_every_block_naming_a_resource_states_its_level_or_is_declared_not_
     finally:
         _se._prov_reset()
     _ = asyncio
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W728 - THE COMPOSITION STORE. A writer handed an empty list for a store that failed to read once would have
+#  written back a file holding only its own row; and one writer awaits between its read and its write.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w728_a_saved_composition_is_never_lost_to_a_store_that_could_not_be_read(client, monkeypatch):
+    import ast
+    import inspect
+    import json
+    import agentic_core.api.resource_fabric as _fab
+
+    def _compose(name):
+        r = client.post("/api/v1/resources/compose", json={"name": name, "resource_ids": ["vsb_org_swarm"], "usage_area": "general"})
+        assert r.status_code == 200, r.text[:300]
+        return r.json()["id"] if "id" in r.json() else r.json()["composition"]["id"]
+
+    store = _fab._STORE
+    before = store.read_bytes() if store.exists() else None
+    try:
+        a = _compose("w728 first")
+        b = _compose("w728 second")
+        ids = lambda: {c["id"] for c in json.loads(store.read_text(encoding="utf-8"))}
+        assert {a, b} <= ids()
+
+        #  1. A STORE THAT CANNOT BE READ: every writer refuses, and the file is left byte for byte
+        good = store.read_bytes()
+        store.write_bytes(good[: len(good) // 2])                      # a torn file
+        torn = store.read_bytes()
+        for call in (lambda: client.post("/api/v1/resources/compose", json={"name": "w728 third", "resource_ids": ["vsb_org_swarm"], "usage_area": "general"}),
+                     lambda: client.put(f"/api/v1/resources/compositions/{a}", json={"name": "w728 renamed"}),
+                     lambda: client.delete(f"/api/v1/resources/compositions/{a}")):
+            r = call()
+            assert r.status_code == 503 and "nothing was written" in r.json()["detail"], (r.status_code, r.text[:200])
+            assert store.read_bytes() == torn, "a writer replaced a store it could not read"
+        store.write_bytes(good)
+
+        #  2. A WRITER THAT AWAITS: a composition added during another's re-simulation survives the write
+        real_sim = _fab._simulate_configuration
+        added = {}
+
+        #  (the other writer acts on the store directly, through the module's own lock and strict read: a
+        #   request made from inside a handler would re-enter the test client's event loop)
+        async def _slow_sim(*args, **kw):
+            if not added:
+                with _fab._compositions_lock():
+                    rows = _fab._compositions_for_write()
+                    rows.append({"id": "comp-w728added", "name": "w728 added during a re-simulation", "resources": []})
+                    _fab._save_compositions(rows)
+                added["id"] = "comp-w728added"
+            return await real_sim(*args, **kw)
+        monkeypatch.setattr(_fab, "_simulate_configuration", _slow_sim)
+        r = client.put(f"/api/v1/resources/compositions/{a}", json={"name": "w728 renamed"})
+        assert r.status_code == 200 and r.json()["name"] == "w728 renamed", r.text[:300]
+        assert {a, b, added["id"]} <= ids(), "an update wrote back the rows it read before it waited"
+
+        #  3. ...and one REMOVED during the re-simulation is not brought back
+        async def _sim_that_loses_it(*args, **kw):
+            monkeypatch.setattr(_fab, "_simulate_configuration", real_sim)
+            with _fab._compositions_lock():
+                _fab._save_compositions([c for c in _fab._compositions_for_write() if c["id"] != b])
+            return await real_sim(*args, **kw)
+        monkeypatch.setattr(_fab, "_simulate_configuration", _sim_that_loses_it)
+        gone = client.put(f"/api/v1/resources/compositions/{b}", json={"name": "w728 too late"})
+        assert gone.status_code == 404 and "was removed while it was being re-simulated" in gone.json()["detail"], gone.text[:300]
+        assert b not in ids()
+
+        #  4. BY SYNTAX: no function that saves reads with the tolerant reader
+        tree = ast.parse(inspect.getsource(_fab))
+        mixed = [f.name for f in ast.walk(tree) if isinstance(f, (ast.FunctionDef, ast.AsyncFunctionDef))
+                 and f.name != "_save_compositions" and "_save_compositions(" in ast.unparse(f) and "_load_compositions()" in ast.unparse(f)]
+        assert mixed == [], mixed
+        savers = [f.name for f in ast.walk(tree) if isinstance(f, (ast.FunctionDef, ast.AsyncFunctionDef))
+                  and f.name != "_save_compositions" and "_save_compositions(" in ast.unparse(f)]
+        assert len(savers) >= 3, savers
+        for f in ast.walk(tree):
+            if isinstance(f, (ast.FunctionDef, ast.AsyncFunctionDef)) and f.name in savers:
+                assert "_compositions_lock()" in ast.unparse(f), (f.name, "saves outside the lock")
+
+        #  5. BY SYNTAX: the save replaces the file whole (one process writes whole files either way, so no
+        #     behaviour leg above can see a non-atomic write)
+        saver = next(f for f in ast.walk(tree) if isinstance(f, ast.FunctionDef) and f.name == "_save_compositions")
+        assert "atomic_write_json(" in ast.unparse(saver) and "write_text(" not in ast.unparse(saver), ast.unparse(saver)
+    finally:
+        if before is None:
+            store.unlink(missing_ok=True)
+        else:
+            store.write_bytes(before)
