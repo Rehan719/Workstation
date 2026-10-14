@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- A MADE-UP provision in the publisher's shape, written by hand for the guard. It is not law and quotes none. -->
+<Legislation xmlns="http://www.legislation.gov.uk/namespaces/legislation" DocumentURI="http://www.legislation.gov.uk/ukpga/2099/1" RestrictExtent="E+W" RestrictStartDate="2099-01-02">
+  <ukm:Metadata xmlns:ukm="http://www.legislation.gov.uk/namespaces/metadata" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dct="http://purl.org/dc/terms/">
+    <dc:identifier>http://www.legislation.gov.uk/ukpga/2099/1/section/7</dc:identifier>
+    <dc:title>Sample Provisions Measure</dc:title>
+    <dc:modified>2099-01-03</dc:modified>
+    <dct:valid>2099-01-02</dct:valid>
+    <ukm:UnappliedEffects>
+      <ukm:UnappliedEffect Type="words substituted" AffectedProvisions="s. 7(2)(a)" AffectingYear="2099" AffectingNumber="5" AffectingClass="UnitedKingdomPublicGeneralAct"/>
+      <ukm:UnappliedEffect Type="inserted" AffectedProvisions="s. 70(1)" AffectingYear="2099" AffectingNumber="5" AffectingClass="UnitedKingdomPublicGeneralAct"/>
+      <ukm:UnappliedEffect Type="repealed" AffectedProvisions="ss. 6-8" AffectingYear="2099" AffectingNumber="6" AffectingClass="UnitedKingdomPublicGeneralAct"/>
+      <ukm:UnappliedEffect Type="inserted" AffectedProvisions="s. 7A" AffectingYear="2099" AffectingNumber="6" AffectingClass="UnitedKingdomPublicGeneralAct"/>
+    </ukm:UnappliedEffects>
+  </ukm:Metadata>
+  <Primary>
+    <Body>
+      <P1group>
+        <Title>A made-up heading.</Title>
+        <P1 id="section-7">
+          <Pnumber>7</Pnumber>
+          <P1para>
+            <P2 id="section-7-1">
+              <Pnumber>1</Pnumber>
+              <P2para><Text>WORDS-ONE of the first part <Emphasis>marked up</Emphasis>, then a comma.</Text></P2para>
+            </P2>
+            <P2 id="section-7-2">
+              <Pnumber>2</Pnumber>
+              <P2para>
+                <Text>WORDS-TWO opening words—</Text>
+                <P3 id="section-7-2-a"><Pnumber>a</Pnumber><P3para><Text>WORDS-A the first limb, or</Text></P3para></P3>
+                <P3 id="section-7-2-b"><Pnumber>b</Pnumber><P3para><Text>WORDS-B the second limb.</Text></P3para></P3>
+              </P2para>
+            </P2>
+          </P1para>
+        </P1>
+      </P1group>
+    </Body>
+  </Primary>
+</Legislation>

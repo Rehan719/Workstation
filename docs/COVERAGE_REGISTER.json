@@ -614,6 +614,15 @@
    "subject": "A judged event with written criteria and named human judges",
    "state": "nothing_built",
    "today": "nothing here; its design waits on a real marking scheme"
+  },
+  {
+   "id": "law-read-a-provision",
+   "domain": "Law",
+   "subject": "Reading one provision of an Act as its publisher gives it",
+   "nation": "England, Wales, Scotland",
+   "state": "journey",
+   "driven_by": "test_w724_a_statute_provision_is_shown_word_for_word_and_help_is_a_list_of_links",
+   "today": "one section is fetched from legislation.gov.uk on request and shown word for word with its version date, extent, the publisher's list of changes not yet applied and the licence; it is not advice and says nothing about whether it applies to a person"
   }
  ]
 }

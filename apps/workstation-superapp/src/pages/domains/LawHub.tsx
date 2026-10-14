@@ -5,6 +5,7 @@ import { Card, Badge, Button } from '@workstation/ui';
 import { Layers, Landmark, History } from 'lucide-react';
 import { useAdaptiveUI } from '../../components/AdaptiveUIProvider';
 import MatterAssemblyPanel from '../../components/MatterAssemblyPanel';
+import StatutePanel from '../../components/StatutePanel';
 import { DomainTool } from '../../components/DomainTool';
 import { toolsFor } from '../../lib/toolRegistry';
 
@@ -102,6 +103,10 @@ export const LawHub: React.FC = () => {
       {/* P3.23 — the matter specialist: provenance per particular, refused authorities, unresolved checks */}
       <Card className="p-6">
         <MatterAssemblyPanel />
+      </Card>
+      {/* W724 (plan item P5.20) - one provision of an Act, word for word from its publisher, and where help is */}
+      <Card className="p-6">
+        <StatutePanel />
       </Card>
     </div>
   );
