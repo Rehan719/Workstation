@@ -65901,3 +65901,118 @@ def test_w731_the_owners_own_papers_are_not_in_the_public_tree():
     assert not re.search(r"\b[A-Z][a-z]+ v [A-Z][a-z]+", _readme), "the law app's README names a case again"
     #  4. the live law ontology the Law hub reads is KEPT (only the Owner's own papers moved)
     assert (_root / "knowledge/Law/EmploymentTribunal/ontology/uk_employment_law_v9.json").is_file()
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W732 - SAFEGUARDS AGAINST EXPOSURE (Owner, 2026-10-14). One screen (agentic_core/privacy_exposure.py) behind
+#  four doors: the commit hook, this suite, the host's push protection, and the platform's own route. It finds
+#  each kind, never reports the text it matched, and says what it did NOT check.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w732_the_public_tree_holds_no_privacy_exposure(client, tmp_path, monkeypatch):
+    import hashlib
+    import importlib.util
+    import json
+    import pathlib
+    import subprocess
+    from agentic_core import privacy_exposure as _pe
+    _root = pathlib.Path(__file__).resolve().parents[1]
+    monkeypatch.setenv("WORKSTATION_PRIVATE_MARKERS", str(tmp_path / "no_marker_list_here.txt"))
+
+    def _load(rel, name):
+        _s = importlib.util.spec_from_file_location(name, _root / rel)
+        _m = importlib.util.module_from_spec(_s)
+        _s.loader.exec_module(_m)
+        return _m
+
+    #  1. THE TREE holds no finding among the kinds checked - and says the marker kind was NOT checked here
+    _r = _pe.scan(_root, markers=_pe.load_markers(), allowed=_pe.load_allowed(_root))
+    assert _r["files_read"] > 1000, _r["files_read"]
+    assert _r["findings"] == [], [(f["path"], f["line"], f["kind"]) for f in _r["findings"]]
+    assert _r["not_checked"] == ["private_marker"] and "NOT looked for" in _r["not_checked_basis"], _r
+    assert "private_marker" not in _r["checked"]
+    assert _r["not_read_in_full"] == [], ("a tracked file was too large to read whole", _r["not_read_in_full"])
+
+    #  2. EACH KIND IS FOUND, and no finding carries the text it matched (values built, never typed whole)
+    _key = "AIza" + "Q" * 35
+    _case = "1234567" + "/" + "2031"
+    _mark = "Zzyzx" + " Holdings"
+    _planted = [("notes/a.txt", f"x\nkey={_key}\n".encode()), ("notes/b.md", f"case {_case}\n".encode()),
+                ("docs/My CV 2031.docx", b""), ("inputs/Law/letter.txt", b"hello"),
+                ("notes/c.txt", f"about {_mark} here".encode()), ("notes/clean.txt", b"nothing private"),
+                ("notes/d.env", ('API_KEY="' + "Ab3" + "xK9pQ2mZ7rT4wL8nB6vC1" + '"').encode()),
+                ("notes/e.py", b'token = "https://Ab3oauth2.Example9.com/xyzQ"\npassword = "correcthorsebatterystaple"\n')]
+    _rep = _pe.scan(_root, files=_planted, markers=[_mark])
+    assert {(f["path"], f["kind"]) for f in _rep["findings"]} == {
+        ("notes/a.txt", "credential"), ("notes/b.md", "case_number"), ("docs/My CV 2031.docx", "personal_document"),
+        ("inputs/Law/letter.txt", "private_folder"), ("notes/c.txt", "private_marker"),
+        ("notes/d.env", "credential")}, _rep["findings"]          # an address and a plain word are not secrets
+    _flat = json.dumps(_rep)
+    assert _key not in _flat and _case not in _flat and _mark not in _flat, "a finding reports the text it matched"
+    assert _rep["not_checked"] == [] and "private_marker" in _rep["checked"]
+    #     an allowance needs an exact path, a known kind and a reason
+    assert not _pe.scan(_root, files=_planted[:1], allowed=[("notes/a.txt", "credential")])["findings"]
+    (tmp_path / "config").mkdir()
+    (tmp_path / "config" / "privacy_allow.json").write_text(json.dumps([
+        {"path": "a", "kind": "credential", "reason": "fixture"}, {"path": "b", "kind": "credential", "reason": ""},
+        {"path": "c", "kind": "no_such_kind", "reason": "x"}]), encoding="utf-8")
+    assert _pe.load_allowed(tmp_path) == [("a", "credential")]
+    #     the marker list: comments, blanks and markers too short to be safe are skipped
+    (tmp_path / "markers.txt").write_text("# private\n\nab\n" + _mark + "\n", encoding="utf-8")
+    assert _pe.load_markers(tmp_path / "markers.txt") == [_mark]
+    assert _pe.load_markers(tmp_path / "absent.txt") is None
+
+    #  3. STAGED: the hook reads what the commit would record, not the working copy
+    _g = tmp_path / "scratch_repo"
+    _g.mkdir()
+    _git = lambda *a: subprocess.run(["git", "-C", str(_g), "-c", "user.email=t@t", "-c", "user.name=t", *a],
+                                     capture_output=True, text=True)
+    assert _git("init", "-q").returncode == 0
+    (_g / "n.txt").write_text(f"k={_key}\n", encoding="utf-8")
+    assert _git("add", "n.txt").returncode == 0
+    (_g / "n.txt").write_text("clean now\n", encoding="utf-8")          # the working copy no longer holds it
+    _st = _pe.scan(_g, files=_pe.staged(_g))
+    assert [(f["path"], f["kind"]) for f in _st["findings"]] == [("n.txt", "credential")], _st["findings"]
+
+    #  4. THE HOOK installs into the clone's hooks, keeps a hook that was already there, and runs the check
+    _hookmod = _load("scripts/install_privacy_hook.py", "w732_hook")
+    _hooks = _g / ".git" / "hooks"
+    _hooks.mkdir(exist_ok=True)
+    (_hooks / "pre-commit").write_text("#!/bin/sh\necho earlier\n", encoding="utf-8")
+    assert _hookmod.install(_g) == 0
+    _text = (_hooks / "pre-commit").read_text(encoding="utf-8")
+    assert _hookmod.MARK in _text and "privacy_check.py\" --staged" in _text, _text
+    assert (_hooks / "pre-commit.before-privacy").read_text(encoding="utf-8") == "#!/bin/sh\necho earlier\n"
+    assert _hookmod.install(_g) == 0 and (_hooks / "pre-commit.before-privacy").is_file()   # idempotent
+
+    #  5. THE MOVE that resolves a finding: dry run changes nothing; applied, every byte is kept and the file leaves
+    _mover = _load("scripts/move_to_private_store.py", "w732_mover")
+    (_g / "papers").mkdir()
+    (_g / "papers" / "p.txt").write_bytes(b"private paper\r\n")
+    #     (the scratch commit skips the hook installed in leg 4: it has no scripts/ to run, so it would refuse)
+    assert _git("add", "papers/p.txt").returncode == 0 and _git("commit", "-q", "--no-verify", "-m", "x").returncode == 0
+    _dest = tmp_path / "private_store"
+    assert _mover.move(_g, _dest, ["papers/"], apply=False) == {"applied": False, "files": 1, "dest": str(_dest.resolve())}
+    assert not _dest.exists() and (_g / "papers" / "p.txt").is_file()
+    _res = _mover.move(_g, _dest, ["papers/"], apply=True)
+    assert _res["applied"] and (_dest / "papers" / "p.txt").read_bytes() == b"private paper\r\n"
+    _man = json.loads((_dest / _res["manifest"]).read_text(encoding="utf-8"))
+    assert _man["files"][0]["sha256"] == hashlib.sha256(b"private paper\r\n").hexdigest()
+    assert not (_g / "papers" / "p.txt").exists() and "papers/p.txt" not in _git("ls-files").stdout
+    for _bad_dest, _target in ((_g / "inside", ["n.txt"]), (tmp_path / "elsewhere", ["no/such/"])):
+        try:
+            _mover.move(_g, _bad_dest, _target, apply=True)
+            raise AssertionError(("the move accepted", _bad_dest, _target))
+        except SystemExit:
+            pass
+
+    #  6. THE PLATFORM'S OWN ROUTE: the same scan, and a deployment that cannot scan says NOT CHECKED
+    _body = client.get("/api/v1/compliance/privacy-exposure").json()
+    assert _body["scanned"] is True and _body["count"] == 0 and _body["not_checked"] == ["private_marker"], _body
+    assert (_root / _body["runbook"]).is_file() and len(_body["how_to_resolve"]) == 4
+
+    def _no_git(root):
+        raise RuntimeError("no git here")
+    monkeypatch.setattr(_pe, "tracked", _no_git)
+    _down = client.get("/api/v1/compliance/privacy-exposure").json()
+    assert _down["scanned"] is False and _down["count"] is None and _down["basis"].startswith("NOT CHECKED"), _down
+    assert set(_down["not_checked"]) == set(_pe.KINDS)

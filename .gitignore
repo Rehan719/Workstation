@@ -110,3 +110,5 @@ _archive/agentic_core/domains/law/
 _archive/legacy-archive/Law/
 _archive/legacy-archive/Science/
 _archive/outputs/audit/sovereign_audit_log.jsonl
+# W732 - a type checker's cache is never tracked (one 43 MB copy was, and no screen could read it)
+.mypy_cache/
