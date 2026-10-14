@@ -35,6 +35,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
+from agentic_core.api._ai_provenance import call_evidence as _call_evidence   # W727
 
 router = APIRouter(prefix="/api/v1/sovereign-evolution", tags=["sovereign-evolution"])
 
@@ -134,6 +135,8 @@ def _prov_snapshot() -> dict:
     """What served this cycle. An EMPTY map means no call was made - which is not the same as the
     floor serving it, so a reader must be able to tell those apart."""
     return {"served_by": dict(_PROV["served_by"]), "any_external": _PROV["any_external"],
+            #  W727 - an empty map means no call was made: no level, said as that; otherwise the level of replies
+            **_call_evidence(asked=bool(_PROV["served_by"])),
             "calls": sum(_PROV["served_by"].values()),
             "basis": ("counted per call as the cycle ran; an empty map means no AI call was made, "
                       "which is not the same as the deterministic floor serving one")}

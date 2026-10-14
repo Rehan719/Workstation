@@ -26,6 +26,7 @@ from agentic_core.auth.core import get_current_user
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
+from agentic_core.api._ai_provenance import call_evidence as _call_evidence   # W727
 
 router = APIRouter(tags=["integration-surface"])
 
@@ -84,13 +85,17 @@ async def ai_completion(req: AIQuery):
     # W506 (P2.2) - the completion says what served it. `served_by` is None on the failure path, which is
     # a different statement from the floor having served it, so the two cases stay distinguishable.
     _served, _ext = None, False
+    _failed = False
     try:
         _ir = await gateway.query_meta(prompt, agent=req.agent, timeout=30, augment=False, user_text=(prompt or None))
         out = _ir.get("output", "")
         _served, _ext = _ir.get("served_by"), bool(_ir.get("is_external"))
     except Exception as e:
         out = f"[unavailable: {e}]"
+        _failed = True
     return {"completion": out, "prompt": prompt[:120],
+            #  W727 - on the failure path the gateway raised: asked and not answered, never "behaviour"
+            **_call_evidence(_served, failed=_failed),
             "served_by": _served, "is_external": _ext,
             "served_by_basis": ("null means no call completed - the gateway raised - which is not the "
                                 "same as the deterministic floor serving this")}
@@ -118,6 +123,8 @@ async def ai_query(req: AIQuery, user: dict | None = Depends(get_current_user)):
     except Exception as e:
         _err = f"{type(e).__name__}: {str(e)[:160]}"
     return {"answer": out, "ok": _err is None, "error": _err,
+            #  W727 - `_err` is set when the call raised or returned nothing: asked and not answered
+            **_call_evidence(_served, failed=bool(_err)),
             "served_by": _served, "is_external": _external,
             "query": prompt[:120]}
 

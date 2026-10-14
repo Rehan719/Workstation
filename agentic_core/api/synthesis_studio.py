@@ -40,6 +40,7 @@ from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
 from agentic_core.organism.biobus import biobus
+from agentic_core.api._ai_provenance import (reply_evidence as _reply_evidence)   # W727
 
 router = APIRouter(prefix="/api/v1/studio", tags=["synthesis-studio"])
 
@@ -250,7 +251,7 @@ async def run_lab_cascade(challenge: str, realm: str = "enterprise", domain: str
         results[stage_key] = meta.get("output", "") or ""
         sb = meta.get("served_by", "native")
         served[sb] = served.get(sb, 0) + 1
-    return {"stages": results, "stages_run": len(stages), "served_by": served}
+    return {**_reply_evidence(), "stages": results, "stages_run": len(stages), "served_by": served}
 
 
 class SynthesiseRequest(BaseModel):
@@ -321,10 +322,10 @@ async def synthesise(req: SynthesiseRequest,
             results[stage_key] = stage_content
             _stage_served = _st.get("served_by")
             _stage_ext = bool(_st.get("is_external"))
-            provenance[stage_key] = {"served_by": _stage_served, "is_external": _stage_ext}
+            provenance[stage_key] = {**_reply_evidence(_stage_served), "served_by": _stage_served, "is_external": _stage_ext}
 
             #  W627 (FU-529) - the provenance computed above now RIDES the event, as the comment says it must
-            yield f'data: {json.dumps({"stage": "complete", "stage_key": stage_key, "stage_label": stage_label, "content": stage_content, "stage_num": i + 1, "served_by": _stage_served, "is_external": _stage_ext})}\n\n'
+            yield f'data: {json.dumps({**_reply_evidence(_stage_served), "stage": "complete", "stage_key": stage_key, "stage_label": stage_label, "content": stage_content, "stage_num": i + 1, "served_by": _stage_served, "is_external": _stage_ext})}\n\n'
 
         # Spawn the VSB entity
         entity_id = f"vsb-{synthesis_id[:8]}"

@@ -33,6 +33,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from agentic_core.ai.gateway import gateway
+from agentic_core.api._ai_provenance import (reply_evidence as _reply_evidence)   # W727
 
 router = APIRouter(prefix="/api/v1/organism", tags=["idbo-organism"])
 
@@ -233,7 +234,7 @@ async def encode_genome(req: EncodeRequest):
         traits[axis] = 0.5
 
     genome_id = f"genome-{uuid.uuid4().hex[:10]}"
-    genome = {
+    genome = {**_reply_evidence(served_by), 
         "genome_id": genome_id,
         "entity_name": req.entity_name,
         "domain": req.domain,

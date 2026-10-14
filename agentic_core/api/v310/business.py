@@ -9,6 +9,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
+from agentic_core.api._ai_provenance import (reply_evidence as _reply_evidence)   # W727
 
 router = APIRouter(prefix="/entrepreneur", tags=["Entrepreneurial Hub"])
 
@@ -111,7 +112,7 @@ async def generate_business_plan_stream(req: PlanRequest) -> StreamingResponse:
                     yield f'data: {{"token": {json.dumps(safe)}}}\n\n'
                 elif ev.get("done"):
                     fin = ev
-            yield "data: " + json.dumps({"done": True, "generated_at": time.time(),
+            yield "data: " + json.dumps({**_reply_evidence(fin.get('served_by')), "done": True, "generated_at": time.time(),
                                          "served_by": fin.get("served_by"), "is_external": bool(fin.get("is_external")),
                                          "profile_applied": bool(fin.get("profile_applied")),
                                          "guardrail_passed": fin.get("guardrail_passed")}) + "\n\n"

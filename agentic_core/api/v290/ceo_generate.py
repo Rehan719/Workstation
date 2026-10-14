@@ -19,6 +19,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 from agentic_core.ai.gateway import gateway
+from agentic_core.api._ai_provenance import (reply_evidence as _reply_evidence)   # W727
 
 router = APIRouter(prefix="/ceo", tags=["AI Co-Creator"])
 
@@ -222,7 +223,7 @@ async def generate_blueprint(req: BlueprintRequest) -> BlueprintResponse:
     # floor's own outline, and `gateway.query` had discarded the one field that could say so.
     _meta = await gateway.query_meta(prompt, agent="ceo_blueprint", augment=False, user_text=(req.intent or None))
     deliverable = _meta.get("output", "")
-    _prov = {"served_by": _meta.get("served_by", "native"), "is_external": bool(_meta.get("is_external"))}
+    _prov = {**_reply_evidence(_meta.get('served_by', 'native')), "served_by": _meta.get("served_by", "native"), "is_external": bool(_meta.get("is_external"))}
 
     # Optionally persist as a project deliverable
     if req.project_id:

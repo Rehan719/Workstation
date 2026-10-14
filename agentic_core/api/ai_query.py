@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from agentic_core.ai.gateway import gateway
 from agentic_core.auth.core import get_current_user
+from agentic_core.api._ai_provenance import (reply_evidence as _reply_evidence)   # W727
 
 router = APIRouter(prefix="/ai", tags=["AI Query"])
 
@@ -21,7 +22,7 @@ async def ai_query(req: QueryRequest, user: dict | None = Depends(get_current_us
     # recall decision at every call site rather than inherited from the default.
     _r = await gateway.query_meta(req.message, agent=req.agent, owner_id=owner, augment=False,
                                   user_text=req.message)
-    return {"response": _r.get("output", ""),
+    return {**_reply_evidence(_r.get('served_by')), "response": _r.get("output", ""),
             "served_by": _r.get("served_by"),
             "is_external": bool(_r.get("is_external")),
             "governance_checkpoint": _r.get("governance_checkpoint")}

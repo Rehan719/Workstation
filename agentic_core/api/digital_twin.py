@@ -20,6 +20,7 @@ from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
 from agentic_core.organism.biobus import biobus
+from agentic_core.api._ai_provenance import (reply_evidence as _reply_evidence)   # W727
 
 router = APIRouter(prefix="/api/v1/twin", tags=["digital-twin"])
 
@@ -140,7 +141,7 @@ def _composition(res: dict, what: str) -> dict:
     optimised, no figure in any table is calculated. The answer and the stored row say so, with what served
     the text, so a table a model wrote can never be read as a simulation's output."""
     _by = (res or {}).get("served_by") or "native"
-    return {
+    return {**_reply_evidence(_by), 
         "kind": "narrative",
         "computed": False,
         "served_by": _by,

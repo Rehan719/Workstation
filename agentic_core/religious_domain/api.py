@@ -951,6 +951,7 @@ async def hifz_progress(uid: str):
 #  here is arithmetic over text FETCHED from the named source. Nothing is composed, nothing about a learner's
 #  recall is judged, and no answer carries a score, a count of mistakes or a rank.
 from agentic_core.religious_domain.memorization import practice as _practice
+from agentic_core.api._ai_provenance import (reply_evidence as _reply_evidence)   # W727
 
 _NO_DEFAULTS = ("the platform proposes no portion: no source on the memorisation method has yet been read and "
                 "entered in the register of sources, so a portion is whatever the learner or their teacher sets")
@@ -1196,7 +1197,7 @@ async def tajweed_lesson(req: TajweedLessonRequest):
     _sr.submit_if_new(_key, "qep/tajweed/lesson", lesson, reference=req.rule_name)
     _published, _review_state, _review_why = _sr.published_body(_key, lesson)
 
-    return {
+    return {**_reply_evidence(served_by), 
         "rule": req.rule_name,
         "level": req.level,
         "lesson_plan": _published,
@@ -1414,7 +1415,7 @@ async def qep_curriculum(req: QepCurriculumRequest):
     _sr.submit_if_new(_key, "qep/curriculum", body, reference=req.subject)
     _published, _state, _why = _sr.published_body(_key, body)
 
-    return {
+    return {**_reply_evidence(served_by), 
         "subject": req.subject,
         "level": req.level,
         "duration_weeks": _weeks,

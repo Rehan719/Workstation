@@ -28,6 +28,7 @@ router = APIRouter(prefix="/ceo", tags=["AI CEO"])
 
 from agentic_core.ai.gateway import gateway
 from agentic_core.auth.core import get_current_user, request_owner_id
+from agentic_core.api._ai_provenance import (failed_call_evidence as _failed_call_evidence, reply_evidence as _reply_evidence)   # W727
 
 class ChatRequest(BaseModel):
     message: str
@@ -578,7 +579,7 @@ async def generate_ceo_stream(prompt: str, scope: str, owner_id: Optional[str]):
                 _answer.append(str(ev["token"]))
                 yield f"data: {json.dumps({'content': ev['token'], 'done': False})}\n\n"
             elif ev.get("done"):
-                yield "data: " + json.dumps({
+                yield "data: " + json.dumps({**_reply_evidence(ev.get('served_by')), 
                     "content": "", "done": True,
                     "served_by": ev.get("served_by"), "is_external": bool(ev.get("is_external")),
                     "guardrail_passed": ev.get("guardrail_passed"), "profile_applied": ev.get("profile_applied"),
@@ -587,7 +588,7 @@ async def generate_ceo_stream(prompt: str, scope: str, owner_id: Optional[str]):
                 }) + "\n\n"
     except Exception as exc:
         # honest terminal frame — never a canned answer, never a silent stop
-        yield "data: " + json.dumps({"content": "", "done": True, "served_by": None, "is_external": False,
+        yield "data: " + json.dumps({**_failed_call_evidence(), "content": "", "done": True, "served_by": None, "is_external": False,
                                      "error": f"the owned fabric raised: {str(exc)[:160]}",
                                      "grounding": _cited("", facts)}) + "\n\n"
 

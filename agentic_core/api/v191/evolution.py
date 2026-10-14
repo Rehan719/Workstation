@@ -22,6 +22,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
+from agentic_core.api._ai_provenance import (reply_evidence as _reply_evidence)   # W727
 
 router = APIRouter(prefix="/evolution", tags=["evolution"])
 
@@ -175,14 +176,14 @@ async def generate_proposals(req: GenerateRequest):
         #  ledger v17 R4.0 / R6.1 - a canned proposal used to be filed here, with a type, an impact and a
         #  rationale nothing produced, counted as `generated: 1` and approvable into Change Control. Nothing
         #  parsed, so nothing is proposed and NOTHING IS STORED; the answer says so and shows what came back.
-        return {"generated": 0, "proposals": [], "served_by": _served,
+        return {**_reply_evidence(_served), "generated": 0, "proposals": [], "served_by": _served,
                 "basis": ("the serving resource returned no line in the PROPOSAL_ format this route parses, so "
                           "nothing was proposed and nothing was stored"),
                 "raw": raw[:200]}
     for _p in new_proposals:
         _p["served_by"] = _served                  # which resource wrote this proposal, on the row itself
     _save(proposals)
-    return {"generated": len(new_proposals), "proposals": new_proposals, "served_by": _served}
+    return {**_reply_evidence(_served), "generated": len(new_proposals), "proposals": new_proposals, "served_by": _served}
 
 
 #  ledger v17 R4.0 / R6.1 - the default this module filed until that round, kept ONLY so a row of it that is

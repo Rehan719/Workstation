@@ -47,6 +47,7 @@ from pydantic import BaseModel
 from agentic_core.api._strict_models import STRICT
 
 from agentic_core.gaas.v5 import UnifiedConstitutionalInterceptorV16Omega, UEGLogger
+from agentic_core.api._ai_provenance import (reply_evidence as _reply_evidence)   # W727
 
 router = APIRouter(prefix="/api/v1/transformation", tags=["transformation-orchestration"])
 
@@ -469,12 +470,12 @@ async def orchestrate(req: OrchestrateRequest):
                 ],
                 timeout=10.0,
             )
-            native_cognition = {
+            native_cognition = {**_reply_evidence(), 
                 "posture": "in-house-first",
                 "stages": swarm_res["stages"],
                 "any_external": swarm_res["any_external"],
                 "served_by": [t["served_by"] for t in swarm_res["trace"]],
-                "trace": [{"role": t["role"], "served_by": t["served_by"], "output": t["output"][:400]}
+                "trace": [{**_reply_evidence(t['served_by']), "role": t["role"], "served_by": t["served_by"], "output": t["output"][:400]}
                           for t in swarm_res["trace"]],
                 "synthesis": swarm_res["final"][:800],
             }
@@ -487,7 +488,7 @@ async def orchestrate(req: OrchestrateRequest):
                 _v9, _b9 = True, f"served by an owned model ({', '.join(sorted(set(_served)))})"
             stage(9, "Native AI Swarm (owned)", "AI CEO",
                   "Run the Chief's cognition on Workstation's OWN native swarm (in-house-first)",
-                  {"served_by": _served, "any_external": native_cognition["any_external"],
+                  {**_reply_evidence(), "served_by": _served, "any_external": native_cognition["any_external"],
                    "synthesis": native_cognition["synthesis"][:200]},
                   verified=_v9, signal_type="cognitive", basis=_b9, checks="provenance")
         except Exception as e:
