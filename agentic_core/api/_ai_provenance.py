@@ -71,6 +71,28 @@ def no_reply_evidence() -> Dict[str, Any]:
     return dict(_NO_REPLY_EVIDENCE)
 
 
+_FAILED_CALL_EVIDENCE = {
+    "evidence_level": None, "evidence_level_number": None,
+    "evidence_basis": ("ASKED AND NOT ANSWERED: a resource was asked and the call failed or returned nothing, so "
+                       "there is no reply to state a level for")}
+
+
+def failed_call_evidence() -> Dict[str, Any]:
+    """W727 - for a block written on the path where the call was MADE and failed. Saying "nothing was asked"
+    there would be false, and calling it "behaviour" would say a reply exists."""
+    return dict(_FAILED_CALL_EVIDENCE)
+
+
+def call_evidence(served_by: Any = None, failed: bool = False, asked: bool = True) -> Dict[str, Any]:
+    """W727 - for a block ONE expression writes on more than one path: the call failed, or no call was made,
+    or a resource replied. One call, so the source shows one statement of evidence at that place."""
+    if failed:
+        return failed_call_evidence()
+    if not asked:
+        return no_reply_evidence()
+    return reply_evidence(served_by)
+
+
 def reply_evidence(served_by: Any = None) -> Dict[str, Any]:
     """The evidence level of an answer a resource gave - or, for a refusal, the statement that there is none."""
     return dict(_REFUSAL_EVIDENCE if served_by == REFUSAL_GATE else _REPLY_EVIDENCE)

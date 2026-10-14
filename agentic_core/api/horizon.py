@@ -22,6 +22,7 @@ from pydantic import BaseModel, Field
 from agentic_core.api._ai_provenance import ai_text
 from agentic_core.auth.core import get_current_user
 from agentic_core.horizon import kernel
+from agentic_core.api._ai_provenance import (failed_call_evidence as _failed_call_evidence)   # W727
 
 router = APIRouter(prefix="/api/v1/horizon", tags=["horizon-membrane"])
 
@@ -63,7 +64,7 @@ async def horizon_observe(req: ObserveRequest,
         failed = not str(text or "").strip()
     except Exception as e:                       # noqa: BLE001 — a failed call is not a compression
         failed, text = True, ""
-        prov = {"served_by": None, "is_external": False, "error": f"{e.__class__.__name__}: {e}"}
+        prov = {**_failed_call_evidence(), "served_by": None, "is_external": False, "error": f"{e.__class__.__name__}: {e}"}
 
     rec = kernel.build_record(obs, prov.get("served_by"), bool(prov.get("is_external")), failed, text)
     dec = kernel.decide(rec)

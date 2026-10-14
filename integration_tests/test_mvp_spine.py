@@ -65776,3 +65776,93 @@ def test_w726_the_page_shows_the_preview_first_and_enters_only_what_was_shown():
     opening_src = _code_only((root / "apps/workstation-superapp/src/components/PlanOpening.tsx").read_text(encoding="utf-8"))
     assert "{scope === 'workstation' && <RatifiedPlanEntry onEntered={onSaved} />}" in " ".join(opening_src.split()), \
         "the entry is offered on a plan that is not the platform's own"
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W727 - OWNER RULING 2026-10-13, completed: EVERY block that names which resource served states its evidence
+#  level, or is DECLARED not to be an answer, with a reason. The count of silent, undeclared blocks is zero and
+#  is held there: a new one fails this test.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w727_every_block_naming_a_resource_states_its_level_or_is_declared_not_an_answer(client, monkeypatch):
+    import asyncio
+    from agentic_core.api import _ai_provenance as _prov
+    from agentic_core.api import integration_surface as _is
+    from agentic_core.api import native_ai as _na
+    from agentic_core.api import sovereign_evolution as _se
+
+    #  1. THE COUNT, made now (not the one kept for the process): nothing silent that is not declared
+    inv = _na._blocks_naming_a_model()
+    assert inv["silent_not_declared"] == 0 and inv["not_stating_a_level_where"] == [], inv["not_stating_a_level_where"]
+    assert inv["declared_but_absent"] == [], inv["declared_but_absent"]
+    #     the older identity still holds, and what is left without a level is exactly what is declared
+    assert inv["blocks_naming_a_model"] == inv["stating_a_level"] + inv["not_stating_a_level"]
+    assert inv["not_stating_a_level"] == inv["declared_not_an_answer"]["blocks"] == sum(c for c, _r in _na.NOT_AN_ANSWER.values())
+    for e in inv["declared_not_an_answer"]["entries"]:
+        assert len(e["reason"]) > 40 and e["blocks"] >= 1, e
+    assert f"{inv['declared_not_an_answer']['blocks']} more are declared not to be answers" in inv["basis"]
+    assert "0 name a resource, are not declared and state no level" in inv["basis"]
+
+    #  2. THE COUNT CAN FAIL, three ways
+    real = dict(_na.NOT_AN_ANSWER)
+    key = ("agentic_core/api/operational_excellence.py", "record_outcome")
+    #     (a) a block nobody declared is silent, and the count says where
+    monkeypatch.setattr(_na, "NOT_AN_ANSWER", {k: v for k, v in real.items() if k != key})
+    undeclared = _na._blocks_naming_a_model()
+    assert undeclared["silent_not_declared"] == 1 and undeclared["not_stating_a_level_where"] == [":".join(key)], undeclared["not_stating_a_level_where"]
+    #     (b) a declaration with nothing behind it is reported, never counted
+    monkeypatch.setattr(_na, "NOT_AN_ANSWER", {**real, ("agentic_core/api/law.py", "no_such_function_w727"): (1, "a declaration planted by the guard, with no block behind it")})
+    planted = _na._blocks_naming_a_model()
+    assert [s["function"] for s in planted["declared_but_absent"]] == ["no_such_function_w727"], planted["declared_but_absent"]
+    assert planted["declared_not_an_answer"]["blocks"] == inv["declared_not_an_answer"]["blocks"]
+    #     (c) a declaration claiming more blocks than the function holds is stale, and hides nothing
+    monkeypatch.setattr(_na, "NOT_AN_ANSWER", {**real, key: (5, real[key][1])})
+    over = _na._blocks_naming_a_model()
+    assert over["declared_but_absent"] == [{"file": key[0], "function": key[1], "declared": 5, "found": 1}], over["declared_but_absent"]
+    #     (d) a declaration covers only as many blocks as it counts: the next one in that function is silent
+    two = ("agentic_core/api/operational_excellence.py", "last_successful_server")
+    assert real[two][0] == 2, "the function no longer holds two declared blocks, so this leg would be idle"
+    monkeypatch.setattr(_na, "NOT_AN_ANSWER", {**real, two: (1, real[two][1])})
+    under = _na._blocks_naming_a_model()
+    assert under["silent_not_declared"] == 1 and under["not_stating_a_level_where"] == [":".join(two)], under["not_stating_a_level_where"]
+    monkeypatch.setattr(_na, "NOT_AN_ANSWER", real)
+
+    #  3. THE FOUR STATEMENTS, each what it says it is
+    assert _prov.call_evidence("native")["evidence_level"] == "behaviour"
+    failed = _prov.call_evidence("native", failed=True)
+    assert failed["evidence_level"] is None and failed["evidence_basis"].startswith("ASKED AND NOT ANSWERED")
+    none = _prov.call_evidence(asked=False)
+    assert none["evidence_level"] is None and none["evidence_basis"].startswith("NOT SERVED")
+    assert _prov.call_evidence(_prov.REFUSAL_GATE)["evidence_basis"].startswith("REFUSED BEFORE ANY RESOURCE WAS ASKED")
+    assert failed["evidence_basis"] != none["evidence_basis"], "a failed call is said to be a call never made"
+
+    #  4. ONE EXPRESSION, TWO PATHS - both driven
+    async def _answers(*a, **k):
+        return {"output": "w727 an answer", "served_by": "native", "is_external": False}
+
+    async def _raises(*a, **k):
+        raise RuntimeError("w727 the gateway raised")
+
+    async def _empty(*a, **k):
+        return {"output": "", "served_by": "native", "is_external": False}
+    monkeypatch.setattr(_is.gateway, "query_meta", _answers)
+    ok = client.post("/api/v1/ai/completion", json={"prompt": "w727 probe"}).json()
+    assert ok["evidence_level"] == "behaviour" and ok["served_by"] == "native", ok
+    q = client.post("/api/v1/ai/query", json={"query": "w727 probe"}).json()
+    assert q["ok"] is True and q["evidence_level"] == "behaviour", q
+    monkeypatch.setattr(_is.gateway, "query_meta", _raises)
+    bad = client.post("/api/v1/ai/completion", json={"prompt": "w727 probe"}).json()
+    assert bad["served_by"] is None and bad["evidence_level"] is None and bad["evidence_basis"].startswith("ASKED AND NOT ANSWERED"), bad
+    qbad = client.post("/api/v1/ai/query", json={"query": "w727 probe"}).json()
+    assert qbad["ok"] is False and qbad["evidence_basis"].startswith("ASKED AND NOT ANSWERED"), qbad
+    monkeypatch.setattr(_is.gateway, "query_meta", _empty)
+    qnone = client.post("/api/v1/ai/query", json={"query": "w727 probe"}).json()
+    assert qnone["ok"] is False and qnone["evidence_basis"].startswith("ASKED AND NOT ANSWERED"), qnone
+    #     a cycle that made no call says so; one that made a call states the level of replies
+    _se._prov_reset()
+    assert _se._prov_snapshot()["evidence_basis"].startswith("NOT SERVED") and _se._prov_snapshot()["calls"] == 0
+    _se._PROV["served_by"]["native"] = 2
+    try:
+        assert _se._prov_snapshot()["evidence_level"] == "behaviour" and _se._prov_snapshot()["calls"] == 2
+    finally:
+        _se._prov_reset()
+    _ = asyncio

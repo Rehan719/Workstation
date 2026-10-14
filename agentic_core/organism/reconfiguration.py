@@ -41,6 +41,7 @@ from agentic_core.auth.core import get_current_user
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
+from agentic_core.api._ai_provenance import (reply_evidence as _reply_evidence)   # W727
 
 router = APIRouter(prefix="/api/v1/organism", tags=["idbo-organism"])
 
@@ -429,7 +430,7 @@ async def ai_suggest_config(req: AISuggestRequest):
                 **wiring_for(section, key),
             })
 
-    return {
+    return {**_reply_evidence(meta.get('served_by', 'native')), 
         "suggestions": suggestions,
         "system_context": state_context,
         "served_by": meta.get("served_by", "native"),

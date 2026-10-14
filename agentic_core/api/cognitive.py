@@ -30,6 +30,7 @@ from pydantic import BaseModel
 
 from agentic_core.cognitive.cascade_v16 import UltimateCognitiveCascade
 from agentic_core.mjm.mjm import MJMOrchestratorV4, ConsultationRequest
+from agentic_core.api._ai_provenance import (reply_evidence as _reply_evidence)   # W727
 
 router = APIRouter(prefix="/api/v1/cognitive", tags=["cognitive-engines"])
 
@@ -245,7 +246,7 @@ async def run_mjm(req: MJMRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"MJM consultation failed: {type(e).__name__}: {e}")
 
-    return {
+    return {**_reply_evidence(response.served_by), 
         "query": req.query,
         "engine": response.engine,
         "answer": response.answer,
@@ -315,7 +316,7 @@ async def run_single_engine(req: SingleEngineRequest):
         from agentic_core.consultation.interface import ConsultationRequest as _CReq
         _res = await _eng.consult(_CReq(engine=eid, query=str(req.input),
                                         domain=req.domain, context=req.context or {}))
-        return {
+        return {**_reply_evidence(_res.served_by), 
             "engine_id": eid,
             "status": "ran",
             "ran": True,

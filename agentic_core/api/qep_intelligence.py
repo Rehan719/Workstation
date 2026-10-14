@@ -307,6 +307,8 @@ _SACRED_REFUSAL = ("translation of Arabic / Qur'anic text is NOT OFFERED, by rul
 #  Qur'an, a surah, an ayah or a hadith, was passed to the model because only Arabic script was looked for. This
 #  list may only REFUSE - it never clears anything: text it does not match still goes through the scholar gate.
 import re as _re_w692
+from agentic_core.api._ai_provenance import (reply_evidence as _reply_evidence)   # W727
+from agentic_core.api._ai_provenance import call_evidence as _call_evidence   # W727
 _NAMES_SCRIPTURE_RE = _re_w692.compile(
     r"\b(qur['’`]?an|koran|surah|surat|sura|ayah|ayat|aya|hadith|hadeeth|ahadith|sunnah|sahih|bukhari|"
     r"tirmidhi|tafsir|tafseer|the prophet said|allah says|allah said)\b", _re_w692.IGNORECASE)
@@ -414,7 +416,7 @@ async def translation_translate(req: TranslateRequest,
     _sr.submit_if_new(_key, "qep/translation/translate", _composed,
                       reference=f"{req.source_language or 'language not stated'} to {req.target_language}")
     _published, _state, _why = _sr.published_body(_key, _composed)
-    return {
+    return {**_reply_evidence(served_by), 
         "source_language": req.source_language,
         "target_language": req.target_language,
         "original": req.text,
@@ -511,6 +513,8 @@ async def adaptation_execute(req: AdaptationRequest,
         "from": req.source_domain,
         "to": req.target_domain,
         "status": _bp_status,
+        #  W727 - status "error" is the path where the call raised: asked and not answered
+        **_call_evidence(_served_by, failed=(_bp_status == "error")),
         "served_by": _served_by,
         # W409 — this was the literal 0.9. The prompt above explicitly asks the model for
         # "## Expected Fidelity (0-1)", and the reply was stored only as free text in `blueprint`

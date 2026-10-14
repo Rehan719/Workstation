@@ -34,6 +34,7 @@ from agentic_core.attestation import attest
 from agentic_core.auth.core import get_current_user
 from agentic_core.support import satisfaction, tickets
 from agentic_core.ueg.registry import ueg_ledger
+from agentic_core.api._ai_provenance import (failed_call_evidence as _failed_call_evidence)   # W727
 
 router = APIRouter(prefix="/api/v1/support", tags=["autonomous-support"])
 
@@ -126,7 +127,7 @@ async def support_ask(req: AskRequest, user: dict | None = Depends(get_current_u
         failed = not str(text or "").strip()
     except Exception as e:                       # noqa: BLE001 — recorded as a failure, never as an answer
         failed, text = True, ""
-        prov = {"served_by": None, "is_external": False, "error": f"{e.__class__.__name__}: {e}"}
+        prov = {**_failed_call_evidence(), "served_by": None, "is_external": False, "error": f"{e.__class__.__name__}: {e}"}
     latency_ms = (time.monotonic() - started) * 1000.0
 
     next_step = _ESCALATION if failed else "confirm whether this resolved it, or reply with what still fails"

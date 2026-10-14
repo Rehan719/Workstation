@@ -1029,6 +1029,32 @@ def _blocks_naming_a_model_once() -> Dict[str, Any]:
     return dict(_BLOCKS_COUNTED, counted="once for this process, at the first call")
 
 
+#  W727 - A BLOCK THAT NAMES A RESOURCE AND IS NOT AN ANSWER. A log row about an attempt, a lookup of who
+#  served last, a ledger entry written about an answer, a figure derived by a dated rule: each names a
+#  resource and gives nobody a reply, so it rightly states no level. Until now each was counted as silent for
+#  ever, and a reader could not tell debt from design. Declared here by file and function with a COUNT (one
+#  function can hold a real reply and a record beside it) and a reason. A new silent block in a declared
+#  function is still counted as silent; a declaration with fewer blocks behind it than it claims is stale.
+NOT_AN_ANSWER: Dict[tuple, tuple] = {
+    ("agentic_core/api/vsb.py", "_strategic_layer"): (
+        1, "a cadence refresh: the fields are derived by a dated rule from stored records; it answers nobody"),
+    ("agentic_core/api/vsb.py", "_action_plan_layer"): (
+        1, "a cadence refresh: the fields are derived by a dated rule from stored records; it answers nobody"),
+    ("agentic_core/api/board.py", "chief_instruct"): (
+        1, "the ledger entry written about a directive; the directive's own answer is another block"),
+    ("agentic_core/api/economy.py", "deliver_contract"): (
+        1, "a delivery record that names the run it rests on; the run's own answer states the level"),
+    ("agentic_core/api/operational_excellence.py", "record_outcome"): (
+        1, "a stored log row about an attempt, which may be a failure; it is a record, not an answer to anyone"),
+    ("agentic_core/api/operational_excellence.py", "last_successful_server"): (
+        2, "a lookup of which resource last served; it reports a past record and gives no reply of its own"),
+    ("agentic_core/api/support.py", "support_ask"): (
+        1, "the ledger entry written about an answer; the answer itself is another block and states its level"),
+    ("agentic_core/api/sovereign_evolution.py", "<module>"): (
+        1, "an accumulator of what served each call of a cycle; the cycle's own answer states the level"),
+}
+
+
 def _blocks_naming_a_model() -> Dict[str, Any]:
     import ast
     from pathlib import Path
@@ -1036,6 +1062,7 @@ def _blocks_naming_a_model() -> Dict[str, Any]:
     per: Dict[str, Dict[str, int]] = {}
     per_marked: Dict[str, Any] = {}
     unread: List[str] = []
+    silent_in: Dict[tuple, int] = {}                     # (file, innermost function) -> silent blocks there
     for p in sorted(root.rglob("*.py")):
         try:
             src = p.read_text(encoding="utf-8")
@@ -1045,6 +1072,10 @@ def _blocks_naming_a_model() -> Dict[str, Any]:
         except Exception:                                    # noqa: BLE001 - counted as unread, never as none
             unread.append(p.relative_to(root.parent).as_posix())
             continue
+        rel = p.relative_to(root.parent).as_posix()
+        this_router = p.resolve() == Path(__file__).resolve()
+        spans = [(f.lineno, f.end_lineno, f.name) for f in ast.walk(tree)
+                 if isinstance(f, (ast.FunctionDef, ast.AsyncFunctionDef))]
         named = stated = 0
         for n in ast.walk(tree):
             if not isinstance(n, ast.Dict):
@@ -1054,29 +1085,59 @@ def _blocks_naming_a_model() -> Dict[str, Any]:
                 continue
             named += 1
             spread = any(k is None and "evidence" in ast.dump(v) for k, v in zip(n.keys, n.values))
-            stated += 1 if ("evidence_level" in keys or spread) else 0
-        if named and p.resolve() == Path(__file__).resolve():
+            if "evidence_level" in keys or spread:
+                stated += 1
+            elif not this_router:
+                inside = [s for s in spans if s[0] <= n.lineno <= s[1]]
+                fn = max(inside)[2] if inside else "<module>"
+                silent_in[(rel, fn)] = silent_in.get((rel, fn), 0) + 1
+        if named and this_router:
             #  this router's answers get their level from the route marker above, not from the block: counting
             #  its blocks as silent would be a false finding, so they are listed apart and left out of the total
             per_marked = {"blocks_naming_a_model": named, "stating_a_level": stated,
                           "level_added_by_the_route_marker": True}
             continue
         if named:
-            per[p.relative_to(root.parent).as_posix()] = {"blocks_naming_a_model": named, "stating_a_level": stated}
+            per[rel] = {"blocks_naming_a_model": named, "stating_a_level": stated}
     total = sum(v["blocks_naming_a_model"] for v in per.values())
     said = sum(v["stating_a_level"] for v in per.values())
+    declared: List[Dict[str, Any]] = []
+    stale: List[Dict[str, Any]] = []
+    for (rel, fn), (count, reason) in sorted(NOT_AN_ANSWER.items()):
+        found = silent_in.get((rel, fn), 0)
+        if min(found, count):
+            declared.append({"file": rel, "function": fn, "blocks": min(found, count), "reason": reason})
+        if found < count:
+            stale.append({"file": rel, "function": fn, "declared": count, "found": found})
+    n_declared = sum(d["blocks"] for d in declared)
+    silent_all = total - said
+    silent = silent_all - n_declared
+    where = sorted(f"{rel}:{fn}" for (rel, fn), n in silent_in.items()
+                   if n > (NOT_AN_ANSWER.get((rel, fn)) or (0, ""))[0])
     return {"files": per, "files_counted": len(per), "blocks_naming_a_model": total, "stating_a_level": said,
-            "not_stating_a_level": total - said, "files_unread": unread,
+            #  READ 2026-10-14: an older guard holds `blocks == stating + not_stating`, so this name KEEPS its
+            #  meaning (every block with no level). What W727 adds has its own name beside it.
+            "not_stating_a_level": silent_all,
+            "silent_not_declared": silent,
+            "not_stating_a_level_where": where,
+            "declared_not_an_answer": {
+                "blocks": n_declared, "entries": declared,
+                "basis": ("blocks that name a resource and are records about a call, or figures derived by "
+                          "rule - not an answer to anyone. Each is declared by file and function, with a "
+                          "count and a reason; a block beyond the declared count is counted as silent")},
+            "declared_but_absent": stale,
+            "files_unread": unread,
             "this_router": per_marked,
-            "basis": (f"{said} of {total} written answer block(s) that name which resource served, across "
-                      f"{len(per)} router file(s), carry an evidence level in the block itself. Counted by "
-                      f"syntax, once for this process. A block is a place in the source, not an answer: the shared "
-                      f"provenance is one block and the answers of every router that returns it carry its "
-                      f"level. {total - said} block(s) name a resource and state no level"
+            "basis": (f"{said} of {total} written block(s) that name which resource served, across "
+                      f"{len(per)} router file(s), carry an evidence level in the block itself; {n_declared} "
+                      f"more are declared not to be answers, each with its reason; {silent} name a resource, "
+                      f"are not declared and state no level. Counted by syntax, once for this process. A block "
+                      f"is a place in the source, not an answer: the shared provenance is one block and the "
+                      f"answers of every router that returns it carry its level"
+                      + (f"; {len(stale)} declaration(s) have fewer blocks behind them than they claim" if stale else "")
                       + (f"; {len(unread)} file(s) could not be read and are NOT counted" if unread else "")),
             "ruling": ("Owner, 2026-10-13: every surface means every router that names a model, counted per "
                        "router. The count above is what remains.")}
-
 
 @router.post("/lifecycle/promote")
 @_states_level("/lifecycle/promote")

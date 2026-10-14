@@ -21004,10 +21004,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W727",
       "note": "",
-      "slot_source": "the item it was filed on is done; the open third-phase queue carries it"
+      "slot_source": "the item it was filed on is done; the open third-phase queue carries it",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "All 105 written blocks that name which resource served now state an evidence level (96) or are declared not to be answers with a count and a reason (9); the count of silent, undeclared blocks is zero and a guard holds it there. A failed call says asked and not answered.",
+      "reachability_check": "test_w727_every_block_naming_a_resource_states_its_level_or_is_declared_not_an_answer"
     },
     {
       "id": "FU-1071",

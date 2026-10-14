@@ -13,6 +13,7 @@ from config.paths import DATA_DIR
 from agentic_core.ai.gateway import gateway
 from agentic_core.synthesis.presentation import presentation_gen
 from agentic_core.synthesis.business_model import business_simulator
+from agentic_core.api._ai_provenance import (reply_evidence as _reply_evidence)   # W727
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/synthesis", tags=["Synthesis Studio"])
@@ -382,7 +383,7 @@ class SynthesisManager:
         with open(output_path, "w", encoding="utf-8") as fh:
             fh.write(self._with_provenance(content, ext))
 
-        result: Dict[str, Any] = {
+        result: Dict[str, Any] = {**_reply_evidence(getattr(self, '_last_served_by', None)), 
             "output_id": output_id,
             "output_url": f"/api/v1/synthesis/download/{output_id}",
             "content": content,
@@ -496,7 +497,7 @@ async def stream_synthesis(request: SynthesisRequest):
         synthesis_manager._last_served_by = fin.get("served_by") or None
         synthesis_manager._last_is_external = bool(fin.get("is_external"))
         output_path.write_text(synthesis_manager._with_provenance(content, ext), encoding="utf-8")
-        synthesis_manager.history.append({
+        synthesis_manager.history.append({**_reply_evidence(fin.get('served_by') or None), 
             "output_id": output_id,
             "output_url": f"/api/v1/synthesis/download/{output_id}",
             "content": content,
@@ -524,7 +525,7 @@ async def stream_synthesis(request: SynthesisRequest):
                     _slides_n = len(_parsed["slides"])
             except Exception:
                 _slides_n = None
-        _done = {'done': True, 'output_id': output_id,
+        _done = {**_reply_evidence(fin.get('served_by')), 'done': True, 'output_id': output_id,
                  'download_url': f'/api/v1/synthesis/download/{output_id}', 'timestamp': timestamp,
                  'format': ext,
                  'served_by': fin.get('served_by'), 'is_external': bool(fin.get('is_external')),

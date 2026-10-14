@@ -29,6 +29,7 @@ from agentic_core.auth.core import get_current_user
 
 from agentic_core.ai.gateway import gateway
 from agentic_core.organism.biobus import biobus
+from agentic_core.api._ai_provenance import (reply_evidence as _reply_evidence)   # W727
 
 router = APIRouter(prefix="/api/v1", tags=["capital-fund"])
 
@@ -708,7 +709,7 @@ async def generate_fund_report(req: FundReportRequest):
     meta = await gateway.query_meta(prompt, agent="fund_manager", augment=False, user_text=(req.focus or None))
     biobus.record_operation("fund_report", "fund.report", success=True)
 
-    return {
+    return {**_reply_evidence(meta.get('served_by')), 
         "report_id": uuid.uuid4().hex[:10],
         "period": req.period,
         "focus": req.focus,
@@ -769,7 +770,7 @@ async def ai_valuation(req: ValuationRequest, user: dict | None = Depends(get_cu
             "emit an outline, and an outline presented as a valuation would be fabrication. "
             "Load a local model or enable an external provider (Owner-gated)."))
 
-    return {
+    return {**_reply_evidence(meta.get('served_by')), 
         "valuation_id": uuid.uuid4().hex[:10],
         "title": req.title,
         "domain": req.domain,

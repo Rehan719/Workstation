@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from typing import Dict, Any, List
 from agentic_core.ai.gateway import gateway
+from agentic_core.api._ai_provenance import (reply_evidence as _reply_evidence)   # W727
 
 router = APIRouter(prefix="/civilization", tags=["Civilization Intelligence"])
 
@@ -30,7 +31,7 @@ async def assistant_query(query: str):
     ai_response = _ar.get("output", "")
     #  ledger v17 R5.2 - a fixed confidence figure and two fixed links were returned for every query. Nothing
     #  here scores an answer, and neither link is a page of this application.
-    return {
+    return {**_reply_evidence(_ar.get('served_by')), 
         "response": ai_response,
         "served_by": _ar.get("served_by"), "is_external": bool(_ar.get("is_external")),
         "confidence": None,
