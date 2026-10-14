@@ -1,1 +1,0 @@
-{"domain": "Employment", "rules": [{"id": "STAR_EVIDENCE", "field": "star_format", "check": "equals", "params": true, "action": "warning"}]}

@@ -38218,11 +38218,11 @@ def test_w575_p24_the_scatter_closes_on_each_row_it_reproduced(client):
     assert len(_law["concepts"]) == 494 and "relations" not in _law, (
         "the Law asset changed shape; it is kept as a VOCABULARY precisely because it has no "
         "relations, and if it gained some the ruling would need revisiting", sorted(_law))
-    _uni = _json575.loads((_root / "knowledge/Law/EmploymentTribunal/ontology/"
-                           "unified_assimilated_graph.json").read_text(encoding="utf-8"))
-    assert "edges" not in _uni and len(_uni["nodes"]) == 293, sorted(_uni)
-    assert "path" in _uni["nodes"][0], (
-        "the 293 entries are FILE PATHS, which is why this is never loaded as an ontology")
+    #  W731 - the second file was a list of FILE PATHS over the Owner's own papers (293 entries, no edges), never
+    #  an ontology. It was moved out of this public repository to his private store, so the strongest form of
+    #  "never served as a graph" now holds: it is not in the tree.
+    assert not (_root / "knowledge/Law/EmploymentTribunal/ontology/unified_assimilated_graph.json").exists(), (
+        "the file-path list over the Owner's own papers is back in the public tree")
 
     # ── FU-075 / FU-298 — AN ARTEFACT IS KEPT WITH READERS, OR REMOVED WITH NONE ───────────────
     #  W577 (FU-365) — this guard used to assert that the tolerant loader EXISTS and has at least
@@ -65866,3 +65866,38 @@ def test_w727_every_block_naming_a_resource_states_its_level_or_is_declared_not_
     finally:
         _se._prov_reset()
     _ = asyncio
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W731 - THE OWNER'S OWN PAPERS ARE NOT IN THE PUBLIC TREE. His legal matter and his career papers were moved
+#  to his private store on his word (2026-10-14). This holds the move: none of the folders is in the tree, and
+#  each is ignored so a later `git add` cannot bring it back. No party, person or case is named here.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w731_the_owners_own_papers_are_not_in_the_public_tree():
+    import pathlib
+    import re
+    _root = pathlib.Path(__file__).resolve().parents[1]
+    _moved = ["inputs/Law/", "inputs/Employment/", "knowledge/Employment/", "knowledge/Science/RM_CV_Science_Versions/",
+              "knowledge/Law/EmploymentTribunal/evidence/", "products/Law/VSB-SIG-LAW-OMNIOCTO-19.0/",
+              "products/Employment/VSB-SIG-EMP-PENTA-3.0/", "products/Science/VSB-SIG-SCI-OMNIA-18.0/",
+              "_archive/outputs/Law/", "_archive/outputs/Employment/", "_archive/outputs/Science/PatientSafety/",
+              "_archive/outputs/interview_prep/", "_archive/scripts/Law/", "_archive/scripts/Employment/",
+              "_archive/scripts/Science/PatientSafety/", "_archive/docs/Law/", "_archive/ingest/Employment/",
+              "_archive/legacy-archive/Employment/", "_archive/agentic_core/domains/law/",
+              "_archive/legacy-archive/Law/", "_archive/legacy-archive/Science/"]
+    #  1. none of the folders holds a file in this tree
+    _present = [d for d in _moved if (_root / d).is_dir() and any(p.is_file() for p in (_root / d).rglob("*"))]
+    assert _present == [], ("the Owner's own papers are back in the public tree", _present)
+    _legacy = [p.name for p in (_root / "_archive/legacy-archive").glob("law-grand-operation*") if p.is_dir()
+               and any(q.is_file() for q in p.rglob("*"))]
+    assert _legacy == [], ("an archived run over the Owner's legal matter is back in the tree", _legacy)
+    #  2. each is ignored, so a later `git add` cannot bring it back
+    _gi = (_root / ".gitignore").read_text(encoding="utf-8").splitlines()
+    _unignored = [d for d in _moved if d not in _gi]
+    assert _unignored == [], ("a moved folder is not ignored", _unignored)
+    assert "_archive/legacy-archive/law-grand-operation*/" in _gi
+    #  3. the law app's README names no case (a citation shaped `Name v Name`)
+    _readme = (_root / "apps/workstation-superapp/law/README.md").read_text(encoding="utf-8")
+    assert not re.search(r"\b[A-Z][a-z]+ v [A-Z][a-z]+", _readme), "the law app's README names a case again"
+    #  4. the live law ontology the Law hub reads is KEPT (only the Owner's own papers moved)
+    assert (_root / "knowledge/Law/EmploymentTribunal/ontology/uk_employment_law_v9.json").is_file()

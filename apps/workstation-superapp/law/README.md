@@ -1,7 +1,7 @@
 # Law Grand Operation v9.0-ULTIMATE Standalone PWA
 
 ## Overview
-This directory contains the architecture for the **Law Grand Operation v9.0-ULTIMATE Standalone PWA**, designed to provide free, high-fidelity legal intelligence for *Minhas v Lonza Biologics Plc* and broader employment law litigation.
+This directory contains the architecture for the **Law Grand Operation v9.0-ULTIMATE Standalone PWA**, designed to provide free legal information for employment law litigation.
 
 ## Architecture
 - **Offline-First**: Powered by Service Workers for full offline access to legal knowledge and evidence.

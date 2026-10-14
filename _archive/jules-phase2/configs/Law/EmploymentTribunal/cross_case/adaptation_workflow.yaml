@@ -1,8 +1,0 @@
-cross_case_adaptation:
-  target_domains: ["Science", "Religion", "Employment", "Care"]
-  mechanisms:
-    - name: "EmploymentTribunalIntakeV9"
-      interfaces: ["ScrapingEngineInterface", "IngestionReactorInterface"]
-  compatibility_check:
-    enabled: true
-    schema_version: "v9.0"
