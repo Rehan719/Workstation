@@ -66236,3 +66236,100 @@ def test_w734_a_request_for_a_ruling_is_refused_at_the_floor_every_door_passes(c
     from agentic_core.religious_domain import composed_text as _ct
     import inspect as _inspect
     assert "faith_ruling_refusal(" in _inspect.getsource(_ct.refuse_faith_ruling)
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W735 (cluster E, part 1) - AN ENTITY'S OWN BODY AND RECORD. Founder text is screened when it is saved (and all
+#  four sections are read), the phone app's cache follows its content, the preview serves the app's own start
+#  address, the record names what a founder may write and which door made the entity, and two pages show a
+#  domain by its label. Rows FU-938, 945, 738, 832, 853, 831.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w735_an_entitys_founder_text_is_screened_when_saved_and_its_record_says_what_it_is(client):
+    import json
+    import pathlib
+    import re
+    from agentic_core.api.compliance import screen_compliance
+    _root = pathlib.Path(__file__).resolve().parents[1]
+    _clean = "A village bakery cooperative selling bread to the local primary school"
+    _bad = next((t for t in ("An online casino with interest-bearing loans for members",
+                             "A lending desk built on riba with casino gambling revenue")
+                 if screen_compliance(t)["overall"] == "fail"), None)
+    assert _bad and screen_compliance(_clean)["overall"] != "fail"
+    _r = client.post("/api/v1/vsb/spawn", json={"challenge": _clean, "name": "W735 Bakery", "domain": "commerce"})
+    assert _r.status_code == 200, _r.text[:200]
+    _vid = re.findall(r"vsb-[0-9a-f]{10}", _r.text)[0]
+
+    #  1. FU-938: text saved in a section the screen did not read (operations) is screened ON SAVING, and the
+    #     doors that publish refuse at once - no heartbeat beat is needed
+    _s = client.post(f"/api/v1/vsb/{_vid}/body/operations", json={"text": _bad})
+    assert _s.status_code == 200, _s.text[:200]
+    _scr = _s.json()["screen"]
+    assert _scr["screened"] is True and _scr["overall"] == "fail" and "refuse" in _scr["basis"], _scr
+    _w = client.post(f"/api/v1/vsb/{_vid}/website")
+    assert _w.status_code == 409 and _w.json()["detail"]["error"] == "compliance_fail_hold", (_w.status_code, _w.text[:200])
+    assert _w.json()["detail"]["refused"] == "website"
+    #     and the founder's correction clears it the same way
+    _c = client.post(f"/api/v1/vsb/{_vid}/body/operations", json={"text": "Bread is baked at dawn and delivered by bicycle."})
+    assert _c.json()["screen"]["overall"] != "fail", _c.json()["screen"]
+    _w2 = client.post(f"/api/v1/vsb/{_vid}/website")
+    assert not (_w2.status_code == 409 and isinstance(_w2.json().get("detail"), dict)
+                and _w2.json()["detail"].get("error") == "compliance_fail_hold"), "the corrected text is still held"
+    #     the concept route screens too
+    _k = client.post(f"/api/v1/vsb/{_vid}/concept", json={"concept": "A cooperative bakery owned by its bakers."})
+    assert _k.status_code == 200 and _k.json()["screen"]["screened"] is True, _k.text[:200]
+
+    #  2. FU-832 + FU-853: the record names what a founder may write, and which door established the entity
+    _e = client.get(f"/api/v1/vsb/{_vid}").json()
+    assert set(_e["founder_writable_sections"]) == {"concept", "design", "commercialisation", "operations"}, _e["founder_writable_sections"]
+    assert _e["founder_writable_sections"]["operations"] == f"POST /api/v1/vsb/{_vid}/body/operations"
+    assert _e["established_through"] == "spawn_route", _e.get("established_through")
+    import agentic_core.api.vsb as _vsb
+
+    #  3. FU-945: the phone app's cache name follows the entity and what was generated; old caches are deleted
+    _f1 = _vsb._build_mobile_files({"vsb_id": "vsb-w735aaaaaa", "name": "One", "challenge": "first"})
+    _f2 = _vsb._build_mobile_files({"vsb_id": "vsb-w735aaaaaa", "name": "One", "challenge": "second"})
+    _c1 = re.search(r"const CACHE = '([^']+)'", _f1["mobile/sw.js"]).group(1)
+    _c2 = re.search(r"const CACHE = '([^']+)'", _f2["mobile/sw.js"]).group(1)
+    assert _c1 != _c2 and _c1.startswith("vsb-pwa-vsb-w735aaaaaa-") and "__CACHE_KEY__" not in _f1["mobile/sw.js"], (_c1, _c2)
+    assert _vsb._build_mobile_files({"vsb_id": "vsb-w735aaaaaa", "name": "One", "challenge": "first"})["mobile/sw.js"] == _f1["mobile/sw.js"]
+    assert "caches.delete" in _f1["mobile/sw.js"] and "k !== CACHE" in _f1["mobile/sw.js"]
+
+    #  4. FU-738: the app's own start address is served by the preview (an entity Genesis established, which may
+    #     publish) - and FU-853 through the real route: Genesis, the live door, records itself on the new record
+    _est = client.post("/api/v1/genesis/establish", json={"problem": "a halal community meal service", "domain": "care",
+                                                         "owner_id": "pytest", "name": "W735 Community Meals"})
+    _gid = _est.json()["vsb_id"]
+    _g = client.get(f"/api/v1/vsb/{_gid}").json()
+    assert _g["established_through"] == "genesis_journey" and _g["established_through_basis"].startswith("established by the Genesis journey"), _g.get("established_through_basis")
+    #     the streaming establish door writes it too (fix every writer)
+    _st = client.post("/api/v1/genesis/establish/stream", json={"problem": "W735 stream door", "domain": "enterprise",
+                                                                "name": "W735 Stream Door", "owner_id": "pytest"})
+    _sid = re.search(r'"vsb_id": "(vsb-[a-f0-9]+)"', _st.text).group(1)
+    _s = client.get(f"/api/v1/vsb/{_sid}").json()
+    assert _s["established_through"] == "genesis_journey" and _s["established_through_basis"].startswith("established by the Genesis journey"), _s.get("established_through_basis")
+    #     a Genesis record made before the field existed is read from its genome's origin, and says so
+    _gp = _vsb._VSB_STORE / f"{_gid}.json"
+    _grec = json.loads(_gp.read_text(encoding="utf-8"))
+    _grec.pop("established_through", None); _grec.pop("established_through_basis", None)
+    _gp.write_text(json.dumps(_grec), encoding="utf-8")
+    _g2 = client.get(f"/api/v1/vsb/{_gid}").json()
+    assert _g2["established_through"] == "genesis_journey" and _g2["established_through_basis"].startswith("read from this entity's genome"), _g2.get("established_through_basis")
+    #     and a record whose genome names no origin says it is not recorded, never a guessed door
+    _grec["genome_spec"] = {k: v for k, v in (_grec.get("genome_spec") or {}).items() if k != "origin"}
+    _gp.write_text(json.dumps(_grec), encoding="utf-8")
+    _g3 = client.get(f"/api/v1/vsb/{_gid}").json()
+    assert _g3["established_through"] is None and _g3["established_through_basis"].startswith("not recorded on this entity"), _g3.get("established_through_basis")
+    _grec["genome_spec"]["origin"] = "genesis_journey"
+    _gp.write_text(json.dumps(_grec), encoding="utf-8")
+    _m = client.post(f"/api/v1/vsb/{_gid}/mobile")
+    assert _m.status_code == 200, _m.text[:200]
+    _start = client.get(f"/api/v1/vsb/{_gid}/mobile/page/")
+    _index = client.get(f"/api/v1/vsb/{_gid}/mobile/page/index")
+    assert _start.status_code == 200 and _start.text == _index.text and "<div id=\"app\">" in _start.text, _start.status_code
+
+    #  5. FU-831: the two entity pages show a domain by its label, never the raw value
+    for _page, _expr in (("VSBSpawnStudio.tsx", "{domainLabel(e.domain)}"), ("VSBEconomy.tsx", "{domainLabel(v.domain)}")):
+        _src = (_root / "apps/workstation-superapp/src/pages/enterprise" / _page).read_text(encoding="utf-8")
+        assert _expr in _src and "domainLabel" in _src.split("export")[0], _page
+    _cock = (_root / "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8")
+    assert 'data-testid="cockpit-established-through"' in _cock and "established_through_basis" in _cock
