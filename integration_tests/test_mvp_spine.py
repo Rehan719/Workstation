@@ -66548,3 +66548,57 @@ def test_w737_what_serves_is_said_before_a_form_is_filled(client):
     assert _tool.index("<ServingNow") < _tool.index("{fields.map("), "the tool says what serves only after its form"
     #  4. THE PROMISE that stood without it is reworded
     assert "best-in-class" not in (_src / "pages" / "domains" / "DomainsHub.tsx").read_text(encoding="utf-8")
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W738 (FU-932 second half; Owner ruling 2026-10-14 morning, item 1) - AI-COMPOSED ARABIC SCRIPT AT THE FLOOR.
+#  Withheld on every door the orchestrator and the gateway serve - unless the person asked for an Arabic-script
+#  language, where the script is kept and labelled once as AI-written. Driven with a planted composed text (no
+#  scripture is typed: the Arabic here is the plain word for "hello", built from code points).
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w738_composed_arabic_is_withheld_at_the_floor_unless_an_arabic_script_language_was_asked(monkeypatch):
+    import importlib
+    _orc = importlib.import_module("agentic_core.ai.native.orchestrator")   # the MODULE: the package re-exports
+    #  an object under the same name, so `import ... as` binds the orchestrator object, not the module
+    from agentic_core.ai.gateway import gateway as _gw
+    from agentic_core.religious_domain import composed_text as _ct
+    _loop = _ensure_loop()
+    _word = "".join(chr(c) for c in (0x645, 0x631, 0x62D, 0x628, 0x627))      # an ordinary greeting word
+    _composed = f"Answer: {_word} - and the rest in English."
+
+    def _floor(prompt, agent, **kw):
+        return _composed
+    monkeypatch.setattr(_orc.native_engine, "generate", _floor)
+
+    #  1. THE RULE: withheld with the count; kept and labelled ONCE for an Arabic-script request; base tag read
+    _w, _r = _ct.apply_arabic_rule(_composed, None)
+    assert _word not in _w and _ct.WITHHELD_MARK in _w and _r["arabic_passages_withheld"] == 1 and _r["labelled"] is False
+    for _lang in ("ur", "ar", "fa", "ur-PK"):
+        _k, _kr = _ct.apply_arabic_rule(_composed, _lang)
+        assert _word in _k and _k.endswith(_ct.AI_ARABIC_LABEL) and _kr["labelled"] is True, (_lang, _k[-80:])
+        assert _ct.apply_arabic_rule(_k, _lang)[0].count(_ct.AI_ARABIC_LABEL) == 1, "the label was added twice"
+    assert _ct.apply_arabic_rule(_composed, "en")[0] == _w and _ct.apply_arabic_rule(_composed, "fr")[0] == _w
+    assert _ct.apply_arabic_rule("plain English", "ur") == ("plain English", {**_ct.withheld_record(0), "labelled": False, "language": "ur"})
+
+    #  2. THE ORCHESTRATOR (four routes call it directly) and THE GATEWAY: both directions
+    _o = _loop.run_until_complete(_orc.orchestrator.complete("x", agent="w738", prefer="native"))
+    assert _word not in _o["output"] and _o["arabic"]["arabic_passages_withheld"] == 1, _o
+    _ou = _loop.run_until_complete(_orc.orchestrator.complete("x", agent="w738", prefer="native", language="ur"))
+    assert _word in _ou["output"] and _ou["arabic"]["labelled"] is True
+    _g = _loop.run_until_complete(_gw.query_meta("x", agent="w738", user_text="w738 a question"))
+    assert _word not in _g["output"] and _g["arabic"]["arabic_passages_withheld"] == 1, _g["output"][:120]
+    _gu = _loop.run_until_complete(_gw.query_meta("x", agent="w738", user_text="w738 a question", language="ur-PK"))
+    assert _word in _gu["output"] and _gu["output"].count(_ct.AI_ARABIC_LABEL) == 1, _gu["output"][-120:]
+
+    #  3. THE STREAM: no token carries the script, and the terminal text is the ruled text
+    async def _drain(lang=None):
+        return [e async for e in _gw.stream_meta("x", agent="w738", user_text="w738 a question", language=lang)]
+    _ev = _loop.run_until_complete(_drain())
+    _streamed = "".join(e.get("token", "") for e in _ev)
+    assert _word not in _streamed and _ct.WITHHELD_MARK in _streamed, _streamed[:120]
+    assert _ev[-1]["done"] and _word not in _ev[-1]["output"] and _ev[-1]["arabic"]["arabic_passages_withheld"] == 1
+    _evu = _loop.run_until_complete(_drain("ar"))
+    assert _word in "".join(e.get("token", "") for e in _evu) and _evu[-1]["arabic"]["labelled"] is True
+
+    #  4. ONE DEFINITION: the four general routes' own withholding and the floor's read the same rule
+    assert _ct.apply_arabic_rule.__module__ == _ct.withhold_arabic.__module__

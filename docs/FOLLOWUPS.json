@@ -18268,11 +18268,15 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W738",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Both faith rules now hold at the floor every AI door passes: a request for a religious ruling is refused there (W734), and AI-composed Arabic script is withheld there - in the orchestrator, the gateway's fallback and the stream - unless the person asked for an Arabic-script language, where it is kept and labelled once as AI-written (Owner ruling 2026-10-14).",
+      "reachability_check": "test_w738_composed_arabic_is_withheld_at_the_floor_unless_an_arabic_script_language_was_asked"
     },
     {
       "id": "FU-933",

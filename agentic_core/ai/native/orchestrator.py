@@ -267,7 +267,19 @@ class NativeOrchestrator:
 
     async def complete(self, prompt: str, agent: str = "assistant",
                        timeout: float = 30.0, prefer_external: bool = False,
-                       prefer: str = "auto", user_text: Optional[str] = None) -> Dict[str, Any]:
+                       prefer: str = "auto", user_text: Optional[str] = None,
+                       language: Optional[str] = None) -> Dict[str, Any]:
+        res = await self._complete(prompt, agent=agent, timeout=timeout, prefer_external=prefer_external,
+                                   prefer=prefer, user_text=user_text)
+        #  W738 - the Arabic rule, once, on whatever served (refusals carry no composed text)
+        if not res.get("refused"):
+            from agentic_core.religious_domain.composed_text import apply_arabic_rule
+            res["output"], res["arabic"] = apply_arabic_rule(res.get("output"), language)
+        return res
+
+    async def _complete(self, prompt: str, agent: str = "assistant",
+                        timeout: float = 30.0, prefer_external: bool = False,
+                        prefer: str = "auto", user_text: Optional[str] = None) -> Dict[str, Any]:
         #  W640 - `user_text` is the caller's statement of which words the PERSON wrote. Only the floor
         #  reads it (a served model is given the whole prompt and nothing is duplicated into it); without
         #  it the floor attributes nothing to the person.

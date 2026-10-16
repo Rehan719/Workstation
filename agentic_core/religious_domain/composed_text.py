@@ -114,6 +114,36 @@ def withhold_arabic(composed: Any) -> Tuple[str, Dict[str, Any]]:
     return _ARABIC_RUN_RE.sub(WITHHELD_MARK + " ", text), withheld_record(len(runs))
 
 
+#  W738 (Owner ruling 2026-10-14, item 1) - THE RULE AT THE FLOOR. Arabic script in text a model or the floor
+#  COMPOSED is withheld, as on the four general routes - EXCEPT when the person asked for an Arabic-script language,
+#  where withholding would erase the answer they asked for. That answer keeps its script and carries this label.
+ARABIC_SCRIPT_LANGUAGES = frozenset({"ar", "ur", "fa", "ps", "sd", "ug", "ckb"})
+AI_ARABIC_LABEL = ("[AI-written. Any Qur'anic text here is not from a sourced edition; read it from the Quran "
+                   "pages.]")
+
+
+def arabic_script_requested(language: Any) -> bool:
+    """True when the request's language is one written in Arabic script (the base tag: 'ur-PK' is 'ur')."""
+    return str(language or "").split("-")[0].strip().lower() in ARABIC_SCRIPT_LANGUAGES
+
+
+def apply_arabic_rule(composed: Any, language: Any = None) -> Tuple[str, Dict[str, Any]]:
+    """(text, record) for COMPOSED text at the floor: withheld, or - for an Arabic-script request - kept and
+    labelled once. Never for what a person typed or for text fetched from a sourced edition."""
+    text = str(composed or "")
+    if arabic_script_requested(language):
+        base = str(language).split("-")[0].strip().lower()
+        if ARABIC_SCRIPT_RE.search(text) and AI_ARABIC_LABEL not in text:
+            return (text + "\n\n" + AI_ARABIC_LABEL,
+                    {**withheld_record(0), "labelled": True, "language": base,
+                     "basis": (f"the request asked for {base}, which is written in Arabic script, so the composed "
+                               f"script was kept and labelled as AI-written rather than withheld (Owner ruling "
+                               f"2026-10-14)")})
+        return text, {**withheld_record(0), "labelled": AI_ARABIC_LABEL in text, "language": base}
+    out, rec = withhold_arabic(text)
+    return out, {**rec, "labelled": False, "language": None}
+
+
 class ArabicStreamFilter:
     """withhold_arabic for text that arrives a token at a time. A run of Arabic script can be split across
     tokens, so the state is kept between them: the mark is written once where a run starts and everything up

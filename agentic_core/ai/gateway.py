@@ -394,8 +394,10 @@ class ModelGateway:
             # substantial completion and was demoted below the floor). The orchestrator bounds the
             # local model by its own budget; this bound governs only the external accelerants.
             res = await native_orchestrator.complete(augmented, agent=agent,
-                                                     timeout=(timeout or 30.0), user_text=user_text)
+                                                     timeout=(timeout or 30.0), user_text=user_text,
+                                                     language=language)      # W738 - the Arabic rule's exception
             response = res.get("output", "")
+            _arabic738 = res.get("arabic")
             served_by, is_external = res.get("served_by", "native"), res.get("is_external", False)
         except Exception:
             try:
@@ -404,6 +406,8 @@ class ModelGateway:
                 _observe_floor()           # W658 - a floor-served call is a call the organism saw
             except Exception:
                 response = "[native engine unavailable]"
+            from agentic_core.religious_domain.composed_text import apply_arabic_rule
+            response, _arabic738 = apply_arabic_rule(response, language)     # W738 - the fallback floor too
 
         _screen = screen_reason(response)
         if _screen:
@@ -466,7 +470,9 @@ class ModelGateway:
                                   if (_preamble and self._is_floor(served_by)) else _pstate["basis"]),
                 # W505 (P2.6) — every gateway response carries its governance checkpoint: what the gate
                 # decided before and after, and whether the constitutional ledger actually recorded it.
-                "governance_checkpoint": _chk}
+                "governance_checkpoint": _chk,
+                #  W738 - what the Arabic rule did to this answer (withheld passages, or kept and labelled)
+                "arabic": _arabic738}
 
     async def _call(self, prompt: str, agent: str = "gateway") -> tuple[str, str]:
         """Try providers in priority order, return (response_text, provider_name)."""
@@ -583,7 +589,24 @@ class ModelGateway:
 
     async def stream_meta(self, prompt: str, agent: str = "assistant",
                           owner_id: str | None = None, augment: bool = _RECALL_OFF,
-                          user_text: str | None = None) -> AsyncIterator[dict]:
+                          user_text: str | None = None, language: str | None = None) -> AsyncIterator[dict]:
+        """W738 - the stream with the Arabic rule: each token passes ArabicStreamFilter (unless the person asked
+        for an Arabic-script language), and the terminal frame's text is ruled inside _final."""
+        from agentic_core.religious_domain.composed_text import ArabicStreamFilter, arabic_script_requested
+        _keep = arabic_script_requested(language)
+        _flt = ArabicStreamFilter()
+        async for ev in self._stream_meta_inner(prompt, agent=agent, owner_id=owner_id, augment=augment,
+                                                user_text=user_text, language=language):
+            if "token" in ev and not _keep:
+                _t = _flt.feed(ev["token"])
+                if _t:
+                    yield {"token": _t}
+                continue
+            yield ev
+
+    async def _stream_meta_inner(self, prompt: str, agent: str = "assistant",
+                                 owner_id: str | None = None, augment: bool = _RECALL_OFF,
+                                 user_text: str | None = None, language: str | None = None) -> AsyncIterator[dict]:
         """Yield {"token": …} events then ONE terminal {"done": True, "served_by", "is_external",
         "output", "guardrail_passed", "profile_applied"} — IN-HOUSE FIRST (§6), mirroring
         query_meta's contract:
@@ -619,6 +642,7 @@ class ModelGateway:
                                                                    "article": "A.9.5: no AI gives a religious ruling"})}
             return
         augmented = self._augment(prompt, owner_id=owner_id) if augment else prompt
+        from agentic_core.religious_domain.composed_text import apply_arabic_rule      # W738
         from agentic_core.ai.user_context import load_preamble
         _preamble = load_preamble(owner_id)
         augmented = _preamble + augmented
@@ -662,13 +686,15 @@ class ModelGateway:
             F2: the first cut logged the raw text into tenant memory, then judged it). A streamed
             reply cannot be retracted, so the notice is a token every consumer sees; what is
             logged and remembered is the replacement, exactly as query_meta persists it."""
+            full, _arabic738s = apply_arabic_rule(full, language)          # W738 - before anything is kept
             ok = validate_response(full)
             _log(full if ok else _NOTICE.strip(), served_by)
             return {"done": True, "served_by": served_by, "is_external": is_external,
                     "output": full if ok else _NOTICE.strip(),
                     "guardrail_passed": ok, "profile_applied": bool(_preamble) and not self._is_floor(served_by),
                     "governance_checkpoint": _record_checkpoint(agent, _pre, _output_verdict(full),
-                                                                screened=not ok)}
+                                                                screened=not ok),
+                    "arabic": _arabic738s}
 
         # 1 — the OWNED local model: genuine token-by-token streaming
         if (os.getenv("AI_DISABLE_LOCAL", "").lower() not in ("1", "true", "yes")
