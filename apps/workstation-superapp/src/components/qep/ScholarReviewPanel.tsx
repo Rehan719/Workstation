@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { apiJson, errorMessage } from '../../lib/api';
+import { ChildrenApprovalPack } from './ChildrenApprovalPack';   // W739 (P5.21)
 
 // W669 (FU-693, Owner ruling 2026-10-11) - THE REVIEWING HALF OF THE SCHOLAR GATE, ON A SCREEN.
 // Religious teaching content is composed and WITHHELD until a named scholar approves it. Until this panel
@@ -72,6 +73,9 @@ const ScholarReviewPanel: React.FC = () => {
           </p>
         )}
       </Card>
+
+      {/* W739 (P5.21) - the children's tools as ONE pack, decided as a whole, above the item-by-item queue */}
+      <ChildrenApprovalPack roster={roster} chosen={chosen} />
 
       <Card className="p-6 border-slate-800 bg-slate-900/40">
         <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Roster ({roster.length})</h4>

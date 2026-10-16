@@ -66611,3 +66611,74 @@ def test_w738_composed_arabic_is_withheld_at_the_floor_unless_an_arabic_script_l
 
     #  4. ONE DEFINITION: the four general routes' own withholding and the floor's read the same rule
     assert _ct.apply_arabic_rule.__module__ == _ct.withhold_arabic.__module__
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W739 (P5.21 clauses 1-3; Owner ruling 2026-10-14: "I want the tools built so that the scholar can see what to
+#  approve as a whole") - THE CHILDREN'S TOOLS' APPROVAL PACK: assembled whole, decided as one, bound to its
+#  fingerprint, and a gate no children's tool passes without sign-in AND the current pack's approval.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w739_the_scholar_sees_and_decides_the_childrens_tools_as_one_pack(client, monkeypatch):
+    import pathlib
+    import uuid
+    from agentic_core import plan_followups as _fu
+    from agentic_core.api import scholar_review as _sr
+    from agentic_core.religious_domain import approval_pack as _ap
+    _root = pathlib.Path(__file__).resolve().parents[1]
+    _tag = uuid.uuid4().hex[:6]
+
+    #  1. THE PACK, WHOLE: the rules, the tools and the learner texts, with the gate's answer beside them
+    _p = client.get("/api/v1/scholar-review/pack").json()
+    assert set(_p["sections"]) == {"rules", "tools", "learner_content"} and _p["counts"]["rules"] == len(_ap.RULES) >= 7
+    assert _p["children_tools"]["open"] is False and "sign-in is off" in _p["children_tools"]["basis"], _p["children_tools"]
+    _doc = client.get("/api/v1/scholar-review/pack.md")
+    assert _doc.status_code == 200 and _doc.headers["content-type"].startswith("text/markdown")
+    assert "One decision covers everything below" in _doc.text and all(r["rule"] in _doc.text for r in _ap.RULES)
+    #     a research tool's item is an ADULT tool's and stays out of the children's pack; a learner text is in it
+    _sr.submit(f"religion-research:w739-{_tag}", "religion-research", "w739 research text")
+    _sr.submit(f"w739-lesson-{_tag}", "qep-lesson", "w739 a lesson text for review")
+    _keys = {i["content_key"] for i in client.get("/api/v1/scholar-review/pack").json()["sections"]["learner_content"]}
+    assert f"w739-lesson-{_tag}" in _keys and f"religion-research:w739-{_tag}" not in _keys
+
+    #  2. ONE DECISION, ONLY BY A SCHOLAR ON THE ROSTER, ONLY ON THE PACK THAT WAS READ
+    _h = client.get("/api/v1/scholar-review/pack").json()["pack_hash"]
+    _no = client.post("/api/v1/scholar-review/pack/decide", json={"scholar_id": f"nobody-{_tag}", "decision": "approve", "seen_hash": _h})
+    assert _no.status_code == 409 and "not on the scholar roster" in _no.json()["detail"], _no.text[:200]
+    _sid = f"w739-scholar-{_tag}"
+    assert client.post("/api/v1/scholar-review/roster", json={"scholar_id": _sid, "name": "W739 Test Scholar", "credential": "stated"}).status_code == 200
+    _stale = client.post("/api/v1/scholar-review/pack/decide", json={"scholar_id": _sid, "decision": "approve", "seen_hash": "0" * 32})
+    assert _stale.status_code == 409 and "changed after it was read" in _stale.json()["detail"], _stale.text[:200]
+    _odd = client.post("/api/v1/scholar-review/pack/decide", json={"scholar_id": _sid, "decision": "maybe", "seen_hash": _h})
+    assert _odd.status_code == 409
+    _ok = client.post("/api/v1/scholar-review/pack/decide", json={"scholar_id": _sid, "decision": "approve", "seen_hash": _h,
+                                                                  "notes": "w739", "section_notes": {"rules": "fine", "other": "dropped"}})
+    assert _ok.status_code == 200 and _ok.json()["decision"]["attestation"] == _sr.ATTESTED, _ok.text[:200]
+    assert _ok.json()["decision"]["section_notes"] == {"rules": "fine"}
+    _now = client.get("/api/v1/scholar-review/pack").json()
+    assert _now["state"] == "approved" and _sid in _now["basis"], _now["basis"]
+
+    #  3. THE GATE: held with sign-in off even when approved; open only with both
+    assert _ap.children_tools_open()["open"] is False
+    import agentic_core.auth.core as _auth
+    monkeypatch.setattr(_auth, "auth_enabled", lambda: True)
+    assert _ap.children_tools_open()["open"] is True
+    #     ...and ANY change to the pack re-opens review and holds the tools again
+    _sr.submit(f"w739-lesson2-{_tag}", "qep-lesson", "w739 a second lesson text")
+    _g = _ap.children_tools_open()
+    assert _g["open"] is False and _g["pack_state"] == "changed_since_approval", _g
+    monkeypatch.undo()
+
+    #  4. THE PAGE shows the pack above the item queue and decides on the hash it read
+    _panel = (_root / "apps/workstation-superapp/src/components/qep/ScholarReviewPanel.tsx").read_text(encoding="utf-8")
+    _comp = (_root / "apps/workstation-superapp/src/components/qep/ChildrenApprovalPack.tsx").read_text(encoding="utf-8")
+    assert "<ChildrenApprovalPack roster={roster} chosen={chosen} />" in _panel
+    assert _panel.index("<ChildrenApprovalPack") < _panel.index("Roster ({roster.length})")
+    assert "seen_hash: pack.pack_hash" in _comp and "/api/v1/scholar-review/pack.md" in _comp
+
+    #  5. THE PLAN carries the item, with its bar
+    _plan = (_root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    _items = {i["slot"]: i for i in _fu.plan_items(_plan)}
+    assert "P5.21" in _items and not _items["P5.21"]["done"]
+    _body = " ".join(_plan.split("\n P5.21 [chartered W739", 1)[1].split("\n COMPLETE when P5.1", 1)[0].split())
+    for _part in ("MEASURED FIRST:", "CLAUSES:", "BOUNDARY:", "ACCEPT:", "nothing reaches a child before (3)"):
+        assert _part in _body, _part

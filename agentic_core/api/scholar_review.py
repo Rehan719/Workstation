@@ -364,3 +364,48 @@ async def scholar_review_decide(req: DecisionRequest, user: dict | None = Depend
     if not out["ok"]:
         raise HTTPException(status_code=409, detail=out["detail"])
     return out
+
+
+# -- W739 (P5.21, Owner ruling 2026-10-14) - THE CHILDREN'S TOOLS' APPROVAL PACK, READ AND DECIDED AS ONE ------
+#  agentic_core/religious_domain/approval_pack.py assembles it; these routes show it whole (as data and as one
+#  document) and record one decision on the pack the scholar read. Plain def: each reads files.
+from fastapi.responses import PlainTextResponse                 # noqa: E402
+
+
+class PackDecisionRequest(BaseModel):
+    scholar_id: str
+    decision: str
+    seen_hash: str
+    notes: str = ""
+    section_notes: Dict[str, str] = {}
+
+
+@router.get("/pack")
+def scholar_pack():
+    from agentic_core.religious_domain.approval_pack import assemble, children_tools_open
+    return {**assemble(), "children_tools": children_tools_open(), "footing": _footing()}
+
+
+@router.get("/pack.md", response_class=PlainTextResponse)
+def scholar_pack_document():
+    from agentic_core.religious_domain.approval_pack import as_document
+    return PlainTextResponse(as_document(), media_type="text/markdown; charset=utf-8")
+
+
+@router.post("/pack/decide")
+def scholar_pack_decide(req: PackDecisionRequest, user: dict | None = Depends(get_current_user)):
+    from agentic_core.religious_domain.approval_pack import decide as _decide_pack
+    if auth_enabled():
+        me = user.get("username") if isinstance(user, dict) else None
+        if me != req.scholar_id:
+            raise HTTPException(status_code=403, detail=(
+                "With authentication on, a decision on the pack is entered only by the scholar's own account "
+                f"({req.scholar_id!r}); nobody decides on a scholar's behalf."))
+        out = _decide_pack(req.scholar_id, req.decision, req.notes, req.section_notes, seen_hash=req.seen_hash,
+                           entered_by=str(me), attestation=OWN_ACCOUNT)
+    else:
+        out = _decide_pack(req.scholar_id, req.decision, req.notes, req.section_notes, seen_hash=req.seen_hash,
+                           entered_by="the Owner (single-user mode)", attestation=ATTESTED)
+    if not out["ok"]:
+        raise HTTPException(status_code=409, detail=out["detail"])
+    return out
