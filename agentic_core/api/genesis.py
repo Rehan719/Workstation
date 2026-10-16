@@ -1189,6 +1189,9 @@ _BODY_AGENTS = (("concept", "genesis_concept", "concept"),
 from agentic_core.gaas.v5 import (INTENT_GATE_SCOPE as _INTENT_GATE_SCOPE,
                                   intent_gate_result as _intent_gate_result)
 _ESTABLISH_GATE_SCOPE = _INTENT_GATE_SCOPE
+#  W735 (FU-853) - the door, stated on the record of every entity this journey establishes
+_ESTABLISHED_THROUGH_GENESIS = ("established by the Genesis journey (POST /api/v1/genesis/establish or its streaming "
+                                "door), which keeps a journey record, evidence and review gates before the entity exists")
 
 
 def _establish_gate(gov) -> dict:
@@ -1549,6 +1552,9 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
         "genome_spec": genome_spec,
         "epigenetic_traits": {"domain": req.domain, "origin": "genesis"},
         "generation": 0,
+        #  W735 (FU-853) - WHICH DOOR MADE THIS ENTITY, on its own record, as the spawn route has written since W672
+        "established_through": "genesis_journey",
+        "established_through_basis": _ESTABLISHED_THROUGH_GENESIS,
         "ceo_specification": (req.commercialisation or req.concept)[:2000], "ceo_specification_source": "founder_input",   # W670 (R3.0)
         "swarm_config": {
             "CEO": f"AI CEO — {name}",
@@ -1791,6 +1797,8 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
             # the stage is derived there too, and was a literal on this path as well
             "status": "pending derivation", "stage": "pending derivation", "genome_spec": genome_spec,
             "epigenetic_traits": {"domain": req.domain, "origin": "genesis"}, "generation": 0,
+            #  W735 (FU-853) - which door made this entity, on its own record (the streaming establish door too)
+            "established_through": "genesis_journey", "established_through_basis": _ESTABLISHED_THROUGH_GENESIS,
             "ceo_specification": (req.commercialisation or req.concept)[:2000], "ceo_specification_source": "founder_input",   # W670 (R3.0)
             "genesis_blueprint": {"concept": req.concept, "design": req.design,
                                   "commercialisation": req.commercialisation},

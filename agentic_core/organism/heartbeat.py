@@ -130,6 +130,10 @@ def screen_living_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
             _bp = _blueprint(_ent)
             parts.append(_bp.get("concept", "")[:1200])
             parts.append(_bp.get("commercialisation", "")[:800])
+            #  W735 (FU-938) - a founder may write the design and the operations too; neither was screened
+            parts.append(_bp.get("design", "")[:800])
+            _ops735 = (_ent.get("genesis_journey") or {}).get("operations") if isinstance(_ent.get("genesis_journey"), dict) else ""
+            parts.append(str(_ops735 or "")[:800])
     except Exception as _swallowed:   # FU-461 (W611) — recorded, never swallowed
         _side_failed.append(f"blueprint_text: {_swallowed.__class__.__name__}: {_swallowed}")
     from agentic_core.api.compliance import screen_compliance

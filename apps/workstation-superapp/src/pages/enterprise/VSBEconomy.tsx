@@ -9,6 +9,7 @@ import { ServiceContracts } from './ServiceContracts';
 import { CharityDirectives } from './CharityDirectives';
 import { VenturePortfolioPanel, TransferPanel } from './EconomyOperations';
 import { complianceChip, fundingLabel } from '../../lib/api';
+import { domainLabel } from '../../lib/taxonomy';   // W735 (FU-831)
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -851,7 +852,7 @@ export const VSBEconomy: React.FC = () => {
               <div key={v.vsb_id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-950 border border-slate-900">
                 <div className="min-w-0">
                   <p className="text-sm font-black text-white truncate">{v.name}</p>
-                  <p className="text-[9px] font-mono text-slate-600">{v.vsb_id} · {v.entity_type} · {v.domain}</p>
+                  <p className="text-[9px] font-mono text-slate-600">{v.vsb_id} · {v.entity_type} · {domainLabel(v.domain)}</p>
                 </div>
                 <div className="text-right shrink-0">
                   {/* W491 (FU-192) - an emerald "N cycles" was this roster's own tally presented as the
