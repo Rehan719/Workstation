@@ -87,7 +87,7 @@ async def generate_twin_model(req: ModelRequest):
     }.get(req.complexity, "Model 6-10 components with multiple feedback loops.")
 
     prompt = (
-        f"You are a systems engineer and digital twin architect. "
+        f"This is a digital-twin model. "
         f"Design a comprehensive digital twin model.\n\n"
         f"System: {req.system_name}\n"
         f"Description: {req.system_description}\n"
@@ -173,7 +173,7 @@ async def run_simulation(req: SimulateRequest):
     params_text = json.dumps(req.parameters) if req.parameters else "Default parameters"
 
     prompt = (
-        f"You are a simulation engineer running a digital twin scenario.\n\n"
+        f"Run this digital-twin scenario.\n\n"
         f"System: {model['system_name']}\n"
         f"Model summary:\n{model_summary}\n\n"
         f"Scenario: {req.scenario_name}\n"
@@ -233,7 +233,7 @@ async def optimise_model(req: OptimiseRequest):
     constraints_text = "\n".join(f"- {c}" for c in req.constraints) if req.constraints else "No hard constraints specified."
 
     prompt = (
-        f"You are an optimisation engineer working with a digital twin.\n\n"
+        f"Optimise against this digital twin.\n\n"
         f"System: {model['system_name']}\n"
         f"Model:\n{model['model_spec'][:600]}\n\n"
         f"Optimisation objective: {req.optimisation_objective}\n"

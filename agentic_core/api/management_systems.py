@@ -93,7 +93,7 @@ class QMSRequest(BaseModel):
 async def generate_qms(req: QMSRequest):
     """Generate a complete ISO 9001-aligned Quality Management System framework."""
     prompt = (
-        f"You are a lead ISO 9001 quality consultant. Design a complete QMS framework.\n\n"
+        f"Draft a QMS framework outline.\n\n"
         f"Organisation: {req.organisation_name}\n"
         f"Domain: {req.domain}\n"
         f"Size: {req.size}\n"
@@ -143,7 +143,7 @@ class BMSRequest(BaseModel):
 async def generate_bms(req: BMSRequest):
     """Generate a Business Management System with Balanced Scorecard and OKRs."""
     prompt = (
-        f"You are a strategic management consultant. Build a Business Management System.\n\n"
+        f"Draft a Business Management System outline.\n\n"
         f"Organisation: {req.organisation_name}\n"
         f"Mission: {req.mission}\n"
         f"Domain: {req.domain}\n"
@@ -188,7 +188,7 @@ async def generate_dcs(req: DCSRequest):
     doc_types = req.document_types or ["policies", "procedures", "work instructions", "records", "forms"]
 
     prompt = (
-        f"You are a document control specialist. Design a complete DCS for:\n\n"
+        f"Draft a document control system outline for:\n\n"
         f"Organisation: {req.organisation_name}\nDomain: {req.domain}\n"
         f"Document types: {', '.join(doc_types)}\n\n"
         "Deliver:\n"
@@ -231,7 +231,7 @@ async def generate_audit_schedule(req: AuditScheduleRequest):
     processes = req.processes or ["Sales", "Operations", "Finance", "HR", "IT", "Quality"]
 
     prompt = (
-        f"You are an internal audit lead. Generate a risk-based internal audit programme.\n\n"
+        f"Draft a risk-based internal audit programme.\n\n"
         f"Organisation: {req.organisation_name}\n"
         f"Standard: {req.audit_standard}\nYear: {req.year}\n"
         f"Processes to audit: {', '.join(processes)}\n\n"
@@ -273,7 +273,7 @@ async def generate_risk_register(req: RiskRegisterRequest):
     n = min(max(req.num_risks, 5), 20)
 
     prompt = (
-        f"You are a risk management consultant. Generate a comprehensive risk register.\n\n"
+        f"Draft a risk register.\n\n"
         f"Organisation: {req.organisation_name}\nDomain: {req.domain}\n"
         + (f"Context: {req.context}\n" if req.context else "")
         + f"Number of risks to identify: {n}\n\n"
@@ -316,7 +316,7 @@ class EMSRequest(BaseModel):
 async def generate_ems(req: EMSRequest):
     """Generate an ISO 14001-aligned Environmental Management System framework."""
     prompt = (
-        f"You are a lead ISO 14001 environmental management consultant.\n\n"
+        f"Draft an environmental management system outline.\n\n"
         f"Organisation: {req.organisation_name}\n"
         f"Domain: {req.domain}\nSector: {req.sector}\n"
         + (f"Scope: {req.scope}\n" if req.scope else "")

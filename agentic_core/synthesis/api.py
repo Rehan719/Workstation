@@ -192,7 +192,7 @@ class SynthesisManager:
             }
             doc_label = label_map[otype]
             prompt = (
-                f'You are a world-class analyst. Write a thorough professional {doc_label} on: "{topic}".{ctx_block}\n\n'
+                f'Write a thorough {doc_label} on: "{topic}".{ctx_block}\n\n'
                 f"Format as clean markdown:\n# {doc_label}: {topic}\n## Abstract\n## Introduction\n"
                 f"## Analysis\n## Discussion\n## Conclusion\n\n"
                 f"Be specific and cite knowledge base content where relevant."
@@ -434,7 +434,7 @@ async def stream_synthesis(request: SynthesisRequest):
     if otype in label_map:
         doc_label = label_map[otype]
         prompt = (
-            f'You are a world-class analyst. Write a thorough professional {doc_label} on: "{topic}".{ctx_block}\n\n'
+            f'Write a thorough {doc_label} on: "{topic}".{ctx_block}\n\n'
             f"Format as clean markdown with sections: Abstract, Introduction, Analysis, Discussion, Conclusion. "
             f"Be specific and cite knowledge base content where relevant."
         )
