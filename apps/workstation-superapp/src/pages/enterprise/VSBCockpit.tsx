@@ -854,6 +854,12 @@ export const VSBCockpit: React.FC = () => {
                 </div>
                 <p className="text-[11px] text-slate-500 leading-relaxed">{detail.challenge}</p>
                 <p className="text-[9px] font-mono text-slate-600">{detail.vsb_id} · realm: {detail.realm} · owner: {detail.owner_id}</p>
+                {/* W735 (FU-853) — which door established this entity, from its record; the server says when it is not recorded */}
+                <p className="text-[9px] text-slate-600" data-testid="cockpit-established-through">
+                  {(detail as any).established_through
+                    ? `Established through the ${String((detail as any).established_through).replace(/_/g, ' ')}.`
+                    : `Established through: ${String((detail as any).established_through_basis ?? 'not returned by the server')}`}
+                </p>
                 {/* P3.30 (ledger v16 R2.9) — the sections this entity's own record lists as awaiting the owned model
                     or never provided, each with a box for the founder's own words. Nothing is listed here that the
                     record does not list. */}

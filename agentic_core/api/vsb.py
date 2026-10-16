@@ -934,6 +934,32 @@ def _entity_fallback_copy(name: str, challenge: str, concept: str, kind: str) ->
                else "content pending the owned model — this enterprise has not yet composed its own solution."))
 
 
+def _rescreen_after_founder_text(vsb_id: str) -> dict:
+    """W735 (FU-938) - the founder's text is SCREENED when it is saved. It was saved and the repository marked
+    stale, and the screen ran only on the heartbeat's rotation, so ship, website and archive could leave on a
+    verdict that predated the text. The same writer the rotation and the first screen use runs here; the ship
+    doors read its verdict. A screen may refuse and never clears: a verdict that is not 'fail' says nothing more."""
+    try:
+        from agentic_core.organism.heartbeat import screen_living_vsb
+        _s = screen_living_vsb(vsb_id)
+    except Exception as _exc:                       # noqa: BLE001 - said, never swallowed
+        return {"screened": False, "overall": None,
+                "basis": f"NOT SCREENED: the screen could not run ({_exc.__class__.__name__}); the ship doors "
+                         f"read the last verdict on record"}
+    if _s is None:
+        return {"screened": False, "overall": None,
+                "basis": "NOT SCREENED: the entity is not on the living roster, so there is no history to record "
+                         "a verdict in"}
+    if _s.get("history_unavailable"):
+        return {"screened": False, "overall": None,
+                "basis": f"NOT RECORDED: the compliance history could not be read whole ({_s['history_unavailable'][:120]}), "
+                         f"so the ship doors refuse until it can"}
+    return {"screened": True, "overall": _s.get("overall"), "regression": bool(_s.get("regression")),
+            "basis": (f"screened on saving: {_s.get('overall')}" + (" - the ship, the website, the web app and the "
+                      "phone app now refuse until the text no longer fails" if _s.get("overall") == "fail" else
+                      " (a word-list screen: it can refuse; it has not assessed the enterprise)"))}
+
+
 def _refuse_if_screen_failed(vsb_id: str, what: str) -> None:
     """Owner ruling 2026-10-10 (FU-687) - NOTHING THE §11 SCREEN FAILS LEAVES THE PLATFORM UNREAD.
 
@@ -1376,10 +1402,14 @@ async def get_vsb_webapp_file(vsb_id: str, name: str, request: Request,
 # ── §13 D1 increment 4 — Phone app generator (real installable PWA) ──────────────────────────────
 # An installable, offline-capable Progressive Web App (manifest + service worker + icon + the same
 # data-driven interactive app, mobile-first). HONEST: a PWA — NOT a compiled native iOS/Android app.
-_MOBILE_SW_JS = r"""const CACHE = 'vsb-pwa-v1';
+#  W735 (FU-945) - THE CACHE FOLLOWS THE CONTENT. It was one fixed name for every entity and every generation,
+#  served cache-first, so a hosted copy kept showing the first-shipped body after every re-ship. The name now
+#  carries the entity and a hash of what was generated (so a re-ship installs a new worker), and activate deletes
+#  this app's older caches.
+_MOBILE_SW_JS = r"""const CACHE = 'vsb-pwa-__CACHE_KEY__';
 const ASSETS = ['./', 'index.html', 'app.js', 'styles.css', 'data.json', 'manifest.webmanifest'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => Promise.all(ASSETS.map((a) => c.add(a).catch(() => {}))))); self.skipWaiting(); });
-self.addEventListener('activate', (e) => { e.waitUntil(self.clients.claim()); });
+self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith('vsb-pwa-') && k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', (e) => { e.respondWith(caches.match(e.request).then((r) => r || fetch(e.request).catch(() => caches.match('index.html')))); });
 """
 
@@ -1409,7 +1439,9 @@ def _build_mobile_files(vsb: dict) -> dict:
         "description": vsb.get("challenge", "")[:160],
         "icons": [{"src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"}],
     }, indent=2)
-    f["mobile/sw.js"] = _MOBILE_SW_JS
+    import hashlib as _h735
+    _key735 = _h735.sha256("\x00".join(f[k] for k in sorted(f)).encode("utf-8")).hexdigest()[:12]
+    f["mobile/sw.js"] = _MOBILE_SW_JS.replace("__CACHE_KEY__", f"{str(vsb.get('vsb_id') or 'app')}-{_key735}")
     f["mobile/icon.svg"] = (
         "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\">"
         "<rect width=\"512\" height=\"512\" rx=\"96\" fill=\"#4f46e5\"/>"
@@ -1505,8 +1537,12 @@ async def get_vsb_mobile(vsb_id: str, user: dict | None = Depends(get_current_us
     return json.loads(p.read_text(encoding="utf-8"))
 
 
+#  W735 (FU-738) - the manifest's start_url and the worker's pre-cache are './', which under this preview resolves
+#  to /mobile/page/ - an address with no handler, so installing from the preview or loading it offline failed. The
+#  same handler answers it with the app's index.
+@router.get("/{vsb_id}/mobile/page/", response_class=HTMLResponse)
 @router.get("/{vsb_id}/mobile/page/{name}", response_class=HTMLResponse)
-async def get_vsb_mobile_file(vsb_id: str, name: str, request: Request,
+async def get_vsb_mobile_file(vsb_id: str, request: Request, name: str = "index",
                               user: dict | None = Depends(get_current_user)):
     _require_vsb_access(vsb_id, user)   # W295 - owner-scoped read
     """Serve a generated PWA file (index/app.js/styles.css/data.json/manifest.webmanifest/sw.js/icon.svg)
@@ -1690,8 +1726,10 @@ async def record_vsb_concept(vsb_id: str, req: ConceptRequest, user: dict | None
     _save_vsb(vsb)
     #  a shipped body now disagrees with the record; it is marked stale with the reason, never left to pass
     mark_repo_stale(vsb_id, "the founder recorded the concept after this body was shipped")
+    _screen735 = _rescreen_after_founder_text(vsb_id)                    # W735 (FU-938)
     _plan_note = _tell_plan_founder_wrote(vsb, "concept", concept)        # ledger v17 R2.1
     return {"vsb_id": vsb_id, "concept": concept, "concept_source": "founder", "blueprint": _blueprint(vsb),
+            "screen": _screen735,
             "status": vsb.get("status"), "status_basis": vsb.get("status_basis"),
             "stage": vsb.get("stage"), "stage_basis": vsb.get("stage_basis"),
             "plan_record": _plan_note}
@@ -1728,8 +1766,9 @@ async def record_vsb_body_section(vsb_id: str, section: str, req: BodySectionReq
     founder_wrote_section(vsb, section, text)
     _save_vsb(vsb)
     mark_repo_stale(vsb_id, f"the founder recorded the {section} after this body was shipped")
+    _screen735 = _rescreen_after_founder_text(vsb_id)                    # W735 (FU-938)
     _plan_note = _tell_plan_founder_wrote(vsb, section, text)             # ledger v17 R2.1
-    return {"vsb_id": vsb_id, "section": section, "text": text, "source": "founder",
+    return {"vsb_id": vsb_id, "section": section, "text": text, "source": "founder", "screen": _screen735,
             "body_pending": vsb.get("body_pending"), "body_absent": vsb.get("body_absent"),
             "status": vsb.get("status"), "status_basis": vsb.get("status_basis"),
             "stage": vsb.get("stage"), "stage_basis": vsb.get("stage_basis"),
@@ -2233,6 +2272,15 @@ def _read_view(vsb: dict) -> dict:
             from agentic_core.economy.living_vsbs import living_statement
             v["living"] = {**living_statement(), "read_at": v.get("status_derived_at")}
         v["operating_means"] = _operating_means(v)     # P3.30 r6 - from the status derived just above
+        #  W735 (FU-832) - THE RULE, stated: which sections a founder may write in their own words, and where
+        _vid735 = str(v.get("vsb_id") or "")
+        v["founder_writable_sections"] = {"concept": f"POST /api/v1/vsb/{_vid735}/concept",
+                                          **{s: f"POST /api/v1/vsb/{_vid735}/body/{s}" for s in sorted(_FOUNDER_SECTIONS)}}
+        #  W735 (FU-853) - which door established this entity, as its record says; not recorded is said, never guessed
+        if not v.get("established_through"):
+            v["established_through"] = None
+            v["established_through_basis"] = ("not recorded on this entity: only the spawn route writes this field, so "
+                                              "an entity made through Genesis or before the field existed does not say")
     except Exception as _exc668:                # noqa: BLE001 - the stored view is returned, and says so
         v["read_view_error"] = f"{type(_exc668).__name__}: the status below is the STORED one, not derived now"
     return v

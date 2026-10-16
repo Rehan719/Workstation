@@ -14349,11 +14349,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W735",
       "note": "",
       "slot_source": "a tier-3 remainder of a ledger row closed in W657",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "GET /api/v1/vsb/{id}/mobile/page/ - the app's own start address './' under the preview - is served by the same handler as the index.",
+      "reachability_check": "test_w735_an_entitys_founder_text_is_screened_when_saved_and_its_record_says_what_it_is"
     },
     {
       "id": "FU-739",
@@ -16246,11 +16250,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W735",
       "note": "",
       "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The Spawn Studio list and the Economy roster show a domain through domainLabel, not the raw value.",
+      "reachability_check": "test_w735_an_entitys_founder_text_is_screened_when_saved_and_its_record_says_what_it_is"
     },
     {
       "id": "FU-832",
@@ -16264,11 +16272,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W735",
       "note": "",
       "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The entity read view carries founder_writable_sections: each section a founder may write and the route that takes it.",
+      "reachability_check": "test_w735_an_entitys_founder_text_is_screened_when_saved_and_its_record_says_what_it_is"
     },
     {
       "id": "FU-833",
@@ -16678,11 +16690,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W735",
       "note": "",
       "slot_source": "found in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The entity read view carries established_through, or None with a basis saying it is not recorded and why; the Cockpit shows it.",
+      "reachability_check": "test_w735_an_entitys_founder_text_is_screened_when_saved_and_its_record_says_what_it_is"
     },
     {
       "id": "FU-854",
@@ -18368,11 +18384,15 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W735",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The concept and body routes screen the founder's text on saving, through the same writer the heartbeat rotation uses, and the screen now reads the design and operations sections too; the doors that publish refuse at once on a failing text, and a corrected text clears the same way.",
+      "reachability_check": "test_w735_an_entitys_founder_text_is_screened_when_saved_and_its_record_says_what_it_is"
     },
     {
       "id": "FU-939",
@@ -18516,11 +18536,15 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W735",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The phone app's service-worker cache is named for the entity and a hash of what was generated, so a re-ship installs a new worker; activating it deletes the app's older caches.",
+      "reachability_check": "test_w735_an_entitys_founder_text_is_screened_when_saved_and_its_record_says_what_it_is"
     },
     {
       "id": "FU-946",

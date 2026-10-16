@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { provenanceBadge, provenanceMapBadge, provenanceMapFromTrace, axiosDetail} from '../../lib/api';
-import { DOMAINS as CANON_DOMAINS } from '../../lib/taxonomy';
+import { DOMAINS as CANON_DOMAINS, domainLabel } from '../../lib/taxonomy';   // W735 (FU-831): domainLabel
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Card, Button } from '@workstation/ui';
@@ -417,7 +417,7 @@ export const VSBSpawnStudio: React.FC = () => {
                   <div>
                     <p className="font-black text-white text-sm">{e.name || e.vsb_id}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[9px] font-bold uppercase text-slate-500">{e.domain}</span>
+                      <span className="text-[9px] font-bold uppercase text-slate-500">{domainLabel(e.domain)}</span>
                       <span className="text-slate-700">•</span>
                       <span className="text-[9px] font-bold uppercase text-slate-500">{e.stage}</span>
                     </div>
