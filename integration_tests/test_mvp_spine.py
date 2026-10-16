@@ -65953,12 +65953,16 @@ def test_w732_the_public_tree_holds_no_privacy_exposure(client, tmp_path, monkey
                 ("docs/My CV 2031.docx", b""), ("inputs/Law/letter.txt", b"hello"),
                 ("notes/c.txt", f"about {_mark} here".encode()), ("notes/clean.txt", b"nothing private"),
                 ("notes/d.env", ('API_KEY="' + "Ab3" + "xK9pQ2mZ7rT4wL8nB6vC1" + '"').encode()),
-                ("notes/e.py", b'token = "https://Ab3oauth2.Example9.com/xyzQ"\npassword = "correcthorsebatterystaple"\n')]
+                ("notes/e.py", b'token = "https://Ab3oauth2.Example9.com/xyzQ"\npassword = "correcthorsebatterystaple"\n'),
+                #  W740: a child's school paper, the moved school folder, and a name that only looks alike
+                ("docs/Year 6 SATs results.pdf", b""), ("_archive/outputs/education/sats_2026/n.txt", b"hi"),
+                ("docs/satsuma recipe.pdf", b"")]
     _rep = _pe.scan(_root, files=_planted, markers=[_mark])
     assert {(f["path"], f["kind"]) for f in _rep["findings"]} == {
         ("notes/a.txt", "credential"), ("notes/b.md", "case_number"), ("docs/My CV 2031.docx", "personal_document"),
         ("inputs/Law/letter.txt", "private_folder"), ("notes/c.txt", "private_marker"),
-        ("notes/d.env", "credential")}, _rep["findings"]          # an address and a plain word are not secrets
+        ("notes/d.env", "credential"), ("docs/Year 6 SATs results.pdf", "personal_document"),
+        ("_archive/outputs/education/sats_2026/n.txt", "private_folder")}, _rep["findings"]   # an address, a plain word and a fruit are not
     _flat = json.dumps(_rep)
     assert _key not in _flat and _case not in _flat and _mark not in _flat, "a finding reports the text it matched"
     assert _rep["not_checked"] == [] and "private_marker" in _rep["checked"]

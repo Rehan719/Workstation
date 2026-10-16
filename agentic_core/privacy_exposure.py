@@ -63,6 +63,10 @@ PERSONAL_NAME = re.compile(
     r"driving[ _-]?licen[cs]e|bank[ _-]?statement|fit[ _-]?note|sick[ _-]?note|probation|dismissal|termination|"
     r"appeal[ _-]?hearing|interview[ _-]?prep|witness[ _-]?statement|contemporaneous[ _-]?log|tenancy|"
     r"medical[ _-]?record|occupational[ _-]?health)([^a-z]|$)")
+#  W740 - a child's school or care paper is a personal paper too (the Owner, 2026-10-14)
+CHILD_DOCUMENT = re.compile(
+    r"(?i)(^|[^a-z])(sats|school[ _-]?report|report[ _-]?card|ehcp|birth[ _-]?certificate|child[ _-]?benefit|"
+    r"safeguarding[ _-]?referral|pupil[ _-]?(record|profile|premium))([^a-z]|$)")
 #  W731 - the folders moved to the Owner's private store; the .gitignore carries the same list
 PRIVATE_FOLDERS = (
     "inputs/Law/", "inputs/Employment/", "knowledge/Employment/", "knowledge/Science/RM_CV_Science_Versions/",
@@ -71,7 +75,10 @@ PRIVATE_FOLDERS = (
     "_archive/outputs/Law/", "_archive/outputs/Employment/", "_archive/outputs/Science/PatientSafety/",
     "_archive/outputs/interview_prep/", "_archive/scripts/Law/", "_archive/scripts/Employment/",
     "_archive/scripts/Science/PatientSafety/", "_archive/docs/Law/", "_archive/ingest/Employment/",
-    "_archive/legacy-archive/Employment/", "_archive/agentic_core/domains/law/", "_archive/legacy-archive/law-grand-operation")
+    "_archive/legacy-archive/Employment/", "_archive/agentic_core/domains/law/", "_archive/legacy-archive/law-grand-operation",
+    # W740 - the Owner's child's school material, moved to his private Education folder
+    "_archive/outputs/education/sats_2026/", "outputs/education/sats_2026/",
+    "_archive/agentic_core/identity/sats_persona.py")
 KINDS = ("credential", "case_number", "personal_document", "private_folder", "private_marker")
 MAX_BYTES = 32_000_000          # a larger file is LISTED as not read, never skipped silently
 
@@ -121,6 +128,9 @@ def scan_one(rel: str, data: bytes, markers: Optional[List[str]] = None,
     if pathlib.PurePosixPath(rel).suffix.lower() in DOCUMENT_EXT and PERSONAL_NAME.search(name):
         out.append({"path": rel, "kind": "personal_document", "line": None,
                     "what": "a document whose name says it is a personal paper"})
+    elif pathlib.PurePosixPath(rel).suffix.lower() in DOCUMENT_EXT and CHILD_DOCUMENT.search(name):
+        out.append({"path": rel, "kind": "personal_document", "line": None,
+                    "what": "a document whose name says it is a child's school or care paper"})
     text = data[:MAX_BYTES].decode("utf-8", "ignore")
     for what, rx in CREDENTIAL_SHAPES:
         for m in rx.finditer(text):

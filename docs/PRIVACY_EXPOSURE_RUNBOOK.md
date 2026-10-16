@@ -1,8 +1,9 @@
 # Privacy exposure runbook
 
-This repository is **public**. Two exposures were found in it on 2026-10-14:
+This repository is **public**. Three exposures were found in it on 2026-10-14:
 - credentials pasted into archived text (round W729)
 - 1,276 files of the Owner's own legal and career papers (round W731)
+- 31 files of the Owner's child's school material (round W740)
 
 This page explains how the platform keeps that from happening again. It also says what to do if it does.
 
@@ -21,7 +22,7 @@ All four use one screen, `agentic_core/privacy_exposure.py`. It looks for five k
 |---|---|
 | `credential` | a key-shaped value |
 | `case_number` | a tribunal case number shape |
-| `personal_document` | a document file whose name says it is a personal paper (CV, grievance, settlement, payslip, passport...) |
+| `personal_document` | a document file whose name says it is a personal paper (CV, grievance, settlement, payslip, passport...), or a child's school or care paper (SATs, school report, EHCP, birth certificate...) |
 | `private_folder` | anything under a folder kept private |
 | `private_marker` | a name or word from the Owner's private marker list |
 
