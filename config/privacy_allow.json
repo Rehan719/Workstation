@@ -1,0 +1,7 @@
+[
+  {
+    "path": "scripts/screen_phrasings.py",
+    "kind": "credential",
+    "reason": "holds the private-key header as a phrase its own screen must recognise (allowed by W729 too); it is not a key"
+  }
+]

@@ -698,3 +698,28 @@ async def check(req: ComplianceCheck):
                  "can escalate one for a human; it cannot clear one, so an area nothing assessed is named in "
                  "coverage_gaps and is never reported as compliant."),
     }
+
+
+#  W732 (Owner, 2026-10-14: "put in safeguards to prevent these exposures happening again ... get diagnosed and
+#  resolve if they do") - THE PLATFORM DIAGNOSES ITS OWN PUBLIC TREE. The same screen the commit hook and the
+#  suite run (agentic_core/privacy_exposure.py), read here by the platform itself. Findings carry the path, line
+#  and kind, never the matched text; what was NOT checked is said, so an empty list is never more than its
+#  coverage. Plain def: it reads files.
+@router.get("/privacy-exposure")
+def privacy_exposure() -> Dict[str, Any]:
+    import pathlib
+    from agentic_core import privacy_exposure as _pe
+    _root = pathlib.Path(__file__).resolve().parents[2]
+    try:
+        _report = _pe.scan(_root, markers=_pe.load_markers(), allowed=_pe.load_allowed(_root))
+    except RuntimeError as exc:
+        return {"scanned": False, "findings": [], "count": None, "checked": [], "not_checked": list(_pe.KINDS),
+                "basis": (f"NOT CHECKED: {exc}. Nothing was scanned on this deployment, so this is not a finding "
+                          "that the tree is clear"),
+                "runbook": _pe.RUNBOOK}
+    return {"scanned": True, **_report, "runbook": _pe.RUNBOOK,
+            "how_to_resolve": [
+                "a credential: revoke it at its provider first (the Owner's yes), then replace the value",
+                "private papers: scripts/move_to_private_store.py --dest <a private folder> <paths> (dry run, then --apply)",
+                "a false positive: allow it by exact path and kind, with a reason, in config/privacy_allow.json",
+                "history still holds anything removed: rewriting it is the Owner's decision"]}
