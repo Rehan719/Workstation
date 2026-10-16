@@ -2367,7 +2367,7 @@ async def impact_assessment(cca_id: str):
 
     ctx = biobus.organism_context()
     prompt = (
-        f"You are an impact assessment specialist for Workstation IDBO.\n\n"
+        f"Assess the impact of this change on Workstation IDBO.\n\n"
         f"Change: {c['title']}\n"
         f"Description: {c['description']}\n"
         f"Affected systems: {', '.join(c['affected_systems']) or 'unknown'}\n"

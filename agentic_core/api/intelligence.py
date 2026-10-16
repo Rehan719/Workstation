@@ -177,7 +177,7 @@ _SPI_STAGES = [
 
 _SPI_PROMPTS = {
     "problem_formulation": (
-        "You are a Senior Research Scientist and epistemologist. Formulate the research problem:\n\n"
+        "Formulate the research problem:\n\n"
         "Research Question: {challenge}\nDomain: {domain}\nContext: {context}\n\n"
         "## Refined Research Question (PICO/SPIDER/FINER format — precise, answerable, novel)\n"
         "## Conceptual Framework (theoretical lens / disciplinary paradigm)\n"
@@ -189,7 +189,7 @@ _SPI_PROMPTS = {
         "## Ontological & Epistemological Stance (positivist/interpretivist/pragmatist — justify)\n"
     ),
     "literature_synthesis": (
-        "You are the Chief Scientific Officer conducting a systematic literature synthesis:\n\n"
+        "Conduct a systematic literature synthesis:\n\n"
         "Research Question: {challenge}\nDomain: {domain}\nContext: {context}\n\n"
         "## Foundational Theories & Frameworks (seminal theoretical works underpinning this field)\n"
         "## Key Established Findings (what the evidence robustly shows — with effect sizes where relevant)\n"
@@ -201,7 +201,7 @@ _SPI_PROMPTS = {
         "## Synthesis Map (how existing evidence clusters and what it collectively suggests)\n"
     ),
     "hypothesis_generation": (
-        "You are a Research Scientist generating rigorous hypotheses:\n\n"
+        "Generate rigorous hypotheses:\n\n"
         "Research Question: {challenge}\nDomain: {domain}\nContext: {context}\n\n"
         "## Null Hypothesis H0 (precise, testable, falsifiable)\n"
         "## Alternative Hypothesis H1 (directional prediction with rationale)\n"
@@ -213,7 +213,7 @@ _SPI_PROMPTS = {
         "## Hypothesis Prioritisation (which to test first and why)\n"
     ),
     "methodology_design": (
-        "You are the Study Design Lead. Design the optimal research methodology:\n\n"
+        "Design the research methodology:\n\n"
         "Research Question: {challenge}\nDomain: {domain}\nContext: {context}\n\n"
         "## Study Design Selection (RCT/cohort/case-control/systematic review/mixed-methods — justify)\n"
         "## Sample Design (population, sampling strategy, sample size calculation with power analysis)\n"
@@ -226,7 +226,7 @@ _SPI_PROMPTS = {
         "## Limitations & Mitigation (design limitations and how to address them)\n"
     ),
     "data_strategy": (
-        "You are the Data Science Lead defining the data and analysis strategy:\n\n"
+        "Define the data and analysis strategy:\n\n"
         "Research Question: {challenge}\nDomain: {domain}\nContext: {context}\n\n"
         "## Primary Data Sources (where data comes from — with quality and availability assessment)\n"
         "## Secondary Data Sources (existing datasets to leverage)\n"
@@ -239,7 +239,7 @@ _SPI_PROMPTS = {
         "## Reporting Standards (CONSORT/STROBE/PRISMA/etc. — applicable checklist)\n"
     ),
     "validation_plan": (
-        "You are the Research Quality and Reproducibility Officer:\n\n"
+        "Assess research quality and reproducibility:\n\n"
         "Research Question: {challenge}\nDomain: {domain}\nContext: {context}\n\n"
         "## Internal Validity Assessment (threats: selection, attrition, maturation, instrumentation)\n"
         "## External Validity & Generalisability (population, ecological, temporal validity)\n"
@@ -252,7 +252,7 @@ _SPI_PROMPTS = {
         "## Quality Score (1-10 across all validity dimensions with improvement actions)\n"
     ),
     "impact_assessment": (
-        "You are the Chief Impact Officer assessing research significance:\n\n"
+        "Assess the research significance:\n\n"
         "Research Question: {challenge}\nDomain: {domain}\nContext: {context}\n\n"
         "## Scientific Contribution (how this advances theory and methodology in the field)\n"
         "## Clinical / Practical Application (direct applications if findings are positive)\n"
@@ -265,7 +265,7 @@ _SPI_PROMPTS = {
         "## Impact Maximisation Actions (3 high-leverage activities to amplify research impact)\n"
     ),
     "dissemination_plan": (
-        "You are the Research Communication and Knowledge Translation Lead:\n\n"
+        "Plan the research communication and knowledge translation:\n\n"
         "Research Question: {challenge}\nDomain: {domain}\nContext: {context}\n\n"
         "## Primary Publication Target (journal/venue: impact factor, audience, fit, timeline)\n"
         "## Secondary Outlets (3 additional venues for different audiences)\n"
@@ -1021,7 +1021,7 @@ _APIE_STAGES = [
 
 _APIE_PROMPTS = {
     "source_discovery": (
-        "You are a Senior Research Librarian and academic writing coach. "
+        ""
         "For the following scholarly work, map the authoritative knowledge landscape:\n\n"
         "Topic: {topic}\nDomain: {domain}\nGenre: {genre}\nAudience: {audience}\n\n"
         "Deliver:\n"
@@ -1035,7 +1035,7 @@ _APIE_PROMPTS = {
         "## Red-Flag Sources to Avoid (low-credibility sources in this field)\n"
     ),
     "argument_architecture": (
-        "You are a master of academic argument construction. Build a rigorous argument architecture for:\n\n"
+        "Build an argument architecture for:\n\n"
         "Topic: {topic}\nDomain: {domain}\nGenre: {genre}\n\n"
         "Deliver:\n"
         "## Central Thesis Statement (1-2 sentences, falsifiable and precise)\n"
@@ -1049,7 +1049,7 @@ _APIE_PROMPTS = {
         "## Synthesis Move (how this work advances the field beyond existing literature)\n"
     ),
     "structural_outline": (
-        "You are a professional academic editor. Design the optimal structure for this work:\n\n"
+        "Design a structure for this work:\n\n"
         "Topic: {topic}\nDomain: {domain}\nGenre: {genre}\n"
         "Word count target: {word_count}\nCitation style: {citation_style}\n\n"
         "Deliver:\n"
@@ -1063,7 +1063,7 @@ _APIE_PROMPTS = {
         "## Visual/Table Requirements (figures, tables, diagrams needed)\n"
     ),
     "draft_synthesis": (
-        "You are a skilled academic writer. Draft the core sections for this work:\n\n"
+        "Draft the core sections for this work:\n\n"
         "Topic: {topic}\nDomain: {domain}\nGenre: {genre}\nAudience: {audience}\n"
         "Previous analysis: {context}\n\n"
         "Write full draft text for:\n"
@@ -1075,7 +1075,7 @@ _APIE_PROMPTS = {
         "signal phrases for citations (e.g. 'As [Author] argues...'), no hedging without purpose."
     ),
     "evidence_weaving": (
-        "You are a citation and evidence integration specialist. Build the evidence framework for:\n\n"
+        "Build the evidence framework for:\n\n"
         "Topic: {topic}\nDomain: {domain}\nCitation style: {citation_style}\n"
         "Previous analysis: {context}\n\n"
         "Deliver:\n"
@@ -1089,7 +1089,7 @@ _APIE_PROMPTS = {
         "## Academic Integrity Checklist (10-point originality and attribution guide)\n"
     ),
     "peer_review_simulation": (
-        "You are a blind peer reviewer for a prestigious {domain} journal. "
+        "Review this draft as a peer review would, for a {domain} readership. "
         "Conduct a rigorous review of this work:\n\n"
         "Topic: {topic}\nGenre: {genre}\nDomain: {domain}\n"
         "Work summary: {context}\n\n"
@@ -1105,7 +1105,7 @@ _APIE_PROMPTS = {
         "## Recommendation to Editor with Conditions\n"
     ),
     "revision_intelligence": (
-        "You are a senior academic writing coach reviewing responses to peer critique. "
+        "Review the responses to the peer critique. "
         "Generate targeted revision intelligence for:\n\n"
         "Topic: {topic}\nDomain: {domain}\nGenre: {genre}\n"
         "Peer review findings: {context}\n\n"
@@ -1120,7 +1120,7 @@ _APIE_PROMPTS = {
         "## Revision Timeline (realistic schedule for completing all changes)\n"
     ),
     "integrity_audit": (
-        "You are an academic quality and integrity auditor. "
+        "Check the academic quality and integrity of this work. "
         "Conduct a rigorous audit for:\n\n"
         "Topic: {topic}\nDomain: {domain}\nGenre: {genre}\n"
         "Full work summary: {context}\n\n"
@@ -1137,7 +1137,7 @@ _APIE_PROMPTS = {
         "## Final 12-Point Checklist before Submission\n"
     ),
     "publication_readiness": (
-        "You are a publication specialist and academic submissions coordinator. "
+        "Prepare the submission package. "
         "Produce a complete publication readiness package for:\n\n"
         "Topic: {topic}\nDomain: {domain}\nGenre: {genre}\n"
         "Audience: {audience}\nCitation style: {citation_style}\n"
@@ -1256,7 +1256,7 @@ _DDPIE_STAGES = [
 
 _DDPIE_PROMPTS = {
     "requirements_intelligence": (
-        "You are a Senior Business Analyst and product requirements engineer. "
+        ""
         "Elicit and structure requirements for the following system:\n\n"
         "Subject: {system}\nDomain: {domain}\nScale: {scale}\nStack: {tech_stack}\n\n"
         "Deliver:\n"
@@ -1272,7 +1272,7 @@ _DDPIE_PROMPTS = {
         "## Requirements Traceability Matrix (user need → requirement → acceptance test)\n"
     ),
     "architecture_design": (
-        "You are a Principal Software Architect. Design the system architecture for:\n\n"
+        "Design the system architecture for:\n\n"
         "Subject: {system}\nDomain: {domain}\nScale: {scale}\nStack: {tech_stack}\n"
         "Requirements: {context}\n\n"
         "Deliver:\n"
@@ -1288,7 +1288,7 @@ _DDPIE_PROMPTS = {
         "## Technical Debt Register (known compromises and resolution roadmap)\n"
     ),
     "domain_modelling": (
-        "You are a Domain-Driven Design expert. Build the domain model for:\n\n"
+        "Build the domain model (domain-driven design) for:\n\n"
         "Subject: {system}\nDomain: {domain}\nScale: {scale}\n"
         "Architecture: {context}\n\n"
         "Deliver:\n"
@@ -1304,7 +1304,7 @@ _DDPIE_PROMPTS = {
         "## Data Governance Model (ownership, lineage, retention, GDPR considerations)\n"
     ),
     "api_contract": (
-        "You are an API Design Lead and OpenAPI specification expert. Design the API for:\n\n"
+        "Design the API (OpenAPI) for:\n\n"
         "Subject: {system}\nDomain: {domain}\nStack: {tech_stack}\n"
         "Domain model: {context}\n\n"
         "Deliver:\n"
@@ -1321,7 +1321,7 @@ _DDPIE_PROMPTS = {
         "## API Documentation and Developer Experience Strategy\n"
     ),
     "security_architecture": (
-        "You are a Principal Security Architect and OWASP Top 10 expert. Design the security posture for:\n\n"
+        "Design the security posture (against the OWASP Top 10) for:\n\n"
         "Subject: {system}\nDomain: {domain}\nScale: {scale}\nStack: {tech_stack}\n"
         "API design: {context}\n\n"
         "Deliver:\n"
@@ -1338,7 +1338,7 @@ _DDPIE_PROMPTS = {
         "## Security Maturity Score (1-10 per dimension with improvement roadmap)\n"
     ),
     "implementation_blueprint": (
-        "You are a Head of Engineering and technical delivery lead. Create the implementation blueprint for:\n\n"
+        "Create the implementation blueprint for:\n\n"
         "Subject: {system}\nDomain: {domain}\nScale: {scale}\nStack: {tech_stack}\n"
         "Security architecture: {context}\n\n"
         "Deliver:\n"
@@ -1354,7 +1354,7 @@ _DDPIE_PROMPTS = {
         "## Definition of Ready + Definition of Done (story-level criteria)\n"
     ),
     "test_strategy": (
-        "You are a Head of Quality Engineering and TDD practitioner. Design the test strategy for:\n\n"
+        "Design the test strategy (test-driven) for:\n\n"
         "Subject: {system}\nDomain: {domain}\nStack: {tech_stack}\n"
         "Implementation blueprint: {context}\n\n"
         "Deliver:\n"
@@ -1371,7 +1371,7 @@ _DDPIE_PROMPTS = {
         "## Continuous Testing in CI/CD (which tests run at which pipeline stage)\n"
     ),
     "devops_pipeline": (
-        "You are a Principal DevOps Engineer and Site Reliability Engineering lead. Design the pipeline for:\n\n"
+        "Design the delivery pipeline and its reliability for:\n\n"
         "Subject: {system}\nDomain: {domain}\nScale: {scale}\nStack: {tech_stack}\n"
         "Deployment target: {deployment_target}\nTest strategy: {context}\n\n"
         "Deliver:\n"
@@ -1388,7 +1388,7 @@ _DDPIE_PROMPTS = {
         "## GitOps Workflow (branch strategy, PR gates, automated deploy trigger rules)\n"
     ),
     "technical_review": (
-        "You are a Principal Engineer chairing a Technical Review Board. "
+        "Review this design as a technical review board would. "
         "Conduct the final technical review for:\n\n"
         "Subject: {system}\nDomain: {domain}\nScale: {scale}\nStack: {tech_stack}\n"
         "Full design summary: {context}\n\n"

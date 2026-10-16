@@ -26,7 +26,7 @@ class PlanRequest(BaseModel):
 async def generate_business_plan(req: PlanRequest) -> Dict[str, Any]:
     """Generate a real AI business plan with financial projections."""
     prompt = (
-        f"You are an expert business strategist and financial analyst.\n"
+        f"Draft the business and financial analysis below.\n"
         f"Product/Creation: {req.creation_id}\n"
         f"Target Market: {req.target_market}\n"
         f"Funding Goal: ${req.funding_goal:,.0f}\n"
@@ -80,7 +80,7 @@ async def generate_business_plan(req: PlanRequest) -> Dict[str, Any]:
 async def generate_business_plan_stream(req: PlanRequest) -> StreamingResponse:
     """Stream a full narrative business plan as SSE tokens."""
     prompt = (
-        f"You are an expert business strategist.\n"
+        f"Draft the business strategy below.\n"
         f"Write a comprehensive business plan for:\n"
         f"- Product: {req.creation_id}\n"
         f"- Target Market: {req.target_market}\n"
