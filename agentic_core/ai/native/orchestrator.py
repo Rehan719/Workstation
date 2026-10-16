@@ -698,9 +698,10 @@ class NativeOrchestrator:
         nodes, planner = await self._plan_tree_adaptive(goal, timeout)
         by_id = {n["id"]: n for n in nodes}
         threat = self._immune_threat()
-        # BIOMIMETIC HOMEOSTASIS (§8 → §6): admit cognitive work as a function of the WHOLE living-organism
-        # state — immune threat + circadian cycle + metabolic ATP + composite health — not immune alone; and
-        # FEED the cognitive demand back into metabolic load (heavier swarms expend more ATP). Fail-open.
+        # BIOMIMETIC HOMEOSTASIS (§8 → §6): admit cognitive work as a function of the living-organism state
+        # (immune threat and the measured-health recommendation; the ATP term is a simulator that cannot lower
+        # the cap on the current model) and of the S18.1 work budget behind its switch; and FEED the cognitive
+        # demand back into the ATP simulator. Fail-CLOSED (W742): an organism that cannot be read admits 1.
         homeo = homeostasis.assess(demand_nodes=len(nodes), requested_parallel=max_parallel)
         max_parallel = max(1, int(homeo["max_parallel"]))
         _fire("cognitive", "native.tree", f"plan {len(nodes)} nodes ({homeo['posture']}): {goal[:48]}", 0.6)

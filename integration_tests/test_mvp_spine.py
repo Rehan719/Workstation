@@ -66968,3 +66968,281 @@ def test_w741_tokens_are_counted_where_a_model_answers(client, monkeypatch, tmp_
     z = _wb.state()
     assert z["tokens_spent"] == 0 and z["tokens_counted_calls"] == 1, ("a counted zero was dropped as uncounted", z)
     assert z["tokens_basis"].startswith("measured"), z["tokens_basis"]
+
+
+def test_w742_the_metabolism_tells_the_truth(client, monkeypatch, tmp_path):
+    """W742 - THE METABOLISM TELLS THE TRUTH. Owner ruling S18.1 (2026-09-30): the metabolic budget is measured in
+    what is spent, its throttle ships INERT behind a setting, and the ATP name is retired or relabelled. Before
+    this round `gates_anything` was the switch and nothing read the budget; an organism that could not be read
+    granted the caller's request as "full"; a "read-only" preview advanced the shared ATP simulator; a comment
+    said the heartbeat was off by default; four surfaces presented the ATP figure as live or without its
+    qualifier; and the economy cycle's reason named a floor that never binds.
+
+    THE PROPERTIES, each DRIVEN through the real function or route:
+      1. Off (the default), a spent budget gates nothing, and the record says so.
+      2. On, a spent budget HOLDS native admission at 1 with its reason, and `gates_anything` is True; the org
+         cascade, a caller this round did not touch, then runs its officers one at a time.
+      3. On, an unspent budget holds nothing - a gate that refused everything would pass leg 2.
+      4. On, an unreadable budget holds, whether the store cannot be read whole (4) or cannot be turned into a
+         figure (4b).
+      5. `gates_anything` is computed from the readers loaded, not from the switch alone.
+      6. A duration a CALLER reports is not spent; the platform's own run is.
+      7. An organism that cannot be read admits 1 with a reason - never the requested parallelism.
+      8. A homeostasis projection neither advances the ATP simulator (spied on the simulator itself) nor fires a
+         reflex signal; a run in the same state does both.
+      9. The served app starts the heartbeat at boot with no switch, and the oxygen reading's comment says so.
+     10. Every remaining ATP surface carries its qualifier, and the work budget reaches a page.
+    """
+    import asyncio
+    import re
+    import threading
+    import uuid
+    from pathlib import Path
+
+    from agentic_core.ai.native import homeostasis as _hm
+    from agentic_core.api import operational_excellence as _oe
+    from agentic_core.api.operational_excellence import record_outcome
+    from agentic_core.molecular import work_budget as wb
+    from agentic_core.organism import biobus as _bb
+
+    _root = Path(__file__).resolve().parents[1]
+    #  the budget and outcomes stores are this test's own: the suite's shared budget is spent by test_w518, and
+    #  shared outcome rows change what /native-ai/status reports
+    _store = {"p": tmp_path / "work_budget.json"}
+    monkeypatch.setattr(wb, "_store", lambda: _store["p"])
+    monkeypatch.setattr(_oe, "_STORE", tmp_path / "operations_outcomes.json")
+    monkeypatch.setattr(_oe, "_BASELINE_STORE", tmp_path / "model_health_baselines.json")
+    monkeypatch.delenv("WORKSTATION_WORK_BUDGET", raising=False)
+
+    def _ctx(cycle="ACTIVE_FOCUS"):
+        # a healthy organism that would grant 8: any cap below the request is the budget's doing
+        return {"immune": {"threat_level": "NOMINAL"}, "circadian": {"cycle": cycle},
+                "metabolic": {"atp_ratio": 1.0, "measured": False, "basis": "driven by the W742 guard"},
+                "recommended": {"should_throttle": False, "max_parallel_agents": 8},
+                "mode": "FULL_POWER", "composite_health": 0.9}
+
+    # ── 1. OFF: a SPENT budget gates nothing, and says so ─────────────────────────────────────────────────
+    wb.spend(seconds=wb.CAPACITY_SECONDS)
+    assert wb.state()["fraction_spent"] >= 1.0, ("the precondition: the budget is spent", wb.state())
+    with monkeypatch.context() as m:
+        m.setattr(_bb.biobus, "organism_context", lambda **_k: _ctx())
+        a = _hm.homeostasis.assess(demand_nodes=3, requested_parallel=4)
+    assert a["max_parallel"] == 4 and a["posture"] == "full", (
+        "the budget gated admission with its switch OFF - the ruling ships it inert", a["max_parallel"], a["posture"])
+    assert a["work_budget"]["holds"] is False and a["work_budget"]["enabled"] is False, a["work_budget"]
+    _s = wb.state()
+    assert _s["gates_anything"] is False and "GATES NOTHING" in _s["gate_basis"], _s
+
+    # ── 2. ON and SPENT: admission HOLDS at 1, with the reason, and the record says it gates ─────────────────
+    monkeypatch.setenv("WORKSTATION_WORK_BUDGET", "true")
+    with monkeypatch.context() as m:
+        m.setattr(_bb.biobus, "organism_context", lambda **_k: _ctx())
+        b = _hm.homeostasis.assess(demand_nodes=3, requested_parallel=4)
+        b1 = _hm.homeostasis.assess(demand_nodes=3, requested_parallel=1)
+        bp = _hm.homeostasis.project(3)
+    assert b["max_parallel"] == 1 and b["posture"] == "protected", (
+        "the switch is on and the budget is spent, and admission was not held", b["max_parallel"], b["posture"])
+    assert b["work_budget"]["holds"] is True and "spent" in b["work_budget"]["reason"], b["work_budget"]
+    assert "work budget holds admission at 1" in b["governed_by"], b["governed_by"]
+    assert b1["posture"] == "protected", ("the budget forcing the floor is a defence even when 1 was asked for",
+                                          b1["posture"])
+    assert bp["admitted_max_parallel"] == 1 and bp["fits_current_capacity"] is False, bp
+    _s = wb.state()
+    assert _s["gates_anything"] is True and "native homeostasis admission" in _s["consumers"], _s
+    assert "HOLDING now" in _s["gate_basis"], _s["gate_basis"]
+    #  the biometrics clause is the budget's own computed sentence, not the switch
+    _ab = client.get("/api/v1/biometrics/status").json()["metabolic"]["atp_basis"]
+    #  (each reader named, not their order: a second registered reader must not turn this red on success)
+    assert "it GATES:" in _ab and "native homeostasis admission" in _ab and "HOLDING now" in _ab, _ab
+    #  ONE CALLER NOBODY TOUCHED: the org cascade acts on the admitted parallelism. The organism is the real one
+    #  with only its verdict overridden, so every other reader inside the cascade still sees its usual keys.
+    _real_oc = _bb.biobus.organism_context
+    with monkeypatch.context() as m:
+        m.setattr(_bb.biobus, "organism_context", lambda *a, **k: {**_real_oc(*a, **k), **_ctx()})
+        r2 = client.post("/api/v1/swarm/cascade", json={"mission": "w742 budget hold", "domain": "enterprise"})
+    assert r2.status_code == 200, r2.text[:300]
+    _ha = r2.json()["homeostasis_adaptation"]
+    assert _ha["granted_parallel"] == 1 and _ha["csuite_concurrent"] is False, (
+        "the budget held the controller but the org cascade still ran its officers concurrently", _ha)
+
+    # ── 3. ON and NOT spent: nothing is held ─────────────────────────────────────────────────────────────────
+    _store["p"] = tmp_path / "fresh_work_budget.json"
+    with monkeypatch.context() as m:
+        m.setattr(_bb.biobus, "organism_context", lambda **_k: _ctx())
+        c = _hm.homeostasis.assess(demand_nodes=3, requested_parallel=4)
+    assert c["max_parallel"] == 4 and c["work_budget"]["holds"] is False, (
+        "an unspent budget held admission - a gate that refuses everything", c["max_parallel"], c["work_budget"])
+    assert "not holding" in wb.state()["gate_basis"], wb.state()["gate_basis"]
+    with monkeypatch.context() as m:
+        m.setattr(_bb.biobus, "organism_context", lambda *a, **k: {**_real_oc(*a, **k), **_ctx()})
+        r3 = client.post("/api/v1/swarm/cascade", json={"mission": "w742 budget free", "domain": "enterprise"})
+    assert r3.status_code == 200, r3.text[:300]
+    _ha3 = r3.json()["homeostasis_adaptation"]
+    assert _ha3["granted_parallel"] > 1 and _ha3["csuite_concurrent"] is True, (
+        "with the budget unspent the cascade was still serialised, so the hold above proves nothing", _ha3)
+
+    # ── 4. ON and UNREADABLE: it holds, and says the store could not be read ─────────────────────────────────
+    _store["p"] = tmp_path / "broken_work_budget.json"
+    _store["p"].write_bytes(b'{"window_started": ')
+    with monkeypatch.context() as m:
+        m.setattr(_bb.biobus, "organism_context", lambda **_k: _ctx())
+        d = _hm.homeostasis.assess(demand_nodes=3, requested_parallel=4)
+    assert d["max_parallel"] == 1 and "could not be read whole" in str(d["work_budget"]["reason"]), d["work_budget"]
+
+    # ── 4b. ON and the store cannot be turned into a figure: gate()'s own except branch holds ─────────────────
+    _store["p"] = tmp_path / "malformed_work_budget.json"
+    _store["p"].write_bytes(b'{"window_started": "not-a-time", "seconds_spent": 0}')
+    with monkeypatch.context() as m:
+        m.setattr(_bb.biobus, "organism_context", lambda **_k: _ctx())
+        d2 = _hm.homeostasis.assess(demand_nodes=3, requested_parallel=4)
+    assert d2["max_parallel"] == 1 and "could not be read (ValueError" in str(d2["work_budget"]["reason"]), (
+        d2["work_budget"])
+
+    # ── 5. gates_anything is COMPUTED from the readers loaded, not from the switch ───────────────────────────
+    _store["p"] = tmp_path / "fresh_work_budget.json"
+    with monkeypatch.context() as m:
+        m.setattr(wb, "_CONSUMERS", {})
+        _s0 = wb.state()
+    assert _s0["gates_anything"] is False and "no reader of the gate is loaded" in _s0["gate_basis"], _s0
+    monkeypatch.delenv("WORKSTATION_WORK_BUDGET", raising=False)
+
+    # ── 6. a CALLER's reported duration is not spent; the platform's own run is ──────────────────────────────
+    _spent = []
+    with monkeypatch.context() as m:
+        m.setattr(wb, "spend", lambda seconds=0.0, tokens=None, **_k: _spent.append(round(float(seconds), 3)))
+        r = client.post("/api/v1/operations/record", json={"kind": "engine", "resource": "w742-caller-probe",
+                                                             "duration_ms": 4321, "success": True})
+        assert r.status_code == 200, r.text[:300]
+        assert 4.321 not in _spent, ("a duration a caller REPORTED was spent as the platform's own work", _spent)
+        record_outcome("engine", "w742-platform-probe", duration_ms=1234, success=True)
+        assert 1.234 in _spent, ("the platform's own run was not spent, so the leg above proves nothing", _spent)
+    assert "not counted" in wb.state()["spend_basis"], wb.state()["spend_basis"]
+
+    # ── 7. an organism that cannot be READ admits 1, with the reason ─────────────────────────────────────────
+    def _unreadable(**_k):
+        raise RuntimeError("W742 guard: the organism could not be read")
+
+    with monkeypatch.context() as m:
+        m.setattr(_bb.biobus, "organism_context", _unreadable)
+        e = _hm.homeostasis.assess(demand_nodes=3, requested_parallel=6)
+        ep = _hm.homeostasis.project(5)
+    assert e["max_parallel"] == 1 and e["posture"] == "protected" and e["organism"] is None, (
+        "an organism that could not be read granted capacity on absent evidence", e)
+    assert "could not be read" in e["reason"] and "6 requested" in e["reason"], e["reason"]
+    assert "fail-closed" in e["governed_by"], e["governed_by"]
+    assert ep["admitted_max_parallel"] == 1 and ep["fits_current_capacity"] is False, ep
+
+    # ── 8. a PROJECTION advances nothing and fires nothing; a RUN does both ──────────────────────────────────
+    #  0.2 is the load at zero demand, which only snapshot/project and this control carry; the heartbeat reads
+    #  at the 0.3 default, so a beat landing during this leg cannot be mistaken for a projection
+    _loads, _fired, _sim_loads = [], [], []
+    _tid = threading.get_ident()
+    _real_upd = _bb.biobus._update_atp
+
+    def _spy(metabolic_load=0.3, **_k):
+        _loads.append(round(float(metabolic_load), 3))
+        return _real_upd(metabolic_load)
+
+    #  ...and a spy on the SIMULATOR itself, so a projection that advanced it by another route is seen too
+    _atp = _bb._get_atp()
+    assert _atp is not None, "the ATP simulator is absent, so this leg cannot see an advance"
+    _sim_upd = _atp.update
+    monkeypatch.setattr(_atp, "update", lambda *a, **k: (
+        _sim_loads.append(round(float(k.get("metabolic_load", -1)), 3)), _sim_upd(*a, **k))[1])
+    monkeypatch.setattr(_bb.biobus, "_update_atp", _spy)
+    monkeypatch.setattr(_bb.biobus, "_atp_last_update", 0.0)   # the control is outside biobus's 1 s throttle
+    run = _hm.homeostasis.assess(demand_nodes=0, requested_parallel=4)
+    assert 0.2 in _loads and 0.2 in _sim_loads and run["atp_mode"] == "run", (
+        "the control run did not reach the simulator, so the silence below would prove nothing", _loads, _sim_loads)
+    _loads.clear()
+    _sim_loads.clear()
+    _bb.biobus._atp_last_update = 0.0          # a projection that called _update_atp would now really advance
+    snap = _hm.homeostasis.snapshot()
+    proj = _hm.homeostasis.project(3)
+    route = client.get("/api/v1/native-ai/homeostasis")
+    sim = client.post("/api/v1/resources/compose/simulate",
+                      json={"name": "w742-preview", "resource_ids": ["bdp", "ddpie", "genesis"],
+                            "usage_area": "design"})
+    assert route.status_code == 200 and sim.status_code == 200, (route.text[:200], sim.text[:200])
+    assert (sim.json()["model"].get("organism_capacity") or {}).get("organism"), (
+        "the preview did not project at all, so its silence proves nothing", sim.json()["model"].get("organism_capacity"))
+    assert proj["organism"] is not None
+    assert snap["atp_mode"] == "projection" and route.json()["atp_mode"] == "projection", (
+        snap.get("atp_mode"), route.json().get("atp_mode"))
+    assert 0.2 not in _loads and 0.2 not in _sim_loads, (
+        "a read-only projection advanced the shared ATP simulator", _loads, _sim_loads)
+    monkeypatch.setattr(_hm, "_fire", lambda *a, **k: _fired.append((threading.get_ident(), a)))
+    with monkeypatch.context() as m:
+        m.setattr(_bb.biobus, "organism_context", lambda **_k: _ctx(cycle="MAINTENANCE_REST"))
+        _hm.homeostasis.snapshot()
+        _mine = [a for t, a in _fired if t == _tid]
+        assert _mine == [], ("a projection fired a reflex signal into the nervous system", _mine)
+        _hm.homeostasis.assess(demand_nodes=1, requested_parallel=4)
+    assert any(t == _tid for t, _a in _fired), (
+        "the control run in the same off-peak state fired nothing, so the leg above proves nothing")
+
+    # ── 9. the beat starts at BOOT with no switch, and the oxygen reading's comment says so ─────────────────
+    import agentic_core.app_mvp as _app
+    from agentic_core.organism.heartbeat import heartbeat as _hb
+    _started = []
+
+    async def _no_vitals():
+        return None
+
+    monkeypatch.setattr(_hb, "start", lambda *a, **k: _started.append(1))
+    monkeypatch.setattr(_app, "_vitals_loop", _no_vitals)
+    assert _app._startup in _app.app.router.on_startup, "the hook this leg drives is not the app's startup hook"
+    asyncio.run(_app._startup())
+    assert _started == [1], ("the served app no longer starts the heartbeat at boot; the comment below must "
+                             "change with it", _started)
+    #  (each source read below has a name no other test in this module gives a file, so the module's comment-only
+    #  presence check, which pairs a variable with its LAST assignment in the module, still pairs older
+    #  assertions with the files their own tests read)
+    _bindings_src = (_root / "agentic_core/biomimicry/cycles/bindings.py").read_text(encoding="utf-8")
+    _comment = "\n".join(ln for ln in _bindings_src.splitlines() if ln.lstrip().startswith("#"))
+    assert "OFF by default" not in _comment, "the oxygen reading's comment still says the beat is off by default"
+    assert "starts the beat at boot" in _comment, "the comment no longer says what the startup hook does"
+
+    # ── 10. every remaining ATP surface carries its qualifier, and the budget reaches a page ─────────────────
+    from agentic_core.api.board import _director_grounding
+    from agentic_core.organism.biobus import atp_depletion_state
+    _g = _director_grounding("dir_biomimetic")
+    assert re.search(r"ATP [^;]*SIMULATED", _g), ("the Board director is handed the ATP figure as a LIVE reading", _g)
+    #  "it cannot fall" follows the COMPUTED depletion state, driven both ways below, so this leg stays green on the
+    #  day the model is made able to fall
+    assert ("cannot fall" in _g) is (not atp_depletion_state()["can_deplete"]), (
+        "the director's ATP qualifier disagrees with the model's computed depletion state",
+        atp_depletion_state()["can_deplete"], _g)
+    _real_dep = _bb.atp_depletion_state
+    with monkeypatch.context() as m:
+        m.setattr(_bb, "atp_depletion_state", lambda: {**_real_dep(), "can_deplete": False})
+        _g_cannot = _director_grounding("dir_biomimetic")
+    assert "SIMULATED" in _g_cannot and "cannot fall" in _g_cannot, (
+        "the model computes that the figure cannot fall, and the director is not told", _g_cannot)
+    with monkeypatch.context() as m:
+        m.setattr(_bb, "atp_depletion_state", lambda: {**_real_dep(), "can_deplete": True})
+        _g2 = _director_grounding("dir_biomimetic")
+    assert "SIMULATED" in _g2 and "cannot fall" not in _g2, (
+        "the 'cannot fall' qualifier is typed, not computed from the model", _g2)
+    _cat = client.get("/api/v1/resources/metabolic").json()
+    assert "SIMULATED" in _cat["description"] and "live ATP" not in _cat["description"], _cat["description"]
+    _cy = client.post("/api/v1/economy/cycle", json={"vsb_id": f"w742-{uuid.uuid4().hex[:6]}", "revenue": 10}).json()
+    _cy = _cy.get("cycle", _cy)
+    _es = str(_cy.get("energy_state") or "")
+    assert _es.startswith("not_adjusted"), ("the cycle took another branch, so its reason is not exercised", _es[:160])
+    assert atp_depletion_state()["basis"] in _es and "floored" not in _es, _es
+    _cockpit_code = _code_only(
+        (_root / "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8"))
+    assert ("[lastCycle.metabolic_energy_basis ? 'Metabolic energy' : 'Metabolic energy (simulated, not measured)', "
+            "lastCycle.metabolic_energy]") in _cockpit_code, "the Cockpit prints the energy figure without its qualifier"
+    assert "['Metabolic energy', lastCycle.metabolic_energy]" not in _cockpit_code
+    _rts = [rt for rt in client.app.routes if getattr(rt, "path", "") == "/api/v1/native-ai/homeostasis"]
+    assert _rts, "the homeostasis route moved"
+    assert all("closed loop" not in rt.description and "SIMULATED" in rt.description for rt in _rts), (
+        [rt.description for rt in _rts])
+    _wbody = client.get("/api/v1/native-ai/homeostasis").json()["work_budget"]
+    assert isinstance(_wbody.get("basis"), str) and "capacity" in _wbody["basis"], _wbody
+    _nativeai_code = _code_only(
+        (_root / "apps/workstation-superapp/src/pages/developers/NativeAI.tsx").read_text(encoding="utf-8"))
+    assert "{homeo.work_budget?.basis && (" in _nativeai_code and "{homeo.work_budget.basis}" in _nativeai_code, (
+        "the work budget, the figure S18.1 asked for, still reaches no page")

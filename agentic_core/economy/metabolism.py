@@ -205,8 +205,9 @@ class EconomicMetabolism:
         # §8→§12 ECONOMIC SURVIVAL INSTINCT — when the LIVING ORGANISM's metabolic energy is depleted, the
         # economic organism conserves more (raises reserves), mirroring the §8 homeostatic survival instinct.
         # W506 (P2.7(4), FU-265c) — THE RESERVE IS NO LONGER DECIDED ON THIS TERM, and that is a
-        # deliberate behaviour change. The term is an ATPSimulator on a constant load, floored at 0.5 of
-        # 15, so `metabolic_energy < 0.3` can never be true and energy_state could only ever read
+        # deliberate behaviour change. The term is an ATPSimulator whose production exceeds its consumption
+        # (computed in biobus.atp_depletion_state; its 0.5 floor never binds), so `metabolic_energy < 0.3`
+        # can never be true and energy_state could only ever read
         # "healthy" — yet every VSB cycle recorded a reserve rate as though a living organism's energy
         # had been consulted, in the economy that writes the virtual ledger. A reserve decided on a
         # simulator is not a decision.
@@ -220,9 +221,16 @@ class EconomicMetabolism:
         if metabolic_energy is None:
             energy_state = "unavailable (the organism's metabolic term could not be read)"
         elif not _atp_measured:
+            #  W742 - the reason is COMPUTED. This named the simulator's floor as the mechanism, and that
+            #  floor never binds (W506): production exceeds consumption. The page prints this sentence.
+            try:
+                from agentic_core.organism.biobus import atp_depletion_state as _atp_dep
+                _why_inert = _atp_dep()["basis"]
+            except Exception as _e:                    # noqa: BLE001 - said, never substituted
+                _why_inert = f"(why it cannot fall could not be computed: {_e.__class__.__name__})"
             energy_state = ("not_adjusted_term_unmeasured — the reserve was NOT adjusted: the metabolic "
-                            "term is a simulator on a constant load, floored so it cannot deplete, so it "
-                            "carries no evidence about this entity's energy")
+                            "term is a simulator, so it carries no evidence about this entity's energy. "
+                            + _why_inert)
         elif metabolic_energy < 0.3:
             effective_reserve = round(min(0.6, reserve_rate + 0.15), 3)
             energy_state = "conserving (low organism energy)"
@@ -514,8 +522,8 @@ class EconomicMetabolism:
     # ── biomimetic integration helpers (guarded) ──────────────────────────────
     @staticmethod
     def _atp_ratio() -> Optional[float]:
-        # LIVE metabolic energy — the SAME shared organism ATP the §8 homeostasis governs (cognition expends
-        # it, the heartbeat restores it), NOT a fresh simulator. This links §12 economy ↔ §8 living organism.
+        # The SAME shared organism ATP simulator the §8 homeostasis reads, NOT a fresh one (W742: and NOT a live
+        # measurement of energy - production exceeds consumption on the current model, so it cannot fall).
         try:
             from agentic_core.organism.biobus import _get_atp
             atp = _get_atp()

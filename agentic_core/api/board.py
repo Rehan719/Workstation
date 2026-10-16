@@ -1065,9 +1065,22 @@ def _director_grounding(did: str, scope: str = "workstation") -> str:
         if did == "dir_biomimetic":
             from agentic_core.organism.biobus import biobus
             ctx = biobus.organism_context()
+            #  W742 - this line is the director's premise, sent under "LIVE readings" and shown on the Board
+            #  page as live grounding. The ATP figure is a simulator, and its qualifier travels with it (the
+            #  class of FU-387). Whether it can fall is COMPUTED from the model's constants, as homeostasis.py
+            #  reads it, never taken from a typed field.
+            _met = ctx.get("metabolic") or {}
+            try:
+                from agentic_core.organism.biobus import atp_depletion_state as _atp_dep
+                _can_fall = bool(_atp_dep()["can_deplete"])
+            except Exception:                          # noqa: BLE001 - unknown is not "cannot fall"
+                _can_fall = None
+            _atp_note = ("" if _met.get("measured") else
+                         " (SIMULATED, not a reading of this platform"
+                         + ("; it cannot fall" if _can_fall is False else "") + ")")
             return (f"immune threat {(ctx.get('immune') or {}).get('threat_level')}; "
                     f"circadian {(ctx.get('circadian') or {}).get('cycle')}; "
-                    f"ATP {(ctx.get('metabolic') or {}).get('atp_ratio')}")
+                    f"ATP {_met.get('atp_ratio')}{_atp_note}")
         if did == "dir_operations":
             from agentic_core.config import data_path, read_json_reported
             runs, _why = read_json_reported(data_path("org_cascade_runs.json"), [])
