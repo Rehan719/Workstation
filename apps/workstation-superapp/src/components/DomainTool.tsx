@@ -9,6 +9,7 @@ import { AttachDocument, appendDocBlock } from './AttachDocument';
 import { DictateButton } from './DictateButton';
 import { listOutputs, saveOutput } from '../lib/outputHistory';
 import { getPrefs } from '../lib/userPrefs';
+import { ServingNow } from './ServingNow';   // W737 (FU-1020, FU-1013)
 
 export interface DomainField {
   name: string;
@@ -272,6 +273,8 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
           "Own AI" means an owned model when one is serving. When none is, the result is a structured frame built
           from what you typed, not model-written work, and the result says which it was.
         </p>
+        {/* W737 - and which of the two it is on this deployment NOW, from the server's status, before the form */}
+        <ServingNow />
       </div>
 
       {fields.map(f => (

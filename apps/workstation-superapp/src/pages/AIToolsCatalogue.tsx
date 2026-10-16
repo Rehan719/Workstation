@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Card } from '@workstation/ui';
 import { Scale, Microscope, HeartPulse, GraduationCap, Heart, Briefcase, Sparkles, ArrowRight } from 'lucide-react';
 import { TOOL_REGISTRY, TOOL_TOTAL, DomainTools } from '../lib/toolRegistry';
+import { ServingNow } from '../components/ServingNow';   // W737 (FU-739)
 
 // A single front door to every in-house AI tool. Each links straight to its hub + tab (?tab=).
 // W470 — every entry and every count comes from the ONE tool registry the hubs mount from
@@ -35,6 +36,7 @@ export const AIToolsCatalogue: React.FC = () => (
         {FORMS} form tools whose output is <span className="text-aura">runnable, iteratively refinable, and exportable</span> (Copy / Download),
         {SURFACES} hand-built surfaces, and the Religion domain's QEP flagship — each labelled below.
       </p>
+      <ServingNow />
     </header>
 
     {DOMAINS.map(d => {
@@ -46,6 +48,8 @@ export const AIToolsCatalogue: React.FC = () => (
             <h2 className="text-lg font-black text-white uppercase tracking-tight">{d.name}</h2>
             <span className="text-[9px] font-black uppercase tracking-widest text-slate-600">{d.tools.length} tools</span>
           </div>
+          {/* W737 (FU-739) - the registry cards carry what serves, as the hubs' tools do (one read, shared) */}
+          <ServingNow className="text-[10px] text-slate-500 -mt-2" />
           <div className="grid grid-cols-1 @[560px]:grid-cols-2 @[900px]:grid-cols-3 gap-4">
             {d.tools.map(t => (
               <Link key={t.tab} to={`${d.route}?tab=${t.tab}`}

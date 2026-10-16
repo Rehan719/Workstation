@@ -4,6 +4,7 @@ import { Card, Button } from '@workstation/ui';
 import { Heart, Microscope, GraduationCap, Scale, HeartPulse, Briefcase, Sparkles, Rocket, ArrowRight } from 'lucide-react';
 import { useT } from '../../lib/i18n';
 import { TOOL_REGISTRY, TOOL_TOTAL } from '../../lib/toolRegistry';
+import { ServingNow } from '../../components/ServingNow';   // W737 (FU-967)
 
 // Offering 1 (WHOLE_VISION §3A) — the Domains section's front door: domain-specific AI-mediated tools &
 // resources for working in any domain/realm, usable directly without establishing an enterprise. All
@@ -46,7 +47,8 @@ export const DomainsHub: React.FC = () => {
         <Card className="p-6 border-aura/40 bg-aura/5">
           <div className="flex items-center gap-2 mb-2"><Sparkles size={16} className="text-aura" /><h3 className="text-xs font-black uppercase tracking-widest text-aura">{t('domains.off1.tag', 'Offering 1 · You are here')}</h3></div>
           <p className="text-sm font-black text-white mb-1">{t('domains.off1.title', 'Work now with domain tools')}</p>
-          <p className="text-[11px] text-slate-400 leading-relaxed">Get best-in-class capability on demand inside your domain — without building an enterprise. {TOTAL} tools across {DOMAINS.length} domains — counted from the one tool registry every hub mounts from.</p>
+          <p className="text-[11px] text-slate-400 leading-relaxed">Use domain tools inside your domain — without building an enterprise. {TOTAL} tools across {DOMAINS.length} domains — counted from the one tool registry every hub mounts from.</p>
+          <ServingNow />
         </Card>
         <Card className="p-6 border-highlight/30 hover:border-highlight/60 transition-colors cursor-pointer" onClick={() => navigate('/genesis')}>
           <div className="flex items-center gap-2 mb-2"><Rocket size={16} className="text-highlight" /><h3 className="text-xs font-black uppercase tracking-widest text-highlight">{t('domains.off2.tag', 'Offering 2')}</h3></div>
