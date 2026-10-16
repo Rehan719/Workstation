@@ -233,12 +233,27 @@ def apply_config_change(section: str, key: str, value: Any, reason: str = "",
         except Exception:
             pass
 
+    #  W733 (FU-905) - READ BACK. The record's value was the value GIVEN; nothing read the store afterwards. Read
+    #  it back through the same reader every consumer uses, and say whether it held. Added beside new_value,
+    #  which keeps its meaning (a field's meaning belongs to its readers).
+    try:
+        _read_back = _load_config().get(section, {}).get(key)
+        _read_ok = _read_back == coerced
+        _read_basis = ("read back from the settings store after the write: it holds the value given" if _read_ok
+                       else f"READ BACK DIFFERS: the store holds {_read_back!r} after the write, not {coerced!r}")
+    except Exception as _exc:                    # noqa: BLE001 - said, never guessed
+        _read_back, _read_ok = None, None
+        _read_basis = f"NOT READ BACK: the store could not be read after the write ({_exc.__class__.__name__})"
+
     change = {
         "change_id": uuid.uuid4().hex[:8],
         "section": section,
         "key": key,
         "old_value": old_value,
         "new_value": coerced,
+        "applied_read_back": _read_back,
+        "read_back_matches": _read_ok,
+        "read_back_basis": _read_basis,
         "reason": reason,
         "updated_by": updated_by,
         "applied_at": config["last_updated"],

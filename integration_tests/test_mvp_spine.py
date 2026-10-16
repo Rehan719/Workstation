@@ -60844,12 +60844,15 @@ def test_mgmt_no_replaced_edition_is_named_and_a_nonconformance_is_not_said_to_b
     assert len(_sent) == 2
     for _agent, _p in _sent:
         assert not _EDITION.search(_p) and "-aligned" not in _p and "name no edition" in _p, (_agent, _p[:200])
-    # 3. A NONCONFORMANCE is not said to be kept, and a severity that is not one is refused before any signal
+    # 3. A NONCONFORMANCE - W733 (FU-986) RETARGETED: it was not kept, and this leg held the answer to saying
+    #    so. It is now KEPT as a defect in the quality system's loop, and the leg holds the stronger truth: the
+    #    answer's id is a defect that can be looked up. A severity that is not one is still refused first.
     _nc = client.post("/api/v1/mgmt/nonconformance", json={"organisation_name": "w-ms Org", "description": "w-ms a label was wrong", "severity": "major"})
     assert _nc.status_code == 200, _nc.text[:200]
     _n = _nc.json()
-    assert _n["stored"] is False and "NOT STORED" in _n["stored_basis"] and "cannot be looked up" in _n["stored_basis"], _n
-    assert "recorded" not in _json.dumps({k: v for k, v in _n.items() if k != "capa"}).lower(), "the answer still says it was recorded"
+    assert _n["stored"] is True and _n["nc_id"].startswith("DEF-") and _n["nc_id"] in _n["stored_basis"], _n
+    from agentic_core.vbs.registry import qms as _qms733
+    assert [d for d in _qms733.defects if d["id"] == _n["nc_id"] and d.get("person_reported")], "the id names no kept defect"
     assert "signalled as quality_major" in _n["immune_response"]
     _before = len(_sent)
     for _sev in ("catastrophic", "", "MAJOR"):
@@ -66096,3 +66099,72 @@ def test_w740_the_owners_childs_school_material_is_not_in_the_public_tree():
     for _rel in ("_archive/agentic_core/domains/education/pdf_generator.py",
                  "_archive/agentic_core/domains/master/verify_v_infinity.py"):
         assert "School_SATs_Prep_Pack_2026.pdf" in (_root / _rel).read_text(encoding="utf-8"), _rel
+
+
+#  W733 (FU-986) - A REPORTED NONCONFORMANCE IS KEPT. It opens a defect in the quality system's durable loop,
+#  owned by the caller and marked as reported by a person; it can be listed, corrected and re-verified; it is
+#  not a gate run, so the non-conformance rate does not move; and the record survives a model that fails.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w733_a_reported_nonconformance_is_kept_as_a_defect(client, monkeypatch):
+    import agentic_core.api.management_systems as _ms
+    from agentic_core.vbs.registry import qms as _qms
+    _sent = []
+
+    async def _compose(prompt, agent, **kw):
+        _sent.append(prompt)
+        return "w733 draft capa", {"served_by": "w733-capture"}
+    monkeypatch.setattr(_ms, "_compose", _compose)
+    _before = _qms.defect_summary()
+    _r = client.post("/api/v1/mgmt/nonconformance", json={"organisation_name": "w733 Org", "vsb_id": "vsb-w733",
+                                                          "description": "w733 a batch label was wrong", "severity": "minor"})
+    assert _r.status_code == 200, _r.text[:200]
+    _j = _r.json()
+    _id = _j["nc_id"]
+    #  1. KEPT: the defect is in the loop, whole, marked as a person's report
+    _d = [d for d in _qms.defects if d["id"] == _id]
+    assert len(_d) == 1 and _d[0]["person_reported"] is True and _d[0]["status"] == "open", _d
+    assert _d[0]["meta"] == {"severity": "minor", "organisation": "w733 Org", "description": "w733 a batch label was wrong"}
+    assert _d[0]["delivery_ref"] == {"vsb_id": "vsb-w733"} and _j["defect"]["id"] == _id
+    #  2. LISTED where the answer says, and the loop runs on it
+    _listed = client.get("/api/v1/vbs/qms/defects").json()["defects"]
+    assert any(d["id"] == _id for d in _listed), "the defect is not where the answer says to look"
+    _c = client.post(f"/api/v1/vbs/qms/defects/{_id}/correct", json={"correction": "w733 relabelled"})
+    assert _c.status_code == 200 and _c.json()["defect"]["status"] == "corrected", _c.text[:200]
+    #  3. NOT A GATE RUN: the rate's two terms do not move; the report is counted apart
+    _after = _qms.defect_summary()
+    assert (_after["gates_run"], _after["gate_failures"]) == (_before["gates_run"], _before["gate_failures"]), (_before, _after)
+    assert _after["reported_total"] == _before.get("reported_total", 0) + 1
+    #  4. THE RECORD COMES FIRST: a model that fails cannot lose it
+    async def _fails(prompt, agent, **kw):
+        raise RuntimeError("w733 the model failed")
+    monkeypatch.setattr(_ms, "_compose", _fails)
+    _n_before = len([d for d in _qms.defects if d.get("person_reported")])
+    try:
+        client.post("/api/v1/mgmt/nonconformance", json={"organisation_name": "w733 Org", "description": "w733 second", "severity": "major"})
+    except Exception:
+        pass
+    assert len([d for d in _qms.defects if d.get("person_reported")]) == _n_before + 1, "a failed draft lost the record"
+    #  5. THE PROMPT claims no role (Owner ruling 2026-10-11), and a refused severity opens nothing
+    assert _sent and not _sent[0].lstrip().lower().startswith("you are"), _sent[0][:80]
+    _n_before = len(_qms.defects)
+    assert client.post("/api/v1/mgmt/nonconformance", json={"organisation_name": "x", "description": "x", "severity": "bad"}).status_code == 422
+    assert len(_qms.defects) == _n_before
+
+
+#  W733 (FU-905) - AN APPLIED SETTING IS READ BACK. The single write path re-reads the store through the reader
+#  every consumer uses and says whether the value held; driven both ways.
+def test_w733_an_applied_setting_is_read_back(client, monkeypatch):
+    import agentic_core.organism.reconfiguration as _rc
+    _r = client.post("/api/v1/organism/config/update", json={"section": "gateway", "key": "temperature_bias",
+                                                             "value": "precise", "reason": "w733 read back"})
+    assert _r.status_code == 200, _r.text[:200]
+    _c = _r.json()["change"]
+    assert _c["new_value"] == "precise" and _c["applied_read_back"] == "precise" and _c["read_back_matches"] is True, _c
+    assert _c["read_back_basis"].startswith("read back from the settings store"), _c["read_back_basis"]
+    #     a write that did not hold is SAID, not recorded as applied
+    monkeypatch.setattr(_rc, "_save_config", lambda config: None)
+    _lost = _rc.apply_config_change("gateway", "temperature_bias", "creative", reason="w733 lost write")
+    assert _lost["new_value"] == "creative" and _lost["read_back_matches"] is False, _lost
+    assert _lost["applied_read_back"] == "precise" and _lost["read_back_basis"].startswith("READ BACK DIFFERS"), _lost
+    monkeypatch.undo()
+    _rc.apply_config_change("gateway", "temperature_bias", "neutral", reason="w733 restore")

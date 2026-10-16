@@ -19,10 +19,11 @@ from __future__ import annotations
 import time
 import uuid
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from agentic_core.api._ai_provenance import ai_text, person_said
+from agentic_core.auth.core import get_current_user
 from agentic_core.organism.biobus import biobus
 
 
@@ -363,7 +364,7 @@ class NonConformanceRequest(BaseModel):
 
 
 @router.post("/nonconformance")
-async def record_nonconformance(req: NonConformanceRequest):
+async def record_nonconformance(req: NonConformanceRequest, user: dict | None = Depends(get_current_user)):
     """
     Record a quality non-conformance — feeds directly into the immune system.
     Major/critical non-conformances elevate immune threat level.
@@ -390,9 +391,15 @@ async def record_nonconformance(req: NonConformanceRequest):
         intensity,
     )
 
-    # AI generates CAPA (Corrective Action / Preventive Action)
+    #  W733 (FU-986) - THE NONCONFORMANCE IS KEPT: it opens a defect in the quality system's durable loop, owned
+    #  by the caller, before anything is composed - so a model that fails cannot lose the record.
+    from agentic_core.vbs.registry import qms as _qms
+    _u = user if isinstance(user, dict) else None
+    _defect = _qms.open_reported_defect(req.description, req.severity, req.organisation_name, req.vsb_id,
+                                        owner_id=(_u or {}).get("username"))
+    # A draft CAPA (corrective and preventive action). No role is claimed in the prompt (Owner ruling 2026-10-11).
     prompt = (
-        f"You are a quality management specialist. Generate a CAPA for:\n\n"
+        f"Draft a CAPA (corrective and preventive action) for this non-conformance:\n\n"
         f"Organisation: {req.organisation_name}\n"
         f"Non-conformance: {req.description}\n"
         f"Severity: {req.severity.upper()}\n\n"
@@ -407,16 +414,17 @@ async def record_nonconformance(req: NonConformanceRequest):
 
     return {
         "ai_provenance": _prov,
-        "nc_id": uuid.uuid4().hex[:8],
+        "nc_id": _defect["id"],
         "severity": req.severity,
         "description": req.description,
         #  the sentence that stood here said the nonconformance was kept. Nothing keeps it: the id above is
         #  made for this answer and stored nowhere. What happened is a signal, and that is what is said.
         "immune_response": f"signalled as {error_type} to the immune sensor",
-        "stored": False,
-        "stored_basis": ("NOT STORED: this route keeps no record of a nonconformance, and the id in this answer "
-                         "cannot be looked up later. A defect that is stored, corrected and re-verified is opened "
-                         "through the quality system's defects route, not here."),
+        "stored": True,
+        "defect": _defect,
+        "stored_basis": (f"STORED as defect {_defect['id']} in the quality system's defect loop, marked as reported "
+                         f"by a person: list it at GET /api/v1/vbs/qms/defects, then correct it and re-verify it "
+                         f"there. It is not a gate run, so the non-conformance rate does not move."),
         "capa": capa,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
