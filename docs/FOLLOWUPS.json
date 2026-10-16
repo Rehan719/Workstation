@@ -21349,6 +21349,245 @@
       "note": "",
       "slot_source": "rides the open row for the Windows access violation on the same item",
       "tier": 3
+    },
+    {
+      "id": "FU-1086",
+      "title": "OWNER DECISION: the uncapped, census-partitioned final audit has no item that builds or runs it",
+      "why": "The Owner ruled on 2026-10-12 that the final audit is uncapped and census-partitioned, its instrument built and guarded in its own round and calibrated first, and run after Phase 5 and the authentication-readiness round. The ruling lives only as a sentence in P2.40's order, and P5.10's calibration clause is the only other trace; no item, acceptance clause or open row owns building or running it, and once P2.40 closes the sentence sits on a closed item. Recommended: charter it as its own item, run in both the floor and the local-model configuration, with seven properties each driven red by a planted fault: every census surface in exactly one slice or a stated overlap, the union equals the census, no region capped, a failed or empty region blocks completeness, the measured commit reported, earlier ledgers byte-identical.",
+      "source": "W747",
+      "found": "2026-10-16",
+      "files": [
+        "docs/FABLE_DELIVERY_PROMPT.md"
+      ],
+      "severity": "high",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2
+    },
+    {
+      "id": "FU-1087",
+      "title": "HYPOTHESIS: a model is made the serving default after one check, that it is installed",
+      "why": "Read from code, not yet driven: POST /api/v1/native-ai/lifecycle/promote persists any locally discovered model as the serving default after checking only that it is installed - no evaluation on the probe set, no licence text, no runtime digest, no health gate - and the effective default re-checks only that the name is present, although the same file says a tag can be pulled again to a different build. Drive the refusals first. Smallest addition: promote stores the runtime digest and returns the licence line and evaluation state it relied on; refuses with a stated reason when no licence text is held or the model is a research-only lead, an admin forcing it with a trail; the default holds only while the digest matches. Whether promotion must also require a recorded baseline is an Owner question: the code says baselines are deliberately not read by promotion.",
+      "source": "W747",
+      "found": "2026-10-16",
+      "files": [
+        "agentic_core/api/native_ai.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P3.32",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the model lifecycle and its evaluation are this item's",
+      "tier": 2
+    },
+    {
+      "id": "FU-1088",
+      "title": "The Owner's ruled routing tie-break order is encoded nowhere, so the ruling cannot fail",
+      "why": "Owner ruling 2026-09-30 (constitution): routing is hard constraints, then the tie-break order privacy fit, risk fit, domain match, resource headroom, and no numeric route score is ever published. No code names the order and no guard holds it: the tier router walks down the tiers, the orchestrator reorders by success rate then speed, and the Instrument Cell selector orders by fewest resources. Smallest addition: the route record names the ruled order and which of the four decided, privacy fit tied to the data class of an outbound call; a guard drives a case each term decides.",
+      "source": "W747",
+      "found": "2026-10-16",
+      "files": [
+        "agentic_core/ai/native/tiers.py",
+        "agentic_core/ai/native/orchestrator.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.3",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "its bar is the in-house-first order proven by test",
+      "tier": 2
+    },
+    {
+      "id": "FU-1089",
+      "title": "HYPOTHESIS: sign-in and signup have no limit on attempts",
+      "why": "Read from code, not driven: POST /api/v1/auth/token and signup carry no attempt limit; the only rate limiter in the tree limits the gateway's outbound calls. P4.2 covers the invited stage and sets none. Drive it with sign-in on in a test process; if confirmed, a per-identity and per-address limit lands before invited people hold accounts.",
+      "source": "W747",
+      "found": "2026-10-16",
+      "files": [
+        "agentic_core/auth/core.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "authentication readiness, before P4.2 invites anyone",
+      "tier": 2
+    },
+    {
+      "id": "FU-1090",
+      "title": "The held-out evaluation set has three cases and measures no injection, refusal without a source, malformed output or unsupported claim",
+      "why": "agentic_core/ai/native/heldout_cases.json holds three cases (format, arithmetic, join). P3.32 requires a held-out set but does not say what it covers, so the behaviours that matter most for a served model go unmeasured. Smallest addition: one case per behaviour, each scored by a computed check, never a model's opinion.",
+      "source": "W747",
+      "found": "2026-10-16",
+      "files": [
+        "agentic_core/ai/native/heldout_cases.json"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.32",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the held-out set is this item's",
+      "tier": 2
+    },
+    {
+      "id": "FU-1091",
+      "title": "A baseline of a served model records no runtime settings, so it cannot be reproduced from its record",
+      "why": "The gateway sends the local runtime no options (no context length, no sampling settings), and the baseline record says sampling is not set and not recorded. P3.32's acceptance - a baseline run is reproducible from its recorded versions - therefore cannot hold for a model tier, which undermines any comparison of two local models. Smallest addition: the settings actually sent are recorded with each baseline, and a run that sent none says the runtime's defaults applied, by name and version.",
+      "source": "W747",
+      "found": "2026-10-16",
+      "files": [
+        "agentic_core/ai/gateway.py",
+        "agentic_core/api/native_ai.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.32",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "baselines are this item's",
+      "tier": 2
+    },
+    {
+      "id": "FU-1092",
+      "title": "An answer names its server but never the model or build that answered, or where it ran",
+      "why": "Answer provenance names served_by (for example the local runtime) and whether it was external, never the model, its build digest or the device it ran on; after a promote or a re-pull two answers with the same label can come from different builds. Smallest addition, sequenced after the rounds that count tokens and describe the installed model from the runtime (they edit the same return): the model name and digest as the runtime reports them, and the processor where it reports one, unknown otherwise.",
+      "source": "W747",
+      "found": "2026-10-16",
+      "files": [
+        "agentic_core/ai/native/orchestrator.py",
+        "agentic_core/ai/gateway.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.32",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "serving provenance of a model tier is this item's",
+      "tier": 2
+    },
+    {
+      "id": "FU-1093",
+      "title": "HYPOTHESIS: the ensemble counts the deterministic floor as a second server, so one model can write a consensus of itself",
+      "why": "Read from code: /api/v1/native-ai/ensemble requires two different servers before it synthesises; with one local model, the model and the deterministic floor pass that test although the floor is not a model, a model then writes the consensus, and the method string counts owned models including the floor. Every fidelity run is floor-only, so the truth passes cannot see this branch. Drive it with a model serving first; then a consensus needs two distinct model servers, a synthesiser that is also a member is named as one, and disagreement is kept, not resolved away.",
+      "source": "W747",
+      "found": "2026-10-16",
+      "files": [
+        "agentic_core/ai/native/orchestrator.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2,
+      "slot_source": "its files sit in an area retired with P2.18, so the router names no item; P3.30 holds the fabric's small truth fixes (W747)"
+    },
+    {
+      "id": "FU-1094",
+      "title": "The plan still names the old fidelity instrument as the measure in three places",
+      "why": "docs/FABLE_DELIVERY_PROMPT.md names scripts/workflows/fidelity_audit_v3.js as the fidelity measure in three places, while the plan's own record and the W626 handover name fidelity_audit_v7.js as the committed instrument, and v3 pins a stale commit in its prompt text. Point the three lines at v7 and say v3 is kept as history, in the round that runs the M1 re-run.",
+      "source": "W747",
+      "found": "2026-10-16",
+      "files": [
+        "docs/FABLE_DELIVERY_PROMPT.md",
+        "scripts/workflows/fidelity_audit_v3.js"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.40",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the M1 re-run is this item's",
+      "tier": 2
+    },
+    {
+      "id": "FU-1095",
+      "title": "A failure on the first deployment reaches no person: failures are recorded and shown only on a page someone must open",
+      "why": "P3.25 records every route failure in the outcome ledger and the event chain and shows them on one page; nothing sends a failure to anyone, and README.md still lists error monitoring as not built, which is half true. The first deploy is private to the Owner, so the cost is an outage nobody sees. Smallest addition, in the deploy pre-flight: an uptime check on /health from OUTSIDE the machine (a boot failure cannot report itself), e-mailing the Owner from his own cloud account beside the billing alert; it is named in the dry run and driven once at the deploy with him watching; /health returns a fixed body, so the check sees only a dead process, and the runbook says so. The README line becomes: failures recorded, not alerted.",
+      "source": "W747",
+      "found": "2026-10-16",
+      "files": [
+        "README.md",
+        "docs/DEPLOYMENT.md"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.5",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the deploy pre-flight is this item's",
+      "tier": 2
+    },
+    {
+      "id": "FU-1096",
+      "title": "A 14-layer specification file contradicts the seven-layer canon on a live import path, and its execution method has no caller and returns a constant",
+      "why": "agentic_core/architecture/layer_registry.py heads its table as the definitive 14-layer specification of a Jules-era document; eleven of the module paths it names do not exist. It cannot be archived: governance/uci_interceptor.py imports and instantiates the manager in enriched_layers.py, which reads it. enriched_layers.execute_sovereign has no caller outside archived tests and its layer-13 branch returns a fixed success with a typed drift figure. Smallest addition: relabel the table as historical, mark the missing paths absent, retire only the uncalled execution methods after a whole-tree reachability check that includes strings; the seven layers stay the canon.",
+      "source": "W747",
+      "found": "2026-10-16",
+      "files": [
+        "agentic_core/architecture/layer_registry.py",
+        "agentic_core/architecture/enriched_layers.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 3,
+      "slot_source": "its files sit in an area retired with P2.18, so the router names no item; P3.30 holds the fabric's small truth fixes (W747)"
+    },
+    {
+      "id": "FU-1097",
+      "title": "P3.31 is marked done and its text still says the page shows the proposal and not yet the verification",
+      "why": "The Instrument Cell page has run verification since W673 (it posts to /api/v1/resources/cell/verify and shows a verdict), and the item's rows moved to P3.30 by the Owner's ruling of 2026-10-12, yet P3.31's open paragraph still lists both as open - the plan showing closed work as open. Add a dated line saying what was built since and what stands (free-text criteria are still not assessed), without deleting the earlier sentence.",
+      "source": "W747",
+      "found": "2026-10-16",
+      "files": [
+        "docs/FABLE_DELIVERY_PROMPT.md"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 3,
+      "slot_source": "its files sit in an area retired with P2.18, so the router names no item; P3.30 holds the fabric's small truth fixes (W747)"
+    },
+    {
+      "id": "FU-1098",
+      "title": "The history store beside the settings store is also read tolerantly as the base of a write, and a reset records a corrupt store's value as the defaults",
+      "why": "In agentic_core/organism/reconfiguration.py the history loader returns an empty list on any parse failure and the appender writes that list back under the lock with one entry added, erasing the record of governed setting changes; the reset records a corrupt store's prior value as the defaults. The open row for the settings store names only the settings loader, so fixing it alone would leave the same defect one function away (fix every writer). Same remedy: a missing store is empty, an unreadable one is kept and the write refused.",
+      "source": "W747",
+      "found": "2026-10-16",
+      "files": [
+        "agentic_core/organism/reconfiguration.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P2.40",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "rides the open row for the settings store on the same item",
+      "tier": 2
     }
   ],
   "routes": [

@@ -2182,3 +2182,118 @@ their source, were reviewed by their authors. Chartered as plan item P5.20, eigh
 
 An automated review that approves religious content; copying an advice charity's pages or a commercially
 published commentary; an index of judgments before the licence is granted; the word "certified" anywhere.
+
+## 33. Addendum (W747) - twenty-seven external "master" and "digital mitochondria" implementation prompts, read against the tree
+
+Between 2026-10-14 and 2026-10-16 the Owner supplied twenty-seven external, model-written documents and asked
+that every one be reviewed equally, verified, and used to extend the plan. They are two lines of work: master
+implementation prompts and strategic reviews (v6, v7, v9, v11-v13, the W731 and "Retry 7/8/9" reviews), and a
+"digital mitochondria" prompt for every cell and entity (v20, v21, v22, v34-v38, v40, and two different texts
+both numbered v42). Two of them exist only as text pasted into a conversation and were reviewed from a digest
+written from the full text. Several arrived more than once: v21 five times, v20 twice, the Retry 8 definitive
+prompt twice, a Retry 7 review twice; the copies were checked byte for byte and reviewed once. Two documents
+cite sources that were never supplied: a "v41 final draft" and a "vOmega-OMNISYNTHESIS" specification with a
+deployment script.
+
+### How they were read
+
+One reviewer per document, the same instructions and the same rubric for every one. Each document was read end
+to end. Every factual claim about this repository, its plan, its CI or the outside world was checked at the tree
+or at the build server. Every demand was classified as BUILT, PLANNED, PREPARED, REFUSED (by a standing ruling),
+MISREADING, or GAP. Each distinct gap was then given to two refuters: one searching the tree, the plan and the
+register for anything that already builds, plans or rules it out, the other asking whether it fits the Owner's
+rulings at all. A gap is kept only if both fail to refute it.
+
+| | Claims checked | Confirmed / partial / false / stale / unverifiable | Demands | Built / planned / prepared / refused / misreading / gap |
+|---|---|---|---|---|
+| 24 documents of 14-15 October | 596 | 394 / 91 / 64 / 35 / 12 | 739 | 209 / 194 / 108 / 94 / 50 / 84 |
+| 3 documents of 16 October | 77 | 42 / 20 / 9 / 4 / 2 | 93 | 23 / 13 / 19 / 14 / 11 / 13 |
+
+About one demand in nine is a true gap. Two thirds are already built, planned or prepared, and one in eight is
+ruled out by a standing ruling. The share of false claims RISES along the mitochondria line: the early prompts
+make none or one, the last ones make six to twelve.
+
+### What they get wrong about this platform (the same few premises, repeated)
+
+- **"Eight systems in the README."** The README has no such phrase. The canon is seven biomimetic layers; the 8
+  is the Vision 8.0 version label.
+- **A "Transformation Office" beside the Business Transformation Office.** The canon has one Business
+  Transformation Office that coordinates the whole (Vision, organisation section).
+- **OGE / HAIRMS and "Growing Tip" as canon.** Declined on 2026-10-09 (section 19 and
+  `docs/OGE_HAIRMS_BRIEF_ASSESSMENT.md`); the function is the Instrument Cell, which proposes and checks and never
+  generates, promotes or tunes itself (P3.31).
+- **S18.1-S18.6 as future or possibly absent.** They are ruled (plan, OWNER RULINGS 2026-09-30) and S18.1-S18.4
+  are built: the work budget in `agentic_core/molecular/work_budget.py`, selection on record (P3.27), lineage,
+  mitosis and retirement (P3.26). One document rewrites four of the rulings in softer words; the rulings say they "may not be
+  widened, softened or reinterpreted".
+- **"No numeric route score" as a new idea.** It is an Owner ruling of 2026-09-30: hard constraints, then a
+  stated tie-break order (privacy fit, risk fit, domain match, resource headroom), and no score ever published.
+- **The installed model as a future candidate.** llama3.2 is the configured default. The candidate lists also
+  omit the permissively licensed small Qwen3.5 models, do not flag a research-only licence, and offer a 10 GB model
+  for a machine with 7.7 GB of memory.
+- **"Final" and "consolidated" are not evidence.** The document numbered v37 9A is v36 with one update and drops
+  rulings its predecessors carried; each regeneration lost something the previous one had.
+
+### What they get right that the tree did not yet carry
+
+Kept after both refuters (the register rows are added by this round, each with the evidence):
+
+1. The Owner's uncapped, census-partitioned final audit exists only as a sentence inside P2.40's order; no item
+   builds or runs it. Put to the Owner as a decision (below).
+2. Model promotion: the lifecycle promote route makes any installed model the serving default after checking only
+   that it is installed - no evaluation, licence, digest or health gate. (Prepared round RF on P3.32.)
+3. The ruled routing tie-break order is encoded nowhere and no guard holds it, so the ruling cannot fail. (P4.3,
+   whose bar is the in-house-first order proven by test.)
+4. Sign-in and signup have no limit on attempts. (P4.1.)
+5. The held-out evaluation set (`agentic_core/ai/native/heldout_cases.json`) has three cases; injection, refusal without a source, malformed output and
+   unsupported claims are unmeasured. (P3.32.)
+6. A baseline of a served model records no runtime settings, so P3.32's "reproducible from its recorded
+   versions" cannot hold. (P3.32.)
+7. An answer names its server ("ollama") but never the model or build that answered, or where it ran. (P3.32.)
+8. The ensemble counts the deterministic floor as a second server, so one model can write a "consensus" of
+   itself. (P3.30.)
+9. The plan still names an old fidelity instrument as the measure in three places. (P2.40.)
+10. Main's own push run of the W740 merge failed (a test worker died) and nothing recorded it; a green pull
+    request run tests the tree before the merge, and only main's push run tests what was merged. (Recorded by
+    W736 beside the open row for worker deaths; the state check now reads main's push run.)
+11. P2.40's top row names one store read tolerantly as the base of a write; the history store beside it has the
+    same defect, and a reset records a corrupt store's prior value as the defaults. (Rides that row, P2.40.)
+12. The repository's own 14-layer specification file (`agentic_core/architecture/layer_registry.py`) is on a live import path, so it cannot be archived; it is
+    relabelled and its uncalled execution method retired. (P3.30.)
+
+13. A failure on the first deployment reaches no person: failures are recorded and shown on a page someone must
+    open. (P4.5, in the deploy pre-flight: an uptime check from outside the machine.)
+14. P3.31 is marked done and its text still says the page does not show the verification. (P3.30.)
+15. The candidate model list leaves out the smallest permissively licensed models, mislabels the installed default
+    as an alternate and does not flag a research-only licence. (An erratum to round RF, P3.32.)
+
+Fifty distinct gaps were proposed; thirty-four were refuted - most because a prepared round, an open row or a
+standing ruling already covers them, a few because the premise was wrong. Gap 10 and the duplicated layer-file
+finding are counted once; gap 15 needs no row.
+
+And from the metabolic audit of the same documents (rounds W741-W746, prepared and reviewed): the work budget's
+record said it gates work when its switch is on while nothing read it; tokens are never counted; there is one
+budget for the whole platform; carrying capacity (S18.6) had no owner; the Cockpit showed the simulated ratio as
+"Metabolic energy" with no label; a gateway docstring lists an order the code does not follow.
+
+### What follows
+
+No new plan item. The surviving gaps become register rows on the items that own their mechanism; the six
+metabolic rounds W741-W746 build what the prompts asked for in Workstation's own terms - tokens counted where a
+model answers, the record telling the truth, a budget per entity with carrying capacity derived from it, the
+installed model described from its runtime, host resources read once. The throttle stays inert behind its
+setting; the Owner flips it.
+
+### What is deliberately not proposed
+
+A second scheduler, registry, telemetry stack or control plane; a mitochondrion process per cell; a Transformation
+Office beside the BTO; the OGE/HAIRMS or Growing Tip vocabulary; any quantum, photonic or other accelerator
+dependency, and any claim of one from a name; weight merging; a numeric route score; Stripe, subscriptions or
+any real-money rail; a "sovereign wealth fund" as real finance; the vOmega deployment script; a score of any
+person, including any "founder alignment" figure.
+
+### For the Owner
+
+- **The final audit has no owner.** Recommended: charter it as its own item (instrument built and guarded in its
+  own round, calibrated first, run after Phase 5 and P4.1, uncapped and census-partitioned, in both the floor and
+  the local-model configuration). Until ruled, a register row on OWNER holds it.
