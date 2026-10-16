@@ -321,7 +321,9 @@ async def _staged_query(prompt: str, agent: str, label: str, said: str | None = 
     if not out.strip() or out.lstrip().startswith(_GATEWAY_FAILURES):
         why = out.strip() or "the gateway returned nothing"
         return f"[{label} did not run — {why}]", {**_no_reply_evidence(), "served_by": None, "is_external": False, "failed": True}
-    return out, {**_reply_evidence(), "served_by": meta.get("served_by") or "native",
+    #  W734 - a stage the floor REFUSED (a request for a religious ruling) is the platform's rule answering:
+    #  reply_evidence reads the server and states no level for it, rather than the reply level
+    return out, {**_reply_evidence(meta.get("served_by")), "served_by": meta.get("served_by") or "native",
                  "is_external": bool(meta.get("is_external")), "failed": False}
 
 
