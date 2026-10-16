@@ -745,7 +745,7 @@ async def ai_valuation(req: ValuationRequest, user: dict | None = Depends(get_cu
     refuses when only the deterministic floor would serve (a template cannot value anything),
     and carries served_by/is_external so the UI renders the provenance badge."""
     prompt = (
-        f"You are a startup valuation expert. Provide a market valuation assessment.\n\n"
+        f"Draft a market valuation assessment, stating every assumption.\n\n"
         f"Product/Service: {req.title}\n"
         f"Description: {req.description}\n"
         f"Domain: {req.domain}\n"

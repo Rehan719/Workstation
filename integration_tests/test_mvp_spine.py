@@ -66333,3 +66333,65 @@ def test_w735_an_entitys_founder_text_is_screened_when_saved_and_its_record_says
         assert _expr in _src and "domainLabel" in _src.split("export")[0], _page
     _cock = (_root / "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8")
     assert 'data-testid="cockpit-established-through"' in _cock and "established_through_basis" in _cock
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  CLUSTER N (Owner ruling 2026-10-12: "NO PROMPT IN ANY DOMAIN CLAIMS A PROFESSIONAL'S ROLE"). A census over
+#  every string VALUE in agentic_core (not comments, not docstrings): a role claim that carries a professional's
+#  credential fails, unless it names one of the platform's OWN seats - which the Owner kept ("develop AI agent
+#  roles as before"). And a prompt is read AS SENT on two doors.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_no_prompt_claims_a_professionals_role(client, monkeypatch):
+    import ast
+    import pathlib
+    import re
+    _root = pathlib.Path(__file__).resolve().parents[1] / "agentic_core"
+    _claim = re.compile(r"\bYou are (?:a|an|the)\b[^.\n]{0,90}", re.I)
+    _credential = re.compile(
+        r"(?i)\b(expert|senior|principal|specialist|consultant|lead|scientist|engineer|librarian|editor|writer|"
+        r"reviewer|analyst|architect|head of|officer|master|auditor|coach|counsel|scholar|strategist|designer|"
+        r"manager|innovator|technologist|practitioner|world-class|professor|doctor|clinician|lawyer|solicitor|"
+        r"accountant|economist|teacher|tutor|examiner)\b")
+    #  the platform's own seats: named FOR this platform, never a human credential
+    _seat = re.compile(r"(?i)of Workstation IDBO|\bIDBO Solution Architect\b|Centre of Excellence|\bHead of the\b|"
+                       r"\bAI Chief Technology Officer\b|\bAI advisor\b|Reactor's Studio analyst|advisory avatar")
+    _found, _seats, _files = [], 0, 0
+    for _p in sorted(_root.rglob("*.py")):
+        if "_archive" in _p.parts or _p.name.startswith("test"):
+            continue
+        _tree = ast.parse(_p.read_text(encoding="utf-8"))
+        _files += 1
+        _docs = {id(n.body[0].value) for n in ast.walk(_tree)
+                 if isinstance(n, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and n.body
+                 and isinstance(n.body[0], ast.Expr) and isinstance(getattr(n.body[0], "value", None), ast.Constant)}
+        _retired = {id(v) for n in ast.walk(_tree) if isinstance(n, ast.AnnAssign) and getattr(n.target, "id", "") == "_RETIRED_REALM_SYSTEMS"
+                    for v in ast.walk(n.value)}
+        for _n in ast.walk(_tree):
+            if isinstance(_n, ast.Constant) and isinstance(_n.value, str) and id(_n) not in _docs and id(_n) not in _retired:
+                for _m in _claim.finditer(_n.value):
+                    if _credential.search(_m.group(0)):
+                        if _seat.search(_m.group(0)):
+                            _seats += 1
+                        else:
+                            _found.append(f"{_p.relative_to(_root.parent).as_posix()}:{_n.lineno} {_m.group(0)[:70]}")
+    assert _files > 300, _files
+    assert _found == [], ("a prompt claims a professional's role", _found)
+    assert _seats >= 5, ("the census no longer sees the platform's own seats, so it may be reading nothing", _seats)
+    #  the retired realm table is read by nothing - if it is read again, it must pass the census first
+    _readers = [str(q) for q in _root.rglob("*.py") if "_RETIRED_REALM_SYSTEMS" in q.read_text(encoding="utf-8")
+                and q.name != "ceo_generate.py"]
+    assert _readers == [], _readers
+
+    #  AS SENT: the management-systems generator and a project's realm frame
+    import agentic_core.api.management_systems as _ms
+    _sent = []
+
+    async def _compose(prompt, agent, **kw):
+        _sent.append(prompt)
+        return "## 1. Policy\nn captured", {"served_by": "n-capture"}
+    monkeypatch.setattr(_ms, "_compose", _compose)
+    assert client.post("/api/v1/mgmt/qms/generate", json={"organisation_name": "N Org", "domain": "general"}).status_code == 200
+    assert _sent and not _claim.search(_sent[0]), _sent[0][:120]
+    from agentic_core.projects.api import REALM_PROMPTS
+    assert not [k for k, v in REALM_PROMPTS.items() if _claim.search(v)], REALM_PROMPTS
+    assert "religious ruling" in REALM_PROMPTS["religion"] and "scripture" in REALM_PROMPTS["religion"]

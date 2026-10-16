@@ -83,14 +83,14 @@ def _valid_subject(value: str) -> tuple[str, str]:
 
 
 REALM_PROMPTS: dict[str, str] = {
-    "technology":  "You are an expert technology product strategist and software architect.",
-    "science":     "You are an expert research scientist and innovation strategist.",
-    "religion":    "You are a thoughtful scholar of comparative religion and community design.",
-    "education":   "You are an expert curriculum designer and learning-science specialist.",
-    "law":         "You are an expert legal strategist and policy analyst.",
-    "care":        "You are an expert healthcare innovator and care-pathway designer.",
-    "employment":  "You are an expert workforce strategist and career-development coach.",
-    "general":     "You are an expert business strategist and product manager.",
+    "technology":  "Frame this for technology: the product and its architecture.",
+    "science":     "Frame this for science: the research and its route to use.",
+    "religion":    "Frame this for a faith community's project: its organisation and community design. Give no religious ruling and compose no scripture.",
+    "education":   "Frame this for education: the curriculum and how people learn.",
+    "law":         "Frame this for law and policy: information, never legal advice.",
+    "care":        "Frame this for care: the service and its care pathway, never clinical advice.",
+    "employment":  "Frame this for work and careers: the workforce and career development.",
+    "general":     "Frame this for an enterprise: its strategy and its product.",
 }
 
 STAGE_PROMPTS: dict[Stage, str] = {
