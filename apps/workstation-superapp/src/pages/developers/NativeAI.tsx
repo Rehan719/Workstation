@@ -784,6 +784,14 @@ export const NativeAI: React.FC = () => {
                       so it never lowers the cap{homeo.organism.conserving_posture_basis ? ' — ' : ''}
                       {homeo.organism.conserving_posture_basis}</span>}
               </p>
+              {/* W742 — the work budget (Owner ruling S18.1), the energy figure that CAN run down, printed from
+                  the server's own sentence: what it has recorded, and whether it gates or is holding admission. */}
+              {homeo.work_budget?.basis && (
+                <p className="text-[10px] text-slate-500 mt-2" data-testid="homeo-work-budget"
+                   title={homeo.work_budget.spend_basis ?? ''}>
+                  Work budget{homeo.work_budget.holds ? ' — holding admission at 1' : ''}: {homeo.work_budget.basis}
+                </p>
+              )}
               <div className="flex flex-wrap gap-2 mt-3">
                 <span className="text-[9px] font-bold uppercase px-2 py-1 rounded bg-violet-500/10 text-violet-300">max parallel: {homeo.max_parallel}</span>
                 <span className="text-[9px] font-bold uppercase px-2 py-1 rounded bg-slate-900 text-slate-400">mode: {homeo.organism.mode}</span>

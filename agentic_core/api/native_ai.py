@@ -138,9 +138,11 @@ async def native_status():
 
 @router.get("/homeostasis")
 async def native_homeostasis():
-    """§8→§6: the live biomimetic homeostatic posture governing the native AI fabric — how the living
-    organism's state (immune · circadian · metabolic ATP · composite health) currently modulates how much
-    cognitive work the swarm/tree will admit. Real organism state; cognition also feeds ATP back (closed loop)."""
+    """§8→§6: the homeostatic posture governing the native AI fabric — how much cognitive work the swarm/tree
+    will admit now. The immune, self-healing and circadian terms are read from live state; the metabolic (ATP)
+    term is SIMULATED (organism.atp_basis and organism.atp_can_fall say what it is); behind
+    WORKSTATION_WORK_BUDGET the work budget can hold admission at 1 (`work_budget`). A projection: reading this
+    does not advance the ATP simulator."""
     from agentic_core.ai.native.homeostasis import homeostasis
     return homeostasis.snapshot()
 

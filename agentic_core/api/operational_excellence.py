@@ -84,11 +84,16 @@ def record_outcome(kind: str, resource: str, *, served_by: str = "native",
     # spent, and this is the ONE place every run path already reports its duration. Feeding it here
     # makes the budget measure real work; without a producer it would be a declared capability nothing
     # reaches. Best-effort: accounting never breaks the work it accounts for.
+    #  W742 (S18.1) - ONLY THE PLATFORM'S OWN RUNS ARE SPENT. A duration a caller reports over /record is a claim,
+    #  not work this platform did (W672 stamps that row reported_by="caller"), and with the S18.1 gate built a
+    #  claim large enough to exhaust the budget would serialise the native workflow tree and the org cascade
+    #  once the switch is on.
     try:
-        from agentic_core.molecular import work_budget as _wb
-        #  W741 (S18.1) - `tokens` is what the serving model reported for THIS run, in the same spend as
-        #  its seconds, so a counted run is one call and not two. None means nothing counted.
-        _wb.spend(seconds=max(0, int(duration_ms)) / 1000.0, tokens=tokens)
+        if reported_by != "caller":
+            from agentic_core.molecular import work_budget as _wb
+            #  W741 (S18.1) - `tokens` is what the serving model reported for THIS run, in the same spend as
+            #  its seconds, so a counted run is one call and not two. None means nothing counted.
+            _wb.spend(seconds=max(0, int(duration_ms)) / 1000.0, tokens=tokens)
     except Exception:                                    # noqa: BLE001
         pass
     _produced = bool(success)

@@ -439,7 +439,7 @@ async def cascade_orchestration(req: CascadeRequest,
     # the homeostatic posture is BEHAVIORAL, not advisory: under granted headroom the C-Suite
     # officer+CoE pairs run CONCURRENTLY (bounded by the granted parallelism); under a protective
     # posture (granted 1) the run stays fully sequential — the organism's state genuinely shapes
-    # how the organisation works. Best-effort/fail-open.
+    # how the organisation works. Fail-closed (W742): a controller that cannot answer grants 1, as below.
     _DEFAULT_CSUITE = ["CSO", "CFO", "CTO", "COO", "CLO"]
     _sel_probe = [r for r in (req.csuite_roles or _DEFAULT_CSUITE) if r in _AGENTS and r != "CEO"] or _DEFAULT_CSUITE
     _honest_demand = 3 + 2 * len(_sel_probe[:9]) + len((req.coe_specialisms or [])[:3]) + 3 + 6

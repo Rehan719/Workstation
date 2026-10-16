@@ -135,8 +135,10 @@ def oxygen(vsb_id: Optional[str] = None) -> Dict[str, Any]:
         return _unassessable("agentic_core/organism/heartbeat.py::OrganismHeartbeat.status",
                              "the heartbeat reported no beat count")
     #  A STOPPED HEARTBEAT IS A REAL READING OF ZERO, and that is said rather than left to look like an
-    #  absence: the beat is OFF by default on this platform, so 0 beats is the normal honest answer and
-    #  must not be confused with "could not be measured".
+    #  absence. The served app starts the beat at boot (app_mvp.py's startup hook calls heartbeat.start(),
+    #  with no switch) and only its AI-autonomy levers default to off, so on a running server the count
+    #  climbs from the first interval; 0 is the honest answer for a stopped beat or for a process that never
+    #  ran the startup hook, and must not be confused with "could not be measured".
     return _assessed(beats, "agentic_core/organism/heartbeat.py::OrganismHeartbeat.status",
                      f"beats completed by the organism heartbeat (running={st.get('running')}; a "
                      f"stopped beat genuinely measures 0, which is not the same as unmeasured)",

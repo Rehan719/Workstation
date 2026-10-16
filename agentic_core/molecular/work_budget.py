@@ -24,9 +24,14 @@ WHY IT CAN DEPLETE, which the thing it replaces could not
   whole life of the process, and the UI already told viewers it never limits a run. A budget that cannot run down
   is not a budget. This one is a fraction of a stated capacity and reaches 1.0 when the capacity is spent.
 
-IT SHIPS INERT. `enabled()` is False unless `WORKSTATION_WORK_BUDGET=true`. Off, nothing reads differently and
-no throttle becomes reachable — the ruling requires that, because making `atp < 0.3` reachable switches on
+IT SHIPS INERT. `enabled()` is False unless `WORKSTATION_WORK_BUDGET=true`. Off, no admission changes and
+no throttle is reachable — the ruling requires that, because making `atp < 0.3` reachable switches on
 behaviour that has never once fired and would cap all cognition to serial.
+ON (W742), `gate()` is read by one consumer, which registers itself when it is imported: the native homeostasis
+controller's admission. While the gate holds (the window's capacity is spent, or the store cannot be read
+whole), the native workflow tree and the org cascade run their nodes one at a time; single model calls,
+deliverables and every other AI door are not held, and no run is refused or deferred. `gates_anything` is
+computed from the switch AND the readers loaded.
 """
 from __future__ import annotations
 
@@ -46,6 +51,16 @@ _ENV = "WORKSTATION_WORK_BUDGET"
 def enabled() -> bool:
     """The ruling requires this ships inert. Off, the budget records and reports but gates nothing."""
     return os.getenv(_ENV, "false").strip().lower() == "true"
+
+
+#  W742 (S18.1) - WHO READS THE GATE, registered by each reader when it loads. `gates_anything` is computed from
+#  this and the switch rather than typed, so a process that never loads a reader reports that nothing gates there.
+_CONSUMERS: Dict[str, str] = {}
+
+
+def register_consumer(name: str, effect: str) -> None:
+    """Called once, at import, by code that reads gate() and acts on `holds`."""
+    _CONSUMERS[str(name)] = str(effect)
 
 
 def _store():
@@ -134,10 +149,61 @@ def state() -> Dict[str, Any]:
         "capacity_basis": (f"{CAPACITY_SECONDS:.0f} seconds per {WINDOW_SECONDS / 3600:.0f}-hour window is a "
                            "STATED ASSUMPTION, not a measurement — nothing here has yet measured what this "
                            "platform's sustainable rate is"),
-        "gates_anything": enabled(),
+        #  W742 (S18.1) - true only with the switch on AND a reader of the gate loaded in this process
+        "gates_anything": enabled() and bool(_CONSUMERS),
+        "consumers": dict(_CONSUMERS),
+        "holding_reason": _hold_reason(fraction, why),
+        "gate_basis": _gate_basis(fraction, why),
+        #  W742 - what the figure is a sum OF, said where the gate reads it
+        "spend_basis": ("the sum of every run duration the platform recorded; a run recorded inside another "
+                        "(a model attempt inside the AI call or run that made it) can be counted at each level, "
+                        "so this can exceed the wall-clock time actually worked. Durations a caller reported "
+                        "through /api/v1/operations/record are not counted"),
         "basis": (f"{spent:.1f}s of a stated {CAPACITY_SECONDS:.0f}s capacity is recorded spent this window, "
-                  f"from {int(rec.get('calls') or 0)} run(s) whose duration was measured"
-                  + ("" if enabled() else " — and it GATES NOTHING: the budget ships inert until "
-                                          f"{_ENV}=true, per the Owner's ruling")),
+                  f"from {int(rec.get('calls') or 0)} run(s) whose duration was measured — and "
+                  + _gate_basis(fraction, why)),
         "store_incomplete": why,
     }
+
+
+def _hold_reason(fraction: float, why: Optional[str]) -> Optional[str]:
+    """Why the S18.1 throttle holds right now, or None. Off, it never holds."""
+    if not enabled():
+        return None
+    if why:
+        return (f"the budget store could not be read whole ({why}); an unreadable budget is not an "
+                "available one, so the throttle holds")
+    if fraction >= 1.0:
+        return (f"the stated capacity of {CAPACITY_SECONDS:.0f}s for this {WINDOW_SECONDS / 3600:.0f}-hour "
+                "window is recorded spent")
+    return None
+
+
+def _gate_basis(fraction: float, why: Optional[str]) -> str:
+    """What the gate does in THIS process, computed from the switch, the registered readers and the figure."""
+    if not enabled():
+        return f"it GATES NOTHING: the budget ships inert until {_ENV}=true, per the Owner's ruling"
+    if not _CONSUMERS:
+        return f"{_ENV} is on, but no reader of the gate is loaded in this process, so it gates nothing here"
+    readers = "; ".join(f"{k} ({v})" for k, v in sorted(_CONSUMERS.items()))
+    held = _hold_reason(fraction, why)
+    return (f"it GATES: {readers}. "
+            + (f"It is HOLDING now: {held}" if held else "It is not holding: the capacity is not yet spent"))
+
+
+def gate() -> Dict[str, Any]:
+    """THE S18.1 THROTTLE (W742), read where cognition is admitted. `holds` is True only with the switch on and
+    the window's capacity spent, or the store unreadable. Never raises into a caller: if the budget cannot be
+    read at all while the switch is on, it holds and says why."""
+    try:
+        st = state()
+    except Exception as exc:                           # noqa: BLE001 - said, never substituted
+        on = enabled()
+        why = f"the work budget could not be read ({exc.__class__.__name__}: {exc})"
+        return {"enabled": on, "holds": on,
+                "reason": (why + "; an unreadable budget is not an available one, so the throttle holds")
+                if on else None,
+                "basis": why}
+    return {"enabled": st["enabled"], "holds": st["holding_reason"] is not None,
+            "reason": st["holding_reason"], "fraction_spent": st["fraction_spent"],
+            "basis": st["basis"], "spend_basis": st["spend_basis"]}

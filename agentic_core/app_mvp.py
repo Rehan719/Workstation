@@ -653,15 +653,20 @@ async def biometrics_status():
         atp_basis = ("simulated — an ATP production/consumption model on a load derived from CPU. "
                      + _dep["basis"] + " It is not a live vital.")
         # OWNER RULING 2026-09-30 (18.1) - the figure that CAN run down, named beside the one that
-        # cannot, on the channel that already reaches a reader. Without this the budget would be an
-        # API-only key and the surface would still imply the ratio is the energy figure.
+        # cannot. W742 (re-measured): NO PAGE renders this route's metabolic.atp_basis - Introspection reads
+        # atp_ratio only and the vitals hook never reads `metabolic` - so this clause is API-only. The budget
+        # reaches a page through the native homeostasis answer's `work_budget` (work_budget.gate()), which
+        # NativeAI prints on the homeostasis card.
         _wb = _dep.get("the_figure_that_can_deplete") or {}
         if _wb.get("unit"):
             atp_basis += (f" THE REAL BUDGET, measured in {_wb['unit']}: "
                           f"{_wb.get('seconds_spent')}s of {_wb.get('capacity_seconds')}s spent "
                           f"({round((_wb.get('fraction_spent') or 0) * 100)}%) over "
                           f"{_wb.get('calls_recorded')} recorded run(s)"
-                          + ("" if _wb.get("gates_anything") else " — and it gates nothing yet, by ruling"))
+                          #  W742 (S18.1) - the budget's own computed sentence: what it gates in this process
+                          #  and whether it is holding, where this clause only knew the switch
+                          + (f" — and {_wb['gate_basis']}" if _wb.get("gate_basis")
+                             else " — and it gates nothing yet, by ruling"))
         elif _wb.get("unavailable"):
             atp_basis += f" The work budget could not be read: {_wb['unavailable']}."
     except Exception:

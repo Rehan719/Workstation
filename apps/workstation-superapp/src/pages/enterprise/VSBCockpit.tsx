@@ -1373,7 +1373,7 @@ export const VSBCockpit: React.FC = () => {
                 <Card className="p-6 border-highlight/30">
                   <h4 className="text-[10px] font-black uppercase tracking-widest text-highlight mb-3">Latest metabolic cycle</h4>
                   <div className="grid grid-cols-2 @[560px]:grid-cols-3 gap-3 text-[11px]">
-                    {[['Intake revenue', lastCycle.intake_revenue], ['Operating costs', lastCycle.operating_costs], ['Reserve', lastCycle.homeostasis_reserves], ['Distributable profit', lastCycle.distributable_profit], ['Metabolic energy', lastCycle.metabolic_energy]].map(([label, val]) => val != null && (
+                    {[['Intake revenue', lastCycle.intake_revenue], ['Operating costs', lastCycle.operating_costs], ['Reserve', lastCycle.homeostasis_reserves], ['Distributable profit', lastCycle.distributable_profit], [lastCycle.metabolic_energy_basis ? 'Metabolic energy' : 'Metabolic energy (simulated, not measured)', lastCycle.metabolic_energy]].map(([label, val]) => val != null && (
                       <div key={label as string}><span className="text-slate-500">{label}: </span><span className="text-white font-bold">{typeof val === 'number' ? Number(val).toLocaleString() : String(val)}</span></div>
                     ))}
                     {/* W503 (FU-169, S1.20 C10) — `giving_back` is charity.allocate's dict

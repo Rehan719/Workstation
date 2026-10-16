@@ -292,8 +292,9 @@ _REGISTRY: List[Dict[str, Any]] = [
        "/api/v1/organism/self-healing/status", ["governance", "evolution", "delivery"], biomimetic=True, methods=("GET",),
        needs=[_need_module("agentic_core.organism.self_healing", "self_healer", "the handler reads its status")]),
     _R("metabolic", "Metabolic / ATP", "organism_system", "biomimetic",
-       "The ATP energy model + composite-health mode (FULL_POWER/NOMINAL/DEGRADED/EMERGENCY) — the "
-       "organism's metabolism. When composed, reads the live ATP + operating mode.",
+       "The SIMULATED ATP energy model (a simulator, not a measurement of this platform's energy) + the "
+       "composite-health mode (FULL_POWER/NOMINAL/DEGRADED/EMERGENCY) — the organism's metabolism. When "
+       "composed, reads the simulated ATP figure + the operating mode.",
        ["atp energy model", "composite health", "operating mode"],
        {"metabolic_load": "float 0-1"}, "/api/v1/organism/status", ["governance", "evolution"], biomimetic=True, methods=("GET",),
        needs=[_need_module("agentic_core.organism.biobus", "biobus", "the handler reads the organism context from it")]),

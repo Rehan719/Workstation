@@ -84,11 +84,13 @@ def atp_depletion_state() -> dict:
         # would break every reader who takes it to mean exactly that. What this adds is the honest
         # instrument and its unit, so no reader has to infer that a ratio between 0.5 and 15.0 measures
         # anything.
-        # WHICH SURFACE SHOWS THIS (the pre-flight asks, and the answer is indirect but real):
-        # app_mvp.py appends the budget - its unit, seconds spent, capacity and whether it gates
-        # anything - onto `atp_basis`, which already reaches the viewer (ResourceFabric.tsx renders the
-        # organism tooltip that carries it). No page reads THIS key by name, and that is deliberate:
-        # adding a second channel for one claim is how two surfaces come to disagree.
+        # WHICH SURFACE SHOWS THIS (W742 - re-measured; the earlier answer named a tooltip that never
+        # carried it): app_mvp.py appends the budget onto /api/v1/biometrics/status metabolic.atp_basis,
+        # which NO page renders (Introspection reads atp_ratio only, and ResourceFabric's tooltip reads
+        # homeostasis.project's organism block). The budget reaches a page through the native homeostasis
+        # controller instead: its answer carries work_budget.gate(), and NativeAI.tsx prints that basis on
+        # the homeostasis card. No page reads THIS key by name, and that is deliberate: adding a second
+        # channel for one claim is how two surfaces come to disagree.
         "the_figure_that_can_deplete": _work_budget_state(),
         "ratio_is_a_label_not_a_measurement": (
             "the ATP ratio names no unit and cannot fall; the work budget beside it is measured in "
@@ -254,9 +256,15 @@ class BiomimeticBus:
             return round(max(0.0, min(1.0, atp.ratio / 15.0)), 3)
         return 0.8
 
+    def _read_atp(self) -> float:
+        """W742 — the ATP ratio WITHOUT advancing the simulator or its throttle stamp, for a caller that
+        declares itself a projection. Same normalisation and fallback as `_update_atp`."""
+        atp = _get_atp()
+        return round(max(0.0, min(1.0, atp.ratio / 15.0)), 3) if atp else 0.8
+
     # ── Organism Context ──────────────────────────────────────────────────────
 
-    def organism_context(self, metabolic_load: float = 0.3) -> dict[str, Any]:
+    def organism_context(self, metabolic_load: float = 0.3, *, advance_atp: bool = True) -> dict[str, Any]:
         """
         Full organism state for AI decision-making.
 
@@ -268,13 +276,17 @@ class BiomimeticBus:
         - Genome-guided trait axes (if available)
 
         Used by: VSB spawn CEO prompt, swarm cascade, intelligence engines.
+
+        `advance_atp=False` (W742) reads the ATP ratio without advancing the simulator or its throttle
+        stamp: the mode a homeostasis projection uses, so that read changes no ATP state. Every other caller
+        advances it (the read is not free, W694).
         """
         try:
             imm = immune.status()
             ns = nervous.status()
             sh = self_healer.status()
             cycle = _circadian_cycle()
-            atp_ratio = self._update_atp(metabolic_load)
+            atp_ratio = self._update_atp(metabolic_load) if advance_atp else self._read_atp()
             reconfig = _get_reconfig()
 
             immune_health = imm["health"]
