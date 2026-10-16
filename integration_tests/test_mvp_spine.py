@@ -20286,7 +20286,7 @@ def test_w490_floor_served_output_says_so_wherever_it_goes(client):
     assert "FLOOR_STAGE_NOTE" in ci and ci.count('data-testid="solve-floor-note-') == 3
 
     # ── the call count is counted, not asserted ─────────────────────────────────────────────────
-    assert sb["calls_attempted"] == 3, sb_
+    assert sb["calls_attempted"] == 3, sb
     assert sb["calls_made"] == 3 - sb["provenance"]["failed_calls"], sb
     # a vacuous blind: with nothing failing, a counted 3 and a constant 3 are the same number. One
     # call is made to fail so the count has to be real.
@@ -66673,3 +66673,52 @@ def test_w739_the_scholar_sees_and_decides_the_childrens_tools_as_one_pack(clien
     _body = " ".join(_plan.split("\n P5.21 [chartered W739", 1)[1].split("\n COMPLETE when P5.1", 1)[0].split())
     for _part in ("MEASURED FIRST:", "CLAUSES:", "BOUNDARY:", "ACCEPT:", "nothing reaches a child before (3)"):
         assert _part in _body, _part
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W747 - the Owner supplied twenty-seven external prompts (2026-10-14..16) and asked that each be reviewed equally.
+#  Their review is recorded in the assessment's section 33, and every gap that survived two refuters is a register
+#  row on the item that owns its mechanism - no new plan item.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w747_the_external_prompts_review_is_recorded_and_its_gaps_are_registered():
+    import json
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    assess = (root / "docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md").read_text(encoding="utf-8")
+    assert "\n## 33. Addendum (W747)" in assess and assess.index("\n## 32.") < assess.index("\n## 33."), "no section 33"
+    section = assess.split("\n## 33. Addendum (W747)", 1)[1].split("\n## 34.", 1)[0]
+    #  every file the section names is in the tree
+    named = re.findall(r"`([A-Za-z0-9_./-]+\.(?:py|json|md))`", section)
+    assert len(named) >= 4 and all((root / n).exists() for n in named), [n for n in named if not (root / n).exists()]
+    for said in ("How they were read", "What they get wrong about this platform", "What they get right",
+                 "No new plan item", "What is deliberately not proposed", "For the Owner",
+                 "two refuters", "no score ever published"):
+        assert said in section, said
+    #  each gap that survived is an open row, with its slot, entered by this round
+    reg = {r["title"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    expected = [
+        ('OWNER DECISION: the uncapped, census-partitioned final audit has no item that builds or runs it', 'OWNER'),
+        ('HYPOTHESIS: a model is made the serving default after one check, that it is installed', 'P3.32'),
+        ("The Owner's ruled routing tie-break order is encoded nowhere, so the ruling cannot fail", 'P4.3'),
+        ('HYPOTHESIS: sign-in and signup have no limit on attempts', 'P4.1'),
+        ('The held-out evaluation set has three cases and measures no injection, refusal without a source, malformed output or unsupported claim', 'P3.32'),
+        ('A baseline of a served model records no runtime settings, so it cannot be reproduced from its record', 'P3.32'),
+        ('An answer names its server but never the model or build that answered, or where it ran', 'P3.32'),
+        ('HYPOTHESIS: the ensemble counts the deterministic floor as a second server, so one model can write a consensus of itself', 'P3.30'),
+        ('The plan still names the old fidelity instrument as the measure in three places', 'P2.40'),
+        ('A failure on the first deployment reaches no person: failures are recorded and shown only on a page someone must open', 'P4.5'),
+        ('A 14-layer specification file contradicts the seven-layer canon on a live import path, and its execution method has no caller and returns a constant', 'P3.30'),
+        ('P3.31 is marked done and its text still says the page shows the proposal and not yet the verification', 'P3.30'),
+        ("The history store beside the settings store is also read tolerantly as the base of a write, and a reset records a corrupt store's value as the defaults", 'P2.40'),
+    ]
+    for title, slot in expected:
+        r = reg.get(title)
+        assert r is not None, ("a surviving gap is not in the register", title)
+        assert r["source"] == "W747" and r["slot"] == slot, (title, r.get("source"), r.get("slot"))
+    owner = [reg[t] for t, s in expected if s == "OWNER"]
+    assert len(owner) == 1 and owner[0]["owner_gated"] is True and owner[0]["title"].startswith("OWNER DECISION:"), owner
+    #  a row read from code says so in its title until it is driven
+    for title, _slot in expected:
+        if "Read from code" in reg[title]["why"]:
+            assert title.startswith("HYPOTHESIS:"), title
