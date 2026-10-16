@@ -12,8 +12,9 @@ logger = logging.getLogger(__name__)
 #  trusting it:
 #    · knowledge/Law/EmploymentTribunal/ontology/uk_employment_law_v9.json holds 494 REAL UK
 #      employment-law concepts and 4 rules, and NO relations key at all.
-#    · unified_assimilated_graph.json holds 293 "nodes" that are FILE PATHS over the Owner's own
-#      documents, each with a hash, and NO edges key — the simulated-assimilation era.
+#    · unified_assimilated_graph.json held 293 "nodes" that were FILE PATHS over the Owner's own
+#      documents, each with a hash, and NO edges key — the simulated-assimilation era. (W731: moved out
+#      of this public repository to the Owner's private store.)
 #  So the engine served graphs and no graph exists. Wiring it would have meant inventing relations.
 #
 #  WHAT IS KEPT. The 494-concept vocabulary and its rules remain on disk as a LAW DOMAIN RESOURCE for

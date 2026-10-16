@@ -84,3 +84,29 @@ models/
 # finished. Useful for one investigation, never part of the tree. A blind that removes the
 # watchdog's opt-in guard writes one into the repo root, so this is residue protection too.
 stall-*.txt
+
+# W731 - the Owner's own legal and career papers are kept in his private store, never in this public repository
+inputs/Law/
+inputs/Employment/
+knowledge/Employment/
+knowledge/Science/RM_CV_Science_Versions/
+knowledge/Law/EmploymentTribunal/evidence/
+outputs/Law/EmploymentTribunal/
+products/Law/VSB-SIG-LAW-OMNIOCTO-19.0/
+products/Employment/VSB-SIG-EMP-PENTA-3.0/
+products/Science/VSB-SIG-SCI-OMNIA-18.0/
+_archive/outputs/Law/
+_archive/outputs/Employment/
+_archive/outputs/Science/PatientSafety/
+_archive/outputs/interview_prep/
+_archive/scripts/Law/
+_archive/scripts/Employment/
+_archive/scripts/Science/PatientSafety/
+_archive/docs/Law/
+_archive/ingest/Employment/
+_archive/legacy-archive/Employment/
+_archive/legacy-archive/law-grand-operation*/
+_archive/agentic_core/domains/law/
+_archive/legacy-archive/Law/
+_archive/legacy-archive/Science/
+_archive/outputs/audit/sovereign_audit_log.jsonl
