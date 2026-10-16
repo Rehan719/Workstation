@@ -38,6 +38,8 @@ def main(argv) -> int:
           f"checked: {', '.join(report['checked'])}")
     if report["not_checked"]:
         print(f"NOT CHECKED: {', '.join(report['not_checked'])} - {report['not_checked_basis']}")
+    if "--staged" not in argv:
+        print(f"NOT SCANNED: {report['history_basis']}")
     if report["count"]:
         print(f"STOP: do not commit or push this. Follow {pe.RUNBOOK}.")
         return 1
