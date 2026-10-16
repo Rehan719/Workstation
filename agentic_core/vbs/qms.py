@@ -149,6 +149,33 @@ class QualityManagementSystem:
             return 0                      # a modern store that has recorded only what-ifs
         return int(st.get("defects_total", 0))      # genuinely pre-W316 store
 
+    def open_reported_defect(self, description: str, severity: str, organisation: str = "",
+                             vsb_id: str | None = None, owner_id: str | None = None) -> Dict[str, Any]:
+        """W733 (FU-986) - a nonconformance a PERSON reports opens a defect here, in the same durable loop a
+        failed gate opens one in, so it can be listed, corrected and re-verified. It is not a gate run: no
+        gate counter moves and the non-conformance rate is unchanged. It is counted apart (`reported_total`)
+        and marked `person_reported`, so nothing downstream mistakes it for a measured failure."""
+        st = self._load_state()
+        st["reported_total"] = int(st.get("reported_total", 0)) + 1
+        d = {
+            "id": f"DEF-{uuid.uuid4().hex[:8]}",
+            "label": "reported-nonconformance",
+            "owner_id": owner_id,
+            "delivery_ref": {"vsb_id": vsb_id} if vsb_id else None,
+            "meta": {"severity": severity, "organisation": str(organisation)[:200],
+                     "description": str(description)[:2000]},
+            "person_reported": True,
+            "what_if": False,
+            "status": "open",
+            "opened_at": _now(),
+            "correction": None,
+            "reverified": False,
+        }
+        st["defects"].append(d)
+        st["defects"] = st["defects"][-500:]
+        self._save_state()
+        return d
+
     # ── §10 (W307) — the defect → correction → re-verify loop (ISO 9001 §8.7 / §10.2) ──
     def correct_defect(self, defect_id: str, correction: str, actor: str = "owner") -> Optional[Dict[str, Any]]:
         """Record the correction taken for an OPEN defect. The defect is not closed here —
@@ -230,6 +257,10 @@ class QualityManagementSystem:
                     "counts_are_incomplete": True} if self._store_unreadable else {}),
                 # W489 — what the rate is OVER, and what it deliberately leaves out
                 "what_if_gates": int(st.get("what_if_gates", 0)),
+                #  W733 (FU-986) - defects a person reported: counted apart, never in the rate
+                "reported_total": int(st.get("reported_total", 0)),
+                "person_reported_open": sum(1 for d in st["defects"]
+                                            if d.get("person_reported") and d.get("status") == "open"),
                 "what_if_failures": int(st.get("what_if_failures", 0)),
                 "attested_reverifications": _att,
                 "attested_counted_since": _att_since,

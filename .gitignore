@@ -112,3 +112,9 @@ _archive/legacy-archive/Science/
 _archive/outputs/audit/sovereign_audit_log.jsonl
 # W732 - a type checker's cache is never tracked (one 43 MB copy was, and no screen could read it)
 .mypy_cache/
+
+
+# W740 - the Owner's child's school material is kept in his private store
+_archive/outputs/education/sats_2026/
+outputs/education/sats_2026/
+_archive/agentic_core/identity/sats_persona.py

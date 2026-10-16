@@ -10,7 +10,7 @@ def generate_ultimate_master_bundle():
     if os.path.exists(csuite): merger.append(csuite)
 
     # 2. Education Bundle
-    edu_bundle = "outputs/education/sats_2026/deliverable/Norbury_School_SATs_Prep_Pack_2026.pdf"
+    edu_bundle = "outputs/education/sats_2026/deliverable/School_SATs_Prep_Pack_2026.pdf"
     if os.path.exists(edu_bundle): merger.append(edu_bundle)
 
     # 3. CoE Validation

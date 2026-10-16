@@ -353,6 +353,25 @@ class ModelGateway:
                     "profile_applied": False,
                     "profile_state": "not_read", "profile_basis": "the request was refused before any profile was read",
                     "governance_checkpoint": _halt}
+        #  W734 (FU-932) - THE FAITH RULING SCREEN AT THE FLOOR. The four doors that screened a request for a
+        #  religious ruling were four of many: authorship, solve, BDP, design-dev and the Genesis journey asked a
+        #  model with no screen. It runs here, over the PERSON'S OWN WORDS only (an instruction a route wrote
+        #  cannot trigger it), and answers with the constitutional refusal's own shape. A request it does not
+        #  refuse was not found sound: it may refuse, never clear.
+        from agentic_core.religious_domain.composed_text import faith_ruling_refusal
+        _faith = faith_ruling_refusal(user_text, "request")
+        if _faith:
+            return {"output": f"[CONSTITUTIONAL REFUSAL] {_faith['message']}",
+                    "served_by": "constitutional_policy_gate", "is_external": False, "refused": True,
+                    "faith_refusal": _faith,
+                    **language_verdict(language, "constitutional_policy_gate", False),
+                    "recall_stored": False,
+                    "recall_not_stored_because": "the request was refused before any model ran, so there "
+                                                 "is no completion to recall",
+                    "profile_applied": False,
+                    "profile_state": "not_read", "profile_basis": "the request was refused before any profile was read",
+                    "governance_checkpoint": _record_halt(agent, {"allowed": False, "reason": _faith["message"],
+                                                                   "article": "A.9.5: no AI gives a religious ruling"})}
         # W332 — generation-class callers whose output SHIPS or PERSISTS must not carry cross-request
         # recall: recall was the leak vector. W489 made that the DEFAULT (see _RECALL_OFF above)
         # rather than a convention each caller had to remember, because two rounds of fixing callers
@@ -588,6 +607,16 @@ class ModelGateway:
             yield {"done": True, "served_by": "constitutional_policy_gate", "is_external": False,
                    "output": f"[CONSTITUTIONAL REFUSAL] {_pre.get('reason')}", "guardrail_passed": None,
                    "profile_applied": False, "governance_checkpoint": _record_halt(agent, _pre)}
+            return
+        #  W734 (FU-932) - the faith ruling screen on the STREAM path too (the second writer, W475)
+        from agentic_core.religious_domain.composed_text import faith_ruling_refusal
+        _faith = faith_ruling_refusal(user_text, "request")
+        if _faith:
+            yield {"done": True, "served_by": "constitutional_policy_gate", "is_external": False, "refused": True,
+                   "output": f"[CONSTITUTIONAL REFUSAL] {_faith['message']}", "guardrail_passed": None,
+                   "faith_refusal": _faith, "profile_applied": False,
+                   "governance_checkpoint": _record_halt(agent, {"allowed": False, "reason": _faith["message"],
+                                                                   "article": "A.9.5: no AI gives a religious ruling"})}
             return
         augmented = self._augment(prompt, owner_id=owner_id) if augment else prompt
         from agentic_core.ai.user_context import load_preamble

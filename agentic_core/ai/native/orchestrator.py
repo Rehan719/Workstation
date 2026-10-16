@@ -271,6 +271,13 @@ class NativeOrchestrator:
         #  W640 - `user_text` is the caller's statement of which words the PERSON wrote. Only the floor
         #  reads it (a served model is given the whole prompt and nothing is duplicated into it); without
         #  it the floor attributes nothing to the person.
+        #  W734 (FU-932) - the faith ruling screen, for the routes that call the orchestrator directly (the
+        #  console, products, the fabric, the C-Suite). The gateway screens before it reaches here.
+        from agentic_core.religious_domain.composed_text import faith_ruling_refusal
+        _faith = faith_ruling_refusal(user_text, "request")
+        if _faith:
+            return {"output": f"[CONSTITUTIONAL REFUSAL] {_faith['message']}", "served_by": "constitutional_policy_gate",
+                    "is_external": False, "resources_tried": [], "refused": True, "faith_refusal": _faith}
         # §6/§7 user design control over WHICH owned tier serves:
         #   "auto"   — in-house-first selection (local model → native floor → opt-in external)
         #   "native" — force the deterministic native FLOOR (fast · free · reproducible)

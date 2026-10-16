@@ -20,7 +20,7 @@ def verify_vinfinity_ultimate():
     # Full list of key deliverables in the bundle
     key_deliverables = [
         "C_Suite_Certification_vInfinity.pdf",
-        "Norbury_School_SATs_Prep_Pack_2026.pdf",
+        "School_SATs_Prep_Pack_2026.pdf",
         "CoE_Verification_Report_v19.1.pdf",
         "ET1_v19.1_updated.pdf",
         "Hillingdon_Legal_Aid_Clarity_Letter_v19.1.pdf",
