@@ -714,6 +714,7 @@ def privacy_exposure() -> Dict[str, Any]:
         _report = _pe.scan(_root, markers=_pe.load_markers(), allowed=_pe.load_allowed(_root))
     except RuntimeError as exc:
         return {"scanned": False, "findings": [], "count": None, "checked": [], "not_checked": list(_pe.KINDS),
+                "history_scanned": False,
                 "basis": (f"NOT CHECKED: {exc}. Nothing was scanned on this deployment, so this is not a finding "
                           "that the tree is clear"),
                 "runbook": _pe.RUNBOOK}
