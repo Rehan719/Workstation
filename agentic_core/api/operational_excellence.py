@@ -53,7 +53,8 @@ def record_outcome(kind: str, resource: str, *, served_by: str = "native",
                    ref: Optional[str] = None, vsb_id: Optional[str] = None,
                    run_id: Optional[str] = None,
                    served_by_all: Optional[List[str]] = None,
-                   reported_by: str = "platform") -> Dict[str, Any]:
+                   reported_by: str = "platform",
+                   tokens: Optional[int] = None) -> Dict[str, Any]:
     """Append one real run outcome. Reusable in-process (the run paths call this best-effort)
     and via the /record endpoint. Never raises into a caller — recording is non-critical.
 
@@ -85,7 +86,9 @@ def record_outcome(kind: str, resource: str, *, served_by: str = "native",
     # reaches. Best-effort: accounting never breaks the work it accounts for.
     try:
         from agentic_core.molecular import work_budget as _wb
-        _wb.spend(seconds=max(0, int(duration_ms)) / 1000.0)
+        #  W741 (S18.1) - `tokens` is what the serving model reported for THIS run, in the same spend as
+        #  its seconds, so a counted run is one call and not two. None means nothing counted.
+        _wb.spend(seconds=max(0, int(duration_ms)) / 1000.0, tokens=tokens)
     except Exception:                                    # noqa: BLE001
         pass
     _produced = bool(success)

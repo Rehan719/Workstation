@@ -327,6 +327,8 @@ class ModelGateway:
         fabric — see agentic_core/ai/native/.)"""
         self._sync_reconfig()
         await self._rate_limiter.acquire()
+        #  W741 (S18.1) - the token bases are the orchestrator's own sentences, imported rather than retyped
+        from agentic_core.ai.native.orchestrator import FLOOR_TOKENS_BASIS, REFUSED_TOKENS_BASIS
         # W505 (P2.6) — THE CONSTITUTIONAL PRE-GATE, on the seam every generation passes through. Before
         # this the gate had four callers and none of them was the AI gateway, so the claim that every
         # action is constitutionally gated held for the economy and not for a single completion.
@@ -352,7 +354,9 @@ class ModelGateway:
                                                  "is no completion to recall",
                     "profile_applied": False,
                     "profile_state": "not_read", "profile_basis": "the request was refused before any profile was read",
-                    "governance_checkpoint": _halt}
+                    "governance_checkpoint": _halt,
+                    #  W741 (S18.1) - shape-complete: a refusal ran no model, so nothing counted
+                    "model_tokens": None, "model_tokens_basis": REFUSED_TOKENS_BASIS}
         #  W734 (FU-932) - THE FAITH RULING SCREEN AT THE FLOOR. The four doors that screened a request for a
         #  religious ruling were four of many: authorship, solve, BDP, design-dev and the Genesis journey asked a
         #  model with no screen. It runs here, over the PERSON'S OWN WORDS only (an instruction a route wrote
@@ -371,7 +375,8 @@ class ModelGateway:
                     "profile_applied": False,
                     "profile_state": "not_read", "profile_basis": "the request was refused before any profile was read",
                     "governance_checkpoint": _record_halt(agent, {"allowed": False, "reason": _faith["message"],
-                                                                   "article": "A.9.5: no AI gives a religious ruling"})}
+                                                                   "article": "A.9.5: no AI gives a religious ruling"}),
+                    "model_tokens": None, "model_tokens_basis": REFUSED_TOKENS_BASIS}   # W741 (S18.1)
         # W332 — generation-class callers whose output SHIPS or PERSISTS must not carry cross-request
         # recall: recall was the leak vector. W489 made that the DEFAULT (see _RECALL_OFF above)
         # rather than a convention each caller had to remember, because two rounds of fixing callers
@@ -387,6 +392,10 @@ class ModelGateway:
         _preamble = _pstate["preamble"]
         augmented = _preamble + augmented
         served_by, is_external = "native", False
+        #  W741 (OWNER RULING S18.1) - the token count the serving model reported, carried to the reply. It
+        #  starts as the floor's answer because the except branch below IS the floor; the orchestrator's reply
+        #  replaces it with what counted, or why nothing did.
+        _mt, _mt_basis = None, FLOOR_TOKENS_BASIS
         try:
             from agentic_core.ai.native import orchestrator as native_orchestrator
             # §6 (W353) — pass the caller's timeout THROUGH: the old min(...,30) clamp made the
@@ -399,6 +408,9 @@ class ModelGateway:
             response = res.get("output", "")
             _arabic738 = res.get("arabic")
             served_by, is_external = res.get("served_by", "native"), res.get("is_external", False)
+            _mt = res.get("model_tokens")
+            _mt_basis = (res.get("model_tokens_basis")
+                         or "NOT COUNTED - the orchestrator's reply carried no token count; null, never 0")
         except Exception:
             try:
                 from agentic_core.ai.native import native_engine
@@ -472,7 +484,9 @@ class ModelGateway:
                 # decided before and after, and whether the constitutional ledger actually recorded it.
                 "governance_checkpoint": _chk,
                 #  W738 - what the Arabic rule did to this answer (withheld passages, or kept and labelled)
-                "arabic": _arabic738}
+                "arabic": _arabic738,
+                #  W741 (S18.1) - what the serving model reported it spent, or null and why nothing counted
+                "model_tokens": _mt, "model_tokens_basis": _mt_basis}
 
     async def _call(self, prompt: str, agent: str = "gateway") -> tuple[str, str]:
         """Try providers in priority order, return (response_text, provider_name)."""
@@ -583,6 +597,11 @@ class ModelGateway:
                             if token:
                                 yield token
                             if obj.get("done"):
+                                #  W741 (S18.1) - the final object carries the server's token count. It is
+                                #  yielded as a ZERO-LENGTH CountedText that the stream reads and does not
+                                #  stream: a count is not text
+                                from agentic_core.ai.native.orchestrator import ollama_counted
+                                yield ollama_counted("", obj)
                                 break
                         except Exception:
                             continue
@@ -622,6 +641,7 @@ class ModelGateway:
         back in by name) + tenant-stamped
         writes, matching query_meta."""
         await self._rate_limiter.acquire()
+        from agentic_core.ai.native.orchestrator import FLOOR_TOKENS_BASIS, REFUSED_TOKENS_BASIS   # W741 (S18.1)
         # W619 (FU-496, M2 v8 R4.3) — THE STREAM PATH IS GATED AS query_meta IS. stream_meta applied the response
         # guardrail and neither the constitutional pre-gate nor the post-checkpoint, so the CEO chat, the projects
         # stream, the business plan and the synthesis stream produced completions with no governance record.
@@ -629,7 +649,8 @@ class ModelGateway:
         if not _pre.get("allowed", True):
             yield {"done": True, "served_by": "constitutional_policy_gate", "is_external": False,
                    "output": f"[CONSTITUTIONAL REFUSAL] {_pre.get('reason')}", "guardrail_passed": None,
-                   "profile_applied": False, "governance_checkpoint": _record_halt(agent, _pre)}
+                   "profile_applied": False, "governance_checkpoint": _record_halt(agent, _pre),
+                   "model_tokens": None, "model_tokens_basis": REFUSED_TOKENS_BASIS}   # W741 (S18.1)
             return
         #  W734 (FU-932) - the faith ruling screen on the STREAM path too (the second writer, W475)
         from agentic_core.religious_domain.composed_text import faith_ruling_refusal
@@ -639,7 +660,8 @@ class ModelGateway:
                    "output": f"[CONSTITUTIONAL REFUSAL] {_faith['message']}", "guardrail_passed": None,
                    "faith_refusal": _faith, "profile_applied": False,
                    "governance_checkpoint": _record_halt(agent, {"allowed": False, "reason": _faith["message"],
-                                                                   "article": "A.9.5: no AI gives a religious ruling"})}
+                                                                   "article": "A.9.5: no AI gives a religious ruling"}),
+                   "model_tokens": None, "model_tokens_basis": REFUSED_TOKENS_BASIS}   # W741 (S18.1)
             return
         augmented = self._augment(prompt, owner_id=owner_id) if augment else prompt
         from agentic_core.religious_domain.composed_text import apply_arabic_rule      # W738
@@ -670,18 +692,20 @@ class ModelGateway:
 
         # §6 (W323) — the STREAM path is on the same control plane as query_meta: circuit-breaker
         # gated, and every streamed serve RECORDS an outcome into the W275 learning loop.
-        def _record(served_by: str, is_external: bool, t0: float, ok: bool) -> None:
+        def _record(served_by: str, is_external: bool, t0: float, ok: bool, tokens: int | None = None) -> None:
             try:
                 from agentic_core.api.operational_excellence import record_outcome
                 record_outcome("model_attempt", f"stream:{agent}", served_by=served_by,
                                is_external=is_external,
-                               duration_ms=int((time.time() - t0) * 1000), success=ok)
+                               duration_ms=int((time.time() - t0) * 1000), success=ok,
+                               tokens=tokens)        # W741 (S18.1) - one spend with the seconds
             except Exception:
                 pass
 
         _NOTICE = "\n[POLICY VIOLATION] The generated response was blocked by safety guardrails."
 
-        def _final(full: str, served_by: str, is_external: bool) -> dict:
+        def _final(full: str, served_by: str, is_external: bool, model_tokens: int | None = None,
+                   model_tokens_basis: str | None = None) -> dict:
             """The terminal frame — and the guardrail is applied BEFORE anything is persisted (refuter
             F2: the first cut logged the raw text into tenant memory, then judged it). A streamed
             reply cannot be retracted, so the notice is a token every consumer sees; what is
@@ -694,7 +718,13 @@ class ModelGateway:
                     "guardrail_passed": ok, "profile_applied": bool(_preamble) and not self._is_floor(served_by),
                     "governance_checkpoint": _record_checkpoint(agent, _pre, _output_verdict(full),
                                                                 screened=not ok),
-                    "arabic": _arabic738s}
+                    "arabic": _arabic738s,
+                    #  W741 (S18.1) - the count the serving model reported, or null and why nothing counted
+                    "model_tokens": model_tokens,
+                    "model_tokens_basis": model_tokens_basis or (
+                        FLOOR_TOKENS_BASIS if self._is_floor(served_by) else
+                        f"NOT COUNTED - {served_by} served this and this platform reads no token count from it; "
+                        "null, never 0")}
 
         # 1 — the OWNED local model: genuine token-by-token streaming
         if (os.getenv("AI_DISABLE_LOCAL", "").lower() not in ("1", "true", "yes")
@@ -702,13 +732,20 @@ class ModelGateway:
             _t0 = time.time()
             try:
                 full = ""
+                _count = None     # W741 (S18.1) - the zero-length CountedText the stream ends with, if any
                 async for token in self._stream_owned_model(augmented):
+                    if getattr(token, "model_tokens_basis", None):   # the server's count, not text
+                        _count = token
+                        continue
                     full += token
                     yield {"token": token}
+                _mt = getattr(_count, "model_tokens", None)
+                _mt_basis = (getattr(_count, "model_tokens_basis", None)
+                             or "NOT COUNTED - no count was read from the local model's stream; null, never 0")
                 if full.strip():
                     self_healer.record_success("ollama")
-                    _record("ollama", False, _t0, True)
-                    _fin = _final(full, f"ollama:{self._effective_ollama_model}", False)
+                    _record("ollama", False, _t0, True, tokens=_mt)
+                    _fin = _final(full, f"ollama:{self._effective_ollama_model}", False, _mt, _mt_basis)
                     if not _fin["guardrail_passed"]:
                         yield {"token": _NOTICE}
                     yield _fin

@@ -1326,9 +1326,12 @@ async def native_complete(req: CompleteRequest):
     from agentic_core.ai.gateway import console_pre_gate, console_post_gate
     _halt = console_pre_gate(req.agent)
     if _halt:
+        from agentic_core.ai.native.orchestrator import REFUSED_TOKENS_BASIS   # W741 (S18.1)
         return {"output": f"[CONSTITUTIONAL REFUSAL] {_halt.get('refused_reason')}",
                 "served_by": "constitutional_policy_gate", "is_external": False, "resources_tried": [],
-                "governance_checkpoint": _halt}
+                "governance_checkpoint": _halt,
+                #  shape-complete with the orchestrator's reply: a refusal ran no model, so nothing counted
+                "model_tokens": None, "model_tokens_basis": REFUSED_TOKENS_BASIS}
     res = await orchestrator.complete(req.prompt, agent=req.agent, timeout=req.timeout,
                                       prefer_external=req.prefer_external, prefer=req.model,
                                       user_text=(req.prompt or None))   # W651 (FU-675) - the console's own text

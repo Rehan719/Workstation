@@ -21588,6 +21588,143 @@
       "note": "",
       "slot_source": "rides the open row for the settings store on the same item",
       "tier": 2
+    },
+    {
+      "id": "FU-1099",
+      "title": "Tokens are counted nowhere, although the local model reports them in every answer",
+      "why": "S18.1 rules the budget in tokens and seconds; record_outcome fed seconds only and spend(tokens=) had no caller. Ollama's final object carries prompt_eval_count and eval_count, and orchestrator._stream_generate and gateway._stream_owned_model broke on it reading only the response text; the work budget's docstring said a producer would appear, assuming none existed. Verifiers split: medium (a ratified ruling half-built, untracked, with a wrong stated cause) and low (a disclosed, pinned, inert interim state); filed low.",
+      "source": "W741 (audit wf1 F5)",
+      "found": "2026-10-16",
+      "files": [
+        "agentic_core/molecular/work_budget.py",
+        "agentic_core/ai/native/orchestrator.py",
+        "agentic_core/ai/gateway.py",
+        "agentic_core/api/operational_excellence.py",
+        "agentic_core/api/_ai_provenance.py",
+        "agentic_core/api/native_ai.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "done",
+      "closed_by": "W741",
+      "note": "",
+      "slot_source": "tier-3 finding: P3.30 owns tier-3 rows (Owner ruling 2026-10-09); the token half of S18.1",
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Counted where the local model answers (the orchestrator's local route and the gateway's stream), into the reply and into the work budget in the same spend as the run's seconds; the floor, every refusal and an answer that counted nothing say null with a basis, and a counted zero is kept as 0. Proved by test_w741_tokens_are_counted_where_a_model_answers: legs 1-2 (the count reaches the reply and one spend), leg 7 (the stream, never as text), legs 3-6 and 8 (null with a basis; a counted zero kept)."
+    },
+    {
+      "id": "FU-1100",
+      "title": "An external accelerant's reported token usage is read nowhere",
+      "why": "orchestrator._run_model drops the usage the Anthropic and OpenAI answers carry (msg.usage, comp.usage), and the gateway stream's claude and openai branches drop theirs too; OpenAI also needs stream_options to report usage on a stream. The work budget's basis says such usage is not read. This matters only once AI_ALLOW_EXTERNAL is on.",
+      "source": "W741 (audit wf1 F5)",
+      "found": "2026-10-16",
+      "files": [
+        "agentic_core/ai/native/orchestrator.py",
+        "agentic_core/ai/gateway.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P4.3",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "external accelerants run only behind P4.3's switch",
+      "tier": 3
+    },
+    {
+      "id": "FU-1101",
+      "title": "The avatar's local image reading runs a model and records no outcome, so the work budget never sees its seconds or tokens",
+      "why": "avatars/api.py _ollama_vision posts to the local model with streaming off and reads only the response text, and nothing records an outcome for it; it is reachable from useAvatarSession.ts and VSBCockpit.tsx. The work budget docstring's line that every run path already records duration_ms is false for it.",
+      "source": "W741 (audit wf1 F5)",
+      "found": "2026-10-16",
+      "files": [
+        "agentic_core/avatars/api.py",
+        "agentic_core/molecular/work_budget.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "tier-3 finding: P3.30 owns tier-3 rows (Owner ruling 2026-10-09); the router would pick P2.40 from the avatars/ route",
+      "tier": 3
+    },
+    {
+      "id": "FU-1102",
+      "title": "The work budget's fraction is computed from seconds alone; tokens sit beside it with no stated capacity",
+      "why": "S18.1 rules both units, but fraction_spent is seconds_spent / CAPACITY_SECONDS. A token capacity would be a stated assumption, like the seconds capacity.",
+      "source": "W741 (audit wf1 F5)",
+      "found": "2026-10-16",
+      "files": [
+        "agentic_core/molecular/work_budget.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "tier-3 finding: P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
+      "tier": 3
+    },
+    {
+      "id": "FU-1103",
+      "title": "The gateway stream records no outcome when the local model answers empty, so the work budget never sees that attempt",
+      "why": "The stream records the local attempt only inside its check that the answer has text (the owned-model branch of gateway._stream_meta_inner). An empty answer with no exception falls through with no record and no breaker mark, so its seconds and its counted tokens are not spent. The orchestrator path records the same case as a failure with its count (test_w741 leg 4).",
+      "source": "W741 (audit wf1 F5)",
+      "found": "2026-10-16",
+      "files": [
+        "agentic_core/ai/gateway.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "tier-3: P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
+      "tier": 3
+    },
+    {
+      "id": "FU-1104",
+      "title": "record_outcome rewrites the whole outcomes store from a read that returns an empty list when the file cannot be parsed, and takes no lock",
+      "why": "operational_excellence._load returns [] on JSONDecodeError or OSError, and record_outcome appends one row and saves, so an unreadable store is replaced by a single row; an unreadable store is not empty and is never overwritten (W728). Driven on a scratch copy while preparing W741: a corrupt operations_outcomes.json held one row after one record_outcome call. The read-modify-write also takes no store_lock; the W577 strict-read fix converted set_health_baseline in this file, not this writer.",
+      "source": "W741 (found while isolating the outcomes store)",
+      "found": "2026-10-16",
+      "files": [
+        "agentic_core/api/operational_excellence.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.41",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "a tier-2 shortfall found by W741 while isolating the outcomes store; the area has no routed owner",
+      "tier": 2
+    },
+    {
+      "id": "FU-1105",
+      "title": "The token count reaches no page, and the stream's count reaches no SSE client",
+      "why": "model_tokens and model_tokens_basis are returned by /native-ai/complete, by the gateway reply, on the provenance every domain router returns and on the stream's final frame, and no page reads them. The four SSE consumers (v310/business.py, synthesis/api.py, v138/ceo.py, projects/api.py) rebuild the final event from named keys, so the stream's count reaches the budget and no client. The round that puts the work budget on a page meets this.",
+      "source": "W741 (audit wf1 F5)",
+      "found": "2026-10-16",
+      "files": [
+        "agentic_core/api/_ai_provenance.py",
+        "agentic_core/api/native_ai.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
+      "tier": 3
     }
   ],
   "routes": [
