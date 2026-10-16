@@ -90,7 +90,9 @@ def atp_depletion_state() -> dict:
         # homeostasis.project's organism block). The budget reaches a page through the native homeostasis
         # controller instead: its answer carries work_budget.gate(), and NativeAI.tsx prints that basis on
         # the homeostasis card. No page reads THIS key by name, and that is deliberate: adding a second
-        # channel for one claim is how two surfaces come to disagree.
+        # channel for one claim is how two surfaces come to disagree. (W743) The Organism page also shows it,
+        # through /organism/status systems.work_budget, which calls work_budget.state() itself - the function
+        # this key calls - so the two cannot disagree.
         "the_figure_that_can_deplete": _work_budget_state(),
         "ratio_is_a_label_not_a_measurement": (
             "the ATP ratio names no unit and cannot fall; the work budget beside it is measured in "

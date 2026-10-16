@@ -265,6 +265,7 @@ async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
                        # that the run PRODUCED output and leaves the verdict unset (NOT ASSESSED) rather
                        # than filing "the floor returned text" as a success.
                        duration_ms=int((time.monotonic() - t0) * 1000), success=bool(output),
+                       owner_id=owner_id,     # S18.6 (W743) - booked to that owner's own budget
                        quality_gate=None)
     except Exception:
         pass

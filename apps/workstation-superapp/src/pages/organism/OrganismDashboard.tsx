@@ -36,6 +36,12 @@ interface OrganismStatus {
     nervous:       { arousal_state: string; signal_rate_per_second: number; signals_last_60s: number; by_type: Record<string,number>; total_signals: Record<string,number>; reflex_arcs: number };
     self_healing:  { overall_health: number | null; open_circuits: number; recent_events: unknown[] };
     metabolic:     { atp_ratio: number };
+    // S18.1 / S18.6 (W743) - the measured budget, the busiest entities' own figures, the derived carrying capacity
+    work_budget?: { seconds_spent?: number; capacity_seconds?: number; gate_basis?: string; spend_basis?: string;
+      unavailable?: string; carrying_capacity?: { entities: number | null; basis: string };
+      entities?: { entities_measured: number; basis: string };
+      by_entity?: { owner_id: string; vsb_id: string | null; least_headroom_seconds: number; bound_by: string[];
+        levels: { level: string; capacity_seconds: number; seconds_spent: number }[] }[] };
     circadian:     { cycle: string; is_peak_focus: boolean };
     // W495 (FU-129, S8.2) - the count is of STORED genomes; encoded_genomes says how many were
     // actually encoded by a model (zero on the deterministic floor, which cannot declare traits)
@@ -437,6 +443,27 @@ export const OrganismDashboard: React.FC = () => {
             </div>
             <HealthBar value={systems.metabolic.atp_ratio} />
             <div className="text-xs font-mono text-white/30">ATP ratio · simulated{cognition?.organism?.atp_can_fall === false ? ' — cannot fall' : ''}</div>
+            {/* S18.1 / S18.6 (W743) - the budget that CAN run down, in seconds, each busy entity's own share of it
+                and the carrying capacity derived from them: every figure with its basis, in text */}
+            {systems.work_budget && (systems.work_budget.unavailable
+              ? <div className="text-[10px] font-mono text-amber-400/80">Work budget unreadable: {systems.work_budget.unavailable}</div>
+              : <div className="mt-2 space-y-1 text-[10px] font-mono text-white/50" data-testid="organism-work-budget">
+                  <div>Work budget: {systems.work_budget.seconds_spent}s of {systems.work_budget.capacity_seconds}s this window — {systems.work_budget.gate_basis}. {systems.work_budget.spend_basis}</div>
+                  <div data-testid="organism-carrying-capacity">
+                    Carrying capacity: {systems.work_budget.carrying_capacity?.entities != null ? `${systems.work_budget.carrying_capacity?.entities} entities` : 'unmeasured'} — {systems.work_budget.carrying_capacity?.basis}
+                  </div>
+                  {(systems.work_budget.by_entity ?? []).length > 0 && (
+                    <div>The busiest {systems.work_budget.by_entity?.length} of {systems.work_budget.entities?.entities_measured} entities measured this window. {systems.work_budget.entities?.basis}</div>
+                  )}
+                  {(systems.work_budget.by_entity ?? []).map(e => {
+                    const own = e.levels[e.levels.length - 1];
+                    return (
+                      <div key={`${e.owner_id}/${e.vsb_id}`} data-testid="organism-entity-budget">
+                        {e.vsb_id}: {own.seconds_spent}s of its derived {own.capacity_seconds}s; least headroom on its chain {e.least_headroom_seconds}s (bound by {e.bound_by.join(', ')})
+                      </div>
+                    );
+                  })}
+                </div>)}
           </SystemCard>
 
           {/* Circadian */}

@@ -522,6 +522,7 @@ async def cascade_orchestration(req: CascadeRequest,
             record_outcome("ai_call", f"agent:{agent}", served_by=sb,
                            is_external=bool(res.get("is_external")),
                            duration_ms=int((time.time() - _qt0) * 1000),
+                           owner_id=_owner_id,     # S18.6 (W743) - the caller's own budget, when known
                            # W495 (FU-125, S7.3) - no quality gate assesses a single AI call, so
                            # this records that it PRODUCED output and claims no verdict
                            success=bool((res.get("output") or "").strip()),

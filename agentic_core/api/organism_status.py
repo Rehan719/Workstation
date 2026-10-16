@@ -365,6 +365,18 @@ def _reconfig_wiring(features: dict, domains_config: dict) -> dict:
                 + ". The per-key table is on the Anatomy tab.")}
 
 
+def _work_budget_view() -> dict:
+    """S18.1 / S18.6 (W743) - the measured work budget, the busiest entities' own figures beside it and the
+    carrying capacity derived from them, or the reason none of it could be read. This route is admin-only
+    (W505), so the per-entity rows reach an admin alone; the platform-wide state() inside names no one."""
+    try:
+        from agentic_core.molecular import work_budget as _wb
+        return {**_wb.state(), "by_entity": _wb.entity_states(5)}
+    except Exception as exc:                         # noqa: BLE001 - the reason is returned, never a figure
+        return {"unavailable": f"{exc.__class__.__name__}: {exc}",
+                "basis": "the work budget could not be read, and no figure stands in for it"}
+
+
 @router.get("/status")
 async def organism_status():
     """
@@ -451,6 +463,9 @@ async def organism_status():
                 "recent_events": sh["healing_log"][:3],
             },
             "metabolic": ctx["metabolic"],
+            #  S18.1 / S18.6 (W743) - the budget that CAN run down, beside the ATP figure that cannot, with each
+            #  busy entity's own share and the derived carrying capacity; OrganismDashboard renders it in text
+            "work_budget": _work_budget_view(),
             "circadian": ctx["circadian"],
             "genome": genome,
             "reconfiguration": {
