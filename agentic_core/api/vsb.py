@@ -2278,9 +2278,19 @@ def _read_view(vsb: dict) -> dict:
                                           **{s: f"POST /api/v1/vsb/{_vid735}/body/{s}" for s in sorted(_FOUNDER_SECTIONS)}}
         #  W735 (FU-853) - which door established this entity, as its record says; not recorded is said, never guessed
         if not v.get("established_through"):
-            v["established_through"] = None
-            v["established_through_basis"] = ("not recorded on this entity: only the spawn route writes this field, so "
-                                              "an entity made through Genesis or before the field existed does not say")
+            _gs735 = v.get("genome_spec") if isinstance(v.get("genome_spec"), dict) else {}
+            _origin735 = str(_gs735.get("origin") or "")
+            if _origin735 == "genesis_journey":
+                #  made by Genesis before the field existed: its genome records that origin (genesis.py genome_spec)
+                v["established_through"] = "genesis_journey"
+                v["established_through_basis"] = ("read from this entity's genome, whose origin the Genesis journey "
+                                                  "records when it establishes an entity; the record itself predates "
+                                                  "the field")
+            else:
+                v["established_through"] = None
+                v["established_through_basis"] = (
+                    "not recorded on this entity: it predates the field and its genome names no origin" if not _origin735
+                    else f"not recorded as a door: its genome's origin is '{_origin735}', which no establishing door writes")
     except Exception as _exc668:                # noqa: BLE001 - the stored view is returned, and says so
         v["read_view_error"] = f"{type(_exc668).__name__}: the status below is the STORED one, not derived now"
     return v

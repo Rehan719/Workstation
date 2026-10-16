@@ -66276,12 +66276,32 @@ def test_w735_an_entitys_founder_text_is_screened_when_saved_and_its_record_says
     assert "caches.delete" in _f1["mobile/sw.js"] and "k !== CACHE" in _f1["mobile/sw.js"]
 
     #  4. FU-738: the app's own start address is served by the preview (an entity Genesis established, which may
-    #     publish) - and FU-853 through the real route: Genesis does not record its door, and the record says so
+    #     publish) - and FU-853 through the real route: Genesis, the live door, records itself on the new record
     _est = client.post("/api/v1/genesis/establish", json={"problem": "a halal community meal service", "domain": "care",
                                                          "owner_id": "pytest", "name": "W735 Community Meals"})
     _gid = _est.json()["vsb_id"]
     _g = client.get(f"/api/v1/vsb/{_gid}").json()
-    assert _g["established_through"] is None and _g["established_through_basis"].startswith("not recorded"), _g.get("established_through_basis")
+    assert _g["established_through"] == "genesis_journey" and _g["established_through_basis"].startswith("established by the Genesis journey"), _g.get("established_through_basis")
+    #     the streaming establish door writes it too (fix every writer)
+    _st = client.post("/api/v1/genesis/establish/stream", json={"problem": "W735 stream door", "domain": "enterprise",
+                                                                "name": "W735 Stream Door", "owner_id": "pytest"})
+    _sid = re.search(r'"vsb_id": "(vsb-[a-f0-9]+)"', _st.text).group(1)
+    _s = client.get(f"/api/v1/vsb/{_sid}").json()
+    assert _s["established_through"] == "genesis_journey" and _s["established_through_basis"].startswith("established by the Genesis journey"), _s.get("established_through_basis")
+    #     a Genesis record made before the field existed is read from its genome's origin, and says so
+    _gp = _vsb._VSB_STORE / f"{_gid}.json"
+    _grec = json.loads(_gp.read_text(encoding="utf-8"))
+    _grec.pop("established_through", None); _grec.pop("established_through_basis", None)
+    _gp.write_text(json.dumps(_grec), encoding="utf-8")
+    _g2 = client.get(f"/api/v1/vsb/{_gid}").json()
+    assert _g2["established_through"] == "genesis_journey" and _g2["established_through_basis"].startswith("read from this entity's genome"), _g2.get("established_through_basis")
+    #     and a record whose genome names no origin says it is not recorded, never a guessed door
+    _grec["genome_spec"] = {k: v for k, v in (_grec.get("genome_spec") or {}).items() if k != "origin"}
+    _gp.write_text(json.dumps(_grec), encoding="utf-8")
+    _g3 = client.get(f"/api/v1/vsb/{_gid}").json()
+    assert _g3["established_through"] is None and _g3["established_through_basis"].startswith("not recorded on this entity"), _g3.get("established_through_basis")
+    _grec["genome_spec"]["origin"] = "genesis_journey"
+    _gp.write_text(json.dumps(_grec), encoding="utf-8")
     _m = client.post(f"/api/v1/vsb/{_gid}/mobile")
     assert _m.status_code == 200, _m.text[:200]
     _start = client.get(f"/api/v1/vsb/{_gid}/mobile/page/")

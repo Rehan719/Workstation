@@ -16697,7 +16697,7 @@
       "tier": 3,
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
-      "close_note": "The entity read view carries established_through, or None with a basis saying it is not recorded and why; the Cockpit shows it.",
+      "close_note": "Both Genesis establish doors write established_through on the new record, as the spawn route has since W672; a Genesis record made before the field is read from its genome's origin and says so; any other record carries None with a basis saying it is not recorded and why; the Cockpit shows it.",
       "reachability_check": "test_w735_an_entitys_founder_text_is_screened_when_saved_and_its_record_says_what_it_is"
     },
     {
