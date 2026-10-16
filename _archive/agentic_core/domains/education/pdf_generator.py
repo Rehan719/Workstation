@@ -93,7 +93,7 @@ class SATsPDFGenerator:
 
     def concatenate_bundle(self):
         """Uses PyPDF2 to concatenate all individual PDFs into a master bundle."""
-        bundle_path = os.path.join(self.base_dir, "deliverable/Norbury_School_SATs_Prep_Pack_2026.pdf")
+        bundle_path = os.path.join(self.base_dir, "deliverable/School_SATs_Prep_Pack_2026.pdf")
         os.makedirs(os.path.dirname(bundle_path), exist_ok=True)
 
         merger = PdfWriter()
@@ -104,7 +104,7 @@ class SATsPDFGenerator:
             Spacer(1, 200),
             Paragraph("SATs 2026: COMPLETE PREPARATION PACK", self.styles['Title']),
             Spacer(1, 20),
-            Paragraph("Personalized for Norbury School Pupil", self.styles['Heading2']),
+            Paragraph("Personalized for a pupil", self.styles['Heading2']),
             Spacer(1, 100),
             Paragraph("بِسْمِ اللَّهِ وَعَلَى بَرَكَةِ اللَّهِ", self.styles['Normal'])
         ]
