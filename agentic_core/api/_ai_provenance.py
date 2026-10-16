@@ -282,6 +282,10 @@ async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
                                   "profile_applied": res.get("profile_applied"),
                                   "profile_state": res.get("profile_state"),
                                   "profile_basis": res.get("profile_basis"),
+                                  #  W741 (S18.1) - the token count the serving model reported, or null
+                                  #  and why nothing counted; this fixed key set would otherwise drop it
+                                  "model_tokens": res.get("model_tokens"),
+                                  "model_tokens_basis": res.get("model_tokens_basis"),
                                   #  W698 - the level of evidence this answer is, or that a refusal is none
                                   **reply_evidence(served_by)}
     if _material is not None:

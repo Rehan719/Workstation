@@ -8,10 +8,14 @@ WHAT IT MEASURES, and what it refuses to measure
   · **seconds** — real. Every run path already records `duration_ms` into
     `api/operational_excellence.record_outcome`, and that one writer feeds this. So the figure comes from work
     the platform actually did, not from a coefficient.
-  · **tokens** — NOT RECORDED anywhere in this repository. Measured before writing this: no token accounting
-    exists at any call site. So `tokens_spent` is None with a reason, never 0, because zero would read as "no
-    tokens were used" when the truth is "nobody counted". When a producer appears, it feeds `spend(tokens=...)`
-    and the field starts reporting.
+  · **tokens** — counted where a model answers (W741). The producer existed all along and was thrown away:
+    Ollama's final answer object carries `prompt_eval_count` and `eval_count`, and the local-model routes read
+    only `response`. The native orchestrator's local route and the gateway's stream now read that count and
+    hand it to `record_outcome(tokens=...)`, which passes it to `spend()` in the SAME call as the run's
+    seconds, so a counted run is still one run. A run nothing counted (the deterministic floor runs no model;
+    an external accelerant's reported usage is not read) adds nothing, and `tokens_spent` stays None with a
+    reason until something has counted, because zero would read as "no tokens were used" when the truth is
+    "nobody counted".
 
 WHY IT CAN DEPLETE, which the thing it replaces could not
   `atp_simulator` consumes `0.1 * load` against a production of `0.5 * efficiency`, so production always won and
@@ -69,7 +73,7 @@ def spend(seconds: float = 0.0, tokens: Optional[int] = None) -> None:
     cost three data-loss incidents applies here as much as anywhere.
     """
     try:
-        if seconds <= 0 and not tokens:
+        if seconds <= 0 and tokens is None:
             return
         with store_lock(_store()):
             rec, _why = _load()
@@ -87,8 +91,12 @@ def spend(seconds: float = 0.0, tokens: Optional[int] = None) -> None:
                     "already accumulated and understated consumption", float(seconds), tokens, _why)
                 return
             rec["seconds_spent"] = round(float(rec.get("seconds_spent") or 0.0) + max(0.0, float(seconds)), 3)
-            if tokens:
+            #  W741 (S18.1) - a count is a MEASUREMENT even when it is 0, so the test is `is not None`
+            #  (a truthiness test dropped a counted zero and left "nobody counted"). How many spends carried a
+            #  count is kept beside the total, because a total over some runs is not a total over all of them.
+            if tokens is not None:
                 rec["tokens_spent"] = int(rec.get("tokens_spent") or 0) + int(tokens)
+                rec["token_calls"] = int(rec.get("token_calls") or 0) + 1
             rec["calls"] = int(rec.get("calls") or 0) + 1
             atomic_write_json(_store(), rec)
     except Exception:                                  # noqa: BLE001 — accounting never breaks a run
@@ -111,9 +119,18 @@ def state() -> Dict[str, Any]:
         "window_seconds": WINDOW_SECONDS,
         "window_started": rec.get("window_started"),
         "tokens_spent": tokens,
-        "tokens_basis": ("measured" if tokens is not None else
-                         "NOT RECORDED — no call site in this repository counts tokens, so this is null "
-                         "rather than 0; zero would read as 'no tokens were used' when nobody counted"),
+        #  W741 (S18.1) - how many spends carried a count; the total covers THOSE model answers only
+        "tokens_counted_calls": int(rec.get("token_calls") or 0),
+        "tokens_basis": (f"measured - {tokens} token(s) reported by the serving model itself, over "
+                         f"{int(rec.get('token_calls') or 0)} counted model answer(s) this window; "
+                         f"{int(rec.get('calls') or 0)} spend(s) were recorded in all, which is not a count of "
+                         "answers: a wrapper that times the same call records its own, and a run nothing "
+                         "counted adds no tokens (the deterministic floor runs no model, and an external "
+                         "accelerant's reported usage is not read)"
+                         if tokens is not None else
+                         "NOT RECORDED — no run this window reported a token count (a count comes only from a "
+                         "model's own answer; the deterministic floor runs no model), so this is null rather "
+                         "than 0; zero would read as 'no tokens were used' when nobody counted"),
         "capacity_basis": (f"{CAPACITY_SECONDS:.0f} seconds per {WINDOW_SECONDS / 3600:.0f}-hour window is a "
                            "STATED ASSUMPTION, not a measurement — nothing here has yet measured what this "
                            "platform's sustainable rate is"),

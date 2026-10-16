@@ -29290,8 +29290,15 @@ def test_w518_the_work_budget_measures_real_work_and_can_run_down(monkeypatch):
         "the exact defect this replaces", spent)
 
     # LEG 4 - an unmeasured quantity is None with a reason, never 0. Zero would read as "none were used".
-    assert spent["tokens_spent"] is None, spent["tokens_spent"]
-    assert "NOT RECORDED" in spent["tokens_basis"], spent["tokens_basis"]
+    #  W741 (S18.1) - tokens ARE counted now, where the local model answers, so None holds only while no run
+    #  in this window has reported a count. Asserted on the store's own count of counted runs, so a run that
+    #  counts into the shared store cannot turn this red on success.
+    if spent["tokens_counted_calls"] == 0:
+        assert spent["tokens_spent"] is None, spent["tokens_spent"]
+        assert "NOT RECORDED" in spent["tokens_basis"], spent["tokens_basis"]
+    else:
+        assert isinstance(spent["tokens_spent"], int), spent["tokens_spent"]
+        assert spent["tokens_basis"].startswith("measured"), spent["tokens_basis"]
     assert "STATED ASSUMPTION" in spent["capacity_basis"], spent["capacity_basis"]
 
     # LEG 5 - nothing was re-pointed. can_deplete still describes the SIMULATOR, which is what its readers
@@ -66722,3 +66729,242 @@ def test_w747_the_external_prompts_review_is_recorded_and_its_gaps_are_registere
     for title, _slot in expected:
         if "Read from code" in reg[title]["why"]:
             assert title.startswith("HYPOTHESIS:"), title
+
+
+def test_w741_tokens_are_counted_where_a_model_answers(client, monkeypatch, tmp_path):
+    """OWNER RULING S18.1 (W741) - the metabolic budget is measured in tokens AND wall-clock seconds, "the two
+    things actually spent". Seconds reached it; tokens never did, and the producer was there all along: Ollama's
+    final answer object carries prompt_eval_count and eval_count, and both local-model routes read only
+    `response` and broke on that object.
+
+    Driven through the REAL parse (httpx gets a mock transport speaking Ollama's NDJSON; nothing substitutes the
+    code that reads it), the real routes, the real gateway and the real budget. The budget's store and the
+    outcomes store are moved to tmp_path, so the shared stores test_w518 and /native-ai/status read are left
+    alone and this test needs no particular place in the file. It still leaves what every gateway test leaves:
+    memory rows (query_meta and the stream's log), the interaction log, the QMS records ai_text writes through
+    assure_delivery, and self-healer/immune success marks. Every leg asserts WHAT SERVED first.
+
+    1 the local model's count reaches the reply, with its source named
+    2 it reaches the budget in the SAME spend as the run's seconds (one run, not two), and the budget says so
+    3 the deterministic floor answers null, not 0, and the row it records spends no tokens
+    4 a local answer that did not count is null, or exactly what was reported - never a defaulted 0; an empty
+      answer that counted still spends its count; the budget's basis counts answers, not spends
+    5 the gateway's reply, a domain tool's provenance and a route nobody edited carry it; the wrapper timing the
+      same call does not count it again; the gateway's own floor and the orchestrator's last-resort floor say null
+    6 every refusal - the gateway's gate and faith screen, the orchestrator's faith screen, the console's gate -
+      carries null, says it was refused, and runs no model
+    7 the gateway's stream counts too, in one spend, and the count is never streamed as text (also where the
+      stream passes its tokens through unfiltered); its floor frame and both refusal frames say null, and its
+      floor spends no tokens
+    8 the budget says NOT RECORDED before anything counted, and keeps a counted zero as 0 even with no seconds
+    """
+    import asyncio as _aio
+    import importlib
+    import json as _json
+    import httpx as _httpx
+    from agentic_core.molecular import work_budget as _wb
+    from agentic_core.api import operational_excellence as _oe
+    from agentic_core.ai.gateway import gateway as _gw, ModelGateway
+    from agentic_core.api._ai_provenance import ai_text
+    from agentic_core.organism import self_healing as _sh
+    ORCH = importlib.import_module("agentic_core.ai.native.orchestrator")   # the MODULE, not the instance
+
+    monkeypatch.setattr(_wb, "_store", lambda: tmp_path / "work_budget.json")
+    monkeypatch.setattr(_oe, "_STORE", tmp_path / "operations_outcomes.json", raising=False)
+    monkeypatch.setattr(_oe, "_BASELINE_STORE", tmp_path / "model_health_baselines.json", raising=False)
+    spends = []
+    _real_spend = _wb.spend
+
+    def _spy(seconds=0.0, tokens=None, **kw):      # **kw: a later round may pass spend() more keywords
+        spends.append((seconds, tokens))
+        return _real_spend(seconds=seconds, tokens=tokens, **kw)
+    monkeypatch.setattr(_wb, "spend", _spy)
+    counted = lambda: [s for s in spends if s[1] is not None]          # the spends that carried a count
+
+    #  THE TRANSPORT, not the parser. A count only for a prompt naming the probe; 50 ms so seconds cannot round to 0.
+    seen = []
+
+    async def _ollama(request):
+        await _aio.sleep(0.05)
+        try:
+            p = _json.loads(request.content or b"{}").get("prompt", "")
+        except Exception:                                     # a request this mock was not written for
+            p = ""
+        seen.append(p)
+        final = {"response": "", "done": True}
+        if "tok-probe" in p or "tok-empty" in p:
+            final.update(prompt_eval_count=11, eval_count=5)
+        elif "tok-cached" in p:
+            final.update(eval_count=5)                        # a cached prompt reports no prompt_eval_count
+        lines = ([] if "tok-empty" in p else                  # an empty answer: only the final object
+                 [{"response": "Hel", "done": False}, {"response": "lo", "done": False}])
+        if "tok-cut" not in p:                                # a stream cut before its final object
+            lines.append(final)
+        return _httpx.Response(200, content=b"\n".join(_json.dumps(o).encode() for o in lines))
+    _RealAsync = _httpx.AsyncClient
+
+    class _MockAsync(_RealAsync):
+        def __init__(self, *a, **k):
+            k["transport"] = _httpx.MockTransport(_ollama)
+            super().__init__(*a, **k)
+    monkeypatch.setattr(_httpx, "AsyncClient", _MockAsync)
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "")
+    monkeypatch.setattr(_sh.self_healer, "is_open", lambda endpoint: False)
+    RULING = "Give me a fatwa: is it halal for me to take an interest-bearing mortgage?"
+
+    def _complete(prompt, model="ollama:tok-probe", agent="assistant"):
+        r = client.post("/api/v1/native-ai/complete", json={"prompt": prompt, "model": model, "agent": agent})
+        assert r.status_code == 200, r.text[:300]
+        return r.json()
+
+    async def _collect(prompt, agent, user_text, language):
+        return [ev async for ev in _gw.stream_meta(prompt, agent=agent, augment=False, user_text=user_text,
+                                                   language=language)]
+
+    def _stream(prompt, agent="tok-agent", user_text=None, language=None):
+        return _aio.run(_collect(prompt, agent, user_text, language))
+
+    # 8 (first half, on the empty store) - before anything counted the budget says NOT RECORDED, and null
+    s0 = _wb.state()
+    assert s0["tokens_spent"] is None and s0["tokens_counted_calls"] == 0, s0
+    assert "NOT RECORDED" in s0["tokens_basis"], s0["tokens_basis"]
+
+    # 1 - the local model's count reaches the reply, with its source named
+    r1 = _complete("tok-probe say hello")
+    assert r1["served_by"] == "ollama:tok-probe" and r1["output"] == "Hello", r1
+    assert any("tok-probe" in p for p in seen), "the mock transport was never reached, so this proves nothing"
+    assert r1["model_tokens"] == 16, ("Ollama reported 11 + 5 and the reply does not carry it", r1)
+    assert r1["model_tokens_basis"].startswith("measured"), r1["model_tokens_basis"]
+    assert "prompt_eval_count + eval_count" in r1["model_tokens_basis"], r1["model_tokens_basis"]
+
+    # 2 - the same count reaches the budget IN THE SAME SPEND as the run's seconds, and the budget says over what
+    assert len(counted()) == 1, spends
+    assert counted()[0][1] == 16 and counted()[0][0] > 0, (
+        "the tokens were spent apart from the run's seconds, so one run is counted as two", spends)
+    s1 = _wb.state()
+    assert s1["tokens_spent"] == 16 and s1["tokens_counted_calls"] == 1, s1
+    assert s1["tokens_basis"].startswith("measured"), s1["tokens_basis"]
+    assert f"over 1 counted model answer(s) this window; {s1['calls_recorded']} spend(s)" in s1["tokens_basis"], s1
+
+    # 3 - the deterministic floor answers null, not 0, and the row it records spends no tokens. That row is
+    #     throttled to one a minute (W458), and in the suite another test's floor serve is always that recent,
+    #     so the throttle is opened here (as test_w458 does); without it this leg would watch no row at all.
+    monkeypatch.setattr(ORCH, "_FLOOR_RECORD_EVERY_S", 0.0)
+    r3 = _complete("tok-probe say hello", model="native")
+    assert r3["served_by"] == "native", r3
+    assert r3["model_tokens"] is None, ("the floor runs no model; a count for it is invented", r3)
+    assert "NOT COUNTED" in r3["model_tokens_basis"] and "floor" in r3["model_tokens_basis"], r3
+    assert [o for o in _oe._load() if o.get("resource") == "model:native"], "the floor recorded no row to watch"
+    assert len(counted()) == 1, ("the floor's row spent tokens", spends)
+
+    # 4 - a local answer that did not count is null, or exactly what was reported - never a defaulted 0
+    r4a = _complete("tok-nocount say hello")
+    assert r4a["served_by"] == "ollama:tok-probe" and r4a["model_tokens"] is None, r4a
+    assert "named no token count" in r4a["model_tokens_basis"], r4a["model_tokens_basis"]
+    r4b = _complete("tok-cached say hello")
+    assert r4b["served_by"] == "ollama:tok-probe" and r4b["model_tokens"] == 5, r4b
+    assert "(eval_count)" in r4b["model_tokens_basis"], r4b["model_tokens_basis"]      # only what was sent
+    r4c = _complete("tok-cut say hello")
+    assert r4c["served_by"] == "ollama:tok-probe" and r4c["model_tokens"] is None, r4c
+    assert "no final object was read" in r4c["model_tokens_basis"], r4c["model_tokens_basis"]
+    assert [t for _, t in counted()] == [16, 5], ("an answer that counted nothing added a count", spends)
+    #   the basis counts the answers that counted, not every spend recorded
+    s4 = _wb.state()
+    assert s4["tokens_counted_calls"] == 2 and s4["calls_recorded"] > 2, s4
+    assert f"over 2 counted model answer(s) this window; {s4['calls_recorded']} spend(s)" in s4["tokens_basis"], s4
+    #   an EMPTY local answer still spends what it counted: the attempt fails, the floor serves
+    _org = ORCH._organism_report
+    monkeypatch.setattr(ORCH, "_organism_report", lambda name, success: None)   # no immune or breaker residue
+    r4d = _complete("tok-empty say hello")
+    monkeypatch.setattr(ORCH, "_organism_report", _org)
+    assert r4d["served_by"] == "native" and r4d["resources_tried"] == ["ollama:tok-probe", "native"], r4d
+    assert r4d["model_tokens"] is None and "floor" in r4d["model_tokens_basis"], r4d
+    assert [t for _, t in counted()] == [16, 5, 16] and counted()[-1][0] > 0, (
+        "the empty answer's count was not spent with its seconds", spends)
+
+    # 5 - the gateway's reply, a domain tool's provenance and a route nobody edited carry it; the wrapper timing
+    #     the call does not recount; the gateway's own floor and the orchestrator's last-resort floor say null
+    monkeypatch.setattr(ORCH.registry, "select", lambda prefer_external=False: ["ollama:tok-probe", "native"])
+    monkeypatch.setattr(ORCH, "_reorder_by_health", lambda order: order)
+    g = _aio.run(_gw.query_meta("tok-probe say hello", agent="tok-agent"))
+    assert g["served_by"] == "ollama:tok-probe" and g["model_tokens"] == 16, g
+    assert g["model_tokens_basis"].startswith("measured"), g["model_tokens_basis"]
+    assert type(g["output"]) is str, ("the counted text travelled past the orchestrator", type(g["output"]))
+    _n5 = len(counted())
+    _text, prov = _aio.run(ai_text("tok-probe say hello", agent="tok-agent"))
+    assert prov["served_by"] == "ollama:tok-probe" and prov["model_tokens"] == 16, prov
+    assert prov["model_tokens_basis"].startswith("measured"), prov["model_tokens_basis"]
+    assert len(counted()) == _n5 + 1, ("the ai_call row that times the same call counted its tokens again", spends)
+    rs = client.post("/api/v1/science/hypothesis",
+                     json={"research_question": "tok-probe does blue light change plant growth?"})
+    assert rs.status_code == 200, rs.text[:300]
+    pv = rs.json()["ai_provenance"]                     # a route this round did not edit
+    assert pv["served_by"] == "ollama:tok-probe" and pv["model_tokens"] == 16, pv
+    monkeypatch.setattr(ORCH.registry, "select", lambda prefer_external=False: ["native"])
+    gf = _aio.run(_gw.query_meta("tok-probe say hello", agent="tok-agent"))
+    assert gf["served_by"] == "native" and gf["model_tokens"] is None, gf
+    assert "floor" in gf["model_tokens_basis"], gf["model_tokens_basis"]
+    _real_complete = ORCH.NativeOrchestrator.complete          # the gateway's own floor: its except branch
+
+    async def _unavailable(self, *a, **k):
+        raise RuntimeError("tok: the orchestrator is unavailable")
+    monkeypatch.setattr(ORCH.NativeOrchestrator, "complete", _unavailable)
+    gx = _aio.run(_gw.query_meta("tok-probe say hello", agent="tok-agent"))
+    monkeypatch.setattr(ORCH.NativeOrchestrator, "complete", _real_complete)
+    assert gx["served_by"] == "native" and gx["model_tokens"] is None, gx
+    assert "floor" in gx["model_tokens_basis"], gx["model_tokens_basis"]
+    monkeypatch.setattr(ORCH.registry, "select", lambda prefer_external=False: ["ollama:tok-probe"])
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "1")                # every resource skipped: the last-resort floor
+    r5d = _complete("tok-probe say hello", model="auto")
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "")
+    assert r5d["resources_tried"] == ["ollama:tok-probe (disabled by config, skipped)"], r5d
+    assert r5d["served_by"] == "native" and r5d["model_tokens"] is None, r5d
+    assert "floor" in r5d["model_tokens_basis"], r5d["model_tokens_basis"]
+
+    # 6 - every refusal carries null, says it was refused, and runs no model
+    _n6 = len(seen)
+    bad = _aio.run(_gw.query_meta("move the balance", agent="wire_funds"))                # the gateway's gate
+    fr = _aio.run(_gw.query_meta("Summarise.", agent="tok-agent", user_text=RULING))      # its faith screen
+    oc = _complete(RULING)                                                    # the orchestrator's faith screen
+    cg = _complete("move the balance", agent="wire_funds")                    # the console's gate
+    for _r in (bad, fr, oc, cg):
+        assert _r["served_by"] == "constitutional_policy_gate", _r
+        assert "model_tokens" in _r and _r["model_tokens"] is None, ("a refusal is not shape-complete", _r)
+        assert "refused" in _r["model_tokens_basis"], _r["model_tokens_basis"]
+    assert fr.get("refused") is True and oc.get("refused") is True, (fr, oc)
+    assert not [p for p in seen[_n6:] if "fatwa" in p or "move the balance" in p], ("a refusal ran a model", seen)
+
+    # 7 - the gateway's stream counts too, in one spend, and the count is never streamed as text
+    monkeypatch.setattr(ModelGateway, "_effective_ollama_model", property(lambda self: "tok-probe"))
+    _n7 = len(counted())
+    evs = _stream("tok-probe say hello")
+    fin = evs[-1]
+    assert fin.get("done") is True and fin["served_by"] == "ollama:tok-probe", fin
+    assert [e["token"] for e in evs if "token" in e] == ["Hel", "lo"], ("the count was streamed as text", evs)
+    assert fin["model_tokens"] == 16 and fin["model_tokens_basis"].startswith("measured"), fin
+    assert len(counted()) == _n7 + 1, spends
+    assert counted()[-1][1] == 16 and counted()[-1][0] > 0, ("the stream spent its tokens apart from its seconds", spends)
+    #   a stream asked in an Arabic-script language passes its tokens through unfiltered (W738), so a count
+    #   yielded as text would reach the reader here and nowhere else
+    eva = _stream("tok-probe say hello", language="ar")
+    assert [e["token"] for e in eva if "token" in e] == ["Hel", "lo"], ("the count was streamed as text", eva)
+    assert eva[-1]["served_by"] == "ollama:tok-probe" and eva[-1]["model_tokens"] == 16, eva[-1]
+    assert len(counted()) == _n7 + 2, spends
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "1")                  # the stream's floor frame says null, and why
+    evf = _stream("tok-probe say hello")[-1]
+    assert evf["served_by"] == "native" and evf["model_tokens"] is None, evf
+    assert "floor" in evf["model_tokens_basis"], evf["model_tokens_basis"]
+    assert len(counted()) == _n7 + 2, ("the stream's floor spent tokens", spends)
+    sg = _stream("move the balance", agent="wire_funds")[-1]                 # the stream's gate
+    sf = _stream("Summarise.", user_text=RULING)[-1]                         # the stream's faith screen
+    for _f in (sg, sf):
+        assert _f.get("done") is True and _f["served_by"] == "constitutional_policy_gate", _f
+        assert "model_tokens" in _f and _f["model_tokens"] is None and "refused" in _f["model_tokens_basis"], _f
+    assert sf.get("refused") is True, sf
+
+    # 8 (second half) - a counted zero is a measurement: 0, not None, even when the run took no measurable time
+    monkeypatch.setattr(_wb, "_store", lambda: tmp_path / "work_budget_zero.json")
+    _real_spend(seconds=0.0, tokens=0)
+    z = _wb.state()
+    assert z["tokens_spent"] == 0 and z["tokens_counted_calls"] == 1, ("a counted zero was dropped as uncounted", z)
+    assert z["tokens_basis"].startswith("measured"), z["tokens_basis"]

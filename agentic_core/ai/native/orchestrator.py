@@ -41,16 +41,60 @@ class ResourceSkipped(RuntimeError):
         self.reason = reason
 
 
-def _record_model(name: str, success: bool, t0: float) -> None:
+def _record_model(name: str, success: bool, t0: float, tokens: Optional[int] = None) -> None:
     """Record a real per-model-resource attempt (kind=model_attempt) so the orchestrator can
-    LEARN which owned/external models actually perform. Best-effort, non-critical."""
+    LEARN which owned/external models actually perform. Best-effort, non-critical.
+
+    W741 (OWNER RULING S18.1) - `tokens` is the count the serving model's own server reported for this
+    attempt, or None when nothing counted. It travels in the SAME record as the attempt's duration, so the
+    work budget receives seconds and tokens in one spend and a counted attempt is still one run."""
     try:
         from agentic_core.api.operational_excellence import record_outcome
         record_outcome("model_attempt", f"model:{name}", served_by=name,
                        is_external=name in ("anthropic", "openai"),
-                       duration_ms=int((time.monotonic() - t0) * 1000), success=success)
+                       duration_ms=int((time.monotonic() - t0) * 1000), success=success,
+                       tokens=tokens)
     except Exception:
         pass
+
+
+class CountedText(str):
+    """W741 (OWNER RULING S18.1) - a model's text CARRYING the token count its own server reported.
+
+    `_run_model` returns `str`, and its substitutes (the suite's fakes, any resource that does not count) return
+    plain text. So the count travels ON the text rather than changing the return type: plain text has no count
+    and reads as None, which is exactly what it is. `complete()` hands its callers a plain `str` (the W738
+    Arabic rule rebuilds every served output as text), so this type does not travel further than the reply's
+    two count fields."""
+    model_tokens: Optional[int] = None
+    model_tokens_basis: Optional[str] = None
+
+
+FLOOR_TOKENS_BASIS = ("NOT COUNTED - the deterministic floor served this and runs no model, so there are no "
+                      "tokens to count; null, never 0")
+REFUSED_TOKENS_BASIS = "NOT COUNTED - the request was refused before any model ran; null, never 0"
+
+
+def ollama_counted(text: str, final: Optional[Dict[str, Any]]) -> CountedText:
+    """`text`, carrying the tokens Ollama reported in its FINAL object (the one with `done: true`).
+
+    The count is prompt_eval_count + eval_count, summing only the fields the server actually sent, and the
+    basis names them: a prompt Ollama served from its cache can report fewer prompt tokens, or none, because
+    they were not evaluated again, and that is what was spent. No final object read (the stream ended early, or
+    its last line could not be parsed), or a final object naming neither field, is None: not counted, never 0."""
+    out = CountedText(text)
+    fields = [k for k in ("prompt_eval_count", "eval_count")
+              if type((final or {}).get(k)) is int and final[k] >= 0]
+    if fields:
+        out.model_tokens = sum(final[k] for k in fields)
+        out.model_tokens_basis = (f"measured - {out.model_tokens} token(s) the local model reported in its "
+                                  f"final answer object ({' + '.join(fields)})")
+    else:
+        out.model_tokens_basis = ("NOT COUNTED - " + ("no final object was read from the local model's stream"
+                                                      if final is None else
+                                                      "the local model's final object named no token count")
+                                  + "; null, never 0")
+    return out
 
 
 def _breaker_open(name: str) -> bool:
@@ -289,7 +333,8 @@ class NativeOrchestrator:
         _faith = faith_ruling_refusal(user_text, "request")
         if _faith:
             return {"output": f"[CONSTITUTIONAL REFUSAL] {_faith['message']}", "served_by": "constitutional_policy_gate",
-                    "is_external": False, "resources_tried": [], "refused": True, "faith_refusal": _faith}
+                    "is_external": False, "resources_tried": [], "refused": True, "faith_refusal": _faith,
+                    "model_tokens": None, "model_tokens_basis": REFUSED_TOKENS_BASIS}   # W741 (S18.1)
         # §6/§7 user design control over WHICH owned tier serves:
         #   "auto"   — in-house-first selection (local model → native floor → opt-in external)
         #   "native" — force the deterministic native FLOOR (fast · free · reproducible)
@@ -316,7 +361,8 @@ class NativeOrchestrator:
                 _observe_floor_serve()     # W658 - seen, whether or not the throttled row below is written
                 _record_floor_serve(_t0)   # W458 — the floor serve is RECORDED (throttled), so status can follow it
                 _fire("motor", f"native.{agent}", "served by native engine", 0.4)
-                return {"output": out, "served_by": "native", "is_external": False, "resources_tried": tried}
+                return {"output": out, "served_by": "native", "is_external": False, "resources_tried": tried,
+                        "model_tokens": None, "model_tokens_basis": FLOOR_TOKENS_BASIS}   # W741 (S18.1)
             _t = time.monotonic()
             try:
                 # §6 (W353) — the OUTER bound must not undercut the owned model's own adaptive
@@ -328,13 +374,20 @@ class NativeOrchestrator:
                 _is_local = (name == "ollama" or name.startswith("ollama:"))
                 _outer = 200.0 if _is_local else timeout
                 out = await asyncio.wait_for(self._run_model(name, prompt), _outer)
+                #  W741 (S18.1) - the count the model's server reported travels ON the text; plain text (a
+                #  resource that does not count, or a substitute) has none, and that reads as null, never 0
+                _mt = getattr(out, "model_tokens", None)
+                _mt_basis = (getattr(out, "model_tokens_basis", None)
+                             or f"NOT COUNTED - {name} served this and this platform reads no token count from "
+                                "it; null, never 0")
                 if out and out.strip():
-                    _record_model(name, True, _t)        # learned: this model performed
+                    _record_model(name, True, _t, tokens=_mt)    # learned: this model performed
                     _organism_report(name, True)         # §6×§8 (W278) — breaker heals on success
                     _fire("motor", f"native.{agent}", f"served by {name}", 0.5)
                     return {"output": out, "served_by": name,
-                            "is_external": name in ("anthropic", "openai"), "resources_tried": tried}
-                _record_model(name, False, _t)           # empty output = failure
+                            "is_external": name in ("anthropic", "openai"), "resources_tried": tried,
+                            "model_tokens": _mt, "model_tokens_basis": _mt_basis}
+                _record_model(name, False, _t, tokens=_mt)   # empty output = failure; its count was still spent
                 _organism_report(name, False)            # §6×§8 (W278) — raises immune + breaker
             except ResourceSkipped as sk:
                 # W458 — not attempted ≠ failed: annotate like the circuit-open skip, record NOTHING
@@ -347,7 +400,8 @@ class NativeOrchestrator:
         # the native floor guarantees we never reach here, but be safe:
         out = native_engine.generate(prompt, agent, user_text=user_text)
         _observe_floor_serve()     # W658 - the last-resort floor return is a call seen, like the first
-        return {"output": out, "served_by": "native", "is_external": False, "resources_tried": tried}
+        return {"output": out, "served_by": "native", "is_external": False, "resources_tried": tried,
+                "model_tokens": None, "model_tokens_basis": FLOOR_TOKENS_BASIS}   # W741 (S18.1)
 
     async def ensemble(self, prompt: str, agent: str = "ensemble", models: Optional[List[str]] = None,
                        synthesize: bool = True, timeout: float = 30.0) -> Dict[str, Any]:
@@ -458,6 +512,7 @@ class NativeOrchestrator:
 
             async def _stream_generate() -> str:
                 chunks: List[str] = []
+                final: Optional[Dict[str, Any]] = None     # W741 - Ollama's last object carries its count
                 async with httpx.AsyncClient(timeout=to) as client:
                     async with client.stream("POST", url, json={"model": model, "prompt": prompt,
                                                                 "stream": True}) as r:
@@ -470,8 +525,9 @@ class NativeOrchestrator:
                                 continue
                             chunks.append(j.get("response", ""))
                             if j.get("done"):
+                                final = j
                                 break
-                return "".join(chunks)
+                return ollama_counted("".join(chunks), final)
 
             return await asyncio.wait_for(_stream_generate(), timeout=budget)
         if name == "anthropic":
