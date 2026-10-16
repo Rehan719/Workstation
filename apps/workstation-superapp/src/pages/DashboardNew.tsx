@@ -12,6 +12,7 @@ import axios from 'axios';
 import { getPrefs } from '../lib/userPrefs';
 import { listOutputs, type OutputRecord } from '../lib/outputHistory';
 import { useT } from '../lib/i18n';
+import { ServingNow } from '../components/ServingNow';   // W737 (FU-967)
 
 // The unified front door (§3A + §17). It orients every user to the two ways Workstation IDBO serves
 // them — (1) work now with AI across a domain, or (2) take a challenge Concept→Commercialisation into a
@@ -163,6 +164,8 @@ export const DashboardNew: React.FC = () => {
               <span className="text-white">{t('home.intro.work')}</span>, {t('home.intro.or', 'or')}
               <span className="text-white"> {t('home.intro.build')}</span> {t('home.intro.tail')}
             </p>
+            {/* W737 (FU-967) - the front door carries what serves, as every tool does */}
+            <ServingNow className="text-[11px] text-amber-400/80 font-bold max-w-2xl leading-relaxed" />
           </div>
           <div className="flex flex-wrap gap-4 shrink-0">
             <Button onClick={() => setSearchOpen(true)} variant="outline" className="bg-slate-900 border-slate-800">

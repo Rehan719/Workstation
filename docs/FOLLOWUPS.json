@@ -14371,11 +14371,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W737",
       "note": "",
       "slot_source": "a tier-3 remainder of a ledger row closed in W657",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "What this deployment can serve is said before a form is filled, from the server's own status (GET /api/v1/native-ai/status), by one component on every form tool, both front doors and the catalogue; an unread status is said as not known.",
+      "reachability_check": "test_w737_what_serves_is_said_before_a_form_is_filled"
     },
     {
       "id": "FU-740",
@@ -19004,11 +19008,15 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W737",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "What this deployment can serve is said before a form is filled, from the server's own status (GET /api/v1/native-ai/status), by one component on every form tool, both front doors and the catalogue; an unread status is said as not known.",
+      "reachability_check": "test_w737_what_serves_is_said_before_a_form_is_filled"
     },
     {
       "id": "FU-968",
@@ -20038,11 +20046,15 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W737",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "What this deployment can serve is said before a form is filled, from the server's own status (GET /api/v1/native-ai/status), by one component on every form tool, both front doors and the catalogue; an unread status is said as not known.",
+      "reachability_check": "test_w737_what_serves_is_said_before_a_form_is_filled"
     },
     {
       "id": "FU-1021",

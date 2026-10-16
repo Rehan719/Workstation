@@ -66528,3 +66528,32 @@ def test_no_prompt_claims_a_professionals_role(client, monkeypatch):
     from agentic_core.projects.api import REALM_PROMPTS
     assert not [k for k, v in REALM_PROMPTS.items() if _claim.search(v)], REALM_PROMPTS
     assert "religious ruling" in REALM_PROMPTS["religion"] and "scripture" in REALM_PROMPTS["religion"]
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W737 (cluster F, part 1: FU-1020, 967, 739) - WHAT THIS DEPLOYMENT CAN SERVE IS SAID BEFORE A FORM IS FILLED,
+#  from the server's own status, on every form tool, both front doors and the catalogue - not only inside an answer.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w737_what_serves_is_said_before_a_form_is_filled(client):
+    import pathlib
+    _src = pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+    #  1. THE FIELDS the component reads exist on the status the server answers, with the meaning it assumes
+    _st = client.get("/api/v1/native-ai/status").json()
+    assert {"is_real_model", "mode", "active_model_label"} <= set(_st), sorted(_st)
+    assert _st["is_real_model"] == (_st["active_model"] != "native"), _st
+    #  2. THE COMPONENT reads that route once, says the floor case and the model case, and never guesses
+    _c = (_src / "components" / "ServingNow.tsx").read_text(encoding="utf-8")
+    assert "fetch('/api/v1/native-ai/status')" in _c and _c.count("fetch(") == 1, "the status is read more than once"
+    assert "no owned model is serving" in _c and "an owned model is serving" in _c
+    assert "could not be read just now, so nothing is claimed" in _c, "an unread status must be said as not known"
+    assert "s.is_real_model === false" in _c and "mode === 'deterministic_floor'" in _c
+    #  3. EVERY PLACE a promise stands carries it: the tool component (so every Law, Education... form), both
+    #     front doors and the catalogue (top and each domain's cards)
+    for _rel, _n in (("components/DomainTool.tsx", 1), ("pages/domains/DomainsHub.tsx", 1),
+                     ("pages/DashboardNew.tsx", 1), ("pages/AIToolsCatalogue.tsx", 2)):
+        _page = (_src / _rel).read_text(encoding="utf-8")
+        assert _page.count("<ServingNow") == _n and "import { ServingNow }" in _page, (_rel, _page.count("<ServingNow"))
+    _tool = (_src / "components" / "DomainTool.tsx").read_text(encoding="utf-8")
+    assert _tool.index("<ServingNow") < _tool.index("{fields.map("), "the tool says what serves only after its form"
+    #  4. THE PROMISE that stood without it is reworded
+    assert "best-in-class" not in (_src / "pages" / "domains" / "DomainsHub.tsx").read_text(encoding="utf-8")
