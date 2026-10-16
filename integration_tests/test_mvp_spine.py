@@ -16493,7 +16493,14 @@ def test_w470_catalogue_honesty_one_registry_live_counts_and_no_dead_flagship_ta
     assert body["count"] == len(products) >= 12 and all(p["status"] in ("live", "source", "legacy") for p in products)
     assert body["counts"] == catalog.catalogue_counts(products)          # the API says the honest numbers itself
     by_slug = {p["slug"]: p for p in products}
+    #  W731 - three of the six legacy archives (Employment, Law, Science) held only the Owner's own papers and were
+    #  moved out of this public repository, so they are no longer registered directories. The three that remain
+    #  are still legacy; the three moved must not be listed again.
+    _moved731 = {"Employment", "Law", "Science"}
     for slug in ("Care", "Education", "Employment", "Law", "Religion", "Science"):
+        if slug in _moved731:
+            assert slug not in by_slug and not (pathlib.Path(__file__).resolve().parents[1] / "products" / slug).exists(), slug
+            continue
         p = by_slug[slug]
         assert p["status"] == "legacy" and p["route"] is None and p["live"] is False, p
         assert p["category"] == "Legacy archive" and "not a served product" in " ".join(p["features"]), p
@@ -16503,7 +16510,7 @@ def test_w470_catalogue_honesty_one_registry_live_counts_and_no_dead_flagship_ta
             assert p["route"] is None, p
     counts = catalog.catalogue_counts(products)
     assert counts["registered"] == len(products) and counts["live"] + counts["source"] + counts["legacy"] == len(products)
-    assert 0 < counts["live"] < counts["registered"] and counts["legacy"] == 6, counts
+    assert 0 < counts["live"] < counts["registered"] and counts["legacy"] == len(catalog.LEGACY_ARCHIVES - _moved731), counts   # W731: three moved
     assert set(catalog.LEGACY_ARCHIVES) == {"Care", "Education", "Employment", "Law", "Religion", "Science"}
     assert not (set(catalog.LEGACY_ARCHIVES) & set(catalog.ROUTE_OVERRIDES)), "a legacy archive must never route"
     # the SDK/source pointers open nothing: no route in any metadata.json is honoured as live without a served page
@@ -54065,18 +54072,24 @@ def test_p3a_r2_a_record_holds_what_happened(client, monkeypatch):
 
     def _num(v):
         return isinstance(v, (int, float)) and not isinstance(v, bool)
-    #    THE PRECONDITION the withholding rests on: the two engines return one figure whatever they are handed.
-    #    If this goes red an engine has started computing, and _stored_cascade_record must stop nulling it.
+    #    W730 (FU-854, FU-861) - RETARGETED. This leg's precondition was that the two engines returned one figure
+    #    whatever they were handed. They now return NOT ASSESSED and no figure, which is asserted here for two
+    #    different problems. The record's withholding is still driven, by a PLANTED numeric report: a figure could
+    #    come back from a model path, and the record's copy must still drop it.
     _c1 = _ensure_loop().run_until_complete(_vsb._cascade.execute_cascade({"problem": "a village bakery"}))
     _c2 = _ensure_loop().run_until_complete(_vsb._cascade.execute_cascade(
         {"problem": "an orbital debris tracking consortium", "domain": "science", "scope": "concept"}))
-    assert _num(_c1["alignment"]["alignment"]) and _num(_c1["alerts"]["threat_score"]), _c1
-    assert _c1["alignment"] == _c2["alignment"] and _c1["alerts"] == _c2["alerts"], (
-        "an engine returned different figures for different problems: it computes now, so the record must keep it",
-        _c1["alignment"], _c2["alignment"], _c1["alerts"], _c2["alerts"])
-    _kept = _vsb._stored_cascade_record(_c1)
-    assert _num(_c1["alignment"]["alignment"]), "the live cascade report was changed by making the record's copy"
+    for _c in (_c1, _c2):
+        assert _c["alignment"]["alignment"] is None and _c["alignment"]["status"] == "NOT_ASSESSED", _c["alignment"]
+        assert _c["alerts"]["threat_score"] is None and _c["alerts"]["status"] == "NOT_ASSESSED", _c["alerts"]
+    _planted = {**_c1, "alignment": {"status": "SUCCESS", "alignment": 0.5},
+                "alerts": {"status": "SUCCESS", "threat_score": 0.5}}
+    _kept = _vsb._stored_cascade_record(_planted)
+    assert _num(_planted["alignment"]["alignment"]), "the live cascade report was changed by making the record's copy"
     assert _kept["alignment"]["alignment"] is None and _kept["engines_ran"] == _c1["engines_ran"], _kept
+    assert _kept["figures_withheld"] == ["alignment.alignment", "alerts.threat_score"], _kept["figures_withheld"]
+    assert "2 figure(s) the cascade returned are not kept" in _kept["figures_withheld_basis"], _kept["figures_withheld_basis"]
+    assert "fixed return" in _kept["alignment"]["status_basis"] and "fixed return" in _kept["alerts"]["status_basis"]
     assert _vsb._stored_cascade_record({"alignment": {"alignment": True}})["figures_withheld"] == [], "a flag is not a figure"
     assert _vsb._stored_cascade_record("not a report") == "not a report"
 
@@ -54094,9 +54107,9 @@ def test_p3a_r2_a_record_holds_what_happened(client, monkeypatch):
         "the entity record holds an alignment figure no engine computed", _ca.get("alignment"))
     assert _ca["alerts"]["threat_score"] is None and "NOT ASSESSED" in _ca["alerts"]["threat_score_basis"], (
         "the entity record holds a threat figure no engine computed", _ca.get("alerts"))
-    assert "fixed return" in _ca["alignment"]["status_basis"] and "fixed return" in _ca["alerts"]["status_basis"]
-    assert _ca["figures_withheld"] == ["alignment.alignment", "alerts.threat_score"], _ca["figures_withheld"]
-    assert "2 figure(s) the cascade returned are not kept" in _ca["figures_withheld_basis"], _ca["figures_withheld_basis"]
+    #    W730 - the engines return no figure now, so the record has nothing to withhold, and says so
+    assert _ca["alignment"]["status"] == "NOT_ASSESSED" and _ca["alerts"]["status"] == "NOT_ASSESSED", _ca
+    assert _ca["figures_withheld"] == [] and "nothing was withheld" in _ca["figures_withheld_basis"], _ca["figures_withheld_basis"]
     assert not [k for sec in ("alignment", "alerts") for k, v in _ca[sec].items() if _num(v)], (
         "a numeric figure is still on the record under one of the two engine sections", _ca["alignment"], _ca["alerts"])
     assert len(_ca["engines_ran"]) == 6 and _ca["status"] == "completed", ("the rest of the report was lost", _ca)
@@ -66021,3 +66034,165 @@ def test_w732_the_public_tree_holds_no_privacy_exposure(client, tmp_path, monkey
     _down = client.get("/api/v1/compliance/privacy-exposure").json()
     assert _down["scanned"] is False and _down["count"] is None and _down["basis"].startswith("NOT CHECKED"), _down
     assert set(_down["not_checked"]) == set(_pe.KINDS)
+
+
+#  W728 - THE COMPOSITION STORE. A writer handed an empty list for a store that failed to read once would have
+#  written back a file holding only its own row; and one writer awaits between its read and its write.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w728_a_saved_composition_is_never_lost_to_a_store_that_could_not_be_read(client, monkeypatch):
+    import ast
+    import inspect
+    import json
+    import agentic_core.api.resource_fabric as _fab
+
+    def _compose(name):
+        r = client.post("/api/v1/resources/compose", json={"name": name, "resource_ids": ["vsb_org_swarm"], "usage_area": "general"})
+        assert r.status_code == 200, r.text[:300]
+        return r.json()["id"] if "id" in r.json() else r.json()["composition"]["id"]
+
+    store = _fab._STORE
+    before = store.read_bytes() if store.exists() else None
+    try:
+        a = _compose("w728 first")
+        b = _compose("w728 second")
+        ids = lambda: {c["id"] for c in json.loads(store.read_text(encoding="utf-8"))}
+        assert {a, b} <= ids()
+
+        #  1. A STORE THAT CANNOT BE READ: every writer refuses, and the file is left byte for byte
+        good = store.read_bytes()
+        store.write_bytes(good[: len(good) // 2])                      # a torn file
+        torn = store.read_bytes()
+        for call in (lambda: client.post("/api/v1/resources/compose", json={"name": "w728 third", "resource_ids": ["vsb_org_swarm"], "usage_area": "general"}),
+                     lambda: client.put(f"/api/v1/resources/compositions/{a}", json={"name": "w728 renamed"}),
+                     lambda: client.delete(f"/api/v1/resources/compositions/{a}")):
+            r = call()
+            assert r.status_code == 503 and "nothing was written" in r.json()["detail"], (r.status_code, r.text[:200])
+            assert store.read_bytes() == torn, "a writer replaced a store it could not read"
+        store.write_bytes(good)
+
+        #  2. A WRITER THAT AWAITS: a composition added during another's re-simulation survives the write
+        real_sim = _fab._simulate_configuration
+        added = {}
+
+        #  (the other writer acts on the store directly, through the module's own lock and strict read: a
+        #   request made from inside a handler would re-enter the test client's event loop)
+        async def _slow_sim(*args, **kw):
+            if not added:
+                with _fab._compositions_lock():
+                    rows = _fab._compositions_for_write()
+                    rows.append({"id": "comp-w728added", "name": "w728 added during a re-simulation", "resources": []})
+                    _fab._save_compositions(rows)
+                added["id"] = "comp-w728added"
+            return await real_sim(*args, **kw)
+        monkeypatch.setattr(_fab, "_simulate_configuration", _slow_sim)
+        r = client.put(f"/api/v1/resources/compositions/{a}", json={"name": "w728 renamed"})
+        assert r.status_code == 200 and r.json()["name"] == "w728 renamed", r.text[:300]
+        assert {a, b, added["id"]} <= ids(), "an update wrote back the rows it read before it waited"
+
+        #  3. ...and one REMOVED during the re-simulation is not brought back
+        async def _sim_that_loses_it(*args, **kw):
+            monkeypatch.setattr(_fab, "_simulate_configuration", real_sim)
+            with _fab._compositions_lock():
+                _fab._save_compositions([c for c in _fab._compositions_for_write() if c["id"] != b])
+            return await real_sim(*args, **kw)
+        monkeypatch.setattr(_fab, "_simulate_configuration", _sim_that_loses_it)
+        gone = client.put(f"/api/v1/resources/compositions/{b}", json={"name": "w728 too late"})
+        assert gone.status_code == 404 and "was removed while it was being re-simulated" in gone.json()["detail"], gone.text[:300]
+        assert b not in ids()
+
+        #  4. BY SYNTAX: no function that saves reads with the tolerant reader
+        tree = ast.parse(inspect.getsource(_fab))
+        mixed = [f.name for f in ast.walk(tree) if isinstance(f, (ast.FunctionDef, ast.AsyncFunctionDef))
+                 and f.name != "_save_compositions" and "_save_compositions(" in ast.unparse(f) and "_load_compositions()" in ast.unparse(f)]
+        assert mixed == [], mixed
+        savers = [f.name for f in ast.walk(tree) if isinstance(f, (ast.FunctionDef, ast.AsyncFunctionDef))
+                  and f.name != "_save_compositions" and "_save_compositions(" in ast.unparse(f)]
+        assert len(savers) >= 3, savers
+        for f in ast.walk(tree):
+            if isinstance(f, (ast.FunctionDef, ast.AsyncFunctionDef)) and f.name in savers:
+                assert "_compositions_lock()" in ast.unparse(f), (f.name, "saves outside the lock")
+
+        #  5. BY SYNTAX: the save replaces the file whole (one process writes whole files either way, so no
+        #     behaviour leg above can see a non-atomic write)
+        saver = next(f for f in ast.walk(tree) if isinstance(f, ast.FunctionDef) and f.name == "_save_compositions")
+        assert "atomic_write_json(" in ast.unparse(saver) and "write_text(" not in ast.unparse(saver), ast.unparse(saver)
+    finally:
+        if before is None:
+            store.unlink(missing_ok=True)
+        else:
+            store.write_bytes(before)
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W730 - TWO ENGINES STOP RETURNING A FIGURE NOTHING COMPUTES. The alignment and anomaly engines returned one
+#  fixed figure for any input; they now return NOT ASSESSED and no figure, and each surface that shows them
+#  says so: the engine's own floor answer, the cascade's report and basis, and the single-engine route.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w730_no_engine_returns_a_figure_nothing_computes(client, monkeypatch):
+    import ast
+    import pathlib
+    import re
+    import agentic_core.cognitive.hoshiyari_engine as _ho
+    import agentic_core.cognitive.iman_engine as _im
+    from agentic_core.consultation.interface import ConsultationRequest
+    _loop = _ensure_loop()
+
+    #  1. THE SOURCE, for two different inputs: no figure, the key still present, the reason beside it
+    for _probe in ({"query": "a village bakery"}, {"goals": ["an orbital debris consortium"], "n": 7}):
+        _a = _loop.run_until_complete(_im.ImanEngine().validate_values(_probe))
+        _t = _loop.run_until_complete(_ho.HoshiyariEngine().detect_anomalies(_probe))
+        assert _a["status"] == "NOT_ASSESSED" and "alignment" in _a and _a["alignment"] is None, _a
+        assert _t["status"] == "NOT_ASSESSED" and "threat_score" in _t and _t["threat_score"] is None, _t
+        assert _a["alignment_basis"].startswith("NOT ASSESSED") and _t["threat_score_basis"].startswith("NOT ASSESSED")
+
+    #  2. THE FLOOR'S ANSWER comes from what the check returned - driven with no model, not read off the ambient
+    async def _no_model(engine, prompt, **kw):
+        return None, {"served_by": None, "basis": "no tier above the floor could serve (W730 test)"}
+    monkeypatch.setattr(_im, "serve", _no_model)
+    monkeypatch.setattr(_ho, "serve", _no_model)
+    _ri = _loop.run_until_complete(_im.ImanEngine().consult(ConsultationRequest(engine="iman", query="w730")))
+    _rh = _loop.run_until_complete(_ho.HoshiyariEngine().consult(ConsultationRequest(engine="hoshiyari", query="w730")))
+    assert _ri.answer == "Alignment: not assessed - nothing here computes one", _ri.answer
+    assert _rh.answer == "Threat Score: not assessed - nothing here computes one", _rh.answer
+    #     a refusal says it refused (these said `Alignment: 0.0` and `Threat Score: 1.0`), and a computed figure
+    #     would still be shown
+    assert _im._marker({"status": "REJECTED", "reason": "High toxicity"}) == "Alignment: rejected (High toxicity)"
+    assert _ho._marker({"status": "ALERT", "reason": "Hypoxia"}) == "Threat Score: alert (Hypoxia)"
+    assert _im._marker({"status": "SUCCESS", "alignment": 0.4}) == "Alignment: 0.4"
+    assert _ho._marker({"status": "SUCCESS", "threat_score": 0.4}) == "Threat Score: 0.4"
+    monkeypatch.undo()
+
+    #  3. THE CASCADE ROUTE: no figure in its report, and its basis COUNTS which engines said not assessed
+    _body = client.post("/api/v1/cognitive/cascade", json={"problem": "w730 a village bakery", "include_mjm": False}).json()
+    _cas = _body["cascade"]
+    assert _cas["alignment"]["alignment"] is None and _cas["alerts"]["threat_score"] is None, (_cas["alignment"], _cas["alerts"])
+    assert "2 returned NOT ASSESSED with no figure (hoshiyari, iman)" in _cas["status_basis"], _cas["status_basis"]
+    assert "the other 4 return a fixed marker" in _cas["status_basis"], _cas["status_basis"]
+    assert "Each returns a fixed" not in _cas["status_basis"], _cas["status_basis"]
+
+    #  4. THE SINGLE-ENGINE ROUTE says which this engine did; an engine that still returns a marker keeps its note
+    for _eid in ("iman", "hoshiyari"):
+        _r = client.post("/api/v1/cognitive/engine", json={"engine_id": _eid, "input": "w730"}).json()
+        assert _r["result"]["status"] == "NOT_ASSESSED", _r
+        assert "returned NOT ASSESSED and no figure" in _r["note"], _r["note"]
+    _aq = client.post("/api/v1/cognitive/engine", json={"engine_id": "aqal", "input": "w730"}).json()
+    assert "returns a fixed marker rather than computing" in _aq["note"], _aq["note"]
+
+    #  5. A CENSUS that holds it: no `return {...}` in agentic_core/cognitive puts a numeric LITERAL under a key
+    #     that names a score, an alignment or a confidence
+    _root = pathlib.Path(__file__).resolve().parents[1] / "agentic_core" / "cognitive"
+    _key = re.compile(r"score|alignment|confidence", re.I)
+    _fixed = []
+    for _p in sorted(_root.rglob("*.py")):
+        for _fn in ast.walk(ast.parse(_p.read_text(encoding="utf-8"))):
+            if not isinstance(_fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            for _n in ast.walk(_fn):
+                if isinstance(_n, ast.Return) and isinstance(_n.value, ast.Dict):
+                    for _k, _v in zip(_n.value.keys, _n.value.values):
+                        if (isinstance(_k, ast.Constant) and isinstance(_k.value, str) and _key.search(_k.value)
+                                and isinstance(_v, ast.Constant) and isinstance(_v.value, (int, float))
+                                and not isinstance(_v.value, bool)):
+                            _fixed.append(f"{_p.name}:{_n.lineno} {_fn.name} {_k.value}")
+    assert len(list(_root.rglob("*.py"))) >= 10, "the census read too few files to mean anything"
+    assert _fixed == [], ("a cognitive function returns a fixed figure under a score/alignment/confidence key", _fixed)
