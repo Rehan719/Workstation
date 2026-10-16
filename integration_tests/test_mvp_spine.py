@@ -66082,6 +66082,25 @@ def test_w730_no_engine_returns_a_figure_nothing_computes(client, monkeypatch):
 
 
 # ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W740 - THE OWNER'S CHILD'S SCHOOL MATERIAL IS NOT IN THE PUBLIC TREE. A personalised exam-preparation pack and
+#  a learner profile were moved to his private store on his word (2026-10-14), as his career papers were; four
+#  archived generator lines that named the school were made generic. No child or school is named here.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w740_the_owners_childs_school_material_is_not_in_the_public_tree():
+    import pathlib
+    _root = pathlib.Path(__file__).resolve().parents[1]
+    _gone = ("_archive/outputs/education/sats_2026", "_archive/agentic_core/identity/sats_persona.py")
+    assert not [g for g in _gone if (_root / g).exists()], "the child's school material is back in the public tree"
+    _gi = (_root / ".gitignore").read_text(encoding="utf-8").splitlines()
+    for _rule in ("_archive/outputs/education/sats_2026/", "outputs/education/sats_2026/",
+                  "_archive/agentic_core/identity/sats_persona.py"):
+        assert _rule in _gi, _rule
+    #  the four archived generators name the pack generically
+    for _rel in ("_archive/agentic_core/domains/education/pdf_generator.py",
+                 "_archive/agentic_core/domains/master/verify_v_infinity.py"):
+        assert "School_SATs_Prep_Pack_2026.pdf" in (_root / _rel).read_text(encoding="utf-8"), _rel
+
+
 #  W733 (FU-986) - A REPORTED NONCONFORMANCE IS KEPT. It opens a defect in the quality system's durable loop,
 #  owned by the caller and marked as reported by a person; it can be listed, corrected and re-verified; it is
 #  not a gate run, so the non-conformance rate does not move; and the record survives a model that fails.

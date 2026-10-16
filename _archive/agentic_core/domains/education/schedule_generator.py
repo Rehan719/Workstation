@@ -75,7 +75,7 @@ class SATsScheduleGenerator:
 
     async def save_markdown(self, schedule_data: Dict[str, Any]):
         md_content = "# 📅 SATs 2026: 14-Day Revision Schedule\n\n"
-        md_content += "## Personalized for: Norbury School Pupil\n\n"
+        md_content += "## Personalized for: a pupil\n\n"
 
         for day in schedule_data["revision_plan"]:
             md_content += f"### Day {day['day']} - {day['date']} ({day['status']})\n"
