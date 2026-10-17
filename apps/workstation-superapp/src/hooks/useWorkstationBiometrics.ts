@@ -77,7 +77,9 @@ export function useWorkstationBiometrics(pollIntervalMs = 6000): WorkstationBiom
     try {
       const res = await axios.get('/api/v1/biometrics/status', { timeout: 3000, validateStatus: () => true });
       if (res.status !== 200) {
-        setData(prev => ({ ...prev, loaded: true }));
+        // W746 - a refusal (503: the host could not be read) is not a live reading. The previous figures stay,
+        // but the dot goes grey rather than presenting them as current.
+        setData(prev => ({ ...prev, loaded: true, live: false }));
         return;
       }
       const r = res.data ?? {};

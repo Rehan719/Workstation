@@ -390,10 +390,9 @@ async def ai_suggest_config(req: AISuggestRequest):
         pass
 
     try:
-        import psutil
-        cpu = psutil.cpu_percent(interval=None)
-        mem = psutil.virtual_memory().percent
-        state_context += f"CPU: {cpu}%, Memory: {mem}%\n"
+        #  W746 - the one host observation, in words that say WHICH machine and over what window
+        from agentic_core.organism.host_observation import prompt_line as _host_line
+        state_context += _host_line() + "\n"
     except Exception:
         pass
 

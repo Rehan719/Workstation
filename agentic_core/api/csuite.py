@@ -104,14 +104,20 @@ async def get_cto_infra() -> dict:
     Infrastructure metrics from psutil (real) + project activity (real).
     """
     s = _project_stats()
-    cpu    = psutil.cpu_percent(interval=0.1)
-    mem    = psutil.virtual_memory()
+    #  W746 - read through the one host observation: no 0.1 s sleep per call (at most one, while no reading
+    #  exists), a stated window, and None (never 0) for a figure that could not be read. Disk is not part of it
+    #  and is still read here.
+    from agentic_core.organism.host_observation import observe as _observe_host
+    _obs   = _observe_host()
+    _h     = _obs["host"]
     disk   = psutil.disk_usage("/")
 
     return {
-        "cpu_percent":    cpu,
-        "memory_percent": mem.percent,
-        "memory_used_gb": round(mem.used / 1e9, 2),
+        "cpu_percent":    _h["cpu_percent"],
+        "memory_percent": _h["memory_percent"],
+        "memory_used_gb": (None if _h["memory_used_bytes"] is None else round(_h["memory_used_bytes"] / 1e9, 2)),
+        "cpu_window_seconds": _h["cpu_window_seconds"],
+        "host_basis":     f"{_h['cpu_basis']} | {_h['memory_basis']}",
         "disk_percent":   disk.percent,
         "active_projects": s["active"],
         "total_projects":  s["total"],

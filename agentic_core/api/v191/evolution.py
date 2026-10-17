@@ -113,10 +113,9 @@ async def generate_proposals(req: GenerateRequest):
         system_context += "Immune: unavailable\n"
 
     try:
-        import psutil
-        cpu = psutil.cpu_percent(interval=None)
-        mem = psutil.virtual_memory().percent
-        system_context += f"System: CPU {cpu}%, Memory {mem}%\n"
+        #  W746 - the one host observation, in words that say WHICH machine and over what window
+        from agentic_core.organism.host_observation import prompt_line as _host_line
+        system_context += _host_line() + "\n"
     except Exception:
         pass
 

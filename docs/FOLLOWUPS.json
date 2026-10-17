@@ -22238,6 +22238,135 @@
       "closed_by": null,
       "note": "",
       "slot_source": "OWNER DECISION (M-EXEC-07): downloading a model is the Owner's; W745 registers the leads and downloads nothing"
+    },
+    {
+      "id": "FU-1131",
+      "title": "Host CPU and memory were read at nine call sites over one shared psutil window no figure stated, and the Home summary sent 0.0 for a figure it could not read",
+      "why": "Residue of the psutil first-sample audit finding, which was itself refuted (psutil seeds the importing thread at import, so a first call on the served app is not a meaningless 0.0). What survived: psutil's non-blocking window is per thread and all nine sites read it on the event-loop thread, so each figure covered the time since whichever reader asked last, and none said how long that was. Two reads inside one 15.6 ms clock tick return psutil's divide-by-zero 0.0; across a few ticks a 0.0 can also be busy-time quantisation at low load (one scratch probe; the counts vary with load and nothing asserts them). The CTO infrastructure route and the AI CEO's vitals tool slept 0.1 s on the event loop; projects/api.py coalesced an unread figure to 0.0 and the Home page printed it as an idle machine; the optimiser's monitor set this process's memory beside the host's percentages, unnamed.",
+      "source": "W746 (audit wf1, what the refuters left standing)",
+      "found": "2026-10-17",
+      "files": [
+        "agentic_core/organism/host_observation.py",
+        "agentic_core/app_mvp.py",
+        "agentic_core/api/csuite.py",
+        "agentic_core/api/v138/ceo.py",
+        "agentic_core/api/v191/evolution.py",
+        "agentic_core/api/sovereign_evolution.py",
+        "agentic_core/organism/reconfiguration.py",
+        "agentic_core/optimizer/monitor.py",
+        "agentic_core/projects/api.py",
+        "apps/workstation-superapp/src/pages/DashboardNew.tsx",
+        "apps/workstation-superapp/src/pages/evolution/SovereignEvolution.tsx",
+        "apps/workstation-superapp/src/hooks/useWorkstationBiometrics.ts"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.41",
+      "status": "done",
+      "closed_by": "W746",
+      "note": "",
+      "slot_source": "a tier-2 invisible shortfall: P2.41 holds the standing tier-2 rows",
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "agentic_core/organism/host_observation.py takes every CPU sample on one sampler thread, never over less than 0.1 s (psutil's minimum), and every reading states its window and its age; a reader who asks sooner gets the last reading, not a new one. All nine sites read through it: the organism vitals route, the vitals broadcast, the Home summary, the CTO infrastructure route, the AI CEO's vitals tool (and the route that serves it), the two model prompts (evolution and reconfiguration), the sovereign introspection and the optimiser's monitor. An unread figure is None with its reason, never 0: the vitals route refuses with 503 and the reason, the Home page says not measured and draws no meter, and the biometrics hook marks a refused read not live. The two 0.1 s sleeps per call are gone (one wait, at most 0.1 s, while no reading exists). The monitor names which figure is the process's and which the host's. Proved by test_w746_host_resources_are_read_once_and_say_what_they_cover: leg 1 drives every site through a sentinel while psutil answers other figures; leg 1b finds no other reader on the AST; leg 2 the window and the sampler thread; leg 3 host and process apart; leg 4 unknown is never 0, and the next reader after a failure gets a full window; leg 6 tiers.machine is reused, not repeated; leg 7 a forked child opens its own sampler. The page and hook checks are source guards."
+    },
+    {
+      "id": "FU-1132",
+      "title": "The vitals broadcast sends a fixed latency of 12 ms and a swarm health computed from the project count",
+      "why": "app_mvp._vitals_loop's SYSTEM_VITALS payload carries \"latency_ms\": 12 and \"swarmHealth\": min(1.0, 0.7 + len(projects) * 0.01): a typed constant and a formula over a count, presented beside measured figures - the class W642 removed from /projects/stats/summary. Unreached: Shell.tsx stores the payload in the shared store's systemVitals (packages/shared/store.ts), and no live page reads systemVitals (only archived pages do). Seen by the psutil audit's refuters; W746 left the two keys alone because no reader shows them.",
+      "source": "W746 (audit wf1 refuters)",
+      "found": "2026-10-17",
+      "files": [
+        "agentic_core/app_mvp.py",
+        "apps/workstation-superapp/src/components/layout/Shell.tsx",
+        "packages/shared/store.ts"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "tier-3 and unreached: P3.30 owns tier-3 rows (Owner ruling 2026-10-09), beside the other app_mvp.py surface rows there",
+      "tier": 3
+    },
+    {
+      "id": "FU-1133",
+      "title": "memory_used_gb is decimal gigabytes on the CTO route and binary gibibytes in the AI CEO's vitals tool",
+      "why": "csuite.get_cto_infra divides the host's used memory by 1e9 and ToolRegistry.get_system_vitals divides it by 1024**3, under the same key; tiers.machine's ram_gb is binary too. The two figures are 7.4% apart for the same bytes. The CTO route has no page reader; the CEO tool's output enters a model prompt and is served at GET /api/v138/ceo/vitals. W746 kept each site's unit rather than redefine a field, so this needs a decision on the key (rename one, or add the unit beside it).",
+      "source": "W746 (preparing the round)",
+      "found": "2026-10-17",
+      "files": [
+        "agentic_core/api/csuite.py",
+        "agentic_core/api/v138/ceo.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "tier-3: P3.30 owns tier-3 rows (Owner ruling 2026-10-09), beside the C-Suite and AI CEO surface rows there",
+      "tier": 3
+    },
+    {
+      "id": "FU-1134",
+      "title": "The demand predictor averages a CPU figure that can now be None, and nothing calls it",
+      "why": "optimizer/predictor.py's predict_demand reads h.get(\"cpu_percent\", 0) from the monitor's history into np.average. Since W746 the monitor reports None when the host cannot be read, which would raise a TypeError there (get() returns the None, not the default). predict_demand and ResourceMonitor.get_history have no caller (the call was searched, not the method name), so nothing is reached today; it breaks the day a caller is added.",
+      "source": "W746 (preparing the round)",
+      "found": "2026-10-17",
+      "files": [
+        "agentic_core/optimizer/predictor.py",
+        "agentic_core/optimizer/monitor.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "tier-3 and unreached: P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
+      "tier": 3
+    },
+    {
+      "id": "FU-1135",
+      "title": "tiers.machine reports a CUDA device whenever nvidia-smi is on PATH, and states nothing about NPU, QPU or PPU",
+      "why": "ai/native/tiers.py machine() sets cuda=True when shutil.which(\"nvidia-smi\") finds the tool: that shows the tool is installed, not that this process can see a device (the basis names the evidence; the boolean, which gates the GPU tiers, does not). No field says NPU, QPU or PPU were not probed. Raised by the audits' completeness critic and confirmed on the source; W746 leaves tiers.py unedited, because an older guard pins machine()'s own memory read, and its host observation hands RAM total and CUDA to machine() rather than read them again.",
+      "source": "W746 (audit wf1 completeness critic)",
+      "found": "2026-10-17",
+      "files": [
+        "agentic_core/ai/native/tiers.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "tier-3: P3.30 owns tier-3 rows (Owner ruling 2026-10-09); no route names the tier probe",
+      "tier": 3
+    },
+    {
+      "id": "FU-1136",
+      "title": "The host CPU figure's sampling window reaches no page: four surfaces print the percentage without the window it covers",
+      "why": "W746 states each host CPU reading's window and its basis in every answer (host_cpu_window_seconds and host_cpu_basis on the organism vitals route, cpu_window_seconds and host_basis on the Home summary, cpu_window_seconds in the sovereign cycle's resources), and labels the figures as the host's. No page renders the window: the Home page's Host CPU vital (DashboardNew.tsx), the shell's cardiovascular tooltip (BiometricStatus.tsx), Introspection's host CPU headroom (Introspection.tsx) and the cycle page's Host CPU metric (SovereignEvolution.tsx) print the percentage alone, so a reader cannot tell a 0.1 s reading from a 5 s one. Found by the self-check of the W746 diff (keys produced and shown by no page).",
+      "source": "W746 (the round's self-check)",
+      "found": "2026-10-17",
+      "files": [
+        "apps/workstation-superapp/src/pages/DashboardNew.tsx",
+        "apps/workstation-superapp/src/components/BiometricStatus.tsx",
+        "apps/workstation-superapp/src/pages/cognitive/Introspection.tsx",
+        "apps/workstation-superapp/src/pages/evolution/SovereignEvolution.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.41",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "a tier-2 invisible shortfall: P2.41 holds the standing tier-2 rows",
+      "tier": 2
     }
   ],
   "routes": [

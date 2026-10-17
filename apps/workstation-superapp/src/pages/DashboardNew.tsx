@@ -20,7 +20,7 @@ import { ServingNow } from '../components/ServingNow';   // W737 (FU-967)
 // metrics): vitals + projects from the live stats endpoint, organism health from /organism/status.
 
 interface ActivityItem { id: string; type: string; msg: string; time: string; }
-interface Vitals { cpu: number; memory: number; totalProjects: number; }
+interface Vitals { cpu: number | null; memory: number | null; totalProjects: number; }
 
 // §3A — the two distinct, complementary ways the platform serves each user.
 const JOURNEYS = [
@@ -110,7 +110,10 @@ export const DashboardNew: React.FC = () => {
     }).catch(() => setBackendDown(true));
 
     axios.get('/api/v1/projects/stats/summary').then(({ data }) => {
-      setVitals({ cpu: data.cpu_percent ?? 0, memory: data.memory_percent ?? 0, totalProjects: data.total_projects ?? 0 });
+      // W746 - an unread host figure arrives as null and stays null; coalescing it to zero printed an idle machine
+      setVitals({ cpu: typeof data.cpu_percent === 'number' ? data.cpu_percent : null,
+                  memory: typeof data.memory_percent === 'number' ? data.memory_percent : null,
+                  totalProjects: data.total_projects ?? 0 });
     }).catch(() => {});
 
     // W493 (FU-205) - the autonomy levers the identity copy claims, read rather than assumed
@@ -325,7 +328,7 @@ export const DashboardNew: React.FC = () => {
                 <Vital label="Measured Health"
                        value={!health ? '—' : health.measuredOnly === null ? 'not measured'
                               : `${Math.round(health.measuredOnly * 100)}%`}
-                       pct={health && health.measuredOnly !== null ? health.measuredOnly * 100 : 0} tone="aura" />
+                       pct={health && health.measuredOnly !== null ? health.measuredOnly * 100 : null} tone="aura" />
                 {/* the blend is not hidden: it is stated as the blend, beside the measured figure */}
                 {health && health.unmeasuredShare > 0 && (
                   <p className="text-[10px] text-amber-400/80 font-bold -mt-4" data-testid="home-composite-health-basis">
@@ -336,8 +339,9 @@ export const DashboardNew: React.FC = () => {
                     ({health.unmeasuredTerms.join(', ')}).
                   </p>
                 )}
-                <Vital label="CPU" value={vitals ? `${vitals.cpu.toFixed(1)}%` : '—'} pct={vitals?.cpu ?? 0} tone="highlight" />
-                <Vital label="Memory" value={vitals ? `${vitals.memory.toFixed(1)}%` : '—'} pct={vitals?.memory ?? 0} tone="highlight" />
+                {/* W746 - these are the HOST's figures (every program on the machine), and an unread one says so */}
+                <Vital label="Host CPU" value={!vitals ? '—' : vitals.cpu != null ? `${vitals.cpu.toFixed(1)}%` : 'not measured'} pct={vitals?.cpu ?? null} tone="highlight" />
+                <Vital label="Host memory" value={!vitals ? '—' : vitals.memory != null ? `${vitals.memory.toFixed(1)}%` : 'not measured'} pct={vitals?.memory ?? null} tone="highlight" />
                 <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-500 tracking-widest">
                   <span>Projects</span><span className="text-emerald-400">{vitals?.totalProjects ?? '—'}</span>
                 </div>
@@ -353,13 +357,16 @@ export const DashboardNew: React.FC = () => {
   );
 };
 
-const Vital: React.FC<{ label: string; value: string; pct: number; tone: 'aura' | 'highlight' }> = ({ label, value, pct, tone }) => (
+// W746 - pct is null for a figure that was not read, and then no meter is drawn: an empty bar reads as 0%
+const Vital: React.FC<{ label: string; value: string; pct: number | null; tone: 'aura' | 'highlight' }> = ({ label, value, pct, tone }) => (
   <div className="space-y-2">
     <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-500 tracking-widest">
       <span>{label}</span><span className={tone === 'aura' ? 'text-aura' : 'text-highlight'}>{value}</span>
     </div>
-    <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
-      <div className={`h-full ${tone === 'aura' ? 'bg-aura' : 'bg-highlight'} transition-all duration-1000`} style={{ width: `${Math.min(100, Math.max(0, pct))}%` }} />
-    </div>
+    {pct !== null && (
+      <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
+        <div className={`h-full ${tone === 'aura' ? 'bg-aura' : 'bg-highlight'} transition-all duration-1000`} style={{ width: `${Math.min(100, Math.max(0, pct))}%` }} />
+      </div>
+    )}
   </div>
 );

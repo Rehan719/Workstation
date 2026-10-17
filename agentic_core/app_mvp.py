@@ -15,7 +15,6 @@ import asyncio
 import logging
 import os
 
-import psutil
 from dotenv import load_dotenv
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,6 +24,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("workstation.mvp")
 
 from agentic_core.config import settings
+# W746 - imported at boot, so the one host observation opens its first sampling window with the process
+from agentic_core.organism import host_observation as _host_obs  # noqa: E402
 
 # ── App ───────────────────────────────────────────────────────────────────────
 app = FastAPI(
@@ -623,14 +624,22 @@ async def biometrics_status():
         projects = []
         active = 0
 
-    cpu  = psutil.cpu_percent(interval=None)
-    mem  = psutil.virtual_memory()
+    #  W746 - THE ONE HOST OBSERVATION, over a window it states. resource_flow, the load label and the ATP load
+    #  below are all derived from these two figures, so a figure that could not be read refuses the route
+    #  with its reason rather than letting a 0 stand in for it.
+    _host = _host_obs.observe()["host"]
+    if _host["cpu_percent"] is None or _host["memory_percent"] is None:
+        from fastapi import HTTPException as _HTTPExc
+        raise _HTTPExc(status_code=503, detail=("the host could not be read, so no vital derived from it is "
+                                                f"given: {_host['cpu_basis']}; {_host['memory_basis']}"))
+    cpu  = _host["cpu_percent"]
+    mem_percent = _host["memory_percent"]
     ws   = len(_ws.connections)
     imm  = immune.status()
     nervous_status = nervous.status()
 
     resource_flow = max(0.0, 100.0 - cpu)
-    peristaltic_delay = round(max(1, mem.percent / 20), 1)
+    peristaltic_delay = round(max(1, mem_percent / 20), 1)
 
     # ATP Simulator — molecular energy model (real biomimetic calculation)
     try:
@@ -712,6 +721,9 @@ async def biometrics_status():
         # percent over 20 — not a delay in milliseconds — and says so too.
         "cardiovascular": {"resource_flow": round(resource_flow, 1), "peristaltic_delay": peristaltic_delay,
                            "host_cpu_percent": round(cpu, 1),
+                           #  W746 - how long the CPU figure's window was, and what it covers, travel with it
+                           "host_cpu_window_seconds": _host["cpu_window_seconds"],
+                           "host_cpu_basis": _host["cpu_basis"],
                            "resource_flow_basis": "host CPU headroom (100 − cpu%) — spare capacity, not workload",
                            "peristaltic_delay_basis": "host memory percent ÷ 20 — a load index, not milliseconds"},
         # the platform's OWN activity: running projects and open websocket channels, nothing about the host
@@ -821,8 +833,8 @@ async def _vitals_loop():
     while True:
         try:
             projects = _all_projects()
-            cpu = psutil.cpu_percent(interval=None)
-            mem = psutil.virtual_memory().percent
+            _host = _host_obs.observe()["host"]          # W746 - the one host observation; None when unread, never 0
+            cpu, mem = _host["cpu_percent"], _host["memory_percent"]
             active = sum(1 for p in projects if p.status == "running")
             await _ws.broadcast({
                 "type": "SYSTEM_VITALS",

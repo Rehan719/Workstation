@@ -304,12 +304,11 @@ async def project_stats() -> dict:
         by_stage[p.stage] = by_stage.get(p.stage, 0) + 1
         by_realm[p.realm] = by_realm.get(p.realm, 0) + 1
         total_outputs += len(p.outputs)
-    try:
-        import psutil as _psutil
-        cpu = _psutil.cpu_percent(interval=None)
-        mem = _psutil.virtual_memory().percent
-    except Exception:
-        cpu, mem = 0.0, 0.0
+    #  W746 - the one host observation. A figure it could not read was 0.0 here, which the Home page printed as
+    #  an idle machine; it is None now, with its reason.
+    from agentic_core.organism.host_observation import observe as _observe_host
+    _host = _observe_host()["host"]
+    cpu, mem = _host["cpu_percent"], _host["memory_percent"]
 
     total = len(projects)
 
@@ -320,8 +319,10 @@ async def project_stats() -> dict:
         "total_outputs": total_outputs,
         "active": sum(1 for p in projects if p.status == "running"),
         "complete": sum(1 for p in projects if p.stage == "commercialise"),
-        "cpu_percent": round(cpu, 1),
-        "memory_percent": round(mem, 1),
+        "cpu_percent": None if cpu is None else round(cpu, 1),
+        "memory_percent": None if mem is None else round(mem, 1),
+        "cpu_window_seconds": _host["cpu_window_seconds"],
+        "host_basis": f"{_host['cpu_basis']} | {_host['memory_basis']}",
         #  W642 (FU-655, ledger v14 R5) - this was min(1, 0.70 + 0.02 x the number of projects): a formula
         #  over a COUNT, returned as a health figure. Nothing measures swarm health here. The key stays so a
         #  reader of it gets a statement rather than a KeyError, and the statement is that it is not measured.
