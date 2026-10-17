@@ -13092,11 +13092,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W748",
       "note": "",
       "slot_source": "a suite-reliability rider, beside the parallel-stall row on the same item",
-      "tier": 3
+      "tier": 3,
+      "because": "refuted",
+      "because_means": "the row's premise was measured and did not hold; nothing needed building",
+      "close_note": "Premise refuted: each xdist worker has its own DATA_DIR since W507, so no profile store is shared between workers and no per-test user or store was needed (the single user's profile is under this run's DATA_DIR: test_w748_no_test_leaves_the_single_users_profile_saved, leg L4a; per-worker isolation itself is test_xdist_iso's). The W640 red was a same-worker leak: test_w505_p23 saved a profile and never cleared it. It now clears it in a finally and asserts the clear (leg L4b, driven by running it), the W640 comment that diagnosed a cross-worker race carries its correction, and a census requires every profile-saving test to clear or restore after its last save (leg L4c)."
     },
     {
       "id": "FU-677",
@@ -13278,11 +13281,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W748",
       "note": "",
       "slot_source": "a suite-reliability rider, beside the parallel-stall and shared-profile rows",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A beat refreshes a newly born entity's never-refreshed cadence layers, which the board pack hashes, and moves its version - driven with every autonomy switch off (test_w748_a_beat_between_two_assemblies_moves_the_pack_and_a_beat_first_leaves_nothing_due, leg L2). The production heartbeat loop that supplied such beats in every worker is stopped and waited for in the module client fixture, and no loop is alive in the process, counted over every heartbeat object and on the client's own event loop (test_w748_no_heartbeat_loop_runs_beside_the_tests_and_the_product_still_starts_one, leg L1); the fixture's teardown census keeps it stopped, and the product still starts its loop (leg L1b). Closed on elimination: with it stopped, no other background work in a worker writes a pack input during a test - the other startup task (the vitals loop) only reads, the remaining create_task sites are unreachable by any route or awaited in place, nothing calls the swarm signalling listener, and stores are per worker since W507. The two-in-three rate was not reproduced; the window from birth to the first pack includes the establish's throttled gateway waits, during which the loop could beat."
     },
     {
       "id": "FU-686",
@@ -22451,6 +22457,43 @@
       "note": "",
       "slot_source": "tier-3 finding: P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
       "tier": 3
+    },
+    {
+      "id": "FU-1141",
+      "title": "The suite sends every model call through the 20-calls-a-minute rate limiter, which sleeps while holding its lock",
+      "why": "GATEWAY_RPM is set nowhere in the tests or in CI, so the gateway's token bucket allows 20 calls a minute for the whole suite, and _RateLimiter.acquire sleeps up to three seconds while holding its asyncio lock, so every other caller in the process waits behind it. A second writer sets the limit at run time: ModelGateway._sync_reconfig takes gateway.rpm_limit from the organism configuration, a Change Control lever, so a conftest default could be overridden in the middle of a run; agentic_core/config.py reads GATEWAY_RPM again for the settings the app reports. The lock is one asyncio.Lock shared by every event loop in the process, the test client's and each test's own; a waiter on one loop woken from another is the candidate cause behind a test that stalled inside a keyword selection (a hypothesis, read from code, not reproduced). Measure the limiter's share of suite time first, then choose the default and where it is set.",
+      "source": "W748 (audit-2 cluster G2)",
+      "found": "2026-10-17",
+      "files": [
+        "integration_tests/conftest.py",
+        "agentic_core/ai/gateway.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "a suite-reliability rider, beside the parallel-stall rows already on this item",
+      "tier": 3
+    },
+    {
+      "id": "FU-1142",
+      "title": "The operations record is mostly rows written before the suite was isolated, and nothing marks them as test rows",
+      "why": "Measured read-only on 2026-10-16: 1,843 of the 2,000 rows of the operations record predate the round that isolated the suite's store (W394, 2026-08-31), and 1,776 are dated 2026-06-28..30, the window of the suite runs that also wrote a test double's rows (of the 1,776: 1,573 served by the native floor, 162 by the test double, 41 by local-model names). Nothing marks the others as test rows (vsb_id is empty on 1,751 and ref on 1,487), and model health and the resource rankings read them. The test double's rows are moved aside under their own ruling; whether these move is the Owner's decision, recommended no: they are real floor outcomes of that period and nothing identifies them as tests. The store keeps the newest 2,000 rows, so they leave on their own as new outcomes are recorded.",
+      "source": "W748 (audit-2 cluster G2)",
+      "found": "2026-10-17",
+      "files": [
+        "agentic_core/api/operational_excellence.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.10",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the operations record's quality is this item's, beside the test-double rows on the same item",
+      "tier": 2
     }
   ],
   "routes": [

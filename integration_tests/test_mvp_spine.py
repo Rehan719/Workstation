@@ -8,7 +8,7 @@ Tests verify that each real AI endpoint:
 3. Does NOT contain obvious simulation markers
 
 Run with:
-    pytest integration_tests/test_mvp_spine.py --noconftest -v
+    python -m pytest integration_tests -q        # conftest.py gives the run its own store roots; this file refuses to run without them, or on data/
 
 AI-dependent tests are automatically skipped when no provider is configured.
 Set ANTHROPIC_API_KEY (or have Ollama running) for the full suite.
@@ -25,6 +25,26 @@ os.environ.setdefault("PROPOSALS_DIR", "data/test_proposals")
 # floor instantly (no waiting on real local inference). The in-house guarantee is unchanged:
 # served_by stays an OWNED resource and any_external stays False.
 os.environ.setdefault("AI_DISABLE_LOCAL", "1")
+
+#  W748 (FU-1040) - THIS FILE NEVER RUNS AGAINST THE REAL STORE. integration_tests/conftest.py gives every run, and every
+#  xdist worker, its own store roots before anything resolves a store: DATA_DIR (agentic_core.config) and
+#  WORKSTATION_DATA_DIR (config/paths.py - the memory store, the interactions database, the meeting log). Skip the
+#  conftest (this docstring used to say to) and both are unset, every store resolves to the repository's data/, and
+#  the tests write into the Owner's record: a test double's operation rows reached it that way. Refused here, at
+#  import, before any fixture or test imports the app; an explicit scratch directory for both is honoured.
+def _refuse_an_unisolated_run(env=os.environ):
+    _real = os.path.normcase(os.path.realpath(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, "data")))
+    _roots = [env.get("DATA_DIR") or "", env.get("WORKSTATION_DATA_DIR") or ""]
+    if not all(_roots) or any(os.path.normcase(os.path.realpath(_r)) == _real for _r in _roots):
+        raise RuntimeError(
+            "DATA_DIR or WORKSTATION_DATA_DIR is not set, or names the repository's own data/, so "
+            "integration_tests/conftest.py did not isolate this run and this suite would write into the real data/ store. "
+            "Run it with the conftest loaded (python -m pytest integration_tests -q), or set both to a scratch directory.")
+    return _roots[0]
+
+
+_refuse_an_unisolated_run()
 
 def _queued_amounts(tr, vsb_id):
     """The amounts QUEUED for one VSB, read the way the cycle's intake reads them.
@@ -63,7 +83,30 @@ _ai_only = pytest.mark.skipif(
 def client():
     from agentic_core.app_mvp import app
     with TestClient(app, raise_server_exceptions=True) as c:
+        #  W748 (FU-685, FU-417, FU-1072, FU-301) - ENTERING THE CLIENT FIRES STARTUP, AND STARTUP STARTS THE PRODUCTION
+        #  HEARTBEAT LOOP on this client's event-loop thread. Left running, it beat on its own clock for the whole worker
+        #  beside tests that run their own beats and read what a beat writes: the first beat that picks a newly born
+        #  entity refreshes its never-refreshed cadence layers, which a board pack hashes; a beat decides whether a
+        #  layer is due; and while a test had auto_ship on it could reship beside that test's own beat, on another
+        #  event loop. Stopped here, once, where every test that uses the app passes, and WAITED FOR, so no test starts
+        #  while it winds down; the app is unchanged, and a test that needs a beat runs one.
+        import asyncio as _aio_startup
+        from agentic_core.organism import heartbeat as _hb_startup
+
+        async def _stop_the_startup_loop():
+            _hb_startup.heartbeat.stop()
+            _t = _hb_startup.heartbeat._task
+            if _t is not None and not _t.done():
+                _t.cancel()
+                await _aio_startup.wait({_t})
+        c.portal.call(_stop_the_startup_loop)
         yield c
+        #  ...AND NOTHING STARTED IT AGAIN while this module ran in this worker (POST /heartbeat/start on this loop would).
+        #  Every heartbeat object is counted: a reload splits the singleton and the old object keeps its loop.
+        import gc as _gc_startup
+        _alive = [id(o) for o in _gc_startup.get_objects() if type(o).__name__ == "OrganismHeartbeat"
+                  and callable(getattr(getattr(o, "_task", None), "done", None)) and not o._task.done()]
+        assert not _alive, "a test started the heartbeat loop again and left it running beside the tests after it"
 
 
 # ── Health ───────────────────────────────────────────────────────────────────
@@ -7477,26 +7520,34 @@ def test_w420_autonomy_settings_survive_a_restart():
     h = hb.OrganismHeartbeat()
     assert all(getattr(h, k) is False for k in h._AUTONOMY_KEYS), "all five must default OFF"
 
-    h.configure(auto_economy=True, auto_compliance=True)
-    assert h.autonomy_persisted is True, "the save reported failure"
+    try:
+        h.configure(auto_economy=True, auto_compliance=True)
+        assert h.autonomy_persisted is True, "the save reported failure"
 
-    # A genuinely fresh instance — this is the assertion the old code could not pass.
-    importlib.reload(hb)
-    h2 = hb.OrganismHeartbeat()
-    assert h2.auto_economy is True, "auto_economy did not survive a restart"
-    assert h2.auto_compliance is True, "auto_compliance did not survive a restart"
-    assert h2.auto_evolve is False, "a flag that was never set must not come back on"
+        # A genuinely fresh instance — this is the assertion the old code could not pass.
+        importlib.reload(hb)
+        h2 = hb.OrganismHeartbeat()
+        assert h2.auto_economy is True, "auto_economy did not survive a restart"
+        assert h2.auto_compliance is True, "auto_compliance did not survive a restart"
+        assert h2.auto_evolve is False, "a flag that was never set must not come back on"
 
-    # Status must let a surface tell the user whether their choice actually stuck.
-    st = h2.status()
-    for k in ("auto_evolve", "auto_economy", "auto_align", "auto_compliance", "auto_ship"):
-        assert k in st, "%s is not reported, so no UI can show its real state" % k
-    assert st["autonomy_persisted"] is True
+        # Status must let a surface tell the user whether their choice actually stuck.
+        st = h2.status()
+        for k in ("auto_evolve", "auto_economy", "auto_align", "auto_compliance", "auto_ship"):
+            assert k in st, "%s is not reported, so no UI can show its real state" % k
+        assert st["autonomy_persisted"] is True
 
-    # Turning one back OFF must persist too — a one-way switch would be its own defect.
-    h2.configure(auto_economy=False)
-    importlib.reload(hb)
-    assert hb.OrganismHeartbeat().auto_economy is False, "switching OFF did not persist"
+        # Turning one back OFF must persist too — a one-way switch would be its own defect.
+        h2.configure(auto_economy=False)
+        importlib.reload(hb)
+        assert hb.OrganismHeartbeat().auto_economy is False, "switching OFF did not persist"
+    finally:
+        #  W748 (FU-417) - AND THE SWITCHES ARE LEFT AS THIS TEST FOUND THEM (all five off: its first assertion), pass
+        #  or fail. It turned auto_compliance on and only auto_economy back off, then reloaded the module, so the store
+        #  and the module's heartbeat kept compliance ON for every later test in the worker, whose beats re-screened
+        #  compliance unasked.
+        hb.heartbeat.configure(auto_economy=False, auto_compliance=False)
+        assert hb.heartbeat.autonomy_persisted is True, "the switches went off in memory and the store kept them on"
 
 
 def test_w421_compliance_verdict_and_hold_reach_the_entity_owner():
@@ -23827,6 +23878,8 @@ def test_w503b_a_failed_visit_leaves_a_trace(client):
         # suite a background heartbeat loop is running, so by then the singleton had moved on and the
         # field came back None. It passed alone and failed in the suite, which is what a guard reading
         # its environment instead of driving it looks like.
+        #  W748 - the module client fixture now stops that loop and waits for it, so the full suite runs no
+        #  background beat; this read stays here, where it holds either way.
         _st1 = client.get("/api/v1/heartbeat/status").json()
         assert (_st1.get("last_vsb_failed") or {}).get("vsb_id") == "vsb-w503f", _st1.get("last_vsb_failed")
 
@@ -24905,25 +24958,31 @@ def test_w505_p23_avatar_and_profile_honesty(client):
         f"an emptied profile still reports as applied: {r.get('profile_applied')}"
     # ProfilePut declares its five fields at the TOP level, not nested under "profile" - sent nested,
     # every field defaults to "" and no preamble is built, which is the product behaving correctly.
-    _prof = client.put("/api/v1/user/profile", json={
-        "about_you": "a ward pharmacist", "goals": "reduce medication waste",
-        "context": "a 400-bed teaching hospital", "constraints": "",
-        "success_criteria": "measurable waste reduction"})
-    assert _prof.status_code in (200, 201), _prof.text
-    r3 = client.post("/api/v1/avatar/chat", json={
-        "message": "what should I measure first?", "context": "general", "session_id": "w505-p23c"}).json()
-    # W623 (FU-533, M1 v9 R5.0) — applied means READ: on the floor the profile reaches the prompt and the floor does not
-    # read it, so the reply says so; a model-served reply says it was applied.
-    if r3.get("served_by") in (None, "native"):
-        assert r3.get("profile_applied") is False and r3.get("profile_state") == "not_usable_by_floor", (
-            r3.get("profile_applied"), r3.get("profile_state"))
-    else:
-        assert r3.get("profile_applied") is True, \
-            f"a stored profile shaped the answer and the reply says it did not: {r3.get('profile_applied')}"
-    # and asking in English must NOT produce the note — a reason for something that did not happen
-    r2 = client.post("/api/v1/avatar/chat", json={
-        "message": "same question", "context": "general", "session_id": "w505-p23b"}).json()
-    assert r2.get("language_note") is None, r2.get("language_note")
+    try:
+        _prof = client.put("/api/v1/user/profile", json={
+            "about_you": "a ward pharmacist", "goals": "reduce medication waste",
+            "context": "a 400-bed teaching hospital", "constraints": "",
+            "success_criteria": "measurable waste reduction"})
+        assert _prof.status_code in (200, 201), _prof.text
+        r3 = client.post("/api/v1/avatar/chat", json={
+            "message": "what should I measure first?", "context": "general", "session_id": "w505-p23c"}).json()
+        # W623 (FU-533, M1 v9 R5.0) — applied means READ: on the floor the profile reaches the prompt and the floor does not
+        # read it, so the reply says so; a model-served reply says it was applied.
+        if r3.get("served_by") in (None, "native"):
+            assert r3.get("profile_applied") is False and r3.get("profile_state") == "not_usable_by_floor", (
+                r3.get("profile_applied"), r3.get("profile_state"))
+        else:
+            assert r3.get("profile_applied") is True, \
+                f"a stored profile shaped the answer and the reply says it did not: {r3.get('profile_applied')}"
+        # and asking in English must NOT produce the note — a reason for something that did not happen
+        r2 = client.post("/api/v1/avatar/chat", json={
+            "message": "same question", "context": "general", "session_id": "w505-p23b"}).json()
+        assert r2.get("language_note") is None, r2.get("language_note")
+    finally:
+        #  W748 (FU-676) - AND THE PROFILE THIS TEST SAVED IS CLEARED, pass or fail, back to the empty profile it made
+        #  at its start. It was left saved, so a later test in this worker reading "no profile" read this one.
+        _clr = client.delete("/api/v1/user/profile")
+        assert _clr.status_code == 200, ("the saved profile was not cleared, so it is left for later tests", _clr.status_code)
 
     # ── 4 (display) + 5: the two surfaces ──
     panel = (root / "apps/workstation-superapp/src/components/avatar/ConversationPanel.tsx").read_text(encoding="utf-8")
@@ -28702,6 +28761,8 @@ def test_w512_the_cell_has_a_temporal_spine_whose_middle_is_the_present(client):
     # /api/v1/heartbeat/stop and the module-scoped app persists (beating False at beats 2). A guard must DRIVE
     # its precondition, never observe the ambient environment (M-VERIF-02) - so both states are driven below
     # and neither depends on what any other test did.
+    #  W748 - the module client fixture now stops the startup loop and waits for it, so the beat in the test env
+    #  is stopped: the first version's assumption became true, and both states are still driven below.
     import agentic_core.organism.heartbeat as _hb
     _real_status = _hb.heartbeat.status
 
@@ -42042,7 +42103,11 @@ def test_w593_p220_the_last_three_a_count_a_verdict_and_a_cadence_that_reaches_e
             _os4.environ[_k] = _d4
         import importlib
         import agentic_core.config as _cfg4
-        importlib.reload(_cfg4)
+        #  W748 - the settings singleton is pointed at this test's data dir and restored after it. Reloading the
+        #  config module split every class it defines: config's own functions then raised a new StoreUnavailable
+        #  that no module's except clause names, and a later test's refusal escaped as an error.
+        _saved_settings4 = _cfg4.settings
+        _cfg4.settings = _cfg4.Settings()          # a frozen instance, read from the env set above
 
         #  FU-425: the counter reads the writer's own term
         from agentic_core.api.vsb import OPERATING_STATUS as _OP4
@@ -42113,9 +42178,9 @@ def test_w593_p220_the_last_three_a_count_a_verdict_and_a_cadence_that_reaches_e
                 _os4.environ.pop(_k, None)
             else:
                 _os4.environ[_k] = _v
-        import importlib as _il4
         import agentic_core.config as _c4
-        _il4.reload(_c4)
+        if "_saved_settings4" in locals():
+            _c4.settings = _saved_settings4
 
 
 def test_w593_p220_the_qep_flagship_service_reports_only_what_it_holds():
@@ -48013,6 +48078,9 @@ def test_w637_every_writer_stamps_what_it_wrote_and_no_gate_counts_a_placeholder
     #  is the DIAGNOSIS, not an observation; the next suite, with this line added, was green.
     #  The profile is removed first. (A second worker can still save one in between; that race is the shared
     #  store's and is registered, and this narrows the window from a whole test to two calls.)
+    #  W748 (FU-676) - THAT DIAGNOSIS DID NOT HOLD: every xdist worker has its own DATA_DIR (conftest, W507), so no other
+    #  worker reaches this store. The profile on disk was left by test_w505_p23 in this same worker; it now clears it,
+    #  and the line below keeps this reading independent of it either way.
     client.delete("/api/v1/user/profile")
     _np638 = client.post("/api/v1/education/feedback", json={
         "student_work": "An essay on the causes of the First World War.", "subject": "History"}).json()
@@ -68530,3 +68598,309 @@ def test_w752_the_settings_and_history_stores_are_never_overwritten_from_a_faile
                 p.unlink(missing_ok=True)
             else:
                 p.write_bytes(b)
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W748 - THE SUITE ITSELF. A test's precondition was state that something other than that test wrote, inside the
+#  same worker: the production heartbeat loop beat beside the tests, and two tests left state behind (a saved profile,
+#  an autonomy switch). And a run without the conftest wrote into the real data/ store. Five tests, one per leg
+#  family, so one red leg cannot hide the others.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w748_no_heartbeat_loop_runs_beside_the_tests_and_the_product_still_starts_one(client):
+    """W748 (FU-685, FU-417, FU-1072, FU-301) - entering the module's TestClient fires startup, and startup starts the
+    production heartbeat loop on the client's event-loop thread, where it beat on its own clock beside tests that drive
+    their own beats and read what a beat writes. The module fixture stops it and waits. L1: no loop is alive, counted
+    two ways. L1b: the product, untouched, still starts one."""
+    import asyncio as _aio_w748
+    import gc as _gc_w748
+
+    import agentic_core.organism.heartbeat as _hbm_w748
+
+    # ── L1. NO HEARTBEAT LOOP RUNS IN THIS PROCESS ──
+    #  EVERY OrganismHeartbeat object alive, not only the module's: importlib.reload has split this singleton in the
+    #  suite, and the instance startup used keeps its loop after the module attribute has moved on.
+    _insts_w748 = [o for o in _gc_w748.get_objects() if type(o).__name__ == "OrganismHeartbeat"]
+    assert any(o is _hbm_w748.heartbeat for o in _insts_w748), (
+        "the census did not find the module's own heartbeat, so it is not walking the objects it claims to",
+        len(_insts_w748))
+    _live_w748 = [id(o) for o in _insts_w748
+                  if callable(getattr(getattr(o, "_task", None), "done", None)) and not o._task.done()]
+    assert _live_w748 == [], (
+        "a heartbeat loop is still running beside the tests. It beats on its own clock - the first beat that picks a "
+        "newly born entity refreshes its never-refreshed layers, a beat decides whether a layer is due, and it "
+        "reships when a test turns auto_ship on - so a test's precondition can change between two of its own lines",
+        len(_live_w748), len(_insts_w748))
+
+    #  ...and on the client's own loop, by coroutine name. The census proves it can see a task by finding one it starts
+    #  itself: that loop always holds other tasks, so "the list is not empty" could never fail.
+    async def _w748_witness():
+        await _aio_w748.sleep(3600)
+
+    async def _w748_plant():
+        #  RETURNED FROM A COROUTINE, not a lambda: portal.call awaits any awaitable its callable returns, and a Task
+        #  is awaitable, so a lambda returning the task would wait out the whole hour
+        return _aio_w748.get_running_loop().create_task(_w748_witness())
+
+    _wt_w748 = client.portal.call(_w748_plant)
+    try:
+        _coros_w748 = client.portal.call(lambda: [getattr(t.get_coro(), "__qualname__", "")
+                                                  for t in _aio_w748.all_tasks() if not t.done()])
+        assert any(c.endswith("_w748_witness") for c in _coros_w748), (
+            "the census cannot see a task it just started on the client's loop, so it could not see a loop there",
+            _coros_w748)
+        assert not [c for c in _coros_w748 if c.endswith("OrganismHeartbeat.run")], (
+            "the heartbeat's loop is a live task on the client's event loop", _coros_w748)
+    finally:
+        client.portal.call(_wt_w748.cancel)
+
+    # ── L1b. ...AND THE PRODUCT STILL STARTS ITS RHYTHM. The suite stops ITS copy in its fixture; the app is untouched,
+    #  so a fresh client over the same app must start one. Removing the heartbeat from startup turns L1 green and this red.
+    from agentic_core.app_mvp import app as _app_w748
+    with TestClient(_app_w748):
+        _hb2_w748 = _hbm_w748.heartbeat
+        _t2_w748 = _hb2_w748._task
+        _started_w748 = (_t2_w748 is not None and not _t2_w748.done(), _hb2_w748.running)
+        _hb2_w748.stop()
+        if _t2_w748 is not None and not _t2_w748.done():
+            #  on the task's OWN loop: Task.cancel is not thread-safe, and if start() returned early this task belongs
+            #  to the module client's loop, not this one
+            _t2_w748.get_loop().call_soon_threadsafe(_t2_w748.cancel)
+    assert _started_w748 == (True, True), (
+        "startup no longer starts the heartbeat loop - the product's rhythm was removed, not the suite's copy of it",
+        _started_w748)
+
+
+def test_w748_a_beat_between_two_assemblies_moves_the_pack_and_a_beat_first_leaves_nothing_due(client, monkeypatch):
+    """W748 - REPRODUCTIONS: they pass before and after this round and name the causes two rows could not. L2 (FU-685):
+    a beat between two board-pack assemblies moves the pack. L3 (FU-417): a beat that lands first leaves the test's own
+    beat with nothing due, no cadence_refresh and nothing raised. Every autonomy switch is OFF for these beats."""
+    import asyncio as _aio_w748
+    import time as _t_w748
+
+    import agentic_core.economy.living_vsbs as _lv_w748
+    import agentic_core.organism.heartbeat as _hbm_w748
+    from agentic_core.api import business_plan as _bp_w748
+    from agentic_core.organism import cadence as _cad_w748
+
+    _acted_w748 = {"compliance_rescreen", "operate_vsb", "evolution_applied", "evolution_cycle", "evolve_vsb",
+                   "alignment", "reshipped_stale_repo", "metabolic_cycle", "transfer_reconcile", "intake_reconcile"}
+
+    def _quiet_w748():
+        #  a re-screen writes the section-11 verdict the pack stamps and an economy cycle posts to the economy it
+        #  hashes, so with a switch on a pack could move with no cadence refresh at all
+        for _k_w748 in _hbm_w748.heartbeat._AUTONOMY_KEYS + ("auto_metabolic",):
+            monkeypatch.setattr(_hbm_w748.heartbeat, _k_w748, False)
+
+    # ── L2. (FU-685) A BEAT BETWEEN TWO ASSEMBLIES MOVES THE PACK; WITH NONE BETWEEN, IT DOES NOT ──
+    #  The pack hashes its strategic and action-plan layers, assembled from the latest cadence refresh. A layer
+    #  refreshes when it is due, and a newly born entity's layers have never been refreshed, so the first beat that
+    #  picks it refreshes them. The roster the beat rotates over is this entity alone.
+    _vid_w748 = client.post("/api/v1/genesis/establish", json={
+        "problem": "w748 board pack probe", "domain": "education", "name": "W748PackProbeCo",
+        "concept": "weekend maths circles for year six pupils", "design": "d",
+        "commercialisation": "a termly family subscription", "ship_output": False}).json()["vsb_id"]
+    _p1_w748 = client.post(f"/api/v1/vsb/{_vid_w748}/board-pack").json()
+    _p2_w748 = client.post(f"/api/v1/vsb/{_vid_w748}/board-pack").json()
+    assert (_p2_w748["content_hash"], _p2_w748["version"]) == (_p1_w748["content_hash"], _p1_w748["version"]), (
+        "two assemblies with nothing between them already differ, so no change below can be laid at a beat",
+        _p1_w748["version"], _p2_w748["version"])
+    _quiet_w748()
+    monkeypatch.setattr(_lv_w748, "_load", lambda: {_vid_w748: {"vsb_id": _vid_w748}})
+    _bt_w748 = _aio_w748.run(_hbm_w748.heartbeat.beat())
+    _mine_w748 = [r for r in ((_hbm_w748.heartbeat.last_cadence or {}).get("refreshed") or [])
+                  if r.get("scope") == _vid_w748]
+    monkeypatch.undo()
+    assert not (_acted_w748 & set(_bt_w748.get("actions") or [])), (
+        "the in-between beat did more than the cadence, so a move below cannot be laid at a refresh",
+        _bt_w748.get("actions"))
+    assert _mine_w748, ("the beat did not refresh this entity's layers, so the pack below says nothing about a beat",
+                        _hbm_w748.heartbeat.last_cadence)
+    _p3_w748 = client.post(f"/api/v1/vsb/{_vid_w748}/board-pack").json()
+    assert _p3_w748["content_hash"] != _p2_w748["content_hash"] and _p3_w748["version"] == _p2_w748["version"] + 1, (
+        "a beat refreshed this entity's layers and its pack did not move, so a beat is not what moved W471's hash",
+        _p2_w748["version"], _p3_w748["version"])
+
+    # ── L3. (FU-417) THE FAILING BEAT'S SIGNATURE, MADE TO HAPPEN. Both apex layers are DUE; another beat refreshes
+    #  them first; the test's own beat then refreshes nothing, raises nothing, and records that nothing was due - the
+    #  absent 'cadence_refresh' W589 read as "the step raised". The other beat was the loop the module fixture stops.
+    _quiet_w748()
+    monkeypatch.setattr(_lv_w748, "_load", lambda: {})         # the apex alone, so only its two layers are in play
+    #  ...and the apex plan is put back byte for byte afterwards, pass or fail: the aged history and the two refreshes
+    #  below are this test's own writes (a refresh writes only that plan), and no test leaves state for the next one
+    _wsp_w748 = _bp_w748._path("workstation")
+    _wsb_w748 = _wsp_w748.read_bytes() if _wsp_w748.exists() else None
+    try:
+        _ws_w748 = _bp_w748._load("workstation")
+        _old_w748 = _t_w748.strftime("%Y-%m-%dT%H:%M:%SZ", _t_w748.gmtime(_t_w748.time() - 400 * 86400))
+        for _e_w748 in (_ws_w748.get("refreshes") or []):
+            if isinstance(_e_w748, dict):
+                _e_w748["at"] = _old_w748
+        _bp_w748._save(_ws_w748)
+        for _l_w748 in _cad_w748.LAYERS:
+            assert _cad_w748.due(_l_w748, _cad_w748.last_refresh_at(_bp_w748._load("workstation"), _l_w748))["due"], (
+                "the aged history did not make this layer due, so the beats below prove nothing", _l_w748)
+        _between_w748 = _aio_w748.run(_hbm_w748.heartbeat.beat())       # the beat a loop would have run in between
+        assert "cadence_refresh" in (_between_w748.get("actions") or []), (
+            "the in-between beat refreshed nothing, so the beat after it reproduces nothing",
+            _between_w748.get("actions"))
+        _own_w748 = _aio_w748.run(_hbm_w748.heartbeat.beat())           # the test's own beat
+        _lc_w748 = dict(_hbm_w748.heartbeat.last_cadence or {})
+        monkeypatch.undo()
+        assert "cadence_refresh" not in (_own_w748.get("actions") or []), _own_w748.get("actions")
+        assert _lc_w748.get("nothing_was_due") is True and _lc_w748.get("could_not_run") is None, _lc_w748
+        assert not [k for k in (_own_w748.get("steps_failed") or {}) if str(k).startswith("cadence")], (
+            "the signature had no failure in it, and this beat records one", _own_w748.get("steps_failed"))
+    finally:
+        if _wsb_w748 is None:
+            _wsp_w748.unlink(missing_ok=True)
+        else:
+            _wsp_w748.write_bytes(_wsb_w748)
+
+
+def test_w748_no_test_leaves_the_single_users_profile_saved(client):
+    """W748 (FU-676) - the profile store is this worker's own (under DATA_DIR, which conftest makes per worker and
+    test_xdist_iso holds), and the one test that left a profile behind now clears it; a census keeps every
+    profile-saving test that way."""
+    import ast as _ast_w748
+    import inspect as _insp_w748
+    import os as _os_w748
+    import pathlib as _pl_w748
+    import sys as _sys_w748
+    import textwrap as _tw_w748
+
+    from agentic_core.ai.user_context import profile_owner as _po_w748
+    from agentic_core.api import user_workspace as _uw_w748
+
+    # ── L4a. THE SINGLE USER'S PROFILE IS UNDER THIS RUN'S DATA_DIR ──
+    _data_w748 = _pl_w748.Path(_os_w748.environ["DATA_DIR"]).resolve()
+    _pp_w748 = _pl_w748.Path(_uw_w748._path_for(_po_w748(None) or "default")).resolve()
+    assert _data_w748 in _pp_w748.parents, ("the single user's profile is not under this run's DATA_DIR",
+                                            str(_pp_w748), str(_data_w748))
+
+    # ── L4b. THE ONE WRITER THAT LEFT A PROFILE, DRIVEN BY RUNNING IT ──
+    test_w505_p23_avatar_and_profile_honesty(client)
+    _left_w748 = client.get("/api/v1/user/profile").json()
+    assert _left_w748["preamble_preview"] == "" and not any((_left_w748.get("profile") or {}).values()), (
+        "test_w505_p23 leaves a saved profile for the single user, so a later test in this worker that reads 'no "
+        "profile' reads that one", _left_w748.get("profile"))
+
+    # ── L4c. EVERY TEST THAT SAVES THE PROFILE CLEARS OR RESTORES IT AFTER ITS LAST SAVE ──
+    #  Read as code (an AST of each candidate test), so a comment naming the route cannot satisfy it. The candidates are
+    #  the module's tests whose compiled constants hold the route, so the whole file is never parsed again; this test
+    #  reads the route itself and is left out by its own name. A clear is a DELETE of the route, or a write_bytes or
+    #  unlink on a name the same test bound to the profile's own path (user_workspace._path_for): an unlink of some
+    #  other file after the save is not a clear, and the first cut of this census counted one as if it were.
+    _route_w748 = "/api/v1/user/profile"
+    _me_w748 = _sys_w748._getframe().f_code.co_name
+
+    def _calls_path_for_w748(node):
+        return any(isinstance(_c, _ast_w748.Call) and (
+            (isinstance(_c.func, _ast_w748.Attribute) and _c.func.attr == "_path_for")
+            or (isinstance(_c.func, _ast_w748.Name) and _c.func.id == "_path_for")) for _c in _ast_w748.walk(node))
+
+    def _consts_w748(co):
+        for _k_w748 in co.co_consts:
+            if isinstance(_k_w748, str):
+                yield _k_w748
+            elif hasattr(_k_w748, "co_consts"):
+                yield from _consts_w748(_k_w748)
+
+    _writers_w748, _leaving_w748 = [], []
+    for _nm_w748, _fn_w748 in sorted(globals().items()):
+        _co_w748 = getattr(_fn_w748, "__code__", None)
+        if not _nm_w748.startswith("test_") or _nm_w748 == _me_w748 or _co_w748 is None:
+            continue
+        if _route_w748 not in set(_consts_w748(_co_w748)):
+            continue
+        _tree_w748 = _ast_w748.parse(_tw_w748.dedent(_insp_w748.getsource(_fn_w748)))
+        _paths_w748 = {_tg_w748.id for _n_w748 in _ast_w748.walk(_tree_w748)
+                       if isinstance(_n_w748, _ast_w748.Assign) and _calls_path_for_w748(_n_w748.value)
+                       for _tg_w748 in _n_w748.targets if isinstance(_tg_w748, _ast_w748.Name)}
+        _puts_w748, _clears_w748 = [], []
+        for _n_w748 in _ast_w748.walk(_tree_w748):
+            if not (isinstance(_n_w748, _ast_w748.Call) and isinstance(_n_w748.func, _ast_w748.Attribute)):
+                continue
+            _a0_w748 = (_n_w748.args[0].value if _n_w748.args and isinstance(_n_w748.args[0], _ast_w748.Constant)
+                        else None)
+            if _n_w748.func.attr == "put" and _a0_w748 == _route_w748:
+                _puts_w748.append(_n_w748.lineno)
+            elif ((_n_w748.func.attr == "delete" and _a0_w748 == _route_w748)
+                  or (_n_w748.func.attr in ("write_bytes", "unlink") and isinstance(_n_w748.func.value, _ast_w748.Name)
+                      and _n_w748.func.value.id in _paths_w748)):
+                _clears_w748.append(_n_w748.lineno)
+        if _puts_w748:
+            _writers_w748.append(_nm_w748)
+            if not any(_c_w748 > max(_puts_w748) for _c_w748 in _clears_w748):
+                _leaving_w748.append((_nm_w748, max(_puts_w748)))
+    assert _writers_w748, "the census found no test that saves the profile, so it is reading the wrong file or call"
+    assert _leaving_w748 == [], ("a test saves the single user's profile and does not clear it afterwards",
+                                 _leaving_w748)
+
+
+def test_w748_autonomy_switches_are_off_after_the_restart_test():
+    """W748 (FU-417) - test_w420 turned auto_compliance on and left it on in the store and in the reloaded module, so
+    every later beat in the worker re-screened compliance unasked. It now puts both switches back off, pass or fail."""
+    import importlib as _il_w748
+
+    test_w420_autonomy_settings_survive_a_restart()
+    _hbnow_w748 = _il_w748.import_module("agentic_core.organism.heartbeat")
+    _fresh_w748 = _hbnow_w748.OrganismHeartbeat()
+    _on_w748 = sorted(k for k in _fresh_w748._AUTONOMY_KEYS if getattr(_fresh_w748, k) is not False)
+    assert _on_w748 == [], (
+        "test_w420 leaves autonomy switched on in the store, so the next organism comes up with it", _on_w748)
+    assert _hbnow_w748.heartbeat.auto_compliance is False, (
+        "the module's heartbeat keeps the switch test_w420 turned on, so later beats re-screen unasked")
+
+
+def test_w748_the_suite_refuses_to_run_against_the_real_store(tmp_path):
+    """W748 (FU-1040) - a run without the conftest has no store roots and would write into the real data/ store. The
+    refusal is driven in process for every refused case and the accepted one, and once in a child, at import."""
+    import os as _os_w748
+    import pathlib as _pl_w748
+    import subprocess as _sp_w748
+    import sys as _sys_w748
+
+    _root_w748 = _pl_w748.Path(__file__).resolve().parents[1]
+    _head_w748 = "DATA_DIR or WORKSTATION_DATA_DIR is not set"
+    _real_w748 = str(_root_w748 / "data")
+    _a_w748, _b_w748 = str(tmp_path / "a"), str(tmp_path / "b")
+    _base_w748 = {k: v for k, v in _os_w748.environ.items() if k not in ("DATA_DIR", "WORKSTATION_DATA_DIR")}
+    #  IN PROCESS, every refused case and the accepted one: importing this file compiles it whole (tens of seconds)
+    for _how_w748, _env_w748 in (
+            ("both unset", dict(_base_w748)),
+            ("WORKSTATION_DATA_DIR unset", dict(_base_w748, DATA_DIR=_a_w748)),
+            ("DATA_DIR unset", dict(_base_w748, WORKSTATION_DATA_DIR=_b_w748)),
+            ("DATA_DIR on the repository's data/", dict(_base_w748, DATA_DIR=_real_w748, WORKSTATION_DATA_DIR=_b_w748)),
+            ("WORKSTATION_DATA_DIR on the repository's data/",
+             dict(_base_w748, DATA_DIR=_a_w748, WORKSTATION_DATA_DIR=_real_w748 + _os_w748.sep))):
+        with pytest.raises(RuntimeError) as _ex_w748:
+            _refuse_an_unisolated_run(_env_w748)
+        assert str(_ex_w748.value).startswith(_head_w748), (_how_w748, str(_ex_w748.value)[:200])
+    assert _refuse_an_unisolated_run(dict(_base_w748, DATA_DIR=_a_w748, WORKSTATION_DATA_DIR=_b_w748)) == _a_w748
+    #  ONE CHILD proves the refusal runs AT IMPORT. No agentic_core import is at module level, and -B writes no
+    #  bytecode, so the child writes nothing even where the refusal is missing; agentic_core is made unimportable in
+    #  it and it runs from a scratch folder all the same, so a module-level import added later still cannot open a
+    #  store here. Matched on the exception line, which no source excerpt in a traceback can print.
+    _cwd_w748 = tmp_path / "cwd"
+    _cwd_w748.mkdir()
+    _code_w748 = ("import sys; sys.modules['agentic_core'] = None; sys.path.insert(0, "
+                  + repr(str(_root_w748 / "integration_tests")) + "); import test_mvp_spine")
+    _no_w748 = _sp_w748.run([_sys_w748.executable, "-B", "-c", _code_w748], capture_output=True, text=True,
+                            encoding="utf-8", errors="replace", env=_base_w748, cwd=str(_cwd_w748), timeout=300)
+    assert not (_no_w748.returncode != 0 and not (_no_w748.stderr or "").strip()), (
+        "the child exited non-zero and printed nothing, so it never reached the import (it could not start, as under "
+        "memory exhaustion): this leg proves nothing either way", _no_w748.returncode)
+    assert _no_w748.returncode != 0 and ("RuntimeError: " + _head_w748) in (_no_w748.stderr or ""), (
+        "the suite imports with neither store root set, so a run without its conftest writes into the real data/ store",
+        _no_w748.returncode, (_no_w748.stderr or "")[-400:])
+    assert "noconftest" not in (_sys_w748.modules[__name__].__doc__ or ""), (
+        "this file's own docstring still tells a reader to run it without its conftest")
+    assert "--noconftest" not in (_root_w748 / "docs" / "DEPLOYMENT.md").read_text(encoding="utf-8"), (
+        "the deploy check still runs the suite without its conftest")
+    from agentic_core.api import operational_excellence as _oe_w748
+    from config import paths as _cp_w748
+    assert _pl_w748.Path(_os_w748.environ["DATA_DIR"]).resolve() in _pl_w748.Path(_oe_w748._STORE).resolve().parents, (
+        "the operations record is not under this run's DATA_DIR", str(_oe_w748._STORE))
+    assert _pl_w748.Path(_os_w748.environ["WORKSTATION_DATA_DIR"]).resolve() in \
+        _pl_w748.Path(_cp_w748.MEMORY_FILE).resolve().parents, (
+        "the memory store is not under this run's WORKSTATION_DATA_DIR", str(_cp_w748.MEMORY_FILE))
