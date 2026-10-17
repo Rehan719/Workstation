@@ -42103,7 +42103,11 @@ def test_w593_p220_the_last_three_a_count_a_verdict_and_a_cadence_that_reaches_e
             _os4.environ[_k] = _d4
         import importlib
         import agentic_core.config as _cfg4
-        importlib.reload(_cfg4)
+        #  W748 - the settings singleton is pointed at this test's data dir and restored after it. Reloading the
+        #  config module split every class it defines: config's own functions then raised a new StoreUnavailable
+        #  that no module's except clause names, and a later test's refusal escaped as an error.
+        _saved_settings4 = _cfg4.settings
+        _cfg4.settings = _cfg4.Settings()          # a frozen instance, read from the env set above
 
         #  FU-425: the counter reads the writer's own term
         from agentic_core.api.vsb import OPERATING_STATUS as _OP4
@@ -42174,9 +42178,9 @@ def test_w593_p220_the_last_three_a_count_a_verdict_and_a_cadence_that_reaches_e
                 _os4.environ.pop(_k, None)
             else:
                 _os4.environ[_k] = _v
-        import importlib as _il4
         import agentic_core.config as _c4
-        _il4.reload(_c4)
+        if "_saved_settings4" in locals():
+            _c4.settings = _saved_settings4
 
 
 def test_w593_p220_the_qep_flagship_service_reports_only_what_it_holds():
