@@ -281,13 +281,18 @@ class ToolRegistry:
         latency is NOT reported: nothing measures it, and a plausible millisecond figure is exactly
         the kind of value that reads as measured. Absent beats invented.
         """
-        import psutil
-        cpu = psutil.cpu_percent(interval=0.1)
-        mem = psutil.virtual_memory()
+        #  W746 - the one host observation: no 0.1 s sleep per call (at most one, while no reading exists), a
+        #  stated window, None (never 0) for a figure that could not be read, and the scope named - these are
+        #  the MACHINE's figures
+        from agentic_core.organism.host_observation import observe as _observe_host
+        _h = _observe_host()["host"]
+        _cpu, _used, _pct = _h["cpu_percent"], _h["memory_used_bytes"], _h["memory_percent"]
         return {
-            "cpu_load_percent": round(cpu, 1),
-            "memory_used_gb": round(mem.used / (1024 ** 3), 2),
-            "memory_percent": round(mem.percent, 1),
+            "cpu_load_percent": None if _cpu is None else round(_cpu, 1),
+            "memory_used_gb": None if _used is None else round(_used / (1024 ** 3), 2),
+            "memory_percent": None if _pct is None else round(_pct, 1),
+            "cpu_window_seconds": _h["cpu_window_seconds"],
+            "scope": "the host machine - every program on it, not this platform alone",
             "latency_ms": None,
             "measured_by": "psutil",
             "note": "latency is not measured on this host, so none is reported.",

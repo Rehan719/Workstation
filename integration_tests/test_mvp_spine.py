@@ -67995,3 +67995,271 @@ def test_w745_the_installed_model_is_described_from_the_runtime_and_candidates_a
     _item = " ".join(plan_src745.split("\n P3.32 [", 1)[1].split("\n MILESTONE M3", 1)[0].split())
     assert "no model is installed" not in _item, "the plan item says no model is installed"
     assert "FROM THE RUNTIME" in _item and "downloads nothing" in _item and "Owner's decision" in _item, "the item does not record what was built"
+
+
+def test_w746_host_resources_are_read_once_and_say_what_they_cover(client, monkeypatch):
+    """W746: host and process CPU and memory are read in ONE place, over a window that is stated.
+
+    THE FIRST-SAMPLE CLAIM WAS REFUTED, and this does not guard it: on the served app psutil seeds the importing
+    thread at import, so a first call does not return a meaningless 0.0 there. What survived the refuters, and
+    what each leg below drives: nine sites shared one psutil window on the event-loop thread and none said how
+    long it was (two reads inside one clock tick are psutil's divide-by-zero 0.0); two of them slept 0.1 s on
+    the event loop; the Home page's source sent 0.0 for a figure it could not read and the page printed an idle
+    machine; and one dict set this process's memory beside the host's percentages unnamed. The page checks
+    (DashboardNew, SovereignEvolution, the biometrics hook) are SOURCE guards: no browser drives them here.
+    """
+    import ast as _ast
+    import asyncio as _aio
+    import copy as _copy
+    import threading as _th
+    import time as _time
+    import types as _types
+    from pathlib import Path as _P
+    import psutil as _ps
+    import agentic_core.app_mvp as _app
+    from agentic_core.organism import host_observation as _HO
+    from agentic_core.api.v138 import ceo as _ceo
+    from agentic_core.api.v191 import evolution as _ev
+    from agentic_core.organism import reconfiguration as _rc
+    from agentic_core.api import sovereign_evolution as _se
+    from agentic_core.optimizer.monitor import ResourceMonitor
+    from agentic_core.ai.native import tiers as _T
+    _root = _P(__file__).resolve().parents[1]
+
+    # ── 1. ONE FUNCTION, AND EVERY CURRENT CALL SITE READS THROUGH IT ────────────────────────────────────
+    #  DRIVEN, not grepped. The observation is replaced by a sentinel AND psutil itself is made to answer with
+    #  figures the sentinel does not hold, so a site that still reads psutil shows 55.55 / 88.88 - never the
+    #  sentinel - and the leg cannot pass by a coincidence of the machine's load.
+    _SENT = {
+        "host": {"cpu_percent": 37.25, "cpu_window_seconds": 2.5, "cpu_reading_age_seconds": 0.25,
+                 "cpu_basis": "SENTINEL host cpu", "memory_percent": 42.0, "memory_used_bytes": 3_000_000_000,
+                 "memory_basis": "SENTINEL host memory"},
+        "process": {"cpu_percent": 3.0, "cpu_window_seconds": 2.5, "cpu_basis": "SENTINEL process cpu",
+                    "rss_mb": 123.0, "memory_basis": "SENTINEL process memory"},
+    }
+
+    class _OtherProc:
+        def memory_info(self):
+            return _types.SimpleNamespace(rss=1)
+
+        def cpu_percent(self, interval=None):
+            return 55.55
+
+    monkeypatch.setattr(_HO, "observe", lambda include_machine=False: _copy.deepcopy(_SENT))
+    monkeypatch.setattr(_ps, "cpu_percent", lambda *a, **k: 55.55)
+    monkeypatch.setattr(_ps, "virtual_memory",
+                        lambda *a, **k: _types.SimpleNamespace(percent=88.88, used=1, total=1, available=0))
+    monkeypatch.setattr(_ps, "Process", lambda *a, **k: _OtherProc())
+
+    #  (a) the organism vitals route
+    _bio = client.get("/api/v1/biometrics/status")
+    assert _bio.status_code == 200, _bio.text[:300]
+    _cv = _bio.json()["cardiovascular"]
+    assert (_cv["host_cpu_percent"], _cv["resource_flow"], _cv["peristaltic_delay"]) == (37.2, 62.8, 2.1), _cv
+    assert _cv["host_cpu_window_seconds"] == 2.5 and _cv["host_cpu_basis"] == "SENTINEL host cpu", _cv
+    #  (b) the Home page's source
+    _sum = client.get("/api/v1/projects/stats/summary").json()
+    assert (_sum["cpu_percent"], _sum["memory_percent"], _sum["cpu_window_seconds"]) == (37.2, 42.0, 2.5), _sum
+    #  (c) the CTO infrastructure route, which slept 0.1 s on the event loop to take its own sample
+    _cto = client.get("/api/csuite/cto/infrastructure").json()
+    assert (_cto["cpu_percent"], _cto["memory_percent"], _cto["memory_used_gb"],
+            _cto["cpu_window_seconds"]) == (37.25, 42.0, 3.0, 2.5), _cto
+    #  (d) the AI CEO's vitals tool, which slept the same 0.1 s
+    _v = _aio.run(_ceo.ToolRegistry().get_system_vitals())
+    assert (_v["cpu_load_percent"], _v["memory_percent"], _v["memory_used_gb"],
+            _v["cpu_window_seconds"]) == (37.2, 42.0, 2.79, 2.5), _v
+    assert "not this platform alone" in _v["scope"], _v
+    #  and the route that serves the tool's dict unchanged (a reader the first pass missed)
+    _vr = client.get("/api/v138/ceo/vitals")
+    assert _vr.status_code == 200 and _vr.json()["cpu_window_seconds"] == 2.5 and _vr.json()["measured_by"] == "psutil", _vr.text[:300]
+    #  (e)(f) the two prompts that tell a model the machine's state, captured where the gateway receives them
+    _prompts = []
+
+    class _Gw:
+        async def query_meta(self, prompt, *a, **k):
+            _prompts.append(prompt)
+            return {"output": "no line in either parsed format", "served_by": "test-stub", "is_external": False}
+
+    monkeypatch.setattr(_ev, "gateway", _Gw())
+    monkeypatch.setattr(_rc, "gateway", _Gw())
+    _gen = client.post("/api/v191/evolution/proposals/generate", json={"context": "w746 probe"})
+    assert _gen.status_code == 200 and _gen.json()["generated"] == 0, _gen.text[:300]
+    _sug = client.post("/api/v1/organism/config/ai-suggest", json={})
+    assert _sug.status_code == 200, _sug.text[:300]
+    _line = ("Host machine (every program on it, not this platform alone): CPU 37.25% over the last 2.5 s, "
+             "memory 42.0%")
+    _evo = [p for p in _prompts if "Evolution Engine" in p]
+    _rcp = [p for p in _prompts if "Reconfiguration Engine" in p]
+    assert _evo and _rcp, ("a prompt was not captured", [p[:80] for p in _prompts])
+    for _pr in (_evo[-1], _rcp[-1], _sug.json()["system_context"]):
+        assert _line in _pr, _pr[:500]
+    #  (g) the sovereign-evolution introspection, which the page shows as that cycle's reading
+    _st = _se._introspect()
+    assert (_st["resources"]["cpu_percent"], _st["resources"]["memory_percent"]) == (37.25, 42.0), _st.get("resources")
+    assert "CPU 37.25% over the last 2.5 s" in _se._state_text(_st), _se._state_text(_st)
+    #  (h) the optimiser's monitor: the HOST's percentages and THIS PROCESS's memory, each named
+    _u = ResourceMonitor().get_current_usage()
+    assert (_u["cpu_percent"], _u["memory_percent"], _u["memory_mb"]) == (37.25, 42.0, 123.0), _u
+    assert (_u["percent_scope"], _u["memory_mb_scope"]) == ("host", "process"), _u
+    #  (i) the vitals broadcast: one tick of the real loop, run on THIS thread. The client's own loop keeps
+    #      running on its portal thread and is left alone, so this does not stop it. A tick that never reaches
+    #      the broadcast ends in a timeout here, never in a loop that waits forever.
+    _me, _sent = _th.get_ident(), []
+
+    async def _bc(payload):
+        if _th.get_ident() != _me:
+            return None
+        _sent.append(payload)
+        raise _aio.CancelledError()
+
+    monkeypatch.setattr(_app._ws, "broadcast", _bc)
+    with pytest.raises(_aio.CancelledError):
+        _aio.run(_aio.wait_for(_app._vitals_loop(), timeout=30))
+    assert (_sent[0]["payload"]["cpu"], _sent[0]["payload"]["memory"]) == (37.25, 42.0), _sent
+    #  and the two pages that print these say they are the host's (SOURCE guard: no browser here)
+    _home = _code_only((_root / "apps/workstation-superapp/src/pages/DashboardNew.tsx").read_text(encoding="utf-8"))
+    _sev = _code_only((_root / "apps/workstation-superapp/src/pages/evolution/SovereignEvolution.tsx").read_text(encoding="utf-8"))
+    assert 'label="Host CPU"' in _home and 'label="Host memory"' in _home and 'label="Host CPU"' in _sev
+    monkeypatch.undo()
+
+    # ── 1b. AND NO OTHER READER REMAINS - on the AST, so a comment naming a call is not a call ────────────
+    _readers, _scanned = set(), 0
+    for _p in sorted((_root / "agentic_core").rglob("*.py")):
+        try:
+            _tree = _ast.parse(_p.read_text(encoding="utf-8", errors="replace"))
+        except SyntaxError:
+            continue
+        _scanned += 1
+        for _n in _ast.walk(_tree):
+            if (isinstance(_n, _ast.Call) and isinstance(_n.func, _ast.Attribute) and _n.func.attr in
+                    ("cpu_percent", "cpu_times", "cpu_times_percent", "virtual_memory", "memory_info")):
+                _readers.add((_p.relative_to(_root).as_posix(), _n.func.attr))
+            #  `from psutil import cpu_percent` and then a bare call is the same read, spelled another way
+            elif isinstance(_n, _ast.ImportFrom) and (_n.module or "").split(".")[0] == "psutil":
+                _readers.add((_p.relative_to(_root).as_posix(), "from psutil import"))
+    _allowed = {("agentic_core/organism/host_observation.py", _a) for _a in ("cpu_percent", "virtual_memory",
+                                                                               "memory_info")}
+    _allowed.add(("agentic_core/ai/native/tiers.py", "virtual_memory"))   # the RAM total observe() reuses
+    assert _scanned > 200 and ("agentic_core/organism/host_observation.py", "cpu_percent") in _readers, (
+        "the scan read nothing, so finding no other reader proves nothing", _scanned)
+    assert _readers <= _allowed, ("a host or process figure is read outside the one observation",
+                                  sorted(_readers - _allowed))
+
+    # ── 2. A VALID WINDOW: never under psutil's minimum, never on the caller's thread ─────────────────────
+    _names, _orig = [], _ps.cpu_percent
+
+    def _spy(*a, **k):
+        _names.append(_th.current_thread().name)
+        return _orig(*a, **k)
+
+    monkeypatch.setattr(_ps, "cpu_percent", _spy)
+    _time.sleep(_HO.MIN_WINDOW_S + 0.02)
+    _t0 = _time.perf_counter()
+    _a = _HO.observe()["host"]
+    _b = _HO.observe()["host"]
+    _t1 = _time.perf_counter()
+    for _r in (_a, _b):
+        assert _r["cpu_percent"] is not None and _r["cpu_window_seconds"] >= _HO.MIN_WINDOW_S, _r
+        #  a reading handed out is never older than one window: an older one is replaced, not served
+        #  (<=, because the age is rounded to the millisecond)
+        assert _r["cpu_reading_age_seconds"] <= _HO.MIN_WINDOW_S, _r
+    #  asked again at once: the SAME reading with its age, not a percentage over a few microseconds. Checked only
+    #  when _a's reading and _b's decision fall inside one window, so a stall between the calls, or a sample the
+    #  vitals tick took just before _a, cannot fail it on success.
+    if (_t1 - _t0) + _a["cpu_reading_age_seconds"] < _HO.MIN_WINDOW_S - 0.001:
+        assert (_b["cpu_percent"], _b["cpu_window_seconds"]) == (_a["cpu_percent"], _a["cpu_window_seconds"]), (_a, _b)
+    #  and a reader on a thread psutil has never seen. This is SETUP for the thread-name check below, not a check
+    #  of its own: psutil's fresh-thread 0.0 is a number and this module times the window, so the _box assertion
+    #  would pass even if the sample were taken on the caller's thread.
+    _box = {}
+
+    def _fresh():
+        _time.sleep(_HO.MIN_WINDOW_S + 0.02)
+        _box.update(_HO.observe()["host"])
+
+    _t = _th.Thread(target=_fresh)
+    _t.start()
+    _t.join()
+    assert _box["cpu_percent"] is not None and _box["cpu_window_seconds"] >= _HO.MIN_WINDOW_S, _box
+    assert _names and all(_nm.startswith("host-observation") for _nm in _names), (
+        "a CPU sample was taken off the sampler thread, so its window was some other reader's", _names)
+    monkeypatch.undo()
+
+    # ── 3. HOST AND PROCESS KEPT APART ───────────────────────────────────────────────────────────────────
+    class _FakeProc:
+        def cpu_percent(self, interval=None):
+            return 999.0
+
+        def memory_info(self):
+            return _types.SimpleNamespace(rss=7 * 1024 * 1024)
+
+    monkeypatch.setitem(_HO._STATE, "proc", _FakeProc())
+    _time.sleep(_HO.MIN_WINDOW_S + 0.02)
+    _o = _HO.observe()
+    assert (_o["process"]["cpu_percent"], _o["process"]["rss_mb"]) == (999.0, 7.0), _o["process"]
+    assert _o["host"]["cpu_percent"] is not None and _o["host"]["cpu_percent"] <= 100.0, (
+        "this process's figure reached the host block", _o["host"])
+    assert _o["host"]["memory_used_bytes"] != 7 * 1024 * 1024, _o["host"]
+    for _k in ("cpu_basis", "memory_basis"):
+        assert "this Python process alone" in _o["process"][_k] and "the whole machine" in _o["host"][_k], _k
+    monkeypatch.undo()
+
+    # ── 4. UNKNOWN IS NEVER 0 ────────────────────────────────────────────────────────────────────────────
+    def _down(*a, **k):
+        raise RuntimeError("driven by the guard: the host cannot be read")
+
+    monkeypatch.setattr(_ps, "cpu_percent", _down)
+    monkeypatch.setattr(_ps, "virtual_memory", _down)
+    _time.sleep(_HO.MIN_WINDOW_S + 0.02)
+    _h = _HO.observe()["host"]
+    assert (_h["cpu_percent"], _h["memory_percent"], _h["memory_used_bytes"], _h["cpu_window_seconds"]) == (
+        None, None, None, None), _h
+    assert _h["cpu_basis"].startswith("NOT MEASURED") and "RuntimeError" in _h["cpu_basis"], _h["cpu_basis"]
+    assert _h["memory_basis"].startswith("NOT MEASURED"), _h["memory_basis"]
+    _sum0 = client.get("/api/v1/projects/stats/summary").json()
+    assert (_sum0["cpu_percent"], _sum0["memory_percent"]) == (None, None), ("an unread figure is served as a number", _sum0)
+    assert "NOT MEASURED" in _sum0["host_basis"], _sum0
+    _cto0 = client.get("/api/csuite/cto/infrastructure").json()
+    assert (_cto0["cpu_percent"], _cto0["memory_percent"], _cto0["memory_used_gb"]) == (None, None, None), _cto0
+    _v0 = _aio.run(_ceo.ToolRegistry().get_system_vitals())
+    assert (_v0["cpu_load_percent"], _v0["memory_percent"], _v0["memory_used_gb"]) == (None, None, None), _v0
+    #  through a client that returns a server error as a response, so a route that crashes on the unread figure
+    #  fails here as a 500, not as an exception out of the test
+    _bio0 = TestClient(_app.app, raise_server_exceptions=False).get("/api/v1/biometrics/status")
+    assert _bio0.status_code == 503 and "NOT MEASURED" in _bio0.json()["detail"], (_bio0.status_code, _bio0.text[:300])
+    assert "resources" not in _se._introspect(), "an unread host reading reached the cycle record"
+    _pl = _HO.prompt_line()
+    assert "CPU not measured" in _pl and "memory not measured" in _pl, _pl
+    _u0 = ResourceMonitor().get_current_usage()
+    assert (_u0["cpu_percent"], _u0["memory_percent"]) == (None, None), _u0
+    monkeypatch.undo()
+    #  and the next reader after the failure gets a real reading over a full window, not a None that would
+    #  refuse the vitals route until some later call happened to complete a window
+    _rec = _HO.observe()["host"]
+    assert _rec["cpu_percent"] is not None and _rec["cpu_window_seconds"] >= _HO.MIN_WINDOW_S, _rec
+    #  SOURCE GUARDS (no browser here): an unread figure renders as not measured, never as 0.0% and never as an
+    #  empty meter, and the shell marks a refused read as not live
+    assert "data.cpu_percent ?? 0" not in _home and "data.memory_percent ?? 0" not in _home
+    assert "vitals.cpu != null ?" in _home and "vitals.memory != null ?" in _home and "'not measured'" in _home
+    assert "pct={vitals?.cpu ?? null}" in _home and "pct={vitals?.memory ?? null}" in _home, "an unread figure draws a meter"
+    assert "pct !== null && (" in _home and "health.measuredOnly * 100 : null}" in _home, "a meter is drawn for an unread figure"
+    _biohook_src = _code_only((_root / "apps/workstation-superapp/src/hooks/useWorkstationBiometrics.ts").read_text(encoding="utf-8"))
+    _non200 = _biohook_src.split("if (res.status !== 200) {", 1)[1].split("return;", 1)[0]
+    assert "live: false" in _non200, ("a refused vitals read leaves the previous figures marked live", _non200)
+
+    # ── 6. RAM TOTAL AND CUDA ARE tiers.machine()'s, NOT A SECOND DETECTION ──────────────────────────────
+    _msent = {"ram_gb": 1.25, "ram_basis": "SENTINEL machine", "cpu_count": 3, "cpu_basis": "SENTINEL",
+              "cuda": False, "cuda_basis": "SENTINEL"}
+    monkeypatch.setattr(_T, "machine", lambda: dict(_msent))
+    assert _HO.observe(include_machine=True)["machine"] == _msent, "the observation detects the machine itself"
+    assert "machine" not in _HO.observe(), "the machine block is read on every observation, and no site asks for it"
+    monkeypatch.undo()
+
+    # ── 7. A FORKED CHILD OPENS ITS OWN SAMPLER: the parent's thread does not exist there ─────────────────
+    _old_sampler = _HO._STATE["sampler"]
+    monkeypatch.setitem(_HO._STATE, "pid", -1)                 # this process now looks like another's child
+    _child = _HO.observe()["host"]
+    assert _HO._STATE["sampler"] is not _old_sampler, "a process that is not the sampler's own reused its thread"
+    assert _child["cpu_percent"] is not None and _child["cpu_window_seconds"] >= _HO.MIN_WINDOW_S, _child
+    monkeypatch.undo()
+    _old_sampler.shutdown(wait=False)

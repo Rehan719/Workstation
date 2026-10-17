@@ -95,11 +95,17 @@ def _introspect() -> Dict[str, Any]:
     except Exception:
         pass
     try:
-        import psutil
-        state["resources"] = {
-            "cpu_percent": psutil.cpu_percent(interval=None),
-            "memory_percent": psutil.virtual_memory().percent,
-        }
+        #  W746 - the one host observation. A figure it could not read leaves the block out, as a failed read
+        #  always did here, so the page shows a dash rather than a 0 or "None%".
+        from agentic_core.organism.host_observation import observe as _observe_host
+        _h = _observe_host()["host"]
+        if _h["cpu_percent"] is not None and _h["memory_percent"] is not None:
+            state["resources"] = {
+                "cpu_percent": _h["cpu_percent"],
+                "memory_percent": _h["memory_percent"],
+                "cpu_window_seconds": _h["cpu_window_seconds"],
+                "scope": "host",
+            }
     except Exception:
         pass
     return state
@@ -117,7 +123,8 @@ def _state_text(state: Dict[str, Any]) -> str:
         lines.append(f"Self-healing: {state['self_healing']}")
     if "resources" in state:
         r = state["resources"]
-        lines.append(f"Resources: CPU {r.get('cpu_percent')}%, Memory {r.get('memory_percent')}%")
+        lines.append(f"Host machine (every program on it, not this platform alone): CPU {r.get('cpu_percent')}% "
+                     f"over the last {r.get('cpu_window_seconds')} s, memory {r.get('memory_percent')}%")
     return "\n".join(lines)
 
 

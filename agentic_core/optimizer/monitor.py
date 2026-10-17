@@ -14,12 +14,17 @@ class ResourceMonitor:
 
     def get_current_usage(self) -> Dict[str, Any]:
         """Captures real-time metrics including process-level telemetry."""
-        process = psutil.Process()
+        #  W746 - the one host observation. memory_mb is THIS PROCESS's resident memory and the two percentages
+        #  are the HOST's; they sat side by side unnamed, and now each says which it is.
+        from agentic_core.organism.host_observation import observe as _observe_host
+        _obs = _observe_host()
         usage = {
             "timestamp": psutil.time.time(),
-            "cpu_percent": psutil.cpu_percent(),
-            "memory_mb": process.memory_info().rss / (1024 * 1024),
-            "memory_percent": psutil.virtual_memory().percent,
+            "cpu_percent": _obs["host"]["cpu_percent"],
+            "memory_mb": _obs["process"]["rss_mb"],
+            "memory_mb_scope": "process",
+            "memory_percent": _obs["host"]["memory_percent"],
+            "percent_scope": "host",
             "disk_usage": psutil.disk_usage('/').percent,
             "api_quota_remaining": 0.85 # Simulation baseline
         }

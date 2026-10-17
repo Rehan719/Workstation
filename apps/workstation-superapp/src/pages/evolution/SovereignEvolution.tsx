@@ -211,7 +211,8 @@ export const SovereignEvolution: React.FC = () => {
                         : imm?.threat_level === 'ELEVATED' ? 'warn'
                         : imm?.threat_level === 'HIGH' || imm?.threat_level === 'CRITICAL' ? 'bad'
                         : undefined} />
-              <Metric label="CPU" value={res ? `${res.cpu_percent}%` : '—'} />
+              <Metric label="Host CPU" value={res ? `${res.cpu_percent}%` : '—'}
+                      title="the whole machine at that cycle - every program on it, not this platform alone" />
               {/* W492 - a count of zero is not a good outcome; the tone follows the figure */}
               {/* W496 (FU-120) - "not rejected" counted a directive the C-Suite never evaluated as
                   proceeding. The counts are shown apart and the tooltip carries the basis. */}
