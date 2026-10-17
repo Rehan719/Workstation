@@ -65937,6 +65937,7 @@ def test_w732_the_public_tree_holds_no_privacy_exposure(client, tmp_path, monkey
     import json
     import pathlib
     import subprocess
+    import sys
     from agentic_core import privacy_exposure as _pe
     _root = pathlib.Path(__file__).resolve().parents[1]
     monkeypatch.setenv("WORKSTATION_PRIVATE_MARKERS", str(tmp_path / "no_marker_list_here.txt"))
@@ -65954,6 +65955,12 @@ def test_w732_the_public_tree_holds_no_privacy_exposure(client, tmp_path, monkey
     assert _r["not_checked"] == ["private_marker"] and "NOT looked for" in _r["not_checked_basis"], _r
     assert "private_marker" not in _r["checked"]
     assert _r["not_read_in_full"] == [], ("a tracked file was too large to read whole", _r["not_read_in_full"])
+    #     ... and it says what it is about: the current files, never history - a zero is not "the repo is clean"
+    assert _r["history_scanned"] is False and "history was NOT scanned" in _r["history_basis"], _r
+    assert _r["scope"].startswith("every file tracked"), _r["scope"]
+    _cli = subprocess.run([sys.executable, str(_root / "scripts" / "privacy_check.py")], capture_output=True,
+                          text=True, cwd=str(_root))
+    assert "NOT SCANNED: git history was NOT scanned" in _cli.stdout, (_cli.returncode, _cli.stdout[-600:])
 
     #  2. EACH KIND IS FOUND, and no finding carries the text it matched (values built, never typed whole)
     _key = "AIza" + "Q" * 35
@@ -65976,6 +65983,7 @@ def test_w732_the_public_tree_holds_no_privacy_exposure(client, tmp_path, monkey
     _flat = json.dumps(_rep)
     assert _key not in _flat and _case not in _flat and _mark not in _flat, "a finding reports the text it matched"
     assert _rep["not_checked"] == [] and "private_marker" in _rep["checked"]
+    assert _rep["scope"].startswith("only the files handed") and _rep["history_scanned"] is False, _rep["scope"]
     #     an allowance needs an exact path, a known kind and a reason
     assert not _pe.scan(_root, files=_planted[:1], allowed=[("notes/a.txt", "credential")])["findings"]
     (tmp_path / "config").mkdir()
@@ -66048,6 +66056,7 @@ def test_w732_the_public_tree_holds_no_privacy_exposure(client, tmp_path, monkey
     _down = client.get("/api/v1/compliance/privacy-exposure").json()
     assert _down["scanned"] is False and _down["count"] is None and _down["basis"].startswith("NOT CHECKED"), _down
     assert set(_down["not_checked"]) == set(_pe.KINDS)
+    assert _body["history_scanned"] is False and _down["history_scanned"] is False, (_body.get("scope"), _down)
 
 
 #  W728 - THE COMPOSITION STORE. A writer handed an empty list for a store that failed to read once would have
