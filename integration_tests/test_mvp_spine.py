@@ -4290,8 +4290,8 @@ def test_cca_immune_reconfigurator(client):
     # governs (audits + auto-approves) and applies via the reconfiguration engine. NOMINAL → no action.
     n = client.post("/api/v1/cca/immune-reconfigure", json={}).json()
     assert n["governed_by"].startswith("Change Control Agency")
-    # ELEVATED → temperature_bias, whose advertised consumer W438 proved does NOT exist (the only
-    # behavioural read is gateway._call, which nothing invokes). Per the lever map's own W318 rule
+    # ELEVATED → temperature_bias, whose advertised consumer W438 proved does NOT exist (nothing reads
+    # the key; the uncalled gateway._call this note once named never read it, and is archived). Per the lever map's own W318 rule
     # the defence now honestly records lever_set_no_consumer and does NOT claim "implemented" —
     # this test used to assert the false claim.
     e = client.post("/api/v1/cca/immune-reconfigure", json={"simulate_threat": "ELEVATED"}).json()
@@ -54041,7 +54041,7 @@ def test_p3a_r1_a_refusal_or_a_count_says_what_happened(client, monkeypatch):
     import agentic_core.organism.immune as _im
     _doc = _im.__doc__ or ""
     _ac = _root / "agentic_core"
-    for _rel in ("ai/gateway.py", "ai/native/orchestrator.py", "vbs/quality.py", "organism/heartbeat.py"):
+    for _rel in ("ai/native/orchestrator.py", "vbs/quality.py", "organism/heartbeat.py"):   # W744: the gateway's only writer, _call, is archived
         assert _rel in _doc, ("the docstring does not name this writer", _rel)
         assert "immune.record(" in (_ac / _rel).read_text(encoding="utf-8"), ("a named writer does not write", _rel)
     assert "organism/biobus.py record_error" in _doc and "immune.record(" in (_ac / "organism/biobus.py").read_text(encoding="utf-8")
@@ -56645,7 +56645,7 @@ def test_t2b_eight_statements_say_what_the_code_beside_them_does(client, monkeyp
     # ================================================================================================
     import agentic_core.organism.immune as _im
     _kinds = [k for _l, _ks in _im.RECORDED_KINDS for k in _ks]
-    assert len(_kinds) >= 8 and _im.REVIEW_FLAG_TYPES and set(_im.REVIEW_FLAG_TYPES) < set(_kinds), (_kinds, _im.REVIEW_FLAG_TYPES)
+    assert len(_kinds) >= 7 and _im.REVIEW_FLAG_TYPES and set(_im.REVIEW_FLAG_TYPES) < set(_kinds), (_kinds, _im.REVIEW_FLAG_TYPES)
 
     def _lowered_by(kind):
         _s = _im.ImmuneSystem()                      # a fresh sensor: the singleton is never written
@@ -56674,7 +56674,7 @@ def test_t2b_eight_statements_say_what_the_code_beside_them_does(client, monkeyp
     #    THE TABLE IS THE CALLERS': the literal kinds at the call sites that exist, compared as sets
     _lit = r'"((?:ai|compliance|quality)_[a-z]+|timeout)"'
     _at_sites = set()
-    for _f in ("ai/gateway.py", "ai/native/orchestrator.py", "organism/heartbeat.py", "vbs/quality.py"):
+    for _f in ("ai/native/orchestrator.py", "organism/heartbeat.py", "vbs/quality.py"):   # W744: the gateway writes none since _call was archived
         _t = _code_only((_core / _f).read_text(encoding="utf-8"))
         _calls = re.findall(r"immune\.record\((.*?)\)\n", _t, flags=re.S)
         assert _calls, (_f, "no immune.record call was found, so this file's kinds were not read")
@@ -67478,3 +67478,206 @@ def test_w743_each_entity_has_its_own_work_budget_and_the_platform_derives_its_c
         [(x.get("id"), x.get("status")) for x in _unowned743])
     assert [x for x in _items743 if "carrying capacity" in _t743(x) and "nothing reads" in _t743(x)], (
         "nothing carries the reader S18.6's derived capacity would feed")
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W744 (the ledger v8 R4.7 residual lead) - THE GATEWAY SAYS WHAT RUNS, AND ITS UNCALLED EXTERNAL-FIRST CASCADE
+#  IS ARCHIVED. ModelGateway's docstring listed an external-first order (Anthropic, OpenAI, Ollama) that no path
+#  uses, beside an uncalled `_call` that read neither AI_ALLOW_EXTERNAL nor the external cap; `_call` is archived.
+#  The query path is DRIVEN with the local model, the floor and an allowed, keyed accelerant listed; the stream path
+#  with the local model down and an accelerant allowed and keyed; then both with the switch off. The class
+#  docstring's three query-path statements, its two stream-path statements and its switch-off sentence, and one
+#  statement each of the query, query_meta, stream and immune docstrings, are compared BOTH WAYS with what the drive
+#  measured, so a docstring left behind when an order changes fails here (its local-model skip conditions and
+#  rate-limit line are not driven). The drive writes no shared store: a fresh immune sensor; no breaker,
+#  learning-loop, recall, interaction or constitutional-ledger write; no local-model probe (the model list is
+#  patched empty); the hourly external-cap check is replaced by a counter during the stream legs.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w744_the_gateway_says_what_runs_and_its_uncalled_cascade_is_archived(monkeypatch):
+    import importlib
+    import pathlib
+    import sys
+    import types
+    _root = pathlib.Path(__file__).resolve().parents[1]
+
+    def _run(coro):
+        return _ensure_loop().run_until_complete(coro)
+
+    def _flat(text):
+        return " ".join((text or "").split())
+
+    _gwmod = importlib.import_module("agentic_core.ai.gateway")
+    _orc = importlib.import_module("agentic_core.ai.native.orchestrator")   # the MODULE: the package re-exports the instance
+    _mr = importlib.import_module("agentic_core.ai.native.model_resource")
+    _oe = importlib.import_module("agentic_core.api.operational_excellence")
+    _im = importlib.import_module("agentic_core.organism.immune")
+    _sh = importlib.import_module("agentic_core.organism.self_healing")
+    _MG, _gw = _gwmod.ModelGateway, _gwmod.gateway
+    _MARK = "w744-order-probe"
+
+    _fresh = _im.ImmuneSystem()                    # a fresh sensor: the singleton is never written
+    monkeypatch.setattr(_im, "immune", _fresh)
+    monkeypatch.setattr(_sh.self_healer, "is_open", lambda endpoint, *_a, **_k: False)
+    monkeypatch.setattr(_sh.self_healer, "record_failure", lambda endpoint, *_a, **_k: None)
+    monkeypatch.setattr(_sh.self_healer, "record_success", lambda endpoint, *_a, **_k: None)
+    monkeypatch.setattr(_oe, "record_outcome", lambda *a, **k: {})
+    monkeypatch.setattr(_oe, "model_health", lambda *a, **k: {})      # nothing measured: the registry order stands
+    monkeypatch.setattr(_gwmod.memory, "add_memory", lambda *a, **k: None)
+    monkeypatch.setattr(_gwmod.interaction_logger, "log_interaction", lambda *a, **k: None)
+    monkeypatch.setattr(_gwmod, "_chain", lambda event, *_a, **_k: {"recorded": False, "not_recorded_because": "w744 probe"})
+    #  THE QUERY PATH'S RESOURCES LISTED: a local model (patched up), the floor, and Anthropic allowed and keyed.
+    #  OpenAI is left unkeyed: its real SDK is installed, and no placeholder key may reach a network call. The
+    #  installed-model list is patched empty, so no leg probes a real local server while AI_DISABLE_LOCAL is empty.
+    monkeypatch.setattr(_mr, "ollama_up", lambda: True)
+    monkeypatch.setattr(_mr, "local_models", lambda: [])
+    monkeypatch.setenv("AI_ALLOW_EXTERNAL", "true")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "w744-placeholder-not-a-key")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    _attempted = []
+
+    async def _run_model(self, name, prompt, **_k):
+        if _MARK not in prompt:                    # a call this test did not make is skipped, never recorded
+            raise _orc.ResourceSkipped(name, "w744: not this probe")
+        _attempted.append(name)
+        if name.startswith("ollama"):
+            raise TimeoutError("w744: the local model timed out")      # what the orchestrator's wait_for raises
+        return f"w744 answer from {name}"
+    monkeypatch.setattr(_orc.NativeOrchestrator, "_run_model", _run_model)
+    _real_complete = _orc.orchestrator.complete
+    _handed = []
+
+    async def _spy(prompt, **kw):
+        _r = await _real_complete(prompt, **kw)
+        if _MARK in prompt:
+            _handed.append({"timeout": kw.get("timeout"), **_r})
+        return _r
+    monkeypatch.setattr(_orc.orchestrator, "complete", _spy)
+    _doc = _flat(_MG.__doc__)
+    _qsec, _, _ssec = _doc.partition("stream / stream_meta")
+
+    # -- 1. THE QUERY PATH, measured: what was tried, in what order, and what served -----------------------
+    assert {"ollama", "native", "anthropic"} <= set(_mr.registry.select()), (
+        "the precondition was not reached: the local model, the floor and an allowed accelerant are not all listed",
+        _mr.registry.select())
+    _out = _run(_gw.query(f"{_MARK}: list three steps to open a bakery", agent="w744-query", timeout=None))
+    assert _out and len(_handed) == 1 and _attempted, ("the probe did not reach the orchestrator's resources", _handed, _attempted)
+    _h = _handed[0]
+    _q_ext = any(n in ("anthropic", "openai") for n in _attempted)
+    assert ("1. the owned local model (Ollama)" in _qsec) == (_h["resources_tried"][0] == "ollama"), (
+        "the class docstring and the measured query path disagree about what is tried first", _h["resources_tried"])
+    assert ("the native deterministic floor, which always answers, so it is the last resource this path tries" in _qsec) == (
+        _h["resources_tried"][-1] == "native" and _h["served_by"] == "native"), (
+        "the class docstring and the measured query path disagree about the floor", _h["resources_tried"], _h["served_by"])
+    assert ("are therefore never attempted here" in _qsec) == (not _q_ext), (
+        "the class docstring and the measured query path disagree about the external accelerants", _attempted)
+
+    # -- 2. query() AND query_meta() SAY WHAT THEY HAND ON: a None timeout reaches the orchestrator as 30, and the
+    #       externals listed after the floor are never attempted - both measured above ----------------------
+    _qdoc = _flat(_MG.query.__doc__)
+    assert ("None is read as 30" in _qdoc) == (_h["timeout"] == 30.0), (_h["timeout"], _qdoc[:300])
+    assert "claude→openai→ollama" not in _qdoc and "provider cascade" not in _qdoc, _qdoc[:300]
+    _qmdoc = _flat(_MG.query_meta.__doc__)
+    assert ("are never attempted on this path" in _qmdoc) == (not _q_ext), (
+        "query_meta's docstring and the measured query path disagree about the external accelerants", _qmdoc[:400])
+    assert "bounds any single model attempt" not in _qmdoc and "remains below for reference" not in _qmdoc, _qmdoc[:400]
+
+    # -- 3. A TIMEOUT ON A LIVE PATH IS HEARD under a kind the health table lists (that the table lists only kinds
+    #       a call site writes is the t2b guard's leg 8, which reads the call sites) ---------------------------
+    _timed_out_as = {e.error_type for e in list(_fresh._events) if e.endpoint == "model:ollama"}
+    assert _timed_out_as, ("the precondition was not reached: the timed-out local model was not recorded", list(_fresh._events))
+    _kinds = {k for _l, _ks in _im.RECORDED_KINDS for k in _ks}
+    assert _timed_out_as <= _kinds, ("a live path records a kind the health table does not list", _timed_out_as - _kinds)
+    assert "timed out" in next(_l for _l, _ks in _im.RECORDED_KINDS if _timed_out_as & set(_ks)), _im.RECORDED_KINDS
+
+    # -- 4. THE STREAM PATH, measured: the local model down, an accelerant allowed and keyed -----------------
+    _local_tries, _ext_calls = [], []
+
+    async def _down(self, augmented, **_k):
+        if _MARK in augmented:
+            _local_tries.append(1)
+        raise RuntimeError("w744: the local model is down")
+        yield ""                                   # unreachable: it makes this an async generator, as the seam is
+
+    class _Stream:
+        def __init__(self, **kw):
+            _ext_calls.append(kw.get("model"))
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *exc):
+            return False
+
+        @property
+        def text_stream(self):
+            async def _gen():
+                for _t in ("w744 ", "external ", "reply."):
+                    yield _t
+            return _gen()
+
+    class _Client:
+        def __init__(self, api_key=None, **_k):
+            self.messages = types.SimpleNamespace(stream=lambda **kw: _Stream(**kw))
+    _fake = types.ModuleType("anthropic")
+    _fake.AsyncAnthropic = _Client
+    monkeypatch.setitem(sys.modules, "anthropic", _fake)
+    monkeypatch.setattr(_MG, "_stream_owned_model", _down)
+    monkeypatch.setattr(_gw, "anthropic_key", "w744-placeholder-not-a-key")
+    monkeypatch.setattr(_gw, "openai_key", None)
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "")
+    _capped = []
+    monkeypatch.setattr(_orc.NativeOrchestrator, "_external_budget_check",
+                        lambda self, provider, **_k: _capped.append(provider))   # counted, never refused; restored at exit
+
+    async def _stream(agent):
+        return [ev async for ev in _gw.stream_meta(f"{_MARK}: name one risk", agent=agent)]
+    _before = len(_fresh._events)
+    _on = _run(_stream("w744-stream"))
+    assert _local_tries and _on and _on[-1].get("done") is True, (
+        "the precondition was not reached: the stream did not try the local model", _local_tries)
+    _s_ext = _on[-1].get("served_by") == "claude" and _on[-1].get("is_external") is True
+    assert ("the external accelerants, before the floor, ONLY when AI_ALLOW_EXTERNAL=true" in _ssec) == _s_ext, (
+        "the class docstring and the measured stream path disagree", _on[-1].get("served_by"), _ext_calls)
+    if _s_ext:
+        assert ("outside the orchestrator's hourly external cap" in _ssec) == (not _capped), (
+            "the class docstring and the measured stream path disagree about the hourly external cap", _capped)
+    #    since W738 the stream's ordered body (and its docstring) is _stream_meta_inner; stream_meta wraps it
+    _sdoc = _flat(_MG._stream_meta_inner.__doc__)
+    assert ("which differs from query_meta's" in _sdoc) == (_s_ext != _q_ext), (
+        "the stream's docstring and the two measured paths disagree about whether their orders differ", _s_ext, _q_ext)
+
+    # -- 5. THE IMMUNE DOCSTRING NAMES THE GATEWAY AS A WRITER ONLY IF IT IS ONE: the stream failure above was
+    #       heard, or not, and the docstring says which ---------------------------------------------------------
+    _heard = any(e.error_type in ("ai_failure", "timeout") for e in list(_fresh._events)[_before:])
+    _idoc = _flat(_im.__doc__)
+    _wl = _idoc[_idoc.index("- AI gateway and model-tier calls"):_idoc.index("- compliance fails")]
+    assert ("a failure on the gateway's stream path is not recorded here" in _wl) == (not _heard), (_heard, _wl)
+    assert ("ai/gateway.py" in _wl) == _heard, ("the immune docstring and the stream path disagree about the gateway", _wl)
+
+    # -- 6. WITH THE SWITCH OFF NEITHER PATH REACHES AN EXTERNAL PROVIDER (a key present, local model down), and
+    #       the method that reached one without reading the switch is gone from the class -------------------
+    monkeypatch.setenv("AI_ALLOW_EXTERNAL", "false")
+    _n_ext, _n_att = len(_ext_calls), len(_attempted)
+    _off = _run(_stream("w744-stream-off"))
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "1")    # the suite's own setting again; ollama_up stays patched up
+    assert not ({"anthropic", "openai"} & set(_mr.registry.select())), (
+        "the registry lists an external accelerant with the switch off", _mr.registry.select())
+    _run(_gw.query_meta(f"{_MARK}: name one risk", agent="w744-query-off"))
+    assert len(_handed) == 2, ("the switch-off query did not reach the orchestrator", _handed)
+    _off_ext = (len(_ext_calls) > _n_ext or _off[-1].get("is_external") is True
+                or any(n in ("anthropic", "openai") for n in _attempted[_n_att:]) or _handed[-1].get("is_external") is True)
+    assert not _off_ext and _off[-1].get("served_by") == "native" and _handed[-1]["served_by"] == "native", (
+        "an external provider was reached with the switch off", _off[-1], _handed[-1], _ext_calls)
+    assert ("neither path reaches an external provider" in _doc) == (not _off_ext), _doc[-400:]
+    assert not hasattr(_MG, "_call") and not hasattr(_MG, "_preferred_provider"), (
+        "the uncalled external-first cascade is back in the live gateway")
+
+    # -- 7. THE ARCHIVE SAYS WHAT MOVED: the two methods, verbatim, and where (names no other test gives a file,
+    #       so the comment-only presence leg pairs these reads with no older assertion) ------------------------
+    _arch744 = (_root / "_archive" / "agentic_core" / "ai" / "gateway_legacy_call.py").read_text(encoding="utf-8")
+    assert "async def _call(self, prompt: str" in _arch744 and "def _preferred_provider(self)" in _arch744, (
+        "the archived methods are not in the record")
+    _index744 = (_root / "_archive" / "README.md").read_text(encoding="utf-8")
+    assert "## Later moves: gateway._call (" in _index744 and "_archive/agentic_core/ai/gateway_legacy_call.py" in _index744, (
+        "the archive's index does not record the move")

@@ -186,11 +186,26 @@ _RECALL_OFF = False
 
 
 class ModelGateway:
-    """
-    Priority order:
-      1. Anthropic Claude (claude-sonnet-4-6) — best quality, used when key present
-      2. OpenAI GPT-4o-mini — fallback when OPENAI_API_KEY set
-      3. Ollama llama3.2 — local fallback, always available if Ollama is running
+    """WHO SERVES A COMPLETION - in-house first, and the two entry paths do not order resources the same way.
+
+    query / query_meta - the native orchestrator decides (ai/native/orchestrator.py):
+      1. the owned local model (Ollama), when its server answers with a model pulled - skipped when
+         AI_DISABLE_LOCAL is set or its circuit breaker is open, and moved behind the floor when its recent
+         record is effectively dead (W380);
+      2. the native deterministic floor, which always answers, so it is the last resource this path tries.
+         The external accelerants (Anthropic, OpenAI: a key AND AI_ALLOW_EXTERNAL=true) are listed after it
+         and are therefore never attempted here - this gateway never passes prefer_external.
+
+    stream / stream_meta - ordered in this class:
+      1. the owned local model, token by token - skipped when AI_DISABLE_LOCAL is set or its circuit
+         breaker is open;
+      2. the external accelerants, before the floor, ONLY when AI_ALLOW_EXTERNAL=true and a key is set
+         (Anthropic, then OpenAI) - outside the orchestrator's hourly external cap (W335);
+      3. the native floor, chunked - the guaranteed terminal.
+
+    With AI_ALLOW_EXTERNAL off (the default) neither path reaches an external provider. With it on, a
+    streamed reply can be served externally before the floor and a gateway query cannot (orchestrator callers
+    that pass prefer_external can) - the switch is the Owner's (P4.3).
 
     Rate limit: GATEWAY_RPM env var (default 20 calls/min) prevents runaway spend.
     """
@@ -238,10 +253,6 @@ class ModelGateway:
                 self._rate_limiter._tokens = min(self._rate_limiter._tokens, float(new_rpm))
         except Exception:
             pass
-
-    def _preferred_provider(self) -> str:
-        """Return preferred_provider from reconfig, defaulting to 'auto'."""
-        return self._reconfig_cache.get("gateway", {}).get("preferred_provider", "auto")
 
     @staticmethod
     def _is_floor(served_by: str | None) -> bool:
@@ -296,13 +307,13 @@ class ModelGateway:
                     timeout: float | None = 90.0,
                     owner_id: str | None = None, augment: bool = _RECALL_OFF,
                     governance: dict | None = None, user_text: str | None = None) -> str:
-        """Run one completion through the provider cascade.
+        """Run one completion through `query_meta` and return its text only - who served it and the
+        governance checkpoint are dropped, so a caller that must say who served it uses `query_meta`.
 
-        `timeout` is an OVERALL bound (seconds) on the whole cascade so an AI call
-        can never hang a request indefinitely — the worst case (claude→openai→ollama)
-        could otherwise stack to ~3 minutes. Interactive endpoints should pass a
-        tighter value (e.g. 20) for snappy UX; pass None to disable the bound.
-        On timeout we return a clearly-labelled fallback rather than blocking.
+        `timeout` is handed to the orchestrator, which applies it to an external accelerant attempt only,
+        and this path never attempts one (see the class docstring). The owned local model runs on its own
+        budget (orchestrator.local_model_budget_s) and the native floor answers in-process.
+        None is read as 30.
         """
         res = await self.query_meta(prompt, agent=agent, timeout=timeout,
                                     owner_id=owner_id, augment=augment, governance=governance,
@@ -319,12 +330,13 @@ class ModelGateway:
         this to prove their cascades run in-house). Same in-house-first routing as `query()`.
 
         IN-HOUSE FIRST: route through Workstation's OWN native orchestrator — a local owned model
-        (Ollama) when present → the always-available native structured engine floor → external
-        accelerants ONLY if AI_ALLOW_EXTERNAL=true. The native floor guarantees a real, honest,
+        (Ollama) when present → the always-available native structured engine floor, which answers, so
+        the external accelerants the registry lists after it (a key AND AI_ALLOW_EXTERNAL=true) are never
+        attempted on this path. The native floor guarantees a real, honest,
         structured result, so the platform never hangs, never depends on an external provider, and
-        never returns a bare "[unavailable]". `timeout` bounds any single model attempt. (The legacy
-        external-first `_call` cascade remains below for reference but is superseded by the native
-        fabric — see agentic_core/ai/native/.)"""
+        never returns a bare "[unavailable]". `timeout` reaches the orchestrator, which applies it to an
+        external attempt only; the local model runs on its own budget. (The legacy external-first `_call`
+        cascade, which nothing called, is archived at _archive/agentic_core/ai/gateway_legacy_call.py.)"""
         self._sync_reconfig()
         await self._rate_limiter.acquire()
         #  W741 (S18.1) - the token bases are the orchestrator's own sentences, imported rather than retyped
@@ -488,76 +500,10 @@ class ModelGateway:
                 #  W741 (S18.1) - what the serving model reported it spent, or null and why nothing counted
                 "model_tokens": _mt, "model_tokens_basis": _mt_basis}
 
-    async def _call(self, prompt: str, agent: str = "gateway") -> tuple[str, str]:
-        """Try providers in priority order, return (response_text, provider_name)."""
-        from agentic_core.organism.immune import immune
-        from agentic_core.organism.self_healing import self_healer
-
-        preferred = self._preferred_provider()  # "auto" | "claude" | "openai" | "ollama"
-
-        # 1 — Anthropic Claude
-        if self.anthropic_key and not self_healer.is_open("claude") and preferred in ("auto", "claude"):
-            try:
-                import anthropic
-                client = anthropic.AsyncAnthropic(api_key=self.anthropic_key)
-                msg = await client.messages.create(
-                    model=self.claude_model,
-                    max_tokens=self.max_tokens,
-                    messages=[{"role": "user", "content": prompt}],
-                )
-                self_healer.record_success("claude")
-                return msg.content[0].text, "claude"
-            except Exception:
-                immune.record(agent, "ai_failure")
-                self_healer.record_failure("claude")
-
-        # 2 — OpenAI
-        if self.openai_key and not self_healer.is_open("openai") and preferred in ("auto", "openai"):
-            try:
-                from openai import AsyncOpenAI
-                client = AsyncOpenAI(api_key=self.openai_key)
-                completion = await client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=[{"role": "user", "content": prompt}],
-                    timeout=30,
-                    max_tokens=self.max_tokens,
-                )
-                self_healer.record_success("openai")
-                return completion.choices[0].message.content or "", "openai"
-            except Exception:
-                immune.record(agent, "ai_failure")
-                self_healer.record_failure("openai")
-
-        # 3 — Ollama
-        if not self_healer.is_open("ollama"):
-            try:
-                timeout = httpx.Timeout(connect=5.0, read=120.0, write=5.0, pool=5.0)
-                async with httpx.AsyncClient(timeout=timeout) as client:
-                    res = await client.post(self.ollama_url, json={
-                        "model": self._effective_ollama_model,
-                        "prompt": prompt,
-                        "stream": False,
-                    })
-                self_healer.record_success("ollama")
-                return res.json().get("response", ""), "ollama"
-            except httpx.ConnectError:
-                immune.record(agent, "ai_failure")
-                self_healer.record_failure("ollama")
-                return (
-                    "AI engine unavailable — start Ollama with `ollama serve` "
-                    "or configure ANTHROPIC_API_KEY in your environment.",
-                    "error",
-                )
-            except httpx.ReadTimeout:
-                immune.record(agent, "timeout")
-                self_healer.record_failure("ollama")
-                return "The model is still loading. Please retry in a moment.", "error"
-            except Exception as e:
-                immune.record(agent, "ai_failure")
-                self_healer.record_failure("ollama")
-                return f"Unexpected error ({type(e).__name__}). Please try again.", "error"
-
-        return "All AI providers are currently unavailable. The self-healing system is monitoring recovery.", "circuit_open"
+    #  W744 - `_call`, the legacy external-first cascade (Anthropic, then OpenAI, then a local model), and
+    #  `_preferred_provider`, which only it read, are archived verbatim at
+    #  _archive/agentic_core/ai/gateway_legacy_call.py. Nothing called either, and `_call` read neither
+    #  AI_ALLOW_EXTERNAL nor the hourly external cap.
 
     # ── streaming ────────────────────────────────────────────────────────────
 
@@ -627,8 +573,8 @@ class ModelGateway:
                                  owner_id: str | None = None, augment: bool = _RECALL_OFF,
                                  user_text: str | None = None, language: str | None = None) -> AsyncIterator[dict]:
         """Yield {"token": …} events then ONE terminal {"done": True, "served_by", "is_external",
-        "output", "guardrail_passed", "profile_applied"} — IN-HOUSE FIRST (§6), mirroring
-        query_meta's contract:
+        "output", "guardrail_passed", "profile_applied"} — IN-HOUSE FIRST (§6), in its own order, which
+        differs from query_meta's (see the class docstring):
         1. the OWNED local model (Ollama), genuine token-by-token streaming, when present
            (skipped under AI_DISABLE_LOCAL, e.g. the deterministic test/CI runtime);
         2. external accelerant streaming ONLY when explicitly opted in (AI_ALLOW_EXTERNAL=true);
