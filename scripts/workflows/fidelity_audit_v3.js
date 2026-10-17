@@ -1,4 +1,6 @@
 // Workstation IDBO — the six-region vision-fidelity assessment (W446, ledger v3).
+// KEPT AS HISTORY, NOT RUN (W752): the committed instrument is scripts/workflows/fidelity_audit_v7.js, which takes
+// base, head and date as arguments. The HEAD and date in this file's prompt text are the commit ledger v3 measured.
 // A Claude Code *Workflow* script (see the Workflow tool / workflow-authoring reference), not a Node program.
 // HOW TO RUN: boot a FRESH backend from HEAD on a scratch DATA_DIR (AI_DISABLE_LOCAL=1 mirrors CI — NOT the shipped
 // default: with the flag unset and Ollama discoverable the gateway serves from the local model; the flag makes

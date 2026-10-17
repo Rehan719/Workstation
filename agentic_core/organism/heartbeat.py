@@ -1068,6 +1068,14 @@ class OrganismHeartbeat:
                 #  ledger v17 (FU-974) - what the lever could reach when it was engaged
                 "containment_at_engagement": res.get("containment_at_engagement"),
             }
+            #  W752 - a defence whose lever the write path REFUSED (the settings or their history could not be read
+            #  whole) applied nothing. The record stands, so it is still counted as engaged; the beat now also says the
+            #  step failed, with the reason, and the defence carries whether its lever was applied (fields ADDED).
+            self.last_immune_defence["lever_applied"] = res.get("applied") is not None
+            self.last_immune_defence["apply_error"] = res.get("apply_error")
+            if res.get("applied") is None:
+                out["error"] = (f"the defence {res.get('cca_id')} was recorded and its lever was NOT applied: "
+                                f"{res.get('apply_error') or 'the reason was not given'}")
             out["engaged"], out["result"] = True, self.last_immune_defence
         except Exception as exc:
             out["error"] = f"{exc.__class__.__name__}: {exc}"

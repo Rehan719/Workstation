@@ -21329,10 +21329,13 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.40",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W752",
       "note": "",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Every writer of the settings store reads it whole inside its lock or is refused, and the store is kept byte for byte (the class W728 fixed for compositions); a missing store is new and is created. The refusal reaches every caller: the update route answers 503 with the reason, the single write path and the reset raise StoreUnavailable, Change Control's implement answers 503 and records apply_failed with the reason and stays implementable, and the immune reflex answers not_applied with the reason instead of saying the value is stored; the heartbeat, which calls the reflex, records that step as failed with the reason and its defence says the lever was not applied (it had counted the defence as engaged with no error). The settings route says when the store could not be read. A non-finite number is refused before anything is written, because the strict read would refuse it and so every later change. Proved by test_w752_the_settings_and_history_stores_are_never_overwritten_from_a_failed_read: leg 2 (a torn store and one of the wrong shape, every writer and caller, the heartbeat's defence included, and that defence over a readable store applying with no failure), leg 1 (a missing store is new), leg 5 (a non-finite value), leg 7 (by syntax, a writer added later saves inside the lock after a whole read)."
     },
     {
       "id": "FU-1085",
@@ -21512,11 +21515,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.40",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W752",
       "note": "",
       "slot_source": "the M1 re-run is this item's",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Four lines of the delivery prompt directed use of fidelity_audit_v3.js, not three: the header's pointer, the definition of complete, the tools list's fidelity measure and the per-milestone re-run. Each now names fidelity_audit_v7.js and says v3 is kept as history, three of them with its base, head and date arguments; v3's own header says it is history and not run. P2.5's closed acceptance keeps its true historical mention of v3. Done ahead of the M1 re-run so that the re-run reads the right pointer. Proved by test_w752_the_settings_and_history_stores_are_never_overwritten_from_a_failed_read leg 8: each of the four places names the newest instrument in scripts/workflows, computed from the tree, and a superseded one only beside the word history; every superseded instrument's header says it is history."
     },
     {
       "id": "FU-1095",
@@ -21586,11 +21592,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P2.40",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W752",
       "note": "",
       "slot_source": "rides the open row for the settings store on the same item",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The appender reads the history whole inside its lock or refuses, and the history is kept byte for byte; a change or a reset the history could not record is not made; a history that fails after the settings were written leaves the change standing, saying history_recorded false with the reason. The history route answers a null history with the reason, which the page already words as a failed read and not as no changes. The reset never records a corrupt store's value as its prior: over an unreadable store it is refused and nothing is recorded; and its prior now names every section it returns to the defaults, computed from the schema (the four typed sections left out the Quran platform's shared weights - driven on a scratch copy). Proved by test_w752_the_settings_and_history_stores_are_never_overwritten_from_a_failed_read: leg 3 (an unreadable history: 503, nothing changed, the reset refused, the route null with the reason), leg 4 (the history fails after the write), leg 2 (the reset over a corrupt settings store), leg 6 (the reset's prior, every section), leg 1 (a missing history is new)."
     },
     {
       "id": "FU-1099",
@@ -22367,6 +22376,81 @@
       "note": "",
       "slot_source": "a tier-2 invisible shortfall: P2.41 holds the standing tier-2 rows",
       "tier": 2
+    },
+    {
+      "id": "FU-1137",
+      "title": "An unreadable settings or history store now refuses every change, the immune reflex's included, and nothing offers the way back",
+      "why": "W752 made every writer of organism_config.json and its history refuse a store that cannot be read whole and keep it byte for byte (W728's rule); before, the store was silently replaced. The way back is by hand: no route repairs these two stores, while the VSB ledger has one (W472: a copy kept beside the store, what can be recovered without inventing a value recovered, only what passes the strict read written back, what was lost said). Until a repair, every settings change - Change Control's implement and the immune reflex's defences included - answers with the reason and changes nothing (driven by W752's guard, leg 2). The Anatomy page shows that refusal when a change is tried, but not the settings route's store_unreadable sentence beside the values it lists. Smallest addition: the same repair for these two stores, admin-only, and the page printing that sentence.",
+      "source": "W752 (a consequence of its own fix, recorded in the same round)",
+      "found": "2026-10-17",
+      "files": [
+        "agentic_core/organism/reconfiguration.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.41",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "a tier-2 shortfall left by W752's refusal; P2.41 carries the tier-2 pass, and the area's own item, P2.40, closes on its M1 re-run",
+      "tier": 2
+    },
+    {
+      "id": "FU-1138",
+      "title": "The gateway reads the settings store through a reader of its own, so while the store cannot be read its rate limit keeps the last value and nothing says so",
+      "why": "ai/gateway.py _sync_reconfig parses organism_config.json itself and passes on any failure, keeping its cached copy, while every other consumer reads reconfiguration._load_config, which answers the defaults. Driven on a scratch copy in W752: with rpm_limit 7 saved and the store then torn, the gateway kept 7 while the other consumers read 20, and no surface said why. W752 made the writers refuse and the settings route state an unreadable store; this reader was left as it was because other rounds are editing the gateway. Smallest change: read through reconfiguration's reader and carry its stated problem.",
+      "source": "W752 (found while fixing the settings store's writers)",
+      "found": "2026-10-17",
+      "files": [
+        "agentic_core/ai/gateway.py",
+        "agentic_core/organism/reconfiguration.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "tier-3 finding: P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
+      "tier": 3
+    },
+    {
+      "id": "FU-1139",
+      "title": "The settings route's per-key wiring leaves out the Quran platform's governed weights",
+      "why": "GET /api/v1/organism/config builds key_wiring from four typed sections (gateway, domains, features, organism), so qep_recommendation.weights - governed since W687 and read by qep_intelligence - is listed in governed_keys and nowhere in the per-key wiring the Anatomy page shows. Driven on a scratch copy in W752. The reset's prior had the same four typed sections and W752 computed it from the schema; this reader was left. Smallest change: iterate the schema's sections.",
+      "source": "W752 (found beside the reset's typed sections)",
+      "found": "2026-10-17",
+      "files": [
+        "agentic_core/organism/reconfiguration.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P2.41",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "a tier-2 shortfall found by W752; P2.41 carries the tier-2 pass, and the area's own item, P2.40, closes on its M1 re-run",
+      "tier": 2
+    },
+    {
+      "id": "FU-1140",
+      "title": "Three live documents still name the superseded fidelity instrument as the measure",
+      "why": "docs/KNOWLEDGE_OPERATING_PROCESS.md's Measure step, docs/README.md's ledger line (which still describes ledger v3 of 2026-09-05) and the whole vision's list of the two measures name scripts/workflows/fidelity_audit_v3.js, while the committed instrument is fidelity_audit_v7.js. W752 corrected the delivery prompt, which is what its row named. The vision's state block dated 2026-09-05 is history and stays as it is.",
+      "source": "W752 (found while correcting the delivery prompt's pointer)",
+      "found": "2026-10-17",
+      "files": [
+        "docs/KNOWLEDGE_OPERATING_PROCESS.md",
+        "docs/README.md",
+        "docs/WORKSTATION_IDBO_WHOLE_VISION.md"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "tier-3 finding: P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
+      "tier": 3
     }
   ],
   "routes": [

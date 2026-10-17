@@ -1365,6 +1365,7 @@ def engage_immune_defence(threat: str | None = None, requested_by: str = "immune
                                  "decided_by": "auto_approve_immune_defence"})
 
     applied = None
+    _apply_error = None
     try:
         # W438: the CCA's execution arm is the ungated core, not the HTTP route — the route now
         # refuses governed levers (that refusal exists precisely so THIS audited path is the only
@@ -1417,6 +1418,7 @@ def engage_immune_defence(threat: str | None = None, requested_by: str = "immune
                            f"Applied immune defence: {plan['section']}.{plan['key']}={plan['value']}", 0.7)
     except Exception as e:
         change["audit_trail"].append({"event": "apply_failed", "ts": now, "error": str(e)})
+        _apply_error = f"{e.__class__.__name__}: {e}"
 
     _save_change(change)
     # W464 (FU-013) — the reflex's approval is a decision. Written after the record is saved: the config_update node
@@ -1438,7 +1440,11 @@ def engage_immune_defence(threat: str | None = None, requested_by: str = "immune
         "status": change["status"],
         #  W670 (ledger v16 R4.4) - "reconfigured" was answered for a lever with no reader and for one whose
         #  reader cannot act; the action is read from what the record says happened.
-        "action": ("reconfigured" if change["status"] == "implemented" else "lever_set_nothing_acts_on_it"),
+        #  W752 - and when the write path REFUSED (a store that could not be read whole) nothing was set: this
+        #  answered that the value was stored while revert_with said the lever was not applied.
+        "action": ("reconfigured" if change["status"] == "implemented" else
+                   "not_applied" if applied is None else "lever_set_nothing_acts_on_it"),
+        "apply_error": _apply_error,
         "reason": _why974,
         "containment_at_engagement": _reach974,
         "ueg_logged": ueg_logged,
@@ -1452,6 +1458,7 @@ def engage_immune_defence(threat: str | None = None, requested_by: str = "immune
         "governed_by": "Change Control Agency (arms-length)",
         "message": (f"Immune reconfigurator: {threat} → {plan['section']}.{plan['key']}={plan['value']} "
                     f"({change['status']})" + ("." if change["status"] == "implemented" else
+                                               f" - NOT APPLIED: {_apply_error}" if applied is None else
                                                " - the value is stored and nothing acts on it.")),
     }
 
@@ -2193,6 +2200,7 @@ def _implement_locked(cca_id: str, force: bool, principal: str, verified: bool,
     if spec:
         from agentic_core.organism.reconfiguration import (apply_config_change, apply_config_reset,
                                                            wiring_for)
+        from agentic_core.config import StoreUnavailable
         try:
             if spec.get("reset"):
                 applied = apply_config_reset(reason=f"CCA {cca_id}: {c['title']}",
@@ -2209,6 +2217,10 @@ def _implement_locked(cca_id: str, force: bool, principal: str, verified: bool,
             c["audit_trail"].append({"event": "apply_failed", "ts": now, "error": str(e)})
             _save_change(c)
             raise HTTPException(status_code=422, detail=f"config change could not be applied: {e}")
+        except StoreUnavailable as e:             # W752 - the settings or their history could not be read whole
+            c["audit_trail"].append({"event": "apply_failed", "ts": now, "error": str(e)})
+            _save_change(c)
+            raise HTTPException(status_code=503, detail=f"config change could not be applied: {e}")
         if not wired:
             # W318 — the value was set but nothing consumes it: never claim 'implemented'
             c["audit_trail"].append({"event": "config_set_no_consumer", "ts": now, "applied": applied,

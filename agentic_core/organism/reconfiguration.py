@@ -19,6 +19,11 @@ W438 honesty + governance pass:
   · Every applied change is UEG-logged and the history records the REAL prior value (reset used to
     fabricate old_value: "custom").
 
+W752 - every writer reads the settings and the history WHOLE. A store that does not exist is new and is created; one
+that exists and cannot be read whole is kept byte for byte and the write is refused with the reason (a route answers
+503, never 500). The tolerant readers stay for the consumers, which must not go down, and say when a store could not
+be read. A value the strict read would refuse (a non-finite number) is never written.
+
   GET  /api/v1/organism/config             — current configuration + per-key wiring truth
   POST /api/v1/organism/config/update      — apply a change (governed keys → 409 → CCA)
   GET  /api/v1/organism/config/history     — change history
@@ -32,7 +37,7 @@ import json
 import time
 import uuid
 from pathlib import Path
-from agentic_core.config import data_path, atomic_write_json, store_lock
+from agentic_core.config import data_path, atomic_write_json, store_lock, StoreUnavailable, read_json_strict
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -129,22 +134,34 @@ def wiring_for(section: str, key: str) -> dict[str, Any]:
     return out
 
 
+def _merge_with_defaults(saved: dict) -> dict:
+    # Merge with a DEEP copy of defaults (aliasing the default sections let updates mutate
+    # the module-level template — the reset bug)
+    merged = copy.deepcopy(_DEFAULT_CONFIG)
+    for k, v in saved.items():
+        if isinstance(v, dict) and k in merged and isinstance(merged[k], dict):
+            merged[k] = {**merged[k], **v}
+        else:
+            merged[k] = v
+    return merged
+
+
 def _load_config() -> dict:
+    """FOR READING ONLY. Every consumer of a lever reads through this and must not go down, so a store that cannot
+    be read is answered as the defaults. NO WRITER MAY USE IT AS ITS BASE (W752): written back, those defaults
+    replaced every saved setting. Writers use `_config_for_write` inside the store's lock."""
     if _CONFIG_STORE.exists():
         try:
-            saved = json.loads(_CONFIG_STORE.read_text())
-            # Merge with a DEEP copy of defaults (aliasing the default sections let updates mutate
-            # the module-level template — the reset bug)
-            merged = copy.deepcopy(_DEFAULT_CONFIG)
-            for k, v in saved.items():
-                if isinstance(v, dict) and k in merged and isinstance(merged[k], dict):
-                    merged[k] = {**merged[k], **v}
-                else:
-                    merged[k] = v
-            return merged
+            return _merge_with_defaults(json.loads(_CONFIG_STORE.read_text()))
         except Exception:
             pass
     return copy.deepcopy(_DEFAULT_CONFIG)
+
+
+def _config_for_write() -> dict:
+    """W752 - the settings WHOLE, for a writer. A store that does not exist is new (the defaults); one that exists
+    and cannot be read whole raises StoreUnavailable, and the caller writes nothing."""
+    return _merge_with_defaults(read_json_strict(_CONFIG_STORE, dict, expect=dict))
 
 
 def _save_config(config: dict) -> None:
@@ -152,6 +169,8 @@ def _save_config(config: dict) -> None:
 
 
 def _load_history() -> list[dict]:
+    """FOR READING ONLY: a history that cannot be read is answered as empty here. NO WRITER MAY USE IT (W752) - the
+    appender wrote that empty list back with one entry, erasing the record of every governed change."""
     if _CONFIG_HISTORY.exists():
         try:
             return json.loads(_CONFIG_HISTORY.read_text())[-100:]
@@ -160,11 +179,40 @@ def _load_history() -> list[dict]:
     return []
 
 
+def _history_for_write() -> list[dict]:
+    """W752 - the history WHOLE, for a writer: a history that does not exist is empty; one that exists and cannot be
+    read whole raises StoreUnavailable."""
+    return read_json_strict(_CONFIG_HISTORY, list, expect=list)
+
+
+def _store_problem(path, expect) -> str | None:
+    """W752 - why a store that EXISTS cannot be read whole, or None (read whole, or absent: a missing store is new,
+    not unreadable). For the readers, so what they show is never passed off as the saved state."""
+    try:
+        read_json_strict(path, None, expect=expect)
+        return None
+    except StoreUnavailable as exc:
+        return exc.problem
+
+
 def _append_history(change: dict) -> None:
     with store_lock(_CONFIG_HISTORY):
-        history = _load_history()
+        history = _history_for_write()             # W752 - whole, or refused; never [] for a store that failed to read
         history.append(change)
         atomic_write_json(_CONFIG_HISTORY, history[-100:])
+
+
+def _record_in_history(change: dict) -> dict:
+    """W752 - append an APPLIED change to the history, or say it was not recorded. The settings were already written
+    when this runs (the history was read whole just before), so a refusal here must not read as the change failing."""
+    try:
+        _append_history(change)
+        change["history_recorded"] = True
+    except StoreUnavailable as exc:
+        change["history_recorded"] = False
+        change["history_basis"] = (f"the change WAS applied; the history could not be read whole ({exc.problem}), "
+                                   f"so it was not recorded there, and the history was kept as it is")
+    return change
 
 
 def _ueg_log(event: dict) -> None:
@@ -213,9 +261,21 @@ def apply_config_change(section: str, key: str, value: Any, reason: str = "",
     if section not in _DEFAULT_CONFIG or not isinstance(_DEFAULT_CONFIG.get(section), dict):
         raise ValueError(f"Unknown config section: {section}")
     coerced = coerce_value(section, key, value)
+    #  W752 - the store is read STRICTLY now, and a strict read refuses a non-finite number (NaN, Infinity). JSON
+    #  carries one into a stored-only key, and once written it would refuse every later change, so it is refused
+    #  here, before anything is written.
+    try:
+        json.dumps(coerced, allow_nan=False)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{section}.{key}: {value!r} cannot be stored so that it reads back whole ({exc}); "
+                         f"nothing was written") from None
 
     with store_lock(_CONFIG_STORE):
-        config = _load_config()
+        #  W752 (the class W728 fixed for compositions) - read WHOLE or refused. A store that failed to read was
+        #  answered as the defaults and written back with this one change, losing every other setting. The history
+        #  must be readable too: a change that could not be recorded is not made.
+        config = _config_for_write()
+        _history_for_write()
         section_data = config[section]
         old_value = section_data.get(key)
         section_data[key] = coerced
@@ -259,7 +319,7 @@ def apply_config_change(section: str, key: str, value: Any, reason: str = "",
         "applied_at": config["last_updated"],
         **wiring_for(section, key),
     }
-    _append_history(change)
+    _record_in_history(change)
     _ueg_log({"type": "organism.config_update", **{k: change[k] for k in
               ("section", "key", "old_value", "new_value", "reason", "updated_by")}})
     return change
@@ -268,7 +328,10 @@ def apply_config_change(section: str, key: str, value: Any, reason: str = "",
 def apply_config_reset(reason: str = "", updated_by: str = "system") -> dict:
     """Reset to TRUE defaults (deep copy), recording the real prior config in history."""
     with store_lock(_CONFIG_STORE):
-        prior = _load_config()
+        #  W752 - the prior is read WHOLE or the reset is refused: over a store that failed to read, the defaults
+        #  were recorded as the prior and the saved settings were replaced. The history must be readable too.
+        prior = _config_for_write()
+        _history_for_write()
         defaults = copy.deepcopy(_DEFAULT_CONFIG)
         defaults["last_updated"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         defaults["updated_by"] = updated_by
@@ -277,13 +340,15 @@ def apply_config_reset(reason: str = "", updated_by: str = "system") -> dict:
         "change_id": uuid.uuid4().hex[:8],
         "section": "all",
         "key": "reset",
-        "old_value": {k: prior.get(k) for k in ("gateway", "domains", "features", "organism")},
+        #  W752 - every section the reset returns to its defaults, computed from the schema: the four typed here
+        #  left out the Quran platform's shared weights (W687), which the reset also changes, so they had no prior
+        "old_value": {k: prior.get(k) for k in _DEFAULT_CONFIG if isinstance(_DEFAULT_CONFIG[k], dict)},
         "new_value": "defaults",
         "reason": reason or "Reset to defaults",
         "updated_by": updated_by,
         "applied_at": defaults["last_updated"],
     }
-    _append_history(change)
+    _record_in_history(change)
     _ueg_log({"type": "organism.config_reset", "reason": reason, "updated_by": updated_by})
     return {"status": "reset", "config": defaults, "change": change}
 
@@ -293,6 +358,7 @@ async def get_config():
     """Current organism configuration, with the wiring truth per key: which keys anything actually
     reads back (and what), which are stored-only, and which are CCA-governed live levers."""
     cfg = _load_config()
+    _unread = _store_problem(_CONFIG_STORE, dict)          # W752 - said, never shown as the saved settings
     key_wiring = []
     for section in ("gateway", "domains", "features", "organism"):
         for key in (cfg.get(section) or {}):
@@ -300,6 +366,9 @@ async def get_config():
     return {"config": cfg,
             "key_wiring": key_wiring,
             "governed_keys": sorted(f"{s}.{k}" for s, k in _GOVERNED_KEYS),
+            "store_unreadable": (None if _unread is None else
+                                 f"the saved settings could not be read whole ({_unread}), so what is shown may not "
+                                 f"be what was saved, and no change can be saved until the store is repaired"),
             "note": ("only the wired keys change live behaviour; stored-only keys persist but "
                      "nothing consults them — displayed so a settings panel cannot pass a dead "
                      "switch off as a control")}
@@ -309,7 +378,15 @@ async def get_config():
 async def config_history():
     """Return configuration change history."""
     history = _load_history()
-    return {"history": list(reversed(history)), "total": len(history),
+    #  W752 - an unreadable history is not an empty one. The page already says the read failed ("this is not 'no
+    #  changes'") for a null history; it was handed [] and said no changes were recorded.
+    _unread = _store_problem(_CONFIG_HISTORY, list)
+    if _unread is not None:
+        return {"history": None, "total": None, "capacity": 100,
+                "store_unreadable": (f"the change history could not be read whole ({_unread}), so it is not shown; "
+                                     f"it is kept as it is, and no change can be saved until it is repaired"),
+                "note": "history is capped at the last 100 changes"}
+    return {"history": list(reversed(history)), "total": len(history), "store_unreadable": None,
             "capacity": 100, "note": "history is capped at the last 100 changes"}
 
 
@@ -344,6 +421,9 @@ async def update_config(req: ConfigUpdateRequest,
                                      reason=req.reason, updated_by=_by)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
+    except StoreUnavailable as e:                 # W752 - a refusal the caller receives, never a 500
+        raise HTTPException(status_code=503, detail=(f"The setting was not changed: {e}. The store is left exactly "
+                                                     f"as it is."))
     return {"status": "applied", "change": change,
             **({"note": "this key is stored-only — nothing reads it back, so the write changes "
                         "no live behaviour"} if not change["wired"] else {})}

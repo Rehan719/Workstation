@@ -68272,3 +68272,261 @@ def test_w746_host_resources_are_read_once_and_say_what_they_cover(client, monke
     assert _child["cpu_percent"] is not None and _child["cpu_window_seconds"] >= _HO.MIN_WINDOW_S, _child
     monkeypatch.undo()
     _old_sampler.shutdown(wait=False)
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W752 - THE SETTINGS AND HISTORY STORES ARE NEVER OVERWRITTEN FROM A FAILED READ. Both were read tolerantly as
+#  the base of every write: a settings store that failed to parse once was answered as the defaults and written back
+#  with one change (every other setting lost); a history that failed to parse was answered as [] and written back
+#  holding one entry; a reset over a corrupt store recorded the defaults as its prior. The refusal now reaches every
+#  caller: the routes, Change Control, the immune reflex and the heartbeat that calls it. And the plan named a
+#  superseded fidelity instrument as THE measure.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w752_the_settings_and_history_stores_are_never_overwritten_from_a_failed_read(client, monkeypatch):
+    import ast
+    import inspect
+    import json
+    import pathlib
+    import re
+    import agentic_core.organism.reconfiguration as _rc
+    from agentic_core.api.change_control import engage_immune_defence, revert_immune_defence
+    from agentic_core.config import StoreUnavailable
+
+    S, H = pathlib.Path(_rc._CONFIG_STORE), pathlib.Path(_rc._CONFIG_HISTORY)
+    held = {p: (p.read_bytes() if p.exists() else None) for p in (S, H)}
+    U = "/api/v1/organism/config/update"
+
+    def post(value, reason):
+        return client.post(U, json={"section": "gateway", "key": "temperature_bias", "value": value, "reason": reason})
+
+    def mine(reason):
+        return [h for h in json.loads(H.read_text(encoding="utf-8")) if h.get("reason") == reason]
+
+    def torn(p):
+        good = p.read_bytes()
+        p.write_bytes(good[: len(good) // 2])
+        return good, p.read_bytes()
+
+    try:
+        #  1. MISSING STORES ARE NEW: they are created, and the prior is the default
+        for p in (S, H):
+            p.unlink(missing_ok=True)
+        r = post("w752-first", "w752 first")
+        assert r.status_code == 200, r.text[:300]
+        assert S.exists() and H.exists(), "a missing store was not created"
+        c = r.json()["change"]
+        assert c["old_value"] == _rc._DEFAULT_CONFIG["gateway"]["temperature_bias"] and c["history_recorded"] is True, c
+        assert json.loads(S.read_text(encoding="utf-8"))["gateway"]["temperature_bias"] == "w752-first"
+        assert len(mine("w752 first")) == 1
+        assert client.get("/api/v1/organism/config").json()["store_unreadable"] is None
+        h0 = client.get("/api/v1/organism/config/history").json()
+        assert isinstance(h0["history"], list) and h0["store_unreadable"] is None, h0
+        assert post("w752-second", "w752 second").status_code == 200
+
+        #  2. AN UNREADABLE SETTINGS STORE IS KEPT BYTE FOR BYTE, and every writer and caller is refused with the reason
+        good, bad = torn(S)
+        hist = H.read_bytes()
+        r = post("w752-lost", "w752 lost")
+        assert r.status_code == 503 and "could not be read whole" in r.json()["detail"], (r.status_code, r.text[:300])
+        assert S.name in r.json()["detail"] and "nothing was written" in r.json()["detail"]
+        assert S.read_bytes() == bad and H.read_bytes() == hist, "a writer replaced a store it could not read"
+        try:
+            _rc.apply_config_change("gateway", "max_tokens", 1234, reason="w752 direct")
+            raise AssertionError("the single write path wrote over a store it could not read")
+        except StoreUnavailable:
+            pass
+        #     the reset never records a corrupt store's value as its prior: it is refused, and nothing is recorded
+        try:
+            _rc.apply_config_reset(reason="w752 reset over a corrupt store")
+            raise AssertionError("a reset over an unreadable store was made")
+        except StoreUnavailable:
+            pass
+        assert S.read_bytes() == bad and H.read_bytes() == hist
+        #     a change implemented through Change Control is refused with the reason, not a 500
+        S.write_bytes(good)
+        sub = client.post("/api/v1/cca/submit", json={
+            "title": "w752 a setting over an unreadable store", "description": "w752 probe",
+            "rationale": "the implement path is refused when the settings cannot be read whole",
+            "affected_systems": ["organism"], "submitted_by": "w752_probe",
+            "config_change": {"section": "gateway", "key": "temperature_bias", "value": "w752-cca"}})
+        assert sub.status_code == 200, sub.text[:300]
+        cid = sub.json()["cca_id"]
+        with _measured_healthy():
+            if client.get(f"/api/v1/cca/{cid}").json()["status"] != "approved":
+                rv = client.post(f"/api/v1/cca/{cid}/review",
+                                 json={"override_decision": "approved", "owner_decision_acknowledged": True})
+                assert rv.status_code == 200, rv.text[:300]
+            S.write_bytes(bad)
+            imp = client.post(f"/api/v1/cca/{cid}/implement")
+            assert imp.status_code == 503 and "could not be read whole" in imp.json()["detail"], (imp.status_code, imp.text[:300])
+            assert S.read_bytes() == bad and H.read_bytes() == hist
+            rec = client.get(f"/api/v1/cca/{cid}").json()
+            assert rec["status"] == "approved" and rec["audit_trail"][-1]["event"] == "apply_failed", rec["audit_trail"][-1:]
+            assert "could not be read whole" in rec["audit_trail"][-1]["error"]
+            #  ...and it stays implementable once the store can be read
+            S.write_bytes(good)
+            again = client.post(f"/api/v1/cca/{cid}/implement")
+            assert again.status_code == 200 and again.json()["applied"]["new_value"] == "w752-cca", again.text[:300]
+        good = S.read_bytes()
+        #     the immune reflex says it did NOT apply the lever, never that the value is stored
+        S.write_bytes(good[: len(good) // 2])
+        bad = S.read_bytes()
+        res = engage_immune_defence("HIGH", requested_by="w752_probe", requested_by_verified=False)
+        assert res["applied"] is None and res["action"] == "not_applied", (res["action"], res["applied"])
+        assert "could not be read whole" in (res["apply_error"] or "") and "NOT APPLIED" in res["message"], res["message"]
+        assert "is stored" not in res["message"], res["message"]
+        assert S.read_bytes() == bad
+        #     ...and the heartbeat, the reflex's caller, says its defence step failed and that the lever was not applied
+        from agentic_core.organism.heartbeat import heartbeat as _hb
+        import agentic_core.api.change_control as _cc
+        _hb_held = (_hb.last_immune_defence, _hb._last_defence_beat)
+        try:
+            monkeypatch.setattr(_cc, "_immune_threat", lambda: _hb.DEFEND_AT)
+            _hb.last_immune_defence, _hb._last_defence_beat = None, None
+            step = _hb.respond_to_threat()
+            d = _hb.last_immune_defence
+            assert step["engaged"] is True and "NOT applied" in (step.get("error") or ""), step
+            assert "could not be read whole" in step["error"] and d["lever_applied"] is False, (step, d)
+            assert "could not be read whole" in (d["apply_error"] or "") and d["reversible"] is False, d
+            assert S.read_bytes() == bad
+            #     the same step over a readable store applies its lever and says nothing failed (never a false failure)
+            S.write_bytes(good)
+            _hb.last_immune_defence, _hb._last_defence_beat = None, None
+            step = _hb.respond_to_threat()
+            d = _hb.last_immune_defence
+            try:
+                assert step["engaged"] is True and not step.get("error"), step
+                assert d["lever_applied"] is True and d["apply_error"] is None and d["reversible"] is True, d
+            finally:
+                revert_immune_defence(d["cca_id"], reason="w752 probe")
+            S.write_bytes(bad)
+        finally:
+            monkeypatch.undo()
+            _hb.last_immune_defence, _hb._last_defence_beat = _hb_held
+        #     the readers do not go down, and say the store could not be read
+        g = client.get("/api/v1/organism/config")
+        assert g.status_code == 200 and "could not be read whole" in (g.json()["store_unreadable"] or ""), g.text[:300]
+        #     a store of the wrong shape is unreadable too
+        S.write_bytes(b'["not", "the settings"]')
+        assert post("w752-shape", "w752 shape").status_code == 503
+        assert S.read_bytes() == b'["not", "the settings"]'
+        S.write_bytes(good)
+
+        #  3. AN UNREADABLE HISTORY IS KEPT, and a change that could not be recorded is not made
+        settings = S.read_bytes()
+        H.write_bytes(b'{"not": "a list"}')
+        r = post("w752-unrecorded", "w752 unrecorded")
+        assert r.status_code == 503 and H.name in r.json()["detail"], (r.status_code, r.text[:300])
+        assert S.read_bytes() == settings, "a change was made that the history could not record"
+        assert H.read_bytes() == b'{"not": "a list"}'
+        try:
+            _rc.apply_config_reset(reason="w752 reset over an unreadable history")
+            raise AssertionError("a reset was made that the history could not record")
+        except StoreUnavailable:
+            pass
+        assert S.read_bytes() == settings and H.read_bytes() == b'{"not": "a list"}'
+        hv = client.get("/api/v1/organism/config/history").json()
+        assert hv["history"] is None and hv["total"] is None and "could not be read whole" in (hv["store_unreadable"] or ""), hv
+        H.write_bytes(hist)
+
+        #  4. A HISTORY THAT FAILS AFTER THE SETTINGS WERE WRITTEN: the change stands, says it was not recorded,
+        #     and the history is kept as it was
+        real_save = _rc._save_config
+        tear = {}
+
+        def _save_then_tear(config):
+            real_save(config)
+            tear["good"], tear["bad"] = torn(H)
+        monkeypatch.setattr(_rc, "_save_config", _save_then_tear)
+        ch = _rc.apply_config_change("gateway", "temperature_bias", "w752-race", reason="w752 race")
+        monkeypatch.undo()
+        assert ch["history_recorded"] is False and "WAS applied" in ch["history_basis"], ch
+        assert json.loads(S.read_text(encoding="utf-8"))["gateway"]["temperature_bias"] == "w752-race"
+        assert H.read_bytes() == tear["bad"], "the appender replaced a history it could not read"
+        H.write_bytes(tear["good"])
+
+        #  5. A VALUE THE STRICT READ WOULD REFUSE IS NEVER WRITTEN: one non-finite number would refuse every later change
+        before = (S.read_bytes(), H.read_bytes())
+        r = client.post(U, content=b'{"section": "features", "key": "w752_probe", "value": NaN, "reason": "w752 nan"}',
+                        headers={"Content-Type": "application/json"})
+        assert r.status_code == 422 and "reads back whole" in r.json()["detail"], (r.status_code, r.text[:300])
+        assert (S.read_bytes(), H.read_bytes()) == before
+        assert post("w752-after-nan", "w752 after nan").status_code == 200
+
+        #  6. THE RESET RECORDS THE REAL PRIOR OF EVERY SECTION IT RETURNS TO ITS DEFAULTS
+        sections = {k for k, v in _rc._DEFAULT_CONFIG.items() if isinstance(v, dict)}
+        _rc.apply_config_change("qep_recommendation", "weights", "0.5,0.3,0.2", reason="w752 weights")
+        _rc.apply_config_change("gateway", "temperature_bias", "w752-prior", reason="w752 prior")
+        out = _rc.apply_config_reset(reason="w752 reset")
+        prior = out["change"]["old_value"]
+        assert set(prior) == sections, (sorted(prior), sorted(sections))
+        assert prior["qep_recommendation"]["weights"] == "0.5,0.3,0.2" and prior["gateway"]["temperature_bias"] == "w752-prior", prior
+        assert out["change"]["history_recorded"] is True and mine("w752 reset")[-1]["old_value"] == prior
+
+        #  7. BY SYNTAX - a writer added later: every save of either store sits in that store's lock, after a whole
+        #     read, and never after the tolerant one (the legs above drive the writers that exist)
+        tree = ast.parse(inspect.getsource(_rc))
+        funcs = {f.name: f for f in ast.walk(tree) if isinstance(f, (ast.FunctionDef, ast.AsyncFunctionDef))}
+
+        def calls(node, name):
+            return [x for x in ast.walk(node) if isinstance(x, ast.Call) and isinstance(x.func, ast.Name) and x.func.id == name]
+
+        def writes(node, store):
+            return [x for x in calls(node, "atomic_write_json") if x.args and ast.unparse(x.args[0]) == store]
+
+        for store, saver, whole, tolerant, known in (
+                ("_CONFIG_STORE", "_save_config", "_config_for_write", "_load_config", {"apply_config_change", "apply_config_reset"}),
+                ("_CONFIG_HISTORY", None, "_history_for_write", "_load_history", {"_append_history"})):
+            found = set()
+            for name, f in funcs.items():
+                sites = (calls(f, saver) if saver and name != saver else []) + ([] if name == saver else writes(f, store))
+                if not sites:
+                    continue
+                found.add(name)
+                locks = [w for w in ast.walk(f) if isinstance(w, ast.With) and any(
+                    ast.unparse(i.context_expr) == f"store_lock({store})" for i in w.items)]
+                for site in sites:
+                    held_by = [w for w in locks if any(x is site for x in ast.walk(w))]
+                    assert held_by, (name, f"writes {store} outside its lock")
+                    block = ast.Module(body=held_by[0].body, type_ignores=[])
+                    assert calls(block, whole) and not calls(block, tolerant), (name, f"writes {store} from a read that is not whole")
+            assert known <= found, (store, sorted(found))
+        assert writes(funcs["_save_config"], "_CONFIG_STORE"), "the settings are no longer saved whole"
+        src = inspect.getsource(_rc)
+        assert "write_text(" not in src and "write_bytes(" not in src, "a store is written other than whole and atomically"
+
+        #  8. THE PLAN NAMES THE COMMITTED FIDELITY INSTRUMENT where it says what to run, and the superseded one says
+        #     it is history - computed from the instruments in the tree, never typed
+        root = pathlib.Path(__file__).resolve().parents[1]
+        wf = root / "scripts" / "workflows"
+        ver = {int(m.group(1)): p for p in wf.glob("fidelity_audit_v*.js") if (m := re.fullmatch(r"fidelity_audit_v(\d+)\.js", p.name))}
+        assert len(ver) >= 2, sorted(ver)
+        newest = ver[max(ver)].name
+        older = [ver[v].name for v in ver if v != max(ver)]
+        prompt = (root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+        #  the plan's OWN text: the blocks followups.py render generates quote register rows, and a row may quote
+        #  one of these lines, which would make a place read twice or read a quotation of it
+        prompt = re.sub(r"<!-- (\w+):begin.*?<!-- \1:end -->", "", prompt, flags=re.S)
+
+        def region(start, end, back=None):
+            assert prompt.count(start) == 1, ("the plan no longer says where it names the measure", start)
+            i = prompt.index(start)
+            i = prompt.rindex(back, 0, i) if back else i
+            return prompt[i: prompt.index(end, i + 1)]
+        for where, reg in (("the header's pointer", region('the instrument behind "definition of complete"', "\n---", back="·")),
+                           ("the definition of complete", region("DEFINITION OF COMPLETE.", "Complete is a MEASUREMENT")),
+                           ("the tools list", region("THE fidelity measure", "\n- ", back="\n- ")),
+                           ("the milestone re-run", region("Per phase boundary (M1, M2, M3)", "A milestone is a measurement."))):
+            assert newest in reg, (where, "does not name the committed instrument", newest)
+            for o in older:
+                assert o not in reg or "history" in reg, (where, "names a superseded instrument as current", o)
+        for o in older:
+            head = "\n".join((wf / o).read_text(encoding="utf-8").splitlines()[:4])
+            assert "kept as history" in head.lower() and newest in head, (o, "does not say it is history")
+    finally:
+        monkeypatch.undo()
+        for p, b in held.items():
+            if b is None:
+                p.unlink(missing_ok=True)
+            else:
+                p.write_bytes(b)
