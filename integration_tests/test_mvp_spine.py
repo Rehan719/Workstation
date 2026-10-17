@@ -133,8 +133,25 @@ def _as_meta(fn):
 def _code_only(text):
     """The text with // and /* */ comments (TS/JS) and whole-line # comments (Python) removed."""
     import re as _re_co
-    t = _re_co.sub(r"\{/\*.*?\*/\}|/\*.*?\*/", "", str(text or ""), flags=_re_co.S)
+    t = _slash_star_restored(_re_co.sub(r"\{/\*.*?\*/\}|/\*.*?\*/", "", _slash_star_masked(text), flags=_re_co.S))
     return "\n".join(ln for ln in t.splitlines() if not ln.lstrip().startswith(("//", "#")))
+
+
+#  FU-833 - A BLOCK COMMENT IS NOT OPENED INSIDE A QUOTED TOKEN. An accept list's text-slash-star, a glob and an
+#  image accept hold the two characters that open a block comment; the stripper took them for one and cut to the
+#  next close anywhere in the file - seventeen lines of AttachDocument.tsx, its accept list among them. A ONE-LINE,
+#  WHITESPACE-FREE quoted token holding them is masked first and restored after. The same pattern is
+#  scripts/selfcheck_diff.py's _SLASH_STAR_TOKEN_RE; a guard holds the two equal.
+_SLASH_STAR_TOKEN = __import__("re").compile(r"""(['"`])[^\s'"`\\]*?/\*(?:(?!\*/)[^\s'"`\\])*\1""")
+_SLASH_STAR_MASK = "\x00slash-star\x00"
+
+
+def _slash_star_masked(text):
+    return _SLASH_STAR_TOKEN.sub(lambda m: m.group(0).replace("/*", _SLASH_STAR_MASK), str(text or ""))
+
+
+def _slash_star_restored(text):
+    return text.replace(_SLASH_STAR_MASK, "/*")
 
 
 #  W718 - a change to a governed live setting is applied only after the platform's own health has been read
@@ -7144,6 +7161,16 @@ def test_svg_and_png_exports_are_real(client):
     assert len(lines) <= _D._CARD_MAX_LINES, f"{len(lines)} lines will overlap the footer"
 
 
+#  FU-833 - the fabrication scan's comment stripper, at module level so the W749 guard can DRIVE it: a one-line quoted
+#  token holding a block opener is masked, so the lines after it are scanned rather than cut away with a marker.
+def _strip_fabrication_comments(text: str) -> str:
+    import re as _re_fab
+    text = _slash_star_restored(_re_fab.sub(r"/\*.*?\*/", " ", _slash_star_masked(text), flags=_re_fab.S))
+    text = _re_fab.sub(r"^\s*//.*$", " ", text, flags=_re_fab.M)
+    text = _re_fab.sub(r"(?<![:'\"])//[^\n'\"]*$", " ", text, flags=_re_fab.M)
+    return text
+
+
 def test_frontend_fabrications_do_not_return():
     """W374 — the fabricated UI markers deleted in Round 11 must never come back.
 
@@ -7182,10 +7209,7 @@ def test_frontend_fabrications_do_not_return():
     # the markers survive only inside the comments that document what was removed. A guard that
     # fires on its own documentation is noise — and the "fix" would be deleting useful history.
     def _strip_comments(text: str) -> str:
-        text = re.sub(r"/\*.*?\*/", " ", text, flags=re.S)      # block comments
-        text = re.sub(r"^\s*//.*$", " ", text, flags=re.M)       # whole-line comments
-        text = re.sub(r"(?<![:'\"])//[^\n'\"]*$", " ", text, flags=re.M)   # trailing comments
-        return text
+        return _strip_fabrication_comments(text)        # FU-833: one stripper, driven by the W749 guard
 
     offenders = []
     for f in list(src.rglob("*.tsx")) + list(src.rglob("*.ts")):
@@ -7723,7 +7747,7 @@ def test_w426_learning_loop_copy_matches_the_real_demotion_rule():
     # and the explanatory copy must state the real numbers and mention probation
     assert "under 25% success" in page, "the page still describes a superseded demotion threshold"
     assert "60% success" not in page, "the pre-W380 copy survives on the page"
-    assert "probation" in page.lower(), "probation is part of the rule and must be described"
+    assert "probation" in _code_only(page).lower(), "probation is part of the rule and must be described"
     assert "10 minutes" in page, "the probation window must be stated, not implied"
 
 
@@ -21168,7 +21192,7 @@ def test_w493_a_present_tense_claim_needs_the_process_running(client):
     assert "Operates each living VSB on the beat" not in hm
     assert "Re-screens every living VSB" not in hm
     assert "ONE living VSB per beat" in hm and "least recently operated" in hm
-    assert "round-robin" in hm
+    assert "round-robin" in _code_only(hm)
     assert "Routes vision gaps to delivery tiers each beat" not in hm
     # the code this describes: one entity per beat
     lv = (root / "agentic_core/economy/living_vsbs.py").read_text(encoding="utf-8")
@@ -21317,7 +21341,9 @@ def test_w493_a_present_tense_claim_needs_the_process_running(client):
     # check that RAISES exits 2 rather than 0.
     _r = _sp.run([__import__("sys").executable, str(sc), "--rev", "HEAD"],
                  cwd=root, capture_output=True, text=True, encoding="utf-8", errors="replace")
-    assert _r.returncode == 0, ("a check could not run:\n" + _r.stdout[-900:] + _r.stderr[-400:])
+    #  FU-921 - 1 is "nothing to compare" (a committed tree, as on CI) and 0 "the checks ran"; neither is a broken tool
+    assert _r.returncode in (0, 1), ("a check could not run:\n" + _r.stdout[-900:] + _r.stderr[-400:])
+    assert (_r.returncode == 1) == ("nothing to compare" in _r.stdout), (_r.returncode, _r.stdout[-400:])
     assert "SELF-CHECK over" in _r.stdout, _r.stdout[-400:]
     assert "CHECK(S) COULD NOT RUN" not in _r.stdout, _r.stdout[-600:]
     # W493 refutation - both asserts above run against the AUTHOR's tree, so neither can see the defect
@@ -21339,7 +21365,8 @@ def test_w493_a_present_tense_claim_needs_the_process_running(client):
         return _rc, _buf.getvalue()
 
     _rc0, _out0 = _run_tool493(["--rev", "HEAD"], [])
-    assert _rc0 == 0, (_rc0, _out0)
+    assert _rc0 == 1, (_rc0, _out0)          # FU-921: nothing compared is not a pass
+    assert "examined nothing" in _out0, _out0
     assert "SELF-CHECK over 0 changed file(s)" in _out0, _out0   # not behind the early return
     assert "nothing to compare" in _out0, _out0
     _keep493 = _mod.CHECKS["keys"]
@@ -54887,8 +54914,9 @@ def test_p3b_r4_domain_qep_and_genesis_surfaces_say_what_exists(client, monkeypa
     assert "Virtual WST only" in _card and "no real payment rails are enabled" in _card and "rules on nobody" in _card
 
     # -- 2. D2 (R2.13) THE ATTACH CONTROL says what it does not read, where a caller's hint cannot replace it --
-    #    read RAW: this file holds the literal 'text/*', which the comment-stripper takes for the start of a
-    #    block comment and cuts through to the next one - the accept list itself would be removed
+    #    read RAW: until FU-833 the comment-stripper read the accept list's text wildcard as the start of a block
+    #    comment and cut the list away; the raw read is kept because the checks below read the accept list and the
+    #    hint line exactly as written
     _ad = (_src / "components" / "AttachDocument.tsx").read_text(encoding="utf-8")
     _accept = _between(_ad, "accept={[", "].join(',')}") + _between(_ad, "export const TEXT_DOC_EXT = [", "];")
     _media = [m for m in ("image/", "audio/", "video/", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".mp3", ".mp4", ".wav")
@@ -60664,7 +60692,7 @@ def test_w676_a_returned_finding_cannot_pass_unread(tmp_path, monkeypatch, capsy
     class _R:
         @staticmethod
         def standing(f, v=None):
-            return "STANDING"
+            return ("PARTIAL", "survived")
         @staticmethod
         def standing_tier(f, v=None):
             return f.get("tier")
@@ -68891,3 +68919,410 @@ def test_w748_the_suite_refuses_to_run_against_the_real_store(tmp_path):
     assert _pl_w748.Path(_os_w748.environ["WORKSTATION_DATA_DIR"]).resolve() in \
         _pl_w748.Path(_cp_w748.MEMORY_FILE).resolve().parents, (
         "the memory store is not under this run's WORKSTATION_DATA_DIR", str(_cp_w748.MEMORY_FILE))
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W749 (cluster G1) - INSTRUMENTS THAT CANNOT FAIL. A check whose "examined nothing" read as "found nothing", a
+#  reader that cut through a quoted string, a pairing that took the last name in the file, and an audit record that
+#  could carry no class, no residue and a missing verdict. Rows FU-920, 921, 923, 925, 833, 1074, 1002, 990.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w749_an_instrument_that_examined_nothing_refuses_and_reads_what_it_names(tmp_path, monkeypatch, capsys):
+    """G1 (W749). Every leg DRIVES the instrument on its empty or planted case and on a real one, with tmp_path,
+    monkeypatch and the real scripts; nothing here writes a shared store. The source legs - 3c', the wiring half of
+    4e, 6e, 6e+ - and the source census (7) are named as such where they stand.
+
+    1 the diff self-check: an unread diff exits 2, nothing compared exits 1, a check or a deletion list whose git
+      call could not read exits 2, and a failed search is never remembered as "no reader"
+    2 the browser smoke refuses a route table that parsed to nothing, before any browser starts
+    3 the entity scan, the recovery audit and the reach audit refuse a missing or empty input and name what they
+      could not read
+    4 no reader opens a block comment inside a quoted token
+    5 an assertion is judged against the file its OWN function read
+    6 from edition 18 the record states a class and a residue list, a finding with no verdict is refused, and a
+      residue line naming a home-directory path is refused
+    8 the effectiveness check counts with the renderer's own (verdict, how)
+    7 SOURCE CENSUS: each listed instrument carries the words of a refusal
+    """
+    import ast as _ast
+    import importlib.util as _ilu
+    import inspect as _inspect
+    import json as _json
+    import os as _os
+    import pathlib as _pl
+    import re as _re
+    import shutil as _sh
+    import subprocess as _sp
+    import sys as _sys
+
+    _root = _pl.Path(__file__).resolve().parents[1]
+    _NOTHING = "examined nothing"
+
+    def _load(name, rel):
+        _spec = _ilu.spec_from_file_location(name, _root / rel)
+        _mod = _ilu.module_from_spec(_spec)
+        _spec.loader.exec_module(_mod)
+        return _mod
+
+    # == 1. FU-921 - the diff self-check: an unread diff is not an empty one, and nothing compared is not 0 =======
+    _sc = _load("_w749_sc", "scripts/selfcheck_diff.py")
+    monkeypatch.setattr(_sys, "argv", ["selfcheck_diff.py", "--rev", "no-such-rev-w749", "--check", "keys"])
+    capsys.readouterr()
+    assert _sc.main() == 2, "a rev git cannot resolve was read as an empty diff"
+    _o = capsys.readouterr().out
+    assert "could not read the diff" in _o and "not a pass" in _o, _o
+    assert "SELF-CHECK over 0 changed file(s)" not in _o, ("an unread diff was reported as zero changed files", _o)
+    monkeypatch.setattr(_sc, "changed_files", lambda rev: [])
+    monkeypatch.setattr(_sc, "deleted_files", lambda rev: set())
+    monkeypatch.setattr(_sys, "argv", ["selfcheck_diff.py", "--rev", "HEAD"])
+    assert _sc.main() == 1, "a self-check that compared nothing exited 0, which reads as a clean diff"
+    _o = capsys.readouterr().out
+    assert "SELF-CHECK over 0 changed file(s)" in _o and "nothing to compare" in _o and _NOTHING in _o, _o
+    monkeypatch.setattr(_sc, "changed_files", lambda rev: ["agentic_core/api/vsb.py"])
+    monkeypatch.setitem(_sc.CHECKS, "keys", (_sc.CHECKS["keys"][0], lambda rev, files: []))
+    monkeypatch.setattr(_sys, "argv", ["selfcheck_diff.py", "--rev", "HEAD", "--check", "keys"])
+    assert _sc.main() == 0
+    _o = capsys.readouterr().out
+    assert "SELF-CHECK over 1 changed file(s)" in _o and _NOTHING not in _o, _o
+
+    #    1d. AT THE FLOOR: a git call that could not read INSIDE a check (a `git grep` for readers) is a check that
+    #    could not run - not "no reader"
+    def _git_unread_check(rev, files):
+        _sc.sh("git", "diff", "--name-only", "no-such-rev-w749")
+        return []
+    monkeypatch.setitem(_sc.CHECKS, "keys", (_sc.CHECKS["keys"][0], _git_unread_check))
+    assert _sc.main() == 2, "a check whose git call could not read reported ok"
+    _o = capsys.readouterr().out
+    assert "CHECK(S) COULD NOT RUN: keys" in _o and "git could not read" in _o and "ok   [keys]" not in _o, _o
+    #    1e. a deletion list git could not read is not "nothing deleted"
+    monkeypatch.setattr(_sc, "deleted_files",
+                        lambda rev: (_sc.sh("git", "diff", "--name-only", "no-such-rev-w749"), set())[1])
+    assert _sc.main() == 2, "a deletion list git could not read was taken for 'nothing deleted'"
+    assert "could not read which files the diff deletes" in capsys.readouterr().out
+    monkeypatch.setattr(_sc, "deleted_files", lambda rev: set())
+    #    1f. a search git could not read is not cached as "no reader" for the next check
+    monkeypatch.setattr(_sc, "_grep_cache", {})
+
+    def _reads(rev, files):
+        return [] if not _sc.grep_repo("w749-needle-g1") else ["a reader"]
+    monkeypatch.setitem(_sc.CHECKS, "keys", (_sc.CHECKS["keys"][0], _reads))
+    monkeypatch.setitem(_sc.CHECKS, "renames", (_sc.CHECKS["renames"][0], _reads))
+    monkeypatch.setattr(_sys, "argv", ["selfcheck_diff.py", "--rev", "HEAD", "--check", "keys", "--check", "renames"])
+    with monkeypatch.context() as _mp:
+        _mp.setenv("GIT_DIR", str(tmp_path / "no-git-w749"))
+        assert _sc.main() == 2
+    _o = capsys.readouterr().out
+    assert "CHECK(S) COULD NOT RUN: keys, renames" in _o, ("a failed search was handed to the next check as 'no reader'", _o)
+
+    # == 2. FU-920 - the browser smoke refuses a route table that parsed to nothing, before any browser starts ====
+    _node = _sh.which("node")
+    assert _node, "node is not on PATH, so the smoke's own refusal cannot be driven (CI images and the Owner's machine carry it)"
+    _env = {k: v for k, v in _os.environ.items() if not k.startswith("SMOKE_")}
+    _empty_app = tmp_path / "App_empty.tsx"
+    _empty_app.write_text("export default function App() { return null }\n", encoding="utf-8")
+    _smoke = _root / "scripts" / "browser_smoke.mjs"
+    _r = _sp.run([_node, str(_smoke), "http://127.0.0.1:9"], capture_output=True, text=True, encoding="utf-8",
+                 errors="replace", cwd=str(_root), timeout=120, env=dict(_env, SMOKE_APP_SOURCE=str(_empty_app)))
+    assert _r.returncode == 1 and _NOTHING in _r.stderr, (_r.returncode, _r.stdout[-300:], _r.stderr[-400:])
+    assert "BROWSER SMOKE PASSED" not in _r.stdout and "sweeping" not in _r.stdout, (
+        "the smoke went on with an empty route list", _r.stdout[-300:])
+    #    and the real route table parses to a positive count, read without a browser
+    _r = _sp.run([_node, str(_smoke), "http://127.0.0.1:9"], capture_output=True, text=True, encoding="utf-8",
+                 errors="replace", cwd=str(_root), timeout=120, env=dict(_env, SMOKE_PARSE_ONLY="1"))
+    _m = _re.search(r"parsed (\d+) route", _r.stdout)
+    assert _r.returncode == 0 and _m and int(_m.group(1)) > 0, (_r.returncode, _r.stdout[-300:], _r.stderr[-300:])
+
+    # == 3. FU-923 - three report scripts: a missing or empty input is nothing examined, said and refused ========
+    #    3a. the entity scan
+    _ecs = _load("_w749_ecs", "scripts/entity_coverage_scan.py")
+    monkeypatch.setattr(_ecs, "data_path", lambda *_a: tmp_path / "no_such_root")
+    monkeypatch.setattr(_sys, "argv", ["entity_coverage_scan.py"])
+    capsys.readouterr()
+    assert _ecs.main() == 1, "the entity scan exited 0 over a data root that does not exist"
+    _o = capsys.readouterr().out
+    assert "REFUSING" in _o and _NOTHING in _o and "no_such_root" in _o and "named by nothing" not in _o, _o
+    _bare = tmp_path / "bare_root"
+    (_bare / "economy").mkdir(parents=True)
+    (_bare / "economy" / "x.json").write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(_ecs, "data_path", lambda *_a: _bare)
+    monkeypatch.setattr(_sys, "argv", ["entity_coverage_scan.py", "--json"])
+    assert _ecs.main() == 1, "a root with no entity store was reported as a store naming no entity"
+    _rep = _json.loads(capsys.readouterr().out)
+    assert _rep["root_exists"] is True and _rep["entity_store_exists"] is False, _rep
+    (_bare / "vsb_entities").mkdir()
+    monkeypatch.setattr(_sys, "argv", ["entity_coverage_scan.py"])
+    assert _ecs.main() == 1, "an empty entity store was reported as a clean one"
+    assert "holds no entity record" in capsys.readouterr().out
+    (_bare / "vsb_entities" / "vsb-cccc3333.json").write_text(_json.dumps({"vsb_id": "vsb-cccc3333"}), encoding="utf-8")
+    assert _ecs.main() == 0
+    _o = capsys.readouterr().out
+    assert _o.startswith("entities: 1 ") and _NOTHING not in _o, _o
+    _lone = tmp_path / "lone_root"
+    (_lone / "vsb_entities").mkdir(parents=True)
+    (_lone / "vsb_entities" / "vsb-dddd4444.json").write_text(_json.dumps({"vsb_id": "vsb-dddd4444"}), encoding="utf-8")
+    monkeypatch.setattr(_ecs, "data_path", lambda *_a: _lone)
+    assert _ecs.main() == 1, "a store with no record beside it accused every entity of being named by nothing"
+    assert "no record outside the entity store" in capsys.readouterr().out
+    #    3b. the recovery audit
+    _ra = _load("_w749_ra", "scripts/recovery_audit.py")
+    _tree = tmp_path / "empty_tree"
+    _tree.mkdir()
+    monkeypatch.setattr(_ra, "ROOT", _tree)
+    monkeypatch.setattr(_ra, "NOT_READ", [])
+    monkeypatch.setattr(_sys, "argv", ["recovery_audit.py", "--only", "orphans,archived"])
+    assert _ra.main() == 1, "the recovery audit exited 0 over a tree with no Python file in it"
+    _o = capsys.readouterr().out
+    assert "REFUSING" in _o and _NOTHING in _o and "== orphans: 0" not in _o, _o
+    (_tree / "agentic_core").mkdir()
+    (_tree / "agentic_core" / "w_749.py").write_text("x = 1\n", encoding="utf-8")
+    monkeypatch.setattr(_ra, "NOT_READ", [])
+    assert _ra.main() == 0
+    _o = capsys.readouterr().out
+    assert "examined 1 Python file(s)" in _o, _o
+    _nr = next((_ln for _ln in _o.splitlines() if _ln.startswith("NOT READ")), "")
+    assert all(k in _nr for k in ("core/", "_archive/", "integration_tests", "scripts")), (
+        "a folder the audit was told to read was dropped without a word", _o)
+    #    and its machine-readable output says the same: how much was read, and what was not
+    _jout = tmp_path / "recovery_w749.json"
+    monkeypatch.setattr(_ra, "NOT_READ", [])
+    monkeypatch.setattr(_sys, "argv", ["recovery_audit.py", "--only", "orphans,archived", "--json", str(_jout)])
+    assert _ra.main() == 0
+    capsys.readouterr()
+    _jrep = _json.loads(_jout.read_text(encoding="utf-8"))
+    assert _jrep.get("examined_py_files") == 1 and "_archive/" in (_jrep.get("not_read") or []), (
+        "the --json report reads as clean while the audit could not read part of what it was told to", _jrep)
+    #    3b''. the archive fallback index says when there is no archive to read
+    monkeypatch.setattr(_ra, "NOT_READ", [])
+    assert _ra._archive_index() == {} and _ra.NOT_READ == ["_archive/"], _ra.NOT_READ
+    #    3b'. a git call that could not read is recorded, and a history git could not read is not "no history entry"
+    monkeypatch.setattr(_ra, "ROOT", _root)
+    monkeypatch.setattr(_ra, "NOT_READ", [])
+    assert _ra._run(["git", "diff", "--name-only", "no-such-rev-w749"]) == ""
+    assert any("exited 128" in n for n in _ra.NOT_READ), _ra.NOT_READ
+    monkeypatch.setattr(_ra, "NOT_READ", [])
+    monkeypatch.setattr(_ra, "_run", lambda args: (_ra.NOT_READ.append("`git log` exited 128"), "")[1])
+    _rows = _ra.find_deleted_sources(["agentic_core/gone_w749.py"])
+    assert _rows and _rows[0]["kind"] == "unknown" and "could not be read" in _rows[0]["note"], _rows
+    #    3c. the reach audit
+    _rh = _load("_w749_rh", "scripts/reach_audit.py")
+    monkeypatch.setattr(_rh, "backend_routes", lambda: [("GET", "/api/v1/w749/probe")])
+    monkeypatch.setattr(_rh, "FRONTEND_SRC", tmp_path / "no_frontend")
+    monkeypatch.setattr(_sys, "argv", ["reach_audit.py"])
+    assert _rh.main() == 1, "the reach audit read no frontend, called every route unreached, and exited 0"
+    _o = capsys.readouterr().out
+    assert "REFUSING" in _o and _NOTHING in _o and "reach:" not in _o, _o
+    _fe = tmp_path / "frontend"
+    _fe.mkdir()
+    (_fe / "Probe.tsx").write_text("fetch('/api/v1/w749/probe')\n", encoding="utf-8")
+    monkeypatch.setattr(_rh, "FRONTEND_SRC", _fe)
+    assert _rh.main() == 0
+    _o = capsys.readouterr().out
+    assert "reach: 1/1 ops" in _o and _NOTHING not in _o, _o
+    monkeypatch.setattr(_rh, "backend_routes", lambda: [("GET", "/health")])
+    assert _rh.main() == 1, "the reach audit read an app with no /api route and reported a reach figure"
+    _o = capsys.readouterr().out
+    assert "REFUSING" in _o and "the app answered no /api route" in _o and "reach:" not in _o, _o
+    #    3c'. SOURCE LEG (named as such): the exit code reaches the shell - main() is called directly above
+    _rt = _ast.parse((_root / "scripts" / "reach_audit.py").read_text(encoding="utf-8"))
+    assert any(isinstance(n, _ast.Raise) and isinstance(n.exc, _ast.Call) and getattr(n.exc.func, "id", "") == "SystemExit"
+               and n.exc.args and isinstance(n.exc.args[0], _ast.Call) and getattr(n.exc.args[0].func, "id", "") == "main"
+               for n in _ast.walk(_rt)), "reach_audit's exit code does not reach the shell"
+
+    # == 4. FU-833 - no reader opens a block comment inside a quoted token ========================================
+    #    4a. planted
+    _planted = ("const a = 'text" + "/*';\nconst keep_w749 = 1;\n" + "/" + "* gone-w749 *" + "/\n"
+                + "{/" + "* jsx-gone-w749 *" + "/}\n// line-gone-w749\n")
+    _out = _code_only(_planted)
+    assert "keep_w749" in _out and "'text" + "/*'" in _out, ("code after a quoted opener was cut away", _out)
+    assert "gone-w749" not in _out, ("a real comment survived the stripper", _out)
+    #    4b. the real page that showed it: every line holding a quoted opener survives whole (content-independent;
+    #    if the file stops holding one, this has nothing to check and 4a/4c still drive the masking)
+    _ad_raw = (_root / "apps/workstation-superapp/src/components/AttachDocument.tsx").read_text(encoding="utf-8")
+    _ad_code = _code_only(_ad_raw)
+    _ad_q = [_ln for _ln in _ad_raw.splitlines()
+             if _SLASH_STAR_TOKEN.search(_ln) and not _ln.lstrip().startswith(("//", "#"))]
+    assert all(_ln in _ad_code for _ln in _ad_q), (
+        "a line holding a quoted opener was cut", [_ln for _ln in _ad_q if _ln not in _ad_code])
+    #    4c. CONSISTENCY, not a census of every opener: where the pattern masks a token, masking and neutralising
+    #    agree. A quoted opener containing whitespace is outside the pattern (the brief's stated risk).
+    for _base in ("apps/workstation-superapp/src", "agentic_core", "scripts"):
+        for _f in sorted((_root / _base).rglob("*")):
+            if _f.suffix not in (".ts", ".tsx", ".py", ".mjs", ".js") or "node_modules" in _f.parts or not _f.is_file():
+                continue
+            _t = _f.read_text(encoding="utf-8", errors="replace")
+            if not _SLASH_STAR_TOKEN.search(_t):
+                continue
+            _neutral = _SLASH_STAR_TOKEN.sub(lambda m: m.group(0).replace("/" + "*", "/\x01"), _t)
+            assert _code_only(_neutral).replace("/\x01", "/" + "*") == _code_only(_t), (
+                "a quoted opener in this file changes what the stripper removes", _f.relative_to(_root).as_posix())
+    #    4d. the pre-flight's own comment reader, and the same pattern in both places
+    _x = tmp_path / "x_w749.tsx"
+    _x.write_text("const accept = 'text" + "/*';\nconst phrase = 'phrase-w749-code';\n" + "/" + "* a real comment *"
+                  + "/\n", encoding="utf-8")
+    assert _sc._in_comment_only(_x, "phrase-w749-code") == (0, 1), _sc._in_comment_only(_x, "phrase-w749-code")
+    assert _sc._SLASH_STAR_TOKEN_RE.pattern == _SLASH_STAR_TOKEN.pattern, "the suite and the pre-flight disagree"
+    #    4e. the fabrication scan's stripper, DRIVEN: a marker after a quoted opener is still seen
+    _fab = _strip_fabrication_comments("const a = 'text" + "/*';\nconst m = 'All systems " + "nominal';\n"
+                                       + "/" + "* x *" + "/\n")
+    assert "All systems " + "nominal" in _fab, ("a marker after a quoted opener was cut away", _fab)
+    #        SOURCE LEG (wiring only): the scan uses that stripper
+    assert "_strip_fabrication_comments(" in _inspect.getsource(test_frontend_fabrications_do_not_return)
+
+    # == 5. FU-1074 - an assertion is judged against the file ITS OWN function read ==============================
+    _fake = tmp_path / "fake_repo"
+    (_fake / "integration_tests").mkdir(parents=True)
+    (_fake / "apps/workstation-superapp/src/pages").mkdir(parents=True)
+    (_fake / "apps/workstation-superapp/src/pages/A.tsx").write_text("const a = 'phrase-w749-presence';\n", encoding="utf-8")
+    (_fake / "apps/workstation-superapp/src/pages/B.tsx").write_text(
+        "// phrase-w749-presence\nconst b = 'phrase-w749-presence';\n", encoding="utf-8")
+    _A, _q = "ass" + "ert", '"'
+    (_fake / "integration_tests" / "test_fake.py").write_text("\n".join([
+        "def test_zero():",                     # at offset 0: a FUNCTION, not module level
+        "    page = (root / " + _q + "pages/B.tsx" + _q + ").read_text()",
+        "", "",
+        "def test_one():",
+        "    page = (root / " + _q + "pages/A.tsx" + _q + ").read_text()",
+        "    " + _A + " " + _q + "phrase-w749-presence" + _q + " in page",
+        "    " + _A + " " + _q + "phrase-w749-forbidden-text" + _q + " not in page",
+        "", "",
+        "def test_two():",
+        "    page = (root / " + _q + "pages/B.tsx" + _q + ").read_text()",
+        "", "",
+        "def test_three():",                    # no read of its own: must be judged against nothing
+        "    " + _A + " " + _q + "phrase-w749-presence" + _q + " in page",
+        "    " + _A + " " + _q + "phrase-w749-forbidden-text" + _q + " not in page",
+        ""]), encoding="utf-8")
+    monkeypatch.setattr(_sc, "ROOT", _fake)
+    #    5a. presence: each assertion is read against its own function's file, or against none
+    assert _sc.check_presence("HEAD", ["integration_tests/test_fake.py"]) == [], (
+        "an assertion was judged against a file its own function never read (an earlier or a later function's)")
+    #    5b. banned: the forbidden literal belongs to A.tsx, and to no file test_three never read
+    monkeypatch.setattr(_sc, "added_removed", lambda rev, f: ([(1, "// phrase-w749-forbidden-text")], []))
+    _hit_a = _sc.check_banned("HEAD", ["apps/workstation-superapp/src/pages/A.tsx"])
+    _hit_b = _sc.check_banned("HEAD", ["apps/workstation-superapp/src/pages/B.tsx"])
+    assert _hit_a and not _hit_b, ("the forbidden literal was attached to the file another function read", _hit_a, _hit_b)
+    monkeypatch.setattr(_sc, "ROOT", _root)
+
+    # == 6. FU-925, FU-1002 and the unrefuted sentence - an audit record states a class, its residue, a verdict each
+    _script = _root / "scripts" / "render_fidelity_ledger.py"
+    _census = tmp_path / "census.json"
+    _census.write_text(_json.dumps({"routes": ["GET /api/v1/a"], "pages": [{"path": "/alpha", "component": "Alpha"}]}),
+                       encoding="utf-8")
+
+    def _fd(i, tier=1):
+        return {"section": f"finding {i}", "verdict": "PARTIAL", "tier": tier, "why_this_tier": "w",
+                "vision_claim": "c", "observed": "o", "evidence": "e"}
+
+    def _vd(i, cls="availability", tier=1):
+        d = {"index": i, "refuted": False, "reproduced": True, "corrected_verdict": "PARTIAL", "corrected_tier": tier,
+             "reason": "r", "evidence": "x"}
+        if cls is not None:
+            d["defect_class"] = cls
+        return d
+
+    def _region(findings, verdicts, residue=("left learner w749-probe in the hifz store",),
+                refuter_residue=("refuter left change record w749-cr",)):
+        r = {"region": "R1", "summary": "", "findings": findings, "verdicts": verdicts, "hit_the_cap": False,
+             "unlisted_findings": 0, "surfaces_exercised": {"routes": ["GET /api/v1/a"], "files": []}, "cap": 20}
+        if residue is not None:
+            r["residue"] = list(residue)
+        if refuter_residue is not None:
+            r["refuter_residue"] = list(refuter_residue)
+        return [r]
+
+    def _render(regions, version, name):
+        _src = tmp_path / (name + ".json")
+        _src.write_text(_json.dumps(regions), encoding="utf-8")
+        _dst = tmp_path / name
+        _p = _sp.run([_sys.executable, str(_script), str(_src), str(_dst), "deadbeef", "2026-10-16", "8031",
+                      str(version), "W749", str(_census)], capture_output=True, text=True, encoding="utf-8",
+                     errors="replace", env=dict(_os.environ, PYTHONIOENCODING="utf-8"))
+        return _p.returncode, (_p.stdout or "") + (_p.stderr or ""), (
+            _dst.read_text(encoding="utf-8") if _dst.exists() else None)
+
+    #    6a. FU-925: counted from the refuters' classes, STANDING findings only; an off-list word is shown as written
+    _struck = dict(_vd(3, "missing_control"), refuted=True, reproduced=False)
+    _rc, _out, _text = _render(_region([_fd(0), _fd(1), _fd(2, tier=2), _fd(3), _fd(4)],
+                                       [_vd(0), _vd(1, "false_statement"), _vd(2, tier=2), _struck,
+                                        _vd(4, "unlisted-w749")]), 18, "ok.md")
+    assert _rc == 0, _out[-400:]
+    assert ("| availability | 2 |" in _text and "| false_statement | 1 |" in _text and "| mixed | 0 |" in _text
+            and "| missing_control | 0 |" in _text and "| unlisted-w749 | 1 |" in _text), _text[:2000]
+    #    6b. a verdict with no class is refused, and nothing is written
+    _rc, _out, _none = _render(_region([_fd(0)], [_vd(0, cls=None)]), 18, "nocls.md")
+    assert _rc != 0 and "REFUSING TO WRITE" in _out and "defect_class" in _out and _none is None, (_rc, _out[-300:])
+    #    6c. FU-1002: the residue is printed whole, as candidates - the assessor's and the refuter's; a region with
+    #    no residue list is refused
+    assert "## Residue and side observations" in _text and "left learner w749-probe in the hifz store" in _text, (
+        _text[-1500:])
+    assert "refuter left change record w749-cr" in _text, _text[-1500:]
+    _rc, _out, _none = _render(_region([_fd(0)], [_vd(0)], residue=None), 18, "nores.md")
+    assert _rc != 0 and "residue" in _out and _none is None, (_rc, _out[-300:])
+    #    6d. a finding with no verdict is refused at v18; at v17 the sentence counts it instead of saying all were refuted
+    _rc, _out, _none = _render(_region([_fd(0), _fd(1)], [_vd(0)]), 18, "nov.md")
+    assert _rc != 0 and "have no verdict" in _out and _none is None, (_rc, _out[-300:])
+    _rc, _out, _t17 = _render(_region([_fd(0), _fd(1)], [_vd(0, cls=None)], residue=None), 17, "v17.md")
+    assert _rc == 0, _out[-400:]
+    assert ("Every one of the 2 findings was individually refuted" not in _t17
+            and "1 of the 2 findings were individually refuted" in _t17), _t17[:3000]
+    assert "| availability |" not in _t17 and "## Residue" not in _t17, "an earlier edition grew sections its record cannot fill"
+    #    6e. SOURCE LEG - the instrument REQUIRES both fields and carries them to the record
+    _wf = (_root / "scripts" / "workflows" / "fidelity_audit_v7.js").read_text(encoding="utf-8")
+    _reqs = _re.findall(r"required:\s*\[([^\]]*)\]", _wf)
+    assert any("'index'" in r and "'defect_class'" in r for r in _reqs), _reqs
+    assert any("'findings'" in r and "'residue'" in r for r in _reqs), _reqs
+    assert any("'verdicts'" in r and "'residue'" in r for r in _reqs), _reqs
+    for _carry in ("residue: assessed?.residue", "residue: assessed.residue", "refuter_residue: v?.residue"):
+        assert _carry in _wf, ("a region's residue is dropped on its way to the record", _carry)
+    #    6e+. SOURCE LEG - the region with no findings keeps its coverage fields, the run steps name the edition, the
+    #    census and the effectiveness check, and the prompts ask for the residue and the class
+    _empty = [_ln for _ln in _wf.splitlines() if "findings: [], verdicts: []" in _ln]
+    assert _empty and all(k in _empty[0] for k in (
+        "hit_the_cap: assessed?.hit_the_cap", "unlisted_findings: assessed?.unlisted_findings",
+        "surfaces_exercised: assessed?.surfaces_exercised", "residue: assessed?.residue")), _empty
+    _steps = [_ln for _ln in _wf.splitlines() if _ln.startswith("//")
+              and ("render_fidelity_ledger.py <result.json>" in _ln or "audit_returns.py" in _ln)]
+    assert any("<census.json>" in _ln and " 7 W<round>" not in _ln for _ln in _steps) and any(
+        "--check" in _ln for _ln in _steps), _steps
+    assert "RESIDUE (FU-1002)" in _wf and "defect_class ON EVERY INDEX" in _wf, "the prompt no longer asks for them"
+    #    6f. a residue line naming a path under a home directory is refused: the ledger and the record are public
+    _home = "C:" + "\\" + "Users" + "\\" + "someone-w749" + "\\" + "papers"
+    _rc, _out, _none = _render(_region([_fd(0)], [_vd(0)], residue=("read a folder at " + _home,)), 18, "home.md")
+    assert _rc != 0 and "home directory" in _out and _none is None and "someone-w749" not in _out, (_rc, _out[-300:])
+
+    # == 8. FU-990 - the effectiveness check counts with the renderer's own (verdict, how) =========================
+    _ar = _load("_w749_ar", "scripts/audit_returns.py")
+    _rec = [{"region": "R1",
+             "findings": [{"section": "kept", "verdict": "PARTIAL", "tier": 1},
+                          {"section": "struck", "verdict": "PARTIAL", "tier": 1},
+                          {"section": "delivered", "verdict": "PARTIAL", "tier": 2}],
+             "verdicts": [{"index": 0, "refuted": False, "reproduced": True, "corrected_verdict": "PARTIAL", "corrected_tier": 1},
+                          {"index": 1, "refuted": True, "reproduced": False, "corrected_verdict": "PARTIAL", "corrected_tier": 1},
+                          {"index": 2, "refuted": True, "reproduced": False, "corrected_verdict": "DELIVERED", "corrected_tier": 2}]}]
+    assert [f["id"] for f in _ar.standing(_rec, _ar._renderer())] == ["R1.0"], (
+        "a struck or DELIVERED finding was counted as standing", _ar.standing(_rec, _ar._renderer()))
+
+    # == 7. SOURCE CENSUS - each listed instrument carries the words of a refusal (test_fu671 drives eight of them)
+    _instruments = ["scripts/audit_returns.py", "scripts/audit_unexercised.py", "scripts/blind_sweep.py",
+                    "scripts/check_import_integrity.py", "scripts/coverage_register.py", "scripts/method_instruments.py",
+                    "scripts/refutation_gate.py", "scripts/run_verdict.py", "scripts/sources_check.py",
+                    "scripts/round_tools/blinds.py",
+                    "scripts/selfcheck_diff.py", "scripts/entity_coverage_scan.py", "scripts/recovery_audit.py",
+                    "scripts/reach_audit.py", "scripts/browser_smoke.mjs"]
+
+    def _emitted(src):
+        """The strings a module can print or return - its docstrings left out, since a docstring saying the tool
+        refuses is not a refusal."""
+        _tree = _ast.parse(src)
+        _docs = {id(n.body[0].value) for n in _ast.walk(_tree)
+                 if isinstance(n, (_ast.Module, _ast.FunctionDef, _ast.AsyncFunctionDef, _ast.ClassDef)) and n.body
+                 and isinstance(n.body[0], _ast.Expr) and isinstance(n.body[0].value, _ast.Constant)}
+        return "\n".join(n.value for n in _ast.walk(_tree)
+                         if isinstance(n, _ast.Constant) and isinstance(n.value, str) and id(n) not in _docs)
+
+    _mute = []
+    for _rel in _instruments:
+        _txt = (_root / _rel).read_text(encoding="utf-8")
+        _code = _emitted(_txt) if _rel.endswith(".py") else _code_only(_txt)
+        if _NOTHING not in _code.lower():
+            _mute.append(_rel)
+    assert not _mute, ("an instrument that reports on a set has no refusal for an empty one in its code", _mute)
