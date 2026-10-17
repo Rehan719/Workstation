@@ -3191,6 +3191,7 @@ async def run_swarm(req: RunSwarmRequest, user: dict | None = Depends(get_curren
                        duration_ms=_ms,
                        success=bool(res.get("trace")),
                        quality_gate=(res.get("quality") or {}).get("qms_gate_passed"),
+                       owner_id=_fabric_owner(user),     # S18.6 (W743) - the entity's budget, under its owner
                        ref=req.swarm_id, vsb_id=run_vsb_id)
     except Exception:
         pass

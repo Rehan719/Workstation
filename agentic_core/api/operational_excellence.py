@@ -54,7 +54,8 @@ def record_outcome(kind: str, resource: str, *, served_by: str = "native",
                    run_id: Optional[str] = None,
                    served_by_all: Optional[List[str]] = None,
                    reported_by: str = "platform",
-                   tokens: Optional[int] = None) -> Dict[str, Any]:
+                   tokens: Optional[int] = None,
+                   owner_id: Optional[str] = None) -> Dict[str, Any]:
     """Append one real run outcome. Reusable in-process (the run paths call this best-effort)
     and via the /record endpoint. Never raises into a caller — recording is non-critical.
 
@@ -93,7 +94,12 @@ def record_outcome(kind: str, resource: str, *, served_by: str = "native",
             from agentic_core.molecular import work_budget as _wb
             #  W741 (S18.1) - `tokens` is what the serving model reported for THIS run, in the same spend as
             #  its seconds, so a counted run is one call and not two. None means nothing counted.
-            _wb.spend(seconds=max(0, int(duration_ms)) / 1000.0, tokens=tokens)
+            #  S18.6 (W743) - and to the entity that ran it, so each entity has its own figure and the carrying
+            #  capacity is derived from measured per-entity spend. `owner_id` is FORWARDED, never written to the
+            #  outcome row below (that row is read by every reader of the learning loop); a run that names no
+            #  owner is booked to the platform total alone, and a caller's /record duration is not spent at all.
+            _wb.spend(seconds=max(0, int(duration_ms)) / 1000.0, tokens=tokens,
+                      owner_id=owner_id, vsb_id=vsb_id)
     except Exception:                                    # noqa: BLE001
         pass
     _produced = bool(success)

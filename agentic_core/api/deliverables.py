@@ -341,6 +341,10 @@ async def produce(req: ProduceRequest, user: dict | None = Depends(get_current_u
         pass
     try:
         from agentic_core.api.operational_excellence import record_outcome
+        from agentic_core.auth.core import auth_enabled as _auth_on
+        #  S18.6 (W743) - an internal call (transformation, the BTO configurator) passes no user; under sign-in
+        #  request_owner_id stamps it "default", a phantom owner, so it books to the platform alone
+        _book_owner = _owner if (isinstance(user, dict) or not _auth_on()) else None
         record_outcome("deliverable", f"deliverable:{req.type}",
                        served_by=gen["ai_provenance"]["served_by"],
                        is_external=gen["ai_provenance"]["is_external"],
@@ -352,6 +356,7 @@ async def produce(req: ProduceRequest, user: dict | None = Depends(get_current_u
                        # run is recorded as NOT ASSESSED rather than as a success.
                        duration_ms=_dur, success=bool(gen["content"]),
                        quality_gate=((gen.get("quality_assurance") or {}).get("quality") or {}).get("qms_gate_passed"),
+                       owner_id=_book_owner,     # S18.6 (W743) - its owner's budget, and its VSB's under it
                        ref=deliverable["id"], vsb_id=req.vsb_id)
     except Exception:
         pass

@@ -21924,6 +21924,147 @@
       "note": "",
       "slot_source": "a tier-2 invisible shortfall, latent behind the Owner's switch: P2.41 holds the standing tier-2 rows",
       "tier": 2
+    },
+    {
+      "id": "FU-1115",
+      "title": "S18.6's carrying capacity is owned by no open item: P3.26 routed it to P3.2, which closed without it",
+      "why": "The Owner ruled on 2026-09-30 (S18.6, one of the six decisions ratified 2026-09-29) that an entity has a carrying capacity, derived from the metabolic budget rather than set. P3.26 recorded it as NOT THIS ITEM and pointed at P3.2; P3.2's bar has no capacity or budget clause and it closed in W603, and the canon's ruled-decisions table still routed it there. The budget itself was one platform-wide figure: spend() took no entity, record_outcome dropped the VSB id it held, and nothing derived a capacity.",
+      "source": "W743 (audit wf1 F6, the round's review)",
+      "found": "2026-10-16",
+      "files": [
+        "agentic_core/molecular/work_budget.py",
+        "docs/FABLE_DELIVERY_PROMPT.md",
+        "docs/WORKSTATION_IDBO_WHOLE_VISION.md"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "done",
+      "closed_by": "W743",
+      "note": "",
+      "slot_source": "tier-3: S18.6's capacity half was unowned; P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Each entity's own figure (an owner, and a VSB under it) is booked by the four run paths that hold an owner (an AI call, a cascade tier, a deliverable, a fabric swarm run); an internal call under sign-in books to no owner. An entity's capacity is derived as an equal share of its parent's among the parent's entities measured this window, and the least headroom on its chain is reported with every tied level named. The carrying capacity is derived on every read from measured per-entity spend, and is None with UNMEASURED while nothing is attributed; one entity definition holds for the count, the list and the capacity; the platform-wide record names no owner and no entity. Shown with each basis on the admin Organism page; the plan pointer and the canon rows are corrected. Reported, not enforced (the S18.1 gate reads the platform total); the reader rides P3.30. Proved by test_w743_each_entity_has_its_own_work_budget_and_the_platform_derives_its_carrying_capacity legs 1-9."
+    },
+    {
+      "id": "FU-1116",
+      "title": "Nothing reads the derived carrying capacity or an entity's own work-budget figure to act: no birth or admission consults them",
+      "why": "S18.6 rules the capacity derived, and W743 derives it and shows it beside each entity's own figure. No birth consults it (turnover's mitosis proposal, establishment), and admission reads only the platform total through the S18.1 gate. If built, it ships inert behind WORKSTATION_WORK_BUDGET, as the S18.1 throttle does. Whether a birth may be refused over capacity is the Owner's to decide.",
+      "source": "W743 (the round's review)",
+      "found": "2026-10-16",
+      "files": [
+        "agentic_core/molecular/work_budget.py",
+        "agentic_core/economy/turnover.py",
+        "agentic_core/ai/native/homeostasis.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "tier-3: disclosed beside the figures since W743 (reported, not enforced); P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
+      "tier": 3
+    },
+    {
+      "id": "FU-1117",
+      "title": "A genome route comment says no page fetches /api/v1/organism/status; the Organism dashboard and the overview both fetch it",
+      "why": "organism/genome.py, in list_genomes, says the corrected aggregate lives on /api/v1/organism/status, which no page fetches. OrganismDashboard.tsx and DashboardNew.tsx both fetch that route, and since W743 the Organism page also prints the work budget from it. A stale comment; no surface states it.",
+      "source": "W743 (the round's review)",
+      "found": "2026-10-16",
+      "files": [
+        "agentic_core/organism/genome.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "stale comment, no surface; P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
+      "tier": 3
+    },
+    {
+      "id": "FU-1118",
+      "title": "A VSB's own operating cascade and a contract delivery book their work to no entity, even with sign-in on",
+      "why": "vsb.py's operating cycle and economy.py's contract delivery call cascade_orchestration without a user, so the cascade's tier calls pass no owner and their seconds count as unattributed in the work budget. The tier calls pass no vsb_id either, although the request's scope names the VSB. Threading vsb_id would change the outcome rows that /api/v1/operations/outcomes?vsb_id= filters, so measure those readers first.",
+      "source": "W743 (the round's review)",
+      "found": "2026-10-16",
+      "files": [
+        "agentic_core/api/swarm.py",
+        "agentic_core/api/vsb.py",
+        "agentic_core/api/economy.py",
+        "agentic_core/molecular/work_budget.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "tier-3: disclosed as unattributed_seconds since W743; P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
+      "tier": 3
+    },
+    {
+      "id": "FU-1119",
+      "title": "A saved composition's run holds its caller and books its seconds to no entity",
+      "why": "run_composition in resource_fabric.py has the caller in scope (it checks design access with it), but its record_outcome call passes no owner_id, so a composition run's seconds count as unattributed in the work budget, while the fabric swarm run beside it books its owner since W743. Smallest fix: owner_id=_fabric_owner(user) on that call, with a guard leg that runs a saved composition. Read from code, not driven.",
+      "source": "W743 (check round)",
+      "found": "2026-10-16",
+      "files": [
+        "agentic_core/api/resource_fabric.py",
+        "agentic_core/molecular/work_budget.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "tier-3: disclosed as unattributed_seconds since W743; P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
+      "tier": 3
+    },
+    {
+      "id": "FU-1120",
+      "title": "HYPOTHESIS: with sign-in on, a VSB's own cascade and a contract delivery would fail before running, because the cascade reads a username from FastAPI's Depends default",
+      "why": "cascade_orchestration reads (user or {}).get('username') when the scope names an existing VSB and sign-in is on. The internal callers in vsb.py and economy.py pass no user, so user is the Depends(get_current_user) default, which is truthy and has no get (checked in isolation: AttributeError). Under AUTH_ENABLED this would raise before any tier runs. The route path was not driven. Fix: user if isinstance(user, dict) else None, as the cascade's own tier helper already does; check the other route functions that are called directly and read (user or {}).",
+      "source": "W743 (the round's review)",
+      "found": "2026-10-16",
+      "files": [
+        "agentic_core/api/swarm.py",
+        "agentic_core/api/vsb.py",
+        "agentic_core/api/economy.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "fails only with AUTH_ENABLED=true; P4.1 holds the signed-in perimeter rows",
+      "tier": 3
+    },
+    {
+      "id": "FU-1121",
+      "title": "The platform work-budget total counts nested work more than once",
+      "why": "Every recorded run feeds spend(), and rows nest: an AI call, a deliverable and a cascade tier time gateway.query_meta while the orchestrator writes a model_attempt row for the same model call; a composition run wraps fabric_resource rows, and a swarm run wraps model attempts. The total over-counts whenever a real model serves, so the S18.1 gate would hold early once switched on. spend_basis discloses it (W742), and each entity's own figure is booked by the one run in a nest that names its owner (W743). Fix: a run-span parent id, so only the outermost run of a nest spends; dropping model_attempt rows alone would under-count the gateway calls that have no outer row. Read from code, not driven with a live model.",
+      "source": "W743 (the round's review)",
+      "found": "2026-10-16",
+      "files": [
+        "agentic_core/api/operational_excellence.py",
+        "agentic_core/molecular/work_budget.py",
+        "agentic_core/ai/native/orchestrator.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "tier-3: disclosed by spend_basis; P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
+      "tier": 3
     }
   ],
   "routes": [

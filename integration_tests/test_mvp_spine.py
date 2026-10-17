@@ -67255,3 +67255,235 @@ def test_w742_the_metabolism_tells_the_truth(client, monkeypatch, tmp_path):
         (_root / "apps/workstation-superapp/src/pages/developers/NativeAI.tsx").read_text(encoding="utf-8"))
     assert "{homeo.work_budget?.basis && (" in _nativeai_code and "{homeo.work_budget.basis}" in _nativeai_code, (
         "the work budget, the figure S18.1 asked for, still reaches no page")
+
+
+def test_w743_each_entity_has_its_own_work_budget_and_the_platform_derives_its_carrying_capacity(
+        client, monkeypatch, tmp_path):
+    """OWNER RULINGS 2026-09-30, S18.1 and S18.6 - each entity has its own work budget figure, and the platform's
+    carrying capacity is DERIVED from what entities measurably spend against the stated capacity, never set.
+
+    Before W743 the budget was one platform-wide figure: spend() took no entity, record_outcome dropped the vsb_id
+    it held, and nothing derived a carrying capacity - S18.6's capacity half was routed to P3.2, which never took
+    it. The entity figures are REPORTED, NOT ENFORCED: the S18.1 gate reads the platform total. Driven on isolated
+    stores (the budget and the outcome rows are this test's own), so no other test's spend is read and none is
+    disturbed. Figures at the PLATFORM level are compared within 0.05s, because a background floor-serve row may add
+    milliseconds to the patched total; entity figures are booked only by the run paths driven here and are
+    compared exactly.
+
+    THE PROPERTIES, each DRIVEN through the real function or route:
+      1. A run is booked to the entity that ran it (its owner, and its VSB under that owner) and to no other.
+      2. The least headroom on an entity's chain is reported, with every level at that least named.
+      3. An entity's capacity is an equal share of its parent's among the parent's entities measured this window;
+         one definition of an entity holds for the count and the list; the platform-wide record names no one.
+      4. The carrying capacity is derived from measured per-entity spend, and is None with its reason while
+         nothing is measured.
+      5. The one producer forwards the entity; a caller over the public route books nothing.
+      6. Every run path that holds an owner passes it; an internal call under sign-in names no owner.
+      7. An entity's own figure is reported, not enforced, and says so: the gate reads the platform total.
+      8. The admin Organism status carries the budget, the busiest entities first and the carrying capacity, and
+         the page prints each basis as text.
+      9. S18.6's capacity half has an owner: the plan's pointer and the canon row are corrected, the row that said
+         nobody owned it is closed, and the reader the capacity would feed is registered (selected by subject).
+    """
+    import asyncio
+    import json as _json
+    from pathlib import Path
+    from agentic_core.molecular import work_budget as wb
+    from agentic_core.api import operational_excellence as oe
+
+    _root743 = Path(__file__).resolve().parents[1]
+    monkeypatch.setattr(wb, "_store", lambda: tmp_path / "budget_a.json")
+    monkeypatch.setattr(wb, "CAPACITY_SECONDS", 100.0)
+    #  the outcome rows this test drives are its own: shared rows change what /native-ai/status reports
+    monkeypatch.setattr(oe, "_STORE", tmp_path / "operations_outcomes.json")
+    monkeypatch.setattr(oe, "_BASELINE_STORE", tmp_path / "model_health_baselines.json")
+    monkeypatch.delenv("WORKSTATION_WORK_BUDGET", raising=False)
+
+    def _lv(view):
+        return {r["level"]: r for r in view["levels"]}
+
+    # ── 1. A RUN IS BOOKED TO THE ENTITY THAT RAN IT, AND TO NO OTHER. Two entities of one owner, and a second owner
+    #       holding an entity with the SAME id: neither a sibling's spend nor another owner's lands in it.
+    wb.spend(seconds=45.0, owner_id="w743-owner-a", vsb_id="vsb-w743-1")
+    wb.spend(seconds=1.0, owner_id="w743-owner-a", vsb_id="vsb-w743-2")
+    wb.spend(seconds=7.0, owner_id="w743-owner-b", vsb_id="vsb-w743-1")
+    a1, a2 = wb.entity_state("w743-owner-a", "vsb-w743-1"), wb.entity_state("w743-owner-a", "vsb-w743-2")
+    b1 = wb.entity_state("w743-owner-b", "vsb-w743-1")
+    assert _lv(a1)["vsb"]["seconds_spent"] == 45.0, ("another owner's run was booked to this entity", a1)
+    assert _lv(a2)["vsb"]["seconds_spent"] == 1.0, ("a sibling's spend was booked to this entity", a2)
+    assert _lv(b1)["vsb"]["seconds_spent"] == 7.0, b1
+    assert _lv(a1)["owner"]["seconds_spent"] == 46.0, ("the owner's figure is not the sum of its own runs", a1)
+    assert abs(_lv(a1)["platform"]["seconds_spent"] - 53.0) < 0.05, ("the platform total stopped counting", a1)
+
+    # ── 2. THE LEAST HEADROOM ON THE CHAIN, with every level at that least named. The sibling's 45s reaches
+    #       vsb-w743-2 only through the owner they share: its own level still has 24s of its 25s; the owner binds at 4s.
+    assert _lv(a2)["vsb"]["headroom_seconds"] == 24.0, ("a sibling's spend entered this entity's own level", a2)
+    assert a2["least_headroom_seconds"] == 4.0 and a2["bound_by"] == ["owner"], a2
+    assert a1["least_headroom_seconds"] == 0.0 and a1["bound_by"] == ["vsb"], a1
+    assert b1["least_headroom_seconds"] == 43.0 and b1["bound_by"] == ["owner", "vsb"], (
+        "a tie was settled by naming one level, which is an arbitrary attribution", b1)
+    wb.spend(seconds=45.0)                                   # work that named no entity
+    a2b = wb.entity_state("w743-owner-a", "vsb-w743-2")
+    assert a2b["bound_by"] == ["platform"] and abs(a2b["least_headroom_seconds"] - 2.0) < 0.05, (
+        "an entity with room of its own was not bound by the platform's smaller headroom", a2b)
+
+    # ── 3. AN ENTITY'S CAPACITY IS DERIVED, NEVER SET: an equal share of its parent's among the parent's entities
+    #       measured this window, so it moves when the measured population moves.
+    assert (_lv(a2b)["owner"]["capacity_seconds"], _lv(a2b)["vsb"]["capacity_seconds"]) == (50.0, 25.0), a2b
+    wb.spend(seconds=1.0, owner_id="w743-owner-c")
+    a2c = wb.entity_state("w743-owner-a", "vsb-w743-2")
+    assert _lv(a2c)["owner"]["capacity_seconds"] == 33.333, ("a third owner's arrival did not move the share", a2c)
+    assert _lv(a2c)["vsb"]["capacity_seconds"] == 16.667, a2c
+    #  ...one definition of an entity: the count the platform reports is the number of entities listed
+    assert wb.state()["entities"]["entities_measured"] == len(wb.entity_states(99)) == 3, (
+        "the entity count and the entities listed disagree (one VSB id run by two owners)", wb.entity_states(99))
+    #  ...and the platform-wide record names NO owner and NO entity: every status surface reads it
+    _plat = _json.dumps(wb.state())
+    assert not any(n in _plat for n in ("w743-owner-a", "w743-owner-b", "vsb-w743-1", "vsb-w743-2")), (
+        "the platform-wide budget names owners or entities", _plat[:400])
+
+    # ── 4. THE CARRYING CAPACITY IS DERIVED FROM MEASURED PER-ENTITY SPEND AGAINST THE STATED CAPACITY, and is None
+    #       with its reason while nothing is measured - never a number standing in for one.
+    monkeypatch.setattr(wb, "_store", lambda: tmp_path / "budget_b.json")
+    cc0 = wb.state()["carrying_capacity"]
+    assert cc0["entities"] is None and cc0["basis"].startswith("UNMEASURED"), cc0
+    wb.spend(seconds=30.0, owner_id="w743-owner-x", vsb_id="vsb-w743-p")
+    wb.spend(seconds=10.0, owner_id="w743-owner-x", vsb_id="vsb-w743-q")
+    cc1 = wb.state()["carrying_capacity"]
+    assert (cc1["entities"], cc1["entities_measured"], cc1["over_capacity"]) == (5, 2, False), cc1
+    wb.spend(seconds=80.0, owner_id="w743-owner-x", vsb_id="vsb-w743-r")
+    cc2 = wb.state()["carrying_capacity"]
+    assert (cc2["entities"], cc2["over_capacity"]) == (2, True), ("the capacity did not move with demand", cc2)
+    assert "DERIVED" in cc2["basis"] and "40.0s" in cc2["basis"], cc2["basis"]
+    wb.spend(seconds=50.0)
+    s4 = wb.state()
+    assert s4["carrying_capacity"]["entities"] == 2, ("spend that named no entity entered the mean", s4)
+    assert s4["entities"]["attributed_seconds"] == 120.0, s4["entities"]
+    assert abs(s4["entities"]["unattributed_seconds"] - 50.0) < 0.05, s4["entities"]
+
+    # ── 5. THE ONE PRODUCER FORWARDS THE ENTITY; A CALLER OVER THE PUBLIC ROUTE BOOKS NOTHING. A caller-reported
+    #       duration is not spent (W742), so it moves neither the platform total nor an entity's figure - even with
+    #       an owner id in the body, which the route does not accept.
+    oe.record_outcome("engine", "w743-forwarding-probe", duration_ms=3000, success=True,
+                      owner_id="w743-owner-x", vsb_id="vsb-w743-p")
+    assert _lv(wb.entity_state("w743-owner-x", "vsb-w743-p"))["vsb"]["seconds_spent"] == 33.0, (
+        "record_outcome did not forward the entity it was given")
+    _before = wb.state()["seconds_spent"]
+    r = client.post("/api/v1/operations/record", json={"kind": "engine", "resource": "w743-caller-claim",
+                                                       "duration_ms": 9000, "vsb_id": "vsb-w743-q",
+                                                       "owner_id": "w743-owner-x"})
+    assert r.status_code == 200, r.text
+    assert abs(wb.state()["seconds_spent"] - _before) < 0.05, "a caller-reported duration was spent"
+    assert _lv(wb.entity_state("w743-owner-x", "vsb-w743-q"))["vsb"]["seconds_spent"] == 10.0, (
+        "a caller's claim was booked to an entity")
+    assert wb.state()["entities"]["attributed_seconds"] == 123.0, ("a caller's claim was attributed",
+                                                                    wb.state()["entities"])
+
+    # ── 6. THE RUN PATHS THAT KNOW THEIR OWNER PASS IT, driven through real routes and real functions; an internal
+    #       call under sign-in names no owner rather than a phantom "default".
+    seen = []
+    _orig = oe.record_outcome
+
+    def _spy(*a, **k):
+        seen.append((a[0] if a else k.get("kind"), k.get("owner_id"), k.get("vsb_id")))
+        return _orig(*a, **k)
+
+    monkeypatch.setattr(oe, "record_outcome", _spy)
+    d = client.post("/api/v1/deliverables/produce", json={
+        "type": "brief", "brief": "w743 entity budget probe", "vsb_id": "vsb-w743-deliv",
+        "content": "# Probe\n\n## Objective\nA verbatim body for the entity budget probe."})
+    assert d.status_code == 200, d.text
+    _deliv = [s for s in seen if s[0] == "deliverable"]
+    assert _deliv and _deliv[-1][1] == d.json()["owner_id"] and _deliv[-1][2] == "vsb-w743-deliv", (
+        "the deliverable run did not pass the owner it stamped, with its VSB", seen)
+    from agentic_core.api import deliverables as _dv
+    from agentic_core.ai import gateway as _gw743
+
+    def _run743(coro):
+        #  asyncio.run starts a NEW loop; the gateway's limiter lock is bound to whichever loop used it first
+        #  (the test client's), so each direct call gets a fresh one
+        monkeypatch.setattr(_gw743.gateway._rate_limiter, "_lock", asyncio.Lock())
+        return asyncio.run(coro)
+    with monkeypatch.context() as _m743:
+        _m743.setenv("AUTH_ENABLED", "true")
+        _run743(_dv.produce(_dv.ProduceRequest(type="brief", brief="w743 internal-call probe",
+                                                   content="# Probe\n\n## Objective\nAn internal call's body."),
+                                user=None))
+    assert [s for s in seen if s[0] == "deliverable"][-1][1] is None, (
+        "an internal call under sign-in was booked to a phantom 'default' owner", seen)
+    from agentic_core.api import _ai_provenance as _ap
+    _run743(_ap.ai_text("w743 entity budget probe", agent="w743_probe", owner_id="w743-owner-ai"))
+    assert ("ai_call", "w743-owner-ai", None) in seen, ("the AI-call wrapper dropped the owner it held", seen)
+    from agentic_core.api import swarm as _swm
+    _run743(_swm.cascade_orchestration(_swm.CascadeRequest(mission="w743 cascade owner probe"),
+                                           user={"username": "w743-owner-cascade"}))
+    assert ("ai_call", "w743-owner-cascade", None) in seen, ("a cascade tier dropped the caller it held", seen)
+    from agentic_core.ai.native import orchestrator           # stubbed as test_w509 stubs it, and open to keywords
+
+    async def _swarm_w743(agent, stages, context="", prefer_external=False, timeout=30.0, user_text=None, **_k):
+        return {"agent": agent, "stages": len(stages), "final": "out", "any_external": False, "homeostasis": {},
+                "trace": [{"step": 1, "role": "a", "served_by": "native", "output": "1"}]}
+
+    monkeypatch.setattr(orchestrator, "swarm", _swarm_w743)
+    sr = client.post("/api/v1/resources/swarm/run", json={"context": "w743", "stages": [
+        {"role": "a", "instruction": "one"}]})
+    assert sr.status_code == 200, sr.text
+    _sw = [s for s in seen if s[0] == "swarm_run"]
+    assert _sw and _sw[-1][1], ("the fabric swarm run did not pass the owner it holds", seen)
+    monkeypatch.setattr(oe, "record_outcome", _orig)
+
+    # ── 7. AN ENTITY'S OWN FIGURE IS REPORTED, NOT ENFORCED, AND SAYS SO. With the switch on, the S18.1 gate reads
+    #       the platform total: an entity with none of its own share left is not held while the platform has room,
+    #       its row carries no gate claim of its own, and its basis says what reads it.
+    monkeypatch.setattr(wb, "_store", lambda: tmp_path / "budget_c.json")
+    wb.spend(seconds=50.0, owner_id="w743-owner-g", vsb_id="vsb-w743-g1")
+    wb.spend(seconds=1.0, owner_id="w743-owner-g", vsb_id="vsb-w743-g2")
+    monkeypatch.setenv("WORKSTATION_WORK_BUDGET", "true")
+    g1 = wb.entity_state("w743-owner-g", "vsb-w743-g1")
+    assert g1["least_headroom_seconds"] == 0.0 and g1["bound_by"] == ["vsb"], g1
+    _g743 = wb.gate()
+    assert _g743["holds"] is False, ("the gate held on an entity's own figure while the platform had room", _g743)
+    assert "gates_anything" not in g1, ("an entity's row carries a gate claim nothing implements for it", g1)
+    assert "reported, not enforced" in g1["capacity_basis"], g1["capacity_basis"]
+    monkeypatch.delenv("WORKSTATION_WORK_BUDGET", raising=False)
+    monkeypatch.setattr(wb, "_store", lambda: tmp_path / "budget_b.json")
+
+    # ── 8. SHOWN, WITH ITS BASIS, WHERE A READER IS. The Organism page's status carries the budget, each busy
+    #       entity's own share with what binds it, busiest first, and the carrying capacity; the page prints the basis.
+    org = client.get("/api/v1/organism/status")
+    assert org.status_code == 200, org.text
+    wbv = org.json()["systems"]["work_budget"]
+    assert "unavailable" not in wbv, wbv
+    assert wbv["carrying_capacity"] == wb.state()["carrying_capacity"], wbv
+    _rows = {(e["owner_id"], e["vsb_id"]): e for e in wbv["by_entity"]}
+    assert _rows.get(("w743-owner-x", "vsb-w743-r"), {}).get("bound_by"), wbv["by_entity"]
+    assert [e["vsb_id"] for e in wb.entity_states(2)] == ["vsb-w743-r", "vsb-w743-p"], (
+        "the busiest entities are not listed first", wb.entity_states(2))
+    _orgdash743 = (_root743 / "apps/workstation-superapp/src/pages/organism/OrganismDashboard.tsx").read_text(
+        encoding="utf-8")
+    assert "'unmeasured'} — {systems.work_budget.carrying_capacity?.basis}" in _orgdash743, (
+        "the carrying capacity's basis is not printed as text beside the figure")
+    assert "{e.bound_by.join(', ')}" in _orgdash743, "what binds an entity is not printed"
+    assert "{systems.work_budget.entities?.entities_measured}" in _orgdash743, "a cut list does not say it is cut"
+    assert "{systems.work_budget.entities?.basis}" in _orgdash743, "the page does not say the figures are not enforced"
+    assert "title={systems.work_budget" not in _orgdash743, "a basis held only in a tooltip is not shown"
+
+    # ── 9. S18.6 HAS AN OWNER. The plan's pointer to P3.2 is corrected, the canon says where it went, the row that
+    #       said nobody owned it is closed, and the reader the capacity would feed rides a row (selected by SUBJECT).
+    _fable743 = (_root743 / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    assert "CORRECTED W743: the pointer above named P3.2" in _fable743
+    _vision743 = (_root743 / "docs/WORKSTATION_IDBO_WHOLE_VISION.md").read_text(encoding="utf-8")
+    row6 = next(ln for ln in _vision743.splitlines() if ln.startswith("> | 6 "))
+    assert "work_budget.py" in row6 and "| **P3.2**," not in row6, row6
+    from agentic_core import plan_followups as _fu
+
+    def _t743(x):
+        return (x.get("title") or "").lower()
+
+    _items743 = _fu.load()["items"]
+    _unowned743 = [x for x in _items743 if "carrying capacity" in _t743(x) and "owned by no open item" in _t743(x)]
+    assert _unowned743 and all(x.get("status") != "open" for x in _unowned743), (
+        "no closed row records that S18.6's carrying capacity, once owned by no one, is built - or one is open",
+        [(x.get("id"), x.get("status")) for x in _unowned743])
+    assert [x for x in _items743 if "carrying capacity" in _t743(x) and "nothing reads" in _t743(x)], (
+        "nothing carries the reader S18.6's derived capacity would feed")
