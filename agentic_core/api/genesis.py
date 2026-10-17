@@ -23,7 +23,7 @@ from agentic_core.api._ai_provenance import reply_evidence as _reply_evidence   
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
-from agentic_core.auth.core import get_current_user, request_owner_id
+from agentic_core.auth.core import entity_owner_stamp, get_current_user, request_owner_id
 from agentic_core.api.intelligence import _ai_cognitive_prime_meta, _ai_mjm_lifecycle_meta, _usable, _selected_lenses
 from agentic_core.gaas.v5 import UnifiedConstitutionalInterceptorV16Omega, UEGLogger
 from agentic_core.api.vsb import _public_prose, _gate_block_reason, _gates_blocking, _LIFECYCLE_STAGE_IDS
@@ -1467,8 +1467,11 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
             "basis": _lin_chk["basis"],
         })
     # §17.5 user isolation — with auth enabled, the established VSB's owner is ALWAYS the
-    # authenticated user (server-side stamp). Single-user mode unchanged.
-    req.owner_id = request_owner_id(user, req.owner_id)
+    # authenticated user (server-side stamp). W753 (FU-1048) - with it off, a request that names no owner (the
+    # Genesis page names none, and the model's default is the old label) is stamped with the configured
+    # single-user owner, never the label.
+    _own753 = entity_owner_stamp(user, req.owner_id)
+    req.owner_id = _own753["owner_id"]
     _apply_journey_record(req)         # W668 - the platform's record first, so the veto reads the real candidate
     _refuse_vetoed_candidate(req)      # W485 — a vetoed approach establishes nothing
     import uuid as _uuid
@@ -1542,6 +1545,7 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
                            else "the default - no product was chosen"),
         "scope": "commercialise",
         "owner_id": req.owner_id,
+        "owner_stamped": True, "owner_stamp_basis": _own753["owner_stamp_basis"],   # W753 (FU-1048)
         # §4.8 (W496, FU-100) - derived below from the gates, the body-pending map and whether
         # anything actually tends the entity; a literal here was a claim about a state nobody checked
         "status": "pending derivation",
@@ -1738,7 +1742,8 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
     import uuid as _uuid
     import time as _time
 
-    req.owner_id = request_owner_id(user, req.owner_id)   # §17.5 — server-side owner stamp
+    _own753 = entity_owner_stamp(user, req.owner_id)   # §17.5 + W753 (FU-1048) — server-side owner stamp
+    req.owner_id = _own753["owner_id"]
     _apply_journey_record(req)         # W668 - the platform's record first (both paths)
     _refuse_vetoed_candidate(req)      # W485 — a vetoed approach establishes nothing (both paths)
     # W452 (refuter F1) — a bad gate id must be a REAL 400: raised inside the generator it arrived
@@ -1793,6 +1798,7 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
         entity = {
             "vsb_id": vsb_id, "name": name, "challenge": req.problem, "domain": req.domain,
             "realm": req.realm, "scope": "commercialise", "owner_id": req.owner_id,
+            "owner_stamped": True, "owner_stamp_basis": _own753["owner_stamp_basis"],   # W753 (FU-1048)
             # §4.8 (W496, FU-100) - derived after the facets attach (see below); §4 (W573, M1 R2.1)
             # the stage is derived there too, and was a literal on this path as well
             "status": "pending derivation", "stage": "pending derivation", "genome_spec": genome_spec,

@@ -288,8 +288,11 @@ async def synthesise(req: SynthesiseRequest,
     solution_name = req.solution_name or f"{req.domain.title()} Solution"
     # W505 (P2.6) — the run is recorded against the PRINCIPAL where there is one, as /vsb/spawn already
     # does. This route had no dependency at all, so nothing tied a synthesis to whoever asked for it.
-    from agentic_core.auth.core import request_owner_id as _roi
-    owner_id = _roi(user, "default")
+    #  W753 (FU-1048) - this route names no owner: with sign-in off the entity carries the configured single-user
+    #  owner, never the old label; with it on, the signed-in person, as before
+    from agentic_core.auth.core import entity_owner_stamp as _eos753
+    _own753 = _eos753(user, "")
+    owner_id = _own753["owner_id"]
     synthesis_id = uuid.uuid4().hex[:12]
     start = time.time()
     results: dict[str, str] = {}
@@ -335,6 +338,7 @@ async def synthesise(req: SynthesiseRequest,
             # §17.5. Every owner check on a VSB reads this field, so an unowned entity was reachable by
             # anyone once auth was on - including by the cascade scope check added this round.
             "owner_id": owner_id,
+            "owner_stamped": True, "owner_stamp_basis": _own753["owner_stamp_basis"],   # W753 (FU-1048)
             "synthesis_id": synthesis_id,
             "challenge": req.challenge,
             "solution_name": solution_name,
@@ -472,9 +476,10 @@ async def spawn_vsb_entity(req: SpawnRequest, user: dict | None = Depends(get_cu
     # §3.3 invariant — every generated VSB carries Board + Chief + living economy + plan (no path
     # may produce a governance-orphaned entity). §17.5 — owner stamped server-side when auth enabled.
     from agentic_core.api.vsb import enrich_vsb_entity
-    from agentic_core.auth.core import request_owner_id
-    owner = request_owner_id(user, "default")
-    entity["owner_id"] = owner
+    from agentic_core.auth.core import entity_owner_stamp
+    _own753 = entity_owner_stamp(user, "")          # W753 (FU-1048) - the configured owner while sign-in is off
+    owner = _own753["owner_id"]
+    entity.update(_own753)
     enrich_vsb_entity(entity, owner_id=owner, problem=req.challenge or req.solution_name,
                       domain=req.domain, parent_vsb=getattr(req, 'parent_vsb', '') or '')
     #  W667 (ledger v16 R2.3) - the literal "active" above survived whenever the screen did not fail, and the

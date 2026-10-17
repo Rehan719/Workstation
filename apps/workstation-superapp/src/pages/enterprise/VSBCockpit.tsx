@@ -853,7 +853,12 @@ export const VSBCockpit: React.FC = () => {
                   </div>
                 </div>
                 <p className="text-[11px] text-slate-500 leading-relaxed">{detail.challenge}</p>
-                <p className="text-[9px] font-mono text-slate-600">{detail.vsb_id} · realm: {detail.realm} · owner: {detail.owner_id}</p>
+                <p className="text-[9px] font-mono text-slate-600">{detail.vsb_id} · realm: {detail.realm} · owner: {detail.owner_id}
+                  {/* W753 (FU-1048) — an old record under the single-user label says so; the server gives the label at the read and does not store it */}
+                  {detail.owner_stamp?.label && (
+                    <span className="ml-1 text-slate-500" data-testid="cockpit-owner-stamp" title={detail.owner_stamp?.basis || ''}>({detail.owner_stamp.label})</span>
+                  )}
+                </p>
                 {/* W735 (FU-853) — which door established this entity, from its record; the server says when it is not recorded */}
                 <p className="text-[9px] text-slate-600" data-testid="cockpit-established-through">
                   {(detail as any).established_through

@@ -2259,6 +2259,31 @@ def _operating_means(vsb: dict):
             "satisfaction reading is part of a beat.")
 
 
+#  W753 (FU-1048) - the Owner's own words for a record made before new records were stamped with his identity
+OWNER_STAMP_PREDATES = "made before owner stamping"
+
+
+def owner_stamp_view(record) -> dict:
+    """W753 (FU-1048; the Owner's ruling of 2026-10-14) - how this record's owner was decided, for every reader:
+    {"stamped_at_creation", "label", "basis"}. A record made since carries `owner_stamped`. One made before does
+    not and is NEVER rewritten: an old record under the single-user label is labelled HERE, at the read, and the
+    label is not stored. Total: whatever it is handed, it answers."""
+    from agentic_core.config import SINGLE_USER_LABEL
+    rec = record if isinstance(record, dict) else {}
+    if rec.get("owner_stamped") is True:
+        return {"stamped_at_creation": True, "label": None,
+                "basis": str(rec.get("owner_stamp_basis") or "stamped when the record was made")}
+    if rec.get("owner_id") == SINGLE_USER_LABEL:
+        return {"stamped_at_creation": False, "label": OWNER_STAMP_PREDATES,
+                "basis": (f"made before new records were stamped with the configured owner, so it carries the "
+                          f"single-user label '{SINGLE_USER_LABEL}' it was made with. The record is not rewritten: "
+                          f"this label is given at the read and is not stored on it.")}
+    return {"stamped_at_creation": False, "label": None,
+            "basis": ("made before owner stamping; the owner shown is the one its creating request carried, and the "
+                      "record is not rewritten" if rec.get("owner_id") else
+                      "made before owner stamping and names no owner; none is invented for it")}
+
+
 def _read_view(vsb: dict) -> dict:
     """W668 (ledger v16 R2.2) - WHAT A READER IS GIVEN: the status, the stage and the living statement as they
     are NOW. They were derived when a gate, a body section or the ship changed, and never when the heartbeat
@@ -2266,6 +2291,7 @@ def _read_view(vsb: dict) -> dict:
     was stopped, beside a roster saying Self-run was off. The stored record is not rewritten by a read; this
     is a copy, and `status_derived_at` on it is the moment of the read."""
     v = dict(vsb)
+    v["owner_stamp"] = owner_stamp_view(vsb)        # W753 (FU-1048) - given at this read, never stored
     try:
         _rederive(v)
         if isinstance(v.get("living"), dict) and v["living"].get("registered") is not False:
@@ -3084,9 +3110,11 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
     if SPAWN_ROUTE_RETIRED:            # read at call time, and before the stream: a 410 after status 200 is lost
         raise HTTPException(status_code=410, detail=SPAWN_ROUTE_RETIRED_REASON)
     # §17.5 user isolation — with auth enabled the owner is ALWAYS the authenticated user
-    # (server-side stamp; a client cannot claim another owner). Single-user mode unchanged.
-    from agentic_core.auth.core import request_owner_id
-    req.owner_id = request_owner_id(user, req.owner_id)
+    # (server-side stamp; a client cannot claim another owner). W753 (FU-1048) - with it off, a request that
+    # names no owner (the Spawn Studio page sends the old label) carries the configured single-user owner.
+    from agentic_core.auth.core import entity_owner_stamp
+    _own753 = entity_owner_stamp(user, req.owner_id)
+    req.owner_id = _own753["owner_id"]
 
     #  P3.26 clause (1) — THE REFUSAL SITS HERE, IN THE OUTER HANDLER, and it has to.
     #  This route returns a StreamingResponse: by the time `_stream()` below executes, status 200 has
@@ -3325,6 +3353,7 @@ async def spawn_vsb(req: SpawnRequest, user: dict | None = Depends(get_current_u
             "realm": req.realm,
             "scope": req.scope,
             "owner_id": req.owner_id,
+            "owner_stamped": True, "owner_stamp_basis": _own753["owner_stamp_basis"],   # W753 (FU-1048)
             # §3.3 (W496, FU-100) - a literal here is a claim about a state nobody checked. The
             # record keeps the field (every reader depends on it) and it is DERIVED below, after the
             # gates and the body-pending map are known, by _apply_derived_status().
