@@ -67690,3 +67690,317 @@ def test_w744_the_gateway_says_what_runs_and_its_uncalled_cascade_is_archived(mo
     _index744 = (_root / "_archive" / "README.md").read_text(encoding="utf-8")
     assert "## Later moves: gateway._call (" in _index744 and "_archive/agentic_core/ai/gateway_legacy_call.py" in _index744, (
         "the archive's index does not record the move")
+
+
+def test_w745_the_installed_model_is_described_from_the_runtime_and_candidates_are_registered_not_downloaded(client, monkeypatch, tmp_path):
+    """Plan item P3.32, W745: the installed model is described from the runtime; candidates are registered, not
+    downloaded. With FU-894 (the evaluation cap is stated on read) and FU-918 (a failed lifecycle read no longer
+    hides the evidence and baseline blocks; viewing the page with that read failing is still owed).
+
+    THE PROPERTIES, one leg each: (1) every described field is the runtime's own and moves when the runtime's
+    answer moves; (2) a field the runtime does not report is null and named, never filled in; (3) "not read" -
+    disabled, unanswered, refused, or one description failing - is said as such and is never "nothing installed";
+    (4) a lead's downloaded and evaluated states are read from the runtime's list and the stored records, and
+    whether it is the configured default from the configured model name, each driven both ways on leads this test
+    owns, and a store that cannot be read whole gives NOT KNOWN, never "not evaluated"; (5) nothing asks the
+    runtime to pull, and the candidate read does not even describe; (6) both routes state their level from the one
+    table; (7) the lifecycle read states how many evaluations it holds against the cap, read from the named
+    constant, and says first when the record could not be read whole; the register does not call a possibly
+    dropped evaluation "not evaluated"; (8) the page draws those blocks outside the lifecycle card, reads the
+    lifecycle through apiJson and shows its failure, says "not read yet" while a read is pending, shows every
+    described field and the configured default where they are read, and re-reads the register after a lifecycle
+    action; (9) the plan item no longer says no model is installed.
+
+    No real runtime is asked: httpx's two module functions are replaced by a fake that answers by path and records
+    every call, at a host that cannot resolve. The two stores read here are files in the test's own directory."""
+    import hashlib
+    import json as _j
+    import pathlib
+    import httpx
+    import agentic_core.api.native_ai as _na
+    from agentic_core.ai.native import model_resource as _mr
+
+    _pre = _na.router.prefix
+    _base = "http://rf-runtime.test:11434"
+    _bl_file, _lc_file = tmp_path / "rf_model_baselines.json", tmp_path / "rf_model_lifecycle.json"
+    monkeypatch.setenv("OLLAMA_URL", _base + "/api/generate")
+    monkeypatch.delenv("AI_DISABLE_LOCAL", raising=False)
+    monkeypatch.setattr(_mr, "_lifecycle_path", lambda *_a, **_k: _lc_file)
+    monkeypatch.setattr(_na, "_baseline_store", lambda *_a, **_k: _bl_file)
+    for _cache in (_mr._OLLAMA_CACHE, _mr._MODELS_CACHE):      # restored on exit, whatever is written meanwhile
+        for _k in list(_cache):
+            monkeypatch.setitem(_cache, _k, _cache[_k])
+    assert _mr._ollama_base() == _base, "precondition: the runtime this test answers for is the one asked"
+
+    _lic_a = "RF TEST LICENCE A\n\nThe second line of the licence text."
+    _rt = {"down": False, "tags_code": 200, "show_fail": set(),
+           "tags": [{"name": "rf-model-a:latest", "model": "rf-model-a:latest", "size": 2019393189,
+                     "digest": "rf-digest-A", "modified_at": "2026-10-01T00:00:00Z",
+                     "details": {"format": "gguf", "family": "rflm", "parameter_size": "3.2B",
+                                 "quantization_level": "Q4_K_M"}},
+                    {"name": "rf-model-b:1b", "model": "rf-model-b:1b", "digest": "rf-digest-B",
+                     "details": {"format": "ggml-b", "family": "rflm-b", "parameter_size": "1.2B"}}],
+           "show": {"rf-model-a:latest": {"license": _lic_a, "capabilities": ["completion"],
+                                          "model_info": {"general.parameter_count": 3212749888}},
+                    "rf-model-b:1b": {"model_info": {}}}}
+    _seen = []
+
+    class _Resp:
+        def __init__(self, code, body):
+            self.status_code, self._body = code, body
+
+        def json(self):
+            return self._body
+
+    def _get(url, *a, **k):
+        _seen.append(("GET", str(url), None))
+        if _rt["down"]:
+            raise httpx.ConnectError("rf: the runtime is not answering")
+        if str(url) == _base + "/api/tags":
+            return _Resp(_rt["tags_code"], {"models": _j.loads(_j.dumps(_rt["tags"]))})
+        return _Resp(404, {"error": "rf: no such path"})
+
+    def _post(url, *a, **k):
+        _name = (k.get("json") or {}).get("model")
+        _seen.append(("POST", str(url), _name))
+        if str(url) == _base + "/api/show" and _name in _rt["show"] and _name not in _rt["show_fail"]:
+            return _Resp(200, _j.loads(_j.dumps(_rt["show"][_name])))
+        return _Resp(404, {"error": "rf: not found"})
+
+    monkeypatch.setattr(httpx, "get", _get)
+    monkeypatch.setattr(httpx, "post", _post)
+
+    def _rtcalls():
+        return [c for c in _seen if c[1].startswith(_base)]
+
+    def _installed():
+        _r = client.get(_pre + "/lifecycle/installed")
+        assert _r.status_code == 200, (_r.status_code, _r.text[:300])
+        return _r.json()
+
+    def _register():
+        _r = client.get(_pre + "/lifecycle/candidates")
+        assert _r.status_code == 200, (_r.status_code, _r.text[:300])
+        return _r.json()
+
+    # == 1. EVERY FIELD IS THE RUNTIME'S OWN, AND MOVES WHEN THE RUNTIME'S ANSWER MOVES ======================
+    _a = _installed()
+    assert _a["read"] is True and [m["name"] for m in _a["models"]] == ["rf-model-a:latest", "rf-model-b:1b"], _a
+    _m = _a["models"][0]
+    assert (_m["digest"], _m["size_bytes"], _m["parameter_size"], _m["quantization_level"], _m["family"], _m["format"]) == (
+        "rf-digest-A", 2019393189, "3.2B", "Q4_K_M", "rflm", "gguf"), _m
+    assert _m["routing_name"] == "rf-model-a" and _m["parameter_count"] == 3212749888 and _m["capabilities"] == ["completion"], _m
+    assert _m["licence"]["first_line"] == "RF TEST LICENCE A" and _m["licence"]["chars"] == len(_lic_a), _m["licence"]
+    assert _m["licence"]["sha256"] == hashlib.sha256(_lic_a.encode("utf-8")).hexdigest(), "the licence hash is not the hash of its text"
+    assert _m["show_read"] is True and _m["not_reported"] == [], _m
+    assert _base + "/api/tags" in _a["read_from"] and _base + "/api/show" in _a["read_from"], _a["read_from"]
+    #    the tag is pulled again to a different build: the next read says so in EVERY field - nothing was
+    #    remembered or typed
+    _rt["tags"][0].update(digest="rf-digest-A2", size=2019393190, modified_at="2026-10-02T00:00:00Z")
+    _rt["tags"][0]["details"].update(quantization_level="Q8_0", parameter_size="3.3B", family="rflm2", format="gguf2")
+    _rt["show"]["rf-model-a:latest"].update(license="RF TEST LICENCE C", capabilities=["completion", "tools"],
+                                            model_info={"general.parameter_count": 3212749889})
+    _a2 = _installed()["models"][0]
+    assert (_a2["digest"], _a2["size_bytes"], _a2["modified_at"], _a2["quantization_level"], _a2["parameter_size"],
+            _a2["family"], _a2["format"], _a2["parameter_count"], _a2["capabilities"], _a2["licence"]["first_line"]) == (
+        "rf-digest-A2", 2019393190, "2026-10-02T00:00:00Z", "Q8_0", "3.3B", "rflm2", "gguf2", 3212749889,
+        ["completion", "tools"], "RF TEST LICENCE C"), _a2
+
+    # == 2. A FIELD THE RUNTIME DOES NOT REPORT IS NULL AND NAMED - never filled in ===========================
+    _b = _installed()["models"][1]
+    assert _b["quantization_level"] is None and _b["size_bytes"] is None and _b["licence"] is None, _b
+    assert _b["parameter_count"] is None and _b["capabilities"] is None and _b["show_read"] is True, _b
+    assert set(_b["not_reported"]) == {"size_bytes", "quantization_level", "parameter_count", "capabilities", "licence"}, _b["not_reported"]
+    assert _b["routing_name"] == "rf-model-b:1b"
+    assert (_b["parameter_size"], _b["family"], _b["format"], _b["digest"]) == ("1.2B", "rflm-b", "ggml-b", "rf-digest-B"), _b
+
+    # == 3. NOT READ IS SAID, AND IS NEVER "NOTHING INSTALLED" ==============================================
+    _n0 = len(_rtcalls())
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "1")
+    _d = _installed()
+    assert _d["read"] is False and _d["models"] == [] and _d["basis"].startswith("NOT READ") and "AI_DISABLE_LOCAL" in _d["basis"], _d
+    assert "says nothing about what is installed" in _d["basis"] and len(_rtcalls()) == _n0, "a disabled runtime was asked"
+    monkeypatch.delenv("AI_DISABLE_LOCAL")
+    _rt["down"] = True
+    _u = _installed()
+    assert _u["read"] is False and _u["models"] == [] and "did not give its model list" in _u["basis"], _u
+    assert "ConnectError" in _u["basis"] and "says nothing about what is installed" in _u["basis"], _u["basis"]
+    _rt["down"], _rt["tags_code"] = False, 500
+    _s = _installed()
+    assert _s["read"] is False and "HTTP 500" in _s["basis"], _s
+    _rt["tags_code"] = 200
+    #    one model's description failing: its licence is NOT KNOWN (not "not reported"), and the other is untouched
+    _rt["show_fail"] = {"rf-model-a:latest"}
+    _f = {m["name"]: m for m in _installed()["models"]}
+    assert _f["rf-model-a:latest"]["show_read"] is False and _f["rf-model-a:latest"]["licence"] is None, _f
+    assert "could not be read" in _f["rf-model-a:latest"]["show_basis"] and "licence" in _f["rf-model-a:latest"]["show_basis"]
+    assert "licence" not in _f["rf-model-a:latest"]["not_reported"], "a description that was not read is called not reported"
+    assert _f["rf-model-a:latest"]["digest"] == "rf-digest-A2" and _f["rf-model-b:1b"]["show_read"] is True, _f
+    _rt["show_fail"] = set()
+    #    and a runtime that answers with an empty list IS a statement that nothing is installed
+    _keep, _rt["tags"] = _rt["tags"], []
+    _e = _installed()
+    assert _e["read"] is True and _e["models"] == [] and "lists no model" in _e["basis"], _e
+    _rt["tags"] = _keep
+
+    # == 4. A LEAD'S DOWNLOADED AND EVALUATED ARE READ, NEVER WRITTEN ON IT - each state driven ===============
+    #    the real leads: invariants only, so a lead added, removed or given a runtime tag later does not turn this red
+    _c0 = _register()
+    assert len(_c0["leads"]) == len(_mr.CANDIDATE_LEADS) and "Owner's decision" in _c0["download_decision"], _c0
+    for _x in _mr.CANDIDATE_LEADS:
+        assert _x.get("licence") and _x.get("notes") and "runtime_tag" in _x, ("a lead lacks its licence, notes or tag key", _x.get("id"))
+        for _k in ("downloaded", "evaluated", "configured_default"):
+            assert _k not in _x, ("a lead's state is written on the lead", _x.get("id"), _k)
+        if "research-only" in str(_x.get("licence")).lower():
+            assert "NOT for commercial use" in _x["notes"], ("a research-only lead does not say it bars commercial use", _x.get("id"))
+    assert all(_l["licence_basis"] and _l["state"] for _l in _c0["leads"]), _c0["leads"]
+    #    the states, driven on leads this test owns: a tag with a colon, a bare tag, and no tag
+    monkeypatch.setattr(_mr, "CANDIDATE_LEADS", (
+        {"id": "rf-lead", "name": "RF Lead", "licence": "RF-L", "runtime_tag": "rf-lead:q4", "notes": "rf: a tag with a colon"},
+        {"id": "rf-bare", "name": "RF Bare", "licence": "RF-B", "runtime_tag": "rf-bare", "notes": "rf: a bare tag"},
+        {"id": "rf-none", "name": "RF None", "licence": "RF-N", "runtime_tag": None, "notes": "rf: no tag"}))
+    _byid = {x["id"]: x for x in _register()["leads"]}
+    assert set(_byid) == {"rf-lead", "rf-bare", "rf-none"}, sorted(_byid)
+    for _i in ("rf-lead", "rf-bare"):
+        assert _byid[_i]["downloaded"] is False and _byid[_i]["evaluated"] is False, _byid[_i]
+        assert _byid[_i]["state"] == "not downloaded, not evaluated", _byid[_i]["state"]
+    assert _byid["rf-none"]["downloaded"] is None and "no runtime tag" in _byid["rf-none"]["downloaded_basis"], _byid["rf-none"]
+    assert _byid["rf-none"]["evaluated"] is None, _byid["rf-none"]
+    #    the configured default is READ from the configured model name, never written on a lead - driven both ways
+    monkeypatch.setenv("OLLAMA_MODEL", "rf-bare")
+    _cd = {x["id"]: x for x in _register()["leads"]}
+    assert _cd["rf-bare"]["configured_default"] is True and "rf-bare" in _cd["rf-bare"]["configured_default_basis"], _cd["rf-bare"]
+    assert _cd["rf-lead"]["configured_default"] is False and _cd["rf-none"]["configured_default"] is None, (_cd["rf-lead"], _cd["rf-none"])
+    assert "no runtime tag" in _cd["rf-none"]["configured_default_basis"], _cd["rf-none"]
+    monkeypatch.setenv("OLLAMA_MODEL", "rf-lead:q4")
+    _cd = {x["id"]: x for x in _register()["leads"]}
+    assert _cd["rf-lead"]["configured_default"] is True and _cd["rf-bare"]["configured_default"] is False, (_cd["rf-lead"], _cd["rf-bare"])
+    monkeypatch.delenv("OLLAMA_MODEL")
+
+    def _lead(_id="rf-lead"):
+        return {x["id"]: x for x in _register()["leads"]}[_id]
+
+    def _evals(*rows):
+        _mr.save_lifecycle({"default_local": None, "retired": [], "evaluations": [dict(r) for r in rows]})
+
+    def _baselines(*rows):
+        _bl_file.write_bytes(_j.dumps([dict(r) for r in rows]).encode("utf-8"))
+    #    pulled: DOWNLOADED, read from the runtime's list
+    _rt["tags"].append({"name": "rf-lead:q4", "digest": "rf-digest-Q", "details": {}})
+    _l1 = _lead()
+    assert _l1["downloaded"] is True and _l1["state"] == "downloaded, not evaluated", _l1
+    #    a record naming it where it did not serve: still NOT evaluated, and it says why
+    _evals({"model": "rf-lead:q4", "can_serve": False})
+    _l2 = _lead()
+    assert _l2["evaluated"] is False and "did it serve" in _l2["evaluated_basis"], _l2
+    #    an evaluation in which it served, with no baseline: EVALUATED
+    _evals({"model": "rf-lead:q4", "can_serve": True})
+    _l2b = _lead()
+    assert _l2b["evaluated"] is True and "served in 1 of them" in _l2b["evaluated_basis"], _l2b
+    #    a baseline in which it served, beside an evaluation in which it did not: EVALUATED, by the baseline
+    _evals({"model": "rf-lead:q4", "can_serve": False})
+    _baselines({"run_id": "bl-rf-1", "tier": "ollama:rf-lead:q4", "served_target": True})
+    _l3 = _lead()
+    assert _l3["evaluated"] is True and _l3["state"] == "downloaded, evaluated", _l3
+    #    a BARE tag is the same model as its ':latest' - the shape of the real records: a lead tagged with a bare
+    #    name, the runtime entry under that name with ':latest', and the stored baseline on that ':latest' tier
+    _rt["tags"].append({"name": "rf-bare:latest", "digest": "rf-digest-R", "details": {}})
+    _baselines({"run_id": "bl-rf-1", "tier": "ollama:rf-lead:q4", "served_target": True},
+               {"run_id": "bl-rf-2", "tier": "ollama:rf-bare:latest", "served_target": True})
+    _lb = _lead("rf-bare")
+    assert _lb["downloaded"] is True and _lb["evaluated"] is True, _lb
+    #    a store that cannot be read whole is NOT KNOWN, never "not evaluated": baselines truncated, baselines not
+    #    a list, then the evaluations truncated
+    _bl_file.write_bytes(b'[{"run_id": "bl-rf-x", "tier": "oll')
+    _li = _lead()
+    assert _li["evaluated"] is None and "could not be read whole" in _li["evaluated_basis"], _li
+    _bl_file.write_bytes(b'{"run_id": "bl-rf-x"}')
+    _ln = _lead()
+    assert _ln["evaluated"] is None and "does not hold a list" in _ln["evaluated_basis"], _ln
+    _bl_file.unlink()
+    _lc_file.write_bytes(b'{"evaluations": [{"model": "rf-lead:q4", "can_')
+    _le = _lead()
+    assert _le["evaluated"] is None and "could not be read whole" in _le["evaluated_basis"], _le
+    _lc_file.unlink()
+    #    the runtime is not read: downloaded is NOT CHECKED, with the runtime's own reason, never "not downloaded"
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "1")
+    _l4 = _lead()
+    assert _l4["downloaded"] is None and "AI_DISABLE_LOCAL" in _l4["downloaded_basis"], _l4
+    monkeypatch.delenv("AI_DISABLE_LOCAL")
+
+    # == 5. NOTHING ASKS THE RUNTIME TO PULL, AND THE CANDIDATE READ DOES NOT EVEN DESCRIBE ===================
+    _calls = _rtcalls()
+    assert any(c[:2] == ("GET", _base + "/api/tags") for c in _calls) and any(
+        c[:2] == ("POST", _base + "/api/show") for c in _calls), "no runtime call was recorded, so this leg proves nothing"
+    _mutating = ("/api/pull", "/api/push", "/api/create", "/api/copy", "/api/delete", "/api/blobs")
+    _bad = [c for c in _calls if c[1][len(_base):].startswith(_mutating)]
+    assert not _bad, ("something asked the runtime to fetch, change or remove a model", _bad)
+    _n = len(_rtcalls())
+    _register()
+    _during = _rtcalls()[_n:]
+    assert [c for c in _during if c[1].endswith("/api/show")] == [], ("reading the candidate register described a model", _during)
+    assert [c for c in _during if c[:2] == ("GET", _base + "/api/tags")], "the candidate read did not read the runtime's list"
+
+    # == 6. BOTH ROUTES STATE THEIR LEVEL, READ FROM THE ONE TABLE ==========================================
+    for _p, _got in (("/lifecycle/installed", _installed()), ("/lifecycle/candidates", _register())):
+        assert _na._EVIDENCE_SURFACES.get(_p, (None,))[0] == "configuration", _p
+        assert _got.get("evidence_level") == "configuration" and _na._EVIDENCE_SURFACES[_p][1] in _got["evidence_basis"], (_p, _got.get("evidence_basis"))
+        assert "below level 1" in _got["evidence_basis"], _got["evidence_basis"]
+    assert _na._unclassified_routes() == [] and _na._surfaces_not_stating() == []
+
+    # == 7. FU-894 - THE LIFECYCLE READ STATES HOW MANY EVALUATIONS IT HOLDS AGAINST THE CAP ================
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "1")              # the lifecycle read below asks no runtime
+    monkeypatch.setattr(_mr, "EVALUATIONS_KEPT", 4)          # the cap is read from the constant, never typed
+    _mr.save_lifecycle({"default_local": None, "retired": [], "evaluations": [{"model": f"rf-{i}"} for i in range(3)]})
+    _lc = client.get(_pre + "/lifecycle").json()
+    assert _lc["evaluations_held"] == 3 and _lc["evaluations_kept_at_most"] == 4, _lc
+    assert _lc["evaluations_basis"].startswith("every evaluation recorded is held") and "the cap of 4" in _lc["evaluations_basis"], _lc["evaluations_basis"]
+    _mr.save_lifecycle({"default_local": None, "retired": [], "evaluations": [{"model": f"rf-{i}"} for i in range(5)]})
+    _held = _j.loads(_lc_file.read_text(encoding="utf-8"))["evaluations"]
+    assert [e["model"] for e in _held] == ["rf-1", "rf-2", "rf-3", "rf-4"], ("the store did not keep the newest four", _held)
+    _lc2 = client.get(_pre + "/lifecycle").json()
+    assert _lc2["evaluations_held"] == 4 and "may have been dropped" in _lc2["evaluations_basis"] and "the cap of 4" in _lc2["evaluations_basis"], _lc2["evaluations_basis"]
+    _l5 = _lead()
+    assert _l5["evaluated"] is None and "may have been dropped" in _l5["evaluated_basis"], (
+        "a lead whose evaluation may have been dropped is called not evaluated", _l5)
+    _lc_file.write_bytes(b'{"evaluations": [{"model": "rf-1"}, {"model": "rf-')
+    _lc3 = client.get(_pre + "/lifecycle").json()
+    assert "could not be read whole" in _lc3["evaluations_basis"] and not _lc3["evaluations_basis"].startswith("every evaluation"), (
+        "a record that could not be read whole says every evaluation is held", _lc3["evaluations_basis"])
+    _lc_file.unlink()
+    monkeypatch.delenv("AI_DISABLE_LOCAL")
+
+    # == 8. FU-918 - THE PAGE (SOURCE LEG - nothing here renders a page; the card is bounded by its indentation) ==
+    _repo = pathlib.Path(__file__).resolve().parents[1]
+    native_src745 = _code_only((_repo / "apps/workstation-superapp/src/pages/developers/NativeAI.tsx").read_text(encoding="utf-8"))
+    _open = native_src745.find("{lifecycle && (\n")
+    _end = native_src745.find("\n          )}\n", _open)
+    assert _open != -1 and _end != -1, "the lifecycle card was not found"
+    _card = native_src745[_open:_end]
+    assert "Owned-model lifecycle" in _card and "lifecycle.retired_is_incomplete" in _card, "the bound did not find the lifecycle card"
+    for _tid in ('data-testid="evidence-levels"', 'data-testid="behaviour-baseline"', 'data-testid="installed-models"',
+                 'data-testid="model-candidates"', 'data-testid="lifecycle-error"'):
+        assert _tid in native_src745 and _tid not in _card, ("a block is missing, or is drawn only when the lifecycle read succeeds", _tid)
+    for _need in ("setLcErr(errorMessage(e))", "{lcErr && <p role=\"alert\"", "'/api/v1/native-ai/lifecycle/installed'",
+                  "'/api/v1/native-ai/lifecycle/candidates'", "setInstErr(errorMessage(e))", "setCandErr(errorMessage(e))",
+                  "{installed.basis}", "{c.state}", "{candidates.download_decision}", "{lifecycle.evaluations_basis}",
+                  "{c.configured_default_basis}", 'data-testid="model-candidate-configured-default"',
+                  'data-testid="installed-model-detail"', "m.capabilities.join(', ')", "m.parameter_count.toLocaleString()",
+                  "{m.family ?? 'not reported'}", "{c.runtime_tag ?? 'none recorded'}", "Read from ${installed.read_from}"):
+        assert _need in native_src745, ("the page does not carry it", _need)
+    assert ".then(setLifecycle).catch(() => {})" not in native_src745, "the lifecycle read still swallows its failure"
+    _bb = native_src745.find('data-testid="behaviour-baseline"')
+    _between = native_src745[_end:_bb]
+    assert _bb > _end and "lifecycle &&" not in _between and "lifecycle ?" not in _between, (
+        "the blocks moved out of the lifecycle card are wrapped in a lifecycle check again")
+    assert "apiJson('/api/v1/native-ai/lifecycle')" in native_src745 and "fetch('/api/v1/native-ai/lifecycle')" not in native_src745, (
+        "the lifecycle read does not go through apiJson, so an error answer can be drawn as the card")
+    assert '{!installed && !instErr && <p data-testid="installed-models-pending"' in native_src745, "a pending runtime read draws as an empty list"
+    assert '{!candidates && !candErr && <p data-testid="model-candidates-pending"' in native_src745, "a pending register read draws as an empty list"
+    assert "loadLifecycle();\n      loadCandidates();" in native_src745, "an evaluation leaves the candidate register showing its old state"
+
+    # == 9. THE PLAN ITEM no longer says no model is installed (one is, on the Owner's machine) ===============
+    plan_src745 = (_repo / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    _item = " ".join(plan_src745.split("\n P3.32 [", 1)[1].split("\n MILESTONE M3", 1)[0].split())
+    assert "no model is installed" not in _item, "the plan item says no model is installed"
+    assert "FROM THE RUNTIME" in _item and "downloads nothing" in _item and "Owner's decision" in _item, "the item does not record what was built"

@@ -17521,11 +17521,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W745",
       "note": "",
       "slot_source": "found in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The cap is the named constant EVALUATIONS_KEPT, used by save_lifecycle. GET /api/v1/native-ai/lifecycle answers evaluations_held, evaluations_kept_at_most and evaluations_basis, computed from the two and saying first when the record could not be read whole, and the Native AI page shows the basis. The cut stays: the record is read on routing (orchestrator active_local_models and effective_default_local, and the gateway). The evidence record, the baseline store, keeps every run, failed cases included, and drops nothing; an evaluation is a smoke check whose cut is now stated on read. The candidate register reads a lead as NOT KNOWN when the cap may have dropped its evaluation or a store could not be read whole. Evidence: guard test_w745 leg 7 (the cap read from the constant, the boundary at the cap, a truncated record) and leg 4 (NOT KNOWN in the register); blinds B13-B15, B19-B22, B28."
     },
     {
       "id": "FU-895",
@@ -22201,6 +22204,40 @@
       "note": "",
       "slot_source": "latent until the external switch is flipped; P4.3 owns the accelerants and must close it before the flip",
       "tier": 3
+    },
+    {
+      "id": "FU-1129",
+      "title": "The vision tier recognises a vision model by a typed family list while the runtime reports each model's capabilities",
+      "why": "tiers.vision_resources (agentic_core/ai/native/tiers.py, VISION_FAMILIES and the match below it) recognises a vision model by matching its name against a typed family list, while the local runtime states each model's capabilities. MEASURED live while W745 was prepared (reads only, Ollama 0.40.5): capabilities is returned in every /api/tags row and by /api/show (llama3.2: completion, tools), and model_resource.describe_installed now reads it from /api/show (W745). A multimodal build whose name is not in the list (for example a Qwen3.5 build) would read UNKNOWN although the runtime would say whether it reads images. Not measured: whether a multimodal build reports vision, since none is installed. Fix: read the runtime's capabilities first and keep the family list only as the fallback when the runtime does not report them, with a leg that drives both.",
+      "source": "W745 (the round's preparation and its review)",
+      "found": "2026-10-17",
+      "files": [
+        "agentic_core/ai/native/tiers.py",
+        "agentic_core/ai/native/model_resource.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.32",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it: W745 built the runtime's description of each model on P3.32, and this reader of it is the next step there",
+      "tier": 3
+    },
+    {
+      "id": "FU-1130",
+      "title": "OWNER DECISION: whether to download any registered model candidate for evaluation",
+      "why": "W745 registers research leads, each with the licence the research named, and downloads none; nothing in the platform pulls a model, and the register reads downloaded from the runtime's list at each read. Of the leads not installed, Qwen3.5-4B (Apache-2.0, multimodal; its 4-bit build qwen3.5:4b-q4_K_M is 3.3 GB) is the only one with a runtime tag. Qwen3.5-0.8B and Qwen3.5-2B (Apache-2.0, multimodal) and Qwen3-4B-Instruct-2507 (Apache-2.0) are the smallest permissively licensed leads; no file size or runtime tag was recorded for them. Llama 3.2 (tag llama3.2, the configured default model name) is already installed on the Owner's machine (llama3.2:latest and llama3.2:1b), and a baseline has run on it. Qwen2.5-Coder-3B is research-only, so not for commercial use. Phi-4-mini-instruct needs trust_remote_code. Gemma-4-E2B-it is one 10.2 GB file as published, more than the 7.7 GB of memory this machine was measured at (FU-271). If one is chosen, the Owner pulls it, and a baseline then runs on demand from the Native AI page. RECOMMENDED: download none until a lead's runtime tag and file size are confirmed against this machine's memory; if one is wanted, the smallest Apache-2.0 multimodal lead first (Qwen3.5-2B, or Qwen3.5-0.8B if memory is tight), with its baseline run on demand.",
+      "source": "W745 (the round's preparation and its review)",
+      "found": "2026-10-17",
+      "files": [],
+      "severity": "low",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "OWNER DECISION (M-EXEC-07): downloading a model is the Owner's; W745 registers the leads and downloads nothing"
     }
   ],
   "routes": [

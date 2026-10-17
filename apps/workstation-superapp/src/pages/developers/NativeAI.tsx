@@ -65,6 +65,25 @@ interface EvidenceLevels {
   boundary: string; scope?: string;
   claims_check?: { result_words: string[]; where: string; basis: string };
 }
+// P3.32 (W745) - the installed models as the local runtime describes them (GET /lifecycle/installed). Each
+// field is the runtime's own; null means it was not reported, and `not_reported` names each such field.
+interface InstalledModel {
+  name: string; routing_name: string; digest: string | null; size_bytes: number | null;
+  parameter_size: string | null; quantization_level: string | null; family: string | null; format: string | null;
+  parameter_count: number | null; capabilities: string[] | null; modified_at: string | null;
+  licence: { first_line: string; chars: number; sha256: string; basis: string } | null;
+  show_read: boolean; show_basis: string | null; not_reported: string[];
+}
+interface InstalledModels { read: boolean; read_at: string; read_from: string | null; models: InstalledModel[]; basis: string }
+// ... and the candidate register (GET /lifecycle/candidates): leads, not downloads. `downloaded`, `evaluated` and
+// `configured_default` are three-state, read by the server from the runtime's list, the stored records and the
+// configured model name; `state` is its sentence.
+interface CandidateLead {
+  id: string; name: string; licence: string; runtime_tag: string | null; notes: string; licence_basis: string;
+  downloaded: boolean | null; downloaded_basis: string; evaluated: boolean | null; evaluated_basis: string; state: string;
+  configured_default: boolean | null; configured_default_basis: string;
+}
+interface CandidateRegister { leads: CandidateLead[]; basis: string; download_decision: string; recorded_on: string }
 interface TreeRun {
   goal: string; posture: string; tree: TreeNodeDef[]; levels: string[][];
   node_count: number; parallel_levels: number; max_parallel: number; immune_threat: string;
@@ -477,6 +496,8 @@ export const NativeAI: React.FC = () => {
     // "Deterministic floor active". What serves and what is configured are two fields now.
     configured_default?: string | null; serves?: string; serving_basis?: string;
     discovered?: string[]; active_estate?: string[];
+    // FU-894 - how many evaluations the record holds against the cap that drops older ones, in the server's words
+    evaluations_held?: number; evaluations_kept_at_most?: number; evaluations_basis?: string;
     //  W641 (P3.32) — what an evaluation ran against and what its number is; absent on records made before
     //  the probe set was versioned, and the row says so rather than printing a bare score
     evaluations?: { model: string; can_serve: boolean; score: number | null; at: string;
@@ -492,6 +513,13 @@ export const NativeAI: React.FC = () => {
   const [blOpen, setBlOpen] = useState<string | null>(null);
   const [evLevels, setEvLevels] = useState<EvidenceLevels | null>(null);
   const [evErr, setEvErr] = useState('');
+  // P3.32 (W745) - the installed models as the runtime describes them, and the candidate leads; each read has its
+  // own error line. FU-918 - and the lifecycle read now says when it failed instead of drawing nothing.
+  const [installed, setInstalled] = useState<InstalledModels | null>(null);
+  const [instErr, setInstErr] = useState('');
+  const [candidates, setCandidates] = useState<CandidateRegister | null>(null);
+  const [candErr, setCandErr] = useState('');
+  const [lcErr, setLcErr] = useState('');
   const loadBaselines = () =>
     apiJson<BaselineList>('/api/v1/native-ai/baseline?limit=6').then(d => { setBaselines(d); })
       .catch(e => { setBaselines(null); setBlErr(errorMessage(e)); });
@@ -504,13 +532,20 @@ export const NativeAI: React.FC = () => {
     setBlBusy('');
   };
   const loadLifecycle = () =>
-    fetch('/api/v1/native-ai/lifecycle').then(r => r.json()).then(setLifecycle).catch(() => {});
+    apiJson('/api/v1/native-ai/lifecycle').then(d => { setLifecycle(d); setLcErr(''); })
+      .catch(e => { setLifecycle(null); setLcErr(errorMessage(e)); });
+  // P3.32 (W745) - read on load and again after a lifecycle action, so a lead just evaluated is not still
+  // shown as not evaluated
+  const loadCandidates = () =>
+    apiJson<CandidateRegister>('/api/v1/native-ai/lifecycle/candidates').then(d => { setCandidates(d); setCandErr(''); })
+      .catch(e => { setCandidates(null); setCandErr(errorMessage(e)); });
   const lifecycleAction = async (action: 'evaluate' | 'promote' | 'retire' | 'reinstate', model: string) => {
     setLcBusy(`${action}:${model}`);
     try {
       // Ledger cluster 2 — a failed retire/promote must be visible, never a silent reload
       await apiJson(`/api/v1/native-ai/lifecycle/${action}`, { method: 'POST', body: { model } });
       loadLifecycle();
+      loadCandidates();
     } catch (e) { setError(errorMessage(e)); }
     setLcBusy('');
   };
@@ -529,6 +564,8 @@ export const NativeAI: React.FC = () => {
       .then(d => setModelTiers(d.tiers || [])).catch(() => {});
     loadCascades();
     loadLifecycle();
+    apiJson<InstalledModels>('/api/v1/native-ai/lifecycle/installed').then(setInstalled).catch(e => setInstErr(errorMessage(e)));
+    loadCandidates();
     loadBaselines();
   }, []);
 
@@ -1011,6 +1048,38 @@ export const NativeAI: React.FC = () => {
                   </div>
                 ))}
               </div>
+            </Card>
+          )}
+
+          {/* P3.32 (W745), FU-918 - what is installed, what is only a lead, what each statement rests on and the
+              baseline sit OUTSIDE the lifecycle card: inside it, a failed lifecycle read drew none of them. */}
+          <Card className="p-6 border-sky-500/30">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-sky-300 mb-1">What is installed, what is only a lead, and what each statement rests on</h3>
+            {lcErr && <p role="alert" data-testid="lifecycle-error" className="text-[9px] font-bold text-vital mb-2">The model lifecycle could not be read ({lcErr}): the serving default, retirements and recent evaluations are not shown.</p>}
+            <div data-testid="installed-models" className="space-y-1">
+              <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">Installed local models, as the local runtime describes them now</p>
+              {instErr && <p role="alert" data-testid="installed-models-error" className="text-[9px] font-bold text-vital">{instErr}</p>}
+              {!installed && !instErr && <p data-testid="installed-models-pending" className="text-[9px] text-slate-500">Not read yet: the local runtime is being asked what it holds. Nothing is said here about what is installed until it answers.</p>}
+              {installed && <p data-testid="installed-models-basis" className="text-[9px] text-slate-500">{installed.basis}{installed.read_from ? ` Read from ${installed.read_from} at ${installed.read_at}.` : ''}</p>}
+              {(installed?.models ?? []).map(m => (
+                <p key={m.name} data-testid="installed-model" className="text-[9px] text-slate-400">
+                  <span className="font-mono text-slate-300">{m.name}</span>{m.routing_name !== m.name ? ` (routed as ${m.routing_name})` : ''} · digest {m.digest ? m.digest.slice(0, 12) : 'not reported'} · {m.parameter_size ?? 'parameter size not reported'} · {m.quantization_level ?? 'quantisation not reported'} · licence: {m.licence ? `${m.licence.first_line} (${m.licence.chars} characters)` : (m.show_read ? 'not reported by the runtime' : 'not known')}{m.not_reported.length ? ` · not reported: ${m.not_reported.join(', ')}` : ''}{m.show_basis ? ` · ${m.show_basis}` : ''}
+                  <span data-testid="installed-model-detail" className="block text-slate-600">family {m.family ?? 'not reported'} · format {m.format ?? 'not reported'} · size {m.size_bytes != null ? `${(m.size_bytes / 1e9).toFixed(2)} GB` : 'not reported'} · parameter count {m.parameter_count != null ? m.parameter_count.toLocaleString() : (m.show_read ? 'not reported' : 'not known')} · capabilities {m.capabilities ? m.capabilities.join(', ') : (m.show_read ? 'not reported' : 'not known')} · modified {m.modified_at ?? 'not reported'}</span>
+                </p>
+              ))}
+            </div>
+            <div data-testid="model-candidates" className="mt-3 space-y-1 border-t border-slate-900 pt-2">
+              <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">Candidates: registered leads, not downloads</p>
+              {candErr && <p role="alert" data-testid="model-candidates-error" className="text-[9px] font-bold text-vital">{candErr}</p>}
+              {!candidates && !candErr && <p data-testid="model-candidates-pending" className="text-[9px] text-slate-500">Not read yet: the candidate register is being read.</p>}
+              {candidates && <p data-testid="model-candidates-basis" className="text-[9px] text-slate-500">{candidates.basis}. {candidates.download_decision}</p>}
+              {(candidates?.leads ?? []).map(c => (
+                <p key={c.id} data-testid="model-candidate" className="text-[9px] text-slate-400">
+                  <span className="font-mono text-slate-300">{c.name}</span> · {c.licence} · <span className="font-bold text-slate-300">{c.state}</span>{c.configured_default ? <span data-testid="model-candidate-configured-default" className="text-sky-300"> · the configured default</span> : null} · runtime tag {c.runtime_tag ?? 'none recorded'} · {c.notes}
+                  <span className="block text-slate-600">{c.downloaded_basis}. {c.evaluated_basis}. {c.configured_default_basis}. {c.licence_basis}.</span>
+                </p>
+              ))}
+            </div>
               <div data-testid="evidence-levels" className="mt-3 space-y-1 border-t border-slate-900 pt-2">
                 <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">What each statement about a model on this page rests on</p>
                 {evErr && <p role="alert" data-testid="evidence-levels-error" className="text-[9px] font-bold text-vital">{evErr}</p>}
@@ -1069,9 +1138,10 @@ export const NativeAI: React.FC = () => {
                   </div>
                 ))}
               </div>
-              {(lifecycle.evaluations ?? []).length > 0 && (
+              {lifecycle && (lifecycle.evaluations ?? []).length > 0 && (
                 <div className="mt-3 space-y-1">
                   <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">Recent evaluations (honest — no score when the target could not serve)</p>
+                  {lifecycle.evaluations_basis && <p data-testid="lifecycle-evaluations-basis" className="text-[9px] text-slate-600">{lifecycle.evaluations_basis}</p>}
                   {lifecycle.evaluations!.slice(-3).reverse().map((ev, i) => (
                     <p key={i} className="text-[9px] text-slate-400">
                       {ev.model} · {ev.can_serve ? (ev.probe_set ? `marker hits ${ev.marker_hits} of ${ev.probes_total} · control ${ev.control?.marker_absent === true ? 'passed' : ev.control?.marker_absent === false ? 'FAILED' : 'not read'} · probe set v${ev.probe_set.version}` : `score ${ev.score} (recorded before the probe set was versioned)`) : 'could not serve — no score'}{ev.basis ? <span className="block text-[9px] text-slate-500">{ev.basis}</span> : null} · {ev.at}
@@ -1080,7 +1150,6 @@ export const NativeAI: React.FC = () => {
                 </div>
               )}
             </Card>
-          )}
 
           {/* Quick swarm runner */}
           <Card className="p-6">
