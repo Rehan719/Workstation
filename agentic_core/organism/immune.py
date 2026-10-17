@@ -2,7 +2,9 @@
 IDBO Immune System — a failure sensor that feeds the organism's health state.
 
 What is recorded here, each by a caller that exists (a sliding 5-minute window):
-- AI gateway and model-tier calls that failed or timed out   (ai/gateway.py, ai/native/orchestrator.py)
+- AI gateway and model-tier calls that failed or timed out   (ai/native/orchestrator.py: the gateway's query
+  path routes through it and a timeout is recorded as ai_failure; a failure on the gateway's stream path is not
+  recorded here - only its floor serve is observed)
 - compliance fails, regressions and review escalations       (vbs/quality.py, organism/heartbeat.py)
 - quality non-conformances and operations reported as failed (organism/biobus.py record_error)
 
@@ -25,13 +27,13 @@ from typing import Deque
 class _ErrorEvent:
     ts: float
     endpoint: str
-    error_type: str  # written today: ai_failure, timeout, compliance_*, quality_*, or a failed operation's name
+    error_type: str  # written today: ai_failure, compliance_*, quality_*, or a failed operation's name
 
 
 class ImmuneSystem:
     """
     Ring-buffer of error events over a sliding window.
-    Thread-safe — called from async FastAPI middleware and gateway.
+    Thread-safe — called from its writers (see the module docstring) and the gateway's floor observation.
     """
 
     WINDOW_SECONDS = 300  # 5-minute sliding window
@@ -163,7 +165,7 @@ def _response_playbook(threat_level: str) -> list[str]:
 REVIEW_FLAG_TYPES = frozenset({"compliance_escalation"})
 
 
-# Singleton — imported by gateway and middleware
+# Singleton — imported by its callers (see the module docstring)
 #  W637 — WHAT THE HEALTH FIGURE IS, said once. W635 typed this sentence in four places; every reader of
 #  `health` that prints a basis imports this one, so the description cannot drift from the computation above.
 #  T2B (row 8) - THE SENTENCE NAMED TWO KINDS AND SAID "ONLY". status() lowers health on EVERY recorded event
@@ -172,8 +174,10 @@ REVIEW_FLAG_TYPES = frozenset({"compliance_escalation"})
 #  failed, under the operation's own name. The sentence is now built from this table and from
 #  REVIEW_FLAG_TYPES, the set status() itself reads, so moving a kind in or out of that set moves the sentence.
 #  The table is the module docstring's list of callers as data; a guard compares it with the call sites.
+#  W744 - the first row named a second kind whose only writer was the uncalled gateway._call (archived); a
+#  timeout on a live path reaches this sensor from the orchestrator as ai_failure, which the row's label covers.
 RECORDED_KINDS = (
-    ("AI gateway and model-tier calls that failed or timed out", ("ai_failure", "timeout")),
+    ("AI gateway and model-tier calls that failed or timed out", ("ai_failure",)),
     ("compliance fails and regressions", ("compliance_fail", "compliance_regression")),
     ("compliance review flags", ("compliance_escalation",)),
     ("quality non-conformances", ("quality_minor", "quality_major", "quality_critical")),

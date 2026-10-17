@@ -769,9 +769,9 @@ def _immune_threat() -> str:
 # 'lever_set_no_consumer' instead — no future lever ships decorative.
 _LEVER_CONSUMERS: dict[str, str] = {
     # W438 refactor of this map against a grep of actual readers: temperature_bias was listed here
-    # with "ai.gateway generation parameters (per-call)" — but its only behavioural read sits in
-    # gateway._call, which nothing invokes (the native orchestrator superseded it and never reads
-    # reconfig). Recording the ELEVATED defence as "implemented" against a consumer that does not
+    # with "ai.gateway generation parameters (per-call)" — but nothing reads it. (This note said its read
+    # sat in gateway._call; that uncalled method read preferred_provider, never this key, and W744 archived
+    # it.) Recording the ELEVATED defence as "implemented" against a consumer that does not
     # exist violated this map's own W318 rule; that defence now honestly records
     # lever_set_no_consumer until a real consumer is wired.
     "metabolic_throttle": "organism.heartbeat evolve tick (suppressed at low ATP) — W310",

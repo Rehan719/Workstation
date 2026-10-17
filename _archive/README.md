@@ -58,3 +58,23 @@ git ls-files _archive/products/capital_fund | grep -v '^_archive/products/capita
 then restore the driven test legs from the history of `integration_tests/test_mvp_spine.py` (they import the
 package, which the text legs that replaced them do not), and do not expose the Stripe adapter to any route
 before it consults `REAL_MONEY_ENABLED` the way `agentic_core/api/v310/payments.py` does.
+
+## Later moves: gateway._call (2026-10-16)
+
+**What moved:** two methods of `ModelGateway` in `agentic_core/ai/gateway.py` — `_call`, the legacy external-first
+cascade (Anthropic, then OpenAI, then a local Ollama model), and `_preferred_provider`, which only `_call` read — to
+`_archive/agentic_core/ai/gateway_legacy_call.py`, verbatim, inside a class shell. The live file keeps a comment where
+`_call` stood.
+
+**On whose ruling:** no ruling names this move. It follows principle 10 of the Owner's standing principles
+(`docs/WORKSTATION_IDBO_WHOLE_VISION.md` §15: what is not wired to vision realisation is archived, never deleted)
+and ledger v8's residual lead on R4.7: "Archive the dead `_call` cascade and correct the class docstring". W744.
+
+**Why:** nothing called it: a whole-tree search for the method, for its name as a string and for `_preferred_provider`
+found the definition, `query_meta`'s docstring, two comments, unrelated test-local names and the ledgers that had
+recorded it as dead (v3, v5, v8, v9, v15, v16, with their `docs/fidelity_runs` copies). It read neither
+`AI_ALLOW_EXTERNAL` nor the orchestrator's hourly external cap. Its failure records were the only writer of the
+immune kind `timeout`, which left `RECORDED_KINDS` with it; a live model timeout is recorded by the orchestrator as
+`ai_failure`.
+
+**To reverse it:** `git revert <the commit that added this entry>`; by hand, see the header of the archived file.
