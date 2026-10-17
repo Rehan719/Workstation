@@ -321,6 +321,7 @@ async def model_lifecycle():
     from agentic_core.ai.native.model_resource import (lifecycle_state, effective_default_local,
                                                        configured_default_local,
                                                        active_local_models, local_models)
+    from agentic_core.ai.native import model_resource as _mr_lc     # FU-894: the cap, read at this call
     st = lifecycle_state()
     _eff = effective_default_local()
     _estate = active_local_models()
@@ -339,6 +340,13 @@ async def model_lifecycle():
             "retired": st.get("retired") or [],
             "discovered": local_models(), "active_estate": _estate,
             "evaluations": (st.get("evaluations") or [])[-10:],
+            #  FU-894 - the record keeps the newest EVALUATIONS_KEPT and drops older ones. How many it holds against
+            #  that cap is stated here, so the ten shown are not read as every evaluation ever made; a record that
+            #  could not be read whole says that first.
+            "evaluations_held": len(st.get("evaluations") or []),
+            "evaluations_kept_at_most": _mr_lc.EVALUATIONS_KEPT,
+            "evaluations_basis": _mr_lc.evaluations_held_basis(len(st.get("evaluations") or []),
+                                                               st.get("store_incomplete")),
             # W577 (FU-298) — an empty `retired` and an UNREADABLE record of retirements render the
             # same. That matters here more than on a listing: a reader concluding "no model has been
             # retired" may reinstate or route to one that was. The direction is stated, because the
@@ -936,6 +944,8 @@ _EVIDENCE_SURFACES = {
     "/lifecycle/promote": ("configuration", "a named model is made the default; nothing about it is measured"),
     "/lifecycle/retire": ("configuration", "a named model is removed from the active list"),
     "/lifecycle/reinstate": ("configuration", "a named model is returned to the active list"),
+    "/lifecycle/installed": ("configuration", "what the local runtime reports it holds - name, digest, size, parameter size, quantisation, family, format, parameter count, capabilities and licence - read at call time"),
+    "/lifecycle/candidates": ("configuration", "research leads with the licence the research named; downloaded is read from the runtime's list and evaluated from the stored evaluation and baseline records (behaviour records); this route measures nothing about a lead"),
     "/capabilities": ("configuration", "a catalogue of what is built"),
     "/selfcheck": ("configuration", "whether each backing module imports"),
     "/lifecycle/evaluate": ("behaviour", "replies to the public probe set, by marker"),
@@ -1187,6 +1197,49 @@ async def reinstate_model(req: LifecycleModelRequest):
     save_lifecycle(st)
     _ueg_lifecycle("reinstated", req.model)
     return {"retired": st["retired"]}
+
+
+# -- P3.32 (W745) - THE INSTALLED MODELS ARE DESCRIBED BY THE RUNTIME; CANDIDATES ARE REGISTERED, NOT DOWNLOADED ---
+#  Both are reads. Neither stores anything, and nothing here asks the runtime to pull a model. Both run off the
+#  event loop: the runtime is asked over the network and the stores are files, and the page loads both.
+@router.get("/lifecycle/installed")
+@_states_level("/lifecycle/installed")
+async def installed_models():
+    """The local models as the local runtime describes them, read at this call: name, digest, size, parameter
+    size, quantisation, family, format, parameter count, capabilities and licence. A field the runtime does not
+    report is null and named; "not read" is never "nothing installed". Off the event loop: it makes one call to
+    list and one per model to describe."""
+    import asyncio as _aio
+    from agentic_core.ai.native.model_resource import describe_installed
+    return await _aio.to_thread(describe_installed)
+
+
+def _candidate_register_now() -> Dict[str, Any]:
+    """The candidate register, read now: the runtime's list (one call, no description), the lifecycle record, the
+    baseline store and the configured model name. A store that cannot be read whole passes its reason on, and a
+    baseline store that is not a list is said, never read as empty. Called off the event loop by the route below."""
+    from agentic_core.ai.native.model_resource import (candidate_register, configured_default_local,
+                                                       describe_installed, lifecycle_state)
+    from agentic_core.config import read_json_reported
+    _inst = describe_installed(False)
+    _st = lifecycle_state()
+    _bl, _bl_why = read_json_reported(_baseline_store(), [])
+    if not _bl_why and not isinstance(_bl, list):
+        _bl_why = "the baseline store does not hold a list, so none of its records was read"
+    return candidate_register(_inst, _st.get("evaluations") or [], _bl if isinstance(_bl, list) else [],
+                              evaluations_incomplete=_st.get("store_incomplete"), baselines_incomplete=_bl_why,
+                              configured=configured_default_local())
+
+
+@router.get("/lifecycle/candidates")
+@_states_level("/lifecycle/candidates")
+async def model_candidates():
+    """The candidate register: research leads, each with the licence the research named, marked downloaded or not
+    from the runtime's list, evaluated or not from the stored evaluation and baseline records, and whether it is
+    the configured default from the configured model name, read now. It lists the runtime's models without
+    describing them. Registering a lead downloads nothing; downloading one is the Owner's decision."""
+    import asyncio as _aio
+    return await _aio.to_thread(_candidate_register_now)
 
 
 # Catalogue of Workstation's OWN AI capabilities — each backed by a REAL, integrated agentic_core module
