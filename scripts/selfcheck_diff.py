@@ -53,9 +53,27 @@ BORING_KEYS = {
 }
 
 
+#  FU-921 - EVERY GIT CALL IN THIS TOOL PASSES HERE, so this is where an unread answer is caught. `sh` kept stdout
+#  and dropped the exit code: a rev that does not resolve, or a `git grep` that could not read, printed nothing and
+#  nothing was taken for "no change" or "no reader". 0 is an answer and so is `git grep`'s 1 ("no match"); 128 and
+#  above, a signal, or a git that is not there is "could not read", and is recorded.
+GIT_UNREAD: list = []
+
+
 def sh(*args: str) -> str:
-    return subprocess.run(args, cwd=ROOT, capture_output=True, text=True,
-                          encoding="utf-8", errors="replace").stdout
+    try:
+        _r = subprocess.run(args, cwd=ROOT, capture_output=True, text=True,
+                            encoding="utf-8", errors="replace")
+    except OSError as e:
+        GIT_UNREAD.append(f"`{' '.join(args[:3])}` could not run ({type(e).__name__})")
+        return ""
+    if _r.returncode >= 128 or _r.returncode < 0:
+        GIT_UNREAD.append(f"`{' '.join(args[:3])}` exited {_r.returncode}: {(_r.stderr or '').strip()[:160]}")
+    return _r.stdout
+
+
+class DiffUnreadable(RuntimeError):
+    """FU-921 - git did not answer, so the diff is unknown: never the same thing as an empty diff."""
 
 
 def changed_files(rev: str) -> list[str]:
@@ -63,7 +81,10 @@ def changed_files(rev: str) -> list[str]:
     docstring advertised "the working-tree diff vs HEAD". A pre-flight runs immediately before a
     commit, i.e. after `git add`, so on the normal path it saw nothing and reported clean on exactly
     the diff being committed. Defaulting to HEAD covers staged and unstaged together."""
+    _unread = len(GIT_UNREAD)
     out = sh("git", "diff", "--name-only", rev or "HEAD")
+    if len(GIT_UNREAD) > _unread:                  # FU-921: git did not answer, so this is not "0 changed files"
+        raise DiffUnreadable(GIT_UNREAD[-1])
     return [f.strip() for f in out.splitlines() if f.strip()]
 
 
@@ -134,6 +155,7 @@ def grep_repo(needle: str) -> list[str]:
     if needle in _grep_cache:
         return _grep_cache[needle]
     hits: list[str] = []
+    _unread = len(GIT_UNREAD)
     for d in SEARCH_DIRS:
         base = ROOT / d
         if not base.exists():
@@ -146,7 +168,10 @@ def grep_repo(needle: str) -> list[str]:
         # a round looking for a defect that is not there, and it would pass silently on the day it matters.
         out = sh("git", "grep", "-n", "--untracked", "--fixed-strings", needle, "--", d)
         hits += [h for h in out.splitlines() if h.strip()]
-    _grep_cache[needle] = hits
+    #  FU-921 - a search git could not read is not remembered as "no reader": the next check asking for the same
+    #  needle would be handed that empty answer without a word
+    if len(GIT_UNREAD) == _unread:
+        _grep_cache[needle] = hits
     return hits
 
 
@@ -734,6 +759,31 @@ ASSERT_IN_RE = re.compile(r"""assert\s+(?P<neg>not\s+)?['"](?P<lit>[^'"]{6,})['"
 ASSERT_NOTIN_RE = re.compile(r"""assert\s+['"](?P<lit>[^'"]{6,})['"]\s+not\s+in\s+(?P<var>\w+)""")
 
 
+def _paired_reads(text: str, read_re, assert_re):
+    """FU-1074 - each assertion with the file its variable was LAST given BEFORE it in ITS OWN top-level function.
+
+    check_presence and check_banned built {var: path} over the whole test file, so the last read of a name ANYWHERE
+    won: a test added at the end that read the journey page into a name an older test used for another page made the
+    older test's assertion be judged against the journey page (the build server, 2026-10-13). Measured at 129ba223,
+    before this change: 475 of the 896 positive and 148 of the 279 negative assertions it paired were paired with a
+    file their own function never read. A read at module level, before the first def, is visible to every function;
+    a def at the very start of the file is a function, not module level.
+    """
+    import bisect as _bisect
+    starts = [m.start() for m in re.finditer(r"(?m)^(?:async )?def ", text)]
+    reads: dict = defaultdict(list)
+    for m in read_re.finditer(text):
+        reads[m.group("var")].append((m.start(), m.group("path")))
+    for m in assert_re.finditer(text):
+        here, path = _bisect.bisect_right(starts, m.start()), None
+        for pos, p in reads.get(m.group("var"), ()):
+            if pos >= m.start():
+                break
+            if _bisect.bisect_right(starts, pos) in (here, 0):
+                path = p
+        yield m, path
+
+
 def _selfvars_by_scope(src: str, f: str) -> tuple:
     """Which locals hold THIS file's own text, per enclosing function.
 
@@ -848,14 +898,12 @@ def check_banned(rev: str, files: list[str]) -> list[str]:
     forbidden: dict[str, list[tuple[str, str]]] = defaultdict(list)   # target path -> [(lit, test file)]
     for tf in sorted(ROOT.glob("integration_tests/*.py")):
         text = tf.read_text(encoding="utf-8")
-        # var -> the source file that variable holds, per test module
-        var_path = {m.group("var"): m.group("path") for m in SRC_READ_RE.finditer(text)}
+        # FU-1074 - the source file the variable holds AT the assertion, read in the assertion's own function
         app_prefix = "apps/workstation-superapp/src/"
-        for m in ASSERT_NOTIN_RE.finditer(text):
+        for m, target in _paired_reads(text, SRC_READ_RE, ASSERT_NOTIN_RE):
             lit, var = m.group("lit"), m.group("var")
             if len(lit) < 12:          # a short generic word is not a distinctive claim
                 continue
-            target = var_path.get(var)
             if not target:
                 continue
             for cand in (target, app_prefix + target):
@@ -894,6 +942,13 @@ ANY_SRC_READ_RE = re.compile(
     r"""\s*\)?\s*\.read_text""", re.S)
 
 
+#  FU-833 - a ONE-LINE, WHITESPACE-FREE quoted token holding a block-comment opener (an accept list, a glob) is
+#  not a comment. The same pattern is integration_tests/test_mvp_spine.py's _SLASH_STAR_TOKEN; a guard holds the two
+#  equal.
+_SLASH_STAR_TOKEN_RE = re.compile(r"""(['"`])[^\s'"`\\]*?/\*(?:(?!\*/)[^\s'"`\\])*\1""")
+_SLASH_STAR_MASK = "\x00slash-star\x00"
+
+
 def _in_comment_only(target: Path, lit: str) -> tuple:
     """(comment_hits, code_hits) for `lit` in `target`, where a comment is a whole-line // or a /* */ block.
 
@@ -912,7 +967,11 @@ def _in_comment_only(target: Path, lit: str) -> tuple:
     #  them is content.
     if target.suffix.lower() in (".md", ".json", ".txt"):
         return (0, raw.count(lit))
-    blocks = re.sub(r"/\*.*?\*/", lambda m: "\n" * m.group(0).count("\n"), raw, flags=re.S)
+    #  FU-833 - no block is opened inside a quoted token (an accept list, a glob): such a token is masked first, so
+    #  the lines after it are not read as one long comment, and restored after
+    _masked = _SLASH_STAR_TOKEN_RE.sub(lambda m: m.group(0).replace("/*", _SLASH_STAR_MASK), raw)
+    blocks = re.sub(r"/\*.*?\*/", lambda m: "\n" * m.group(0).count("\n"), _masked,
+                    flags=re.S).replace(_SLASH_STAR_MASK, "/*")
     code_lines, comment_lines = [], []
     for a, b in zip(raw.splitlines(), blocks.splitlines()):
         if a.lstrip().startswith(("//", "#")):
@@ -940,15 +999,11 @@ def check_presence(rev: str, files: list[str]) -> list[str]:
         if not tf.exists():
             continue
         text = tf.read_text(encoding="utf-8")
-        direct = {m.group("var"): m.group("path") for m in ANY_SRC_READ_RE.finditer(text)}
-        if not direct:
-            continue
         app_prefix = "apps/workstation-superapp/src/"
-        for m in ASSERT_IN_RE.finditer(text):
+        for m, path in _paired_reads(text, ANY_SRC_READ_RE, ASSERT_IN_RE):     # FU-1074: its own function's read
             if m.group("neg") or " not in " in m.group(0):
                 continue                       # the negative direction is check_banned's
             lit, var = m.group("lit"), m.group("var")
-            path = direct.get(var)
             if not path or len(lit) < 8:
                 continue
             target = None
@@ -1355,14 +1410,24 @@ def main() -> int:
     ap.add_argument("--rev", default="", help="compare against this rev (default: the working tree)")
     ap.add_argument("--check", action="append", choices=sorted(CHECKS), help="run only these checks")
     args = ap.parse_args()
+    GIT_UNREAD.clear()
 
-    files = changed_files(args.rev)
+    try:
+        files = changed_files(args.rev)
+    except DiffUnreadable as e:
+        print(f"SELF-CHECK could not read the diff{' vs ' + args.rev if args.rev else ' (working tree)'}: {e}. "
+              f"No check ran, and this is not a pass.")
+        return 2
     #  W575 — DELETIONS ARE REPORTED, NOT SCREENED. Every screen here asks a question about a file's
     #  CONTENT ("is this key still read?", "is this route bound to a helper?"), and a file that is
     #  gone has no content to ask about: the keys were not renamed, the module was retired. Naming
     #  them keeps the deletion visible — the round still has to say why it removed each artefact and
     #  what established its reachability — without manufacturing a finding per common key name.
     _deleted = deleted_files(args.rev)
+    if GIT_UNREAD:
+        print(f"SELF-CHECK could not read which files the diff deletes: {GIT_UNREAD[-1]}. No check ran, and this "
+              f"is not a pass.")
+        return 2
     if _deleted:
         print(f"  {len(_deleted)} file(s) DELETED by this diff, not screened for content — a deleted "
               f"file has none, and its keys were retired rather than renamed:")
@@ -1377,9 +1442,11 @@ def main() -> int:
     # banner always prints, and says plainly when there was nothing to compare.
     print(f"SELF-CHECK over {len(files)} changed file(s)"
           f"{' vs ' + args.rev if args.rev else ' (working tree)'}"
-          f"{' — nothing to compare, so no check ran' if not files else ''}\n")
+          f"{' — nothing to compare, so no check ran: examined nothing, which is not a pass' if not files else ''}\n")
+    #  FU-921 - EXIT 1 WHEN NOTHING WAS COMPARED. 0 says the checks ran (their findings are leads) and 2 that the tool
+    #  could not run; an empty diff is neither - it examined nothing, which is not a pass (FU-671).
     if not files:
-        return 0
+        return 1
 
     selected = args.check or list(CHECKS)
     findings: dict[str, list[str]] = {}
@@ -1389,10 +1456,16 @@ def main() -> int:
     errored: list[str] = []
     for key in selected:
         label, fn = CHECKS[key]
+        _unread = len(GIT_UNREAD)
         try:
             findings[key] = fn(args.rev, files)
         except Exception as e:  # a check that breaks must say so, never pass silently
             findings[key] = [f"CHECK ERROR in '{key}': {type(e).__name__}: {e}"]
+            errored.append(key)
+        #  FU-921 - a check whose git call could not read has read nothing: it is a check that could not run
+        if len(GIT_UNREAD) > _unread and key not in errored:
+            findings[key] = [f"CHECK ERROR in '{key}': git could not read - "
+                             f"{'; '.join(GIT_UNREAD[_unread:])[:300]}"]
             errored.append(key)
 
     total = 0

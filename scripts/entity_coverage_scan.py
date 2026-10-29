@@ -94,6 +94,7 @@ def scan(root: pathlib.Path) -> Dict[str, Any]:
                      "cross_references": sorted(e["cross_references"]),
                      "referenced_by_nothing": not e["own_footprint"] and not e["cross_references"]})
     return {"root": str(root), "entities": rows, "kinds_scanned": dict(sorted(kinds.items())),
+            "root_exists": root.is_dir(), "entity_store_exists": estore.is_dir(),      # FU-923: read, never assumed
             "unreadable": unreadable,
             "scanned_leniently_not_utf8": not_utf8,
             "counts": {"entities": len(rows),
@@ -110,9 +111,22 @@ def main() -> int:
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args()
     rep = scan(pathlib.Path(str(data_path("."))).resolve())
+    #  FU-923 - A MISSING OR EMPTY INPUT IS NOTHING EXAMINED. With no data root, no entity store, an empty store, or no
+    #  record beside the store, every count was nought - or every entity "named by nothing" - for that reason alone,
+    #  and the line read as a clean store.
+    _estore = pathlib.Path(rep["root"]) / "vsb_entities"
+    _missing = (f"the data root {rep['root']} does not exist" if not rep["root_exists"] else
+                f"the entity store {_estore} does not exist" if not rep["entity_store_exists"] else
+                f"the entity store {_estore} holds no entity record" if not rep["entities"] else
+                f"no record outside the entity store was found under {rep['root']}, so every entity would read as "
+                f"named by nothing" if not rep["kinds_scanned"] else None)
     if a.json:
         print(json.dumps(rep, indent=1, default=list))
-        return 0
+        return 1 if _missing else 0
+    if _missing:
+        print(f"REFUSING: examined nothing - {_missing}. A count here would describe the missing input, not the "
+              f"entities. That is not a pass.")
+        return 1
     c = rep["counts"]
     print(f"entities: {c['entities']} · named by a cross-reference: {c['with_cross_references']} · own footprint "
           f"only: {c['own_footprint_only']} · named by nothing: {c['referenced_by_nothing']}")

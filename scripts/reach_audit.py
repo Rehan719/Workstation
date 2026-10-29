@@ -117,6 +117,13 @@ def main():
           f"{len({p for _, p in routes})} distinct paths")
     api_routes = [(m, p) for m, p in routes if p.startswith("/api")]
     print(f"frontend: {len(frags)} distinct /api fragments")
+    #  FU-923 - NOTHING READ IS NOTHING EXAMINED. With no frontend source every route printed as unreached (an
+    #  accusation of the whole app), and with no /api route there was nothing to reach; both exited 0.
+    if not frags or not api_routes:
+        print("REFUSING: examined nothing - " + (f"no /api fragment was read under {FRONTEND_SRC}" if not frags
+                                                 else "the app answered no /api route")
+              + ", so a reach figure would describe the missing input, not the app. That is not a pass.")
+        return 1
 
     reach: dict[tuple[str, str], str] = {}
     for m, p in api_routes:
@@ -164,9 +171,10 @@ def main():
             "unreached_genuine_clusters": {k: sorted(v) for k, v in clusters.items()},
         }, indent=2), encoding="utf-8")
         print(f"\nwrote {args.json}")
+    return 0
 
 
 if __name__ == "__main__":
     sys.path.insert(0, str(ROOT))
     os.environ.setdefault("AI_DISABLE_LOCAL", "1")
-    main()
+    raise SystemExit(main())

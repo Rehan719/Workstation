@@ -37,16 +37,24 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CODE_DIRS = ["agentic_core", "core", "apps/workstation-superapp/src", "scripts", "integration_tests"]
 PKG_PREFIXES = ["agentic_core/", "core/"]
+#  FU-923 - WHAT COULD NOT BE READ IS SAID. A folder this audit is told to read and does not find, and a git call
+#  that could not read history, made a count nought or a row "unknown" with nothing saying why.
+NOT_READ: list = []
 
 
 def _run(args: list[str]) -> str:
     try:
         # utf-8 explicitly: git output carries non-cp1252 characters (commit subjects, paths) and the
         # platform default decoder raises on them
-        return subprocess.run(args, cwd=ROOT, capture_output=True, text=True, timeout=300,
-                              encoding="utf-8", errors="replace").stdout
+        _r = subprocess.run(args, cwd=ROOT, capture_output=True, text=True, timeout=300,
+                            encoding="utf-8", errors="replace")
     except Exception as e:                                    # a missing git is a finding, not a crash
+        NOT_READ.append(f"`{' '.join(args[:2])}` could not run ({type(e).__name__})")
         return f"__ERROR__ {e}"
+    #  FU-923 - git exits 1 for "no match" (a real answer from `git grep`) and 128 when it could not read at all
+    if _r.returncode >= 128:
+        NOT_READ.append(f"`{' '.join(args[:2])}` exited {_r.returncode}: {(_r.stderr or '').strip()[:120]}")
+    return _r.stdout
 
 
 def _py_files() -> list[Path]:
@@ -55,6 +63,8 @@ def _py_files() -> list[Path]:
         base = ROOT / d.rstrip("/")
         if base.exists():
             out += [p for p in base.rglob("*.py") if "__pycache__" not in p.parts]
+        else:
+            NOT_READ.append(d)
     return out
 
 
@@ -81,7 +91,10 @@ def _history_map() -> dict:
     `--diff-filter=D` scan misses exactly the cases most worth recovering (the W159/W382 archive sweeps).
     This reads D and R together with `--name-status -M`.
     """
+    _n = len(NOT_READ)
     log = _run(["git", "log", "--diff-filter=DR", "-M", "--pretty=format:__C__%H|%s", "--name-status"])
+    if len(NOT_READ) > _n:                         # FU-923: a history git could not read is not an empty history
+        return None
     out: dict = {}
     sha = subject = None
     for line in log.splitlines():
@@ -106,6 +119,8 @@ def _archive_index() -> dict:
     if arch.exists():
         for p in arch.rglob("*.py"):
             idx.setdefault(p.name, []).append(str(p.relative_to(ROOT)).replace("\\", "/"))
+    else:
+        NOT_READ.append("_archive/")       # FU-923: the fallback index read nothing, said rather than silent
     return idx
 
 
@@ -118,6 +133,8 @@ def find_deleted_sources(paths: list[str]) -> list[dict]:
     unknown          — nothing to recover
     """
     hist, arch = _history_map(), _archive_index()
+    _hist_read = hist is not None
+    hist = hist or {}
     out = []
     for rel in paths:
         h = hist.get(rel)
@@ -137,7 +154,9 @@ def find_deleted_sources(paths: list[str]) -> list[dict]:
                 row.update(kind="name_elsewhere", candidates=copies[:3],
                            note="same file name under _archive/; compare before trusting it")
             else:
-                row.update(kind="unknown", note="no history entry and no archive copy")
+                row.update(kind="unknown", note=("no history entry and no archive copy" if _hist_read else
+                                                 "git history could not be read (see NOT READ), so whether git "
+                                                 "holds it is not known"))
         if blob_ref:
             blob = _run(["git", "show", blob_ref])
             row["lines"] = len(blob.splitlines()) if blob and not blob.startswith("__ERROR__") else None
@@ -153,6 +172,7 @@ def _live_text() -> str:
     for d in CODE_DIRS:
         base = ROOT / d
         if not base.exists():
+            NOT_READ.append(d)
             continue
         for p in base.rglob("*"):
             if p.suffix in (".py", ".ts", ".tsx", ".json", ".yml", ".yaml", ".toml", ".cfg") \
@@ -168,6 +188,7 @@ def find_archived_unreferenced(live: str) -> list[dict]:
     """Modules under _archive/ whose module name nothing live mentions — recoverable work, or settled history."""
     arch = ROOT / "_archive"
     if not arch.exists():
+        NOT_READ.append("_archive/")
         return []
     out = []
     for p in sorted(arch.rglob("*.py")):
@@ -267,6 +288,12 @@ def main() -> int:
     ap.add_argument("--only", help="comma-separated: orphans,deleted,archived,optional,unwired,unfilled")
     args = ap.parse_args()
     want = set((args.only or "orphans,deleted,archived,optional,unwired,unfilled").split(","))
+    #  FU-923 - A TREE WITH NO PYTHON FILE IS NOTHING EXAMINED: every finder below would print 0 for that reason
+    _examined = len(_py_files())
+    if not _examined:
+        print(f"REFUSING: examined nothing - no Python file under {', '.join(PKG_PREFIXES)} in {ROOT}, so every count "
+              f"below would be nought because nothing was read. That is not a pass.")
+        return 1
 
     report: dict = {}
     if "orphans" in want or "deleted" in want:
@@ -292,8 +319,14 @@ def main() -> int:
         if len(rows) > 25:
             print(f"  … and {len(rows) - 25} more (use --json for all)")
     if args.json_out:
-        Path(args.json_out).write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+        Path(args.json_out).write_text(json.dumps({**report, "examined_py_files": _examined,
+                                                   "not_read": list(dict.fromkeys(NOT_READ))},
+                                                  indent=2, ensure_ascii=False), encoding="utf-8")
         print(f"\nwritten: {args.json_out}")
+    print(f"\nexamined {_examined} Python file(s) under {', '.join(PKG_PREFIXES)}")
+    if NOT_READ:
+        _nr = list(dict.fromkeys(NOT_READ))
+        print(f"NOT READ ({len(_nr)}): {', '.join(_nr)} - a count above covers only what was read")
     print("\nThis audit REPORTS candidates with their evidence. It never decides that something is dead: "
           "[[feedback-reachability-blind-spots]] — imports and a green suite do not prove a file is unused.")
     return 0

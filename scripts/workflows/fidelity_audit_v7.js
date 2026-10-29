@@ -22,7 +22,8 @@
 // and is NOT the shipped default: with the flag unset and Ollama discoverable the gateway serves from the
 // local model — the flag is what makes floor-disclosure assessable). Point `base` at it. Then, after the run:
 //   python scripts/refutation_gate.py after --result <result.json>      # the agents all finished
-//   python scripts/render_fidelity_ledger.py <result.json> docs/VISION_FIDELITY_LEDGER.md <HEAD> <date> <port> 7 W<round>
+//   python scripts/render_fidelity_ledger.py <result.json> docs/VISION_FIDELITY_LEDGER.md <HEAD> <date> <port> <edition> W<round> <census.json>
+//   python scripts/audit_returns.py docs/fidelity_runs/ledger_v<edition>_W<round>_<head>.json --check   # FU-990: no likely return left undecided
 // and regenerate the prompt's <ledger> block from it. A fidelity verdict is dated the day it ran.
 //
 // WHAT THIS EDITION IS NOT. W572 ran SIXTY-SIX agents over these six regions; this is TWELVE (one assessor and
@@ -126,7 +127,14 @@ route template, not the filled-in id) and every page or component file you actua
 path). Only what you executed or opened — not what you know exists. A surface you did not reach is not a
 clean surface, and this list is how a reader tells the two apart.
 EVERY finding's \`section\` is its ONE-LINE TITLE — a sentence naming what is wrong, not a section number.
-It becomes the finding's heading and is the only handle a register row or a reader has on it.`
+It becomes the finding's heading and is the only handle a register row or a reader has on it.
+RESIDUE (FU-1002). In \`residue\` list, one line each, every record your probes left in a live store (what
+and where), and anything you observed that is NOT one of your findings and a person should read: a defect
+outside your region, a privacy or data-handling observation, a store that was not isolated. THIS LIST IS
+PRINTED IN A PUBLIC LEDGER: say what KIND of data you saw and what kind of place held it (for example "a
+personal-documents folder outside the scratch data root"), never its content, a person's name, or a path
+under a home directory. An empty list says you left nothing and saw nothing else; it is read, so do not
+leave it empty by default.`
 
 const FINDINGS = { type: 'object', properties: { findings: { type: 'array', items: { type: 'object', properties: {
   section: { type: 'string' }, verdict: { type: 'string' },
@@ -136,17 +144,20 @@ const FINDINGS = { type: 'object', properties: { findings: { type: 'array', item
   required: ['section', 'verdict', 'tier', 'why_this_tier', 'vision_claim', 'observed', 'evidence'] } },
   region_summary: { type: 'string' }, hit_the_cap: { type: 'boolean' },
   unlisted_findings: { type: 'number' },
+  residue: { type: 'array', items: { type: 'string' } },
   surfaces_exercised: { type: 'object', properties: {
     routes: { type: 'array', items: { type: 'string' } },
     files: { type: 'array', items: { type: 'string' } } }, required: ['routes', 'files'] } },
-  required: ['findings', 'region_summary', 'hit_the_cap', 'unlisted_findings', 'surfaces_exercised'] }
+  required: ['findings', 'region_summary', 'hit_the_cap', 'unlisted_findings', 'surfaces_exercised', 'residue'] }
 
 const VERDICTS = { type: 'object', properties: { verdicts: { type: 'array', items: { type: 'object', properties: {
   index: { type: 'number' }, refuted: { type: 'boolean' }, reproduced: { type: 'boolean' },
   corrected_verdict: { type: 'string' }, corrected_tier: { type: 'number' },
+  defect_class: { type: 'string' },
   reason: { type: 'string' }, evidence: { type: 'string' } },
-  required: ['index', 'refuted', 'reproduced', 'corrected_verdict', 'corrected_tier', 'reason'] } } },
-  required: ['verdicts'] }
+  required: ['index', 'refuted', 'reproduced', 'corrected_verdict', 'corrected_tier', 'defect_class', 'reason'] } },
+  residue: { type: 'array', items: { type: 'string' } } },
+  required: ['verdicts', 'residue'] }
 
 const REGIONS = [
   { key: 'R1', title: '§10 + §11 — the solution-quality bar, continuous compliance, and the faith-content constitution',
@@ -167,11 +178,15 @@ const results = await pipeline(REGIONS,
   r => agent(COMMON + DIRECTION + `\nYOUR REGION (${r.key}): ${r.title}\n${r.brief}`,
     { label: `assess:${r.key}`, phase: 'Assess', schema: FINDINGS }),
   (assessed, r) => {
-    if (!assessed || !assessed.findings?.length) return { region: r.key, findings: [], verdicts: [], summary: assessed?.region_summary || '', cap: CAP, directed: DIRECTED }
+    if (!assessed || !assessed.findings?.length) return { region: r.key, findings: [], verdicts: [], summary: assessed?.region_summary || '', cap: CAP, directed: DIRECTED, hit_the_cap: assessed?.hit_the_cap, unlisted_findings: assessed?.unlisted_findings, surfaces_exercised: assessed?.surfaces_exercised, residue: assessed?.residue }
     const listing = assessed.findings.map((f, i) => `[${i}] ${f.section} — ${f.verdict} · tier ${f.tier}: claim="${f.vision_claim}" observed="${f.observed}" evidence="${f.evidence}" disclosed=${f.disclosed_to_user || '?'} why_this_tier="${f.why_this_tier}"`).join('\n')
-    return agent(COMMON + `\nYOU ARE THE REFUTER for region ${r.key} (${r.title}). An assessor produced these findings:\n${listing}\n\nAttack EVERY finding. Default to refuted=true unless you personally reproduce the gap (execute the route, read the code, count the store). SAY WHICH IT WAS ON EVERY INDEX: set reproduced=true ONLY if you personally reproduced the gap the finding describes - whatever you then decide about its verdict or its tier - and reproduced=false if you could not, or found the capability delivered. A finding you reproduced and merely re-labelled or re-tiered STANDS at your tier; one you could not reproduce does not. The ledger counts by this field, so do not leave it to be guessed from the tier. A finding is refuted when the capability IS delivered/disclosed as the vision says, when the evidence does not support the verdict, or when the verdict is the wrong one (say the corrected verdict — findings often need correcting UPWARD to DELIVERED or DOWNWARD when the assessor was too kind).\n\nAND GIVE corrected_tier ON EVERY INDEX, even when you leave it unchanged — it is the axis MILESTONE M1 is scored on, and a refuter who reports only a verdict hides a tier they moved. In v6 FOUR findings were escalated into tier 1 and the record said none had been made harsher, because direction was computed from the verdict alone; two of those had their verdict index RISE while the tier tightened. Tier the finding as YOU stand behind it after checking, against the tier definitions above, and say in \`reason\` why that tier rather than the one above or below.`,
+    return agent(COMMON + `\nYOU ARE THE REFUTER for region ${r.key} (${r.title}). An assessor produced these findings:\n${listing}\n\nAttack EVERY finding. Default to refuted=true unless you personally reproduce the gap (execute the route, read the code, count the store). SAY WHICH IT WAS ON EVERY INDEX: set reproduced=true ONLY if you personally reproduced the gap the finding describes - whatever you then decide about its verdict or its tier - and reproduced=false if you could not, or found the capability delivered. A finding you reproduced and merely re-labelled or re-tiered STANDS at your tier; one you could not reproduce does not. The ledger counts by this field, so do not leave it to be guessed from the tier. A finding is refuted when the capability IS delivered/disclosed as the vision says, when the evidence does not support the verdict, or when the verdict is the wrong one (say the corrected verdict — findings often need correcting UPWARD to DELIVERED or DOWNWARD when the assessor was too kind).\n\nAND GIVE corrected_tier ON EVERY INDEX, even when you leave it unchanged — it is the axis MILESTONE M1 is scored on, and a refuter who reports only a verdict hides a tier they moved. In v6 FOUR findings were escalated into tier 1 and the record said none had been made harsher, because direction was computed from the verdict alone; two of those had their verdict index RISE while the tier tightened. Tier the finding as YOU stand behind it after checking, against the tier definitions above, and say in \`reason\` why that tier rather than the one above or below.\n\nAND GIVE defect_class ON EVERY INDEX (FU-925), for the gap as
+YOU stand behind it: availability (the surface offers a capability whose required resource is not available
+here), false_statement (a statement false for another reason), missing_control (a control that should refuse,
+gate or record is absent), mixed (one half availability, one half another false statement), or other. One of
+those five words; the ledger counts it at every edition.`,
       { label: `refute:${r.key}`, phase: 'Refute', schema: VERDICTS })
-      .then(v => ({ region: r.key, findings: assessed.findings, verdicts: v?.verdicts || [], summary: assessed.region_summary, directed: DIRECTED, hit_the_cap: assessed.hit_the_cap, unlisted_findings: assessed.unlisted_findings, surfaces_exercised: assessed.surfaces_exercised, cap: CAP }))
+      .then(v => ({ region: r.key, findings: assessed.findings, verdicts: v?.verdicts || [], summary: assessed.region_summary, directed: DIRECTED, hit_the_cap: assessed.hit_the_cap, unlisted_findings: assessed.unlisted_findings, surfaces_exercised: assessed.surfaces_exercised, residue: assessed.residue, refuter_residue: v?.residue, cap: CAP }))
   })
 
 return results
