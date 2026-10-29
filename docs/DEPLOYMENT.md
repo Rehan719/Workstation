@@ -105,7 +105,7 @@ The payments rails (`agentic_core/api/v310/payments.py`) operate in modes
 
 ```bash
 python -c "import agentic_core.app_mvp"                       # backend imports/boots
-pytest integration_tests/test_mvp_spine.py --noconftest -q    # integration suite (AI_DISABLE_LOCAL=1 → fast)
+python -m pytest integration_tests -q                         # integration suite (its conftest isolates the stores; AI_DISABLE_LOCAL=1 → fast)
 npm --prefix apps/workstation-superapp run build              # frontend tsc + vite build
 ```
 
