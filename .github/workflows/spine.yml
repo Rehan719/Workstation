@@ -93,7 +93,9 @@ jobs:
 
   browser-smoke:
     name: Browser smoke — the §3A routes actually render
-    runs-on: ubuntu-latest
+    #  W757 - pinned: ubuntu-latest moved to 26.04 and Playwright cannot install chromium there ("does not support
+    #  chromium on ubuntu26.04-x64"), so every PR's smoke failed before a page was opened. Unpin when it can.
+    runs-on: ubuntu-24.04
     # Runs in PARALLEL with the backend suite, so it adds no wall-clock to the pipeline while the
     # suite remains the long pole. Guards the class the response-shape tests cannot see: a page that
     # returns 200 with real bytes and still shows the user nothing (Round 11's Change Control page
