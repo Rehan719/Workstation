@@ -42130,7 +42130,11 @@ def test_w593_p220_the_last_three_a_count_a_verdict_and_a_cadence_that_reaches_e
             _os4.environ[_k] = _d4
         import importlib
         import agentic_core.config as _cfg4
-        importlib.reload(_cfg4)
+        #  W748 - the settings singleton is pointed at this test's data dir and restored after it. Reloading the
+        #  config module split every class it defines: config's own functions then raised a new StoreUnavailable
+        #  that no module's except clause names, and a later test's refusal escaped as an error.
+        _saved_settings4 = _cfg4.settings
+        _cfg4.settings = _cfg4.Settings()          # a frozen instance, read from the env set above
 
         #  FU-425: the counter reads the writer's own term
         from agentic_core.api.vsb import OPERATING_STATUS as _OP4
@@ -42201,9 +42205,9 @@ def test_w593_p220_the_last_three_a_count_a_verdict_and_a_cadence_that_reaches_e
                 _os4.environ.pop(_k, None)
             else:
                 _os4.environ[_k] = _v
-        import importlib as _il4
         import agentic_core.config as _c4
-        _il4.reload(_c4)
+        if "_saved_settings4" in locals():
+            _c4.settings = _saved_settings4
 
 
 def test_w593_p220_the_qep_flagship_service_reports_only_what_it_holds():
@@ -66029,6 +66033,7 @@ def test_w732_the_public_tree_holds_no_privacy_exposure(client, tmp_path, monkey
     import json
     import pathlib
     import subprocess
+    import sys
     from agentic_core import privacy_exposure as _pe
     _root = pathlib.Path(__file__).resolve().parents[1]
     monkeypatch.setenv("WORKSTATION_PRIVATE_MARKERS", str(tmp_path / "no_marker_list_here.txt"))
@@ -66046,6 +66051,12 @@ def test_w732_the_public_tree_holds_no_privacy_exposure(client, tmp_path, monkey
     assert _r["not_checked"] == ["private_marker"] and "NOT looked for" in _r["not_checked_basis"], _r
     assert "private_marker" not in _r["checked"]
     assert _r["not_read_in_full"] == [], ("a tracked file was too large to read whole", _r["not_read_in_full"])
+    #     ... and it says what it is about: the current files, never history - a zero is not "the repo is clean"
+    assert _r["history_scanned"] is False and "history was NOT scanned" in _r["history_basis"], _r
+    assert _r["scope"].startswith("every file tracked"), _r["scope"]
+    _cli = subprocess.run([sys.executable, str(_root / "scripts" / "privacy_check.py")], capture_output=True,
+                          text=True, cwd=str(_root))
+    assert "NOT SCANNED: git history was NOT scanned" in _cli.stdout, (_cli.returncode, _cli.stdout[-600:])
 
     #  2. EACH KIND IS FOUND, and no finding carries the text it matched (values built, never typed whole)
     _key = "AIza" + "Q" * 35
@@ -66068,6 +66079,7 @@ def test_w732_the_public_tree_holds_no_privacy_exposure(client, tmp_path, monkey
     _flat = json.dumps(_rep)
     assert _key not in _flat and _case not in _flat and _mark not in _flat, "a finding reports the text it matched"
     assert _rep["not_checked"] == [] and "private_marker" in _rep["checked"]
+    assert _rep["scope"].startswith("only the files handed") and _rep["history_scanned"] is False, _rep["scope"]
     #     an allowance needs an exact path, a known kind and a reason
     assert not _pe.scan(_root, files=_planted[:1], allowed=[("notes/a.txt", "credential")])["findings"]
     (tmp_path / "config").mkdir()
@@ -66140,6 +66152,7 @@ def test_w732_the_public_tree_holds_no_privacy_exposure(client, tmp_path, monkey
     _down = client.get("/api/v1/compliance/privacy-exposure").json()
     assert _down["scanned"] is False and _down["count"] is None and _down["basis"].startswith("NOT CHECKED"), _down
     assert set(_down["not_checked"]) == set(_pe.KINDS)
+    assert _body["history_scanned"] is False and _down["history_scanned"] is False, (_body.get("scope"), _down)
 
 
 #  W728 - THE COMPOSITION STORE. A writer handed an empty list for a store that failed to read once would have
