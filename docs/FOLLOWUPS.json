@@ -16304,11 +16304,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W749",
       "note": "",
       "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "W749: _code_only, the fabrication scan's stripper (now module-level and driven) and the pre-flight's comment reader mask a one-line, whitespace-free quoted token holding a block opener. The row's App.tsx half does not reproduce: App.tsx holds no quoted opener. Local copies of the bare stripper elsewhere in the suite are a row of their own. Proved by test_w749_an_instrument_that_examined_nothing_refuses_and_reads_what_it_names, legs 4a-4e."
     },
     {
       "id": "FU-834",
@@ -18040,11 +18043,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W749",
       "note": "",
       "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "W749: the smoke reads its route table before any browser starts and exits 1 with 'examined nothing' when the table parses to no route. A table whose every route is already deep-checked is not refused. The suite drives the empty table through node, and SMOKE_PARSE_ONLY reads the real count. Driven from the backend suite without a browser (the refusal comes first), in place of the separate CI job the row proposed. Proved by test_w749_an_instrument_that_examined_nothing_refuses_and_reads_what_it_names, leg 2."
     },
     {
       "id": "FU-921",
@@ -18058,11 +18064,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W749",
       "note": "",
       "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "W749: every git call passes sh, which records an exit of 128 or more, a signal, or a missing git. An unread diff exits 2. A check whose git call could not read exits 2 as a check that could not run, and so does a deletion list git could not read. A failed search is never cached as 'no reader'. An empty diff exits 1, a diff with files exits 0. test_w493's two exit-code asserts are retargeted. Proved by test_w749_an_instrument_that_examined_nothing_refuses_and_reads_what_it_names, legs 1a-1f."
     },
     {
       "id": "FU-922",
@@ -18098,11 +18107,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W749",
       "note": "",
       "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "W749: the entity scan exits 1 with 'examined nothing' on a missing root, a missing or empty entity store, or a store with nothing beside it. The recovery audit refuses a tree with no Python file, names each folder and git call it could not read (the archive fallback index included; find_orphan_pycache's folders are covered through _py_files, which main always calls first), says on each row when history could not be read, and its --json carries examined_py_files and not_read. The reach audit refuses when it read no frontend or the app answered no /api route, and its exit reaches the shell. Proved by test_w749_an_instrument_that_examined_nothing_refuses_and_reads_what_it_names, legs 3a, 3b (with its --json leg, 3b' and 3b'') and 3c (with 3c')."
     },
     {
       "id": "FU-924",
@@ -18134,11 +18146,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W749",
       "note": "",
       "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "W749: from edition 18 every refuter verdict carries defect_class (the five rows of assessment section 21: availability, mixed, false_statement, missing_control, other). The ledger counts standing findings by class, an off-list word is shown as written, and a record without a class is refused. Proved by test_w749_an_instrument_that_examined_nothing_refuses_and_reads_what_it_names, legs 6a, 6b and 6e."
     },
     {
       "id": "FU-926",
@@ -18151,11 +18166,11 @@
       ],
       "severity": "low",
       "owner_gated": false,
-      "slot": "P3.30",
+      "slot": "P3.32",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
+      "slot_source": "installed-model statements belong with the model register. W749 reconstructed the three sites: (1) api/native_ai.py and NativeAI.tsx say no local model is installed when local_models() returns none because AI_DISABLE_LOCAL is set; (2) ai/gateway.py's floor language note, the branch for a language other than English; (3) cognitive/__init__.py says torchsde is not installed while requirements.txt pins it, which the dependency pre-flight round decides. test_w492 pins the first sentence.",
       "tier": 3
     },
     {
@@ -19479,11 +19494,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.10",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W749",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W676; W749 fixes its standing filter (it compared the renderer's (verdict, how) pair to a string, so a struck or DELIVERED tier-1/2 finding was never left out; none such in v8-v17) and puts audit_returns.py --check into the instrument's run steps. test_w676_a_returned_finding_cannot_pass_unread's stand-in returns the renderer's pair. Proved by test_w749_an_instrument_that_examined_nothing_refuses_and_reads_what_it_names, leg 8 (the filter) and leg 6e+ (the run steps)."
     },
     {
       "id": "FU-991",
@@ -19714,11 +19732,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.10",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W749",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "W749: the audit schema requires a residue list from every assessor and refuter, and the record carries both. From edition 18 the ledger prints them as candidates for the register. A record without them, or with a residue line naming a path under a home directory, is refused; the prompt asks for the kind of data and place, never content, names or home-directory paths. Proved by test_w749_an_instrument_that_examined_nothing_refuses_and_reads_what_it_names, legs 6c, 6e, 6e+ and 6f."
     },
     {
       "id": "FU-1003",
@@ -21151,10 +21172,13 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W749",
       "note": "",
-      "slot_source": "it is a fault of a guard's own reach, and the suite's reliability rows already sit on this item"
+      "slot_source": "it is a fault of a guard's own reach, and the suite's reliability rows already sit on this item",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "W749: check_presence and check_banned pair each assertion with the last read of its name before it in its own top-level function; a read before the first def is visible to every function, and a def at the very start of the file is a function. A fake test file drives both halves and the def at offset 0. The two leads this exposed (test_w426, test_w493) now assert over _code_only, and test_w611's census holds them. At 129ba223, 475 of 896 positive and 148 of 279 negative assertions had been paired with a file their own function never read. Proved by test_w749_an_instrument_that_examined_nothing_refuses_and_reads_what_it_names, leg 5."
     },
     {
       "id": "FU-1075",
@@ -22493,6 +22517,177 @@
       "closed_by": null,
       "note": "",
       "slot_source": "the operations record's quality is this item's, beside the test-double rows on the same item",
+      "tier": 2
+    },
+    {
+      "id": "FU-1143",
+      "title": "The refutation gate's findings-against-verdicts reconciliation never runs: no caller passes findings_by_lens",
+      "why": "scripts/refutation_gate.py reconciles each lens's findings against its verdicts only when findings_by_lens is supplied; its after step is called with the result alone, and no caller in scripts/, agentic_core/ or the suite supplies it, so the check it exists to make has never run.",
+      "source": "W749 (G1)",
+      "found": "2026-10-17",
+      "files": [
+        "scripts/refutation_gate.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.10",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the audit instrument's own rows ride the quality item (FU-993, FU-1036)",
+      "tier": 3
+    },
+    {
+      "id": "FU-1144",
+      "title": "The entity scan's basis says every JSON file was read while it lists files it could not read",
+      "why": "scripts/entity_coverage_scan.py states that every JSON file under the data root was read, in the same report that lists the files it could not read. Say the basis from what was read.",
+      "source": "W749 (G1)",
+      "found": "2026-10-17",
+      "files": [
+        "scripts/entity_coverage_scan.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "tier-3 finding: P3.30 owns tier-3 rows (Owner ruling 2026-10-09); the instrument FU-923 was on",
+      "tier": 3
+    },
+    {
+      "id": "FU-1145",
+      "title": "A new instrument is not required to join the examined-nothing census, because the census's list is typed",
+      "why": "The W749 guard's source census names fifteen instruments by path; a script added later that reports on a set is not required to carry a refusal for an empty one. Derive the list, or require a new instrument to declare it.",
+      "source": "W749 (G1)",
+      "found": "2026-10-17",
+      "files": [
+        "integration_tests/test_mvp_spine.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "tier-3 finding: P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
+      "tier": 3
+    },
+    {
+      "id": "FU-1146",
+      "title": "The diff self-check's reader search skips a search folder that does not exist without saying so",
+      "why": "selfcheck_diff.grep_repo continues past a SEARCH_DIRS folder that is not there. All six exist today; a renamed one would make the keys and renames screens quieter with nothing saying a folder was not searched.",
+      "source": "W749 (G1)",
+      "found": "2026-10-17",
+      "files": [
+        "scripts/selfcheck_diff.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "tier-3 finding: P3.30 owns tier-3 rows (Owner ruling 2026-10-09); the instrument FU-921 was on",
+      "tier": 3
+    },
+    {
+      "id": "FU-1147",
+      "title": "Local copies of the suite's bare block-comment stripper keep the cut that W749 fixed in _code_only",
+      "why": "Twenty tests (measured on the W739 tree) strip block comments with their own bare regex instead of _code_only, so a one-line quoted token holding a block opener still cuts to the next close in what they read. None reads a file that holds such a token today; route them through _slash_star_masked and _slash_star_restored.",
+      "source": "W749 (G1)",
+      "found": "2026-10-17",
+      "files": [
+        "integration_tests/test_mvp_spine.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "a fault of a guard's own reach; the suite's reliability rows sit on this item (FU-1074 was here)",
+      "tier": 3
+    },
+    {
+      "id": "FU-1148",
+      "title": "The ledger said every finding had been individually refuted whatever the record held",
+      "why": "render_fidelity_ledger.py typed the sentence that every one of the findings was individually refuted, so a region whose refuter returned fewer verdicts than findings rendered that sentence over findings no refuter read.",
+      "source": "W749 (G1)",
+      "found": "2026-10-17",
+      "files": [
+        "scripts/render_fidelity_ledger.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.10",
+      "status": "done",
+      "closed_by": "W749",
+      "note": "",
+      "slot_source": "the audit instrument's own rows ride the quality item (FU-993, FU-1036)",
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "W749: the sentence is computed, and counts the findings that carry no verdict; from edition 18 a finding with no verdict is refused, naming its index. Proved by test_w749_an_instrument_that_examined_nothing_refuses_and_reads_what_it_names, leg 6d."
+    },
+    {
+      "id": "FU-1149",
+      "title": "The audit's run steps named edition 7 and no census",
+      "why": "fidelity_audit_v7.js's header told the operator to render with edition 7 and no census, which the renderer refuses from edition 14, and never called the effectiveness check.",
+      "source": "W749 (G1)",
+      "found": "2026-10-17",
+      "files": [
+        "scripts/workflows/fidelity_audit_v7.js"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.10",
+      "status": "done",
+      "closed_by": "W749",
+      "note": "",
+      "slot_source": "the audit instrument's own rows ride the quality item (FU-993, FU-1036)",
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "W749: the run steps name the edition, the census and audit_returns.py --check. Proved by test_w749_an_instrument_that_examined_nothing_refuses_and_reads_what_it_names, leg 6e+."
+    },
+    {
+      "id": "FU-1150",
+      "title": "The audit workflow dropped an assessor's coverage fields when it returned no findings",
+      "why": "The workflow's branch for a region with no findings returned the region without hit_the_cap, unlisted_findings or surfaces_exercised, so from edition 14 the renderer would refuse a run in which any region found nothing.",
+      "source": "W749 (G1)",
+      "found": "2026-10-17",
+      "files": [
+        "scripts/workflows/fidelity_audit_v7.js"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.10",
+      "status": "done",
+      "closed_by": "W749",
+      "note": "",
+      "slot_source": "the audit instrument's own rows ride the quality item (FU-993, FU-1036)",
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "W749: the empty branch carries all three and the residue list. Proved by test_w749_an_instrument_that_examined_nothing_refuses_and_reads_what_it_names, leg 6e+."
+    },
+    {
+      "id": "FU-1151",
+      "title": "OWNER DECISION: two committed audit run records carry text of a private kind in the public tree",
+      "why": "Read by path and kind only: docs/fidelity_runs/ledger_v15_W654_ab829862.json carries home-directory paths in four findings, and docs/fidelity_runs/ledger_v16_W665_ca081db0.json carries references to a personal matter in one. The privacy scanner has no kind for either shape, and docs/VISION_FIDELITY_LEDGER.md holds none of it. Recommended: edit the notes now to say what kind of place each was, leaving git history as ruled on 2026-10-14; from edition 18 the renderer refuses a home-directory path in a residue line.",
+      "source": "W749 (G1)",
+      "found": "2026-10-17",
+      "files": [
+        "docs/fidelity_runs/ledger_v15_W654_ab829862.json",
+        "docs/fidelity_runs/ledger_v16_W665_ca081db0.json"
+      ],
+      "severity": "medium",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
       "tier": 2
     }
   ],

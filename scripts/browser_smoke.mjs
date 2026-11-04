@@ -15,9 +15,9 @@
  * both slow and non-deterministic. Model behaviour is verified separately (§6).
  *
  * Usage:  node scripts/browser_smoke.mjs [baseURL]
- * Exit 0 = clean, 1 = a real user-visible problem.
+ * Exit 0 = clean, 1 = a real user-visible problem, or a route table that parsed to no route (nothing examined).
  */
-import { chromium } from 'playwright';
+// playwright is imported below, after the route table is read (FU-920): a refused run needs no browser
 import { readFileSync } from 'node:fs';
 
 const BASE = process.argv[2] || process.env.SMOKE_BASE_URL || 'http://localhost:8010';
@@ -90,6 +90,27 @@ const REQUIRED_SECTIONS = {
 const failures = [];
 const note = (m) => console.log(`  ${m}`);
 
+// FU-920 - THE SWEEP'S ROUTE LIST IS READ BEFORE ANY BROWSER STARTS, AND A ROUTE TABLE THAT PARSES TO NOTHING IS
+// REFUSED. It is parsed from App.tsx (the W402 pass below); a change in how routes are written there would match
+// nothing, and the smoke then passed saying "plus 0 swept" - a pass that examined none of the routes it exists to
+// cover. The refusal is on what was PARSED, not on what is left to sweep: a table whose every route is already
+// deep-checked above is a correct state. SMOKE_APP_SOURCE reads another route table (the suite drives the empty
+// case with it); SMOKE_PARSE_ONLY=1 stops after the parse.
+const appSource = readFileSync(process.env.SMOKE_APP_SOURCE || new URL("../apps/workstation-superapp/src/App.tsx", import.meta.url), "utf-8");
+const parsed = [...new Set([...appSource.matchAll(/<Route\s+path="([^"]+)"/g)].map((m) => m[1]))];
+if (!parsed.length) {
+  console.error("REFUSING: examined nothing - no route was parsed from the route table, so the render-only " +
+                "sweep would cover none of the app's pages. That is not a pass.");
+  process.exit(1);
+}
+const swept = parsed
+  .filter((r) => r !== "/" && !r.includes("*") && !r.includes(":"))
+  .filter((r) => !ROUTES.some(([done]) => done.split("?")[0] === r));
+if (process.env.SMOKE_PARSE_ONLY === "1") {
+  console.log(`parsed ${parsed.length} route(s); would sweep ${swept.length} further route(s) (render-only); parse only, no browser started`);
+  process.exit(0);
+}
+const { chromium } = await import('playwright');
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
 const page = await ctx.newPage();
@@ -288,10 +309,7 @@ try {
 //
 // The route list is PARSED FROM App.tsx at run time rather than hardcoded, so a new page is covered
 // the moment it is added and this cannot silently drift out of date.
-const appSource = readFileSync(new URL("../apps/workstation-superapp/src/App.tsx", import.meta.url), "utf-8");
-const swept = [...new Set([...appSource.matchAll(/<Route\s+path="([^"]+)"/g)].map((m) => m[1]))]
-  .filter((r) => r !== "/" && !r.includes("*") && !r.includes(":"))
-  .filter((r) => !ROUTES.some(([done]) => done.split("?")[0] === r));
+// (appSource and swept are read at the top, before any browser starts - FU-920)
 
 note(`sweeping ${swept.length} further routes (render-only)`);
 for (const route of swept) {

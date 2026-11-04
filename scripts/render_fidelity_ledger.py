@@ -14,6 +14,7 @@ The verdict that STANDS for each finding is the refuter's corrected_verdict when
 exists for that index, else the assessor's verdict (marked 'not individually refuted').
 """
 import json
+import re
 import sys
 from collections import Counter
 
@@ -140,6 +141,11 @@ ERRATA = {
             "tools lack one. The verdict is unaffected.",
 }
 VERDICTS = ["STUB", "MISSING", "DOC_OVERCLAIM", "API_ONLY", "PARTIAL", "DELIVERED"]
+#  FU-925 - the classes assessment section 21 counted by hand (A, mixed, B, C, D), stated by each refuter from v18
+DEFECT_CLASSES = ("availability", "mixed", "false_statement", "missing_control", "other")
+#  FU-1002 - the residue section prints agents' notes into a PUBLIC ledger and the run record beside it is committed:
+#  a note naming a path under a home directory is refused (the prompt asks for the kind of place, never the path)
+HOME_PATH = re.compile(r"\b[A-Za-z]:[\\/]+[Uu]sers[\\/]+[^\\/\s'\"]+|(?<![\w.])/home/[^/\s'\"]+|(?<![\w.])/Users/[^/\s'\"]+")
 
 
 def clip(s, n=None):
@@ -244,6 +250,31 @@ def main(src, dst, head, date, port="8024", version="3", round_name="W446", cens
                    f"surfaces_exercised. " if _lacking else "")
                 + ("No surface census was supplied (8th argument). " if _census is None else "")
                 + "A count from a run that does not say what it looked at cannot be scored.")
+    #  FU-925, FU-1002 - FROM v18 A RUN STATES A VERDICT WITH A DEFECT CLASS FOR EVERY FINDING, AND EACH REGION WHAT
+    #  ITS AGENTS LEFT BEHIND, OR IS NOT WRITTEN. The class count of v16 was made by one reader by hand; an agent's note
+    #  that it had read a folder outside its scratch store sat in a region summary and nothing filed it; and a region
+    #  whose refuter returned no verdicts rendered every finding as standing under a sentence saying each was refuted.
+    if ver >= 18:
+        _short = []
+        for r in regions:
+            _vs = [v for v in (r.get("verdicts") or []) if isinstance(v, dict)]
+            _idx = {int(v["index"]) for v in _vs if "index" in v}
+            _no_v = [i for i in range(len(r.get("findings") or [])) if i not in _idx]
+            if _no_v:
+                _short.append(f"{r.get('region')}: finding(s) {_no_v} have no verdict - re-run that refuter")
+            if any(not str(v.get("defect_class") or "").strip() for v in _vs):
+                _short.append(f"{r.get('region')}: a verdict states no defect_class")
+            if not isinstance(r.get("residue"), list):
+                _short.append(f"{r.get('region')}: no residue list")
+            _home = [n for n in list(r.get("residue") or []) + list(r.get("refuter_residue") or [])
+                     if HOME_PATH.search(str(n))]
+            if _home:
+                _short.append(f"{r.get('region')}: {len(_home)} residue line(s) name a path under a home directory - "
+                              f"the ledger and the record are public: say what KIND of place it was")
+        if _short:
+            raise SystemExit("REFUSING TO WRITE: a v18+ ledger needs a verdict with a defect_class for every finding, "
+                             "every region's residue list, and no home-directory path in a residue line. "
+                             + "; ".join(_short) + ".")
     v4 = ver >= 4                     # a tiered edition (v4 at M1, W474; v5 at the M1 re-run, W476; …)
     rows = []  # (region, idx, finding, verdict, standing_verdict, how)
     for k in ORDER:
@@ -260,6 +291,9 @@ def main(src, dst, head, date, port="8024", version="3", round_name="W446", cens
     # counting its tier puts work into a phase bucket on the strength of a claim that failed.
     tiers = Counter(standing_tier(f, v) for _, _, f, v, sv, how in rows
                     if sv != "DELIVERED" and how != "refuted")
+    #  FU-925 - the class each STANDING finding's refuter stated; a verdict with none is "not recorded", never a class
+    classes = Counter(((v or {}).get("defect_class") or "not recorded") for _, _, f, v, sv, how in rows
+                      if sv != "DELIVERED" and how != "refuted")
 
     total = len(rows)
     assessed = Counter(f.get("verdict", "?").upper() for _, _, f, _, _, _ in rows)
@@ -366,7 +400,10 @@ def main(src, dst, head, date, port="8024", version="3", round_name="W446", cens
     w("1. **DELIVERED is understated by construction.** Assessors were told their job was the gap that")
     w("   remains, but to report DELIVERED where they verified it. Read the DELIVERED entries as the")
     w("   floor of what works, not the ceiling.")
-    w(f"2. **Every one of the {total} findings was individually refuted.** The refuters reproduced")
+    #  COMPUTED, NOT TYPED: a finding with no verdict is rendered "NOT individually refuted" below
+    w((f"2. **Every one of the {total} findings was individually refuted.**" if not hows["unrefuted"] else
+       f"2. **{total - hows['unrefuted']} of the {total} findings were individually refuted; {hows['unrefuted']} "
+       f"carry no verdict** and are marked NOT individually refuted below.") + " The refuters reproduced")
     w(f"   {hows['survived']} as stated and overturned {hows['refuted'] + hows['corrected'] + hows['escalated']} — {refuted_down} moved to a")
     w(f"   HARSHER verdict (a DELIVERED claim that was not), {refuted_up} to a MILDER one (a STUB that was real")
     w("   machinery with an undisclosed shortfall). The verdict in each heading is the one the REFUTER")
@@ -408,6 +445,14 @@ def main(src, dst, head, date, port="8024", version="3", round_name="W446", cens
         w(f"| 3 | {tiers.get(3, 0)} | disclosed or unreached capability gap (Phase P3/P4) |")
         if tiers.get(None):
             w(f"| — | {tiers.get(None)} | no tier recorded |")
+        w("")
+    if ver >= 18:
+        w("Standing findings by defect class (as each refuter stated it; the classes of assessment section 21):")
+        w("")
+        w("| class | count |")
+        w("|---|---|")
+        for _c in list(DEFECT_CLASSES) + sorted(c for c in classes if c not in DEFECT_CLASSES):
+            w(f"| {_c} | {classes.get(_c, 0)} |")
         w("")
     w("Per region:")
     w("")
@@ -523,6 +568,21 @@ def main(src, dst, head, date, port="8024", version="3", round_name="W446", cens
             w("")
         w("---")
     w("")
+    #  FU-1002 - WHAT THE AGENTS LEFT BEHIND, AND WHAT THEY SAW OUTSIDE THEIR FINDINGS: candidates, not findings. The
+    #  round that lands this edition reads each one and files a register row or says why it is none.
+    if ver >= 18:
+        w("## Residue and side observations — candidates for the register, not findings")
+        w("")
+        _any = False
+        for k in ORDER:
+            r = by_key.get(k) or {}
+            for who, notes in (("assessor", r.get("residue") or []), ("refuter", r.get("refuter_residue") or [])):
+                for n in notes:
+                    _any = True
+                    w(f"- **{k} ({who}):** {clip(str(n))}")
+        if not _any:
+            w("No agent recorded any residue or side observation.")
+        w("")
     if _census is not None:
         _routes = sorted(set(_census.get("routes") or []))
         _pages = [p for p in (_census.get("pages") or []) if isinstance(p, dict) and p.get("component")]

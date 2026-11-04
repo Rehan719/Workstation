@@ -49,11 +49,12 @@ def standing(record, R):
         by_index = {v.get("index"): v for v in vs if isinstance(v, dict) and v.get("index") is not None}
         for i, f in enumerate(reg.get("findings") or []):
             v = by_index.get(i, vs[i] if i < len(vs) else None)
-            try:
-                st, tier = R.standing(f, v), R.standing_tier(f, v)
-            except TypeError:
-                st, tier = R.standing(f), R.standing_tier(f)
-            if st == "DELIVERED" or tier not in (1, 2):
+            #  FU-990 - THE RENDERER'S `standing` RETURNS (verdict, how). This compared the pair to a string, so neither a
+            #  DELIVERED finding nor one a refuter struck was ever left out (none sat at tier 1-2 in v8-v17, so nothing
+            #  showed). Counted with the renderer's own rule, as the docstring says.
+            st, how = R.standing(f, v)
+            tier = R.standing_tier(f, v)
+            if st == "DELIVERED" or how == "refuted" or tier not in (1, 2):
                 continue
             text = " ".join(str(f.get(k) or "") for k in ("section", "observed", "evidence", "smallest_honest_fix"))
             out.append({"id": f"{reg.get('region')}.{i}", "tier": tier, "title": str(f.get("section") or ""),
