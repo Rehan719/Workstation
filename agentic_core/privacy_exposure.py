@@ -177,6 +177,7 @@ def scan(root: pathlib.Path, files: Optional[List[Tuple[str, bytes]]] = None,
     """Scan the given (path, bytes) pairs, or every tracked file. The report says what was checked and what was
     NOT, so a clean result is never more than its coverage."""
     allowed = list(allowed)
+    whole_tree = files is None
     not_read: List[str] = []
     if files is None:
         files = []
@@ -200,6 +201,15 @@ def scan(root: pathlib.Path, files: Optional[List[Tuple[str, bytes]]] = None,
         "not_checked_basis": ("" if markers else
                               f"no private marker list was read ({marker_file()}), so the Owner's own names and "
                               "markers were NOT looked for - this is not a finding that none are present"),
+        #  W732 - WHAT THIS REPORT IS ABOUT. It reads files as they are now. A file removed from the tree is still
+        #  in the repository's history, which no door here reads, so the report says so: a zero is never more
+        #  than its coverage (a screen may refuse, never clear).
+        "scope": ("every file tracked in the working tree, as it is now" if whole_tree
+                  else "only the files handed to the scan (the commit hook hands it the staged content)"),
+        "history_scanned": False,
+        "history_basis": ("git history was NOT scanned: a file removed from the tree in an earlier round is still "
+                          "in earlier commits, so this report is about the current files only; rewriting history "
+                          "is the Owner's decision"),
         "markers_read": len(markers or []),
         "not_read_in_full": not_read,
         "findings": findings,
