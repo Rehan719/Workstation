@@ -66810,7 +66810,8 @@ def test_w747_the_external_prompts_review_is_recorded_and_its_gaps_are_registere
     #  each gap that survived is an open row, with its slot, entered by this round
     reg = {r["title"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
     expected = [
-        ('OWNER DECISION: the uncapped, census-partitioned final audit has no item that builds or runs it', 'OWNER'),
+        #  W754 - ruled 2026-11-06: the row left OWNER for P5.22, the item that builds and runs the final audit
+        ('OWNER DECISION: the uncapped, census-partitioned final audit has no item that builds or runs it', 'P5.22'),
         ('HYPOTHESIS: a model is made the serving default after one check, that it is installed', 'P3.32'),
         ("The Owner's ruled routing tie-break order is encoded nowhere, so the ruling cannot fail", 'P4.3'),
         ('HYPOTHESIS: sign-in and signup have no limit on attempts', 'P4.1'),
@@ -66828,8 +66829,9 @@ def test_w747_the_external_prompts_review_is_recorded_and_its_gaps_are_registere
         r = reg.get(title)
         assert r is not None, ("a surviving gap is not in the register", title)
         assert r["source"] == "W747" and r["slot"] == slot, (title, r.get("source"), r.get("slot"))
-    owner = [reg[t] for t, s in expected if s == "OWNER"]
-    assert len(owner) == 1 and owner[0]["owner_gated"] is True and owner[0]["title"].startswith("OWNER DECISION:"), owner
+    #  W754 - the Owner ruled it, so it is ungated and rides the item chartered for it
+    ruled = [reg[t] for t, s in expected if s == "P5.22"]
+    assert len(ruled) == 1 and not ruled[0].get("owner_gated") and ruled[0]["title"].startswith("OWNER DECISION:"), ruled
     #  a row read from code says so in its title until it is driven
     for title, _slot in expected:
         if "Read from code" in reg[title]["why"]:

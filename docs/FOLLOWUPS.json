@@ -11845,11 +11845,14 @@
       "severity": "medium",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W754",
       "note": "",
       "slot_source": "M-EXEC-07 (W744): its fix reads remove the tool and the module, or have it state what it computes, so it waits on the Owner whatever its slot says. W744 measured no reader: call_tool is dispatched only with get_system_vitals and call_meeting, discover_tools (the one listing) is never dispatched, and aro.py's only live importer is api/v138/ceo.py. RECOMMENDED: remove the tool and archive the module (reversible); a restatement would reach no reader",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Owner ruling 2026-11-06: measured first (no route, page or chat path reached optimize_qep_resources; the chat calls only get_system_vitals and call_meeting), then the tool was removed and aro.py archived to _archive/agentic_core/optimization/ reversibly"
     },
     {
       "id": "FU-618",
@@ -21399,12 +21402,13 @@
         "docs/FABLE_DELIVERY_PROMPT.md"
       ],
       "severity": "high",
-      "owner_gated": true,
-      "slot": "OWNER",
+      "owner_gated": false,
+      "slot": "P5.22",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "tier": 2
+      "tier": 2,
+      "slot_source": "Owner ruling 2026-11-06 (W754): accepted as recommended: P5.22 is the item that builds and runs the final audit"
     },
     {
       "id": "FU-1087",
@@ -22164,12 +22168,12 @@
         "agentic_core/ai/native/model_resource.py"
       ],
       "severity": "medium",
-      "owner_gated": true,
-      "slot": "OWNER",
+      "owner_gated": false,
+      "slot": "P4.3",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "M-EXEC-07: two options (the stream after the floor, or a query allowed before it) are the Owner's, to be ruled before P4.3 flips the external switch",
+      "slot_source": "Owner ruling 2026-11-06 (W754): accepted as recommended: option (a), the in-house-first order, built in P4.3 before the switch flips",
       "tier": 3
     },
     {
@@ -22276,9 +22280,9 @@
       "severity": "low",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
+      "status": "dropped",
       "closed_by": null,
-      "note": "",
+      "note": "Owner ruling 2026-11-06 (W754): download no model candidate for now; when one is wanted, the smallest Apache-2.0 multimodal lead first, once its tag and size are confirmed against the machine's memory",
       "slot_source": "OWNER DECISION (M-EXEC-07): downloading a model is the Owner's; W745 registers the leads and downloads nothing"
     },
     {
@@ -22686,12 +22690,13 @@
         "docs/fidelity_runs/ledger_v16_W665_ca081db0.json"
       ],
       "severity": "medium",
-      "owner_gated": true,
-      "slot": "OWNER",
+      "owner_gated": false,
+      "slot": "P2.41",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "tier": 2
+      "tier": 2,
+      "slot_source": "Owner ruling 2026-11-06 (W754): accepted as recommended: v15's paths replaced in W754; the v16 note remains, for the session that located it"
     },
     {
       "id": "FU-1152",
