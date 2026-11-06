@@ -21750,11 +21750,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W757",
       "note": "",
       "slot_source": "a tier-2 shortfall found by W741 while isolating the outcomes store; the area has no routed owner",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the outcomes writer reads strictly under the store lock, so an unreadable store is kept byte for byte and the outcome is not written; blind red"
     },
     {
       "id": "FU-1105",
@@ -22157,11 +22160,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W757",
       "note": "",
       "slot_source": "a tier-2 invisible shortfall (the health figure leaves out what it never heard), which P2.41 owns",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the stream's _record observes every serving attempt and records a failed local or external attempt as ai_failure; the immune docstring names ai/gateway.py as that writer and W744 leg 5 computes it both ways; two blinds red"
     },
     {
       "id": "FU-1124",
@@ -22475,11 +22481,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W757",
       "note": "",
       "slot_source": "a tier-2 shortfall found by W752; P2.41 carries the tier-2 pass, and the area's own item, P2.40, closes on its M1 re-run",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the settings route's per-key wiring iterates every typed section of the schema, so qep_recommendation.weights is listed; blind red"
     },
     {
       "id": "FU-1140",

@@ -360,7 +360,9 @@ async def get_config():
     cfg = _load_config()
     _unread = _store_problem(_CONFIG_STORE, dict)          # W752 - said, never shown as the saved settings
     key_wiring = []
-    for section in ("gateway", "domains", "features", "organism"):
+    #  W757 (FU-1139) - every typed section of the schema, not four named ones: the Quran platform's governed
+    #  weights (qep_recommendation) were governed and listed nowhere in the per-key wiring
+    for section in [s for s, v in _DEFAULT_CONFIG.items() if isinstance(v, dict)]:
         for key in (cfg.get(section) or {}):
             key_wiring.append({"section": section, "key": key, **wiring_for(section, key)})
     return {"config": cfg,

@@ -644,6 +644,16 @@ class ModelGateway:
         # §6 (W323) — the STREAM path is on the same control plane as query_meta: circuit-breaker
         # gated, and every streamed serve RECORDS an outcome into the W275 learning loop.
         def _record(served_by: str, is_external: bool, t0: float, ok: bool, tokens: int | None = None) -> None:
+            #  W757 (FU-1123) - the immune sensor hears every streamed attempt, not only the floor: a serve is observed
+            #  and a failed local or external attempt is recorded as ai_failure, as the query path's are
+            try:
+                from agentic_core.organism.immune import immune as _imm
+                if ok:
+                    _imm.observe(f"model:{served_by}")
+                else:
+                    _imm.record(f"model:{served_by}", "ai_failure")
+            except Exception:
+                pass
             try:
                 from agentic_core.api.operational_excellence import record_outcome
                 record_outcome("model_attempt", f"stream:{agent}", served_by=served_by,

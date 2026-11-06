@@ -69657,3 +69657,60 @@ def test_w756_fu1136_the_host_cpu_figure_carries_its_window_on_every_page():
         _src = _code_only((_root / _rel).read_text(encoding="utf-8"))
         _cpu = [l for l in _src.splitlines() if ("Host CPU" in l or "host CPU headroom" in l) and _key in l]
         assert _cpu, (_rel, "prints the host CPU figure without the window it covers")
+
+
+def test_w757_fu1123_the_immune_sensor_hears_a_streamed_model_serve(monkeypatch):
+    """W757 (FU-1123): a streamed reply served by an external provider is OBSERVED by the immune sensor, not only a
+    floor serve (the failure side is driven by test_w744's leg 5)."""
+    import asyncio
+    import agentic_core.ai.gateway as _g
+    from agentic_core.organism.immune import immune as _imm
+    _seen = []
+    monkeypatch.setattr(_imm, "observe", lambda endpoint="": _seen.append(endpoint))
+    monkeypatch.setenv("AI_ALLOW_EXTERNAL", "true")
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "1")
+    _gw = _g.ModelGateway()
+    _gw.anthropic_key = "w757-placeholder-not-a-key"
+    _gw.openai_key = None
+
+    class _S:
+        async def __aenter__(self): return self
+        async def __aexit__(self, *a): return False
+        @property
+        def text_stream(self):
+            async def _t():
+                yield "w757 external answer"
+            return _t()
+
+    class _C:
+        def __init__(self, *a, **k):
+            self.messages = type("M", (), {"stream": lambda _s, *a, **k: _S()})()
+    import anthropic as _an
+    monkeypatch.setattr(_an, "AsyncAnthropic", _C)
+
+    async def _go():
+        return [e async for e in _gw.stream_meta("w757: name one risk", agent="w757", prefer_external=True)]
+    _ev = asyncio.run(_go())
+    assert _ev[-1].get("is_external") is True and "model:claude" in _seen, (
+        "an external stream serve was not observed by the immune sensor", _seen, _ev[-1].get("served_by"))
+
+
+def test_w757_fu1104_fu1139_the_outcomes_writer_keeps_an_unreadable_store_and_the_wiring_lists_every_section(client):
+    """W757: FU-1104 - an unreadable outcomes store is kept byte for byte, not replaced by one row;
+    FU-1139 - the settings route's per-key wiring lists the Quran platform's governed weights."""
+    from agentic_core.api import operational_excellence as _oe
+    _oe._STORE.parent.mkdir(parents=True, exist_ok=True)
+    _was = _oe._STORE.read_bytes() if _oe._STORE.exists() else None
+    try:
+        _oe._STORE.write_bytes(b"{ this is not json")
+        _oe.record_outcome("model_attempt", "w757", served_by="native", duration_ms=1)
+        assert _oe._STORE.read_bytes() == b"{ this is not json", (
+            "an unreadable outcomes store was replaced by a write", _oe._STORE.read_bytes()[:80])
+    finally:
+        if _was is None:
+            _oe._STORE.unlink(missing_ok=True)
+        else:
+            _oe._STORE.write_bytes(_was)
+    _kw = client.get("/api/v1/organism/config").json()["key_wiring"]
+    assert any(k["section"] == "qep_recommendation" and k["key"] == "weights" for k in _kw), (
+        "the governed Quran weights are missing from the per-key wiring", sorted({k['section'] for k in _kw}))

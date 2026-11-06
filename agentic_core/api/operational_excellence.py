@@ -137,10 +137,14 @@ def record_outcome(kind: str, resource: str, *, served_by: str = "native",
         "served_by_all": sorted(set(served_by_all)) if served_by_all else None,
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
+    #  W757 (FU-1104) - the writer reads STRICTLY and under the store's lock (W728's rule): an unreadable store is
+    #  not empty, so it is kept byte for byte and this outcome is not written, rather than replaced by one row
     try:
-        rows = _load()
-        rows.append(outcome)
-        _save(rows)
+        from agentic_core.config import read_json_strict as _strict, store_lock as _lock
+        with _lock(_STORE):
+            rows = _strict(_STORE, [], expect=list)
+            rows.append(outcome)
+            _save(rows)
     except Exception:
         pass
     #  W554 (P2.11) — THE HORIZON SEAM'S SECOND HALF, placed here because this is the one function the

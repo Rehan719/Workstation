@@ -3,8 +3,8 @@ IDBO Immune System — a failure sensor that feeds the organism's health state.
 
 What is recorded here, each by a caller that exists (a sliding 5-minute window):
 - AI gateway and model-tier calls that failed or timed out   (ai/native/orchestrator.py: the gateway's query
-  path routes through it and a timeout is recorded as ai_failure; a failure on the gateway's stream path is not
-  recorded here - only its floor serve is observed)
+  path routes through it and a timeout is recorded as ai_failure; ai/gateway.py: on the stream path every
+  local or external attempt is observed when it serves and recorded as ai_failure when it fails - W757)
 - compliance fails, regressions and review escalations       (vbs/quality.py, organism/heartbeat.py)
 - quality non-conformances and operations reported as failed (organism/biobus.py record_error)
 
