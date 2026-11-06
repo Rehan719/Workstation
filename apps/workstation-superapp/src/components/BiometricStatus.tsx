@@ -144,7 +144,7 @@ export const BiometricStatus: React.FC<BiometricStatusProps> = ({
 }) => {
   // W617 (FU-497, M2 v8 R4.4) — the dot is HOST CPU HEADROOM under an anatomical name; there is no
   // circulatory subsystem. The backend sends that basis and the shell never showed it.
-  const CARDIO_TITLE = `Cardiovascular — host CPU headroom ${b.cardiovascular.resource_flow != null ? Math.round(b.cardiovascular.resource_flow) + '%' : ''} (spare capacity on this machine, not workload; there is no circulatory subsystem)`;
+  const CARDIO_TITLE = `Cardiovascular — host CPU headroom ${b.cardiovascular.resource_flow != null ? Math.round(b.cardiovascular.resource_flow) + '%' : ''}${(b.cardiovascular as any).host_cpu_window_seconds != null ? ` (CPU sampled over ${(b.cardiovascular as any).host_cpu_window_seconds} s)` : ''} (spare capacity on this machine, not workload; there is no circulatory subsystem)`;
   const cardioCol  = cardioClass(b.cardiovascular.resource_flow, b.live);
   const cardioDur  = cardioDuration(b.cardiovascular.resource_flow);
   const cogCol     = cognitionClass(b.cognition.state);

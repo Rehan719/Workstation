@@ -69625,3 +69625,35 @@ def test_w755_fu1113_the_native_ai_page_does_not_say_the_cycle_sets_parallelism(
                         / "apps/workstation-superapp/src/pages/developers/NativeAI.tsx").read_text(encoding="utf-8"))
     assert "circadian terms set how many swarm agents run in parallel" not in _page
     assert "The circadian cycle" in _page and "does not change that number" in _page
+
+
+def test_w756_fu1114_admits_one_carries_its_reason_while_the_budget_holds(monkeypatch):
+    """W756 (FU-1114): with the work budget holding, the projection carries the budget, and the fabric, Deliverables
+    and Organism pages print why the admission is 1."""
+    import pathlib
+    from agentic_core.ai.native import homeostasis as _h
+    _held = {"holds": True, "basis": "w756: the work budget for this window is spent"}
+    monkeypatch.setattr(_h._work_budget, "gate", lambda *a, **k: dict(_held))
+    _p = _h.homeostasis.project(3)
+    assert _p["admitted_max_parallel"] == 1 and (_p.get("work_budget") or {}).get("holds") is True, _p
+    assert "w756" in _p["work_budget"]["basis"]
+    _root = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/pages"
+    for _rel, _tid in (("synthesis/ResourceFabric.tsx", "fabric-work-budget-reason"),
+                       ("Deliverables.tsx", "deliverable-work-budget-reason"),
+                       ("organism/OrganismDashboard.tsx", "organism-work-budget-reason")):
+        _src = _code_only((_root / _rel).read_text(encoding="utf-8"))
+        _blk = _src.split(f'data-testid="{_tid}"', 1)
+        assert len(_blk) == 2 and "work_budget.basis" in _blk[1][:200], (_rel, "prints 'admits 1' without its reason")
+
+
+def test_w756_fu1136_the_host_cpu_figure_carries_its_window_on_every_page():
+    """W756 (FU-1136): the four surfaces that print the host CPU percentage print the window it was sampled over."""
+    import pathlib
+    _root = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    for _rel, _key in (("pages/DashboardNew.tsx", "cpuWindow"),
+                       ("components/BiometricStatus.tsx", "host_cpu_window_seconds"),
+                       ("pages/cognitive/Introspection.tsx", "host_cpu_window_seconds"),
+                       ("pages/evolution/SovereignEvolution.tsx", "cpu_window_seconds")):
+        _src = _code_only((_root / _rel).read_text(encoding="utf-8"))
+        _cpu = [l for l in _src.splitlines() if ("Host CPU" in l or "host CPU headroom" in l) and _key in l]
+        assert _cpu, (_rel, "prints the host CPU figure without the window it covers")

@@ -21971,11 +21971,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W756",
       "note": "",
       "slot_source": "a tier-2 invisible shortfall, latent behind the Owner's switch: P2.41 holds the standing tier-2 rows",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "homeostasis.project carries work_budget, and the fabric capacity chip, the Deliverables homeostasis chip and the Organism max-parallel line each print 'held at 1 by the work budget' with its basis while it holds; blinds red"
     },
     {
       "id": "FU-1115",
@@ -22414,11 +22417,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W756",
       "note": "",
       "slot_source": "a tier-2 invisible shortfall: P2.41 holds the standing tier-2 rows",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the Home Host CPU vital, the shell's cardiovascular tooltip, Introspection's headroom bar and the cycle page's Host CPU metric each print the sampling window beside the percentage; blinds red"
     },
     {
       "id": "FU-1137",

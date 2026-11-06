@@ -576,6 +576,8 @@ export const ResourceFabric: React.FC = () => {
                      capacity 'now'. The immune and circadian terms are live; that one is not. */
                   title={`§8 living-organism capacity now — mode ${sim.model.organism_capacity.organism?.mode}, ATP ${Math.round((sim.model.organism_capacity.organism?.atp_ratio ?? 0) * 100)}% (simulated — it does not fall, so it never limits a run), ${sim.model.organism_capacity.organism?.circadian}. The run will be homeostatically governed at execution time.`}>
                   §8 capacity: {sim.model.organism_capacity.projected_posture} · admits {sim.model.organism_capacity.admitted_max_parallel} {sim.model.organism_capacity.fits_current_capacity ? '· fits' : '· over capacity'}
+                  {/* W756 (FU-1114) — while the work budget holds, the reason the figure is 1 */}
+                  {(sim.model.organism_capacity as any).work_budget?.holds && <span data-testid="fabric-work-budget-reason"> · held at 1 by the work budget: {(sim.model.organism_capacity as any).work_budget.basis}</span>}
                 </span>
               )}
               {/* P3.30 r6 (ledger v16 R4.15) - the tooltip above says the energy figure is simulated; this says it
