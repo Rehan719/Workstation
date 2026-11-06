@@ -20652,11 +20652,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W753",
       "note": "",
       "slot_source": "found by a dated read of the Owner's store in W678; the area has no routed owner",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Driven first on a copy: with sign-in off every door that makes an entity recorded the single-user label 'default'. Now each of the six (both Genesis doors, the spawn door and both Studio doors - retired by ruling, code kept - and a mitosis child) records the configured single-user owner (WORKSTATION_OWNER_ID, read at each call; the role word 'owner' when unset, no name in the code) with how it was decided (owner_stamped, owner_stamp_basis); a request that names an owner keeps it; with sign-in on the signed-in person, as before. Old records are never rewritten: an old 'default' record reads 'made before owner stamping' at the read (GET /api/v1/vsb/{id}, owner_stamp; not stored) and the Cockpit shows it. Profiles and workspaces keep their key. Proved by test_w753_a_new_entity_is_recorded_under_the_configured_owner legs 1-8, test_w753_an_old_default_record_is_labelled_at_the_read_and_never_rewritten legs 1-5 and test_w753_with_sign_in_on_the_signed_in_person_is_stamped; every leg turned red by its blind."
     },
     {
       "id": "FU-1049",
@@ -22689,6 +22692,44 @@
       "closed_by": null,
       "note": "",
       "tier": 2
+    },
+    {
+      "id": "FU-1152",
+      "title": "A person whose username is the single-user label, or the configured single-user owner, would be shown every record made while sign-in was off",
+      "why": "Driven at the function on a copy with sign-in on: the ownership check admits a person named 'default' to every record carrying that label, because it compares the record's owner with the username. W753 adds a second such name, the configured single-user owner (the role word 'owner' when nothing is configured). The admin register route refuses neither name, and self-serve signup, once the Owner enables it, would not either. Smallest addition, beside the reserved-name refusal the sign-in readiness round adds for service names: refuse the label at register and signup, and the configured owner's name everywhere except the admin register route, where the Owner creates his own account.",
+      "source": "W753",
+      "found": "2026-10-17",
+      "files": [
+        "agentic_core/auth/core.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "sign-in readiness owns who may hold which account name",
+      "tier": 2
+    },
+    {
+      "id": "FU-1153",
+      "title": "Business plans, Chief instructions and transformation runs default their owner to a first name written in the source",
+      "why": "Driven on a copy in W753: a business plan with no record reads as owned by the Owner's first name, written in the source, and the SetPlanRequest, ChiefInstruction (board.py) and OrchestrateRequest (transformation_orchestration.py) models default to the same name; TransformationDashboard.tsx and VSBSpawnStudio.tsx send it to the transformation route. The Owner ruled on 2026-10-14 that new single-user records carry the Owner's identity, and W753 made that a configured value for entity records only. Smallest addition: these defaults read the configured single-user owner, and an existing plan's owner is never rewritten. The money records' typed default is already the subject of the open rows on account owners, so it is not repeated here.",
+      "source": "W753",
+      "found": "2026-10-17",
+      "files": [
+        "agentic_core/api/business_plan.py",
+        "agentic_core/api/board.py",
+        "agentic_core/api/transformation_orchestration.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 3
     }
   ],
   "routes": [

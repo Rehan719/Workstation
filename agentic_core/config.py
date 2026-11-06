@@ -80,6 +80,31 @@ class Settings:
 settings = Settings()
 
 
+#  W753 (FU-1048, the Owner's ruling of 2026-10-14) - WHOSE A NEW RECORD IS WHILE SIGN-IN IS OFF. A single-user
+#  deployment serves one person, and every entity it made carried the label below, which an owner-name read then
+#  sorted with the test-era entities. A NEW entity record carries this identity instead; a record already made is
+#  never rewritten (its reader labels it at the read). It is read from the environment at each call, as AUTH_ENABLED
+#  is, and no person's name is written in the code: unset, it is the role word.
+SINGLE_USER_LABEL = "default"
+SINGLE_USER_OWNER_ENV = "WORKSTATION_OWNER_ID"
+SINGLE_USER_OWNER_ROLE = "owner"
+
+
+def single_user_owner() -> dict:
+    """The owner a new record carries while sign-in is off, and where that identity came from:
+    {"owner_id", "source": "configured" | "role_word", "basis"}. The old label is not an identity, so a setting
+    equal to it is read as no setting."""
+    raw = os.getenv(SINGLE_USER_OWNER_ENV, "")
+    val = raw.strip()[:80] if isinstance(raw, str) else ""
+    if val and val != SINGLE_USER_LABEL:
+        return {"owner_id": val, "source": "configured",
+                "basis": f"the single-user owner configured for this deployment ({SINGLE_USER_OWNER_ENV})"}
+    return {"owner_id": SINGLE_USER_OWNER_ROLE, "source": "role_word",
+            "basis": (f"{SINGLE_USER_OWNER_ENV} is not set to an identity, so the record carries the role word "
+                      f"'{SINGLE_USER_OWNER_ROLE}': the one person this single-user deployment serves (no name is "
+                      f"written in the code)")}
+
+
 def atomic_write_json(path, data, indent: int = 2) -> None:
     """Atomic JSON write (the W241 pattern from ai/memory.py, shared): write to a temp file in the
     SAME directory, then os.replace() it in — atomic on Windows and POSIX — so a reader never

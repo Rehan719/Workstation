@@ -364,11 +364,23 @@ def apply_mitosis(parent_id: str, cca_id: str, spec: Dict[str, Any]) -> Dict[str
     parent = _load_vsb(parent_id) or {}
     child_id = f"vsb-{uuid.uuid4().hex[:10]}"
     inherited = constitution_of(parent)
+    #  W753 (FU-1048) - THE CHILD IS A NEW RECORD: it carries its parent's owner, and a parent under the old
+    #  single-user label (or none) gives way to the configured owner while sign-in is off. The parent is not rewritten.
+    from agentic_core.auth.core import entity_owner_stamp
+    _own753 = entity_owner_stamp(None, parent.get("owner_id"))
+    #  ...and its basis says where the owner came from: no request names an owner for a division, its parent's record does
+    _pown753 = str(parent.get("owner_id") or "").strip()
+    _own753["owner_stamp_basis"] = (
+        f"a division of {parent_id}: the parent's owner, carried to its child" if _own753["owner_id"] == _pown753
+        else (f"a division of {parent_id}, whose record carries "
+              + (f"the old single-user label '{_pown753}'" if _pown753 else "no owner")
+              + f", so the child does not inherit it: {_own753['owner_stamp_basis']}"))
     child = {"vsb_id": child_id, "name": str(spec.get("child_name") or child_id), "domain": parent.get("domain"),
-             "realm": parent.get("realm"), "owner_id": parent.get("owner_id", "default"), "generation": 0,
+             "realm": parent.get("realm"), "owner_id": _own753["owner_id"], "generation": 0,
+             "owner_stamped": True, "owner_stamp_basis": _own753["owner_stamp_basis"],
              "status": "living", "stage": "established", "born_of": {"parent": parent_id, "cca_id": cca_id}}
     child.update({k: v for k, v in inherited.items() if v is not None})
-    child = enrich_vsb_entity(child, owner_id=parent.get("owner_id", "default"),
+    child = enrich_vsb_entity(child, owner_id=_own753["owner_id"],
                               problem=str(parent.get("problem") or ""), domain=parent.get("domain") or "enterprise",
                               entity_type=str(parent.get("entity_type") or "waqf_ltd_hybrid"), parent_vsb=parent_id)
     #  enrichment may set defaults; the inherited parts are re-applied so they stay VERBATIM

@@ -301,6 +301,28 @@ def request_owner_id(user: dict | None, requested: str = "default") -> str:
     return requested or "default"
 
 
+def entity_owner_stamp(user: dict | None, requested: str | None = None) -> dict:
+    """W753 (FU-1048; the Owner's ruling of 2026-10-14) - THE OWNER A NEW ENTITY RECORD CARRIES, and how it was
+    decided: {"owner_id", "owner_stamped": True, "owner_stamp_basis"}, written onto the record by every door that
+    makes an entity. With sign-in on nothing changes: request_owner_id's stamp, the signed-in person. With it off,
+    an owner the request named is kept (the suite names its own, which the quarantine rule reads), and a request
+    that named none, or sent the old single-user label, gets the configured single-user owner, never the label.
+    ENTITY DOORS ONLY: profiles and workspaces keep calling request_owner_id, so the Owner's saved profile stays
+    under the key it has always had."""
+    from agentic_core.config import SINGLE_USER_LABEL, single_user_owner
+    named = str(requested or "").strip()
+    if auth_enabled():
+        return {"owner_id": request_owner_id(user, named or SINGLE_USER_LABEL), "owner_stamped": True,
+                "owner_stamp_basis": ("the signed-in person who made it" if user else
+                                      "sign-in is on and no person was on this call, so the owner the request "
+                                      "carried (the old label when it carried none)")}
+    if named and named != SINGLE_USER_LABEL:
+        return {"owner_id": named, "owner_stamped": True,
+                "owner_stamp_basis": "named by the request that made it (sign-in is off)"}
+    so = single_user_owner()
+    return {"owner_id": so["owner_id"], "owner_stamped": True, "owner_stamp_basis": so["basis"]}
+
+
 def user_can_access(user: dict | None, owner_id: str | None) -> bool:
     """Owner-scoping read/mutate check. Single-user mode → always allowed (back-compat). With auth
     enabled: admins see everything; otherwise the record's owner must be the authenticated user —

@@ -69339,3 +69339,230 @@ def test_w749_an_instrument_that_examined_nothing_refuses_and_reads_what_it_name
         if _NOTHING not in _code.lower():
             _mute.append(_rel)
     assert not _mute, ("an instrument that reports on a set has no refusal for an empty one in its code", _mute)
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W753 (FU-1048, P2.41; the Owner's ruling of 2026-10-14) - THE OWNER'S ENTITIES ARE RECORDED UNDER HIS NAME.
+#  While sign-in was off, every door that made an entity recorded the single-user label, and an owner-name read then
+#  sorted the Owner's own entities with the test-era ones. A NEW entity now carries the configured single-user owner
+#  (read from the environment at the call, never a name in the code) and says how its owner was decided; a record
+#  already made is NEVER rewritten, and its reader labels it "made before owner stamping" at the read.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+def test_w753_a_new_entity_is_recorded_under_the_configured_owner(client, monkeypatch):
+    """Every door that makes an entity, driven with sign-in off: both Genesis doors, the spawn door and both Studio
+    doors (retired by ruling; their KEPT code is what a reversal would bring back, so each is opened for its own leg),
+    and a mitosis child. A request that names no owner - or sends the old label, as the Spawn Studio page does - is
+    recorded under the configured owner (set here to a value this test computes) with how it was decided, on the
+    record and on the living roster; a request that names an owner keeps it; unconfigured, the record carries the
+    configuration's role word, never the label."""
+    import json as _j
+    import uuid as _uuid
+    from agentic_core import config as _cfg
+    from agentic_core.api import business_plan as _bp
+    from agentic_core.api import synthesis_studio as _ss
+    from agentic_core.api import vsb as _v
+    from agentic_core.economy import living_vsbs as _lv
+    from agentic_core.economy import turnover as _to
+    from agentic_core.economy.ledger import VirtualLedger
+
+    monkeypatch.delenv("AUTH_ENABLED", raising=False)
+    me = f"w753-owner-{_uuid.uuid4().hex[:8]}"
+    monkeypatch.setenv(_cfg.SINGLE_USER_OWNER_ENV, me)
+    label = _cfg.SINGLE_USER_LABEL
+
+    def _rec(vid):
+        p = _v._vsb_path(vid)
+        assert vid and p.exists(), ("no entity record was written", vid)
+        return _j.loads(p.read_bytes().decode("utf-8"))
+
+    def _stamped(vid, who, door):
+        r = _rec(vid)
+        got = {k: r.get(k) for k in ("owner_id", "owner_stamped", "owner_stamp_basis")}
+        assert r.get("owner_id") == who, (f"the {door} recorded a new entity under {r.get('owner_id')!r}, not {who!r}", got)
+        assert r.get("owner_stamped") is True and str(r.get("owner_stamp_basis") or "").strip(), (
+            f"the {door} does not record how the new entity's owner was decided", got)
+        _ro = ((_lv._load() or {}).get(vid) or {}).get("owner")
+        assert _ro == who, (f"the {door} registered the new entity on the living roster under {_ro!r}", who)
+        return r
+
+    def _sse(resp):
+        return [_j.loads(l[6:]) for l in resp.text.splitlines() if l.startswith("data: ")]
+
+    # (1) GENESIS, as its page calls it: no owner in the body
+    g = client.post("/api/v1/genesis/establish", json={"problem": "W753 a halal community meal service",
+                                                       "name": "W753 Meals", "ship_output": False})
+    assert g.status_code == 200, g.text[:300]
+    gid = g.json()["vsb_id"]
+    gr = _stamped(gid, me, "Genesis establish door")
+    assert gr["owner_stamp_basis"] == _cfg.single_user_owner()["basis"], gr["owner_stamp_basis"]
+    #  ...and what was established with it names the same owner: the Board's Chief and the business plan
+    assert (gr.get("board") or {}).get("owner") == me, (gr.get("board") or {}).get("owner")
+    assert _bp._load(gid).get("owner") == me, _bp._load(gid).get("owner")
+
+    # (2) THE STREAMING GENESIS DOOR, sent the old label explicitly
+    s = client.post("/api/v1/genesis/establish/stream", json={"problem": "W753 a halal bakery for students",
+                                                              "name": "W753 Bakery", "ship_output": False,
+                                                              "owner_id": label})
+    assert s.status_code == 200, s.text[:300]
+    sid = next((e.get("data") or {}).get("vsb_id") for e in _sse(s) if (e.get("data") or {}).get("vsb_id"))
+    _stamped(sid, me, "streaming Genesis door")
+
+    # (3) THE SPAWN DOOR (retired; its kept code), no owner in the body - the request model's default is the label
+    monkeypatch.setattr(_v, "SPAWN_ROUTE_RETIRED", False)
+    sp = client.post("/api/v1/vsb/spawn", json={"challenge": "W753 spawn: a halal artisan bakery", "name": "W753 Spawned"})
+    assert sp.status_code == 200, sp.text[:300]
+    _stamped([e for e in _sse(sp) if e.get("stage") == "complete"][-1]["data"]["vsb_id"], me, "spawn door")
+
+    # (4) THE STUDIO'S SPAWN DOOR (retired; its kept code)
+    monkeypatch.setattr(_ss, "STUDIO_SPAWN_RETIRED", False)
+    st = client.post("/api/v1/studio/vsb/spawn", json={"project_id": "w753-project", "solution_name": "W753 Studio Co",
+                                                       "challenge": "W753 a community garden", "domain": "enterprise"})
+    monkeypatch.setattr(_ss, "STUDIO_SPAWN_RETIRED", True)
+    assert st.status_code == 200, (st.status_code, st.text[:300])
+    _stamped(st.json()["entity_id"], me, "Studio spawn door")
+
+    # (5) THE STUDIO'S SYNTHESISE DOOR (retired; its kept code)
+    monkeypatch.setattr(_ss, "STUDIO_SYNTHESISE_RETIRED", False)
+    sy = client.post("/api/v1/studio/synthesise", json={"challenge": "W753 a cooperative bakery", "domain": "enterprise",
+                                                        "realm": "enterprise"})
+    monkeypatch.setattr(_ss, "STUDIO_SYNTHESISE_RETIRED", True)
+    assert sy.status_code == 200, sy.text[:300]
+    _stamped(next(e["entity_id"] for e in _sse(sy) if e.get("stage") == "done"), me, "Studio synthesise door")
+
+    # (6) A MITOSIS CHILD of a parent made BEFORE the stamping (the parent's record as the store holds old ones): the
+    #     child is a new record and carries the configured owner, and the parent's record is not rewritten
+    _cfg.atomic_write_json(_v._vsb_path(gid), {k: v for k, v in {**gr, "owner_id": label}.items()
+                                               if k not in ("owner_stamped", "owner_stamp_basis")})
+    _led = VirtualLedger(gid)
+    _led.record("revenue", 100.0, memo="W753 intake")
+    _led.record("reserves", 60.0, memo="W753 reserve")
+    assert _lv.set_lifecycle(gid, "mature", by="w753-guard")["changed"]
+    _div = _to.apply_mitosis(gid, f"cca-w753-{_uuid.uuid4().hex[:8]}", {"child_name": "W753 Child", "amount_wst": 10})
+    assert _div.get("divided") is True and _div.get("child_vsb"), _div
+    _ch = _stamped(_div["child_vsb"], me, "mitosis")
+    assert gid in _ch["owner_stamp_basis"] and _cfg.single_user_owner()["basis"] in _ch["owner_stamp_basis"], (
+        "the child does not say its owner came from its parent's record", _ch["owner_stamp_basis"])
+    _par = _rec(gid)
+    assert _par.get("owner_id") == label and "owner_stamped" not in _par, (
+        "a division rewrote its old parent's owner", {k: _par.get(k) for k in ("owner_id", "owner_stamped")})
+
+    # (7) A REQUEST THAT NAMES AN OWNER keeps it (the suite names its own, and the quarantine rule reads that)
+    named = f"w753-named-{_uuid.uuid4().hex[:8]}"
+    n = client.post("/api/v1/genesis/establish", json={"problem": "W753 a named owner's venture", "name": "W753 Named",
+                                                       "ship_output": False, "owner_id": named})
+    assert n.status_code == 200, n.text[:300]
+    nid = n.json()["vsb_id"]
+    nr = _stamped(nid, named, "Genesis establish door (an owner named by the request)")
+    assert _cfg.SINGLE_USER_OWNER_ENV not in nr["owner_stamp_basis"], nr["owner_stamp_basis"]
+    #     ...and a DIVISION of an entity made since keeps its owner - and says it came from the parent's record, because
+    #     no request names an owner for a division
+    _nled = VirtualLedger(nid)
+    _nled.record("revenue", 100.0, memo="W753 intake")
+    _nled.record("reserves", 60.0, memo="W753 reserve")
+    assert _lv.set_lifecycle(nid, "mature", by="w753-guard")["changed"]
+    _ndiv = _to.apply_mitosis(nid, f"cca-w753-{_uuid.uuid4().hex[:8]}", {"child_name": "W753 Named Child", "amount_wst": 10})
+    assert _ndiv.get("divided") is True and _ndiv.get("child_vsb"), _ndiv
+    _nch = _stamped(_ndiv["child_vsb"], named, "mitosis (a parent made since the stamping)")
+    assert nid in _nch["owner_stamp_basis"] and _nch["owner_stamp_basis"] != nr["owner_stamp_basis"], (
+        "a division's child says a request named its owner; its parent's record did", _nch["owner_stamp_basis"])
+
+    # (8) NOTHING CONFIGURED: the configuration's role word - never the old label - and the record says so
+    monkeypatch.delenv(_cfg.SINGLE_USER_OWNER_ENV, raising=False)
+    u = client.post("/api/v1/genesis/establish", json={"problem": "W753 an unconfigured venture", "name": "W753 Unset",
+                                                       "ship_output": False})
+    assert u.status_code == 200, u.text[:300]
+    _so = _cfg.single_user_owner()
+    ur = _stamped(u.json()["vsb_id"], _cfg.SINGLE_USER_OWNER_ROLE, "Genesis establish door (nothing configured)")
+    assert _cfg.SINGLE_USER_OWNER_ROLE != label and _so["source"] == "role_word", _so
+    assert ur["owner_stamp_basis"] == _so["basis"], ur["owner_stamp_basis"]
+
+
+def test_w753_an_old_default_record_is_labelled_at_the_read_and_never_rewritten(client, monkeypatch):
+    """The ruling's other half: a record made before the stamping is NEVER rewritten. Its reader says "made before
+    owner stamping" (the Owner's words, given at the read and not stored); a write to the record leaves its owner as
+    it was made; a record stamped at creation is not labelled old; the Owner's saved profile stays under the key it
+    has always had (the stamp is for entities only); and the Cockpit shows the label on the owner line."""
+    import json as _j
+    import pathlib as _pl
+    import uuid as _uuid
+    from agentic_core import config as _cfg
+    from agentic_core.api import vsb as _v
+
+    monkeypatch.delenv("AUTH_ENABLED", raising=False)
+    monkeypatch.setenv(_cfg.SINGLE_USER_OWNER_ENV, f"w753-owner-{_uuid.uuid4().hex[:8]}")
+    label = _cfg.SINGLE_USER_LABEL
+
+    # (1) AN OLD RECORD - the single-user label, no stamp - planted as the store holds them
+    old = f"vsb-w753{_uuid.uuid4().hex[:6]}"
+    _cfg.atomic_write_json(_v._vsb_path(old), {"vsb_id": old, "name": "W753 Old Co", "owner_id": label,
+                                               "domain": "enterprise", "realm": "enterprise"})
+    before = _v._vsb_path(old).read_bytes()
+    r = client.get(f"/api/v1/vsb/{old}")
+    assert r.status_code == 200, r.text[:300]
+    body = r.json()
+    ost = body.get("owner_stamp") or {}
+    assert body.get("owner_id") == label, body.get("owner_id")
+    assert ost.get("label") == _v.OWNER_STAMP_PREDATES and ost.get("stamped_at_creation") is False and ost.get("basis"), ost
+    assert "before owner stamping" in _v.OWNER_STAMP_PREDATES, "the label is not the Owner's words of 2026-10-14"
+    assert _v._vsb_path(old).read_bytes() == before, "reading an old record rewrote it"
+
+    # (2) A WRITE to the old record (the founder names it) saves it - and whose it is stays as it was made
+    nm = client.post(f"/api/v1/vsb/{old}/name", json={"name": "W753 Renamed Co"})
+    assert nm.status_code == 200, nm.text[:300]
+    after = _j.loads(_v._vsb_path(old).read_bytes().decode("utf-8"))
+    assert after.get("name") == "W753 Renamed Co", "the write did not reach the record, so this leg would prove nothing"
+    assert after.get("owner_id") == label and "owner_stamped" not in after and "owner_stamp" not in after, (
+        "saving an old record rewrote whose it is", {k: after.get(k) for k in ("owner_id", "owner_stamped", "owner_stamp")})
+
+    # (3) A RECORD STAMPED AT CREATION is not labelled old - even one whose stamp is the label (made with sign-in on
+    #     and no person on the call)
+    stp = f"vsb-w753{_uuid.uuid4().hex[:6]}"
+    _cfg.atomic_write_json(_v._vsb_path(stp), {"vsb_id": stp, "name": "W753 Stamped Co", "owner_id": label,
+                                               "owner_stamped": True, "owner_stamp_basis": "W753 planted stamp",
+                                               "domain": "enterprise", "realm": "enterprise"})
+    sv = client.get(f"/api/v1/vsb/{stp}").json().get("owner_stamp") or {}
+    assert sv.get("label") is None and sv.get("stamped_at_creation") is True and sv.get("basis") == "W753 planted stamp", sv
+
+    # (4) THE OWNER'S SAVED PROFILE stays under the key it has always had
+    p = client.get("/api/v1/user/profile")
+    assert p.status_code == 200 and p.json().get("owner_id") == label, (p.status_code, p.text[:200])
+
+    # (5) THE COCKPIT shows the label on the owner line (read from the page's source; the label is driven above)
+    src = (_pl.Path(__file__).resolve().parents[1]
+           / "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8").splitlines()
+    at = next((i for i, l in enumerate(src) if "owner: {detail.owner_id}" in l), None)
+    assert at is not None, "the Cockpit's owner line is gone"
+    near = "\n".join(src[at:at + 5])
+    assert 'data-testid="cockpit-owner-stamp"' in near and "detail.owner_stamp.label" in near, near
+
+
+def test_w753_with_sign_in_on_the_signed_in_person_is_stamped(client, monkeypatch):
+    """With sign-in on nothing changes: the new entity carries the signed-in person, whatever owner the request
+    claims and whatever single-user owner is configured, and it records how its owner was decided."""
+    import json as _j
+    import uuid as _uuid
+    from agentic_core import config as _cfg
+    from agentic_core.api import vsb as _v
+    from agentic_core.auth import core as _ac
+    if not _ac._AUTH_DEPS_OK:
+        import pytest as _pytest
+        _pytest.skip("auth crypto deps not installed")
+    who = f"w753u{_uuid.uuid4().hex[:8]}"
+    users = _ac._load_users()
+    users[who] = {"user_id": who, "username": who, "hashed_password": _ac._pwd_ctx.hash("pw-w753"), "role": "user",
+                  "created_at": "2026-01-01T00:00:00Z", "api_keys": []}
+    _ac._save_users(users)
+    monkeypatch.setenv(_cfg.SINGLE_USER_OWNER_ENV, f"w753-owner-{_uuid.uuid4().hex[:8]}")
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    tok = client.post("/api/v1/auth/token", data={"username": who, "password": "pw-w753"})
+    assert tok.status_code == 200, tok.text[:200]
+    hdr = {"Authorization": f"Bearer {tok.json()['access_token']}"}
+    e = client.post("/api/v1/genesis/establish", json={"problem": "W753 a signed-in venture", "name": "W753 Signed",
+                                                       "ship_output": False,
+                                                       "owner_id": f"w753-claimed-{_uuid.uuid4().hex[:6]}"},
+                    headers=hdr)
+    assert e.status_code == 200, e.text[:300]
+    r = _j.loads(_v._vsb_path(e.json()["vsb_id"]).read_bytes().decode("utf-8"))
+    assert r.get("owner_id") == who and r.get("owner_stamped") is True and r.get("owner_stamp_basis"), (
+        "with sign-in on, the new entity does not carry the signed-in person",
+        {k: r.get(k) for k in ("owner_id", "owner_stamped", "owner_stamp_basis")})
