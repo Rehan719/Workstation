@@ -39,7 +39,7 @@ interface Genome {
   parent_genomes?: string[];
 }
 interface ConfigPayload {
-  config: Record<string, any>; governed_keys: string[]; note: string;
+  config: Record<string, any>; governed_keys: string[]; note: string; store_unreadable?: string | null;
   key_wiring: { section: string; key: string; wired: boolean; consumer: string; governed: boolean; consumer_can_act?: boolean; consumer_can_act_basis?: string }[];
 }
 interface Suggestion { section: string; key: string; suggested_value: string; coerced_value: any; valid: boolean; invalid_reason?: string; rationale: string; wired: boolean; consumer: string; governed: boolean }
@@ -510,6 +510,7 @@ export const OrganismAnatomy: React.FC = () => {
             switch can never pass as a control. The four live levers are <span className="text-highlight">CCA-governed</span> —
             proposing one submits an audited change request (review + apply happen on the Change Control surface, arms-length).
           </p>
+          {config.store_unreadable && <p data-testid="config-store-unreadable" className="text-[10px] text-vital font-bold mb-3">{config.store_unreadable}</p>}
           <div className="grid grid-cols-1 @[640px]:grid-cols-2 gap-1.5 mb-3">
             {config.key_wiring.map(k => {
               const val = config.config?.[k.section]?.[k.key];
@@ -590,7 +591,7 @@ export const OrganismAnatomy: React.FC = () => {
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-900 mb-3">
               <p className="text-[9px] font-black uppercase tracking-widest text-slate-600 mb-1.5">Config change history</p>
               {history == null && <p className="text-[10px] text-slate-600 italic">loading…</p>}
-              {history != null && history.history == null && <p className="text-[10px] text-vital font-bold">history unavailable — the read failed (this is not "no changes")</p>}
+              {history != null && history.history == null && <p data-testid="config-history-unreadable" className="text-[10px] text-vital font-bold">{history.store_unreadable || 'history unavailable — the read failed (this is not "no changes")'}</p>}
               {history?.history != null && history.history.length === 0 && <p className="text-[10px] text-slate-600 italic">no changes recorded yet</p>}
               {(history?.history ?? []).map((c: any, i: number) => (
                 <p key={i} className="text-[10px] font-mono text-slate-400">

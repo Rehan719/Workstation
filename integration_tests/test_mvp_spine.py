@@ -69818,3 +69818,49 @@ def test_w760_the_reserved_titles_are_all_named_a_no_threshold_hold_says_so_and_
     _l = VirtualLedger("vsb-w760-ledger")
     _p = _l.post([n for n, t in CHART.items() if t == "asset"][0], "retained_earnings", 5, memo="w760")
     assert str(_p.get("posting_id", "")).startswith("pst-"), _p
+
+
+def test_w761_fu1137_an_unreadable_settings_or_history_store_has_a_way_back(client):
+    """W761 (FU-1137) - a torn settings or history store is repaired by an admin route: quarantined, the valid prefix
+    written back, what was lost said; afterwards a change saves again. The page prints the store_unreadable sentence."""
+    import json
+    import pathlib
+    import agentic_core.organism.reconfiguration as _rc
+
+    S, H = pathlib.Path(_rc._CONFIG_STORE), pathlib.Path(_rc._CONFIG_HISTORY)
+    held = {p: (p.read_bytes() if p.exists() else None) for p in (S, H)}
+    U, R = "/api/v1/organism/config/update", "/api/v1/organism/config/repair"
+    try:
+        r = client.post(U, json={"section": "gateway", "key": "temperature_bias", "value": "w761-a", "reason": "w761 a"})
+        assert r.status_code == 200, r.text[:300]
+        assert client.post(R, params={"store": "settings"}).json()["repaired"] is False
+        for p, store in ((S, "settings"), (H, "history")):
+            whole = p.read_bytes()
+            p.write_bytes(whole + b'{"torn')                       # a valid store with a garbage tail
+            assert client.post(U, json={"section": "gateway", "key": "temperature_bias", "value": "x",
+                                        "reason": "w761 refused"}).status_code == 503
+            rd = client.get("/api/v1/organism/config" if store == "settings" else "/api/v1/organism/config/history").json()
+            assert "config/repair?store=" + store in rd["store_unreadable"], rd
+            rep = client.post(R, params={"store": store})
+            assert rep.status_code == 200, rep.text[:300]
+            body = rep.json()
+            assert body["repaired"] is True and "trailing byte" in " ".join(body["lost"]), body
+            assert (p.parent / body["quarantine"]).read_bytes() == whole + b'{"torn'
+            assert p.read_bytes() != whole + b'{"torn' and json.loads(p.read_text(encoding="utf-8")) == json.loads(whole)
+            (p.parent / body["quarantine"]).unlink()
+        assert client.post(U, json={"section": "gateway", "key": "temperature_bias", "value": "w761-b",
+                                    "reason": "w761 b"}).status_code == 200
+        S.write_bytes(b"\xff\xfe nothing")
+        assert client.post(R, params={"store": "settings"}).status_code == 409
+        for q in S.parent.glob(S.stem + ".quarantine-*"):
+            q.unlink()
+        assert client.post(R, params={"store": "nope"}).status_code == 422
+    finally:
+        for p, b in held.items():
+            if b is None:
+                p.unlink(missing_ok=True)
+            else:
+                p.write_bytes(b)
+    page = pathlib.Path("apps/workstation-superapp/src/pages/organism/OrganismAnatomy.tsx").read_text(encoding="utf-8")
+    assert '{config.store_unreadable && <p data-testid="config-store-unreadable"' in page and "{config.store_unreadable}" in page
+    assert "history.store_unreadable ||" in page

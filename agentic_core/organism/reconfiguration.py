@@ -29,6 +29,7 @@ be read. A value the strict read would refuse (a non-finite number) is never wri
   GET  /api/v1/organism/config/history     — change history
   POST /api/v1/organism/config/reset       — governed (409 → CCA)
   POST /api/v1/organism/config/ai-suggest  — AI suggests changes (with provenance)
+  POST /api/v1/organism/config/repair      — admin: repair an unreadable settings/history store (W761)
 """
 from __future__ import annotations
 
@@ -42,7 +43,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from agentic_core.auth.core import get_current_user
+from agentic_core.auth.core import get_current_user, require_admin
 from pydantic import BaseModel
 
 from agentic_core.ai.gateway import gateway
@@ -193,6 +194,61 @@ def _store_problem(path, expect) -> str | None:
         return None
     except StoreUnavailable as exc:
         return exc.problem
+
+
+def repair_store(which: str) -> dict:
+    """W761 (FU-1137) - the way back for a settings or history store the strict read refuses, as the VSB ledger has
+    (W472). The bytes are QUARANTINED first (a copy beside the store, never deleted); then only what can be recovered
+    without inventing a value is: a byte-order mark stripped, the valid JSON prefix kept when the tail is garbage or a
+    truncation, and (history only) entries that are not change records dropped and COUNTED. The result must pass the
+    strict read before it is written, and what was lost is said in the answer and on the constitutional ledger."""
+    import codecs
+    import shutil
+    if which not in ("settings", "history"):
+        raise ValueError("store must be 'settings' or 'history'")
+    path, expect = (_CONFIG_STORE, dict) if which == "settings" else (_CONFIG_HISTORY, list)
+    with store_lock(path):
+        problem = _store_problem(path, expect)
+        if problem is None:
+            return {"store": which, "repaired": False,
+                    "reason": "the store reads whole, or does not exist yet - nothing to repair"}
+        raw = path.read_bytes()
+        ts = time.strftime("%Y-%m-%dT%H-%M-%SZ", time.gmtime())
+        quarantine = path.with_name(f"{path.stem}.quarantine-{ts}-{uuid.uuid4().hex[:6]}.json")
+        shutil.copyfile(path, quarantine)
+        lost: list[str] = []
+        if raw.startswith(codecs.BOM_UTF8):
+            raw = raw[len(codecs.BOM_UTF8):]
+            lost.append("a byte-order mark (removed)")
+        try:
+            text = raw.decode("utf-8").lstrip()
+        except UnicodeDecodeError as e:
+            raise StoreUnavailable(path, f"not UTF-8 (byte {e.start}); quarantined as {quarantine.name}, "
+                                         f"nothing recovered") from e
+        try:
+            data, end = json.JSONDecoder().raw_decode(text)
+        except ValueError as e:
+            raise StoreUnavailable(path, f"no valid JSON prefix; quarantined as {quarantine.name}, "
+                                         f"nothing recovered") from e
+        tail = len(text.rstrip()) - end
+        if tail > 0:
+            lost.append(f"{tail} trailing byte(s) after the valid JSON (a truncation or garbage)")
+        if not isinstance(data, expect):
+            raise StoreUnavailable(path, f"the valid JSON is a {type(data).__name__}, not a {expect.__name__}; "
+                                         f"quarantined as {quarantine.name}, nothing written")
+        if which == "history":
+            kept = [c for c in data if isinstance(c, dict)]
+            if len(kept) != len(data):
+                lost.append(f"{len(data) - len(kept)} history entr(ies) that were not change records (dropped)")
+            data = kept
+        atomic_write_json(path, data)
+        if _store_problem(path, expect) is not None:        # never reached for a dict/list; said if it is
+            raise StoreUnavailable(path, f"the recovered store still does not read whole; quarantined as "
+                                         f"{quarantine.name}")
+    record = {"store": which, "repaired": True, "was": problem, "quarantine": quarantine.name,
+              "lost": lost or ["nothing - the bytes held a whole store once read past the damage"]}
+    _ueg_log({"type": "organism.config_store_repaired", **record})
+    return record
 
 
 def _append_history(change: dict) -> None:
@@ -370,7 +426,8 @@ async def get_config():
             "governed_keys": sorted(f"{s}.{k}" for s, k in _GOVERNED_KEYS),
             "store_unreadable": (None if _unread is None else
                                  f"the saved settings could not be read whole ({_unread}), so what is shown may not "
-                                 f"be what was saved, and no change can be saved until the store is repaired"),
+                                 f"be what was saved, and no change can be saved until the store is repaired "
+                                 f"(an admin: POST /api/v1/organism/config/repair?store=settings)"),
             "note": ("only the wired keys change live behaviour; stored-only keys persist but "
                      "nothing consults them — displayed so a settings panel cannot pass a dead "
                      "switch off as a control")}
@@ -386,7 +443,8 @@ async def config_history():
     if _unread is not None:
         return {"history": None, "total": None, "capacity": 100,
                 "store_unreadable": (f"the change history could not be read whole ({_unread}), so it is not shown; "
-                                     f"it is kept as it is, and no change can be saved until it is repaired"),
+                                     f"it is kept as it is, and no change can be saved until it is repaired "
+                                                     f"(an admin: POST /api/v1/organism/config/repair?store=history)"),
                 "note": "history is capped at the last 100 changes"}
     return {"history": list(reversed(history)), "total": len(history), "store_unreadable": None,
             "capacity": 100, "note": "history is capped at the last 100 changes"}
@@ -441,6 +499,19 @@ async def reset_config():
         "example": {"title": "Reset organism config to defaults", "change_type": "config_major",
                     "description": "reset all organism configuration to defaults",
                     "config_change": {"reset": True}}})
+
+
+@router.post("/config/repair")
+async def repair_config_store(store: str = "settings", user: dict = Depends(require_admin)):
+    """W761 (FU-1137) - ADMIN ONLY. Repair the settings ('settings') or change-history ('history') store the strict
+    read refuses: quarantined beside the store, what is recoverable written back, what was lost said. 409 when
+    nothing recoverable remains; the store is then kept as it is."""
+    try:
+        return repair_store(store)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except StoreUnavailable as e:
+        raise HTTPException(status_code=409, detail=f"Nothing was repaired: {e}")
 
 
 class AISuggestRequest(BaseModel):

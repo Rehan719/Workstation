@@ -22465,11 +22465,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W761",
       "note": "",
       "slot_source": "a tier-2 shortfall left by W752's refusal; P2.41 carries the tier-2 pass, and the area's own item, P2.40, closes on its M1 re-run",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "POST /api/v1/organism/config/repair (admin only) repairs the settings or history store like the W472 ledger repair: quarantined copy, valid JSON prefix kept, non-record history entries dropped and counted, loss said and logged; both readers point to it and the Anatomy page prints each store_unreadable sentence. Guard test_w761_fu1137, 6 blinds red."
     },
     {
       "id": "FU-1138",
