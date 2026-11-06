@@ -17159,11 +17159,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W760",
       "note": "",
       "slot_source": "found while verifying an external audit and not done in this round",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "every new ledger posting carries a posting_id (pst-...); postings written before it carry none and none is invented for them; blind red"
     },
     {
       "id": "FU-876",
@@ -17323,11 +17326,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W760",
       "note": "",
       "slot_source": "found in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the refusal of a reserved hold title names all five reserved titles, the owner payout's and the capital fund allocation's included, and the actions that file them; blind red"
     },
     {
       "id": "FU-884",
@@ -17341,11 +17347,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W760",
       "note": "",
       "slot_source": "found in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "a hold whose title is a fund allocation's or an owner payout's carries no materiality threshold, a threshold_basis saying it is held at any amount, and its note says governed, not material; blinds red"
     },
     {
       "id": "FU-885",

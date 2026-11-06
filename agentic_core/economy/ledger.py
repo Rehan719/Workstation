@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import math
 import time
+import uuid
 from contextlib import contextmanager
 from pathlib import Path
 from agentic_core.config import atomic_write_json, data_path, store_lock
@@ -455,6 +456,9 @@ class VirtualLedger:
             delta = amount if (side == "debit") == normal_debit else -amount
             accts[name] = round(accts.get(name, 0.0) + delta, 2)
         posting = {
+            #  W760 (FU-875) - an identifier, so a correction, settlement or reconciliation can name the posting it
+            #  concerns. Postings written before it carry none and are left as they are (no id is invented for them).
+            "posting_id": f"pst-{uuid.uuid4().hex[:16]}",
             "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "debit": debit, "credit": credit, "amount": amount, "memo": memo,
             # W506 (P2.7(8)) - omitted entirely when not stated, so a reader can tell an untagged posting

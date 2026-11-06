@@ -69799,3 +69799,22 @@ def test_w759_fu874_a_resent_transfer_with_its_key_is_the_same_transfer(client):
         "the sender was debited twice for one keyed request", _st["profit_and_loss"]["expenses"])
     _t3 = client.post("/api/v1/economy/transfer", json={**_body, "idempotency_key": None}).json()["transfer"]
     assert _t3["transfer_id"] != _t1["transfer_id"], "an unkeyed request was folded into an earlier transfer"
+
+
+def test_w760_the_reserved_titles_are_all_named_a_no_threshold_hold_says_so_and_a_posting_has_an_id(client):
+    """W760: FU-883 - the refusal names the payout's and the fund's titles; FU-884 - a fund or payout hold carries
+    no threshold and is not called material; FU-875 - a new posting carries an identifier."""
+    _r = client.post("/api/v1/cca/submit", json={"title": "[economy] owner payout — spoof", "change_type": "config_minor",
+                                                  "description": "w760", "submitted_by": "guard"})
+    assert _r.status_code == 422 and "'[economy] owner payout'" in _r.text and "'[economy] capital fund allocation'" in _r.text, _r.text[:300]
+    from agentic_core.economy import governance as _g
+    _h = _g._held({"cca_id": "cca-w760", "title": _g.PAYOUT_HOLD_TITLE_PREFIX + "acct", "impact_tier": "CRITICAL"},
+                  10.0, "Material action — the hold is under review")
+    assert _h["materiality_threshold_wst"] is None and _h["note"].startswith("Governed action") and "ANY amount" in _h["threshold_basis"], _h
+    _h2 = _g._held({"cca_id": "cca-w760b", "title": "[economy] material transfer — x", "impact_tier": "CRITICAL"},
+                   10.0, "Material action — the hold is under review")
+    assert _h2["materiality_threshold_wst"] == _g.MATERIALITY_WST and _h2["note"].startswith("Material action"), _h2
+    from agentic_core.economy.ledger import VirtualLedger, CHART
+    _l = VirtualLedger("vsb-w760-ledger")
+    _p = _l.post([n for n, t in CHART.items() if t == "asset"][0], "retained_earnings", 5, memo="w760")
+    assert str(_p.get("posting_id", "")).startswith("pst-"), _p

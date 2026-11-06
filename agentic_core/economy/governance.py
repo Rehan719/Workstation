@@ -635,9 +635,18 @@ def _held(c: Dict[str, Any], est: float, note: str, status: str = "held_for_chan
     # one the hold is decided under (CRITICAL), not the MEDIUM a hold filed before the ruling was stamped with
     from agentic_core.api.change_control import effective_tier
     follows = c.get("follows_rejection") if status == "held_for_change_control" else None
+    #  W760 (FU-884) - a fund allocation and an owner payout are held AT ANY AMOUNT: they are not "material" and
+    #  there is no threshold to state, so neither the word nor the figure is carried for them
+    _title = str(c.get("title") or "")
+    _no_threshold = _title.startswith((FUND_HOLD_TITLE_PREFIX, PAYOUT_HOLD_TITLE_PREFIX))
+    if _no_threshold and note.startswith("Material action"):
+        note = "Governed action" + note[len("Material action"):]
     return {"status": status, "cca_id": c.get("cca_id"), "impact_tier": effective_tier(c),
             "est_distributable_wst": est, "approved_or_filed_wst": _bound_est(c),
-            "materiality_threshold_wst": MATERIALITY_WST, "note": note,
+            "materiality_threshold_wst": None if _no_threshold else MATERIALITY_WST,
+            **({"threshold_basis": "this class is held for the Owner's decision at ANY amount - no threshold applies"}
+               if _no_threshold else {}),
+            "note": note,
             **({"follows_rejection": follows.get("cca_id")} if isinstance(follows, dict) else {}), **extra}
 
 
