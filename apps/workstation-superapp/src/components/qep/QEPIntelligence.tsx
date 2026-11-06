@@ -17,6 +17,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Brain, Loader2, AlertCircle, ShieldCheck, GitBranch, Scale } from 'lucide-react';
 import { provenanceBadge } from '../../lib/api';
+import { DOMAINS as CANON_DOMAINS, DOMAIN_LABELS } from '../../lib/taxonomy';   // W758 (FU-969)
 
 const Chip: React.FC<{ tone: 'ok' | 'warn' | 'bad' | 'dim'; children: React.ReactNode; title?: string }> = ({ tone, children, title }) => (
   <span title={title} className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${
@@ -203,7 +204,8 @@ const QEPIntelligence: React.FC = () => {
               <select value={(adapt as any)[k]} onChange={e => setAdapt({ ...adapt, [k]: e.target.value })}
                 aria-label={k}
                 className="text-xs bg-slate-900 border border-slate-800 rounded-lg px-2 py-2 text-white focus:outline-none focus:border-highlight/50">
-                {['religion', 'science', 'care', 'education', 'law', 'enterprise'].map(d => <option key={d} value={d}>{d}</option>)}
+                {/* W758 (FU-969) — the six canonical domains (§17.1), not a page's own list with 'enterprise' and no Employment */}
+                {CANON_DOMAINS.map(d => <option key={d} value={d}>{DOMAIN_LABELS[d] ?? d}</option>)}
               </select>
             </div>
           ))}

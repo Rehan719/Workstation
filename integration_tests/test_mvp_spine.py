@@ -69714,3 +69714,18 @@ def test_w757_fu1104_fu1139_the_outcomes_writer_keeps_an_unreadable_store_and_th
     _kw = client.get("/api/v1/organism/config").json()["key_wiring"]
     assert any(k["section"] == "qep_recommendation" and k["key"] == "weights" for k in _kw), (
         "the governed Quran weights are missing from the per-key wiring", sorted({k['section'] for k in _kw}))
+
+
+def test_w758_p241_cascade_design_is_signposted_and_pickers_use_the_six_domains():
+    """W758: FU-958 - Synthesis Studio and Build-to-Order say where cascade design is; FU-969 - the QEP adaptation
+    picker and the Solutions platform's domain scope read the six canonical domains."""
+    import pathlib
+    _root = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    _r = lambda p: _code_only((_root / p).read_text(encoding="utf-8"))
+    for _p in ("pages/BTOCatalog.tsx", "pages/synthesis/SynthesisStudio.tsx"):
+        _blk = _r(_p).split('data-testid="cascade-design-where"', 1)
+        assert len(_blk) == 2 and 'href="/native-ai"' in _blk[1][:600] and 'href="/resource-fabric"' in _blk[1][:600], _p
+    _qi = _r("components/qep/QEPIntelligence.tsx")
+    assert "'enterprise'].map" not in _qi and "CANON_DOMAINS.map" in _qi
+    _sp = _r("pages/SolutionsPlatform.tsx")
+    assert "'Finance'" not in _sp and "const DOMAINS = CANON_DOMAINS.map" in _sp

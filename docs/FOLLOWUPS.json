@@ -18847,11 +18847,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W758",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Synthesis Studio and Build-to-Order each say in their header that cascade design is not on the page and link Native AI, Resource Fabric and Forge, where it is; blind red"
     },
     {
       "id": "FU-959",
