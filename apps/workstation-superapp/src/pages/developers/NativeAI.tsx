@@ -806,8 +806,11 @@ export const NativeAI: React.FC = () => {
                   : 'bg-vital/20 text-vital'}`}>{homeo.posture}</span>
               </div>
               <p className="text-[11px] text-slate-400 leading-relaxed">
-                The living organism (§8) modulates the native AI fabric (§6): the immune, self-healing and
-                circadian terms set how many swarm agents run in parallel.
+                {/* W755 (FU-1113) — driven: the cap is set by the measured health score, the immune threat, the energy
+                    floor and the work budget; the circadian cycle only chooses the posture's label */}
+                The living organism (§8) modulates the native AI fabric (§6): the measured health score and the
+                immune, energy and work-budget limits set how many swarm agents run in parallel. The circadian cycle
+                does not change that number — it only names the posture (full or reduced).
                 {/* W506 (FU-265d) — a claim that the metabolic term also sets the parallelism, and that each
                     cognitive run draws that energy down and recovers it on the circadian cycle, was removed
                     from here; the removed wording is in the commit message rather than quoted, so this comment

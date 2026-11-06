@@ -69568,3 +69568,60 @@ def test_w753_with_sign_in_on_the_signed_in_person_is_stamped(client, monkeypatc
     assert r.get("owner_id") == who and r.get("owner_stamped") is True and r.get("owner_stamp_basis"), (
         "with sign-in on, the new entity does not carry the signed-in person",
         {k: r.get(k) for k in ("owner_id", "owner_stamped", "owner_stamp_basis")})
+
+
+def test_w755_fu1124_a_stream_reaches_an_external_only_when_asked(monkeypatch):
+    """W755 (FU-1124, Owner ruling 2026-11-06, option (a)): with the switch ON and a key set, a stream that does not
+    ask is answered in-house; only a caller passing prefer_external reaches the accelerant."""
+    import asyncio
+    import agentic_core.ai.gateway as _g
+    monkeypatch.setenv("AI_ALLOW_EXTERNAL", "true")
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "1")
+    _gw = _g.ModelGateway()
+    _gw.anthropic_key = "w755-placeholder-not-a-key"
+    _gw.openai_key = None
+    _calls = []
+
+    class _FakeStream:
+        def __init__(self, *a, **k): pass
+        async def __aenter__(self): _calls.append("claude"); return self
+        async def __aexit__(self, *a): return False
+        @property
+        def text_stream(self):
+            async def _g2():
+                yield "w755 external answer"
+            return _g2()
+
+    class _FakeMessages:
+        def stream(self, *a, **k): return _FakeStream()
+
+    class _FakeClient:
+        def __init__(self, *a, **k): self.messages = _FakeMessages()
+    import anthropic as _an
+    monkeypatch.setattr(_an, "AsyncAnthropic", _FakeClient)
+
+    def _run(**kw):
+        async def _go():
+            return [e async for e in _gw.stream_meta("w755: name one risk", agent="w755", **kw)]
+        return asyncio.run(_go())
+
+    _plain = _run()
+    assert _plain[-1].get("is_external") is False and not _calls, (
+        "with the switch on, a stream that did not ask was served externally before the floor", _plain[-1], _calls)
+    _asked = _run(prefer_external=True)
+    assert _calls and _asked[-1].get("is_external") is True, (
+        "a caller that asked for an external with the switch on was not served by one", _asked[-1], _calls)
+
+
+def test_w755_fu1113_the_native_ai_page_does_not_say_the_cycle_sets_parallelism():
+    """W755 (FU-1113): driven from the code path, the cap reads the health score and the immune, energy and budget
+    limits; the circadian cycle chooses only the posture label. The page no longer says the cycle sets the number."""
+    import pathlib, inspect
+    from agentic_core.ai.native import homeostasis as _h
+    _src = inspect.getsource(_h)
+    _capline = [l for l in _src.splitlines() if "cap = min(" in l]
+    assert _capline and all("cycle" not in l for l in _capline), ("the cap now reads the cycle; the page must say so", _capline)
+    _page = _code_only((pathlib.Path(__file__).resolve().parents[1]
+                        / "apps/workstation-superapp/src/pages/developers/NativeAI.tsx").read_text(encoding="utf-8"))
+    assert "circadian terms set how many swarm agents run in parallel" not in _page
+    assert "The circadian cycle" in _page and "does not change that number" in _page

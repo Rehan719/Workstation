@@ -21948,11 +21948,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.40",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W755",
       "note": "",
       "slot_source": "a tier-1 statement on a reached page: P2.40 holds the standing tier-1 rows",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "driven from the code path: the cap is min(requested, the biobus recommendation from the measured score) under immune, ATP and work-budget floors, and the cycle only labels the posture; NativeAI now says so; blind red"
     },
     {
       "id": "FU-1114",
@@ -22170,11 +22173,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P4.3",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W755",
       "note": "",
       "slot_source": "Owner ruling 2026-11-06 (W754): accepted as recommended: option (a), the in-house-first order, built in P4.3 before the switch flips",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Owner ruling 2026-11-06 option (a): the stream's external branch also requires the caller's prefer_external, so with the switch on an unasking stream is answered in-house as a query is; both docstrings say one order; blinds red"
     },
     {
       "id": "FU-1125",

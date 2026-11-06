@@ -199,13 +199,14 @@ class ModelGateway:
     stream / stream_meta - ordered in this class:
       1. the owned local model, token by token - skipped when AI_DISABLE_LOCAL is set or its circuit
          breaker is open;
-      2. the external accelerants, before the floor, ONLY when AI_ALLOW_EXTERNAL=true and a key is set
-         (Anthropic, then OpenAI) - outside the orchestrator's hourly external cap (W335);
+      2. the external accelerants, ONLY when AI_ALLOW_EXTERNAL=true, a key is set AND the caller asks
+         (prefer_external) - W755 (FU-1124, Owner ruling 2026-11-06, option (a)): the in-house-first order,
+         as a query has it (Anthropic, then OpenAI; outside the orchestrator's hourly external cap, W335);
       3. the native floor, chunked - the guaranteed terminal.
 
-    With AI_ALLOW_EXTERNAL off (the default) neither path reaches an external provider. With it on, a
-    streamed reply can be served externally before the floor and a gateway query cannot (orchestrator callers
-    that pass prefer_external can) - the switch is the Owner's (P4.3).
+    With AI_ALLOW_EXTERNAL off (the default) neither path reaches an external provider. With it on, NEITHER
+    path puts an external first unless its caller asks (prefer_external) - one order for both (W755, FU-1124,
+    Owner ruling 2026-11-06). The switch is the Owner's (P4.3).
 
     Rate limit: GATEWAY_RPM env var (default 20 calls/min) prevents runaway spend.
     """
@@ -554,14 +555,16 @@ class ModelGateway:
 
     async def stream_meta(self, prompt: str, agent: str = "assistant",
                           owner_id: str | None = None, augment: bool = _RECALL_OFF,
-                          user_text: str | None = None, language: str | None = None) -> AsyncIterator[dict]:
+                          user_text: str | None = None, language: str | None = None,
+                          prefer_external: bool = False) -> AsyncIterator[dict]:
         """W738 - the stream with the Arabic rule: each token passes ArabicStreamFilter (unless the person asked
         for an Arabic-script language), and the terminal frame's text is ruled inside _final."""
         from agentic_core.religious_domain.composed_text import ArabicStreamFilter, arabic_script_requested
         _keep = arabic_script_requested(language)
         _flt = ArabicStreamFilter()
         async for ev in self._stream_meta_inner(prompt, agent=agent, owner_id=owner_id, augment=augment,
-                                                user_text=user_text, language=language):
+                                                user_text=user_text, language=language,
+                                                prefer_external=prefer_external):
             if "token" in ev and not _keep:
                 _t = _flt.feed(ev["token"])
                 if _t:
@@ -571,13 +574,15 @@ class ModelGateway:
 
     async def _stream_meta_inner(self, prompt: str, agent: str = "assistant",
                                  owner_id: str | None = None, augment: bool = _RECALL_OFF,
-                                 user_text: str | None = None, language: str | None = None) -> AsyncIterator[dict]:
+                                 user_text: str | None = None, language: str | None = None,
+                                 prefer_external: bool = False) -> AsyncIterator[dict]:
         """Yield {"token": …} events then ONE terminal {"done": True, "served_by", "is_external",
-        "output", "guardrail_passed", "profile_applied"} — IN-HOUSE FIRST (§6), in its own order, which
-        differs from query_meta's (see the class docstring):
+        "output", "guardrail_passed", "profile_applied"} — IN-HOUSE FIRST (§6), in the same order as
+        query_meta since W755 (FU-1124, Owner ruling 2026-11-06; see the class docstring):
         1. the OWNED local model (Ollama), genuine token-by-token streaming, when present
            (skipped under AI_DISABLE_LOCAL, e.g. the deterministic test/CI runtime);
-        2. external accelerant streaming ONLY when explicitly opted in (AI_ALLOW_EXTERNAL=true);
+        2. external accelerant streaming ONLY when the switch is on (AI_ALLOW_EXTERNAL=true) AND this caller
+           asked for one (prefer_external) - otherwise the floor below answers;
         3. the native structured-reasoning floor, chunked — the GUARANTEED terminal: this stream
            never depends on an external provider and never ends in a bare error line.
         W451 (P1.3) — the stream path used to swallow WHO served it (recorded into the learning
@@ -700,8 +705,11 @@ class ModelGateway:
                 self_healer.record_failure("ollama")
                 _record("ollama", False, _t0, False)
 
-        # 2 — external accelerants: OPT-IN ONLY (never a dependency)
-        if os.getenv("AI_ALLOW_EXTERNAL", "false").lower() == "true":
+        # 2 — external accelerants: OPT-IN ONLY (never a dependency). W755 (FU-1124, OWNER RULING 2026-11-06,
+        #     option (a)): the IN-HOUSE-FIRST order on both paths. The switch alone no longer puts an external
+        #     before the floor; a caller must also ask (prefer_external), as an orchestrator caller does. With no
+        #     ask, the floor answers, exactly as a gateway query does.
+        if os.getenv("AI_ALLOW_EXTERNAL", "false").lower() == "true" and prefer_external:
             if self.anthropic_key and not self_healer.is_open("claude"):
                 _t0 = time.time()
                 try:
