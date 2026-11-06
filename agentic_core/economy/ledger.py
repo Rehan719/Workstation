@@ -439,6 +439,15 @@ class VirtualLedger:
                        if _pot else "")
                     + f"Accounts: {', '.join(sorted(CHART))}")
         amount = round(float(amount), 2)
+        #  W759 (FU-876) - THE ONE POSTING FUNCTION HAS A FLOOR. A non-finite or zero amount moves nothing and is
+        #  refused. A NEGATIVE amount is the same movement the other way round (the period close posts a contra
+        #  balance that way), so it is stored as debit and credit swapped with the amount positive: every balance
+        #  is identical, and no stored posting carries a negative amount.
+        import math as _math
+        if not _math.isfinite(amount) or abs(amount) < 0.005:
+            raise ValueError(f"a posting must move a finite, non-zero amount (got {amount!r}); nothing was posted")
+        if amount < 0:
+            debit, credit, amount = credit, debit, -amount
         accts = self._data.setdefault("accounts", {})
         for name, side in ((debit, "debit"), (credit, "credit")):
             atype = CHART.get(name, "asset")
@@ -477,7 +486,9 @@ class VirtualLedger:
             dr, cr = (_COMPAT_POSTING_DEBIT.get(account) if kind == "debit" else None) \
                 or _COMPAT_POSTING.get(account) \
                 or ((account, "cash") if kind == "debit" else ("cash", account))
-            self.post(dr, cr, amount, memo=memo or f"legacy:{account}", save=False, source=source)
+            #  W759 (FU-876) - a zero record keeps its entry and makes no balanced posting (there is nothing to move)
+            if abs(round(float(amount), 2)) >= 0.005:
+                self.post(dr, cr, amount, memo=memo or f"legacy:{account}", save=False, source=source)
             return entry
 
     def spend_from(self, account: str, amount: float, memo: str = "",

@@ -17138,11 +17138,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W759",
       "note": "",
       "slot_source": "found while verifying an external audit and not done in this round",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "driven: TransferRequest takes an optional idempotency_key; the same key from the same sender maps to one transfer id, so a resend replays (the sender debited once, the same id answered); an unkeyed request stays a new transfer; blind red"
     },
     {
       "id": "FU-875",
@@ -17174,11 +17177,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W759",
       "note": "",
       "slot_source": "found while verifying an external audit and not done in this round",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "every caller enumerated (record, spend, period close, apoptosis, transfers): _apply_posting refuses a zero or non-finite amount, stores a negative as debit and credit swapped with identical balances (the close's contra case), and a zero record keeps its entry with no posting; three blinds red"
     },
     {
       "id": "FU-877",
@@ -21536,11 +21542,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W759",
       "note": "",
       "tier": 2,
-      "slot_source": "its files sit in an area retired with P2.18, so the router names no item; P3.30 holds the fabric's small truth fixes (W747)"
+      "slot_source": "its files sit in an area retired with P2.18, so the router names no item; P3.30 holds the fabric's small truth fixes (W747)",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "driven: with one local model and the floor, two 'servers' were counted and a consensus synthesised; a consensus now needs two different MODEL servers, the floor's answer stays a member, and the method says only one model served; blind red"
     },
     {
       "id": "FU-1094",

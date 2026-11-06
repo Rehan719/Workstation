@@ -1093,6 +1093,9 @@ class TransferRequest(BaseModel):
     # sender's reserve_fund; refused at the model AND at validate_transfer (belt and braces).
     amount: float = Field(gt=0, allow_inf_nan=False)
     memo: str = ""
+    #  W759 (FU-874) - a caller that may resend names the request: the same key from the same sender is the SAME
+    #  transfer (replayed, never posted twice). With no key, two requests are two transfers, as they may mean.
+    idempotency_key: Optional[str] = Field(default=None, min_length=8, max_length=80, pattern=r"^[A-Za-z0-9._:-]+$")
 
 
 @router.post("/transfer")
@@ -1106,7 +1109,11 @@ async def inter_vsb_transfer(req: TransferRequest, user: dict | None = Depends(g
     # could drain any tenant's reserve by naming it as from_vsb. (Receiving is a payment — the
     # recipient needs no consent to be paid.)
     _require_economy_access(req.from_vsb, user)
-    return await _transfer_core(req)
+    _tid = None
+    if req.idempotency_key:
+        import hashlib as _hl
+        _tid = "xfer-" + _hl.sha256(f"{req.from_vsb}\x1f{req.idempotency_key}".encode()).hexdigest()[:20]
+    return await _transfer_core(req, transfer_id=_tid)
 
 
 class CompleteTransferRequest(BaseModel):

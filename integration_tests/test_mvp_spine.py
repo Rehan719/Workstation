@@ -69729,3 +69729,73 @@ def test_w758_p241_cascade_design_is_signposted_and_pickers_use_the_six_domains(
     assert "'enterprise'].map" not in _qi and "CANON_DOMAINS.map" in _qi
     _sp = _r("pages/SolutionsPlatform.tsx")
     assert "'Finance'" not in _sp and "const DOMAINS = CANON_DOMAINS.map" in _sp
+
+
+def test_w759_fu1093_one_model_and_the_floor_are_not_a_consensus(monkeypatch):
+    """W759 (FU-1093): driven with one local model serving and the floor beside it, the ensemble synthesises no
+    consensus and says why; with two different models it does."""
+    import asyncio, importlib, sys
+    importlib.import_module("agentic_core.ai.native.orchestrator")
+    _orc = sys.modules["agentic_core.ai.native.orchestrator"]
+    importlib.import_module("agentic_core.ai.native.model_resource")
+    _mr = sys.modules["agentic_core.ai.native.model_resource"]
+    monkeypatch.setattr(_mr, "active_local_models", lambda *a, **k: ["m1"])
+    _synth = []
+
+    async def _complete(prompt, agent="native", prefer=None, **kw):
+        if agent.endswith("-synth"):
+            _synth.append(prompt)
+            return {"output": "consensus", "served_by": "ollama:m1"}
+        if prefer and prefer.startswith("ollama:"):
+            return {"output": f"answer from {prefer}", "served_by": prefer, "is_external": False}
+        return {"output": "## Frame\n- the floor", "served_by": "native", "is_external": False}
+    #  patched on the INSTANCE the ensemble calls, so neither a reloaded module (a different class) nor an instance
+    #  attribute another test left behind can route a member past this fake (the suite-only failure of the first draft)
+    monkeypatch.setattr(_orc.orchestrator, "complete", _complete)
+    _r = asyncio.run(_orc.orchestrator.ensemble("w759: one risk", agent="w759"))
+    assert _r.get("synthesis") is None and not _synth, ("one model and the floor were synthesised into a consensus", _r)
+    assert "only ONE model served" in _r.get("method", ""), _r.get("method")
+    _r2 = asyncio.run(_orc.orchestrator.ensemble("w759: one risk", agent="w759", models=["ollama:m1", "ollama:m2"]))
+    assert _r2.get("synthesis") is not None and _synth, ("two different models were not synthesised", _r2.get("method"))
+
+
+def test_w759_fu876_a_posting_moves_a_finite_non_zero_amount_and_a_negative_is_swapped():
+    """W759 (FU-876): the ledger's one posting function refuses zero and non-finite amounts, stores a negative as
+    the same movement reversed (identical balances), and a zero record() keeps its entry without a posting."""
+    import pytest
+    from agentic_core.economy.ledger import VirtualLedger, CHART
+    _l = VirtualLedger("vsb-w759-ledger")
+    _a, _b = [n for n, t in CHART.items() if t == "asset"][:1][0], "retained_earnings"
+    for _bad in (0, 0.001, float("nan"), float("inf")):
+        with pytest.raises(ValueError):
+            _l.post(_a, _b, _bad, memo="w759 bad")
+    _before = dict(_l._data.get("accounts", {}))
+    _p = _l.post(_a, _b, -12.5, memo="w759 negative")
+    assert _p["amount"] == 12.5 and _p["debit"] == _b and _p["credit"] == _a, _p
+    _l2 = VirtualLedger("vsb-w759-ledger-b")
+    _l2.post(_b, _a, 12.5, memo="w759 positive twin")
+    for _acct in (_a, _b):
+        assert round(_l._data["accounts"].get(_acct, 0) - _before.get(_acct, 0), 2) == round(_l2._data["accounts"].get(_acct, 0), 2), _acct
+    _n = len(_l._data.get("postings", []))
+    _e = _l.record("reserves", 0, memo="w759 zero record")
+    assert _e and len(_l._data.get("postings", [])) == _n, "a zero record made a balanced posting"
+
+
+def test_w759_fu874_a_resent_transfer_with_its_key_is_the_same_transfer(client):
+    """W759 (FU-874): driven - the same body POSTed twice with one idempotency_key debits the sender once and
+    answers with the same transfer id; without a key, two requests stay two transfers."""
+    import uuid as _uuid
+    from agentic_core.economy.living_vsbs import register
+    a, b = f"w759-a-{_uuid.uuid4().hex[:6]}", f"w759-b-{_uuid.uuid4().hex[:6]}"
+    register(a, "W759 Sender", "waqf_ltd_hybrid", "enterprise", "Rehan")
+    register(b, "W759 Receiver", "waqf_ltd_hybrid", "enterprise", "Rehan")
+    client.post("/api/v1/economy/cycle", json={"vsb_id": a, "entity_type": "waqf_ltd_hybrid", "revenue": 10000, "costs": 0})
+    _body = {"from_vsb": a, "to_vsb": b, "amount": 100, "memo": "w759", "idempotency_key": "w759-order-0001"}
+    _t1 = client.post("/api/v1/economy/transfer", json=_body).json()["transfer"]
+    _t2 = client.post("/api/v1/economy/transfer", json=_body).json()["transfer"]
+    assert _t1["transfer_id"] == _t2["transfer_id"], ("a resent keyed transfer minted a second transfer", _t1, _t2)
+    _st = client.get(f"/api/v1/economy/board-pack?vsb_id={a}").json()["statements"]
+    assert _st["profit_and_loss"]["expenses"].get("transfer_out") == 100.0, (
+        "the sender was debited twice for one keyed request", _st["profit_and_loss"]["expenses"])
+    _t3 = client.post("/api/v1/economy/transfer", json={**_body, "idempotency_key": None}).json()["transfer"]
+    assert _t3["transfer_id"] != _t1["transfer_id"], "an unkeyed request was folded into an earlier transfer"
