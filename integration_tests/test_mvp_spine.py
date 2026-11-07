@@ -69903,3 +69903,46 @@ def test_w763_fu899_a_resources_declared_need_is_read_at_preview_and_at_run(clie
               '{(runResult.needs_at_run?.unmet ?? []).length > 0 && (',
               '{(h.needs_unmet_at_run ?? []).length > 0 && <span data-testid="fabric-history-needs-unmet"'):
         assert t in page, t
+
+
+def test_w764_the_gateway_reads_the_settings_as_every_consumer_does_and_the_stream_resyncs(client, monkeypatch):
+    """W764 - FU-1138: the gateway read organism_config.json through a reader of its own and, while the store could
+    not be read, kept its last rpm_limit while every other consumer read the defaults. FU-1127: only query_meta
+    re-synced the governed rpm_limit; the stream never did."""
+    import asyncio
+    import json
+    import pathlib
+    import agentic_core.organism.reconfiguration as _rc
+    from agentic_core.ai.gateway import gateway as _g
+
+    S = pathlib.Path(_rc._CONFIG_STORE)
+    held = S.read_bytes() if S.exists() else None
+    lim0, tok0 = _g._rate_limiter._limit, _g._rate_limiter._tokens
+    try:
+        cfg = _rc._load_config()
+        cfg["gateway"]["rpm_limit"] = 7
+        S.write_text(json.dumps(cfg), encoding="utf-8")
+        _g._reconfig_last_sync = 0.0
+        _g._sync_reconfig()
+        assert _g._rate_limiter._limit == 7 and _g._reconfig_problem is None
+        S.write_bytes(S.read_bytes()[:20])                      # torn
+        _g._reconfig_last_sync = 0.0
+        _g._sync_reconfig()
+        assert _g._rate_limiter._limit == _rc._load_config()["gateway"]["rpm_limit"] == _rc._DEFAULT_CONFIG["gateway"]["rpm_limit"], (
+            "the gateway kept the last limit while every other consumer read the defaults", _g._rate_limiter._limit)
+        assert _g._reconfig_problem, "the gateway read a torn store and kept no problem"
+        calls = []
+        monkeypatch.setattr(_g, "_sync_reconfig", lambda: calls.append(1))
+
+        async def _drain():
+            async for _ev in _g.stream_meta("w764 hello", agent="assistant"):
+                pass
+        asyncio.run(_drain())
+        assert calls, "the stream never re-synced the governed rpm_limit"
+    finally:
+        _g._rate_limiter._limit, _g._rate_limiter._tokens = lim0, tok0
+        _g._reconfig_last_sync = 0.0
+        if held is None:
+            S.unlink(missing_ok=True)
+        else:
+            S.write_bytes(held)

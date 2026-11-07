@@ -222,6 +222,7 @@ class ModelGateway:
         self._rate_limiter = _RateLimiter(rpm)
         self._reconfig_last_sync = 0.0
         self._reconfig_cache: dict = {}
+        self._reconfig_problem: str | None = None   # W764 - why the settings store could not be read whole
 
     @property
     def _effective_ollama_model(self) -> str:
@@ -244,8 +245,12 @@ class ModelGateway:
             return
         self._reconfig_last_sync = now
         try:
-            import json
-            data = json.loads(_RECONFIG_PATH.read_text())
+            #  W764 (FU-1138) - read through THE settings reader every other consumer uses. A reader of its own
+            #  kept the last rate limit while the store could not be read and every other consumer read the
+            #  defaults; now the gateway reads what they read, and the problem is kept where it can be said.
+            from agentic_core.organism import reconfiguration as _rc
+            data = _rc._load_config()
+            self._reconfig_problem = _rc._store_problem(_rc._CONFIG_STORE, dict)
             self._reconfig_cache = data
             gw = data.get("gateway", {})
             new_rpm = int(gw.get("rpm_limit", 0))
@@ -591,6 +596,7 @@ class ModelGateway:
         W332/W333 — tenant-scoped recall (off by default since W489; two conversational callers opt
         back in by name) + tenant-stamped
         writes, matching query_meta."""
+        self._sync_reconfig()          # W764 (FU-1127) - the governed rpm_limit reaches the stream as it does query_meta
         await self._rate_limiter.acquire()
         from agentic_core.ai.native.orchestrator import FLOOR_TOKENS_BASIS, REFUSED_TOKENS_BASIS   # W741 (S18.1)
         # W619 (FU-496, M2 v8 R4.3) — THE STREAM PATH IS GATED AS query_meta IS. stream_meta applied the response

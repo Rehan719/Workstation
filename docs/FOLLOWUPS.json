@@ -22271,11 +22271,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W764",
       "note": "",
       "slot_source": "a tier-3 finding no user reaches; P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "stream_meta now calls _sync_reconfig before acquiring the rate limiter, so the governed rpm_limit reaches the stream as it does query_meta. Guard test_w764, blind red."
     },
     {
       "id": "FU-1128",
@@ -22496,11 +22499,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W764",
       "note": "",
       "slot_source": "tier-3 finding: P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The gateway's _sync_reconfig reads the settings through reconfiguration._load_config like every other consumer, so a torn store gives it the defaults as it gives them, and it keeps the store's stated problem. Guard test_w764, 2 blinds red."
     },
     {
       "id": "FU-1139",
