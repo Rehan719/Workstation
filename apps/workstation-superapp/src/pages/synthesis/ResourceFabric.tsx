@@ -52,7 +52,7 @@ interface Composition {
 // W274/W284 — a persisted composition run (GET /resources/compositions/runs)
 interface HistoryRun {
   run_id: string; composition_id: string; name: string; version?: number; objective: string;
-  qms_gate_passed?: boolean | null; any_external?: boolean;
+  qms_gate_passed?: boolean | null; any_external?: boolean; needs_unmet_at_run?: string[];
   // W491 (refutation) — this declared `ran`, which the API stopped sending, and omitted `outcome`,
   // which it now does: every past run rendered one identical aura chip, so a status read, a facility
   // run and an attempt that raised looked the same on the only surface that reads the persisted record.
@@ -67,7 +67,7 @@ interface HistoryRun {
   created_at: string;
 }
 interface Simulation {
-  name: string; usage_area: string; commit_ready: boolean | null; saved: boolean; note?: string;
+  name: string; usage_area: string; commit_ready: boolean | null; saved: boolean; note?: string; needs_with_this_configuration?: { unmet: { resource: string; basis?: string }[]; basis?: string };
   model: {
     pipeline: string[]; combined_capabilities: string[]; resource_classes: Record<string, number>;
     biomimetic_resources: number; shared_usage_areas: string[]; usage_area_supported_by_all: boolean;
@@ -95,7 +95,7 @@ interface CompositionRun {
   // W273/W274/W284 — run-time honesty + plan binding surfaced to the Owner
   run_id?: string; commit_ready?: boolean; usage_area_supported?: boolean;
   stand_ins?: { for: string; resource: string; outcome?: string; label?: string }[]; stand_ins_basis?: string;
-  quality_warning?: string | null; run_params_applied?: string[];
+  quality_warning?: string | null; run_params_applied?: string[]; needs_at_run?: { unmet: { resource: string; basis?: string }[]; basis?: string };
   plan_binding?: { result?: string; advanced?: boolean; objective_id?: string; status?: string } | null;
   quality_assurance?: { quality?: { qms_gate_passed?: boolean; document_controlled?: boolean;
     compliance?: { overall?: string; compliant?: boolean; verdicts?: { framework: string; status: string }[] } } };
@@ -553,6 +553,11 @@ export const ResourceFabric: React.FC = () => {
               <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${sim.commit_ready === null ? 'bg-slate-800 text-slate-400' : sim.commit_ready ? 'bg-emerald-500/15 text-emerald-400' : 'bg-vital/15 text-vital'}`} title={sim.commit_ready === null ? 'the gate could not assess this simulation — commit at your judgement' : undefined}>
                 {sim.commit_ready === null ? 'gate could not assess — commit at your judgement' : sim.commit_ready ? 'commit-ready' : 'not commit-ready'}
               </span>
+              {(sim.needs_with_this_configuration?.unmet ?? []).length > 0 && (
+                <span data-testid="fabric-sim-needs-unmet" className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-vital/15 text-vital" title={sim.needs_with_this_configuration!.basis}>
+                  needs unmet with this configuration: {sim.needs_with_this_configuration!.unmet.map(u => `${u.resource} (${u.basis})`).join(' · ')}
+                </span>
+              )}
               {(() => { const c = qmsChip(sim.simulation?.quality, 'QMS gate:'); return c && (
                 <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`}
                   title={`${c.title}\n§10 quality bar: ${(sim.simulation?.quality?.bar || []).join(' · ')}`}>
@@ -647,6 +652,7 @@ export const ResourceFabric: React.FC = () => {
                 <div key={h.run_id} className="flex flex-wrap items-center gap-1.5 border-t border-slate-800 first:border-t-0 pt-1.5 first:pt-0">
                   <span className="text-[9px] font-mono text-slate-500">{h.run_id}</span>
                   <span className="text-[10px] font-black text-white">{h.name}</span>
+                  {(h.needs_unmet_at_run ?? []).length > 0 && <span data-testid="fabric-history-needs-unmet" className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-vital/15 text-vital">run without what it needs: {h.needs_unmet_at_run!.join(' · ')}</span>}
                   {(() => { const c = qmsChip({ qms_gate_passed: h.qms_gate_passed }); return c && (
                     <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`} title={c.title}>{c.label}</span>
                   ); })()}
@@ -747,6 +753,11 @@ export const ResourceFabric: React.FC = () => {
                         {(() => { const b = provenanceMapBadge(provenanceMapFromTrace(runResult.trace), runResult.any_external); return <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
                         {(runResult.run_params_applied ?? []).length > 0 && (
                           <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-aura/15 text-aura">per-run params: {runResult.run_params_applied!.join(' · ')}</span>
+                        )}
+                        {(runResult.needs_at_run?.unmet ?? []).length > 0 && (
+                          <span data-testid="fabric-run-needs-unmet" className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-vital/15 text-vital" title={runResult.needs_at_run!.basis}>
+                            run without what it needs: {runResult.needs_at_run!.unmet.map(u => `${u.resource} (${u.basis})`).join(' · ')}
+                          </span>
                         )}
                         {runResult.plan_binding && (
                           <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${runResult.plan_binding.advanced ? 'bg-emerald-500/15 text-emerald-400' : 'bg-slate-800 text-slate-400'}`}>

@@ -17648,11 +17648,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W763",
       "note": "",
       "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A compose preview (needs_with_this_configuration) and a composition run (needs_at_run, and needs_unmet_at_run on the run record) now read each resource's declared needs against the configuration they use and name the unmet ones; reported, not a wall. Guard test_w763_fu899, 4 blinds red."
     },
     {
       "id": "FU-900",

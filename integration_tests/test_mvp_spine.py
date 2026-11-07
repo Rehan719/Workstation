@@ -69872,3 +69872,34 @@ def test_w761_fu1137_an_unreadable_settings_or_history_store_has_a_way_back(clie
     page = pathlib.Path("apps/workstation-superapp/src/pages/organism/OrganismAnatomy.tsx").read_text(encoding="utf-8")
     assert '{config.store_unreadable && <p data-testid="config-store-unreadable"' in page and "{config.store_unreadable}" in page
     assert "history.store_unreadable ||" in page
+
+
+def test_w763_fu899_a_resources_declared_need_is_read_at_preview_and_at_run(client):
+    """W763 (FU-899) - a declared per-run need was checked only when the cell proposed. A preview and a run now read
+    each resource's needs against the configuration they use, and say which are unmet."""
+    P = "/api/v1/resources"
+    s0 = client.post(f"{P}/compose/simulate", json={"name": "w763", "resource_ids": ["studio"]})
+    assert s0.status_code == 200, s0.text[:300]
+    n0 = s0.json()["needs_with_this_configuration"]
+    assert [x["resource"] for x in n0["unmet"]] == ["studio"] and n0["all_met"] is False, n0
+    assert "series" in n0["unmet"][0]["basis"], n0
+    _series = [{"label": "a", "value": 1}, {"label": "b", "value": 2}]
+    s1 = client.post(f"{P}/compose/simulate", json={"name": "w763", "resource_ids": ["studio"],
+                                                     "config": {"studio": {"series": _series}}}).json()
+    assert s1["needs_with_this_configuration"]["unmet"] == [], s1["needs_with_this_configuration"]
+    c = client.post(f"{P}/compose", json={"name": "w763 probe", "resource_ids": ["studio"]})
+    assert c.status_code == 200, c.text[:300]
+    cid = c.json().get("id") or c.json()["composition"]["id"]
+    r0 = client.post(f"{P}/compositions/{cid}/run", json={"objective": "w763 bare"}).json()
+    assert [x["resource"] for x in r0["needs_at_run"]["unmet"]] == ["studio"], r0.get("needs_at_run")
+    r1 = client.post(f"{P}/compositions/{cid}/run", json={"objective": "w763 given",
+                                                          "params": {"studio": {"series": _series}}}).json()
+    assert r1["needs_at_run"]["unmet"] == [], r1["needs_at_run"]
+    runs = {x["run_id"]: x for x in client.get(f"{P}/compositions/runs", params={"limit": 100}).json()["runs"]}
+    assert runs[r0["run_id"]]["needs_unmet_at_run"] == ["studio"] and runs[r1["run_id"]]["needs_unmet_at_run"] == []
+    import pathlib
+    page = pathlib.Path("apps/workstation-superapp/src/pages/synthesis/ResourceFabric.tsx").read_text(encoding="utf-8")
+    for t in ('{(sim.needs_with_this_configuration?.unmet ?? []).length > 0 && (',
+              '{(runResult.needs_at_run?.unmet ?? []).length > 0 && (',
+              '{(h.needs_unmet_at_run ?? []).length > 0 && <span data-testid="fabric-history-needs-unmet"'):
+        assert t in page, t
