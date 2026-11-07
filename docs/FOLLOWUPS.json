@@ -17706,11 +17706,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W762",
       "note": "",
       "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A composition run refused at the constitutional pre-gate is now filed in composition_runs.json, marked refused, with its reason, nothing attempted, and its specification link; the response carries run_record. Guarded in test_lgc_spec_a_kept_proposal..., 2 blinds red."
     },
     {
       "id": "FU-903",
@@ -17724,11 +17727,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W762",
       "note": "",
       "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The replay offered on a kept specification states is_reproduction false and why: it holds no configuration or run parameters, so a run uses the composition as it is now and the parameters sent. Guarded in test_lgc_spec_a_kept_proposal..., blind red."
     },
     {
       "id": "FU-904",

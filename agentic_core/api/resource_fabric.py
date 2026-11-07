@@ -2357,6 +2357,13 @@ async def get_specification(sid: str, request: Request, user: dict | None = Depe
             "replay": {"route": "/api/v1/resources/compositions/{cid}/run",
                        "send": {"specification_id": rec.get("id"), "specification_digest": rec.get("digest")},
                        "compositions": comps,
+                       #  W762 (FU-903) - a replay is NOT a reproduction, and says so where it is offered
+                       "is_reproduction": False,
+                       "reproduction_basis": ("a specification keeps the objective, the criteria and the "
+                                              "resources by id. It holds no configuration and no run "
+                                              "parameters: a run from it uses each composition's "
+                                              "configuration as it is NOW and the parameters sent with "
+                                              "that run, so its output is not a reproduction of anything"),
                        "basis": ("a specification is run again through the composition run route, naming it. "
                                  "The run attempts what the COMPOSITION holds; `missing` and `extra` say how "
                                  "each saved composition differs from what was proposed, and the run's record "
@@ -2455,12 +2462,31 @@ async def run_composition(cid: str, req: RunCompositionRequest,
     from agentic_core.ai.gateway import console_pre_gate, console_post_gate
     _halt = console_pre_gate("composition-run")
     if _halt:
-        return {"composition_id": cid, "refused": True,
+        _refused_spec = (_specification_link(
+            _spec, _spec_now, _spec_composed, [], None,
+            refused=f"the run was refused before anything ran: {_halt.get('refused_reason')}")
+            if _spec is not None else None)
+        #  W762 (FU-902) - A REFUSED RUN IS RECORDED. A replay of a kept specification that was refused left no
+        #  trace that it was asked; the history now holds it, marked refused, with nothing attempted.
+        try:
+            from agentic_core.config import atomic_write_json, read_json_strict, store_lock
+            _cr_store = data_path("composition_runs.json")
+            with store_lock(_cr_store):
+                _cr = read_json_strict(_cr_store, list, expect=list)
+                _cr.append({"run_id": f"run-refused-{uuid.uuid4().hex[:10]}", "composition_id": cid,
+                            "name": comp["name"], "owner_id": comp.get("owner_id"),
+                            "version": comp.get("version", 1), "objective": objective[:200],
+                            "refused": True, "refused_reason": _halt.get("refused_reason"),
+                            "composed": _spec_composed, "real_resources": [], "attempted": [],
+                            "specification": _refused_spec,
+                            "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
+                atomic_write_json(_cr_store, _cr[-100:])
+            _refused_record = {"persisted": True}
+        except Exception as _exc:
+            _refused_record = {"persisted": False, "reason": f"{_exc.__class__.__name__}: {str(_exc)[:120]}"}
+        return {"composition_id": cid, "refused": True, "run_record": _refused_record,
                 #  P3.31 - a refused run from a specification says that NOTHING proposed was attempted
-                **({"specification": _specification_link(
-                    _spec, _spec_now, _spec_composed, [], None,
-                    refused=f"the run was refused before anything ran: {_halt.get('refused_reason')}")}
-                   if _spec is not None else {}),
+                **({"specification": _refused_spec} if _spec is not None else {}),
                 "final": f"[CONSTITUTIONAL REFUSAL] {_halt.get('refused_reason')}", "governance_checkpoint": _halt}
     res = await orchestrator.swarm("composition-run", stages, context=objective,
                                    prefer_external=req.prefer_external, timeout=req.timeout,

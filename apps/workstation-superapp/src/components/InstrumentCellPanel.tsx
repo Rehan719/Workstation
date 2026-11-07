@@ -78,7 +78,7 @@ interface SpecSaveReply extends SpecRow { saved: boolean; already_saved?: boolea
 interface SpecDetail extends SpecRow {
   versions?: { id: string; version: number; digest: string }[];
   availability_now?: { id: string; available: boolean; because: string; registration_changed?: boolean | null; equivalents?: string[] }[];
-  replay?: { basis?: string; compositions?: { id: string; name: string; missing: string[]; extra: string[] }[] };
+  replay?: { basis?: string; is_reproduction?: boolean; reproduction_basis?: string; compositions?: { id: string; name: string; missing: string[]; extra: string[] }[] };
 }
 interface ReplayReply {
   run_id?: string; refused?: boolean; final?: unknown; specification?: SpecLink | null;
@@ -488,6 +488,7 @@ export function InstrumentCellPanel() {
               ))}
             </ul>
             <p className="text-[10px] text-slate-500">{specDetail.replay?.basis}</p>
+            {specDetail.replay?.is_reproduction === false && <p data-testid="spec-replay-not-reproduction" className="text-[10px] text-highlight font-bold">Not a reproduction: {specDetail.replay.reproduction_basis}</p>}
             <select value={specComp} aria-label="Composition to run this specification through"
               onChange={e => { setSpecComp(e.target.value); setReplay(null); }}
               className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-[12px] text-white">

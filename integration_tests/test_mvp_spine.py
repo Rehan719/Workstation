@@ -58057,6 +58057,11 @@ def test_lgc_spec_a_kept_proposal_is_immutable_versioned_linked_to_its_run_and_r
         assert _rf["specification"]["executed"] == [] and _rf["specification"]["refused"] is True
         assert sorted((x["resource"], x["why"]) for x in _rf["specification"]["not_attempted"]) == sorted(
             [(_a, "refused"), (_b, "refused")]) and "driven refusal" in _rf["specification"]["not_attempted"][0]["basis"]
+        #  W762 (FU-902) - the refused replay IS RECORDED, marked refused, with nothing attempted
+        assert _rf["run_record"] == {"persisted": True}, _rf.get("run_record")
+        _rrec = next(x for x in client.get("/api/v1/resources/compositions/runs", params={"limit": 100}).json()["runs"]
+                     if x.get("refused") and (x.get("specification") or {}).get("specification_id") == _k2["id"])
+        assert _rrec["composition_id"] == _c1 and _rrec["real_resources"] == [] and "driven refusal" in _rrec["refused_reason"], _rrec
         _rfn = _run(_c1).json()          # the same refusal with no specification named carries no link
         assert _rfn.get("refused") is True and "specification" not in _rfn, sorted(_rfn)
         monkeypatch.setattr(_gw, "console_pre_gate", _real_gate)
@@ -58085,6 +58090,9 @@ def test_lgc_spec_a_kept_proposal_is_immutable_versioned_linked_to_its_run_and_r
         assert _g["unavailable_now"] == [] and all(x["available"] for x in _g["availability_now"]), (
             "the precondition: every proposed resource is available before one is taken away", _g["availability_now"])
         assert _g["replay"]["send"] == {"specification_id": _k2["id"], "specification_digest": _k2["digest"]}
+        assert _g["replay"]["is_reproduction"] is False and "no run parameters" in _g["replay"]["reproduction_basis"], _g["replay"]  # W762 (FU-903)
+        assert "{specDetail.replay?.is_reproduction === false && <p data-testid=\"spec-replay-not-reproduction\"" in (
+            __import__("pathlib").Path("apps/workstation-superapp/src/components/InstrumentCellPanel.tsx").read_text(encoding="utf-8"))
         _by_c = {c["id"]: c for c in _g["replay"]["compositions"]}
         assert _by_c[_c1]["missing"] == [] and _by_c[_c1]["extra"] == [], _by_c[_c1]
         assert _by_c[_c2]["missing"] == [_b] and _by_c[_c2]["extra"] == [_z], _by_c[_c2]
