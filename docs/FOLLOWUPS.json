@@ -22426,11 +22426,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W767",
       "note": "",
       "slot_source": "tier-3 and unreached: P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "DemandPredictor skips and counts an unread (None) CPU figure instead of averaging it as 0, and a history with none readable predicts nothing (None figures, a basis) rather than a typed default; its docstring states nothing calls it. Guard test_w767, 2 blinds red."
     },
     {
       "id": "FU-1135",

@@ -69984,3 +69984,17 @@ def test_w766_fu904_the_fabric_run_history_shows_a_run_from_a_kept_proposal_and_
     from agentic_core.api import resource_fabric as _f
     src = inspect.getsource(_f.run_composition)
     assert '"specification": _spec_link,' in src and '"specification": _refused_spec,' in src and '"refused": True,' in src
+
+
+def test_w767_fu1134_the_demand_predictor_never_averages_an_unread_cpu_figure():
+    """W767 (FU-1134) - the host CPU figure can be None; the predictor averaged it as 0 (or raised), and an empty
+    history returned a typed default. Unread readings are skipped and counted; none readable predicts nothing."""
+    from agentic_core.optimizer.predictor import DemandPredictor
+    p = DemandPredictor()
+    r = p.predict_demand([{"cpu_percent": 50.0}, {"cpu_percent": None}, {"cpu_percent": 50.0}])
+    assert abs(r["expected_cpu"] - 50.0) < 1e-9 and r["readings_used"] == 2 and r["readings_skipped"] == 1, r
+    for h in ([], [{"cpu_percent": None}], [{}]):
+        n = p.predict_demand(h)
+        assert n["expected_cpu"] is None and n["confidence"] is None and "nothing is predicted" in n["basis"], (h, n)
+    import inspect
+    assert "NOTHING CALLS THIS" in inspect.getsource(DemandPredictor.predict_demand)
