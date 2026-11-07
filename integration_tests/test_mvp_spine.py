@@ -58057,6 +58057,11 @@ def test_lgc_spec_a_kept_proposal_is_immutable_versioned_linked_to_its_run_and_r
         assert _rf["specification"]["executed"] == [] and _rf["specification"]["refused"] is True
         assert sorted((x["resource"], x["why"]) for x in _rf["specification"]["not_attempted"]) == sorted(
             [(_a, "refused"), (_b, "refused")]) and "driven refusal" in _rf["specification"]["not_attempted"][0]["basis"]
+        #  W762 (FU-902) - the refused replay IS RECORDED, marked refused, with nothing attempted
+        assert _rf["run_record"] == {"persisted": True}, _rf.get("run_record")
+        _rrec = next(x for x in client.get("/api/v1/resources/compositions/runs", params={"limit": 100}).json()["runs"]
+                     if x.get("refused") and (x.get("specification") or {}).get("specification_id") == _k2["id"])
+        assert _rrec["composition_id"] == _c1 and _rrec["real_resources"] == [] and "driven refusal" in _rrec["refused_reason"], _rrec
         _rfn = _run(_c1).json()          # the same refusal with no specification named carries no link
         assert _rfn.get("refused") is True and "specification" not in _rfn, sorted(_rfn)
         monkeypatch.setattr(_gw, "console_pre_gate", _real_gate)
@@ -58085,6 +58090,9 @@ def test_lgc_spec_a_kept_proposal_is_immutable_versioned_linked_to_its_run_and_r
         assert _g["unavailable_now"] == [] and all(x["available"] for x in _g["availability_now"]), (
             "the precondition: every proposed resource is available before one is taken away", _g["availability_now"])
         assert _g["replay"]["send"] == {"specification_id": _k2["id"], "specification_digest": _k2["digest"]}
+        assert _g["replay"]["is_reproduction"] is False and "no run parameters" in _g["replay"]["reproduction_basis"], _g["replay"]  # W762 (FU-903)
+        assert "{specDetail.replay?.is_reproduction === false && <p data-testid=\"spec-replay-not-reproduction\"" in (
+            __import__("pathlib").Path("apps/workstation-superapp/src/components/InstrumentCellPanel.tsx").read_text(encoding="utf-8"))
         _by_c = {c["id"]: c for c in _g["replay"]["compositions"]}
         assert _by_c[_c1]["missing"] == [] and _by_c[_c1]["extra"] == [], _by_c[_c1]
         assert _by_c[_c2]["missing"] == [_b] and _by_c[_c2]["extra"] == [_z], _by_c[_c2]
@@ -66810,7 +66818,8 @@ def test_w747_the_external_prompts_review_is_recorded_and_its_gaps_are_registere
     #  each gap that survived is an open row, with its slot, entered by this round
     reg = {r["title"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
     expected = [
-        ('OWNER DECISION: the uncapped, census-partitioned final audit has no item that builds or runs it', 'OWNER'),
+        #  W754 - ruled 2026-11-06: the row left OWNER for P5.22, the item that builds and runs the final audit
+        ('OWNER DECISION: the uncapped, census-partitioned final audit has no item that builds or runs it', 'P5.22'),
         ('HYPOTHESIS: a model is made the serving default after one check, that it is installed', 'P3.32'),
         ("The Owner's ruled routing tie-break order is encoded nowhere, so the ruling cannot fail", 'P4.3'),
         ('HYPOTHESIS: sign-in and signup have no limit on attempts', 'P4.1'),
@@ -66828,8 +66837,9 @@ def test_w747_the_external_prompts_review_is_recorded_and_its_gaps_are_registere
         r = reg.get(title)
         assert r is not None, ("a surviving gap is not in the register", title)
         assert r["source"] == "W747" and r["slot"] == slot, (title, r.get("source"), r.get("slot"))
-    owner = [reg[t] for t, s in expected if s == "OWNER"]
-    assert len(owner) == 1 and owner[0]["owner_gated"] is True and owner[0]["title"].startswith("OWNER DECISION:"), owner
+    #  W754 - the Owner ruled it, so it is ungated and rides the item chartered for it
+    ruled = [reg[t] for t, s in expected if s == "P5.22"]
+    assert len(ruled) == 1 and not ruled[0].get("owner_gated") and ruled[0]["title"].startswith("OWNER DECISION:"), ruled
     #  a row read from code says so in its title until it is driven
     for title, _slot in expected:
         if "Read from code" in reg[title]["why"]:
@@ -69566,3 +69576,373 @@ def test_w753_with_sign_in_on_the_signed_in_person_is_stamped(client, monkeypatc
     assert r.get("owner_id") == who and r.get("owner_stamped") is True and r.get("owner_stamp_basis"), (
         "with sign-in on, the new entity does not carry the signed-in person",
         {k: r.get(k) for k in ("owner_id", "owner_stamped", "owner_stamp_basis")})
+
+
+def test_w755_fu1124_a_stream_reaches_an_external_only_when_asked(monkeypatch):
+    """W755 (FU-1124, Owner ruling 2026-11-06, option (a)): with the switch ON and a key set, a stream that does not
+    ask is answered in-house; only a caller passing prefer_external reaches the accelerant."""
+    import asyncio
+    import agentic_core.ai.gateway as _g
+    monkeypatch.setenv("AI_ALLOW_EXTERNAL", "true")
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "1")
+    _gw = _g.ModelGateway()
+    _gw.anthropic_key = "w755-placeholder-not-a-key"
+    _gw.openai_key = None
+    _calls = []
+
+    class _FakeStream:
+        def __init__(self, *a, **k): pass
+        async def __aenter__(self): _calls.append("claude"); return self
+        async def __aexit__(self, *a): return False
+        @property
+        def text_stream(self):
+            async def _g2():
+                yield "w755 external answer"
+            return _g2()
+
+    class _FakeMessages:
+        def stream(self, *a, **k): return _FakeStream()
+
+    class _FakeClient:
+        def __init__(self, *a, **k): self.messages = _FakeMessages()
+    import anthropic as _an
+    monkeypatch.setattr(_an, "AsyncAnthropic", _FakeClient)
+
+    def _run(**kw):
+        async def _go():
+            return [e async for e in _gw.stream_meta("w755: name one risk", agent="w755", **kw)]
+        return asyncio.run(_go())
+
+    _plain = _run()
+    assert _plain[-1].get("is_external") is False and not _calls, (
+        "with the switch on, a stream that did not ask was served externally before the floor", _plain[-1], _calls)
+    _asked = _run(prefer_external=True)
+    assert _calls and _asked[-1].get("is_external") is True, (
+        "a caller that asked for an external with the switch on was not served by one", _asked[-1], _calls)
+
+
+def test_w755_fu1113_the_native_ai_page_does_not_say_the_cycle_sets_parallelism():
+    """W755 (FU-1113): driven from the code path, the cap reads the health score and the immune, energy and budget
+    limits; the circadian cycle chooses only the posture label. The page no longer says the cycle sets the number."""
+    import pathlib, inspect
+    from agentic_core.ai.native import homeostasis as _h
+    _src = inspect.getsource(_h)
+    _capline = [l for l in _src.splitlines() if "cap = min(" in l]
+    assert _capline and all("cycle" not in l for l in _capline), ("the cap now reads the cycle; the page must say so", _capline)
+    _page = _code_only((pathlib.Path(__file__).resolve().parents[1]
+                        / "apps/workstation-superapp/src/pages/developers/NativeAI.tsx").read_text(encoding="utf-8"))
+    assert "circadian terms set how many swarm agents run in parallel" not in _page
+    assert "The circadian cycle" in _page and "does not change that number" in _page
+
+
+def test_w756_fu1114_admits_one_carries_its_reason_while_the_budget_holds(monkeypatch):
+    """W756 (FU-1114): with the work budget holding, the projection carries the budget, and the fabric, Deliverables
+    and Organism pages print why the admission is 1."""
+    import pathlib
+    from agentic_core.ai.native import homeostasis as _h
+    _held = {"holds": True, "basis": "w756: the work budget for this window is spent"}
+    monkeypatch.setattr(_h._work_budget, "gate", lambda *a, **k: dict(_held))
+    _p = _h.homeostasis.project(3)
+    assert _p["admitted_max_parallel"] == 1 and (_p.get("work_budget") or {}).get("holds") is True, _p
+    assert "w756" in _p["work_budget"]["basis"]
+    _root = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/pages"
+    for _rel, _tid in (("synthesis/ResourceFabric.tsx", "fabric-work-budget-reason"),
+                       ("Deliverables.tsx", "deliverable-work-budget-reason"),
+                       ("organism/OrganismDashboard.tsx", "organism-work-budget-reason")):
+        _src = _code_only((_root / _rel).read_text(encoding="utf-8"))
+        _blk = _src.split(f'data-testid="{_tid}"', 1)
+        assert len(_blk) == 2 and "work_budget.basis" in _blk[1][:200], (_rel, "prints 'admits 1' without its reason")
+
+
+def test_w756_fu1136_the_host_cpu_figure_carries_its_window_on_every_page():
+    """W756 (FU-1136): the four surfaces that print the host CPU percentage print the window it was sampled over."""
+    import pathlib
+    _root = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    for _rel, _key in (("pages/DashboardNew.tsx", "cpuWindow"),
+                       ("components/BiometricStatus.tsx", "host_cpu_window_seconds"),
+                       ("pages/cognitive/Introspection.tsx", "host_cpu_window_seconds"),
+                       ("pages/evolution/SovereignEvolution.tsx", "cpu_window_seconds")):
+        _src = _code_only((_root / _rel).read_text(encoding="utf-8"))
+        _cpu = [l for l in _src.splitlines() if ("Host CPU" in l or "host CPU headroom" in l) and _key in l]
+        assert _cpu, (_rel, "prints the host CPU figure without the window it covers")
+
+
+def test_w757_fu1123_the_immune_sensor_hears_a_streamed_model_serve(monkeypatch):
+    """W757 (FU-1123): a streamed reply served by an external provider is OBSERVED by the immune sensor, not only a
+    floor serve (the failure side is driven by test_w744's leg 5)."""
+    import asyncio
+    import agentic_core.ai.gateway as _g
+    from agentic_core.organism.immune import immune as _imm
+    _seen = []
+    monkeypatch.setattr(_imm, "observe", lambda endpoint="": _seen.append(endpoint))
+    monkeypatch.setenv("AI_ALLOW_EXTERNAL", "true")
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "1")
+    _gw = _g.ModelGateway()
+    _gw.anthropic_key = "w757-placeholder-not-a-key"
+    _gw.openai_key = None
+
+    class _S:
+        async def __aenter__(self): return self
+        async def __aexit__(self, *a): return False
+        @property
+        def text_stream(self):
+            async def _t():
+                yield "w757 external answer"
+            return _t()
+
+    class _C:
+        def __init__(self, *a, **k):
+            self.messages = type("M", (), {"stream": lambda _s, *a, **k: _S()})()
+    import anthropic as _an
+    monkeypatch.setattr(_an, "AsyncAnthropic", _C)
+
+    async def _go():
+        return [e async for e in _gw.stream_meta("w757: name one risk", agent="w757", prefer_external=True)]
+    _ev = asyncio.run(_go())
+    assert _ev[-1].get("is_external") is True and "model:claude" in _seen, (
+        "an external stream serve was not observed by the immune sensor", _seen, _ev[-1].get("served_by"))
+
+
+def test_w757_fu1104_fu1139_the_outcomes_writer_keeps_an_unreadable_store_and_the_wiring_lists_every_section(client):
+    """W757: FU-1104 - an unreadable outcomes store is kept byte for byte, not replaced by one row;
+    FU-1139 - the settings route's per-key wiring lists the Quran platform's governed weights."""
+    from agentic_core.api import operational_excellence as _oe
+    _oe._STORE.parent.mkdir(parents=True, exist_ok=True)
+    _was = _oe._STORE.read_bytes() if _oe._STORE.exists() else None
+    try:
+        _oe._STORE.write_bytes(b"{ this is not json")
+        _oe.record_outcome("model_attempt", "w757", served_by="native", duration_ms=1)
+        assert _oe._STORE.read_bytes() == b"{ this is not json", (
+            "an unreadable outcomes store was replaced by a write", _oe._STORE.read_bytes()[:80])
+    finally:
+        if _was is None:
+            _oe._STORE.unlink(missing_ok=True)
+        else:
+            _oe._STORE.write_bytes(_was)
+    _kw = client.get("/api/v1/organism/config").json()["key_wiring"]
+    assert any(k["section"] == "qep_recommendation" and k["key"] == "weights" for k in _kw), (
+        "the governed Quran weights are missing from the per-key wiring", sorted({k['section'] for k in _kw}))
+
+
+def test_w758_p241_cascade_design_is_signposted_and_pickers_use_the_six_domains():
+    """W758: FU-958 - Synthesis Studio and Build-to-Order say where cascade design is; FU-969 - the QEP adaptation
+    picker and the Solutions platform's domain scope read the six canonical domains."""
+    import pathlib
+    _root = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    _r = lambda p: _code_only((_root / p).read_text(encoding="utf-8"))
+    for _p in ("pages/BTOCatalog.tsx", "pages/synthesis/SynthesisStudio.tsx"):
+        _blk = _r(_p).split('data-testid="cascade-design-where"', 1)
+        assert len(_blk) == 2 and 'href="/native-ai"' in _blk[1][:600] and 'href="/resource-fabric"' in _blk[1][:600], _p
+    _qi = _r("components/qep/QEPIntelligence.tsx")
+    assert "'enterprise'].map" not in _qi and "CANON_DOMAINS.map" in _qi
+    _sp = _r("pages/SolutionsPlatform.tsx")
+    assert "'Finance'" not in _sp and "const DOMAINS = CANON_DOMAINS.map" in _sp
+
+
+def test_w759_fu1093_one_model_and_the_floor_are_not_a_consensus(monkeypatch):
+    """W759 (FU-1093): driven with one local model serving and the floor beside it, the ensemble synthesises no
+    consensus and says why; with two different models it does."""
+    import asyncio, importlib, sys
+    importlib.import_module("agentic_core.ai.native.orchestrator")
+    _orc = sys.modules["agentic_core.ai.native.orchestrator"]
+    importlib.import_module("agentic_core.ai.native.model_resource")
+    _mr = sys.modules["agentic_core.ai.native.model_resource"]
+    monkeypatch.setattr(_mr, "active_local_models", lambda *a, **k: ["m1"])
+    _synth = []
+
+    async def _complete(prompt, agent="native", prefer=None, **kw):
+        if agent.endswith("-synth"):
+            _synth.append(prompt)
+            return {"output": "consensus", "served_by": "ollama:m1"}
+        if prefer and prefer.startswith("ollama:"):
+            return {"output": f"answer from {prefer}", "served_by": prefer, "is_external": False}
+        return {"output": "## Frame\n- the floor", "served_by": "native", "is_external": False}
+    #  patched on the INSTANCE the ensemble calls, so neither a reloaded module (a different class) nor an instance
+    #  attribute another test left behind can route a member past this fake (the suite-only failure of the first draft)
+    monkeypatch.setattr(_orc.orchestrator, "complete", _complete)
+    _r = asyncio.run(_orc.orchestrator.ensemble("w759: one risk", agent="w759"))
+    assert _r.get("synthesis") is None and not _synth, ("one model and the floor were synthesised into a consensus", _r)
+    assert "only ONE model served" in _r.get("method", ""), _r.get("method")
+    _r2 = asyncio.run(_orc.orchestrator.ensemble("w759: one risk", agent="w759", models=["ollama:m1", "ollama:m2"]))
+    assert _r2.get("synthesis") is not None and _synth, ("two different models were not synthesised", _r2.get("method"))
+
+
+def test_w759_fu876_a_posting_moves_a_finite_non_zero_amount_and_a_negative_is_swapped():
+    """W759 (FU-876): the ledger's one posting function refuses zero and non-finite amounts, stores a negative as
+    the same movement reversed (identical balances), and a zero record() keeps its entry without a posting."""
+    import pytest
+    from agentic_core.economy.ledger import VirtualLedger, CHART
+    _l = VirtualLedger("vsb-w759-ledger")
+    _a, _b = [n for n, t in CHART.items() if t == "asset"][:1][0], "retained_earnings"
+    for _bad in (0, 0.001, float("nan"), float("inf")):
+        with pytest.raises(ValueError):
+            _l.post(_a, _b, _bad, memo="w759 bad")
+    _before = dict(_l._data.get("accounts", {}))
+    _p = _l.post(_a, _b, -12.5, memo="w759 negative")
+    assert _p["amount"] == 12.5 and _p["debit"] == _b and _p["credit"] == _a, _p
+    _l2 = VirtualLedger("vsb-w759-ledger-b")
+    _l2.post(_b, _a, 12.5, memo="w759 positive twin")
+    for _acct in (_a, _b):
+        assert round(_l._data["accounts"].get(_acct, 0) - _before.get(_acct, 0), 2) == round(_l2._data["accounts"].get(_acct, 0), 2), _acct
+    _n = len(_l._data.get("postings", []))
+    _e = _l.record("reserves", 0, memo="w759 zero record")
+    assert _e and len(_l._data.get("postings", [])) == _n, "a zero record made a balanced posting"
+
+
+def test_w759_fu874_a_resent_transfer_with_its_key_is_the_same_transfer(client):
+    """W759 (FU-874): driven - the same body POSTed twice with one idempotency_key debits the sender once and
+    answers with the same transfer id; without a key, two requests stay two transfers."""
+    import uuid as _uuid
+    from agentic_core.economy.living_vsbs import register
+    a, b = f"w759-a-{_uuid.uuid4().hex[:6]}", f"w759-b-{_uuid.uuid4().hex[:6]}"
+    register(a, "W759 Sender", "waqf_ltd_hybrid", "enterprise", "Rehan")
+    register(b, "W759 Receiver", "waqf_ltd_hybrid", "enterprise", "Rehan")
+    client.post("/api/v1/economy/cycle", json={"vsb_id": a, "entity_type": "waqf_ltd_hybrid", "revenue": 10000, "costs": 0})
+    _body = {"from_vsb": a, "to_vsb": b, "amount": 100, "memo": "w759", "idempotency_key": "w759-order-0001"}
+    _t1 = client.post("/api/v1/economy/transfer", json=_body).json()["transfer"]
+    _t2 = client.post("/api/v1/economy/transfer", json=_body).json()["transfer"]
+    assert _t1["transfer_id"] == _t2["transfer_id"], ("a resent keyed transfer minted a second transfer", _t1, _t2)
+    _st = client.get(f"/api/v1/economy/board-pack?vsb_id={a}").json()["statements"]
+    assert _st["profit_and_loss"]["expenses"].get("transfer_out") == 100.0, (
+        "the sender was debited twice for one keyed request", _st["profit_and_loss"]["expenses"])
+    _t3 = client.post("/api/v1/economy/transfer", json={**_body, "idempotency_key": None}).json()["transfer"]
+    assert _t3["transfer_id"] != _t1["transfer_id"], "an unkeyed request was folded into an earlier transfer"
+
+
+def test_w760_the_reserved_titles_are_all_named_a_no_threshold_hold_says_so_and_a_posting_has_an_id(client):
+    """W760: FU-883 - the refusal names the payout's and the fund's titles; FU-884 - a fund or payout hold carries
+    no threshold and is not called material; FU-875 - a new posting carries an identifier."""
+    _r = client.post("/api/v1/cca/submit", json={"title": "[economy] owner payout — spoof", "change_type": "config_minor",
+                                                  "description": "w760", "submitted_by": "guard"})
+    assert _r.status_code == 422 and "'[economy] owner payout'" in _r.text and "'[economy] capital fund allocation'" in _r.text, _r.text[:300]
+    from agentic_core.economy import governance as _g
+    _h = _g._held({"cca_id": "cca-w760", "title": _g.PAYOUT_HOLD_TITLE_PREFIX + "acct", "impact_tier": "CRITICAL"},
+                  10.0, "Material action — the hold is under review")
+    assert _h["materiality_threshold_wst"] is None and _h["note"].startswith("Governed action") and "ANY amount" in _h["threshold_basis"], _h
+    _h2 = _g._held({"cca_id": "cca-w760b", "title": "[economy] material transfer — x", "impact_tier": "CRITICAL"},
+                   10.0, "Material action — the hold is under review")
+    assert _h2["materiality_threshold_wst"] == _g.MATERIALITY_WST and _h2["note"].startswith("Material action"), _h2
+    from agentic_core.economy.ledger import VirtualLedger, CHART
+    _l = VirtualLedger("vsb-w760-ledger")
+    _p = _l.post([n for n, t in CHART.items() if t == "asset"][0], "retained_earnings", 5, memo="w760")
+    assert str(_p.get("posting_id", "")).startswith("pst-"), _p
+
+
+def test_w761_fu1137_an_unreadable_settings_or_history_store_has_a_way_back(client):
+    """W761 (FU-1137) - a torn settings or history store is repaired by an admin route: quarantined, the valid prefix
+    written back, what was lost said; afterwards a change saves again. The page prints the store_unreadable sentence."""
+    import json
+    import pathlib
+    import agentic_core.organism.reconfiguration as _rc
+
+    S, H = pathlib.Path(_rc._CONFIG_STORE), pathlib.Path(_rc._CONFIG_HISTORY)
+    held = {p: (p.read_bytes() if p.exists() else None) for p in (S, H)}
+    U, R = "/api/v1/organism/config/update", "/api/v1/organism/config/repair"
+    try:
+        r = client.post(U, json={"section": "gateway", "key": "temperature_bias", "value": "w761-a", "reason": "w761 a"})
+        assert r.status_code == 200, r.text[:300]
+        assert client.post(R, params={"store": "settings"}).json()["repaired"] is False
+        for p, store in ((S, "settings"), (H, "history")):
+            whole = p.read_bytes()
+            p.write_bytes(whole + b'{"torn')                       # a valid store with a garbage tail
+            assert client.post(U, json={"section": "gateway", "key": "temperature_bias", "value": "x",
+                                        "reason": "w761 refused"}).status_code == 503
+            rd = client.get("/api/v1/organism/config" if store == "settings" else "/api/v1/organism/config/history").json()
+            assert "config/repair?store=" + store in rd["store_unreadable"], rd
+            rep = client.post(R, params={"store": store})
+            assert rep.status_code == 200, rep.text[:300]
+            body = rep.json()
+            assert body["repaired"] is True and "trailing byte" in " ".join(body["lost"]), body
+            assert (p.parent / body["quarantine"]).read_bytes() == whole + b'{"torn'
+            assert p.read_bytes() != whole + b'{"torn' and json.loads(p.read_text(encoding="utf-8")) == json.loads(whole)
+            (p.parent / body["quarantine"]).unlink()
+        assert client.post(U, json={"section": "gateway", "key": "temperature_bias", "value": "w761-b",
+                                    "reason": "w761 b"}).status_code == 200
+        S.write_bytes(b"\xff\xfe nothing")
+        assert client.post(R, params={"store": "settings"}).status_code == 409
+        for q in S.parent.glob(S.stem + ".quarantine-*"):
+            q.unlink()
+        assert client.post(R, params={"store": "nope"}).status_code == 422
+    finally:
+        for p, b in held.items():
+            if b is None:
+                p.unlink(missing_ok=True)
+            else:
+                p.write_bytes(b)
+    page = pathlib.Path("apps/workstation-superapp/src/pages/organism/OrganismAnatomy.tsx").read_text(encoding="utf-8")
+    assert '{config.store_unreadable && <p data-testid="config-store-unreadable"' in page and "{config.store_unreadable}" in page
+    assert "history.store_unreadable ||" in page
+
+
+def test_w763_fu899_a_resources_declared_need_is_read_at_preview_and_at_run(client):
+    """W763 (FU-899) - a declared per-run need was checked only when the cell proposed. A preview and a run now read
+    each resource's needs against the configuration they use, and say which are unmet."""
+    P = "/api/v1/resources"
+    s0 = client.post(f"{P}/compose/simulate", json={"name": "w763", "resource_ids": ["studio"]})
+    assert s0.status_code == 200, s0.text[:300]
+    n0 = s0.json()["needs_with_this_configuration"]
+    assert [x["resource"] for x in n0["unmet"]] == ["studio"] and n0["all_met"] is False, n0
+    assert "series" in n0["unmet"][0]["basis"], n0
+    _series = [{"label": "a", "value": 1}, {"label": "b", "value": 2}]
+    s1 = client.post(f"{P}/compose/simulate", json={"name": "w763", "resource_ids": ["studio"],
+                                                     "config": {"studio": {"series": _series}}}).json()
+    assert s1["needs_with_this_configuration"]["unmet"] == [], s1["needs_with_this_configuration"]
+    c = client.post(f"{P}/compose", json={"name": "w763 probe", "resource_ids": ["studio"]})
+    assert c.status_code == 200, c.text[:300]
+    cid = c.json().get("id") or c.json()["composition"]["id"]
+    r0 = client.post(f"{P}/compositions/{cid}/run", json={"objective": "w763 bare"}).json()
+    assert [x["resource"] for x in r0["needs_at_run"]["unmet"]] == ["studio"], r0.get("needs_at_run")
+    r1 = client.post(f"{P}/compositions/{cid}/run", json={"objective": "w763 given",
+                                                          "params": {"studio": {"series": _series}}}).json()
+    assert r1["needs_at_run"]["unmet"] == [], r1["needs_at_run"]
+    runs = {x["run_id"]: x for x in client.get(f"{P}/compositions/runs", params={"limit": 100}).json()["runs"]}
+    assert runs[r0["run_id"]]["needs_unmet_at_run"] == ["studio"] and runs[r1["run_id"]]["needs_unmet_at_run"] == []
+    import pathlib
+    page = pathlib.Path("apps/workstation-superapp/src/pages/synthesis/ResourceFabric.tsx").read_text(encoding="utf-8")
+    for t in ('{(sim.needs_with_this_configuration?.unmet ?? []).length > 0 && (',
+              '{(runResult.needs_at_run?.unmet ?? []).length > 0 && (',
+              '{(h.needs_unmet_at_run ?? []).length > 0 && <span data-testid="fabric-history-needs-unmet"'):
+        assert t in page, t
+
+
+def test_w764_the_gateway_reads_the_settings_as_every_consumer_does_and_the_stream_resyncs(client, monkeypatch):
+    """W764 - FU-1138: the gateway read organism_config.json through a reader of its own and, while the store could
+    not be read, kept its last rpm_limit while every other consumer read the defaults. FU-1127: only query_meta
+    re-synced the governed rpm_limit; the stream never did."""
+    import asyncio
+    import json
+    import pathlib
+    import agentic_core.organism.reconfiguration as _rc
+    from agentic_core.ai.gateway import gateway as _g
+
+    S = pathlib.Path(_rc._CONFIG_STORE)
+    held = S.read_bytes() if S.exists() else None
+    lim0, tok0 = _g._rate_limiter._limit, _g._rate_limiter._tokens
+    try:
+        cfg = _rc._load_config()
+        cfg["gateway"]["rpm_limit"] = 7
+        S.write_text(json.dumps(cfg), encoding="utf-8")
+        _g._reconfig_last_sync = 0.0
+        _g._sync_reconfig()
+        assert _g._rate_limiter._limit == 7 and _g._reconfig_problem is None
+        S.write_bytes(S.read_bytes()[:20])                      # torn
+        _g._reconfig_last_sync = 0.0
+        _g._sync_reconfig()
+        assert _g._rate_limiter._limit == _rc._load_config()["gateway"]["rpm_limit"] == _rc._DEFAULT_CONFIG["gateway"]["rpm_limit"], (
+            "the gateway kept the last limit while every other consumer read the defaults", _g._rate_limiter._limit)
+        assert _g._reconfig_problem, "the gateway read a torn store and kept no problem"
+        calls = []
+        monkeypatch.setattr(_g, "_sync_reconfig", lambda: calls.append(1))
+
+        async def _drain():
+            async for _ev in _g.stream_meta("w764 hello", agent="assistant"):
+                pass
+        asyncio.run(_drain())
+        assert calls, "the stream never re-synced the governed rpm_limit"
+    finally:
+        _g._rate_limiter._limit, _g._rate_limiter._tokens = lim0, tok0
+        _g._reconfig_last_sync = 0.0
+        if held is None:
+            S.unlink(missing_ok=True)
+        else:
+            S.write_bytes(held)

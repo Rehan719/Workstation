@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { Card } from '@workstation/ui';
 import { apiJson, errorMessage, axiosDetail } from '../lib/api';
+import { DOMAINS as CANON_DOMAINS, DOMAIN_LABELS } from '../lib/taxonomy';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -54,7 +55,9 @@ interface MissionLog {
 // A list of options a control cannot act on is the same defect as a count that covers nothing, so the
 // named models are gone and what remains says what it is.
 const AI_MODELS = ['Recorded in the spec text — the platform routes in-house first'];
-const DOMAINS = ['Religion', 'Science', 'Law', 'Care', 'Education', 'Employment', 'Finance', 'Engineering', 'Health', 'Governance'];
+//  W758 (FU-969) - the six canonical domains of §17.1, from the one source every routed surface imports; this page
+//  carried its own ten, four of them (Finance, Engineering, Health, Governance) no domain of the platform
+const DOMAINS = CANON_DOMAINS.map(d => DOMAIN_LABELS[d] ?? d);
 const REGIONS = ['EU-West', 'US-East', 'US-West', 'APAC', 'MEA', 'LATAM', 'On-Prem', 'Edge-Local'];
 const FACILITY_TYPES = ['Data Centre', 'Industrial Plant', 'Smart Grid', 'Research Lab', 'Command Hub', 'Distributed Edge'];
 const SCALE_TIERS = [

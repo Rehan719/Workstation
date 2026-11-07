@@ -888,11 +888,13 @@ async def submit_change(req: SubmitChangeRequest, principal: str | None = None) 
                                                                     "[economy] owner payout",
                                                                     # FU-794 - the fund's hold title, reserved too
                                                                     "[economy] capital fund allocation")):
+        #  W760 (FU-883) - the sentence names EVERY reserved title, the payout's and the fund's included
         raise HTTPException(status_code=422, detail=(
-            "change_type 'economy_material' and the '[economy] material distribution/transfer/contract "
-            "settlement' titles are "
-            "reserved for the economy's own materiality holds, which it files and keeps current itself; run "
-            "the action (a cycle or transfer) and decide the hold it files in the Governance hub's Sovereign Sanctum."))
+            "change_type 'economy_material' and the titles '[economy] material distribution', '[economy] material "
+            "transfer', '[economy] material contract settlement', '[economy] owner payout' and '[economy] capital "
+            "fund allocation' are reserved for the economy's own holds, which it files and keeps current itself; "
+            "run the action (a cycle, transfer, settlement, payout or allocation) and decide the hold it files in "
+            "the Governance hub's Sovereign Sanctum."))
     cca_id = f"cca-{uuid.uuid4().hex[:10]}"
     change_type = req.change_type
     cc = req.config_change

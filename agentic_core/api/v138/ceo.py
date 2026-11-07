@@ -12,7 +12,6 @@ from agentic_core.ai.ceo.memory_v01 import memory_v01, meeting_log
 from agentic_core.ai.native.orchestrator import orchestrator
 from agentic_core.layers.ueg import ueg
 from agentic_core.simulation.ese import get_ese_instance
-from agentic_core.optimization.aro import get_aro_instance
 from agentic_core.biomimicry.geospheric.drad import get_drad_instance
 from agentic_core.bto.religion_bto import get_religion_bto
 from agentic_core.swarm.signaling_protocol import SignalingProtocol
@@ -44,7 +43,6 @@ class ToolRegistry:
             "call_meeting": self.call_meeting,
             "discover_tools": self.discover_tools,
             "run_qep_simulation": self.run_qep_simulation,
-            "optimize_qep_resources": self.optimize_qep_resources,
             "orchestrate_qep_swarm": self.orchestrate_qep_swarm,
             "check_qep_fabric_health": self.check_qep_fabric_health,
             "qep_tajwid_coach": self.qep_tajwid_coach,
@@ -75,10 +73,11 @@ class ToolRegistry:
         ese = get_ese_instance(num_agents)
         return await ese.run_simulation(steps)
 
-    async def optimize_qep_resources(self, sim_demand: float = 0.5, reason_demand: float = 0.8):
-        """v0.8: Run Autonomous Resource Optimisation (ARO)."""
-        aro = get_aro_instance()
-        return aro.optimize({"sim_demand": sim_demand, "reason_demand": reason_demand})
+    #  W754 (FU-617, Owner ruling 2026-11-06) - optimize_qep_resources is REMOVED and agentic_core/optimization/aro.py is ARCHIVED (_archive/, reversibly)
+    #  Measured first: no route, page or chat path called the tool (the chat calls only get_system_vitals
+    #  and call_meeting), and nothing read its 'allocation'. Its objective was linear, so the answer was always
+    #  "everything on the largest demand", and two of its four demands were typed constants. An allocator that
+    #  allocates nothing is not kept as a capability.
 
     async def orchestrate_qep_swarm(self, topic: str, domain: str = "religion"):
         """v1.0: Orchestrate specialized cross-domain research swarm (BTO)."""

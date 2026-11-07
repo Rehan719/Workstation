@@ -2357,6 +2357,13 @@ async def get_specification(sid: str, request: Request, user: dict | None = Depe
             "replay": {"route": "/api/v1/resources/compositions/{cid}/run",
                        "send": {"specification_id": rec.get("id"), "specification_digest": rec.get("digest")},
                        "compositions": comps,
+                       #  W762 (FU-903) - a replay is NOT a reproduction, and says so where it is offered
+                       "is_reproduction": False,
+                       "reproduction_basis": ("a specification keeps the objective, the criteria and the "
+                                              "resources by id. It holds no configuration and no run "
+                                              "parameters: a run from it uses each composition's "
+                                              "configuration as it is NOW and the parameters sent with "
+                                              "that run, so its output is not a reproduction of anything"),
                        "basis": ("a specification is run again through the composition run route, naming it. "
                                  "The run attempts what the COMPOSITION holds; `missing` and `extra` say how "
                                  "each saved composition differs from what was proposed, and the run's record "
@@ -2439,6 +2446,7 @@ async def run_composition(cid: str, req: RunCompositionRequest,
         stages.append({"role": r["name"], "instruction": instruction})
     if not stages:
         raise HTTPException(status_code=400, detail="Composition has no resources to run.")
+    _needs_at_run = _per_run_needs([(r["id"], _eff_cfg(r)) for r in comp.get("resources", [])])   # W763 (FU-899)
 
     objective = req.objective or f"Execute the '{comp['name']}' configuration for {comp.get('usage_area', 'synthesis')}."
     # W618 (FU-495, M2 v8 R4.1) — THE USER'S OBJECTIVE IS IN EVERY STAGE'S OWN INSTRUCTION. It reached the swarm
@@ -2455,12 +2463,31 @@ async def run_composition(cid: str, req: RunCompositionRequest,
     from agentic_core.ai.gateway import console_pre_gate, console_post_gate
     _halt = console_pre_gate("composition-run")
     if _halt:
-        return {"composition_id": cid, "refused": True,
+        _refused_spec = (_specification_link(
+            _spec, _spec_now, _spec_composed, [], None,
+            refused=f"the run was refused before anything ran: {_halt.get('refused_reason')}")
+            if _spec is not None else None)
+        #  W762 (FU-902) - A REFUSED RUN IS RECORDED. A replay of a kept specification that was refused left no
+        #  trace that it was asked; the history now holds it, marked refused, with nothing attempted.
+        try:
+            from agentic_core.config import atomic_write_json, read_json_strict, store_lock
+            _cr_store = data_path("composition_runs.json")
+            with store_lock(_cr_store):
+                _cr = read_json_strict(_cr_store, list, expect=list)
+                _cr.append({"run_id": f"run-refused-{uuid.uuid4().hex[:10]}", "composition_id": cid,
+                            "name": comp["name"], "owner_id": comp.get("owner_id"),
+                            "version": comp.get("version", 1), "objective": objective[:200],
+                            "refused": True, "refused_reason": _halt.get("refused_reason"),
+                            "composed": _spec_composed, "real_resources": [], "attempted": [],
+                            "specification": _refused_spec,
+                            "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
+                atomic_write_json(_cr_store, _cr[-100:])
+            _refused_record = {"persisted": True}
+        except Exception as _exc:
+            _refused_record = {"persisted": False, "reason": f"{_exc.__class__.__name__}: {str(_exc)[:120]}"}
+        return {"composition_id": cid, "refused": True, "run_record": _refused_record,
                 #  P3.31 - a refused run from a specification says that NOTHING proposed was attempted
-                **({"specification": _specification_link(
-                    _spec, _spec_now, _spec_composed, [], None,
-                    refused=f"the run was refused before anything ran: {_halt.get('refused_reason')}")}
-                   if _spec is not None else {}),
+                **({"specification": _refused_spec} if _spec is not None else {}),
                 "final": f"[CONSTITUTIONAL REFUSAL] {_halt.get('refused_reason')}", "governance_checkpoint": _halt}
     res = await orchestrator.swarm("composition-run", stages, context=objective,
                                    prefer_external=req.prefer_external, timeout=req.timeout,
@@ -2694,6 +2721,7 @@ async def run_composition(cid: str, req: RunCompositionRequest,
             "composed": [r["id"] for r in comp.get("resources", [])],
             "stand_ins": _stand_ins, "stand_ins_basis": _stand_ins_basis,
             "specification": _spec_link,                                   # P3.31
+            "needs_unmet_at_run": [x["resource"] for x in _needs_at_run["unmet"]],     # W763 (FU-899)
             # W491 (refutation) — this filed a resource whose handler RAISED as kind "facility_run" and
             # dropped the error, so the history read it as a facility that ran. The outcome and the error
             # are what happened; the kind stays as what the resource is.
@@ -2736,6 +2764,7 @@ async def run_composition(cid: str, req: RunCompositionRequest,
             "composition_id": cid, "name": comp["name"], "usage_area": comp.get("usage_area"),
             "objective": objective, "posture": "in-house-first", "quality_assurance": qa,
             "governance_checkpoint": _gov_checkpoint,
+            "needs_at_run": _needs_at_run,                                          # W763 (FU-899)
             # W273 — run-time honesty: the design's simulation verdicts (explicit warning when
             # either failed — never silent, never a hard wall) + which resources got per-run overrides.
             "commit_ready": commit_ready, "usage_area_supported": _area_ok,
@@ -3225,6 +3254,27 @@ async def get_resource(resource_id: str):
     return r
 
 
+def _per_run_needs(pairs: List[tuple]) -> Dict[str, Any]:
+    """W763 (FU-899) - each resource's DECLARED needs checked against the configuration THIS preview or run uses.
+    A need was checked only when the cell proposed; a composition previewed or run directly was never read against
+    it. Reported, never a wall: `unmet` names each resource whose need does not hold with what it was given."""
+    from agentic_core.api.instrument_cell import needs_check
+    rows = []
+    for rid, cfg in pairs:
+        if rid not in _BY_ID:
+            continue
+        try:
+            n = needs_check(rid, dict(cfg or {}))
+            rows.append({"resource": rid, "state": n.get("state"), "basis": n.get("basis")})
+        except Exception as exc:                          # noqa: BLE001 - said, never guessed
+            rows.append({"resource": rid, "state": "not_checked", "basis": f"the check failed ({type(exc).__name__})"})
+    unmet = [r for r in rows if r["state"] == "unmet"]
+    return {"checked": rows, "unmet": unmet, "all_met": not unmet and all(r["state"] == "met" for r in rows),
+            "basis": ("each resource's declared needs, read at this call against the configuration this "
+                      "preview or run uses (saved parameters plus this call's overrides). A resource whose need "
+                      "is unmet is still attempted; this says it was given what it needs or that it was not")}
+
+
 class ComposeRequest(BaseModel):
     name: str
     resource_ids: List[str]
@@ -3346,6 +3396,9 @@ async def simulate_composition(req: ComposeRequest):
         req.name or "(unnamed)", req.resource_ids, req.usage_area, req.config)
     return {"name": req.name, "usage_area": req.usage_area, "resources": resolved,
             "model": model, "simulation": qa, "commit_ready": commit_ready, "saved": False,
+            "needs_with_this_configuration": _per_run_needs(                       # W763 (FU-899)
+                [(rid, {**(_BY_ID[rid].get("reconfigurable_params") or {}), **(req.config.get(rid) or {})})
+                 for rid in req.resource_ids]),
             "note": ("Modelled before commit (§7) — not saved. NOTHING WAS RUN: no resource was executed or "
                      "dry-run; this is a static reading of the selection plus a quality gate over a one-"
                      "sentence description of it. Adjust the design, then compose.")}

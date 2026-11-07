@@ -281,6 +281,7 @@ export const OrganismDashboard: React.FC = () => {
             The organism is governing how much AI cognition the swarm admits. {cognition.organism?.atp_can_fall === false
               ? 'ATP here is a SIMULATION that cannot fall (production always exceeds consumption), so it does not limit runs.'
               : 'Each run expends simulated ATP.'} Max parallel agents now: <span className="text-violet-300 font-bold">{cognition.max_parallel}</span>
+            {/* W756 (FU-1114) */}{cognition.work_budget?.holds && <span data-testid="organism-work-budget-reason"> — held at 1 by the work budget: {cognition.work_budget.basis}</span>}
             {cognition.organism.should_throttle && <span className="text-amber-400"> · throttling</span>}.
           </p>
         </div>
