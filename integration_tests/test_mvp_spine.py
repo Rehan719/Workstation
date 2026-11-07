@@ -68182,7 +68182,7 @@ def test_w746_host_resources_are_read_once_and_say_what_they_cover(client, monke
     #  (d) the AI CEO's vitals tool, which slept the same 0.1 s
     _v = _aio.run(_ceo.ToolRegistry().get_system_vitals())
     assert (_v["cpu_load_percent"], _v["memory_percent"], _v["memory_used_gb"],
-            _v["cpu_window_seconds"]) == (37.2, 42.0, 2.79, 2.5), _v
+            _v["cpu_window_seconds"]) == (37.2, 42.0, 3.0, 2.5), _v   # W765 (FU-1133) - decimal GB, as the CTO route
     assert "not this platform alone" in _v["scope"], _v
     #  and the route that serves the tool's dict unchanged (a reader the first pass missed)
     _vr = client.get("/api/v138/ceo/vitals")
@@ -69946,3 +69946,27 @@ def test_w764_the_gateway_reads_the_settings_as_every_consumer_does_and_the_stre
             S.unlink(missing_ok=True)
         else:
             S.write_bytes(held)
+
+
+def test_w765_memory_is_one_unit_on_every_route_and_the_genome_comment_is_true(client):
+    """W765 - FU-1133: memory_used_gb was decimal GB on the CTO route and binary GiB in the AI CEO's vitals tool.
+    FU-1117: a genome route comment said no page fetches /api/v1/organism/status; two pages do."""
+    import inspect
+    import pathlib
+    from agentic_core.organism.host_observation import MEMORY_UNIT
+    from agentic_core.api.v138 import ceo as _ceo
+    src = inspect.getsource(_ceo)
+    assert "1024 ** 3" not in src and "_used / 1e9" in src and '"memory_unit": MEMORY_UNIT' in src
+    from agentic_core.api import csuite as _cs
+    assert '"memory_unit": MEMORY_UNIT' in inspect.getsource(_cs) and "10^9" in MEMORY_UNIT
+    r = client.get("/api/csuite/cto/infrastructure")
+    assert r.status_code == 200, r.text[:200]
+    _m = r.json()
+    _m = _m if "memory_unit" in _m else next((v for v in _m.values() if isinstance(v, dict) and "memory_unit" in v), {})
+    assert _m.get("memory_unit") == MEMORY_UNIT, r.text[:400]
+    g = pathlib.Path("agentic_core/organism/genome.py").read_text(encoding="utf-8")
+    assert "which no page fetches" not in g
+    for page in ("OrganismDashboard.tsx", "DashboardNew.tsx"):
+        assert page in g
+        hit = list(pathlib.Path("apps/workstation-superapp/src").rglob(page))
+        assert hit and "/api/v1/organism/status" in hit[0].read_text(encoding="utf-8"), page

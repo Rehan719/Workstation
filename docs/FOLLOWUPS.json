@@ -22068,11 +22068,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W765",
       "note": "",
       "slot_source": "stale comment, no surface; P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The genome route comment now names the two pages that fetch /api/v1/organism/status (OrganismDashboard, DashboardNew); the guard reads both pages. Blind red."
     },
     {
       "id": "FU-1118",
@@ -22398,11 +22401,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W765",
       "note": "",
       "slot_source": "tier-3: P3.30 owns tier-3 rows (Owner ruling 2026-10-09), beside the C-Suite and AI CEO surface rows there",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The AI CEO vitals tool now reports memory_used_gb in decimal GB like the CTO route, and both carry memory_unit from one constant in host_observation. Guard test_w765, 2 blinds red."
     },
     {
       "id": "FU-1134",

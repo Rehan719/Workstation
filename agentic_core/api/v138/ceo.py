@@ -1,3 +1,4 @@
+from agentic_core.organism.host_observation import MEMORY_UNIT   # W765 (FU-1133)
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 import json
@@ -288,7 +289,9 @@ class ToolRegistry:
         _cpu, _used, _pct = _h["cpu_percent"], _h["memory_used_bytes"], _h["memory_percent"]
         return {
             "cpu_load_percent": None if _cpu is None else round(_cpu, 1),
-            "memory_used_gb": None if _used is None else round(_used / (1024 ** 3), 2),
+            #  W765 (FU-1133) - decimal gigabytes (10^9 bytes), as the CTO route reports; it was binary GiB here
+            "memory_used_gb": None if _used is None else round(_used / 1e9, 2),
+            "memory_unit": MEMORY_UNIT,
             "memory_percent": None if _pct is None else round(_pct, 1),
             "cpu_window_seconds": _h["cpu_window_seconds"],
             "scope": "the host machine - every program on it, not this platform alone",
