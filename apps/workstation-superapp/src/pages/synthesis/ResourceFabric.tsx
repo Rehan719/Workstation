@@ -53,6 +53,7 @@ interface Composition {
 interface HistoryRun {
   run_id: string; composition_id: string; name: string; version?: number; objective: string;
   qms_gate_passed?: boolean | null; any_external?: boolean; needs_unmet_at_run?: string[];
+  specification?: { specification_id?: string; specification_digest?: string } | null; refused?: boolean; refused_reason?: string;   // W766 (FU-904)
   // W491 (refutation) — this declared `ran`, which the API stopped sending, and omitted `outcome`,
   // which it now does: every past run rendered one identical aura chip, so a status read, a facility
   // run and an attempt that raised looked the same on the only surface that reads the persisted record.
@@ -652,6 +653,8 @@ export const ResourceFabric: React.FC = () => {
                 <div key={h.run_id} className="flex flex-wrap items-center gap-1.5 border-t border-slate-800 first:border-t-0 pt-1.5 first:pt-0">
                   <span className="text-[9px] font-mono text-slate-500">{h.run_id}</span>
                   <span className="text-[10px] font-black text-white">{h.name}</span>
+                  {h.specification?.specification_id && <span data-testid="fabric-history-from-spec" className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-aura/15 text-aura" title={h.specification.specification_digest}>from kept proposal {h.specification.specification_id}</span>}
+                  {h.refused && <span data-testid="fabric-history-refused" className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-vital/15 text-vital" title={h.refused_reason}>refused before anything ran</span>}
                   {(h.needs_unmet_at_run ?? []).length > 0 && <span data-testid="fabric-history-needs-unmet" className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-vital/15 text-vital">run without what it needs: {h.needs_unmet_at_run!.join(' · ')}</span>}
                   {(() => { const c = qmsChip({ qms_gate_passed: h.qms_gate_passed }); return c && (
                     <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${c.cls}`} title={c.title}>{c.label}</span>

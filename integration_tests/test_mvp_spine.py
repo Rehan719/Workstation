@@ -69970,3 +69970,17 @@ def test_w765_memory_is_one_unit_on_every_route_and_the_genome_comment_is_true(c
         assert page in g
         hit = list(pathlib.Path("apps/workstation-superapp/src").rglob(page))
         assert hit and "/api/v1/organism/status" in hit[0].read_text(encoding="utf-8"), page
+
+
+def test_w766_fu904_the_fabric_run_history_shows_a_run_from_a_kept_proposal_and_a_refused_one():
+    """W766 (FU-904) - the run record carries the specification link (and, since W762, a refused run); the fabric
+    page's run history showed neither."""
+    import pathlib
+    page = pathlib.Path("apps/workstation-superapp/src/pages/synthesis/ResourceFabric.tsx").read_text(encoding="utf-8")
+    assert '{h.specification?.specification_id && <span data-testid="fabric-history-from-spec"' in page
+    assert "from kept proposal {h.specification.specification_id}" in page
+    assert '{h.refused && <span data-testid="fabric-history-refused"' in page
+    import inspect
+    from agentic_core.api import resource_fabric as _f
+    src = inspect.getsource(_f.run_composition)
+    assert '"specification": _spec_link,' in src and '"specification": _refused_spec,' in src and '"refused": True,' in src

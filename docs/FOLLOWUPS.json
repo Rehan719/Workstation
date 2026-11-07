@@ -17751,11 +17751,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W766",
       "note": "",
       "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The fabric page's run history now shows a run that came from a kept proposal (its specification id) and a refused run. The swarm run route is not given one: it runs swarm cascades, not compositions, and a kept proposal's replay is defined as the composition run route (the replay offer names it). Guard test_w766, 2 blinds red."
     },
     {
       "id": "FU-905",
