@@ -717,6 +717,11 @@ class ModelGateway:
                         yield {"token": _NOTICE}
                     yield _fin
                     return
+                #  W772 (FU-1103) - AN EMPTY ANSWER IS A RECORDED FAILURE. It fell through with no record and no
+                #  breaker mark, so its seconds and counted tokens were spent on nothing the work budget saw; the
+                #  orchestrator path already records this case as a failure with its count.
+                self_healer.record_failure("ollama")
+                _record("ollama", False, _t0, False, tokens=_mt)
             except Exception:
                 self_healer.record_failure("ollama")
                 _record("ollama", False, _t0, False)

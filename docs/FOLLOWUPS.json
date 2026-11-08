@@ -21765,11 +21765,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W772",
       "note": "",
       "slot_source": "tier-3: P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The gateway stream's owned-model branch now records an empty answer (no text, no exception) as a failed model_attempt with its counted tokens and marks the breaker, as the orchestrator path does; it fell through with no record. Guard test_w772, 2 blinds red."
     },
     {
       "id": "FU-1104",

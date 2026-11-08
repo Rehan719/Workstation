@@ -70065,3 +70065,31 @@ def test_w771_fu1140_the_live_documents_name_the_current_fidelity_instrument():
     for m in re.finditer(r"fidelity_audit_v3\.js", v):
         assert "State as of 2026-09-05" in v[max(0, m.start() - 600):m.start()], v[m.start() - 200:m.start() + 50]
     assert "v3 (2026-09-05)" not in pathlib.Path("docs/README.md").read_text(encoding="utf-8")
+
+
+def test_w772_fu1103_an_empty_local_answer_in_the_stream_is_a_recorded_failure(monkeypatch):
+    """W772 (FU-1103) - an owned model that streamed no text and raised nothing fell through with no outcome and
+    no breaker mark, so the work budget never saw its seconds."""
+    import asyncio
+    import agentic_core.api.operational_excellence as _ox
+    from agentic_core.ai.gateway import gateway as _g
+    rows, fails = [], []
+    monkeypatch.delenv("AI_DISABLE_LOCAL", raising=False)
+    monkeypatch.setattr(_ox, "record_outcome", lambda *a, **k: rows.append(k))
+    from agentic_core.organism.self_healing import self_healer as _sh
+    monkeypatch.setattr(_sh, "is_open", lambda name: False)
+    monkeypatch.setattr(_sh, "record_failure", lambda name: fails.append(name))
+
+    async def _empty(prompt):
+        for t in ("", "  "):
+            yield t
+    monkeypatch.setattr(_g, "_stream_owned_model", _empty)
+    monkeypatch.setattr(_g, "_sync_reconfig", lambda: None)
+
+    async def _drain():
+        return [ev async for ev in _g.stream_meta("w772 hello", agent="assistant")]
+    evs = asyncio.run(_drain())
+    assert evs and evs[-1].get("done"), evs[-1:]
+    own = [r for r in rows if r.get("served_by") == "ollama"]
+    assert own and own[0]["success"] is False, ("an empty local answer left no failure on record", rows)
+    assert "ollama" in fails, "an empty local answer left no breaker mark"
