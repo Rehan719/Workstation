@@ -11,6 +11,12 @@ on:
   pull_request:
     branches: [ main ]
 
+# onnxruntime-node (a frontend dependency) downloads its optional CUDA binary from GitHub releases at install
+# time; CI has no GPU, and that download failed twice in a row (504, then 503) on 2026-11-08, failing the
+# frontend and browser-smoke jobs before any check ran. The CPU runtime ships inside the package.
+env:
+  npm_config_onnxruntime_node_install_cuda: skip
+
 jobs:
   backend:
     name: Backend — boot + integration suite
