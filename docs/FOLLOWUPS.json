@@ -22631,11 +22631,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W770",
       "note": "",
       "slot_source": "tier-3 finding: P3.30 owns tier-3 rows (Owner ruling 2026-10-09); the instrument FU-923 was on",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "entity_coverage_scan.py's basis is computed from what was read: with files it could not read it says how many of how many were read and that 'not found' does not cover the rest, instead of saying every JSON file was read. Guard test_w770, blind red."
     },
     {
       "id": "FU-1145",

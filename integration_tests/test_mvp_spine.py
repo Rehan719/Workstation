@@ -70023,3 +70023,28 @@ def test_w769_fu1146_the_self_check_says_a_search_folder_it_could_not_search(mon
     sc.main()
     out = capsys.readouterr().out
     assert "do NOT EXIST and were not searched" in out and "w769-no-such-folder" in out, out[:800]
+
+
+def test_w770_fu1144_the_entity_scan_basis_says_what_it_could_not_read(tmp_path, monkeypatch):
+    """W770 (FU-1144) - the scan's basis said every JSON file was read while listing files it could not read."""
+    import importlib.util
+    import pathlib
+    spec = importlib.util.spec_from_file_location("_es770", pathlib.Path("scripts/entity_coverage_scan.py"))
+    es = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(es)
+    (tmp_path / "vsb_entities").mkdir()
+    (tmp_path / "a.json").write_text("{}", encoding="utf-8")
+    (tmp_path / "b.json").write_text("{}", encoding="utf-8")
+    whole = es.scan(tmp_path)
+    assert whole["unreadable"] == [] and whole["basis"].startswith("every JSON file under the data root was read")
+    _real = pathlib.Path.read_bytes
+
+    def _rb(self):
+        if self.name == "b.json":
+            raise PermissionError("w770 driven")
+        return _real(self)
+    monkeypatch.setattr(pathlib.Path, "read_bytes", _rb)
+    part = es.scan(tmp_path)
+    assert part["unreadable"] == ["b.json"], part["unreadable"]
+    assert "every JSON file under the data root was read" not in part["basis"], part["basis"]
+    assert "1 of 2 JSON file(s)" in part["basis"] and "does NOT cover them" in part["basis"], part["basis"]
