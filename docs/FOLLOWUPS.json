@@ -22558,11 +22558,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W771",
       "note": "",
       "slot_source": "tier-3 finding: P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "docs/KNOWLEDGE_OPERATING_PROCESS.md's Measure step, docs/README.md's ledger line (no longer describing v3 of 2026-09-05) and the whole vision's list of the two measures now name fidelity_audit_v7.js; the vision's dated 2026-09-05 state block is history and keeps v3. Guard test_w771, 3 blinds red."
     },
     {
       "id": "FU-1141",

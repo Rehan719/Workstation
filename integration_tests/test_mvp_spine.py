@@ -70048,3 +70048,20 @@ def test_w770_fu1144_the_entity_scan_basis_says_what_it_could_not_read(tmp_path,
     assert part["unreadable"] == ["b.json"], part["unreadable"]
     assert "every JSON file under the data root was read" not in part["basis"], part["basis"]
     assert "1 of 2 JSON file(s)" in part["basis"] and "does NOT cover them" in part["basis"], part["basis"]
+
+
+def test_w771_fu1140_the_live_documents_name_the_current_fidelity_instrument():
+    """W771 (FU-1140) - three live documents named fidelity_audit_v3.js as the measure; the committed instrument is
+    fidelity_audit_v7.js. The vision's dated 2026-09-05 state block is history and keeps what it measured with."""
+    import pathlib
+    import re
+    for doc in ("docs/KNOWLEDGE_OPERATING_PROCESS.md", "docs/README.md"):
+        t = pathlib.Path(doc).read_text(encoding="utf-8")
+        assert "fidelity_audit_v3.js" not in t and "fidelity_audit_v7.js" in t, doc
+    assert pathlib.Path("scripts/workflows/fidelity_audit_v7.js").exists()
+    v = pathlib.Path("docs/WORKSTATION_IDBO_WHOLE_VISION.md").read_text(encoding="utf-8")
+    assert "`scripts/workflows/fidelity_audit_v7.js` — the two measures" in v
+    #  the only v3 mention left in the vision is inside the block dated as history
+    for m in re.finditer(r"fidelity_audit_v3\.js", v):
+        assert "State as of 2026-09-05" in v[max(0, m.start() - 600):m.start()], v[m.start() - 200:m.start() + 50]
+    assert "v3 (2026-09-05)" not in pathlib.Path("docs/README.md").read_text(encoding="utf-8")
