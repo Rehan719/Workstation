@@ -69998,3 +69998,13 @@ def test_w767_fu1134_the_demand_predictor_never_averages_an_unread_cpu_figure():
         assert n["expected_cpu"] is None and n["confidence"] is None and "nothing is predicted" in n["basis"], (h, n)
     import inspect
     assert "NOTHING CALLS THIS" in inspect.getsource(DemandPredictor.predict_demand)
+
+
+def test_w768_fu1132_the_vitals_broadcast_sends_no_typed_health_or_latency():
+    """W768 (FU-1132) - SYSTEM_VITALS sent a fixed 12 ms latency and a swarm health computed from the project count."""
+    import inspect
+    from agentic_core import app_mvp as _app
+    src = inspect.getsource(_app._vitals_loop)
+    assert '"latency_ms": None,' in src and '"swarmHealth": None,' in src, src
+    assert "len(projects) * 0.01" not in src and '"latency_ms": 12' not in src
+    assert "not measured" in src
