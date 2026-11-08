@@ -70008,3 +70008,18 @@ def test_w768_fu1132_the_vitals_broadcast_sends_no_typed_health_or_latency():
     assert '"latency_ms": None,' in src and '"swarmHealth": None,' in src, src
     assert "len(projects) * 0.01" not in src and '"latency_ms": 12' not in src
     assert "not measured" in src
+
+
+def test_w769_fu1146_the_self_check_says_a_search_folder_it_could_not_search(monkeypatch, capsys):
+    """W769 (FU-1146) - the reader search skipped a SEARCH_DIRS folder that does not exist without saying so."""
+    import importlib.util
+    import pathlib
+    import sys
+    spec = importlib.util.spec_from_file_location("_sc769", pathlib.Path("scripts/selfcheck_diff.py"))
+    sc = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(sc)
+    monkeypatch.setattr(sc, "SEARCH_DIRS", tuple(sc.SEARCH_DIRS) + ("w769-no-such-folder",))
+    monkeypatch.setattr(sys, "argv", ["selfcheck_diff.py", "--check", sorted(sc.CHECKS)[0]])
+    sc.main()
+    out = capsys.readouterr().out
+    assert "do NOT EXIST and were not searched" in out and "w769-no-such-folder" in out, out[:800]

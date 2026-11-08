@@ -22667,11 +22667,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W769",
       "note": "",
       "slot_source": "tier-3 finding: P3.30 owns tier-3 rows (Owner ruling 2026-10-09); the instrument FU-921 was on",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "selfcheck_diff.py main() now prints, before any early exit, each SEARCH_DIRS folder that does not exist and was not searched for readers, so a 'reaches no surface' lead is not read as covering it. Guard test_w769, blind red."
     },
     {
       "id": "FU-1147",
