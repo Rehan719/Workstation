@@ -70093,3 +70093,33 @@ def test_w772_fu1103_an_empty_local_answer_in_the_stream_is_a_recorded_failure(m
     own = [r for r in rows if r.get("served_by") == "ollama"]
     assert own and own[0]["success"] is False, ("an empty local answer left no failure on record", rows)
     assert "ollama" in fails, "an empty local answer left no breaker mark"
+
+
+def test_w773_fu1101_the_avatar_vision_run_is_a_recorded_outcome(monkeypatch):
+    """W773 (FU-1101) - the avatar's local image reading ran a model and recorded no outcome, so the work budget
+    never saw its seconds; the work-budget docstring said every run path reports its duration."""
+    import asyncio
+    import httpx
+    import agentic_core.api.operational_excellence as _ox
+    from agentic_core.avatars import api as _av
+    rows = []
+    monkeypatch.setattr(_ox, "record_outcome", lambda *a, **k: rows.append((a, k)))
+
+    class _R:
+        def __init__(self, body): self.status_code, self._b = 200, body
+        def json(self): return self._b
+
+    class _C:
+        body = {"response": "a cat on a mat", "eval_count": 9}
+        def __init__(self, *a, **k): pass
+        async def __aenter__(self): return self
+        async def __aexit__(self, *a): return False
+        async def post(self, *a, **k): return _R(_C.body)
+    monkeypatch.setattr(httpx, "AsyncClient", _C)
+    assert asyncio.run(_av._ollama_vision("aGk=", "what is this")) == "a cat on a mat"
+    (a, k), = rows
+    assert a == ("model_attempt", "avatar:vision") and k["success"] is True and k["tokens"] == 9, (a, k)
+    assert k["served_by"].startswith("ollama:") and isinstance(k["duration_ms"], int)
+    _C.body = {"response": "  "}
+    assert asyncio.run(_av._ollama_vision("aGk=", "what is this")) is None
+    assert rows[-1][1]["success"] is False and rows[-1][1]["tokens"] is None, rows[-1]

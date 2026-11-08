@@ -299,8 +299,10 @@ async def _ollama_vision(image_base64: str, message: str) -> Optional[str]:
     moondream) — owned, no external dependency. Returns the analysis text, or None if no local vision
     model is available (caller then falls back honestly — never fabricates image content)."""
     import httpx
+    import time as _time
     ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
     model = os.getenv("OLLAMA_VISION_MODEL", "llava")
+    _t0, _ok, _tokens, out = _time.time(), False, None, None
     try:
         async with httpx.AsyncClient(timeout=float(os.getenv("OLLAMA_VISION_TIMEOUT", "30"))) as client:
             r = await client.post(ollama_url, json={
@@ -310,11 +312,22 @@ async def _ollama_vision(image_base64: str, message: str) -> Optional[str]:
                 "stream": False,
             })
             if r.status_code == 200:
-                out = (r.json().get("response") or "").strip()
-                return out or None
+                _body = r.json()
+                out = (_body.get("response") or "").strip() or None
+                _ok = out is not None
+                _ec = _body.get("eval_count")
+                _tokens = _ec if isinstance(_ec, int) and not isinstance(_ec, bool) else None
+    except Exception:
+        out = None
+    #  W773 (FU-1101) - THE VISION RUN IS A RECORDED OUTCOME. It ran a local model and recorded nothing, so the
+    #  work budget never saw its seconds. Recorded only when an attempt was made: this is reached after the post.
+    try:
+        from agentic_core.api.operational_excellence import record_outcome
+        record_outcome("model_attempt", "avatar:vision", served_by=f"ollama:{model}", is_external=False,
+                       duration_ms=int((_time.time() - _t0) * 1000), success=_ok, tokens=_tokens)
     except Exception:
         pass
-    return None
+    return out
 
 
 class SpeakRequest(BaseModel):

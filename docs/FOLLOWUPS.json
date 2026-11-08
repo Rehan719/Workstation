@@ -21729,11 +21729,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W773",
       "note": "",
       "slot_source": "tier-3 finding: P3.30 owns tier-3 rows (Owner ruling 2026-10-09); the router would pick P2.40 from the avatars/ route",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "avatars/api.py _ollama_vision now records a model_attempt outcome (served_by ollama:<model>, duration, success false for an empty or failed answer, eval_count as tokens when the server gives it), so the work budget sees the vision run and the docstring's claim holds for it. Guard test_w773, 2 blinds red."
     },
     {
       "id": "FU-1102",
