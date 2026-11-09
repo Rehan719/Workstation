@@ -58,9 +58,9 @@ class ToolRegistry:
             "qep_billing_donations": self.qep_billing_donations,
             "qep_guidance_assistant": self.qep_guidance_assistant,
             "qep_swarm_learning": self.qep_swarm_learning,
-            "run_introspection": self.run_introspection,
-            "run_retrospection": self.run_retrospection,
-            "run_extrospection": self.run_extrospection,
+            #  W778 (FU-1126) - run_introspection / run_retrospection / run_extrospection unregistered and
+            #  archived (_archive/agentic_core/api/v138/ceo_fixed_pipelines.py): each returned a fixed analysis
+            #  as if a pipeline had run, and no dispatch reached them
             "generate_v10_roadmap": self.generate_v10_roadmap,
             "recursive_improve": self.recursive_improve,
             "produce_scientific_draft": self.produce_scientific_draft,
@@ -149,34 +149,6 @@ class ToolRegistry:
     async def qep_swarm_learning(self):
         """v0.9: Swarm Intelligence for Group Learning."""
         return await qep_flagship_service.swarm_intelligence_learning()
-
-    async def run_introspection(self, action: str, reasoning: List[str], confidence: float):
-        """v1.0: Run AI CEO Introspection Pipeline."""
-        return {
-            "timestamp": datetime.utcnow().isoformat(),
-            "action": action,
-            "reasoning": reasoning,
-            "confidence": confidence,
-            "status": "LOGGED_TO_CHROMA"
-        }
-
-    async def run_retrospection(self, incident_log: Optional[List[Dict[str, Any]]] = None):
-        """v1.0: Run AI CEO Retrospection Pipeline."""
-        return {
-            "timestamp": datetime.utcnow().isoformat(),
-            "analysis": "Root cause identified: latency spike in L3 reactor.",
-            "fix_proposed": "Trigger ARO optimization for L3.",
-            "status": "ANALYSIS_COMPLETE"
-        }
-
-    async def run_extrospection(self, external_data: Optional[List[str]] = None):
-        """v1.0: Run AI CEO Extrospection Pipeline."""
-        return {
-            "timestamp": datetime.utcnow().isoformat(),
-            "external_trends": ["Increase in decentralized compute usage", "New PQC standards update"],
-            "suggested_actions": ["Update Article 1107 with latest NIST guidelines"],
-            "status": "TRENDS_MAPPED"
-        }
 
     async def generate_v10_roadmap(self):
         """v0.9: Generate the v1.0 Global Launch Roadmap."""

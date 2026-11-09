@@ -70199,3 +70199,19 @@ def test_w776_fu1105_the_token_count_reaches_a_page_and_every_sse_client():
     page = pathlib.Path("apps/workstation-superapp/src/pages/developers/NativeAI.tsx").read_text(encoding="utf-8")
     assert '{cRes.model_tokens_basis && <span data-testid="native-complete-tokens"' in page
     assert "tokens: {cRes.model_tokens ?? 'not counted'}" in page
+
+
+def test_w778_fu1126_the_ceo_registry_lists_no_fixed_analysis_tool():
+    """W778 (FU-1126) - three AI CEO tools returned fixed analyses as if a pipeline ran (LOGGED_TO_CHROMA that logged
+    nothing, one fixed root cause, fixed trends). They are unregistered and archived; the registry is listed."""
+    import pathlib
+    from agentic_core.api.v138 import ceo as _ceo
+    tools = _ceo.ToolRegistry().tools if hasattr(_ceo.ToolRegistry(), "tools") else None
+    reg = tools if isinstance(tools, dict) else next(v for v in vars(_ceo.ToolRegistry()).values() if isinstance(v, dict) and "get_system_vitals" in v)
+    assert "get_system_vitals" in reg and len(reg) > 5, sorted(reg)
+    for gone in ("run_introspection", "run_retrospection", "run_extrospection"):
+        assert gone not in reg and not hasattr(_ceo.ToolRegistry, gone), gone
+    src = pathlib.Path("agentic_core/api/v138/ceo.py").read_text(encoding="utf-8")
+    assert "LOGGED_TO_CHROMA" not in src and "latency spike in L3 reactor" not in src
+    arc = pathlib.Path("_archive/agentic_core/api/v138/ceo_fixed_pipelines.py").read_text(encoding="utf-8")
+    assert "async def run_extrospection" in arc and "ARCHIVED W778" in arc

@@ -22270,11 +22270,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W778",
       "note": "",
       "slot_source": "a tier-3 finding no user reaches; P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "run_introspection, run_retrospection and run_extrospection are unregistered from the AI CEO ToolRegistry and their methods archived to _archive/agentic_core/api/v138/ceo_fixed_pipelines.py (principle 10); a leg lists the registry and asserts none remains and the fixed strings are gone. Guard test_w778, blind red."
     },
     {
       "id": "FU-1127",
