@@ -293,6 +293,11 @@ def state() -> Dict[str, Any]:
         "capacity_seconds": CAPACITY_SECONDS,
         "seconds_spent": round(spent, 3),
         "fraction_spent": round(fraction, 4),
+        #  W775 (FU-1102) - S18.1 rules both units; the fraction is SECONDS ALONE, said where it is read
+        "capacity_tokens": None,
+        "fraction_basis": ("seconds_spent / capacity_seconds, SECONDS ALONE: tokens are recorded beside it but no "
+                           "token capacity is stated, so tokens do not enter the fraction and cannot hold "
+                           "anything"),
         "calls_recorded": int(rec.get("calls") or 0),
         "window_seconds": WINDOW_SECONDS,
         "window_started": rec.get("window_started"),

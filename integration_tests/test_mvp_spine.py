@@ -70146,3 +70146,15 @@ def test_w774_fu1135_cuda_is_a_visible_device_not_an_installed_tool(monkeypatch,
     if gpu:
         assert _t.runnable(gpu, m)[0] == _t.UNKNOWN, _t.runnable(gpu, m)
     assert m["not_probed"] == ["NPU", "QPU", "PPU"] and "not a finding" in m["not_probed_basis"]
+
+
+def test_w775_fu1102_the_work_budget_fraction_says_it_is_seconds_alone():
+    """W775 (FU-1102) - S18.1 rules both units, the fraction was seconds alone, and tokens sat beside it with no
+    stated capacity and nothing saying they do not enter it."""
+    import pathlib
+    from agentic_core.molecular import work_budget as _wb
+    st = _wb.state()
+    assert st["capacity_tokens"] is None and "SECONDS ALONE" in st["fraction_basis"], st.get("fraction_basis")
+    assert "no token capacity is stated" in st["fraction_basis"]
+    page = pathlib.Path("apps/workstation-superapp/src/pages/organism/OrganismDashboard.tsx").read_text(encoding="utf-8")
+    assert '{systems.work_budget.fraction_basis && <div data-testid="organism-work-budget-fraction">' in page

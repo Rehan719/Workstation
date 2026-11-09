@@ -21750,11 +21750,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W775",
       "note": "",
       "slot_source": "tier-3 finding: P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "work_budget.state() now carries capacity_tokens None and a fraction_basis saying the fraction is seconds alone and tokens, having no stated capacity, do not enter it; the Organism dashboard prints it. No token capacity was invented: choosing one is an assumption to state when a reading justifies it. Guard test_w775, 2 blinds red."
     },
     {
       "id": "FU-1103",
