@@ -22670,11 +22670,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W777",
       "note": "",
       "slot_source": "tier-3 finding: P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "test_w749's source census now classifies every tracked script under scripts/: an instrument in the census (with a refusal), a pending instrument whose refusal is not built (twelve, registered as FU-1154), or not an instrument (with what it is); leading-underscore probes are one-round history (FU-924). A script added later is in none and fails the guard until placed. Blind red."
     },
     {
       "id": "FU-1146",
@@ -22834,6 +22837,24 @@
       "note": "",
       "slot_source": "found in this round and not done in it",
       "tier": 3
+    },
+    {
+      "id": "FU-1154",
+      "title": "Twelve scripts that report on a set carry no refusal for an empty one",
+      "why": "W777 classified every tracked script for the W749 source census (FU-1145). Twelve report on a set and carry no 'examined nothing' refusal: audit_surface_census, auth_perimeter, coupling, pass_set_diff, privacy_check, readme_figures, render_fidelity_ledger, row_components, screen_phrasings, truth_sweep_inventory, prune_test_entities, quarantine_test_entities. Each needs the refusal FU-671 requires; as each gains one it moves from the pending set in test_w749 to the census list.",
+      "source": "W777 census classification",
+      "found": "2026-11-09",
+      "files": [
+        "scripts/audit_surface_census.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 3,
+      "slot_source": "rides FU-1145 (W777), the P3.30 census row it was split from"
     }
   ],
   "routes": [

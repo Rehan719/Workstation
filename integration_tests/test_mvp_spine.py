@@ -69350,6 +69350,34 @@ def test_w749_an_instrument_that_examined_nothing_refuses_and_reads_what_it_name
             _mute.append(_rel)
     assert not _mute, ("an instrument that reports on a set has no refusal for an empty one in its code", _mute)
 
+    #  W777 (FU-1145) - THE CENSUS IS NOT TYPED SHUT. Every tracked script is classified here: an instrument in the
+    #  census above, an instrument whose refusal is not yet built (each named, and registered), or not an
+    #  instrument (with what it is). A script added later is in none of them, and this fails until it is placed.
+    _pending_refusal = {   # instruments that report on a set and carry no refusal for an empty one yet (FU-1154)
+        "scripts/audit_surface_census.py", "scripts/auth_perimeter.py", "scripts/coupling.py",
+        "scripts/pass_set_diff.py", "scripts/privacy_check.py", "scripts/readme_figures.py",
+        "scripts/render_fidelity_ledger.py", "scripts/row_components.py", "scripts/screen_phrasings.py",
+        "scripts/truth_sweep_inventory.py", "scripts/prune_test_entities.py", "scripts/quarantine_test_entities.py"}
+    _not_instruments = {
+        "scripts/boot_audit_backend.py": "boots a backend", "scripts/boot_signin_check_backend.py": "boots a backend",
+        "scripts/run_auth_backend.py": "boots a backend", "scripts/init_data.py": "seeds a data store",
+        "scripts/install_privacy_hook.py": "installs a git hook",
+        "scripts/move_to_private_store.py": "moves files on the Owner's instruction",
+        "scripts/relocate_data_store.py": "moves the data store",
+        "scripts/purge_memory_contamination.py": "a one-time Owner-run remediation",
+        "scripts/round_tools/patch.py": "an editing helper", "scripts/followups.py": "the register CLI",
+        "scripts/night_sim.py": "a forecast", "scripts/plan_night.py": "a plan generator",
+        "scripts/session_forecast.py": "a forecast", "scripts/soak_organism.py": "a long-running soak driver"}
+    _tracked = _sp.run(["git", "ls-files", "scripts/*.py", "scripts/round_tools/*.py", "scripts/*.mjs"],
+                       cwd=_root, capture_output=True, text=True, check=True).stdout.split()
+    assert _tracked, "git listed no scripts, so the census examined nothing"
+    #  a leading underscore marks a one-round probe or its seed (FU-924 registers marking them as history)
+    _unplaced = [t for t in _tracked if not _pl.PurePosixPath(t).name.startswith("_")
+                 and t not in set(_instruments) | _pending_refusal | set(_not_instruments)]
+    assert not _unplaced, ("a script is in no census bucket: add it to the instruments (with a refusal), to the "
+                           "pending set (and register it), or to the not-instruments with what it is", _unplaced)
+    assert not (_pending_refusal & set(_instruments)) and all((_root / t).exists() for t in _pending_refusal)
+
 
 # ══════════════════════════════════════════════════════════════════════════════════════════════════════════
 #  W753 (FU-1048, P2.41; the Owner's ruling of 2026-10-14) - THE OWNER'S ENTITIES ARE RECORDED UNDER HIS NAME.
