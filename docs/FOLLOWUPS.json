@@ -21814,11 +21814,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W776",
       "note": "",
       "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The four SSE consumers (v138/ceo.py, v310/business.py, synthesis/api.py, projects/api.py) now carry model_tokens and model_tokens_basis on their done frame, and the Native AI page's completion result prints the count with its basis. Guard test_w776, 2 blinds red."
     },
     {
       "id": "FU-1106",

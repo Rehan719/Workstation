@@ -573,7 +573,7 @@ export const NativeAI: React.FC = () => {
   const [cPrompt, setCPrompt] = useState('Outline a halal, zero-waste weekly meal plan for an elderly resident');
   const [cModel, setCModel] = useState<string>('auto');
   const [modelTiers, setModelTiers] = useState<{ id: string; label: string; kind: string }[]>([]);
-  const [cRes, setCRes] = useState<{ output: string; served_by: string; is_external: boolean; resources_tried?: string[]; governance_checkpoint?: Checkpoint } | null>(null);
+  const [cRes, setCRes] = useState<{ output: string; served_by: string; is_external: boolean; resources_tried?: string[]; governance_checkpoint?: Checkpoint; model_tokens?: number | null; model_tokens_basis?: string } | null>(null);
   const [completing, setCompleting] = useState(false);
   const runComplete = async () => {
     if (!cPrompt.trim()) return;
@@ -995,6 +995,7 @@ export const NativeAI: React.FC = () => {
                   {(() => { const b = provenanceBadge(cRes.served_by, cRes.is_external); return <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
                   {cRes.resources_tried && <span className="text-[8px] font-mono text-slate-600">tried: {cRes.resources_tried.join(' → ')}</span>}
                   <CheckpointChip c={cRes.governance_checkpoint} />
+                  {cRes.model_tokens_basis && <span data-testid="native-complete-tokens" className="text-[8px] font-mono text-slate-600" title={cRes.model_tokens_basis}>tokens: {cRes.model_tokens ?? 'not counted'}</span>}
                 </div>
                 <p className="text-[11px] text-slate-300 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">{cRes.output}</p>
               </div>

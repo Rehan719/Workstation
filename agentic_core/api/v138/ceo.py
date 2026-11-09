@@ -590,6 +590,7 @@ async def generate_ceo_stream(prompt: str, scope: str, owner_id: Optional[str]):
                     "content": "", "done": True,
                     "served_by": ev.get("served_by"), "is_external": bool(ev.get("is_external")),
                     "guardrail_passed": ev.get("guardrail_passed"), "profile_applied": ev.get("profile_applied"),
+                    "model_tokens": ev.get("model_tokens"), "model_tokens_basis": ev.get("model_tokens_basis"),   # W776 (FU-1105)
                     "grounding": _cited("".join(_answer), facts),
                     "grounding_conflicts": _ungrounded_sections("".join(_answer), facts),
                 }) + "\n\n"

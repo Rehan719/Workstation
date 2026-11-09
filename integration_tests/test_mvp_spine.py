@@ -70158,3 +70158,16 @@ def test_w775_fu1102_the_work_budget_fraction_says_it_is_seconds_alone():
     assert "no token capacity is stated" in st["fraction_basis"]
     page = pathlib.Path("apps/workstation-superapp/src/pages/organism/OrganismDashboard.tsx").read_text(encoding="utf-8")
     assert '{systems.work_budget.fraction_basis && <div data-testid="organism-work-budget-fraction">' in page
+
+
+def test_w776_fu1105_the_token_count_reaches_a_page_and_every_sse_client():
+    """W776 (FU-1105) - model_tokens reached the work budget and no client: the four SSE consumers rebuilt the final
+    event from named keys without it, and no page read it."""
+    import pathlib
+    for f in ("agentic_core/api/v138/ceo.py", "agentic_core/api/v310/business.py",
+              "agentic_core/synthesis/api.py", "agentic_core/projects/api.py"):
+        t = pathlib.Path(f).read_text(encoding="utf-8")
+        assert "model_tokens" in t and "model_tokens_basis" in t and "W776" in t, f
+    page = pathlib.Path("apps/workstation-superapp/src/pages/developers/NativeAI.tsx").read_text(encoding="utf-8")
+    assert '{cRes.model_tokens_basis && <span data-testid="native-complete-tokens"' in page
+    assert "tokens: {cRes.model_tokens ?? 'not counted'}" in page

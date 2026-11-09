@@ -530,7 +530,8 @@ async def stream_synthesis(request: SynthesisRequest):
                  'format': ext,
                  'served_by': fin.get('served_by'), 'is_external': bool(fin.get('is_external')),
                  'profile_applied': bool(fin.get('profile_applied')),
-                 'faith_content': _faith659}
+                 'faith_content': _faith659,
+                 'model_tokens': fin.get('model_tokens'), 'model_tokens_basis': fin.get('model_tokens_basis')}   # W776
         if _slides_n is not None:
             _done['slides_count'] = _slides_n
         yield f"data: {json.dumps(_done)}\n\n"

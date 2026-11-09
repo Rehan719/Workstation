@@ -513,6 +513,8 @@ async def run_project(project_id: str,
                 f'"download_url": "{output.download_url}", '
                 f'"served_by": {json.dumps(fin.get("served_by"))}, "is_external": {json.dumps(bool(fin.get("is_external")))}, '
                 f'"profile_applied": {json.dumps(bool(fin.get("profile_applied")))}, '
+                f'"model_tokens": {json.dumps(fin.get("model_tokens"))}, '        # W776 (FU-1105)
+                f'"model_tokens_basis": {json.dumps(fin.get("model_tokens_basis"))}, '
                 f'"preview": {json.dumps(output.preview)}}}\n\n'
             )
         except Exception as exc:
