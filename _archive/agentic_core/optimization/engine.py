@@ -1,3 +1,5 @@
+# ARCHIVED W779 (FU-1125) from agentic_core/optimization/engine.py: nothing live imported OptimizationEngine, and the
+# package held nothing else once aro.py was archived (W754). Kept whole, reversibly.
 import logging
 from typing import Dict, Any, List
 

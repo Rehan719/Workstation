@@ -70215,3 +70215,21 @@ def test_w778_fu1126_the_ceo_registry_lists_no_fixed_analysis_tool():
     assert "LOGGED_TO_CHROMA" not in src and "latency spike in L3 reactor" not in src
     arc = pathlib.Path("_archive/agentic_core/api/v138/ceo_fixed_pipelines.py").read_text(encoding="utf-8")
     assert "async def run_extrospection" in arc and "ARCHIVED W778" in arc
+
+
+def test_w779_fu1125_the_unimported_optimization_engine_is_archived():
+    """W779 (FU-1125) - agentic_core/optimization/engine.py (OptimizationEngine) was imported by nothing live."""
+    import importlib.util
+    import pathlib
+    import subprocess
+    assert not pathlib.Path("agentic_core/optimization/engine.py").exists()
+    try:
+        _spec = importlib.util.find_spec("agentic_core.optimization.engine")
+    except ModuleNotFoundError:
+        _spec = None
+    assert _spec is None
+    arc = pathlib.Path("_archive/agentic_core/optimization/engine.py").read_text(encoding="utf-8")
+    assert "class OptimizationEngine" in arc and "ARCHIVED W779" in arc
+    hits = subprocess.run(["git", "grep", "-l", "-e", "agentic_core.optimization.engine", "-e", "OptimizationEngine",
+                           "--", "agentic_core", "apps", "scripts"], capture_output=True, text=True).stdout.split()
+    assert hits == [], hits
