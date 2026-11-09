@@ -70123,3 +70123,26 @@ def test_w773_fu1101_the_avatar_vision_run_is_a_recorded_outcome(monkeypatch):
     _C.body = {"response": "  "}
     assert asyncio.run(_av._ollama_vision("aGk=", "what is this")) is None
     assert rows[-1][1]["success"] is False and rows[-1][1]["tokens"] is None, rows[-1]
+
+
+def test_w774_fu1135_cuda_is_a_visible_device_not_an_installed_tool(monkeypatch, tmp_path):
+    """W774 (FU-1135) - machine() set cuda=True whenever nvidia-smi was on PATH; it now asks the tool to list a
+    device, and says NPU, QPU and PPU were not probed."""
+    import os
+    import shutil
+    import subprocess
+    from agentic_core.ai.native import tiers as _t
+    monkeypatch.setattr(shutil, "which", lambda n: "/fake/nvidia-smi" if n == "nvidia-smi" else None)
+    for stdout, code, want in (("GPU 0: Test (UUID: x)\n", 0, True), ("", 9, False), ("No devices were found\n", 6, False)):
+        monkeypatch.setattr(subprocess, "run", lambda *a, **k: subprocess.CompletedProcess(a, code, stdout, ""))
+        m = _t.machine()
+        assert m["cuda"] is want, (stdout, m["cuda_basis"])
+    def _boom(*a, **k):
+        raise OSError("w774")
+    monkeypatch.setattr(subprocess, "run", _boom)
+    m = _t.machine()
+    assert m["cuda"] is None and "NOT MEASURED" in m["cuda_basis"], m
+    gpu = next((k for k, v in _t.TIERS.items() if v["needs"]["gpu"]), None)
+    if gpu:
+        assert _t.runnable(gpu, m)[0] == _t.UNKNOWN, _t.runnable(gpu, m)
+    assert m["not_probed"] == ["NPU", "QPU", "PPU"] and "not a finding" in m["not_probed_basis"]

@@ -104,8 +104,23 @@ def machine() -> Dict[str, Any]:
     #  so this asks the environment first and only consults torch if it is already importable.
     _smi = shutil.which("nvidia-smi")
     if _smi:
-        out["cuda"] = True
-        out["cuda_basis"] = f"nvidia-smi is on PATH at {_smi}"
+        #  W774 (FU-1135) - THE TOOL BEING INSTALLED IS NOT A DEVICE BEING VISIBLE. `nvidia-smi -L` is asked to
+        #  list a device; cuda is True only when it lists one, and None when the tool could not answer.
+        try:
+            import subprocess
+            _r = subprocess.run([_smi, "-L"], capture_output=True, text=True, timeout=5)
+            _gpus = [ln for ln in (_r.stdout or "").splitlines() if ln.strip().startswith("GPU ")]
+            if _r.returncode == 0 and _gpus:
+                out["cuda"] = True
+                out["cuda_basis"] = f"`nvidia-smi -L` at {_smi} listed {len(_gpus)} device(s)"
+            else:
+                out["cuda"] = False
+                out["cuda_basis"] = (f"nvidia-smi is on PATH at {_smi} but `nvidia-smi -L` listed no device "
+                                     f"(exit {_r.returncode}), so no CUDA device is visible to this process")
+        except Exception as e:                    # noqa: BLE001
+            out["cuda"] = None
+            out["cuda_basis"] = (f"NOT MEASURED: nvidia-smi is on PATH at {_smi} but `nvidia-smi -L` could not "
+                                 f"be run ({e.__class__.__name__})")
     else:
         try:
             import torch                          # noqa: F401 — presence check only
@@ -117,6 +132,10 @@ def machine() -> Dict[str, Any]:
             out["cuda_basis"] = (
                 "no nvidia-smi on PATH and torch is not importable, so no CUDA device is visible to "
                 "this process. This is a statement about what can be SEEN, not a hardware audit")
+    #  W774 (FU-1135) - what was NOT probed is said, never left to read as absent
+    out["not_probed"] = ["NPU", "QPU", "PPU"]
+    out["not_probed_basis"] = ("no probe for a neural, quantum or photonic processing unit exists here; their "
+                               "absence from this reading is not a finding that none is present")
     return out
 
 
@@ -127,6 +146,9 @@ def runnable(tier: str, m: Optional[Dict[str, Any]] = None) -> Tuple[str, str]:
     m = m or machine()
     needs = TIERS[tier]["needs"]
 
+    if needs["gpu"] and m.get("cuda") is None:            # W774 - not measured is not "none is visible"
+        return UNKNOWN, (f"this tier needs a CUDA device and whether one is visible was not measured. "
+                         f"{m.get('cuda_basis')}.")
     if needs["gpu"] and m.get("cuda") is not True:
         return NOT_RUNNABLE, (
             f"this tier needs a CUDA device and none is visible. {m.get('cuda_basis')}. "

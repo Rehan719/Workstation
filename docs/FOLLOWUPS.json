@@ -22456,11 +22456,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W774",
       "note": "",
       "slot_source": "tier-3: P3.30 owns tier-3 rows (Owner ruling 2026-10-09); no route names the tier probe",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "tiers.machine() now sets cuda True only when nvidia-smi -L lists a device (False when it lists none, None with NOT MEASURED when it cannot run), runnable() answers UNKNOWN for an unmeasured device rather than not runnable, and the reading names NPU, QPU and PPU as not probed. Guard test_w774, 4 blinds red."
     },
     {
       "id": "FU-1136",
