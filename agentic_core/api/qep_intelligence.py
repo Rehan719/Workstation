@@ -421,7 +421,7 @@ async def translation_translate(req: TranslateRequest,
     from agentic_core.api import scholar_review as _sr
     _composed = meta.get("output") or ""
     _key = "qep_translation:" + _sr.body_hash(f"{req.target_language}|{req.text}")
-    _sr.submit_if_new(_key, "qep/translation/translate", _composed,
+    _sr.submit_if_new(_key, "qep/translation/translate", _composed, served_by=served_by,   # W796
                       reference=f"{req.source_language or 'language not stated'} to {req.target_language}")
     _published, _state, _why = _sr.published_body(_key, _composed)
     return {**_reply_evidence(served_by), 

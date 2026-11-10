@@ -1064,6 +1064,10 @@ NOT_AN_ANSWER: Dict[tuple, tuple] = {
         1, "the ledger entry written about an answer; the answer itself is another block and states its level"),
     ("agentic_core/api/sovereign_evolution.py", "<module>"): (
         1, "an accumulator of what served each call of a cycle; the cycle's own answer states the level"),
+    #  W796 (FU-980 R1[3]) - the scholar-review queue's record of an item now names what composed it
+    ("agentic_core/api/scholar_review.py", "submit"): (
+        1, "the review queue's record of a composed item, naming what composed it for the scholar who reads "
+           "it; it is a record kept for review, and the item's own answer states its level"),
 }
 
 

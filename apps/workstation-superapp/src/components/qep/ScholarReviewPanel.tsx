@@ -12,7 +12,7 @@ import { ChildrenApprovalPack } from './ChildrenApprovalPack';   // W739 (P5.21)
 interface Scholar { name: string; credential: string; added_by: string; added_at: string }
 interface Item {
   content_key: string; surface: string; reference: string; body: string; state: string;
-  submitted_at?: string; reviewer_id?: string | null; reviewed_at?: string | null;
+  submitted_at?: string; reviewer_id?: string | null; reviewed_at?: string | null; served_by?: string | null; served_by_basis?: string;
   decision_note?: string | null; entered_by?: string | null; attestation?: string | null;
 }
 interface Footing { authentication: string; who_adds_a_scholar: string; who_decides: string }
@@ -111,6 +111,8 @@ const ScholarReviewPanel: React.FC = () => {
             <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">{it.surface} · {it.reference || it.content_key} · <span className="text-white">{it.state}</span></p>
             {/* REL — the key names the surface, the tool and the text's hash; shown when the line above shows the reference instead */}
             {it.reference && <p className="text-[9px] text-slate-600 break-all" data-testid="scholar-item-key">{it.content_key}</p>}
+            {/* W796 (FU-980 R1[3]) - what composed the item, so a floor frame is never read as a draft to approve */}
+            {it.served_by_basis && <p className="text-[10px] text-amber-400/80 mt-1" data-testid="scholar-item-served-by">{it.served_by_basis}</p>}
             <pre className="text-[11px] text-slate-300 whitespace-pre-wrap mt-2 max-h-48 overflow-auto">{it.body}</pre>
             {it.reviewer_id && (
               <p className="text-[10px] text-amber-400 mt-2" data-testid="scholar-decision">

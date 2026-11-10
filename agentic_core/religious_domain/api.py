@@ -1194,7 +1194,7 @@ async def tajweed_lesson(req: TajweedLessonRequest):
     from agentic_core.api import scholar_review as _sr
     _key = f"tajweed_lesson:{req.rule_name}:{req.level}"
     #  submit_if_new, never submit: `submit` overwrites, so the request after an approval would reset it
-    _sr.submit_if_new(_key, "qep/tajweed/lesson", lesson, reference=req.rule_name)
+    _sr.submit_if_new(_key, "qep/tajweed/lesson", lesson, reference=req.rule_name, served_by=served_by)   # W796
     _published, _review_state, _review_why = _sr.published_body(_key, lesson)
 
     return {**_reply_evidence(served_by), 
@@ -1412,7 +1412,7 @@ async def qep_curriculum(req: QepCurriculumRequest):
 
     #  submit_if_new, never submit: a second request for the same subject must not reset an approval
     _key = f"qep_curriculum:{req.subject}:{req.level}:{_weeks}"
-    _sr.submit_if_new(_key, "qep/curriculum", body, reference=req.subject)
+    _sr.submit_if_new(_key, "qep/curriculum", body, reference=req.subject, served_by=served_by)   # W796
     _published, _state, _why = _sr.published_body(_key, body)
 
     return {**_reply_evidence(served_by), 

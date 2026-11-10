@@ -70596,3 +70596,42 @@ def test_w795_a_script_refusal_says_why_and_the_prompt_names_no_none(client, mon
     assert "from None" not in seen[0] and "from the language it is written in to French" in seen[0], seen[0][:160]
     v = __import__("pathlib").Path("docs/WORKSTATION_IDBO_WHOLE_VISION.md").read_text(encoding="utf-8")
     assert "No QEP VSB exists; §12's entities carry the generic template" not in v and "`qep_waqf_trust`" in v
+
+
+def test_w796_fu980_r1_3_a_scholar_can_be_retired_and_a_queued_item_says_what_composed_it(client):
+    """W796 (FU-980, ledger v17 R1[3]) - the scholar roster had no way to remove a person, and floor-served frames
+    entered a scholar's queue looking like drafts. A scholar is retired (kept, never deleted; earlier decisions stand),
+    and every queued item says what composed it, on the record and on the scholar's panel."""
+    import json
+    import pathlib
+    import uuid
+    import agentic_core.api.scholar_review as _sr
+    from agentic_core.config import data_path
+    held = {p: (p.read_bytes() if p.exists() else None)
+            for p in (data_path(_sr.ROSTER_STORE), data_path(_sr.RETIRED_STORE), _sr._review_path())}
+    try:
+        sid = f"w796-{uuid.uuid4().hex[:6]}"
+        assert client.post("/api/v1/scholar-review/roster", json={"scholar_id": sid, "name": "W796 Probe",
+                                                                   "credential": "stated"}).status_code == 200
+        assert sid in _sr.roster()
+        assert client.post(f"/api/v1/scholar-review/roster/{sid}/retire", json={"reason": " "}).status_code == 422
+        r = client.post(f"/api/v1/scholar-review/roster/{sid}/retire", json={"reason": "stopped reviewing"})
+        assert r.status_code == 200, r.text[:300]
+        assert sid not in _sr.roster() and _sr.retired()[sid][-1]["reason"] == "stopped reviewing"
+        assert _sr.retired()[sid][-1]["name"] == "W796 Probe", "the retired record lost who it was"
+        assert _sr.decide("any-key", sid, approve=True)["ok"] is False, "a retired scholar can still approve"
+        assert client.post(f"/api/v1/scholar-review/roster/{sid}/retire", json={"reason": "again"}).status_code == 404
+        #  a floor-served lesson is queued saying the floor composed it
+        rule = f"w796rule{uuid.uuid4().hex[:4]}"
+        client.post("/api/v1/qep/tajweed/lesson", json={"rule_name": rule})
+        rec = next(v for v in json.loads(_sr._review_path().read_text(encoding="utf-8")).values()
+                   if v.get("reference") == rule)
+        assert rec["served_by"] == "native" and "the deterministic floor composed this" in rec["served_by_basis"], rec
+    finally:
+        for p, b in held.items():
+            if b is None:
+                p.unlink(missing_ok=True)
+            else:
+                p.write_bytes(b)
+    panel = pathlib.Path("apps/workstation-superapp/src/components/qep/ScholarReviewPanel.tsx").read_text(encoding="utf-8")
+    assert '{it.served_by_basis && <p className="text-[10px] text-amber-400/80 mt-1" data-testid="scholar-item-served-by">' in panel

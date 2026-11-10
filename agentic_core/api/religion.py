@@ -132,7 +132,8 @@ def _scholar_gated(tool: str, composed: str, asked: str, headings: tuple, proven
         return "", [], {"state": "withheld", "basis": _why, "content_key": None}, _why
     key = f"{_REVIEW_SURFACE}:{tool}:{_sr.body_hash(body)}"
     rec = _sr.submit_if_new(key, _REVIEW_SURFACE, body,
-                            reference=(tool + ": " + " ".join(str(asked or "").split()))[:300])
+                            reference=(tool + ": " + " ".join(str(asked or "").split()))[:300],
+                            served_by=(provenance or {}).get("served_by"))   # W796 (FU-980 R1[3])
     published, _state, why = _sr.published_body(key, body)
     if published is not None:
         return body, [], {"state": "approved", "basis": why, "content_key": key}, None
