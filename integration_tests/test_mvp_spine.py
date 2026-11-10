@@ -70233,3 +70233,14 @@ def test_w779_fu1125_the_unimported_optimization_engine_is_archived():
     hits = subprocess.run(["git", "grep", "-l", "-e", "agentic_core.optimization.engine", "-e", "OptimizationEngine",
                            "--", "agentic_core", "apps", "scripts"], capture_output=True, text=True).stdout.split()
     assert hits == [], hits
+
+
+def test_w780_fu1097_p331_says_what_was_built_since_it_listed_the_page_as_open():
+    """W780 (FU-1097) - P3.31's open paragraph still listed the page's verification and the item's rows as open;
+    the page has verified since W673 and the rows moved to P3.30. A dated line says so; the earlier sentence stays."""
+    import pathlib
+    p = pathlib.Path("docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    assert "the page shows the proposal and\n      not yet the verification" in p.replace("\r\n", "\n"), "the earlier sentence was deleted"
+    assert "UPDATED 2026-11-10 (W780, FU-1097)" in p and "/api/v1/resources/cell/verify" in p
+    assert '/api/v1/resources/cell/verify' in pathlib.Path(
+        "apps/workstation-superapp/src/components/InstrumentCellPanel.tsx").read_text(encoding="utf-8")

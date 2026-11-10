@@ -21644,11 +21644,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W780",
       "note": "",
       "tier": 3,
-      "slot_source": "its files sit in an area retired with P2.18, so the router names no item; P3.30 holds the fabric's small truth fixes (W747)"
+      "slot_source": "its files sit in an area retired with P2.18, so the router names no item; P3.30 holds the fabric's small truth fixes (W747)",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "P3.31's paragraph in the delivery prompt now carries a dated line (2026-11-10): the page has run verification since W673 (cell/verify) and the item's rows moved to P3.30 by the 2026-10-12 ruling; what stands is that free-text criteria are not assessed. The earlier sentence is kept. Guard test_w780, blind red."
     },
     {
       "id": "FU-1098",
