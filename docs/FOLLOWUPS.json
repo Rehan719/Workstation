@@ -19420,11 +19420,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W794",
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region on the M3 item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Ledger v17 region R5, all seven findings: R5[6] the v280 gamification router and the cross-platform bridge archived with their only caller (W793); R5[2] the dead 'Launch Full Dashboard' button removed, the Memorization card already saying what is not built (W793); R5[3] the avatar empty state says what is sent and what answers (W793); R5[1], R5[4], R5[5] and R5[7], disclosed as found, are each held where a person reads them by test_w794 (a Law answer's floor disclaimer and provenance, Settings' translation scope, Genesis's record-only product line, the auth config's sign-up switch). 6 blinds red across W793-W794."
     },
     {
       "id": "FU-985",
@@ -22980,6 +22983,24 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "The waterfall override records whether its constitutional log write succeeded (ueg_logged, ueg_basis) and its note says 'NOT logged to the UEG' when it failed, instead of 'logged to the UEG' unconditionally. Driven with the log raising. 2 blinds red."
+    },
+    {
+      "id": "FU-1160",
+      "title": "Two AI CEO tools nothing reaches are broken: one raises on a missing argument, one reports 'SWARM_ACTIVE' for work it never starts",
+      "why": "agentic_core/api/v138/ceo.py ToolRegistry: qep_offline_access calls qep_flagship_service.offline_global_access() without the required user_id, so it would raise TypeError; orchestrate_qep_swarm returns {'status': 'SWARM_ACTIVE', ...} for any domain but religion without starting anything. As with W778 (FU-1126), no dispatch reaches either (call_tool is called only with get_system_vitals and call_meeting). Unregister and archive both, or repair them, with a leg that lists the registry. Found by the W795 Appendix A re-measurement, re-checked by hand.",
+      "source": "W795 re-measurement (re-checked by hand)",
+      "found": "2026-11-10",
+      "files": [
+        "agentic_core/api/v138/ceo.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.30 carries unreached code and the class W778 closed",
+      "tier": 3
     }
   ],
   "routes": [

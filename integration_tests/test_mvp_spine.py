@@ -70523,3 +70523,76 @@ def test_w793_fu984_r5_the_stub_routers_are_archived_and_two_sentences_say_what_
                            "*.py", "*.ts", "*.tsx", ":(exclude)_archive", ":(exclude)integration_tests"],
                           capture_output=True, text=True).stdout.split()
     assert live == [], live
+
+
+def test_w794_fu984_r5_the_disclosures_r5_found_are_where_a_person_reads_them(client):
+    """W794 (FU-984, ledger v17 R5[1], R5[4], R5[5], R5[7]) - P3.30's ACCEPT (2) drives each disclosed shortfall at the
+    surface a person reads. R5's four PARTIAL findings were disclosed; this holds each disclosure where it stands, so a
+    reword that drops one goes red. (R5[2], R5[3] and R5[6] were changed in W793.)"""
+    import pathlib
+    # [1] a domain tool on the floor says it is a frame of the person's own words, on the answer itself
+    r = client.post("/api/v1/law/research", json={"question": "notice period for dismissal", "jurisdiction": "england"})
+    assert r.status_code == 200, r.text[:200]
+    j = r.json()
+    assert j["disclaimer"].startswith("Composed by the native floor, not by a model"), j["disclaimer"][:120]
+    assert "NO legal research or analysis was performed" in j["disclaimer"]
+    assert j["ai_provenance"]["served_by"] == "native" and "NO research" in j["ai_provenance"]["floor_note"]
+    tool = pathlib.Path("apps/workstation-superapp/src/components/DomainTool.tsx").read_text(encoding="utf-8")
+    #  the rendered expressions, not the words (a comment naming them would satisfy a word check)
+    assert "{result.disclaimer && <p" in tool and "{result.disclaimer}</p>" in tool, "the page no longer prints the disclaimer"
+    assert "data?.ai_provenance?.floor_note" in tool, "the export no longer carries the floor note"
+    # [4] 'all languages' is the interface dictionaries that exist, and Settings says what is translated
+    st = pathlib.Path("apps/workstation-superapp/src/pages/Settings.tsx").read_text(encoding="utf-8")
+    assert "The interface is not translated into this language yet — it stays in English." in st
+    assert "Translation covers interface chrome, not every screen" in st
+    assert "interfaceLanguages(LANGUAGES)" in st
+    # [5] the product choice is recorded and changes no stage, and Genesis says so beside the picker
+    gj = pathlib.Path("apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8")
+    assert ('data-testid="genesis-product-record-only"' in gj
+            and "no stage runs differently by product yet" in gj)
+    # [7] 'available to all' is a single-user deployment with sign-up off, said at the API as the Owner's switches
+    a = client.get("/api/v1/auth/config").json()
+    assert a["self_serve_signup_enabled"] is False and a["registration"].startswith("Owner-curated"), a
+
+
+def test_w795_fu980_r1_6_appendix_a_says_what_the_code_does(client):
+    """W795 (FU-980, ledger v17 R1[6]) - Appendix A's dated status notes and section 11 rule 4 no longer described the
+    system, mostly under-stating it: rule 4 said sacred text 'refuses (503)' while the route answers 422 for it whatever
+    model is available. The notes were re-measured against the code on 2026-11-10; the 422/503 split is driven here."""
+    import pathlib
+    v = pathlib.Path("docs/WORKSTATION_IDBO_WHOLE_VISION.md").read_text(encoding="utf-8").replace("\r\n", "\n")
+    assert "refuses (503)" not in v, "a status note still says sacred text is refused with 503"
+    assert "translation of sacred text refuses\n   (422, whatever model is available)" in v
+    assert "## A.11 Measured status, 2026-11-10 (HEAD" in v
+    assert v.count("re-measured 2026-11-10") >= 15, v.count("re-measured 2026-11-10")
+    #  the route says what rule 4 now says: sacred text 422 before any model check; teaching text 503 with no model
+    sacred = client.post("/api/v1/qep/translation/translate", json={"text": "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ",
+                                                                   "target_language": "English"})
+    assert sacred.status_code == 422, (sacred.status_code, sacred.text[:200])
+    teach = client.post("/api/v1/qep/translation/translate", json={"text": "Lesson notes on patience.",
+                                                                  "source_language": "English", "target_language": "French"})
+    assert teach.status_code == 503, (teach.status_code, teach.text[:200])
+
+
+def test_w795_a_script_refusal_says_why_and_the_prompt_names_no_none(client, monkeypatch):
+    """W795 - Urdu or Persian teaching text in Arabic script is refused (the script cannot tell it from Qur'anic Arabic),
+    and the refusal now says that is why; the translate prompt said 'from None' when no source language was sent."""
+    r = client.post("/api/v1/qep/translation/translate", json={"text": "صبر کی تعلیم", "source_language": "Urdu",
+                                                              "target_language": "English"})
+    assert r.status_code == 422 and "refused for its Arabic script although 'Urdu' was declared" in r.json()["detail"], r.text[:300]
+    plain = client.post("/api/v1/qep/translation/translate", json={"text": "بسم الله", "target_language": "English"})
+    assert plain.status_code == 422 and "refused for its Arabic script" not in plain.json()["detail"]
+    import agentic_core.ai.native.model_resource as _mr
+    from agentic_core.api import qep_intelligence as _qi
+    seen = []
+    monkeypatch.setattr(_mr, "local_models", lambda: ["probe"])
+
+    async def _cap(prompt, **k):
+        seen.append(prompt)
+        return {"output": "x", "served_by": "native"}
+    monkeypatch.setattr(_qi.gateway, "query_meta", _cap)
+    r2 = client.post("/api/v1/qep/translation/translate", json={"text": "Lesson notes on patience.", "target_language": "French"})
+    assert r2.status_code == 503 and seen, (r2.status_code, seen)
+    assert "from None" not in seen[0] and "from the language it is written in to French" in seen[0], seen[0][:160]
+    v = __import__("pathlib").Path("docs/WORKSTATION_IDBO_WHOLE_VISION.md").read_text(encoding="utf-8")
+    assert "No QEP VSB exists; §12's entities carry the generic template" not in v and "`qep_waqf_trust`" in v

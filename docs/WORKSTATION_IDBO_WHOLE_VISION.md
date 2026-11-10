@@ -575,9 +575,14 @@ platform touches sacred text, honesty constraints bind harder than anywhere else
    recitation of the Qur'an would be a false witness (the W403 precedent). Assessment is
    written-recall only: the learner's typed Arabic against the authoritative text, with its scope
    stated ("says NOTHING about recitation").
-4. **Floor-served output is never presented as scholarship or translation** — translation of sacred
-   text refuses (503) rather than serving a template, and every AI-served surface renders serving
-   provenance (the shared amber "structured floor — not model analysis" badge).
+4. **Floor-served output is never presented as scholarship or translation** — translation of sacred text refuses
+   (422, whatever model is available) rather than serving a template, and every AI-served surface renders serving
+   provenance (the shared amber "structured floor — not model analysis" badge, or a "served by" chip in the QEP
+   studio). *Status (re-measured 2026-11-10): `POST /api/v1/qep/translation/translate` answers 422 for Arabic or
+   Qur'anic text before any model is consulted; for non-Arabic teaching text it answers 503 when no model resource
+   is available or the floor answered in a model's place, and otherwise withholds a model's translation until a
+   named scholar approves it. A named translator's sourced rendering of the meanings (Pickthall) is served at `GET
+   /api/v1/qep/translation/{surah}/{ayah}`, fetched and never composed.*
 5. **AI content is labelled AI-assisted with provenance — never authoritative**; learners are
    directed to qualified teachers.
 
@@ -1208,9 +1213,10 @@ OBSERVED, never what the system reports about itself.)*
 > vision and §11 disagree, **§11 prevails** — and **A.9** records each disagreement, because those are
 > principled refusals that must never be "fixed".
 >
-> **Status convention.** Status notes in A.6 and A.11 are MEASUREMENTS taken 2026-09-07 against HEAD
-> `06c51109`, by reading the named routes and modules, cross-read against `VISION_FIDELITY_LEDGER.md` v3
-> (findings R1.0, R1.7, R5.8, R5.9). Re-measure; do not trust this text.
+> **Status convention.** Status notes in A.6 and A.11 are MEASUREMENTS, taken by reading the named routes and
+> modules. Notes marked *re-measured 2026-11-10* were taken against HEAD `c2b6d861` and cross-read against
+> `VISION_FIDELITY_LEDGER.md` v17 (finding R1.16); the others were taken 2026-09-07 against HEAD `06c51109` and
+> still held on 2026-11-10. Re-measure; do not trust this text.
 
 ## A.1 Where QEP sits in the Workstation structure
 
@@ -1330,30 +1336,60 @@ Adopted here as the Religion domain's feature register, with **measured status**
 
 **2 · AI Tajwīd Coach.** Verse selection, recitation capture, articulation and Tajwīd feedback, error
 highlighting, progress history.
-*Status: **constitutionally narrowed, and correctly so** (A.9.1). What exists is real: written-recall
-comparison of the learner's typed Arabic against the authoritative text (`POST /api/v1/qep/tajweed/analyse`),
-refusing non-Arabic input, returning missing rule-markers, and stating in every payload that it says nothing
-about recitation. Tajwīd **lesson** generation exists, floor-labelled as an outline rather than scholarship.*
+*Status (re-measured 2026-11-10): **constitutionally narrowed, and correctly so** (A.9.1) — recitation is never
+scored and nothing listens to a learner. Written recall is real: `POST /api/v1/qep/tajweed/analyse` compares the
+learner's typed Arabic with the text the server fetches for the surah and ayah sent (an ayah that does not exist is
+refused 422, one that cannot be fetched 503; a reference the caller types is labelled as supplied and asserts no
+Qur'anic text). It reports a letters-only similarity first and an every-mark similarity beside it, lists missing
+madd/ghunnah markers only when the attempt carries harakat, answers `comparable: false` for an attempt with no
+Arabic, and states in every payload that it says nothing about recitation. A reference recitation can be listened
+to: `GET /api/v1/qep/recitation/{source,reciters,audio/{surah}}` fetch a published reciter's audio and word timings
+from the Quran Foundation for the request, store nothing and answer `assessed: false` (503 when its credentials are
+not set). Tajwīd lessons (`POST /api/v1/qep/tajweed/lesson`) are composed, declare their riwayah (Hafs an Asim), and
+are WITHHELD until a named scholar approves the exact text (A.12.3): while the roster is empty every lesson returns
+`lesson_plan: null` with the reason, and no outline is shown.*
 
 **3 · Memorization Suite.** Flashcards, spaced repetition, review scheduling, progress heatmaps, recall
 testing (display then hide), audio looping and segment selection, memorisation coaching.
-*Status: **DELIVERED and honest** (ledger R1.7). Real SM-2 spaced repetition in
-`religious_domain/memorization/engine.py` — e-factor arithmetic, interval growth, a bounded interval cap —
-behind `/qep/hifz/{schedule,review,progress}`. Ayah ranges validate against the real 114-surah ayah-count
-table (1:9 → 422). Progress reports its basis: "a review count, not a hifz certification." The flashcard,
-heatmap and audio surfaces are not built.*
+*Status (re-measured 2026-11-10): **DELIVERED and honest**. Real SM-2 in `religious_domain/memorization/engine.py` —
+e-factor arithmetic with a 1.3 floor, interval growth, a 36,500-day cap — behind
+`/api/v1/qep/hifz/{schedule,review,progress}`; every reference is checked against the 114-surah ayah-count table
+(1:9 → 422). The memorised count is recomputed on every review and every read and states its basis: "a review count,
+not a hifz certification." Recall practice is built (`memorization/practice.py`, `components/HifzPractice.tsx`): a
+portion plan in three tracks (new lesson, recent revision, old revision) that the learner or a teacher sets — as the
+caller states, unverified — with no default portions; a hidden-verse view that sends only the first word(s), the
+next word on request, or the whole verse (`/hifz/practice/{surah}/{ayah}` and `/next`); and verses paired by exact
+shared wording within up to three surahs (`/hifz/similar`), labelled as not a scholar's list. Nothing there is told,
+or judges, what the learner recalled. One verse of a reference recitation can be played beside a review (feature 2).
+Flashcards, progress heatmaps, audio looping and memorisation coaching are not built.*
 
 **4 · Gamified Learning & Competitions.** Time-bound recitation and memorisation competitions, global and
 regional leaderboards, XP, badges, streaks, event notification, replay and share.
-*Status: XP is real and persisted (`/qep/gamification/{uid}` and `/award`, every derived figure — level,
-streak — carrying its formula, W439). Competitions, leaderboards and badges do not exist.*
+*Status (re-measured 2026-11-10): XP is real and persisted, and only a recorded review earns it: `POST
+/api/v1/qep/hifz/review` at quality 3 or more adds 5 XP. `GET /api/v1/qep/gamification/{uid}` returns XP, level with
+its formula (`1 + xp // 100`), the achievements recorded, and the learner's own progress — days reviewed and reviews
+recorded this month against last, counted from their own history. There is no streak: a count of days replaced it
+(Owner ruling 2026-10-12). `POST /api/v1/qep/gamification/award` records nothing — a memorisation or completion
+claim is refused 422 and every other award 409 until sign-in exists. Learners are not ranked: `GET
+/api/v1/qep/leaderboard` answers 410, retired by the Owner's ruling of 2026-10-12 (its code is kept behind
+`LEADERBOARD_RETIRED`). No competition, tournament, badge, event notification or replay exists; the Competitions tab
+shows two "PLANNED" preview cards with no participants, and machine-scored recitation contests read "REFUSED
+(A.9.1)" — recitation is never scored.*
 
 **5 · Learner-Centric Learning Modules.** Structured curricula — **Noorani Qaida, Tajwīd, Quranic Arabic,
 Tafsir** — as lessons (text, video, interactive), quizzes with immediate feedback, recommended learning
 paths, and explanation of selected text on demand.
-*Status: `religious_domain/learning/` holds gamification only; the LearnTeach surface honestly reports "No
-scholars are verified on this deployment" rather than inventing a scholar board. No curriculum content
-exists — see A.12.3.*
+*Status (re-measured 2026-11-10): no curriculum content is shown, by design until a scholar is engaged.
+`religious_domain/learning/` still holds only `gamification.py`. The composing routes exist and are gated: `POST
+/api/v1/qep/curriculum` (the LearnTeach "Generate a study-plan frame" button) and `POST /api/v1/qep/tajweed/lesson`
+compose through the gateway, queue the text in `agentic_core/api/scholar_review.py`, and return `null` with
+`review_state: "withheld"` and the reason while the scholar roster is empty (A.12.3). The general Education routes
+(curriculum, lesson plan, assessment, marking feedback) refuse a religious subject with 409 and point to the gated
+route (`religious_domain/subject_screen.py`). The LearnTeach surface says "No scholars are verified on this
+deployment", gives the roster's count, and says the registry exists and is empty. No Noorani Qaida, Tajwīd, Quranic
+Arabic or Tafsir lessons, no quizzes and no learning paths exist. On request, a named translator's sourced
+translation of the meanings is shown beside a verse; composed explanation (the Religion hub's Tafsir tool) is
+withheld on the floor and, when a model serves, until a named scholar approves it.*
 
 **6 · Educator Platform & Class Management.** Virtual classes, student enrolment, module assignment,
 progress dashboards, grading and feedback, announcements, and AI suggestions to the teacher ("many students
@@ -1379,9 +1415,17 @@ articulation, never **assess** it.*
 **10 · AI Guidance & Fitrah Profiling System.** Conversational Quranic Q&A; the **99-aspect "Fitrah
 Spectrum"** mapped to the Divine Attributes (*Asmāʾ al-Ḥusnā*); guidance conditioned on profile, state and
 query, suggesting Ayah, Hadith, Dua and action; voice interaction; a guidance companion presence.
-*Status: the conversational half has a home — the platform's enterprise-aware avatar (§9) and the Religion
-tools. The Fitrah Spectrum does not exist in any form, and its 99 aspects were never enumerated in any
-source. It is the vision's largest specification gap and its sharpest honesty risk — A.9.5 and A.12.4.*
+*Status (re-measured 2026-11-10): the conversational half has a home and no QEP assistant of its own. The platform's
+avatar (§9) converses through the gateway, which refuses a request for a religious ruling or a theological proof
+before any model runs (`faith_ruling_refusal`, `religious_domain/composed_text.py`) and withholds Arabic script from
+composed text, or labels it AI-written when an Arabic-script language was asked for. The Religion hub's five
+research tools (`/api/v1/religion/*`) withhold their scholarly sections on the floor, and anything a model composes
+there is withheld until a named scholar on the roster approves that exact text (Owner ruling 2026-10-11). The QEP
+"AI Assistant" card says no reasoning resource is wired; no QEP feature suggests an Ayah, Hadith, Dua or action,
+there is no guidance companion, and voice exists only as the avatar's dictation. Guidance never follows an inferred
+emotional state (A.9.4). The Fitrah Spectrum is not built and is not unbuilt work: A.12.4 deferred it as a boundary
+(2026-10-05b), and A.9.5 binds it absolutely if it is ever reopened — self-reported only, never a measurement, never
+scored.*
 
 **11 · Swarm Intelligence & Collaborative Learning.** Analysis of collective learner behaviour surfacing
 common difficulties, pathways that worked for similar learners, and group study suggestions.
@@ -1392,29 +1436,64 @@ They are different systems; build them under different names or not at all.*
 
 **12 · Adaptive UI/UX Engine.** Layout, density, font size, theme and navigation adapting to profile and
 stated preference.
-*Status: an adaptation registry surface exists. The platform-level posture (§9, the W428 explicit profile)
-is the right substrate.*
+*Status (re-measured 2026-11-10): the interface adapts only to saved preferences.
+`components/AdaptiveUIProvider.tsx` reads the person's own settings: a large-text choice changes the rendered font
+size, and a guidance mode and a tone are stored and shown on the hubs as "(saved pref.)" with nothing yet gated on
+them. Layout, density, theme and navigation do not adapt to age, role or skill; the roadmap card lists layout by a
+chosen age band as planned. The interface never adapts to an inferred emotional state (A.9.4):
+`qep_flagship.adaptive_ui_engine` performs no adaptation and ignores any context sent to it. The "adaptation
+registry" on the QEP Intelligence tab (`/api/v1/qep/adaptation/{registry,execute}`) records teaching patterns moved
+between domains and is not part of this feature. The platform-level posture (§9, the W428 explicit profile) remains
+the right substrate.*
 
 **13 · Platform Settings, Globalization & Accessibility.** Language selection with full RTL; themes
 (light, dark, **Islamic**); notification and privacy controls; accessibility (font scaling, high contrast);
 offline access to core content; and **digital certifications** for completed modules.
-*Status: platform settings and §9's language coverage apply. `/qep/translation/translate` **refuses (503)**
-rather than serving a template over sacred text — §11 rule 4 working as designed. Certifications do not
-exist, and must not until A.12.2 is ruled.*
+*Status (re-measured 2026-11-10): platform settings apply (`pages/Settings.tsx`): an interface language picker
+limited to the five languages with a dictionary (English, Arabic, Urdu, French, Spanish; untranslated strings stay
+English), right-to-left layout for Arabic and Urdu, a separate dictation language, and a large-text setting that
+changes the rendered size. There is no theme, high-contrast or notification control, and no offline access on the
+device (no service worker); the server serves Qur'an text it has already fetched from its cache, labelled as cached.
+Translation of sacred text is refused, whatever model is available: `POST /api/v1/qep/translation/translate` answers
+422 before any model check when the text is Arabic or Qur'anic (an Arabic source language, any Arabic-script
+character, words naming the Qur'an, a surah, an ayah or a hadith, or a verse citation). Other teaching text answers
+503 when no model resource is available or the floor answered in a model's place; a model's translation is otherwise
+withheld until a named scholar approves it. A named translator's rendering of the meanings is served instead,
+fetched and never composed — Pickthall (1930), `GET /api/v1/qep/translation/{surah}/{ayah}` — and shown beside a
+verse on request. Certificates: A.12.2 is ruled — QEP issues none in its own name; the record-of-completion path has
+no route and no course exists, so none is issued.*
 
 **14 · Donations.** **Free for everyone - individuals and institutions.** No tiers, no subscriptions and no
 institutional billing; **Zakat-eligible** donation funds; a transparent donor dashboard; and
 **Sponsor-a-Student**. *[OWNER RULING 2026-10-12: the Quran platform's only income is donations and the waqf. The words before the
 ruling: "Secure Billing, Subscriptions & Donations. Sharia-compliant, riba-free pricing; freemium and paid
 tiers; institutional billing at cost + 5%".]*
-*Status: not built. §12's VSB economy is the natural home — see A.8, the strongest structural convergence
-between QEP and Workstation.*
+*Status (re-measured 2026-11-10): the contribution channels are built as routes, and no page sends to them. `POST
+/api/v1/qep/contribute/zakat` and `POST /api/v1/qep/contribute/sponsor-a-student` credit virtual WST to the books of
+an entity whose form is `qep_waqf_trust` — §12's template for A.8 in `agentic_core/economy/entities.py`: no owner
+share, a 5% surplus cap, and a default split inside A.8's limits between the capital fund, learner projects and a
+Zakat-eligible charity share — and report the balance re-read from those books. They refuse an entity that is not on
+the roster (404) or not a QEP entity (422). The Zakat channel rules on no one's Zakat obligation and refers the
+donor to their own scholar; Sponsor-a-Student names and matches no learner. `GET
+/api/v1/qep/contribute/statement/{vsb_id}` is the donor view, shown on every tab of the QEP hub
+(`components/QepDonorStatement.tsx`), which says so when no QEP entity is on the living roster. No real-money rail
+is touched, and there are no tiers or subscriptions.*
 
 **15 · Admin, Analytics & Platform Governance.** Admin console, moderation, role-based analytics for
 learners, teachers, admins and **parents (a Parental Insights Dashboard with session limits and activity
 digests)**, audit logging, GDPR and Sharia compliance, institutional analytics, and embedding into an
 institution's existing learning platform.
-*Status: `/api/qep/analytics/overview` exists and states `measured: false` plainly — honest, and empty.*
+*Status (re-measured 2026-11-10): `GET /api/qep/analytics/overview` still states `measured: false` with no metrics,
+and no page calls it. What a learner can read of their own record is counted from it:
+`/api/v1/qep/hifz/progress/{uid}` and the own-progress months on `/api/v1/qep/gamification/{uid}`; every learner
+answer says the record is keyed by the id the caller sent and is not tied to a verified person. The Sharia-review
+half of governance exists: the scholar-review routes (`/api/v1/scholar-review/*`,
+`agentic_core/api/scholar_review.py`) and the QEP hub's Scholar Review tab add a named scholar (credential recorded
+as stated), show the review queue, record decisions — entered by the Owner and marked attested, not verified, while
+sign-in is off — and present the children's tools as one approval pack. No admin console, moderation, teacher or
+institutional analytics, embedding into another learning platform, or learner export and deletion exists, and there
+is no Parental Insights dashboard: no parent role exists, no children's tool is built, and the hub says its tools
+are for adults.*
 
 **The shared area.** Component library, auth utilities, API clients, i18n, logging, shared types, validation,
 standardised AI-service clients, offline utilities, accessibility helpers. **In Workstation these are already
@@ -1468,7 +1547,9 @@ with a surplus cap, a Zakat-eligible charity channel and free-at-point-of-use pr
 economic model that is genuinely *its own* rather than the generic default. The eight-attribute executive
 board maps onto §5's living organisation as a Religion-domain board composition.
 
-*Status: unrealised. No QEP VSB exists; §12's entities carry the generic template.*
+*Status (re-measured 2026-11-10): no QEP entity exists. Its economic model is a template, `qep_waqf_trust` in
+`agentic_core/economy/entities.py`: no owner profit and a 5% surplus cap with reinvestment, both from A.8 and not
+adjustable by a round, and the other three proportions a labelled default inside those constraints, in virtual WST.*
 
 ## A.9 Where §11 overrides the inherited vision — the constitutional deltas
 
@@ -1542,46 +1623,53 @@ audit found placeholder text presented as a canonical plan, in-memory dictionari
 zero-byte files implying twelve features, and 209 compile errors committed in the last captured build log. **Nothing about what
 those repositories "had working" is evidence of anything.** A.11's status comes from measuring Workstation.
 
-## A.11 Measured status, 2026-09-07 (HEAD `06c51109`)
+## A.11 Measured status, 2026-11-10 (HEAD `c2b6d861`)
 
-**What is real and honest** (ledger R1.7 DELIVERED, survived adversarial refutation): sourced Qur'an text
-with its source label; ayah-count refusals at the ayah, schedule and review routes; genuine SM-2
-memorisation with persisted XP; written-recall comparison that refuses non-Arabic and states it says nothing
-about recitation; a translation route that refuses before any model call; floor-served lessons labelled as
-outlines; analytics that says `measured: false`; and UI reporting "NOT ESTABLISHED" and "no scholars are
-verified" instead of inventing figures.
+*Status (re-measured 2026-11-10): **What is real and honest**: Qur'an text fetched from alquran.cloud with its
+edition, script, riwayah and licence on every ayah and surah answer, and the edition's prepended Basmala shown apart
+from ayah 1; ayah-count refusals (422) on every route that takes a reference — ayah, translation, schedule, review,
+practice, written recall and tafsir; genuine SM-2 memorisation with hidden-verse practice, a three-track portion
+plan and similar-verse pairs that judge nothing; XP earned only by a recorded review and shown as the learner's own
+progress, this month against last, with no rank and no streak; written recall against server-fetched text that
+refuses to compare an attempt with no Arabic and says it says nothing about recitation; a reference recitation to
+listen to that assesses no one; a named translator's sourced translation of the meanings, never composed; a
+translate tool that refuses Arabic or Qur'anic text (422) before any model check and non-Arabic text with no model
+(503) before the gateway is called; lessons, study plans and model translations composed and WITHHELD until a named
+scholar on the roster approves the exact text, with a Scholar Review tab to add a scholar and record decisions;
+Zakat and Sponsor-a-Student routes in virtual WST with a donor statement; analytics that says `measured: false`; and
+UI reporting "NOT ESTABLISHED" and "no scholars are verified" instead of inventing figures.*
 
-**Surface inventory.** `agentic_core/religious_domain/api.py` (674 lines, 11 routes) · `agentic_core/api/religion.py`
-(347 lines, 6 tools) · `agentic_core/api/qep_intelligence.py` (394 lines, 7 routes) ·
-`agentic_core/api/qep_analytics.py` (1 route) ·
-`agentic_core/reactor/religion/{qep_flagship.py, quranic_studies.py, qep_authoring/}` · frontend `QEPStudio.tsx` (341),
-`QEPIntelligence.tsx` (248), `QEPReligionHub.tsx` (155), `QEPFlagshipFeatures.tsx` (141).
-(`QEPDashboard.tsx` and `QEPImmersiveTools.tsx` — the generic four-engine filler and the 'planned' immersive
-tools the five non-Religion hubs showed under a 'QEP Flagship' tab — were deleted in W470; QEP lives in Religion.)
+*Status (re-measured 2026-11-10): **Surface inventory.** Backend: `agentic_core/religious_domain/api.py` (1,696
+lines, 26 routes under `/api/v1/qep`), beside `approval_pack.py`, `composed_text.py`, `quran_foundation.py`,
+`subject_screen.py`, `memorization/{engine,practice}.py`, `tajwid/coach.py` and `learning/gamification.py` ·
+`agentic_core/api/religion.py` (889 lines, 6 routes: five research tools and `/schools`) ·
+`agentic_core/api/qep_intelligence.py` (590 lines, 7 routes) · `agentic_core/api/scholar_review.py` (411 lines, 7
+routes under `/api/v1/scholar-review`) · `agentic_core/api/qep_analytics.py` (1 route) ·
+`agentic_core/economy/entities.py` (`qep_waqf_trust`) and `economy/qep_pricing.py` (no caller) ·
+`agentic_core/reactor/religion/{qep_flagship.py, quranic_studies.py, qep_authoring/}` (qep_flagship is reached only
+through the AI-CEO tool registry). Frontend: `pages/domains/QEPReligionHub.tsx` (266, at `/qep`),
+`pages/domains/ReligionHub.tsx` (413, its QEP tab), `components/QEPStudio.tsx` (542), `HifzPractice.tsx` (180),
+`LearnTeachModule.tsx` (196), `QEPFlagshipFeatures.tsx` (167), `QepDonorStatement.tsx` (60),
+`qep/QEPIntelligence.tsx` (263), `qep/ScholarReviewPanel.tsx` (133), `qep/ChildrenApprovalPack.tsx` (89).
+(`QEPDashboard.tsx` and `QEPImmersiveTools.tsx` stay deleted; no non-Religion hub mounts a QEP component.)*
 
-**Three known defects, each already carried in the delivery plan:**
-- **The Tafsir surface is the constitution's weakest point** (ledger R1.0, PARTIAL). On the floor it serves
-  a scaffold under a "## Translation" heading; `arabic_text`, `arabic_source`, `reference` and `range_note`
-  never reach the screen; it is one of two Religion tools with no `disclaimer` key (interfaith is the
-  other); and a green QMS chip sits
-  beside a compliance verdict of "review". The same rule that makes translation refuse is not applied here.
-  → **P1.8**.
-- **A dead "QEP Flagship" tab on five non-Religion hubs** (ledger R5.8) rendering a generic four-engine
-  panel that reports NOT_WIRED on click — contrary to the directive that QEP lives in Religion. → **P1.13**.
-- **The QMS gate cannot fail on floor output**, so QEP surfaces show green "QMS pass" chips over scaffold.
-  → **P1.1** (the class-kill).
+*Status (re-measured 2026-11-10): the three defects recorded here are closed. The Tafsir tool now shows the sourced
+Arabic, its source, the reference and the range note; removes Translation and Transliteration on every path;
+withholds its five study sections on the floor and a model's notes until a named scholar approves them; and carries
+a `disclaimer`, as all five Religion tools now do (P1.8). No non-Religion hub carries a QEP tab: QEP components
+mount only at `/qep` and on the Religion hub's QEP tab (P1.13). Floor output cannot show a QMS pass: the gate
+reports it "not assessable", drawn as a grey "QMS —", and a pass reads "QMS structure pass" in a neutral colour
+(P1.1).*
 
-**Twelve of the fifteen features have no module — and there is archived prior art.** The tracked Religion
-package holds three modules only: `learning/gamification.py`, `memorization/engine.py`, `tajwid/coach.py`.
-Ten archived module directories — the nine sibling areas auth, community (forum, video), educator,
-finops, governance, guidance, immersive, integrations and swarm (581 lines), plus a `learning/modules.py`
-beside the tracked learning package — **did exist as Jules-era stubs (626 lines in all, `__init__`s
-included) and were archived,
-correctly, to `_archive/jules-unwired/agentic_core/religious_domain/` in W382** (2026-08-31) because nothing
-called them. They are prior art at stub depth — worth a glance before building a feature, never worth
-restoring. *Note for whoever measures next: those nine directory names persist in a working tree as
-`__pycache__`-only residue. They are untracked, absent from a fresh clone, and must not be read as packages
-— an `iterdir` scan will see them and be wrong.*
+*Status (re-measured 2026-11-10): **Twelve of the fifteen features still have no module of their own, and three of
+them now have routes.** The tracked Religion package holds `memorization/{engine,practice}.py`, `tajwid/coach.py`
+and `learning/gamification.py` (a retained concept class; the live award store is in `api.py`), plus four shared
+modules that are rules rather than features: `composed_text.py`, `subject_screen.py`, `quran_foundation.py` and
+`approval_pack.py`. Features 5 (the gated curriculum), 13 (the sourced translation of the meanings) and 14 (the
+contribution channels) are routes in `religious_domain/api.py` with no module. The ten Jules-era stub directories
+(626 lines across 20 files) remain archived at `_archive/jules-unwired/agentic_core/religious_domain/` — prior art
+at stub depth, worth a glance before building a feature, never worth restoring. The nine sibling names can persist
+in an old working tree as `__pycache__`-only residue; they are untracked and must not be read as packages.*
 
 *Recording the W382 commit honestly, since this canon's rule is to record what was observed: its message
 describes a WebSocket default resolved at build time and says nothing about the Religion domain. The
