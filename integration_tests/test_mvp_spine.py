@@ -70338,9 +70338,10 @@ def test_w785_the_audit_instruments_name_no_machines_home_directory():
     argument (else the working directory), the store defaults to the temp directory, the root to the script's own."""
     import pathlib
     import re
-    home = re.compile(r"[A-Za-z]:[\\/]+Users[\\/]|/home/[a-z]|/Users/[a-z]")
+    #  W788 - a drive-letter temp path is one machine's too (W785's pattern missed C:/tmp and C:\\tmp)
+    home = re.compile(r"[A-Za-z]:[\\/]+(?:Users|tmp)[\\/]|/home/[a-z]|/Users/[a-z]")
     for f in ("scripts/workflows/fidelity_audit_v7.js", "scripts/boot_audit_backend.py",
-              "scripts/truth_sweep_inventory.py"):
+              "scripts/truth_sweep_inventory.py", "scripts/boot_signin_check_backend.py"):
         t = pathlib.Path(f).read_text(encoding="utf-8")
         assert not home.search(t), (f, home.search(t).group(0))
     wf = pathlib.Path("scripts/workflows/fidelity_audit_v7.js").read_text(encoding="utf-8")
@@ -70376,3 +70377,30 @@ def test_w786_p240_and_p241_say_they_close_on_the_final_audit():
     assert p[i40 + 1].startswith("      UPDATED 2026-11-10 (W786)") and "P5.22" in p[i40 + 1] and "ONE mid-way audit" in p[i40 + 1]
     i41 = next(i for i, l in enumerate(p) if l.startswith(" P2.41 [MILESTONE M2 re-run, W675"))
     assert p[i41 + 1].startswith("      UPDATED 2026-11-10 (W786)") and "final audit (P5.22)" in p[i41 + 1]
+
+
+def test_w787_the_remaining_work_measurement_adds_up_and_names_real_items():
+    """W787 - docs/REMAINING_WORK_MEASURED.md is a dated measurement of every open item. It must add up (the phase
+    table and the total are the sums of the items' own sizes) and name only items the plan has; it is not pinned
+    to which items are still open, because the work moves and the page is re-measured rather than edited."""
+    import pathlib
+    import re
+    doc = pathlib.Path("docs/REMAINING_WORK_MEASURED.md").read_text(encoding="utf-8")
+    plan = pathlib.Path("docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    assert re.match(r"# Remaining work, measured — \d{4}-\d{2}-\d{2} \(HEAD [0-9a-f]{7,}\)", doc)
+    items = re.findall(r"^## (P[1-5]\.\d+) — .*?\n- \*\*Size:\*\* (\d+(?:\.\d+)?)–(\d+(?:\.\d+)?) rounds", doc, re.M | re.S)
+    assert len(items) >= 1
+    for iid, _lo, _hi in items:
+        assert re.search(rf"^ {re.escape(iid)} ", plan, re.M), f"{iid} is not a plan item"
+    by = {}
+    for iid, lo, hi in items:
+        p = iid[1]
+        by.setdefault(p, [0.0, 0.0, 0])
+        by[p][0] += float(lo); by[p][1] += float(hi); by[p][2] += 1
+    for p, (lo, hi, n) in by.items():
+        row = re.search(rf"^\| P{p} [^|]*\| (\d+) \| (\d+(?:\.\d+)?)–(\d+(?:\.\d+)?) \|", doc, re.M)
+        assert row and int(row.group(1)) == n and float(row.group(2)) == lo and float(row.group(3)) == hi, (p, row and row.groups(), (n, lo, hi))
+    tot = re.search(r"\*\*All open items: (\d+(?:\.\d+)?)–(\d+(?:\.\d+)?) rounds\*\*", doc)
+    assert tot and float(tot.group(1)) == sum(v[0] for v in by.values()) and float(tot.group(2)) == sum(v[1] for v in by.values())
+    assert "HOW IT WAS MEASURED" in doc and "not verified" in doc
+    assert not re.search(r"/home/[a-z]|[A-Za-z]:[\\/]+Users[\\/]", doc), "a machine path in the measurement"

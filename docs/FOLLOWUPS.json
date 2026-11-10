@@ -22879,6 +22879,95 @@
       "note": "",
       "tier": 3,
       "slot_source": "rides FU-1145 (W777), the P3.30 census row it was split from"
+    },
+    {
+      "id": "FU-1155",
+      "title": "A compliance history entry keeps only 'fail' and its time, so a past finding loses its reason",
+      "why": "agentic_core/organism/heartbeat.py writes each history entry as {'overall', 'at'} and keeps the latest screen's verdicts only at the top level, overwritten by the next screen. A FAIL recorded weeks ago therefore carries no reason (the case FU-1046 met on the Owner's store). Smallest addition: a failing entry keeps the failing verdicts' frameworks and reasons, capped. The data-reading half of FU-1046 stays with the Owner; this half needs none of it. Split from FU-1046 by the W787 measurement.",
+      "source": "W787 measurement (split from FU-1046)",
+      "found": "2026-11-10",
+      "files": [
+        "agentic_core/organism/heartbeat.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P2.40",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 2
+    },
+    {
+      "id": "FU-1156",
+      "title": "The production Docker image serves no pages and carries no law corpus or plan",
+      "why": "Dockerfile copies agentic_core, core, config and src only; .dockerignore excludes apps/ ('frontend is built + hosted separately (Vercel/Netlify/static)', but Vercel is retired and the Owner ruled a single free-tier Google Cloud VM) and docs/, and knowledge/ is never copied. A deploy from this image would answer API routes with no pages and without the corpus some routes read. Part of P4.5's dry run (FU-603). Read from the files, not built. Found by the W787 measurement, re-checked by hand.",
+      "source": "W787 measurement (re-checked by hand)",
+      "found": "2026-11-10",
+      "files": [
+        "Dockerfile"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.5",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the deploy dry-run item: the image is what P4.5 deploys",
+      "tier": 2
+    },
+    {
+      "id": "FU-1157",
+      "title": "The Care hub's risk form says it scores a validated tool for NEWS2, MUST and Waterlow, and two of the three are withheld",
+      "why": "apps/workstation-superapp/src/lib/toolRegistry.ts line 52 describes the Clinical Risk Assessment form as 'Score a validated tool from its published table (NEWS2 · MUST · Waterlow) with AI interpretation'. agentic_core/api/care.py lists MUST and Waterlow as withheld on their owners' terms (the risk route answers 409 for them), and P5.13 rules the word 'validated' out. Smallest fix: say NEWS2 is scored from its published chart and MUST and Waterlow are withheld, and drop 'validated'. Found by the W787 measurement, re-checked by hand.",
+      "source": "W787 measurement (re-checked by hand)",
+      "found": "2026-11-10",
+      "files": [
+        "apps/workstation-superapp/src/lib/toolRegistry.ts"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.13",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.13 owns the Care tools' honesty and rules out the word 'validated'",
+      "tier": 1
+    },
+    {
+      "id": "FU-1158",
+      "title": "agentic_core/business/pipelines.py returns a literal invoice and 'audit: PASSED', and nothing imports it",
+      "why": "Its methods return fixed values ({'status': 'COLLECTED', 'invoice': 'inv_990', 'revenue': 1500.0} and {'status': 'REPORTED', 'fiscal_year': '2026', 'audit': 'PASSED'}). A whole-tree search finds no importer. Archive it as a reversible move after a reachability check that includes strings. Found by the W787 measurement, re-checked by hand.",
+      "source": "W787 measurement (re-checked by hand)",
+      "found": "2026-11-10",
+      "files": [
+        "agentic_core/business/pipelines.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P3.30 carries tier-3 stubs and unreached code",
+      "tier": 3
+    },
+    {
+      "id": "FU-1159",
+      "title": "The waterfall override's reply always says 'logged to the UEG', even when the log write failed",
+      "why": "agentic_core/api/economy.py: the override handler wraps UEGLogger().log(...) in try/except-pass and then returns a note that says 'Effective next cycle; logged to the UEG' unconditionally. A failed constitutional log reads as a logged one. Smallest fix: record whether the log write succeeded and say so in the reply. Found by the W787 measurement, re-checked by hand.",
+      "source": "W787 measurement (re-checked by hand)",
+      "found": "2026-11-10",
+      "files": [
+        "agentic_core/api/economy.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.9",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.9 owns an entity's money records, the waterfall's among them",
+      "tier": 1
     }
   ],
   "routes": [

@@ -2,6 +2,7 @@
 paths it calls, grouped into shards of similar weight. Deterministic — the coverage is fixed before any agent runs."""
 import json
 import re
+import tempfile
 from collections import defaultdict
 from pathlib import Path
 
@@ -53,7 +54,8 @@ if cur:
     shards.append(cur)
 out = [{"shard": i + 1, "files": [f["file"] for f in s], "lines": sum(f["lines"] for f in s),
         "apis": sorted({a for f in s for a in f["apis"]})} for i, s in enumerate(shards)]
-json.dump(out, open("C:/tmp/w477_inventory.json", "w", encoding="utf-8", newline="\n"), indent=1)
+_OUT = Path(tempfile.gettempdir()) / "w477_inventory.json"   # W788 - the machine's temp directory, not one Windows path
+json.dump(out, open(_OUT, "w", encoding="utf-8", newline="\n"), indent=1)
 print(f"{len(files)} surfaces, {sum(f['lines'] for f in files)} lines, "
       f"{len({a for f in files for a in f['apis']})} distinct /api paths → {len(out)} shards")
 for s in out:

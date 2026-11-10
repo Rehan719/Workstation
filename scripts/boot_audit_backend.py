@@ -26,7 +26,7 @@ import tempfile
 
 PORT = int(os.environ.get("M1_PORT", "8031"))
 #  W785 - the default store is the machine's temp directory, not a path written for one machine (on Linux the old
-#  default made a folder literally named "C:\tmp\m1_audit" inside the working directory)
+#  default, a Windows drive path, made a folder named after that whole path inside the working directory)
 STORE = pathlib.Path(os.environ.get("M1_STORE", str(pathlib.Path(tempfile.gettempdir()) / "m1_audit")))
 
 
