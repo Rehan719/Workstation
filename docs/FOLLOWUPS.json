@@ -21626,11 +21626,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W781",
       "note": "",
       "tier": 3,
-      "slot_source": "its files sit in an area retired with P2.18, so the router names no item; P3.30 holds the fabric's small truth fixes (W747)"
+      "slot_source": "its files sit in an area retired with P2.18, so the router names no item; P3.30 holds the fabric's small truth fixes (W747)",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "layer_registry.py is labelled HISTORICAL with the seven layers named as the canon, and each module path's existence is read from the tree at import (12 of 14 absent); LayerAdapter, execute_sovereign (with its fixed layer-13 drift) and get_layer, which nothing in the tree reached, strings included, are archived to _archive/agentic_core/architecture/enriched_layers_sovereign.py; the methods governance/uci_interceptor.py calls stay. Guard test_w781, 3 blinds red."
     },
     {
       "id": "FU-1097",

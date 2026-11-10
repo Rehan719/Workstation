@@ -2,35 +2,20 @@ from typing import Dict, Any, Optional
 from agentic_core.ueg.logger import VSBUEGLogger
 from agentic_core.biomimicry.geospheric.orchestrator_legacy import GeosphericHomeostaticOrchestrator
 
-from .layer_registry import get_layer_metadata
-
-class LayerAdapter:
-    def __init__(self, layer_id: int, manager: Any):
-        self.layer_id = layer_id
-        self.manager = manager
-        self.metadata = get_layer_metadata(layer_id)
-
-    async def execute(self, task: Dict[str, Any]) -> Dict[str, Any]:
-        """Base execution logic with UCI validation (mocked for now)."""
-        await self.manager.ueg.log_minimisation_event("layer_execution_triggered", {
-            "layer_id": self.layer_id,
-            "layer_name": self.metadata["name"],
-            "task_id": task.get("id")
-        })
-        # Default behavior: log and return success
-        return {"status": "SUCCESS", "layer": self.layer_id}
 
 class EnrichedArchitecturalLayerManager:
     """
-    14-Layer IDBO Core with backward-compatible 6-layer API.
-    Mandate: Evolutionary Continuity + Supreme Convergence.
+    The layer methods governance/uci_interceptor.py calls (geospheric_homeostasis, immune_resilience) and the
+    geospheric orchestrator it reads. W781 (FU-1096): this once claimed a fourteen-layer core; the seven layers are the
+    canon, the 14-layer table in layer_registry.py is historical, and the 14-layer execution API is archived.
     """
     def __init__(self, ueg_logger: Optional[Any] = None):
         self.ueg = ueg_logger or VSBUEGLogger()
         self.geospheric = GeosphericHomeostaticOrchestrator(ueg_logger=self.ueg)
 
-        # Initialize 14 layers via adapters
-        self.layers_14 = {i: LayerAdapter(i, self) for i in range(14)}
+        #  W781 (FU-1096) - the 14 LayerAdapters, execute_sovereign and get_layer had no caller anywhere in the tree
+        #  (strings included); they are archived in _archive/agentic_core/architecture/enriched_layers_sovereign.py.
+        #  Its layer-13 branch returned a fixed success with a typed drift figure.
 
         # Explicit registration of required supreme components
         from agentic_core.consultation.mushawara.mushawara_bridge_2 import MushawaraBridge2
@@ -81,32 +66,3 @@ class EnrichedArchitecturalLayerManager:
         """
         return await self.geospheric.step(inputs, context)
 
-    # --- SOVEREIGN 14-LAYER API (Phase 4+ Mandate) ---
-
-    async def execute_sovereign(self, layer_id: int, task: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Unified 14-layer execution API.
-        Routes to specialized handlers or legacy shims.
-        """
-        if layer_id not in self.layers_14:
-             raise ValueError(f"Constitutional Violation: Invalid layer ID {layer_id}")
-
-        # Specialized Routing Logic
-        if layer_id == 0:
-            return {"status": "SUCCESS", "result": await self.mycelial_propagation(task.get("data"))}
-        elif layer_id == 5:
-            return await self.geospheric_homeostasis(task.get("inputs", {}), task.get("context", {}))
-        elif layer_id == 9:
-            # Orchestration Layer (Mushawara Integration)
-            res = await self.mushawara.consult(task, mode="sync")
-            return {"status": "SUCCESS", "consensus": res}
-        elif layer_id == 13:
-            # Reflection Layer (SIL integration placeholder for Phase 4)
-            await self.ueg.log_minimisation_event("civilizational_reflection_triggered", task)
-            return {"status": "SUCCESS", "drift": 0.003}
-
-        # Fallback to generic adapter execution
-        return await self.layers_14[layer_id].execute(task)
-
-    def get_layer(self, layer_id: int) -> LayerAdapter:
-        return self.layers_14.get(layer_id)

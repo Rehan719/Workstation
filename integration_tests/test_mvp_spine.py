@@ -70244,3 +70244,28 @@ def test_w780_fu1097_p331_says_what_was_built_since_it_listed_the_page_as_open()
     assert "UPDATED 2026-11-10 (W780, FU-1097)" in p and "/api/v1/resources/cell/verify" in p
     assert '/api/v1/resources/cell/verify' in pathlib.Path(
         "apps/workstation-superapp/src/components/InstrumentCellPanel.tsx").read_text(encoding="utf-8")
+
+
+def test_w781_fu1096_the_14_layer_table_is_history_and_its_uncalled_execution_api_is_archived():
+    """W781 (FU-1096) - layer_registry.py headed itself the definitive 14-layer specification against the
+    seven-layer canon, naming module paths that do not exist; execute_sovereign had no caller and its layer-13 branch
+    returned a fixed drift. The table is labelled historical with each path's existence read; the API is archived."""
+    import inspect
+    import pathlib
+    from agentic_core.architecture import layer_registry as _lr
+    from agentic_core.architecture import enriched_layers as _el
+    src = pathlib.Path("agentic_core/architecture/layer_registry.py").read_text(encoding="utf-8")
+    assert "Definitive 14-Layer" not in src and "HISTORICAL" in src and _lr.HISTORICAL is True and _lr.CANON_LAYERS == 7
+    for v in _lr.LAYER_SPEC.values():
+        assert v["exists"] == (pathlib.Path(v["module"]).exists()), v
+    assert any(not v["exists"] for v in _lr.LAYER_SPEC.values())
+    m = _el.EnrichedArchitecturalLayerManager
+    for gone in ("execute_sovereign", "get_layer"):
+        assert not hasattr(m, gone), gone
+    assert not hasattr(_el, "LayerAdapter") and "drift\": 0.003" not in inspect.getsource(_el)
+    assert "14-Layer IDBO Core" not in inspect.getsource(m)
+    for kept in ("geospheric_homeostasis", "immune_resilience"):           # what governance/uci_interceptor.py calls
+        assert hasattr(m, kept), kept
+    from agentic_core.governance import uci_interceptor  # noqa: F401 - still imports
+    arc = pathlib.Path("_archive/agentic_core/architecture/enriched_layers_sovereign.py").read_text(encoding="utf-8")
+    assert "async def execute_sovereign" in arc and "class LayerAdapter" in arc
