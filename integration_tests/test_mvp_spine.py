@@ -70329,3 +70329,24 @@ def test_w784_fu865_each_forge_stage_is_one_persona_prompt_through_the_gateway(c
         assert out[sid]["output"] == f"[forge_{sid}] composed", out.get(sid)
     page = pathlib.Path("apps/workstation-superapp/src/pages/developers/ForgePipeline.tsx").read_text(encoding="utf-8")
     assert "Composed by a persona prompt through the gateway. Provenance is recorded for the run," in page
+
+
+def test_w785_the_audit_instruments_name_no_machines_home_directory():
+    """W785 - fidelity_audit_v7.js told its twelve agents the repository was one machine's home directory, so a run
+    anywhere else pointed them at a path that did not exist and every quoted file carried that home path into the
+    run record; boot_audit_backend.py and truth_sweep_inventory.py were bound to the same machine. The repo is an
+    argument (else the working directory), the store defaults to the temp directory, the root to the script's own."""
+    import pathlib
+    import re
+    home = re.compile(r"[A-Za-z]:[\\/]+Users[\\/]|/home/[a-z]|/Users/[a-z]")
+    for f in ("scripts/workflows/fidelity_audit_v7.js", "scripts/boot_audit_backend.py",
+              "scripts/truth_sweep_inventory.py"):
+        t = pathlib.Path(f).read_text(encoding="utf-8")
+        assert not home.search(t), (f, home.search(t).group(0))
+    wf = pathlib.Path("scripts/workflows/fidelity_audit_v7.js").read_text(encoding="utf-8")
+    assert "const REPO = A.repo ||" in wf and "Repo: ${REPO} (HEAD ${HEAD}, ${DATE})" in wf
+    assert "RELATIVE to the repo root" in wf
+    boot = pathlib.Path("scripts/boot_audit_backend.py").read_text(encoding="utf-8")
+    assert "tempfile.gettempdir()" in boot and r"C:\tmp" not in boot.split("STORE =", 1)[1].split("\n", 1)[0]
+    inv = pathlib.Path("scripts/truth_sweep_inventory.py").read_text(encoding="utf-8")
+    assert "ROOT = Path(__file__).resolve().parents[1]" in inv

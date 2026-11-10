@@ -5,7 +5,7 @@ import re
 from collections import defaultdict
 from pathlib import Path
 
-ROOT = Path("C:/Users/rehan/Workstation")
+ROOT = Path(__file__).resolve().parents[1]      # W785 - the repository this script sits in, not one machine's path
 SRC = ROOT / "apps/workstation-superapp/src"
 UI = ROOT / "packages/ui/src"
 API_RE = re.compile(r"""['"`](/api/[A-Za-z0-9_\-/{}$.:?=&]+)""")
