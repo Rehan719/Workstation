@@ -142,8 +142,15 @@ def screen_living_vsb(vsb_id: str) -> Optional[Dict[str, Any]]:
     prior = rec.get("overall")
     regression = bool(prior and prior != "fail" and screen["overall"] == "fail")
     entries = (rec.get("history") or [])[-19:]
-    entries.append({"overall": screen["overall"],
-                    "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
+    _entry = {"overall": screen["overall"], "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+    #  W791 (FU-1155) - A FINDING KEEPS ITS REASON. An entry held only "fail" and its time, and the verdicts beside it
+    #  were the latest screen's alone, so a FAIL recorded weeks ago carried no reason once the next screen ran (five
+    #  change records on the Owner's store met exactly this). A failing entry keeps which frameworks failed and why.
+    if screen.get("overall") == "fail":
+        _entry["failing"] = [{"framework": str(v.get("framework") or ""), "reason": str(v.get("reason") or "")[:240]}
+                             for v in (screen.get("verdicts") or [])
+                             if isinstance(v, dict) and v.get("status") == "fail"][:6]
+    entries.append(_entry)
     # W506 (P2.7(6)) - the latest screen's VERDICTS are persisted, with the coverage statement that
     # qualifies them. `screen_compliance` returns all three and this writer kept only `overall`, so the
     # roster's `verdicts` field could never be filled and every row showed an empty list for an entity

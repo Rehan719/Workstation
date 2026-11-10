@@ -1,7 +1,6 @@
 # Files with pre-existing dangling first-party imports, recorded so that
 # scripts/check_import_integrity.py fails only on NEW breaks.
 # Removing a line here is how you assert a file has been fixed.
-agentic_core/business/pipelines.py  # missing: agentic_core.business.pipelines.legal_services_pipeline, agentic_core.business.pipelines.religious_research_pipeline, agentic_core.business.pipelines.scientific_research_pipeline
 agentic_core/evolution/evolution_engine.py  # missing: agentic_core.incubator.petri_dish, agentic_core.incubator.population, agentic_core.incubator.simulation_loop
 agentic_core/evolution/prompt_evolver.py  # missing: agentic_core.ethics.constitutional_enforcer
 agentic_core/governance/verifiable_governance.py  # missing: agentic_core.purpose.evaluator

@@ -22892,10 +22892,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.40",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W791",
       "note": "",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A failing compliance history entry now keeps which frameworks failed and why (failing: framework + reason, capped at six), so a FAIL keeps its reason after later screens overwrite the latest verdicts. Driven: a failing then a passing screen. FU-1046's data-reading half stays with the Owner. Blind red."
     },
     {
       "id": "FU-1156",
@@ -22927,11 +22930,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.13",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W789",
       "note": "",
       "slot_source": "P5.13 owns the Care tools' honesty and rules out the word 'validated'",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The Care risk tool's card (toolRegistry.ts) and hub (CareHub.tsx) now say NEWS2 is scored from its published chart and MUST and Waterlow are withheld on their owners' terms; 'validated' is gone. The guard reads the route's own tool list (must and waterlow withheld, news2 not). 2 blinds red."
     },
     {
       "id": "FU-1158",
@@ -22945,11 +22951,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W792",
       "note": "",
       "slot_source": "P3.30 carries tier-3 stubs and unreached code",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "agentic_core/business/pipelines.py (literal invoice, 'audit: PASSED', unimportable, no importer) is archived whole to _archive/agentic_core/business/pipelines.py and its line dropped from scripts/import_integrity_baseline.txt; the import check passes and reports nothing to drop. Blind red."
     },
     {
       "id": "FU-1159",
@@ -22963,11 +22972,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W790",
       "note": "",
       "slot_source": "P5.9 owns an entity's money records, the waterfall's among them",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The waterfall override records whether its constitutional log write succeeded (ueg_logged, ueg_basis) and its note says 'NOT logged to the UEG' when it failed, instead of 'logged to the UEG' unconditionally. Driven with the log raising. 2 blinds red."
     }
   ],
   "routes": [

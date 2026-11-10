@@ -72,7 +72,7 @@ export const CareHub: React.FC = () => {
             ) : activeTab === 'risk' ? (
               <DomainTool
                 title={T['risk'].title}
-                description={<>Pick a tool and enter the observations — the score is <span className="text-vital">computed in-house from the published table</span> (NEWS2 · MUST · Waterlow) and shown first; Workstation's own AI interprets it. A decision aid — clinical judgement by a qualified professional is required.</>}
+                description={<>Pick a tool and enter the observations — the score is <span className="text-vital">computed in-house from the published chart</span> for NEWS2 and shown first (MUST and Waterlow are withheld on their owners' terms, and say so if picked); Workstation's own AI interprets it. A decision aid — clinical judgement by a qualified professional is required.</>}
                 endpoint="/api/v1/care/risk-assess"
                 resultKey="assessment"
                 submitLabel="Assess risk"

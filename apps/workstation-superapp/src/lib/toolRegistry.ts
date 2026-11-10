@@ -49,7 +49,7 @@ export const TOOL_REGISTRY: DomainTools[] = [
   { name: 'Care', route: '/care', tools: [
     form('clinical', 'Clinical Handover (SBAR)', 'Compose a structured clinical handover in the SBAR/ISBAR framework.'),
     form('care-plan', 'Care Plan Builder', 'A person-centred care plan: goals, interventions, review schedule.'),
-    form('risk', 'Clinical Risk Assessment', 'Score a validated tool from its published table (NEWS2 · MUST · Waterlow) with AI interpretation. A decision aid.'),
+    form('risk', 'Clinical Risk Assessment', 'Score NEWS2 from its published chart, with AI interpretation; MUST and Waterlow are withheld on their owners\' terms. A decision aid.'),   // W789 (FU-1157)
     form('safeguarding', 'Safeguarding Triage', 'Structure the response to a safeguarding concern under the Care Act 2014: immediate safety, category, who to notify, what to record.'),
   ]},
   { name: 'Employment', route: '/employment', tools: [

@@ -206,7 +206,10 @@ export const VSBEconomy: React.FC = () => {
       if (!r.ok) { setWfErr((d?.detail?.violations) || (typeof d?.detail === 'string' ? [d.detail] : [`HTTP ${r.status}`])); setWfSaving(false); return; }
       setWf(prev => prev ? { ...prev, waterfall: d.waterfall, source: d.source } : prev);
       setWfDraft(Object.fromEntries(Object.entries(d.waterfall as Record<string, number>).map(([k, v]) => [k, Math.round(v * 100)])));
-      setWfMsg('Saved — effective from the next cycle (virtual; logged to the UEG).');
+      //  W790 (FU-1159) - whether the change reached the constitutional log is the route's answer, not this page's
+      setWfMsg(d.ueg_logged === false
+        ? `Saved — effective from the next cycle (virtual). NOT logged to the UEG: ${d.ueg_basis ?? 'the log write failed'}.`
+        : 'Saved — effective from the next cycle (virtual; logged to the UEG).');
     } catch (e: any) { setWfErr([e?.message ?? String(e)]); }
     setWfSaving(false);
   };

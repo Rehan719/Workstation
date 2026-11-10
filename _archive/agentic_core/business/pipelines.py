@@ -1,3 +1,6 @@
+# ARCHIVED W792 (FU-1158) from agentic_core/business/pipelines.py. Nothing live imported it, and it could not be
+# imported: its three imports name submodules of a module, not a package. Its methods returned fixed values (an
+# invoice id, revenue 1500.0, "audit: PASSED") as if a pipeline had run. Kept whole, reversibly.
 import logging
 from typing import Dict, Any, List
 

@@ -574,6 +574,8 @@ async def set_waterfall(req: WaterfallRequest, user: dict | None = Depends(get_c
     except TimeoutError as e:
         raise HTTPException(status_code=503, detail=f"the waterfall store is busy ({e}); nothing was written")
     # Constitutional audit — the Owner adjusting the distribution policy is a material, logged act.
+    #  W790 (FU-1159) - WHETHER IT WAS LOGGED IS SAID, NEVER ASSUMED. The reply said "logged to the UEG" after a
+    #  try/except that swallowed a failed write, so a change the constitutional log never received read as logged.
     try:
         from agentic_core.gaas.v5 import UEGLogger
         UEGLogger().log({
@@ -581,14 +583,18 @@ async def set_waterfall(req: WaterfallRequest, user: dict | None = Depends(get_c
             "entity_type_source": et_source,
             "entity_type_claimed": req.entity_type if req.entity_type != entity_type else None,
             "waterfall": waterfall, "by": "owner"})
-    except Exception:
-        pass
+        _ueg_logged, _ueg_basis = True, "written to the constitutional log (the UEG)"
+    except Exception as _exc:                       # noqa: BLE001 - the change stands; the failed log is said
+        _ueg_logged, _ueg_basis = False, (f"NOT written to the constitutional log ({_exc.__class__.__name__}); "
+                                          f"the proportions were saved all the same")
     return {
         "vsb_id": req.vsb_id, **_form_disclosure(req.entity_type, entity_type, et_source),
         "waterfall": waterfall,
         "source": "owner_override", "applied": True,
-        "note": "Owner-set proportions persisted (virtual). Effective next cycle; logged to the UEG. "
-                "Reset by posting the template defaults.",
+        "ueg_logged": _ueg_logged, "ueg_basis": _ueg_basis,
+        "note": ("Owner-set proportions persisted (virtual). Effective next cycle; "
+                 + ("logged to the UEG. " if _ueg_logged else "NOT logged to the UEG - see ueg_basis. ")
+                 + "Reset by posting the template defaults."),
     }
 
 

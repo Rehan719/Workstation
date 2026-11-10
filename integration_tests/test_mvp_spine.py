@@ -10399,7 +10399,7 @@ def test_w457_care_scoring_computes_both_ways(client, monkeypatch):
     assert r3.status_code == 410 and "retired" in r3.json()["detail"] and seen == _n_seen, (r3.status_code, r3.text[:200])
     # the page renders the block first and the copy says what is computed
     hub = Path("apps/workstation-superapp/src/pages/domains/CareHub.tsx").read_text(encoding="utf-8")
-    assert "data-testid=\"care-score\"" in hub and "r.score.total" in hub and "computed in-house from the published table" in hub
+    assert "data-testid=\"care-score\"" in hub and "r.score.total" in hub and "computed in-house from the published chart" in hub   # W789 (FU-1157)
     assert "own</span> AI scores and interprets the risk" not in hub
     assert "score_summary" in Path("apps/workstation-superapp/src/components/DomainTool.tsx").read_text(encoding="utf-8")   # My Work keeps the score
     assert "validated risk scoring" not in Path("apps/workstation-superapp/src/pages/domains/DomainsHub.tsx").read_text(encoding="utf-8")
@@ -70404,3 +70404,89 @@ def test_w787_the_remaining_work_measurement_adds_up_and_names_real_items():
     assert tot and float(tot.group(1)) == sum(v[0] for v in by.values()) and float(tot.group(2)) == sum(v[1] for v in by.values())
     assert "HOW IT WAS MEASURED" in doc and "not verified" in doc
     assert not re.search(r"/home/[a-z]|[A-Za-z]:[\\/]+Users[\\/]", doc), "a machine path in the measurement"
+
+
+def test_w789_fu1157_the_care_risk_tool_says_which_scores_it_computes(client):
+    """W789 (FU-1157) - the Care risk tool's card and hub said it scores 'a validated tool from its published table
+    (NEWS2 · MUST · Waterlow)'; MUST and Waterlow are withheld on their owners' terms and the route refuses them, and
+    P5.13 rules 'validated' out. The words now match what the route does, driven on the route."""
+    import pathlib
+    reg = pathlib.Path("apps/workstation-superapp/src/lib/toolRegistry.ts").read_text(encoding="utf-8")
+    hub = pathlib.Path("apps/workstation-superapp/src/pages/domains/CareHub.tsx").read_text(encoding="utf-8")
+    for txt in (reg, hub):
+        assert "(NEWS2 · MUST · Waterlow)" not in txt
+    assert "Score a validated tool" not in reg and "MUST and Waterlow are withheld" in reg
+    assert "MUST and Waterlow are withheld" in hub
+    tools = client.get("/api/v1/care/tools").json()
+    rows = tools if isinstance(tools, list) else tools.get("tools", [])
+    kind = {t.get("id"): t.get("type") for t in rows if isinstance(t, dict)}
+    assert kind.get("must") == "withheld" and kind.get("waterlow") == "withheld", kind
+    assert kind.get("news2") not in (None, "withheld", "retired"), kind
+
+
+def test_w790_fu1159_the_waterfall_override_says_whether_it_was_logged(client, monkeypatch):
+    """W790 (FU-1159) - the override's reply said 'logged to the UEG' after swallowing a failed log write."""
+    import uuid as _uuid
+    import agentic_core.gaas.v5 as _v5
+    body = {"entity_type": "waqf_ltd_hybrid", "proportions": {"owner": 0.10, "self_investment": 0.25,
+            "capital_fund": 0.20, "user_projects": 0.15, "charity": 0.30}}
+    ok = client.post("/api/v1/economy/waterfall", json={"vsb_id": f"w790-{_uuid.uuid4().hex[:8]}", **body})
+    assert ok.status_code == 200, ok.text[:300]
+    assert ok.json()["ueg_logged"] is True and "logged to the UEG" in ok.json()["note"], ok.json()
+
+    def _boom(self, *a, **k):
+        raise OSError("w790 driven")
+    monkeypatch.setattr(_v5.UEGLogger, "log", _boom)
+    bad = client.post("/api/v1/economy/waterfall", json={"vsb_id": f"w790-{_uuid.uuid4().hex[:8]}", **body})
+    assert bad.status_code == 200, bad.text[:300]
+    j = bad.json()
+    assert j["ueg_logged"] is False and "NOT written" in j["ueg_basis"], j
+    assert "logged to the UEG." not in j["note"] and "NOT logged to the UEG" in j["note"], j["note"]
+    import pathlib
+    page = pathlib.Path("apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx").read_text(encoding="utf-8")
+    assert "setWfMsg(d.ueg_logged === false" in page and "NOT logged to the UEG: ${d.ueg_basis" in page
+
+
+def test_w791_fu1155_a_failing_compliance_entry_keeps_its_reason(monkeypatch):
+    """W791 (FU-1155) - a compliance history entry kept only 'fail' and its time; the reason lived only in the
+    latest screen's verdicts and was gone after the next one. Driven: a failing screen, then a passing one."""
+    import json
+    import uuid
+    import agentic_core.api.compliance as _comp
+    import agentic_core.economy.living_vsbs as _lv
+    from agentic_core.config import data_path
+    from agentic_core.organism.heartbeat import screen_living_vsb
+    vid = f"w791-{uuid.uuid4().hex[:8]}"
+    monkeypatch.setattr(_lv, "list_living", lambda *a, **k: {"living_vsbs": [{"vsb_id": vid, "name": "w791 probe"}]})
+    verdicts = [{"framework": "uk_legal", "status": "fail", "reason": "ACAS code: w791 driven breach", "coverage": "vocabulary"},
+                {"framework": "ehs", "status": "pass", "reason": "nothing found", "coverage": "vocabulary"}]
+    monkeypatch.setattr(_comp, "screen_compliance", lambda text: {"overall": "fail", "verdicts": verdicts})
+    screen_living_vsb(vid)
+    monkeypatch.setattr(_comp, "screen_compliance", lambda text: {"overall": "pass", "verdicts": []})
+    screen_living_vsb(vid)
+    rec = json.loads(data_path("vsb_compliance_history.json").read_text(encoding="utf-8"))[vid]
+    first, second = rec["history"][-2], rec["history"][-1]
+    assert first["overall"] == "fail" and first["failing"] == [
+        {"framework": "uk_legal", "reason": "ACAS code: w791 driven breach"}], first
+    assert second["overall"] == "pass" and "failing" not in second, second
+    assert rec["verdicts"] == [], "the latest screen's verdicts are the pass, so the fail's reason lives only in its entry"
+
+
+def test_w792_fu1158_the_dead_business_pipeline_stub_is_archived():
+    """W792 (FU-1158) - agentic_core/business/pipelines.py returned a literal invoice and 'audit: PASSED', could not
+    be imported (its imports named submodules of a module) and nothing imported it."""
+    import pathlib
+    import subprocess
+    import sys
+    assert not pathlib.Path("agentic_core/business/pipelines.py").exists()
+    arc = pathlib.Path("_archive/agentic_core/business/pipelines.py").read_text(encoding="utf-8")
+    assert "ARCHIVED W792" in arc and "inv_990" in arc
+    base = pathlib.Path("scripts/import_integrity_baseline.txt").read_text(encoding="utf-8")
+    assert "agentic_core/business/pipelines.py" not in base, "a fixed file is still baselined as dangling"
+    r = subprocess.run([sys.executable, "scripts/check_import_integrity.py"], capture_output=True, text=True)
+    assert r.returncode == 0 and "import integrity OK" in r.stdout, r.stdout[-400:]
+    assert "no longer dangle" not in r.stdout, r.stdout[-400:]
+    live = subprocess.run(["git", "grep", "-l", "-e", "business.pipelines", "-e", "BusinessPipeline", "--",
+                           "*.py", "*.ts", "*.tsx", ":(exclude)_archive", ":(exclude)integration_tests"],
+                          capture_output=True, text=True).stdout.split()
+    assert live == [], live
