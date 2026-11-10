@@ -285,9 +285,9 @@ app.include_router(payments_v310.router, prefix="/api/v310", dependencies=[_Depe
 from agentic_core.api.v310 import fund as fund_v310
 app.include_router(fund_v310.router, prefix="/api/v310", dependencies=[_Depends(_get_current_user)])
 
-# 19. Gamification (XP / quests / levels) — called by gamificationStore.ts
-from agentic_core.api.v280 import gamification as gamification_api
-app.include_router(gamification_api.router, prefix="/api/v280", dependencies=[_Depends(_get_current_user)])
+# 19. (W793, FU-984 R5[6]) the v280 gamification router is ARCHIVED (_archive/agentic_core/api/v280/): a stub
+#     whose only caller was the archived gamificationStore.ts behind PlayfulEffectsManager. The Quran platform's own
+#     persisted awards live at /api/v1/qep/gamification and are untouched.
 
 # 20. Evolution proposals (v191) — called by Proposals + EvolutionDashboard pages
 from agentic_core.api.v191 import evolution as evolution_v191
@@ -344,10 +344,8 @@ app.include_router(qep_analytics.router, prefix="/api", dependencies=[_Depends(_
 from agentic_core.api import tools as tools_api
 app.include_router(tools_api.router, prefix="/api", dependencies=[_Depends(_get_current_user)])
 
-# 32. Cross-Platform Bridge (wearable, voice, AR — Phase 3 scaffolding)
-#     Refactored from FastAPI() sub-app to APIRouter (2026-06-18)
-from agentic_core.api import cross_platform
-app.include_router(cross_platform.api, prefix="/api", dependencies=[_Depends(_get_current_user)])
+# 32. (W793, FU-984 R5[6]) the Cross-Platform Bridge (wearable, voice, AR scaffolding) is ARCHIVED
+#     (_archive/agentic_core/api/cross_platform.py): stubs nothing in the product called.
 
 # 33. Religion domain (fiqh research, Quran tafsir, halal review, interfaith)
 from agentic_core.api import religion as religion_api

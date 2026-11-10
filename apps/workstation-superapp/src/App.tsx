@@ -4,7 +4,6 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { Shell } from './components/layout/Shell';
 import { ThemeProvider } from './theme/ThemeContext';
 import { AdaptiveUIProvider } from './components/AdaptiveUIProvider';
-import { PlayfulEffectsManager } from './components/gamification/PlayfulEffectsManager';
 import Joyride from 'react-joyride';
 
 // ── 1. Home / organism overview ──────────────────────────────────────────
@@ -152,7 +151,7 @@ function App() {
     <ThemeProvider>
     <AdaptiveUIProvider>
     <ErrorBoundary>
-    <PlayfulEffectsManager />
+    {/* W793 (FU-984 R5[6]) - PlayfulEffectsManager is archived: it fetched XP from a stub router nothing else used */}
     <Joyride steps={steps} run={runTutorial} callback={onTour} continuous showProgress showSkipButton />
     <Shell>
       {() => (

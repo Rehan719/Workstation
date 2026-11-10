@@ -1,3 +1,5 @@
+// ARCHIVED W793 (FU-984 R5[6]): a stub nothing in the product used (the v280 gamification router and the
+// cross-platform bridge were mounted; PlayfulEffectsManager and its store were their only caller). Kept whole.
 import { create } from 'zustand';
 import axios from 'axios';
 

@@ -70490,3 +70490,36 @@ def test_w792_fu1158_the_dead_business_pipeline_stub_is_archived():
                            "*.py", "*.ts", "*.tsx", ":(exclude)_archive", ":(exclude)integration_tests"],
                           capture_output=True, text=True).stdout.split()
     assert live == [], live
+
+
+def test_w793_fu984_r5_the_stub_routers_are_archived_and_two_sentences_say_what_runs(client):
+    """W793 (FU-984, ledger v17 R5[6], R5[2], R5[3]) - the v280 gamification router and the cross-platform bridge were
+    stubs nothing in the product used, mounted beside the live routes; a QEP button opened nothing; the avatar's
+    empty state said replies are tailored to the context and that an image can be attached on any deployment."""
+    import pathlib
+    import subprocess
+    for path in ("/api/v280/gamification/stats/u1", "/api/v280/gamification/quests?user_id=u1"):
+        assert client.get(path).status_code == 404, path
+    for path in ("/api/cross-platform/ar/scene",):
+        assert client.get(path).status_code == 404, path
+    assert client.post("/api/cross-platform/voice/command", json={}).status_code == 404
+    app = pathlib.Path("apps/workstation-superapp/src/App.tsx").read_text(encoding="utf-8")
+    assert "<PlayfulEffectsManager" not in app and "import { PlayfulEffectsManager }" not in app
+    qep = pathlib.Path("apps/workstation-superapp/src/components/QEPFlagshipFeatures.tsx").read_text(encoding="utf-8")
+    assert "Launch Full Dashboard')" not in qep and "notImplemented" not in qep
+    assert "Flashcards, progress heatmaps and audio looping are not built." in qep
+    av = pathlib.Path("apps/workstation-superapp/src/components/avatar/ConversationPanel.tsx").read_text(encoding="utf-8")
+    assert "Responses are tailored to the" not in av and "read only where a local vision model is installed" in av
+    assert "whether a model or the deterministic floor answered it" in av
+    for f in ("_archive/agentic_core/api/v280/gamification.py", "_archive/agentic_core/api/cross_platform.py",
+              "_archive/apps/workstation-superapp/src/components/gamification/PlayfulEffectsManager.tsx",
+              "_archive/apps/workstation-superapp/src/store/gamificationStore.ts"):
+        assert "ARCHIVED W793" in pathlib.Path(f).read_text(encoding="utf-8"), f
+    #  an import or a mount, not a comment that names what was archived (the first version of this leg matched its
+    #  own round's explanatory comments)
+    live = subprocess.run(["git", "grep", "-l", "-F", "-e", "from agentic_core.api.v280", "-e",
+                           "from agentic_core.api import cross_platform", "-e", "store/gamificationStore", "-e",
+                           "<PlayfulEffectsManager", "-e", "components/gamification/PlayfulEffectsManager'", "--",
+                           "*.py", "*.ts", "*.tsx", ":(exclude)_archive", ":(exclude)integration_tests"],
+                          capture_output=True, text=True).stdout.split()
+    assert live == [], live
