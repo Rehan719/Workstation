@@ -40,6 +40,7 @@ interface CatalogProduct {
   route: string | null;
   status?: 'live' | 'source' | 'legacy';   // W470 — live: a served surface; source: a pointer, nothing served; legacy: an archived directory
   live?: boolean;
+  has_directory?: boolean;   // W782 (FU-888)
 }
 
 // W392 — the TRADEABLE layer. The catalogue above says what exists; a listing says what someone has
@@ -187,7 +188,7 @@ export const LivingMarketplace: React.FC = () => {
           Living <span className="text-aura">Marketplace</span>
         </h1>
         <p className="text-aura font-black uppercase text-[10px] tracking-[0.3em]">
-          Sovereign Economy · {catalogProducts.filter(p => p.live).length} live products · {catalogProducts.length} registered directories
+          Sovereign Economy · {catalogProducts.filter(p => p.live).length} live products · {catalogProducts.length} registered entries ({catalogProducts.filter(p => p.has_directory).length} with a directory)
         </p>
         <p className="text-slate-500 text-xs font-semibold mt-3 max-w-2xl leading-relaxed">
           The platform's registered product directories. Only an entry marked live opens to a served surface on

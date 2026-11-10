@@ -16595,7 +16595,8 @@ def test_w470_catalogue_honesty_one_registry_live_counts_and_no_dead_flagship_ta
 
     # ── the page counts live only, badges legacy and source, and offers Open only for a served surface ──
     page = (app_src / "pages/marketplace/LivingMarketplace.tsx").read_text(encoding="utf-8")
-    assert "{catalogProducts.filter(p => p.live).length} live products · {catalogProducts.length} registered directories" in page
+    assert ("{catalogProducts.filter(p => p.live).length} live products · {catalogProducts.length} registered entries "
+            "({catalogProducts.filter(p => p.has_directory).length} with a directory)") in page   # W782 (FU-888)
     assert "Live Products" not in page and "opens to a live surface" not in page
     assert 'data-testid="catalog-legacy"' in page and "Legacy archive — not a served product" in page
     assert 'data-testid="catalog-source"' in page
@@ -70269,3 +70270,17 @@ def test_w781_fu1096_the_14_layer_table_is_history_and_its_uncalled_execution_ap
     from agentic_core.governance import uci_interceptor  # noqa: F401 - still imports
     arc = pathlib.Path("_archive/agentic_core/architecture/enriched_layers_sovereign.py").read_text(encoding="utf-8")
     assert "async def execute_sovereign" in arc and "class LayerAdapter" in arc
+
+
+def test_w782_fu888_a_catalogue_entry_says_whether_it_has_a_directory(client):
+    """W782 (FU-888) - the live fund's card is listed from its route since its folder was archived, and the page
+    still counted every entry as a registered directory."""
+    import pathlib
+    r = client.get("/api/v1/catalog/products").json()
+    by = {p["slug"]: p for p in r["products"]}
+    assert all(isinstance(p["has_directory"], bool) for p in r["products"])
+    if "capital_fund" in by:
+        assert by["capital_fund"]["has_directory"] is False and by["capital_fund"]["live"] is True, by["capital_fund"]
+    assert r["counts"]["with_directory"] == sum(1 for p in r["products"] if p["has_directory"]) < r["counts"]["registered"] + 1
+    page = pathlib.Path("apps/workstation-superapp/src/pages/marketplace/LivingMarketplace.tsx").read_text(encoding="utf-8")
+    assert "registered directories" not in page and "with a directory" in page and "p.has_directory" in page

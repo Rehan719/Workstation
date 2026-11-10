@@ -17430,11 +17430,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W782",
       "note": "",
       "slot_source": "found in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Each catalogue entry now carries has_directory (false for the live fund, listed from its route since its folder was archived) and counts carries with_directory; the marketplace header reads registered entries and how many have a directory, instead of counting every entry as a directory. Guard test_w782, 2 blinds red."
     },
     {
       "id": "FU-889",
