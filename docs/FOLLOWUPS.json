@@ -17473,11 +17473,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W783",
       "note": "",
       "slot_source": "found in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "consultation_orchestrator.py, whose only importers were in the archived fund package, is archived whole; absolute_constraints.yaml no longer names it as an enforcing gate (NOT ENFORCED, said); DEPENDENCY_VERDICTS.md records that firebase-admin has no live importer again and is NOT removed here - removal rides FU-283's fresh-venv retry. Guard test_w783, 2 blinds red."
     },
     {
       "id": "FU-891",

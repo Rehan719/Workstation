@@ -70284,3 +70284,23 @@ def test_w782_fu888_a_catalogue_entry_says_whether_it_has_a_directory(client):
     assert r["counts"]["with_directory"] == sum(1 for p in r["products"] if p["has_directory"]) < r["counts"]["registered"] + 1
     page = pathlib.Path("apps/workstation-superapp/src/pages/marketplace/LivingMarketplace.tsx").read_text(encoding="utf-8")
     assert "registered directories" not in page and "with a directory" in page and "p.has_directory" in page
+
+
+def test_w783_fu890_what_the_archived_fund_left_unimported_is_archived_or_recorded():
+    """W783 (FU-890) - after the capital-fund package was archived, nothing live imported the consultation
+    orchestrator it used, or firebase-admin, which four of its modules opened at import."""
+    import pathlib
+    import subprocess
+    assert not pathlib.Path("agentic_core/consultation/mushawara/consultation_orchestrator.py").exists()
+    assert "ARCHIVED W783" in pathlib.Path(
+        "_archive/agentic_core/consultation/mushawara/consultation_orchestrator.py").read_text(encoding="utf-8")
+    live = subprocess.run(["git", "grep", "-l", "-e", "consultation_orchestrator", "-e", "firebase_admin", "--",
+                           "*.py", "*.ts", "*.tsx", "*.yaml", ":(exclude)_archive", ":(exclude)integration_tests"],
+                          capture_output=True, text=True).stdout.split()   # code, not a blinds record (scripts/blinds_*.json)
+    assert live == [], live
+    y = pathlib.Path("config/constraints/absolute_constraints.yaml").read_text(encoding="utf-8")
+    assert 'enforcement: "ConsultationOrchestrator pre-execution gate"' not in y and "NOT ENFORCED" in y
+    dv = pathlib.Path("docs/DEPENDENCY_VERDICTS.md").read_text(encoding="utf-8")
+    assert "## W783 (FU-890)" in dv and "It was not removed" in dv
+    assert "firebase-admin" in pathlib.Path("requirements.txt").read_text(encoding="utf-8").lower(), (
+        "a dependency was removed outside FU-283's retry plan")
