@@ -5,7 +5,6 @@ import json
 import asyncio
 import os
 import logging
-from datetime import datetime
 from typing import Dict, Any, List, Optional
 from config.paths import DATA_DIR
 from pydantic import BaseModel
@@ -14,8 +13,6 @@ from agentic_core.ai.native.orchestrator import orchestrator
 from agentic_core.layers.ueg import ueg
 from agentic_core.simulation.ese import get_ese_instance
 from agentic_core.biomimicry.geospheric.drad import get_drad_instance
-from agentic_core.bto.religion_bto import get_religion_bto
-from agentic_core.swarm.signaling_protocol import SignalingProtocol
 from agentic_core.reactor.religion.qep_flagship import qep_flagship_service
 from agentic_core.ai.ceo.autonomy_pipelines import autonomy_pipelines
 from agentic_core.synthesis.content_production import content_pipeline
@@ -44,7 +41,6 @@ class ToolRegistry:
             "call_meeting": self.call_meeting,
             "discover_tools": self.discover_tools,
             "run_qep_simulation": self.run_qep_simulation,
-            "orchestrate_qep_swarm": self.orchestrate_qep_swarm,
             "check_qep_fabric_health": self.check_qep_fabric_health,
             "qep_tajwid_coach": self.qep_tajwid_coach,
             "qep_memorization": self.qep_memorization,
@@ -54,10 +50,13 @@ class ToolRegistry:
             "qep_community": self.qep_community,
             "qep_analytics": self.qep_analytics,
             "qep_certifications": self.qep_certifications,
-            "qep_offline_access": self.qep_offline_access,
             "qep_billing_donations": self.qep_billing_donations,
             "qep_guidance_assistant": self.qep_guidance_assistant,
             "qep_swarm_learning": self.qep_swarm_learning,
+            #  W798 (FU-1160) - orchestrate_qep_swarm and qep_offline_access unregistered and archived
+            #  (_archive/agentic_core/api/v138/ceo_broken_tools.py): the first reported a swarm as active for
+            #  work nothing starts, the second called a service method without the argument it requires, and no
+            #  dispatch reached either
             #  W778 (FU-1126) - run_introspection / run_retrospection / run_extrospection unregistered and
             #  archived (_archive/agentic_core/api/v138/ceo_fixed_pipelines.py): each returned a fixed analysis
             #  as if a pipeline had run, and no dispatch reached them
@@ -79,23 +78,6 @@ class ToolRegistry:
     #  and call_meeting), and nothing read its 'allocation'. Its objective was linear, so the answer was always
     #  "everything on the largest demand", and two of its four demands were typed constants. An allocator that
     #  allocates nothing is not kept as a capability.
-
-    async def orchestrate_qep_swarm(self, topic: str, domain: str = "religion"):
-        """v1.0: Orchestrate specialized cross-domain research swarm (BTO)."""
-        # Mock signaling for tool execution
-        signaling = SignalingProtocol("CEO-ORCHESTRATOR")
-        if domain == "religion":
-             bto = get_religion_bto("AI-CEO", signaling)
-             return bto.orchestrate_research(topic)
-        else:
-             # v1.0: Generic Domain BTO Adapter
-             return {
-                 "status": "SWARM_ACTIVE",
-                 "domain": domain,
-                 "topic": topic,
-                 "engine": "BTO",
-                 "timestamp": datetime.utcnow().isoformat()
-             }
 
     async def check_qep_fabric_health(self):
         """v0.8: Check Dynamic Reactive Adaptive Fabric (DRAD) health."""
@@ -133,10 +115,6 @@ class ToolRegistry:
     async def qep_certifications(self, user_id: str, course_id: str):
         """v0.9: Certifications & Credentials."""
         return await qep_flagship_service.certifications(user_id, course_id)
-
-    async def qep_offline_access(self):
-        """v0.9: Offline & Global Access."""
-        return await qep_flagship_service.offline_global_access()
 
     async def qep_billing_donations(self):
         """v0.9: Secure Billing & Donations."""

@@ -22999,11 +22999,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W798",
       "note": "",
       "slot_source": "P3.30 carries unreached code and the class W778 closed",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Both unregistered and archived, as W778 did: _archive/agentic_core/api/v138/ceo_broken_tools.py holds the two methods verbatim; qep_offline_access called offline_global_access() without its required user_id, and orchestrate_qep_swarm answered SWARM_ACTIVE in both branches - for religion through ReligionResearchSwarm, which marks four tasks ASSIGNED as a mock and executes none. That module's only caller was the tool, so it is archived too (_archive/agentic_core/bto/religion_bto.py). Guard test_w798 reads the whole registry: every registered tool that calls the QEP flagship service passes each argument the service method requires (the class qep_offline_access was in). Four blinds red."
     },
     {
       "id": "FU-1161",

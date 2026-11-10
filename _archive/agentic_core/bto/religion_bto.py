@@ -1,3 +1,7 @@
+# ARCHIVED W798 (FU-1160) - ReligionResearchSwarm's only caller was the AI CEO tool orchestrate_qep_swarm,
+# archived beside it (_archive/agentic_core/api/v138/ceo_broken_tools.py). orchestrate_research marks four
+# tasks 'ASSIGNED' ("Mock assignment for simulation"), executes none, and answers 'SWARM_ACTIVE'.
+
 import logging
 import uuid
 from typing import List, Dict, Any, Optional

@@ -70733,3 +70733,56 @@ def test_w797_fu980_r1_the_remaining_disclosures_hold_where_a_person_reads_them(
         "the scholar sentence no longer branches on the count, so it says EMPTY whatever the roster holds")
     _st797 = client.get("/api/v1/scholar-review/status").json()
     assert isinstance(_st797["scholars_on_roster"], int) and _st797["footing"]["authentication"] in ("on", "off")
+
+
+def test_w798_fu1160_no_registered_ceo_tool_reports_work_it_never_starts_or_raises_on_its_own_call():
+    """W798 (FU-1160) - qep_offline_access called offline_global_access() without the user_id it requires, and
+    orchestrate_qep_swarm answered 'SWARM_ACTIVE' for work nothing starts. Both are unregistered and archived, as
+    W778 did, with the religion swarm whose only caller was the second. The registry is then read as a whole:
+    every registered tool that calls the QEP flagship service passes each argument the service requires."""
+    import ast
+    import inspect
+    import pathlib
+    import subprocess
+    import textwrap
+    from agentic_core.api.v138 import ceo as _ceo798
+    from agentic_core.reactor.religion.qep_flagship import qep_flagship_service as _svc798
+
+    _reg798 = _ceo798.ToolRegistry().tools
+    assert "get_system_vitals" in _reg798 and len(_reg798) > 5, sorted(_reg798)
+    for _gone798 in ("orchestrate_qep_swarm", "qep_offline_access"):
+        assert _gone798 not in _reg798 and not hasattr(_ceo798.ToolRegistry, _gone798), _gone798
+    #  the code, not the comments: this round's own note names what it removed
+    _src798 = "\n".join(ln for ln in pathlib.Path("agentic_core/api/v138/ceo.py").read_text(encoding="utf-8").splitlines()
+                        if not ln.lstrip().startswith("#"))
+    assert "SWARM_ACTIVE" not in _src798 and "religion_bto" not in _src798
+
+    # the class, read over the whole registry: a registered tool that calls the service with fewer arguments than
+    # the service method requires raises TypeError on its first call, which is what qep_offline_access did
+    _tree798 = ast.parse(textwrap.dedent(inspect.getsource(_ceo798.ToolRegistry)))
+    _checked798 = 0
+    for _fn798 in ast.walk(_tree798):
+        if not isinstance(_fn798, (ast.AsyncFunctionDef, ast.FunctionDef)) or _fn798.name not in _reg798:
+            continue
+        for _call798 in ast.walk(_fn798):
+            if (isinstance(_call798, ast.Call) and isinstance(_call798.func, ast.Attribute)
+                    and isinstance(_call798.func.value, ast.Name) and _call798.func.value.id == "qep_flagship_service"):
+                _sig798 = inspect.signature(getattr(_svc798, _call798.func.attr))
+                _need798 = [p.name for p in _sig798.parameters.values() if p.default is inspect.Parameter.empty
+                            and p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)]
+                _given798 = len(_call798.args) + len(_call798.keywords)
+                assert _given798 >= len(_need798), (
+                    "a registered CEO tool calls the flagship service without an argument it requires, so its first "
+                    "call raises", _fn798.name, _call798.func.attr, _need798)
+                _checked798 += 1
+    assert _checked798 >= 8, ("the registry scan checked too few service calls to be reading the right thing",
+                              _checked798)
+
+    _arc798 = pathlib.Path("_archive/agentic_core/api/v138/ceo_broken_tools.py").read_text(encoding="utf-8")
+    assert "ARCHIVED W798" in _arc798 and "async def orchestrate_qep_swarm" in _arc798 and "async def qep_offline_access" in _arc798
+    _bto798 = pathlib.Path("_archive/agentic_core/bto/religion_bto.py").read_text(encoding="utf-8")
+    assert "ARCHIVED W798" in _bto798 and "class ReligionResearchSwarm" in _bto798
+    assert not pathlib.Path("agentic_core/bto/religion_bto.py").exists()
+    _hits798 = subprocess.run(["git", "grep", "-l", "-e", "religion_bto", "-e", "ReligionResearchSwarm",
+                               "--", "agentic_core", "apps", "scripts"], capture_output=True, text=True).stdout.split()
+    assert _hits798 == [], _hits798
