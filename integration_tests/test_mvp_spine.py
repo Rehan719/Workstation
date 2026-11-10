@@ -70350,3 +70350,29 @@ def test_w785_the_audit_instruments_name_no_machines_home_directory():
     assert "tempfile.gettempdir()" in boot and r"C:\tmp" not in boot.split("STORE =", 1)[1].split("\n", 1)[0]
     inv = pathlib.Path("scripts/truth_sweep_inventory.py").read_text(encoding="utf-8")
     assert "ROOT = Path(__file__).resolve().parents[1]" in inv
+
+
+def test_w786_fu969_a_new_project_opens_on_a_canonical_subject():
+    """W786 (FU-969) - the Projects hub's New-project form and its URL default opened on 'technology', a legacy value
+    outside the six-domain, four-realm taxonomy, and the subject picker then offered it. W758 moved the QEP and
+    Solutions pickers to lib/taxonomy; this is the last default the row named on a picker."""
+    import pathlib
+    import re
+    page = pathlib.Path("apps/workstation-superapp/src/pages/projects/ProjectsHub.tsx").read_text(encoding="utf-8")
+    assert "initialRealm = 'technology'" not in page and "?? 'technology'" not in page
+    assert "initialRealm = CANON_REALMS[0]" in page and "searchParams.get('realm')  ?? CANON_REALMS[0]" in page
+    tax = pathlib.Path("apps/workstation-superapp/src/lib/taxonomy.ts").read_text(encoding="utf-8")
+    first = re.search(r"export const REALMS = \['([a-z]+)'", tax).group(1)
+    from agentic_core.taxonomy import REALMS
+    assert first == REALMS[0], (first, REALMS)
+
+
+def test_w786_p240_and_p241_say_they_close_on_the_final_audit():
+    """W786 - P2.41's ACCEPT names a joint M1/M2 re-run, while the Owner allowed one mid-way audit (2026-10-11, W675)
+    and ruled the next audit is the final one after the fifth phase (2026-10-12). The plan says which governs."""
+    import pathlib
+    p = pathlib.Path("docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8").replace("\r\n", "\n").split("\n")
+    i40 = next(i for i, l in enumerate(p) if l.startswith(" P2.40 [MILESTONE M1 re-run, W675"))
+    assert p[i40 + 1].startswith("      UPDATED 2026-11-10 (W786)") and "P5.22" in p[i40 + 1] and "ONE mid-way audit" in p[i40 + 1]
+    i41 = next(i for i, l in enumerate(p) if l.startswith(" P2.41 [MILESTONE M2 re-run, W675"))
+    assert p[i41 + 1].startswith("      UPDATED 2026-11-10 (W786)") and "final audit (P5.22)" in p[i41 + 1]

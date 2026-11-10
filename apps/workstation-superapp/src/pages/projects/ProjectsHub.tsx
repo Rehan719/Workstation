@@ -99,7 +99,9 @@ interface CreateFormProps {
   taxonomyRealm?: string;     // W505 (P2.5): the canonical realm axis, carried separately
 }
 
-const CreateForm: React.FC<CreateFormProps> = ({ onCreated, onCancel, initialRealm = 'technology', initialDomain = 'product', taxonomyRealm = '' }) => {
+// W786 (FU-969) - a plain New project opened on 'technology', a legacy value outside the taxonomy, and the picker then
+// listed it as the subject; it opens on the first canonical realm. A hub's CTA still passes its own domain.
+const CreateForm: React.FC<CreateFormProps> = ({ onCreated, onCancel, initialRealm = CANON_REALMS[0], initialDomain = 'product', taxonomyRealm = '' }) => {
   const [title,       setTitle]       = useState('');
   const [description, setDescription] = useState('');
   const [realm,       setRealm]       = useState(initialRealm);
@@ -545,7 +547,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
 
 export const ProjectsHub: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const urlRealm  = searchParams.get('realm')  ?? 'technology';
+  const urlRealm  = searchParams.get('realm')  ?? CANON_REALMS[0];   // W786 (FU-969) - not the legacy 'technology'
   const urlDomain = searchParams.get('domain') ?? 'product';
   // W505 (P2.5) — the canonical realm a hub CTA carried, kept apart from `realm` above (which is a
   // taxonomy DOMAIN on that path). Falls back to the user's preference, then to the API's own default.

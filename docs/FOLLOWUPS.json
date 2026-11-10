@@ -19125,11 +19125,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W786",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Its smallest honest fix landed in W758 (QEPIntelligence and SolutionsPlatform read DOMAINS from lib/taxonomy). W786 closes the last picker default it named: the Projects hub's New-project form and URL default opened on 'technology', a legacy value outside the taxonomy, and now open on the first canonical realm (a hub CTA still passes its domain, shown as such since W662). The backend's realm field keeps its documented legacy default for API callers. Guard test_w786_fu969, 2 blinds red."
     },
     {
       "id": "FU-970",
@@ -20652,8 +20655,8 @@
         "agentic_core/api/change_control.py"
       ],
       "severity": "medium",
-      "owner_gated": false,
-      "slot": "P2.41",
+      "owner_gated": true,
+      "slot": "OWNER",
       "status": "open",
       "closed_by": null,
       "note": "",
@@ -22813,8 +22816,8 @@
         "docs/fidelity_runs/ledger_v16_W665_ca081db0.json"
       ],
       "severity": "medium",
-      "owner_gated": false,
-      "slot": "P2.41",
+      "owner_gated": true,
+      "slot": "OWNER",
       "status": "open",
       "closed_by": null,
       "note": "",
