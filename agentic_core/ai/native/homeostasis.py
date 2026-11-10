@@ -199,6 +199,8 @@ class HomeostaticController:
             "demand_nodes": int(max(0, demand_nodes)),
             "fits_current_capacity": int(max(0, demand_nodes)) <= cap,
             "organism": snap.get("organism"),
+            #  W756 (FU-1114) - the reason travels with the figure: while the work budget holds, 'admits 1' says why
+            "work_budget": snap.get("work_budget"),
             "note": "current §8 living-organism capacity — the run will be homeostatically governed at execution time",
         }
 

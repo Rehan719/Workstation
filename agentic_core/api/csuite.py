@@ -6,6 +6,7 @@ GET /api/csuite/cto/infrastructure
 """
 from __future__ import annotations
 
+from agentic_core.organism.host_observation import MEMORY_UNIT   # W765 (FU-1133)
 import time
 
 import psutil
@@ -116,6 +117,7 @@ async def get_cto_infra() -> dict:
         "cpu_percent":    _h["cpu_percent"],
         "memory_percent": _h["memory_percent"],
         "memory_used_gb": (None if _h["memory_used_bytes"] is None else round(_h["memory_used_bytes"] / 1e9, 2)),
+        "memory_unit": MEMORY_UNIT,                    # W765 (FU-1133) - one unit, said, on both routes
         "cpu_window_seconds": _h["cpu_window_seconds"],
         "host_basis":     f"{_h['cpu_basis']} | {_h['memory_basis']}",
         "disk_percent":   disk.percent,

@@ -11845,11 +11845,14 @@
       "severity": "medium",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W754",
       "note": "",
       "slot_source": "M-EXEC-07 (W744): its fix reads remove the tool and the module, or have it state what it computes, so it waits on the Owner whatever its slot says. W744 measured no reader: call_tool is dispatched only with get_system_vitals and call_meeting, discover_tools (the one listing) is never dispatched, and aro.py's only live importer is api/v138/ceo.py. RECOMMENDED: remove the tool and archive the module (reversible); a restatement would reach no reader",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Owner ruling 2026-11-06: measured first (no route, page or chat path reached optimize_qep_resources; the chat calls only get_system_vitals and call_meeting), then the tool was removed and aro.py archived to _archive/agentic_core/optimization/ reversibly"
     },
     {
       "id": "FU-618",
@@ -16951,11 +16954,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W784",
       "note": "",
       "slot_source": "what a closed tier-3 bundle row left undone; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "test_w784 drives a Forge run with the gateway captured and asserts each stage is exactly one gateway call opening with that stage's persona prompt and that its output is what the gateway returned, and that the page states it. No code changed; the property now has a guard. 3 blinds red (persona removed, stage bypassing the gateway, page sentence changed)."
     },
     {
       "id": "FU-866",
@@ -17135,11 +17141,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W759",
       "note": "",
       "slot_source": "found while verifying an external audit and not done in this round",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "driven: TransferRequest takes an optional idempotency_key; the same key from the same sender maps to one transfer id, so a resend replays (the sender debited once, the same id answered); an unkeyed request stays a new transfer; blind red"
     },
     {
       "id": "FU-875",
@@ -17153,11 +17162,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W760",
       "note": "",
       "slot_source": "found while verifying an external audit and not done in this round",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "every new ledger posting carries a posting_id (pst-...); postings written before it carry none and none is invented for them; blind red"
     },
     {
       "id": "FU-876",
@@ -17171,11 +17183,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W759",
       "note": "",
       "slot_source": "found while verifying an external audit and not done in this round",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "every caller enumerated (record, spend, period close, apoptosis, transfers): _apply_posting refuses a zero or non-finite amount, stores a negative as debit and credit swapped with identical balances (the close's contra case), and a zero record keeps its entry with no posting; three blinds red"
     },
     {
       "id": "FU-877",
@@ -17314,11 +17329,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W760",
       "note": "",
       "slot_source": "found in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the refusal of a reserved hold title names all five reserved titles, the owner payout's and the capital fund allocation's included, and the actions that file them; blind red"
     },
     {
       "id": "FU-884",
@@ -17332,11 +17350,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W760",
       "note": "",
       "slot_source": "found in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "a hold whose title is a fund allocation's or an owner payout's carries no materiality threshold, a threshold_basis saying it is held at any amount, and its note says governed, not material; blinds red"
     },
     {
       "id": "FU-885",
@@ -17412,11 +17433,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W782",
       "note": "",
       "slot_source": "found in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Each catalogue entry now carries has_directory (false for the live fund, listed from its route since its folder was archived) and counts carries with_directory; the marketplace header reads registered entries and how many have a directory, instead of counting every entry as a directory. Guard test_w782, 2 blinds red."
     },
     {
       "id": "FU-889",
@@ -17452,11 +17476,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W783",
       "note": "",
       "slot_source": "found in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "consultation_orchestrator.py, whose only importers were in the archived fund package, is archived whole; absolute_constraints.yaml no longer names it as an enforcing gate (NOT ENFORCED, said); DEPENDENCY_VERDICTS.md records that firebase-admin has no live importer again and is NOT removed here - removal rides FU-283's fresh-venv retry. Guard test_w783, 2 blinds red."
     },
     {
       "id": "FU-891",
@@ -17630,11 +17657,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W763",
       "note": "",
       "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A compose preview (needs_with_this_configuration) and a composition run (needs_at_run, and needs_unmet_at_run on the run record) now read each resource's declared needs against the configuration they use and name the unmet ones; reported, not a wall. Guard test_w763_fu899, 4 blinds red."
     },
     {
       "id": "FU-900",
@@ -17688,11 +17718,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W762",
       "note": "",
       "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A composition run refused at the constitutional pre-gate is now filed in composition_runs.json, marked refused, with its reason, nothing attempted, and its specification link; the response carries run_record. Guarded in test_lgc_spec_a_kept_proposal..., 2 blinds red."
     },
     {
       "id": "FU-903",
@@ -17706,11 +17739,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W762",
       "note": "",
       "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The replay offered on a kept specification states is_reproduction false and why: it holds no configuration or run parameters, so a run uses the composition as it is now and the parameters sent. Guarded in test_lgc_spec_a_kept_proposal..., blind red."
     },
     {
       "id": "FU-904",
@@ -17724,11 +17760,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W766",
       "note": "",
       "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The fabric page's run history now shows a run that came from a kept proposal (its specification id) and a refused run. The swarm run route is not given one: it runs swarm cascades, not compositions, and a kept proposal's replay is defined as the composition run route (the replay offer names it). Guard test_w766, 2 blinds red."
     },
     {
       "id": "FU-905",
@@ -18844,11 +18883,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W758",
       "note": "",
       "slot_source": "the standing tier-2 findings of ledger v17 ride this item by its charter",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Synthesis Studio and Build-to-Order each say in their header that cascade design is not on the page and link Native AI, Resource Fabric and Forge, where it is; blind red"
     },
     {
       "id": "FU-959",
@@ -21399,12 +21441,13 @@
         "docs/FABLE_DELIVERY_PROMPT.md"
       ],
       "severity": "high",
-      "owner_gated": true,
-      "slot": "OWNER",
+      "owner_gated": false,
+      "slot": "P5.22",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "tier": 2
+      "tier": 2,
+      "slot_source": "Owner ruling 2026-11-06 (W754): accepted as recommended: P5.22 is the item that builds and runs the final audit"
     },
     {
       "id": "FU-1087",
@@ -21529,11 +21572,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W759",
       "note": "",
       "tier": 2,
-      "slot_source": "its files sit in an area retired with P2.18, so the router names no item; P3.30 holds the fabric's small truth fixes (W747)"
+      "slot_source": "its files sit in an area retired with P2.18, so the router names no item; P3.30 holds the fabric's small truth fixes (W747)",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "driven: with one local model and the floor, two 'servers' were counted and a consensus synthesised; a consensus now needs two different MODEL servers, the floor's answer stays a member, and the method says only one model served; blind red"
     },
     {
       "id": "FU-1094",
@@ -21589,11 +21635,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W781",
       "note": "",
       "tier": 3,
-      "slot_source": "its files sit in an area retired with P2.18, so the router names no item; P3.30 holds the fabric's small truth fixes (W747)"
+      "slot_source": "its files sit in an area retired with P2.18, so the router names no item; P3.30 holds the fabric's small truth fixes (W747)",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "layer_registry.py is labelled HISTORICAL with the seven layers named as the canon, and each module path's existence is read from the tree at import (12 of 14 absent); LayerAdapter, execute_sovereign (with its fixed layer-13 drift) and get_layer, which nothing in the tree reached, strings included, are archived to _archive/agentic_core/architecture/enriched_layers_sovereign.py; the methods governance/uci_interceptor.py calls stay. Guard test_w781, 3 blinds red."
     },
     {
       "id": "FU-1097",
@@ -21607,11 +21656,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W780",
       "note": "",
       "tier": 3,
-      "slot_source": "its files sit in an area retired with P2.18, so the router names no item; P3.30 holds the fabric's small truth fixes (W747)"
+      "slot_source": "its files sit in an area retired with P2.18, so the router names no item; P3.30 holds the fabric's small truth fixes (W747)",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "P3.31's paragraph in the delivery prompt now carries a dated line (2026-11-10): the page has run verification since W673 (cell/verify) and the item's rows moved to P3.30 by the 2026-10-12 ruling; what stands is that free-text criteria are not assessed. The earlier sentence is kept. Guard test_w780, blind red."
     },
     {
       "id": "FU-1098",
@@ -21692,11 +21744,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W773",
       "note": "",
       "slot_source": "tier-3 finding: P3.30 owns tier-3 rows (Owner ruling 2026-10-09); the router would pick P2.40 from the avatars/ route",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "avatars/api.py _ollama_vision now records a model_attempt outcome (served_by ollama:<model>, duration, success false for an empty or failed answer, eval_count as tokens when the server gives it), so the work budget sees the vision run and the docstring's claim holds for it. Guard test_w773, 2 blinds red."
     },
     {
       "id": "FU-1102",
@@ -21710,11 +21765,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W775",
       "note": "",
       "slot_source": "tier-3 finding: P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "work_budget.state() now carries capacity_tokens None and a fraction_basis saying the fraction is seconds alone and tokens, having no stated capacity, do not enter it; the Organism dashboard prints it. No token capacity was invented: choosing one is an assumption to state when a reading justifies it. Guard test_w775, 2 blinds red."
     },
     {
       "id": "FU-1103",
@@ -21728,11 +21786,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W772",
       "note": "",
       "slot_source": "tier-3: P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The gateway stream's owned-model branch now records an empty answer (no text, no exception) as a failed model_attempt with its counted tokens and marks the breaker, as the orchestrator path does; it fell through with no record. Guard test_w772, 2 blinds red."
     },
     {
       "id": "FU-1104",
@@ -21746,11 +21807,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W757",
       "note": "",
       "slot_source": "a tier-2 shortfall found by W741 while isolating the outcomes store; the area has no routed owner",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the outcomes writer reads strictly under the store lock, so an unreadable store is kept byte for byte and the outcome is not written; blind red"
     },
     {
       "id": "FU-1105",
@@ -21765,11 +21829,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W776",
       "note": "",
       "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The four SSE consumers (v138/ceo.py, v310/business.py, synthesis/api.py, projects/api.py) now carry model_tokens and model_tokens_basis on their done frame, and the Native AI page's completion result prints the count with its basis. Guard test_w776, 2 blinds red."
     },
     {
       "id": "FU-1106",
@@ -21944,11 +22011,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.40",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W755",
       "note": "",
       "slot_source": "a tier-1 statement on a reached page: P2.40 holds the standing tier-1 rows",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "driven from the code path: the cap is min(requested, the biobus recommendation from the measured score) under immune, ATP and work-budget floors, and the cycle only labels the posture; NativeAI now says so; blind red"
     },
     {
       "id": "FU-1114",
@@ -21964,11 +22034,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W756",
       "note": "",
       "slot_source": "a tier-2 invisible shortfall, latent behind the Owner's switch: P2.41 holds the standing tier-2 rows",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "homeostasis.project carries work_budget, and the fabric capacity chip, the Deliverables homeostasis chip and the Organism max-parallel line each print 'held at 1 by the work budget' with its basis while it holds; blinds red"
     },
     {
       "id": "FU-1115",
@@ -22025,11 +22098,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W765",
       "note": "",
       "slot_source": "stale comment, no surface; P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The genome route comment now names the two pages that fetch /api/v1/organism/status (OrganismDashboard, DashboardNew); the guard reads both pages. Blind red."
     },
     {
       "id": "FU-1118",
@@ -22147,11 +22223,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W757",
       "note": "",
       "slot_source": "a tier-2 invisible shortfall (the health figure leaves out what it never heard), which P2.41 owns",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the stream's _record observes every serving attempt and records a failed local or external attempt as ai_failure; the immune docstring names ai/gateway.py as that writer and W744 leg 5 computes it both ways; two blinds red"
     },
     {
       "id": "FU-1124",
@@ -22164,13 +22243,16 @@
         "agentic_core/ai/native/model_resource.py"
       ],
       "severity": "medium",
-      "owner_gated": true,
-      "slot": "OWNER",
-      "status": "open",
-      "closed_by": null,
+      "owner_gated": false,
+      "slot": "P4.3",
+      "status": "done",
+      "closed_by": "W755",
       "note": "",
-      "slot_source": "M-EXEC-07: two options (the stream after the floor, or a query allowed before it) are the Owner's, to be ruled before P4.3 flips the external switch",
-      "tier": 3
+      "slot_source": "Owner ruling 2026-11-06 (W754): accepted as recommended: option (a), the in-house-first order, built in P4.3 before the switch flips",
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Owner ruling 2026-11-06 option (a): the stream's external branch also requires the caller's prefer_external, so with the switch on an unasking stream is answered in-house as a query is; both docstrings say one order; blinds red"
     },
     {
       "id": "FU-1125",
@@ -22185,11 +22267,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W779",
       "note": "",
       "slot_source": "a tier-3 finding no user reaches; P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "agentic_core/optimization/engine.py (OptimizationEngine), imported by nothing live, is archived whole to _archive/agentic_core/optimization/engine.py beside aro.py (W754), and the now-empty package is removed; the guard asserts nothing live names it. Guard test_w779, blind red."
     },
     {
       "id": "FU-1126",
@@ -22203,11 +22288,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W778",
       "note": "",
       "slot_source": "a tier-3 finding no user reaches; P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "run_introspection, run_retrospection and run_extrospection are unregistered from the AI CEO ToolRegistry and their methods archived to _archive/agentic_core/api/v138/ceo_fixed_pipelines.py (principle 10); a leg lists the registry and asserts none remains and the fixed strings are gone. Guard test_w778, blind red."
     },
     {
       "id": "FU-1127",
@@ -22222,11 +22310,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W764",
       "note": "",
       "slot_source": "a tier-3 finding no user reaches; P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "stream_meta now calls _sync_reconfig before acquiring the rate limiter, so the governed rpm_limit reaches the stream as it does query_meta. Guard test_w764, blind red."
     },
     {
       "id": "FU-1128",
@@ -22276,9 +22367,9 @@
       "severity": "low",
       "owner_gated": true,
       "slot": "OWNER",
-      "status": "open",
+      "status": "dropped",
       "closed_by": null,
-      "note": "",
+      "note": "Owner ruling 2026-11-06 (W754): download no model candidate for now; when one is wanted, the smallest Apache-2.0 multimodal lead first, once its tag and size are confirmed against the machine's memory",
       "slot_source": "OWNER DECISION (M-EXEC-07): downloading a model is the Owner's; W745 registers the leads and downloads nothing"
     },
     {
@@ -22327,11 +22418,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W768",
       "note": "",
       "slot_source": "tier-3 and unreached: P3.30 owns tier-3 rows (Owner ruling 2026-10-09), beside the other app_mvp.py surface rows there",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "SYSTEM_VITALS now sends swarmHealth and latency_ms as None, each with a 'not measured' basis, instead of a health computed from the project count and a fixed 12 ms; no page read either field. Guard test_w768, 2 blinds red."
     },
     {
       "id": "FU-1133",
@@ -22346,11 +22440,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W765",
       "note": "",
       "slot_source": "tier-3: P3.30 owns tier-3 rows (Owner ruling 2026-10-09), beside the C-Suite and AI CEO surface rows there",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The AI CEO vitals tool now reports memory_used_gb in decimal GB like the CTO route, and both carry memory_unit from one constant in host_observation. Guard test_w765, 2 blinds red."
     },
     {
       "id": "FU-1134",
@@ -22365,11 +22462,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W767",
       "note": "",
       "slot_source": "tier-3 and unreached: P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "DemandPredictor skips and counts an unread (None) CPU figure instead of averaging it as 0, and a history with none readable predicts nothing (None figures, a basis) rather than a typed default; its docstring states nothing calls it. Guard test_w767, 2 blinds red."
     },
     {
       "id": "FU-1135",
@@ -22383,11 +22483,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W774",
       "note": "",
       "slot_source": "tier-3: P3.30 owns tier-3 rows (Owner ruling 2026-10-09); no route names the tier probe",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "tiers.machine() now sets cuda True only when nvidia-smi -L lists a device (False when it lists none, None with NOT MEASURED when it cannot run), runnable() answers UNKNOWN for an unmeasured device rather than not runnable, and the reading names NPU, QPU and PPU as not probed. Guard test_w774, 4 blinds red."
     },
     {
       "id": "FU-1136",
@@ -22404,11 +22507,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W756",
       "note": "",
       "slot_source": "a tier-2 invisible shortfall: P2.41 holds the standing tier-2 rows",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the Home Host CPU vital, the shell's cardiovascular tooltip, Introspection's headroom bar and the cycle page's Host CPU metric each print the sampling window beside the percentage; blinds red"
     },
     {
       "id": "FU-1137",
@@ -22422,11 +22528,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W761",
       "note": "",
       "slot_source": "a tier-2 shortfall left by W752's refusal; P2.41 carries the tier-2 pass, and the area's own item, P2.40, closes on its M1 re-run",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "POST /api/v1/organism/config/repair (admin only) repairs the settings or history store like the W472 ledger repair: quarantined copy, valid JSON prefix kept, non-record history entries dropped and counted, loss said and logged; both readers point to it and the Anatomy page prints each store_unreadable sentence. Guard test_w761_fu1137, 6 blinds red."
     },
     {
       "id": "FU-1138",
@@ -22441,11 +22550,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W764",
       "note": "",
       "slot_source": "tier-3 finding: P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The gateway's _sync_reconfig reads the settings through reconfiguration._load_config like every other consumer, so a torn store gives it the defaults as it gives them, and it keeps the store's stated problem. Guard test_w764, 2 blinds red."
     },
     {
       "id": "FU-1139",
@@ -22459,11 +22571,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P2.41",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W757",
       "note": "",
       "slot_source": "a tier-2 shortfall found by W752; P2.41 carries the tier-2 pass, and the area's own item, P2.40, closes on its M1 re-run",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "the settings route's per-key wiring iterates every typed section of the schema, so qep_recommendation.weights is listed; blind red"
     },
     {
       "id": "FU-1140",
@@ -22479,11 +22594,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W771",
       "note": "",
       "slot_source": "tier-3 finding: P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "docs/KNOWLEDGE_OPERATING_PROCESS.md's Measure step, docs/README.md's ledger line (no longer describing v3 of 2026-09-05) and the whole vision's list of the two measures now name fidelity_audit_v7.js; the vision's dated 2026-09-05 state block is history and keeps v3. Guard test_w771, 3 blinds red."
     },
     {
       "id": "FU-1141",
@@ -22552,11 +22670,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W770",
       "note": "",
       "slot_source": "tier-3 finding: P3.30 owns tier-3 rows (Owner ruling 2026-10-09); the instrument FU-923 was on",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "entity_coverage_scan.py's basis is computed from what was read: with files it could not read it says how many of how many were read and that 'not found' does not cover the rest, instead of saying every JSON file was read. Guard test_w770, blind red."
     },
     {
       "id": "FU-1145",
@@ -22570,11 +22691,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W777",
       "note": "",
       "slot_source": "tier-3 finding: P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "test_w749's source census now classifies every tracked script under scripts/: an instrument in the census (with a refusal), a pending instrument whose refusal is not built (twelve, registered as FU-1154), or not an instrument (with what it is); leading-underscore probes are one-round history (FU-924). A script added later is in none and fails the guard until placed. Blind red."
     },
     {
       "id": "FU-1146",
@@ -22588,11 +22712,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W769",
       "note": "",
       "slot_source": "tier-3 finding: P3.30 owns tier-3 rows (Owner ruling 2026-10-09); the instrument FU-921 was on",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "selfcheck_diff.py main() now prints, before any early exit, each SEARCH_DIRS folder that does not exist and was not searched for readers, so a 'reaches no surface' lead is not read as covering it. Guard test_w769, blind red."
     },
     {
       "id": "FU-1147",
@@ -22686,12 +22813,13 @@
         "docs/fidelity_runs/ledger_v16_W665_ca081db0.json"
       ],
       "severity": "medium",
-      "owner_gated": true,
-      "slot": "OWNER",
+      "owner_gated": false,
+      "slot": "P2.41",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "tier": 2
+      "tier": 2,
+      "slot_source": "Owner ruling 2026-11-06 (W754): accepted as recommended: v15's paths replaced in W754; the v16 note remains, for the session that located it"
     },
     {
       "id": "FU-1152",
@@ -22730,6 +22858,24 @@
       "note": "",
       "slot_source": "found in this round and not done in it",
       "tier": 3
+    },
+    {
+      "id": "FU-1154",
+      "title": "Twelve scripts that report on a set carry no refusal for an empty one",
+      "why": "W777 classified every tracked script for the W749 source census (FU-1145). Twelve report on a set and carry no 'examined nothing' refusal: audit_surface_census, auth_perimeter, coupling, pass_set_diff, privacy_check, readme_figures, render_fidelity_ledger, row_components, screen_phrasings, truth_sweep_inventory, prune_test_entities, quarantine_test_entities. Each needs the refusal FU-671 requires; as each gains one it moves from the pending set in test_w749 to the census list.",
+      "source": "W777 census classification",
+      "found": "2026-11-09",
+      "files": [
+        "scripts/audit_surface_census.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 3,
+      "slot_source": "rides FU-1145 (W777), the P3.30 census row it was split from"
     }
   ],
   "routes": [

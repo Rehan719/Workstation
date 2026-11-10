@@ -306,6 +306,8 @@ Document-controlled under the QMS (DCMS) · record ${selected.quality_assurance.
                         + `${selected.homeostasis.organism?.atp_measured === false ? 'not measured, and nothing here was expended: ' : ''}`
                         + `${selected.homeostasis.organism?.atp_basis ?? 'no basis recorded for this figure'}`}>
                       §8 homeostasis: {selected.homeostasis.posture}
+                      {/* W756 (FU-1114) — while the work budget holds, the reason the posture is what it is */}
+                      {(selected.homeostasis as any).work_budget?.holds && <span data-testid="deliverable-work-budget-reason"> · held at 1 by the work budget: {(selected.homeostasis as any).work_budget.basis}</span>}
                     </span>
                   )}
                 </div>

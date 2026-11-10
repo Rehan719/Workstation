@@ -1,7 +1,11 @@
 from typing import Dict, Any
 
 # agentic_core/architecture/layer_registry.py
-# Definitive 14-Layer IDBO Specification for vΩ∞-OMNISYNTHESIS-SUPREME
+# HISTORICAL (W781, FU-1096) - this is the 14-layer table of a Jules-era document, kept because
+# governance/uci_interceptor.py builds the manager in enriched_layers.py that reads it. It is NOT the
+# architecture: the SEVEN layers are the canon (docs/WORKSTATION_IDBO_WHOLE_VISION.md). Many module paths
+# below do not exist; `exists` is read from the tree at import, never assumed.
+import pathlib as _pl
 
 LAYER_SPEC = {
     0: {"name": "Substrate Attestation", "module": "agentic_core/substrate/attestation.py", "required": True},
@@ -19,6 +23,13 @@ LAYER_SPEC = {
     12: {"name": "User Experience", "module": "agentic_core/layers/l12_ux/", "required": False},
     13: {"name": "Civilizational Reflection", "module": "agentic_core/layers/l13_civilizational_reflection/", "required": True},
 }
+
+_ROOT = _pl.Path(__file__).resolve().parents[2]
+for _spec in LAYER_SPEC.values():
+    _spec["exists"] = (_ROOT / _spec["module"]).exists()
+HISTORICAL = True
+CANON_LAYERS = 7
+
 
 def get_layer_metadata(layer_id: int) -> Dict[str, Any]:
     return LAYER_SPEC.get(layer_id, {"name": f"Layer {layer_id}", "module": "unknown", "required": False})

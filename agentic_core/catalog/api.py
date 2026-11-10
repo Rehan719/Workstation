@@ -195,13 +195,15 @@ def list_products() -> List[Dict[str, Any]]:
     have = {entry.name for entry in entries}
     entries += [PRODUCTS_DIR / slug for slug in SERVED_WITHOUT_DIRECTORY
                 if slug not in have and ROUTE_OVERRIDES.get(slug)]
-    return [_load_product(entry.name, entry) for entry in sorted(entries)]
+    #  W782 (FU-888) - an entry SAYS whether it has a directory: one listed from its route alone has none
+    return [{**_load_product(entry.name, entry), "has_directory": entry.is_dir()} for entry in sorted(entries)]
 
 
 def catalogue_counts(products: List[Dict[str, Any]]) -> Dict[str, int]:
     """W470 — the honest header numbers: live is only what a route serves."""
     return {
         "registered": len(products),
+        "with_directory": sum(1 for p in products if p.get("has_directory")),        # W782 (FU-888)
         "live": sum(1 for p in products if p.get("status") == STATUS_LIVE),
         "source": sum(1 for p in products if p.get("status") == STATUS_SOURCE),
         "legacy": sum(1 for p in products if p.get("status") == STATUS_LEGACY),

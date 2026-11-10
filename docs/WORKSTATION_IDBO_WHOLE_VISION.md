@@ -781,7 +781,7 @@ than trusted once this date is old; a long-running dev process serves the code i
   and account, not proof.
 - `docs/NATIVE_PRIMITIVE_DEFECT_LEDGER.md` — all 10 audited primitives FIXED + WIRED (W437); what
   remains is LATENT. `docs/FABRICATION_LEDGER.md` — closed, 63/63.
-- `scripts/reach_audit.py` and `scripts/workflows/fidelity_audit_v3.js` — the two measures; run them
+- `scripts/reach_audit.py` and `scripts/workflows/fidelity_audit_v7.js` — the two measures; run them
   fresh, never trust a written figure or verdict.
 - Legacy fragments describing a different product — `docs/GOVERNANCE.md` (a MultiSig "Governance
   Framework": 3/5 Dilithium-5 signatures over 5% of AUM) and `docs/ARCHITECTURE.md` (the Jules-era

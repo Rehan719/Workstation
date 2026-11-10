@@ -105,8 +105,8 @@ def _list_genomes() -> list[dict]:
 @router.get("/genome")
 async def list_genomes():
     #  FU-405 (W584) — THE POPULATION'S BASIS TRAVELS WITH THE LIST. The corrected aggregate lives on
-    #  /api/v1/organism/status, which no page fetches; this is the endpoint OrganismAnatomy.tsx actually
-    #  calls, so a reader looking at the genomes sees what their fitness values are worth as a population
+    #  /api/v1/organism/status (fetched by OrganismDashboard.tsx and DashboardNew.tsx - W765, FU-1117: this
+    #  said no page fetched it); this is the endpoint OrganismAnatomy.tsx calls, so a reader looking at the genomes sees what their fitness values are worth as a population
     #  rather than only per record. Read from the one producer so there is no second computation to drift.
     gs = _list_genomes()
     try:

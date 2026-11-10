@@ -134,6 +134,11 @@ export const BTOCatalog: React.FC = () => {
           Sovereign Entity Configurator · Select components · Compose your blueprint (specification only — nothing is provisioned)
         </p>
         <div className="mt-3"><FabricLink /></div>
+        {/* W758 (FU-958) — §6 names this page as a place to reconfigure cascades; it is not one, and says where they are */}
+        <p data-testid="cascade-design-where" className="mt-2 text-[10px] text-slate-500">
+          Cascade design is not on this page. Design and run swarm cascades on <a className="text-aura underline" href="/native-ai">Native AI</a>,
+          compose resource cascades on <a className="text-aura underline" href="/resource-fabric">Resource Fabric</a>, and configure stages in <a className="text-aura underline" href="/forge-pipeline">Forge</a>.
+        </p>
       </header>
 
       {/* Blueprint result card */}

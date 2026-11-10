@@ -112,7 +112,7 @@ capital_governance:
 
   article_1132:
     text: "All investment decisions require Mushāwara consultation (≥3 cognitive engines + MJM meta-validation)"
-    enforcement: "ConsultationOrchestrator pre-execution gate"
+    enforcement: "NOT ENFORCED - the ConsultationOrchestrator gate named here was archived with the capital-fund package (W673, W783); no live code gates investment decisions on a consultation"
     action_on_violation: "reject_investment_log_to_ueg"
 
   article_1133:

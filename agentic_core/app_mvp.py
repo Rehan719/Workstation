@@ -844,8 +844,12 @@ async def _vitals_loop():
                     "activeAgents": active,
                     "totalProjects": len(projects),
                     "connections": len(_ws.connections),
-                    "swarmHealth": min(1.0, 0.7 + (len(projects) * 0.01)),
-                    "latency_ms": 12,
+                    #  W768 (FU-1132) - both were typed: a health computed from the project COUNT and a fixed 12 ms.
+                    #  Nothing here measures either, so neither is sent as a figure.
+                    "swarmHealth": None,
+                    "swarmHealth_basis": "not measured: no instrument here observes the swarm's health",
+                    "latency_ms": None,
+                    "latency_basis": "not measured: this broadcast times nothing",
                 },
             })
         except Exception as exc:

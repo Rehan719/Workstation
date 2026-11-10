@@ -573,7 +573,7 @@ export const NativeAI: React.FC = () => {
   const [cPrompt, setCPrompt] = useState('Outline a halal, zero-waste weekly meal plan for an elderly resident');
   const [cModel, setCModel] = useState<string>('auto');
   const [modelTiers, setModelTiers] = useState<{ id: string; label: string; kind: string }[]>([]);
-  const [cRes, setCRes] = useState<{ output: string; served_by: string; is_external: boolean; resources_tried?: string[]; governance_checkpoint?: Checkpoint } | null>(null);
+  const [cRes, setCRes] = useState<{ output: string; served_by: string; is_external: boolean; resources_tried?: string[]; governance_checkpoint?: Checkpoint; model_tokens?: number | null; model_tokens_basis?: string } | null>(null);
   const [completing, setCompleting] = useState(false);
   const runComplete = async () => {
     if (!cPrompt.trim()) return;
@@ -806,8 +806,11 @@ export const NativeAI: React.FC = () => {
                   : 'bg-vital/20 text-vital'}`}>{homeo.posture}</span>
               </div>
               <p className="text-[11px] text-slate-400 leading-relaxed">
-                The living organism (§8) modulates the native AI fabric (§6): the immune, self-healing and
-                circadian terms set how many swarm agents run in parallel.
+                {/* W755 (FU-1113) — driven: the cap is set by the measured health score, the immune threat, the energy
+                    floor and the work budget; the circadian cycle only chooses the posture's label */}
+                The living organism (§8) modulates the native AI fabric (§6): the measured health score and the
+                immune, energy and work-budget limits set how many swarm agents run in parallel. The circadian cycle
+                does not change that number — it only names the posture (full or reduced).
                 {/* W506 (FU-265d) — a claim that the metabolic term also sets the parallelism, and that each
                     cognitive run draws that energy down and recovers it on the circadian cycle, was removed
                     from here; the removed wording is in the commit message rather than quoted, so this comment
@@ -992,6 +995,7 @@ export const NativeAI: React.FC = () => {
                   {(() => { const b = provenanceBadge(cRes.served_by, cRes.is_external); return <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
                   {cRes.resources_tried && <span className="text-[8px] font-mono text-slate-600">tried: {cRes.resources_tried.join(' → ')}</span>}
                   <CheckpointChip c={cRes.governance_checkpoint} />
+                  {cRes.model_tokens_basis && <span data-testid="native-complete-tokens" className="text-[8px] font-mono text-slate-600" title={cRes.model_tokens_basis}>tokens: {cRes.model_tokens ?? 'not counted'}</span>}
                 </div>
                 <p className="text-[11px] text-slate-300 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">{cRes.output}</p>
               </div>

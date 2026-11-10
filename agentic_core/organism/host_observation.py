@@ -28,6 +28,9 @@ returns its answer, so the two can never disagree.
 from __future__ import annotations
 
 import os
+
+#  W765 (FU-1133) - the one unit every route reports memory_used_gb in
+MEMORY_UNIT = "GB: decimal gigabytes (10^9 bytes)"
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor

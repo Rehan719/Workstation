@@ -1411,6 +1411,12 @@ def main() -> int:
     ap.add_argument("--check", action="append", choices=sorted(CHECKS), help="run only these checks")
     args = ap.parse_args()
     GIT_UNREAD.clear()
+    #  W769 (FU-1146) - a search folder that does not exist is SAID: every reader search skipped it in silence, so
+    #  "no surface reads this key" could be an answer about a folder that was never there to read
+    _missing_dirs = [d for d in SEARCH_DIRS if not (ROOT / d).exists()]
+    if _missing_dirs:
+        print(f"  {len(_missing_dirs)} search folder(s) do NOT EXIST and were not searched for readers: "
+              f"{', '.join(_missing_dirs)} - a 'reaches no surface' lead does not cover them\n")
 
     try:
         files = changed_files(args.rev)

@@ -101,9 +101,15 @@ def scan(root: pathlib.Path) -> Dict[str, Any]:
                        "with_cross_references": sum(1 for r in rows if r["cross_references"]),
                        "own_footprint_only": sum(1 for r in rows if r["own_footprint"] and not r["cross_references"]),
                        "referenced_by_nothing": sum(1 for r in rows if r["referenced_by_nothing"])},
-            "basis": ("every JSON file under the data root was read and every record kind found is listed in "
-                      "kinds_scanned with its file count; 'not found' means not named by ANY of them. Nothing was "
-                      "deleted, and this scan cannot delete.")}
+            #  W770 (FU-1144) - the basis is COMPUTED from what was read: it said every JSON file was read while
+            #  listing files it could not read, and 'not found' does not cover those
+            "basis": (("every JSON file under the data root was read" if not unreadable else
+                       f"{sum(kinds.values()) - len(unreadable)} of {sum(kinds.values())} JSON file(s) under the "
+                       f"data root were read; {len(unreadable)} could not be read (listed under 'unreadable') and "
+                       f"'not found' does NOT cover them")
+                      + "; every record kind found is listed in kinds_scanned with its file count; 'not found' "
+                        "means not named by any file that was read. Nothing was deleted, and this scan cannot "
+                        "delete.")}
 
 
 def main() -> int:

@@ -1,3 +1,4 @@
+from agentic_core.organism.host_observation import MEMORY_UNIT   # W765 (FU-1133)
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 import json
@@ -12,7 +13,6 @@ from agentic_core.ai.ceo.memory_v01 import memory_v01, meeting_log
 from agentic_core.ai.native.orchestrator import orchestrator
 from agentic_core.layers.ueg import ueg
 from agentic_core.simulation.ese import get_ese_instance
-from agentic_core.optimization.aro import get_aro_instance
 from agentic_core.biomimicry.geospheric.drad import get_drad_instance
 from agentic_core.bto.religion_bto import get_religion_bto
 from agentic_core.swarm.signaling_protocol import SignalingProtocol
@@ -44,7 +44,6 @@ class ToolRegistry:
             "call_meeting": self.call_meeting,
             "discover_tools": self.discover_tools,
             "run_qep_simulation": self.run_qep_simulation,
-            "optimize_qep_resources": self.optimize_qep_resources,
             "orchestrate_qep_swarm": self.orchestrate_qep_swarm,
             "check_qep_fabric_health": self.check_qep_fabric_health,
             "qep_tajwid_coach": self.qep_tajwid_coach,
@@ -59,9 +58,9 @@ class ToolRegistry:
             "qep_billing_donations": self.qep_billing_donations,
             "qep_guidance_assistant": self.qep_guidance_assistant,
             "qep_swarm_learning": self.qep_swarm_learning,
-            "run_introspection": self.run_introspection,
-            "run_retrospection": self.run_retrospection,
-            "run_extrospection": self.run_extrospection,
+            #  W778 (FU-1126) - run_introspection / run_retrospection / run_extrospection unregistered and
+            #  archived (_archive/agentic_core/api/v138/ceo_fixed_pipelines.py): each returned a fixed analysis
+            #  as if a pipeline had run, and no dispatch reached them
             "generate_v10_roadmap": self.generate_v10_roadmap,
             "recursive_improve": self.recursive_improve,
             "produce_scientific_draft": self.produce_scientific_draft,
@@ -75,10 +74,11 @@ class ToolRegistry:
         ese = get_ese_instance(num_agents)
         return await ese.run_simulation(steps)
 
-    async def optimize_qep_resources(self, sim_demand: float = 0.5, reason_demand: float = 0.8):
-        """v0.8: Run Autonomous Resource Optimisation (ARO)."""
-        aro = get_aro_instance()
-        return aro.optimize({"sim_demand": sim_demand, "reason_demand": reason_demand})
+    #  W754 (FU-617, Owner ruling 2026-11-06) - optimize_qep_resources is REMOVED and agentic_core/optimization/aro.py is ARCHIVED (_archive/, reversibly)
+    #  Measured first: no route, page or chat path called the tool (the chat calls only get_system_vitals
+    #  and call_meeting), and nothing read its 'allocation'. Its objective was linear, so the answer was always
+    #  "everything on the largest demand", and two of its four demands were typed constants. An allocator that
+    #  allocates nothing is not kept as a capability.
 
     async def orchestrate_qep_swarm(self, topic: str, domain: str = "religion"):
         """v1.0: Orchestrate specialized cross-domain research swarm (BTO)."""
@@ -149,34 +149,6 @@ class ToolRegistry:
     async def qep_swarm_learning(self):
         """v0.9: Swarm Intelligence for Group Learning."""
         return await qep_flagship_service.swarm_intelligence_learning()
-
-    async def run_introspection(self, action: str, reasoning: List[str], confidence: float):
-        """v1.0: Run AI CEO Introspection Pipeline."""
-        return {
-            "timestamp": datetime.utcnow().isoformat(),
-            "action": action,
-            "reasoning": reasoning,
-            "confidence": confidence,
-            "status": "LOGGED_TO_CHROMA"
-        }
-
-    async def run_retrospection(self, incident_log: Optional[List[Dict[str, Any]]] = None):
-        """v1.0: Run AI CEO Retrospection Pipeline."""
-        return {
-            "timestamp": datetime.utcnow().isoformat(),
-            "analysis": "Root cause identified: latency spike in L3 reactor.",
-            "fix_proposed": "Trigger ARO optimization for L3.",
-            "status": "ANALYSIS_COMPLETE"
-        }
-
-    async def run_extrospection(self, external_data: Optional[List[str]] = None):
-        """v1.0: Run AI CEO Extrospection Pipeline."""
-        return {
-            "timestamp": datetime.utcnow().isoformat(),
-            "external_trends": ["Increase in decentralized compute usage", "New PQC standards update"],
-            "suggested_actions": ["Update Article 1107 with latest NIST guidelines"],
-            "status": "TRENDS_MAPPED"
-        }
 
     async def generate_v10_roadmap(self):
         """v0.9: Generate the v1.0 Global Launch Roadmap."""
@@ -289,7 +261,9 @@ class ToolRegistry:
         _cpu, _used, _pct = _h["cpu_percent"], _h["memory_used_bytes"], _h["memory_percent"]
         return {
             "cpu_load_percent": None if _cpu is None else round(_cpu, 1),
-            "memory_used_gb": None if _used is None else round(_used / (1024 ** 3), 2),
+            #  W765 (FU-1133) - decimal gigabytes (10^9 bytes), as the CTO route reports; it was binary GiB here
+            "memory_used_gb": None if _used is None else round(_used / 1e9, 2),
+            "memory_unit": MEMORY_UNIT,
             "memory_percent": None if _pct is None else round(_pct, 1),
             "cpu_window_seconds": _h["cpu_window_seconds"],
             "scope": "the host machine - every program on it, not this platform alone",
@@ -588,6 +562,7 @@ async def generate_ceo_stream(prompt: str, scope: str, owner_id: Optional[str]):
                     "content": "", "done": True,
                     "served_by": ev.get("served_by"), "is_external": bool(ev.get("is_external")),
                     "guardrail_passed": ev.get("guardrail_passed"), "profile_applied": ev.get("profile_applied"),
+                    "model_tokens": ev.get("model_tokens"), "model_tokens_basis": ev.get("model_tokens_basis"),   # W776 (FU-1105)
                     "grounding": _cited("".join(_answer), facts),
                     "grounding_conflicts": _ungrounded_sections("".join(_answer), facts),
                 }) + "\n\n"

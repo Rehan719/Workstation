@@ -1,3 +1,6 @@
+# ARCHIVED W783 (FU-890) from agentic_core/consultation/mushawara/: its only importers were in the capital-fund
+# package, archived W673 (_archive/products/capital_fund). Nothing live imports it; the live consultation path is
+# mushawara_bridge_2.py with its own ConsultationQuery. Kept whole, reversibly.
 from typing import List, Dict, Any
 from dataclasses import dataclass
 import asyncio

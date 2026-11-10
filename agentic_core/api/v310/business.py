@@ -115,7 +115,8 @@ async def generate_business_plan_stream(req: PlanRequest) -> StreamingResponse:
             yield "data: " + json.dumps({**_reply_evidence(fin.get('served_by')), "done": True, "generated_at": time.time(),
                                          "served_by": fin.get("served_by"), "is_external": bool(fin.get("is_external")),
                                          "profile_applied": bool(fin.get("profile_applied")),
-                                         "guardrail_passed": fin.get("guardrail_passed")}) + "\n\n"
+                                         "guardrail_passed": fin.get("guardrail_passed"),
+                                         "model_tokens": fin.get("model_tokens"), "model_tokens_basis": fin.get("model_tokens_basis")}) + "\n\n"   # W776 (FU-1105)
         except Exception as exc:
             yield f'data: {{"error": {json.dumps(str(exc))}}}\n\n'
 

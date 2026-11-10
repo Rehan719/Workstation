@@ -20,7 +20,7 @@ import { ServingNow } from '../components/ServingNow';   // W737 (FU-967)
 // metrics): vitals + projects from the live stats endpoint, organism health from /organism/status.
 
 interface ActivityItem { id: string; type: string; msg: string; time: string; }
-interface Vitals { cpu: number | null; memory: number | null; totalProjects: number; }
+interface Vitals { cpu: number | null; memory: number | null; totalProjects: number; cpuWindow?: number | null; }
 
 // §3A — the two distinct, complementary ways the platform serves each user.
 const JOURNEYS = [
@@ -112,6 +112,7 @@ export const DashboardNew: React.FC = () => {
     axios.get('/api/v1/projects/stats/summary').then(({ data }) => {
       // W746 - an unread host figure arrives as null and stays null; coalescing it to zero printed an idle machine
       setVitals({ cpu: typeof data.cpu_percent === 'number' ? data.cpu_percent : null,
+                  cpuWindow: typeof data.cpu_window_seconds === 'number' ? data.cpu_window_seconds : null,   // W756 (FU-1136)
                   memory: typeof data.memory_percent === 'number' ? data.memory_percent : null,
                   totalProjects: data.total_projects ?? 0 });
     }).catch(() => {});
@@ -340,7 +341,7 @@ export const DashboardNew: React.FC = () => {
                   </p>
                 )}
                 {/* W746 - these are the HOST's figures (every program on the machine), and an unread one says so */}
-                <Vital label="Host CPU" value={!vitals ? '—' : vitals.cpu != null ? `${vitals.cpu.toFixed(1)}%` : 'not measured'} pct={vitals?.cpu ?? null} tone="highlight" />
+                <Vital label="Host CPU" value={!vitals ? '—' : vitals.cpu != null ? `${vitals.cpu.toFixed(1)}%${vitals.cpuWindow != null ? ` over ${vitals.cpuWindow} s` : ''}` : 'not measured'} pct={vitals?.cpu ?? null} tone="highlight" />
                 <Vital label="Host memory" value={!vitals ? '—' : vitals.memory != null ? `${vitals.memory.toFixed(1)}%` : 'not measured'} pct={vitals?.memory ?? null} tone="highlight" />
                 <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-500 tracking-widest">
                   <span>Projects</span><span className="text-emerald-400">{vitals?.totalProjects ?? '—'}</span>

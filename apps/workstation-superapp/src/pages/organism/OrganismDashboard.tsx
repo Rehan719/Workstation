@@ -37,7 +37,7 @@ interface OrganismStatus {
     self_healing:  { overall_health: number | null; open_circuits: number; recent_events: unknown[] };
     metabolic:     { atp_ratio: number };
     // S18.1 / S18.6 (W743) - the measured budget, the busiest entities' own figures, the derived carrying capacity
-    work_budget?: { seconds_spent?: number; capacity_seconds?: number; gate_basis?: string; spend_basis?: string;
+    work_budget?: { seconds_spent?: number; capacity_seconds?: number; gate_basis?: string; spend_basis?: string; fraction_basis?: string;
       unavailable?: string; carrying_capacity?: { entities: number | null; basis: string };
       entities?: { entities_measured: number; basis: string };
       by_entity?: { owner_id: string; vsb_id: string | null; least_headroom_seconds: number; bound_by: string[];
@@ -281,6 +281,7 @@ export const OrganismDashboard: React.FC = () => {
             The organism is governing how much AI cognition the swarm admits. {cognition.organism?.atp_can_fall === false
               ? 'ATP here is a SIMULATION that cannot fall (production always exceeds consumption), so it does not limit runs.'
               : 'Each run expends simulated ATP.'} Max parallel agents now: <span className="text-violet-300 font-bold">{cognition.max_parallel}</span>
+            {/* W756 (FU-1114) */}{cognition.work_budget?.holds && <span data-testid="organism-work-budget-reason"> — held at 1 by the work budget: {cognition.work_budget.basis}</span>}
             {cognition.organism.should_throttle && <span className="text-amber-400"> · throttling</span>}.
           </p>
         </div>
@@ -449,6 +450,7 @@ export const OrganismDashboard: React.FC = () => {
               ? <div className="text-[10px] font-mono text-amber-400/80">Work budget unreadable: {systems.work_budget.unavailable}</div>
               : <div className="mt-2 space-y-1 text-[10px] font-mono text-white/50" data-testid="organism-work-budget">
                   <div>Work budget: {systems.work_budget.seconds_spent}s of {systems.work_budget.capacity_seconds}s this window — {systems.work_budget.gate_basis}. {systems.work_budget.spend_basis}</div>
+                  {systems.work_budget.fraction_basis && <div data-testid="organism-work-budget-fraction">{systems.work_budget.fraction_basis}</div>}
                   <div data-testid="organism-carrying-capacity">
                     Carrying capacity: {systems.work_budget.carrying_capacity?.entities != null ? `${systems.work_budget.carrying_capacity?.entities} entities` : 'unmeasured'} — {systems.work_budget.carrying_capacity?.basis}
                   </div>

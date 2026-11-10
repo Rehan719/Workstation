@@ -70,3 +70,13 @@ correction: **firebase-admin is NOT archive-only**.
 **Next attempt, for the local session.** Remove in two halves, and run the full suite on a FRESH venv built only
 from the new `requirements.txt` before pushing. Hold firebase-admin back until whatever reaches it is found. Then
 bisect the torch-absent boot failure across the remaining removals.
+
+## W783 (FU-890) — firebase-admin has no live importer again (2026-11-10)
+
+The live path W628b found to firebase-admin was the capital-fund package: four of its modules opened
+`firebase_admin.firestore` at import. That package was archived in W673 (`_archive/products/capital_fund`), and a
+whole-tree search outside `_archive/` now finds firebase-admin only in the dependency files, the docs and this
+register's own test. The REMOVABLE verdict therefore holds without the W628b correction. **It was not removed
+here**: removal rides FU-283's retry plan above (in halves, on a fresh venv built only from the new
+`requirements.txt`, in its own commit), because the torch-absent boot failure W628b met is not yet bisected.
+

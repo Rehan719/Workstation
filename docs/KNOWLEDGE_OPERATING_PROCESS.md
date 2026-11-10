@@ -87,6 +87,6 @@ The process is not purely manual — the organism helps keep it honest:
 - **Query** `GET /api/v1/plan` (pillars/phases/adherence) and `/api/v1/plan/state` (live reality) anytime.
 - **Direct** via the Board: `POST /api/v1/board/chief/instruct` — your Chief turns your wish into governed action.
 - **Correct** by refining the Vision — `WORKSTATION_IDBO_WHOLE_VISION.md` §1–§15 (your words) and §18 (rulings; the delivery prompt lists what is still with you) — that is the authoritative channel for refining intent; `UNDERSTANDING` and the `PLAN` are then reconciled to it in the same session. (Corrected W446: this line had pointed at `UNDERSTANDING` §9, whose questions were resolved on 2026-06-21.)
-- **Measure** rather than read: `python scripts/reach_audit.py` for the surface, `scripts/workflows/fidelity_audit_v3.js` for the section-by-section verdict (`docs/VISION_FIDELITY_LEDGER.md`), and the delivery plan in `docs/FABLE_DELIVERY_PROMPT.md` for what is being done about it, in what order, and how each item is proven.
+- **Measure** rather than read: `python scripts/reach_audit.py` for the surface, `scripts/workflows/fidelity_audit_v7.js` for the section-by-section verdict (`docs/VISION_FIDELITY_LEDGER.md`), and the delivery plan in `docs/FABLE_DELIVERY_PROMPT.md` for what is being done about it, in what order, and how each item is proven.
 
 > Companion: `WORKSTATION_IDBO_UNDERSTANDING.md`, `WORKSTATION_IDBO_LIVING_PLAN.md`, `VSB_ECONOMIC_LEGAL_MODEL.md`.

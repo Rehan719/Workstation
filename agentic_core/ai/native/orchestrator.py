@@ -432,7 +432,11 @@ class NativeOrchestrator:
         #  W655 (R4.1) - A CONSENSUS NEEDS TWO DIFFERENT SERVERS. With no model serving, every member is the
         #  same deterministic engine: one answer given N times, and a third copy was labelled "Consensus".
         _servers = sorted({str(x.get("served_by")) for x in produced})
-        if synthesize and len(produced) > 1 and len(_servers) > 1:
+        #  W759 (FU-1093) - AND THE FLOOR IS NOT A SECOND MIND. With one model running, its member and the
+        #  deterministic floor were two 'servers', so one model wrote a consensus of itself and a frame. A consensus
+        #  needs two different MODEL servers; the floor's answer is kept as a member but does not make one.
+        _model_servers = [s for s in _servers if not s.startswith("native")]
+        if synthesize and len(produced) > 1 and len(_model_servers) > 1:
             combined = "\n\n".join(f"[{x['model']} · served by {x.get('served_by')}]:\n{x['output'][:800]}" for x in produced)
             syn = await self.complete(
                 "You are an ensemble synthesiser. Given these model outputs for the SAME prompt, produce the "
@@ -445,6 +449,10 @@ class NativeOrchestrator:
         #  on every response, including one member with nothing to synthesise.
         if synthesis is not None:
             method = f"parallel ensemble across {len(members)} owned model(s) → consensus synthesis"
+        elif synthesize and len(produced) > 1 and len(_model_servers) == 1 and len(_servers) > 1:
+            method = (f"{len(produced)} member(s) answered but only ONE model served ({_model_servers[0]}); the other "
+                      f"answer is the deterministic floor's frame, which is not a second view, so no consensus was "
+                      f"synthesised")
         elif synthesize and len(produced) > 1 and len(_servers) <= 1:
             method = (f"{len(produced)} member(s) were requested and ONE resource served all of them "
                       f"({_servers[0] if _servers else 'none'}): one answer given {len(produced)} times, so no "
