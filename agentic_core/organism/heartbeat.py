@@ -1226,6 +1226,8 @@ class OrganismHeartbeat:
         if _hist_why:
             logger.error("the VSB compliance history could not be read whole, so this rotation may be "
                          "choosing on incomplete timestamps: %s", _hist_why)
+        #  W799 (FU-1161) - NO ENTITY FLAG IS READ HERE, deliberately: an entity may not opt out of being
+        #  re-screened, so its recorded auto_compliance does not filter this rotation (living_vsbs.tending says so)
         target = sorted(living, key=lambda v: ((hist.get(v.get("vsb_id"), {}) or {}).get("last_at") or ""))[0]
         _vsb_res = screen_living_vsb(target.get("vsb_id"))
         #  FU-461 — a side effect of the screen that failed reaches the beat's record, by name

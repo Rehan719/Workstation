@@ -23021,11 +23021,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W799",
       "note": "",
       "tier": 3,
-      "slot_source": "P3.30 carries tier-3 findings, and this one is latent: no route sets a flag off, so no entity is affected yet; P3.2, which built the flags, is done"
+      "slot_source": "P3.30 carries tier-3 findings, and this one is latent: no route sets a flag off, so no entity is affected yet; P3.2, which built the flags, is done",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Decided on the recommendation (Owner instruction 2026-11-10). The economy cycle honours the entity's own flag: living_vsbs.operate_one skips an entity whose auto_economy is off (absent still reads as ON, so no legacy entity stops). The section 11 re-screen reads no entity flag, deliberately: an entity may not opt out of being re-screened (section 11: compliance is continuous, not bolted on), and heartbeat._compliance_beat says so where it picks. Every reading says which flag the beat reads: tending() carries read_by_the_beat {auto_economy: True, auto_compliance: False} and its basis says auto_compliance is recorded and not read; living_statement's 'tended' follows the economy flag, so an entity is no longer reported untended because of a flag nothing reads. Guard test_w799 drives operate_one, the compliance step and the statement; five blinds red."
     }
   ],
   "routes": [

@@ -70680,8 +70680,11 @@ def test_w797_fu980_r1_the_remaining_disclosures_hold_where_a_person_reads_them(
                      "POST /api/v1/heartbeat/configure"):
         assert _fact797 in _n11_797, ("section 11's lever sentence does not say what the tree does", _fact797)
     _hb797 = (_root797 / "agentic_core/organism/heartbeat.py").read_text(encoding="utf-8")
-    assert 'data_path("organism_autonomy.json")' in _hb797, "the lever is no longer kept where the note says"
-    assert "auto_compliance" in _hb797.split("_AUTONOMY_KEYS = (", 1)[1].split(")", 1)[0], (
+    #  the VALUES, read from the live object, not phrases a comment could carry
+    from agentic_core.organism import heartbeat as _hbm797
+    assert _hbm797.heartbeat._autonomy_store().name == "organism_autonomy.json", (
+        "the lever is no longer kept where the note says")
+    assert "auto_compliance" in _hbm797.heartbeat._AUTONOMY_KEYS, (
         "the re-screen lever is no longer among the settings that survive a restart, as the note says it is")
     assert ('target = sorted(living, key=lambda v: ((hist.get(v.get("vsb_id"), {}) or {}).get("last_at") or ""))[0]'
             in _hb797), "the re-screen no longer takes one entity a beat, least recently screened first"
@@ -70786,3 +70789,64 @@ def test_w798_fu1160_no_registered_ceo_tool_reports_work_it_never_starts_or_rais
     _hits798 = subprocess.run(["git", "grep", "-l", "-e", "religion_bto", "-e", "ReligionResearchSwarm",
                                "--", "agentic_core", "apps", "scripts"], capture_output=True, text=True).stdout.split()
     assert _hits798 == [], _hits798
+
+
+def test_w799_fu1161_the_beat_reads_the_entity_flag_its_statement_says_it_reads(monkeypatch):
+    """W799 (FU-1161) - an entity's own tending flags were recorded and shown as deciding whether it is tended, and
+    neither beat step read them. The economy cycle now skips an entity whose own flag is off; the section 11
+    re-screen reads no entity flag, because an entity may not opt out of being re-screened; and every reading says
+    which flag the beat reads."""
+    import types
+    from agentic_core.economy import living_vsbs as _lv799
+    from agentic_core.organism import heartbeat as _hb799
+
+    # -- the economy cycle: the opted-out entity is the least recently operated, and is still never picked ----------
+    _roster799 = {
+        "w799-out": {"vsb_id": "w799-out", "auto_economy": False, "auto_compliance": True,
+                     "last_operated": "", "registered_at": "2026-01-01"},
+        "w799-in": {"vsb_id": "w799-in", "auto_economy": True, "auto_compliance": True,
+                    "last_operated": "2026-11-01T00:00:00Z", "registered_at": "2026-01-02"},
+    }
+    _picked799 = []
+    monkeypatch.setattr(_lv799, "operate_vsb",
+                        lambda vid, source="roster": _picked799.append(vid) or {"outcome": "ran"})
+    monkeypatch.setattr(_lv799, "_load", lambda: {k: dict(v) for k, v in _roster799.items()})
+    _lv799.operate_one()
+    assert _picked799 == ["w799-in"], ("an entity whose own economy flag is off was operated", _picked799)
+    monkeypatch.setattr(_lv799, "_load", lambda: {"w799-out": dict(_roster799["w799-out"])})
+    assert _lv799.operate_one() is None and _picked799 == ["w799-in"], _picked799
+    #  absent still reads as ON, so no entity registered before the flags existed stops being tended
+    monkeypatch.setattr(_lv799, "_load", lambda: {"w799-legacy": {"vsb_id": "w799-legacy", "registered_at": "2026-01-03"}})
+    _lv799.operate_one()
+    assert _picked799 == ["w799-in", "w799-legacy"], _picked799
+
+    # -- the re-screen: an entity whose own compliance flag is off is re-screened all the same ----------------------
+    monkeypatch.setattr(_lv799, "list_living",
+                        lambda: {"living_vsbs": [{"vsb_id": "w799-optout", "auto_compliance": False}]})
+    _screened799 = []
+    monkeypatch.setattr(_hb799, "screen_living_vsb", lambda vid: _screened799.append(vid) or {"overall": "review"})
+    monkeypatch.setattr(_hb799, "screen_one_deliverable", lambda: {"screened": None})
+    _res799 = _hb799.heartbeat._compliance_beat()
+    assert _screened799 == ["w799-optout"] and (_res799 or {}).get("vsb_screened") == "w799-optout", (
+        "an entity opted itself out of the section 11 re-screen", _res799)
+
+    # -- what the entity is told: one flag decides tending, and the reading says which -----------------------------
+    monkeypatch.setattr(_hb799, "heartbeat", types.SimpleNamespace(auto_economy=True, running=True))
+    _on799 = _lv799.living_statement({"auto_economy": True, "auto_compliance": False})["entity_tending"]
+    assert _on799["tended"] is True, (
+        "an entity whose economy flag is on is reported untended because of a flag the beat does not read", _on799)
+    assert "may not opt out of being re-screened" in _on799["basis"], _on799["basis"]
+    _off799 = _lv799.living_statement({"auto_economy": False, "auto_compliance": True})["entity_tending"]
+    assert _off799["tended"] is False and "(auto_economy is off)" in _off799["basis"], _off799
+    assert _lv799.tending({})["read_by_the_beat"] == {"auto_economy": True, "auto_compliance": False}
+
+    # -- where a person reads it: the Cockpit says which flag the beat reads ------------------------------------------
+    import pathlib
+    import re as _re799
+    _ck799 = _re799.sub(r"/\*.*?\*/", "", pathlib.Path("apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx")
+                        .read_text(encoding="utf-8"), flags=_re799.S)
+    _ck799 = " ".join(_ck799.split())
+    assert "(recorded; the re-screen does not read it)" in _ck799, (
+        "the Cockpit shows the entity's compliance flag as if it decided something the beat does not read")
+    assert "The §11 re-screen reads no entity flag: an entity may not opt out of being re-screened" in _ck799, (
+        "the Cockpit still says tending needs both flags, and the re-screen reads neither")

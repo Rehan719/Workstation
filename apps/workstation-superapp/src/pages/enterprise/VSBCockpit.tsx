@@ -1510,14 +1510,18 @@ export const VSBCockpit: React.FC = () => {
                     {/* the governing flags, per entity, with ABSENT distinguished from stated-off */}
                     <p data-testid="cockpit-tending-flags" className="text-[9px] text-slate-500 mt-2 leading-relaxed">
                       Tending: auto_economy {operating.auto_economy === false ? 'OFF' : 'on'}
-                      {' · '}auto_compliance {operating.auto_compliance === false ? 'OFF' : 'on'}
+                      {' · '}auto_compliance {operating.auto_compliance === false ? 'OFF' : 'on'} (recorded; the re-screen does not read it)
                       {operating.auto_economy === undefined && operating.auto_compliance === undefined
                         ? ' — neither flag is recorded on this entity: it was registered before the fields '
                           + 'existed, and absent is read as ON because the organism was already tending it.'
                         : ''}
                     </p>
+                    {/* W799 (FU-1161) - which flag the beat reads. Both were shown as deciding tending, and neither
+                        was read; the economy cycle now reads its flag, and the re-screen deliberately reads none. */}
                     <p data-testid="cockpit-tending-basis" className="text-[9px] text-slate-600 mt-1 leading-relaxed">
-                      Tending needs BOTH: the organism beating with its own lever on, and this entity's flag.
+                      The economy cycle needs BOTH: the organism beating with its own lever on, and this entity's
+                      auto_economy flag. The §11 re-screen reads no entity flag: an entity may not opt out of being
+                      re-screened, so it takes every living entity in turn while the organism's re-screen lever is on.
                       A flag on an entity the heartbeat is not running for tends nothing.
                     </p>
                   </>

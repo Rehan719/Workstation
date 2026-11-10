@@ -88,25 +88,21 @@ def living_statement(rec: Optional[Dict[str, Any]] = None) -> dict:
             #  the lever on, which is the half of the clause a global sentence can never express.
             **({} if rec is None else {
                 "entity_tending": (lambda _t: {
-                    "tended": bool(auto and all(_t["flags"].values())),
+                    #  W799 (FU-1161) - the economy cycle is what this entity's own flag decides; the section 11
+                    #  re-screen reads no entity flag (see tending()), so it does not enter "tended"
+                    "tended": bool(auto and _t["flags"]["auto_economy"]),
                     "organism_beating": auto,
                     "entity_flags": _t["flags"],
                     "flags_stated": _t["stated"],
                     "flags_absent": _t["absent"],
                     "basis": (
-                        ("the organism is tending THIS entity: its own flags allow it and the heartbeat is "
-                         "beating with the Self-run lever on. "
-                         if auto and all(_t["flags"].values()) else
+                        ("the organism is tending THIS entity: its own economy flag allows it and the heartbeat "
+                         "is beating with the Self-run lever on. "
+                         if auto and _t["flags"]["auto_economy"] else
                          ("this entity is NOT being tended. "
-                          + ("Its own flags allow it, but " if all(_t["flags"].values()) else
-                             "Its own flags do not allow it"
-                             #  plural agreement: the four-state test of these sentences produced
-                             #  "(auto_economy, auto_compliance IS off)" before this, which is a sentence a
-                             #  reader sees. A basis string is code and gets tested like one.
-                             + ((lambda _off: " (" + ", ".join(_off)
-                                 + (" is off)" if len(_off) == 1 else " are off)"))(
-                                    [k for k, v in _t["flags"].items() if not v])
-                                if not all(_t["flags"].values()) else "")
+                          + ("Its own flags allow it, but " if _t["flags"]["auto_economy"] else
+                             #  W799 - one flag decides this now, so the sentence names the one that is off
+                             "Its own flags do not allow it (auto_economy is off)"
                              + (", and " if not auto else ". "))
                           + ("the organism is not beating with its lever on. " if not auto else "")))
                         + _t["basis"]),
@@ -325,12 +321,21 @@ def tending(rec: Dict[str, Any]) -> Dict[str, Any]:
         "flags": on,
         "stated": stated,
         "absent": absent,
+        #  W799 (FU-1161) - WHICH FLAG THE BEAT READS. Both were recorded and neither was read: operate_one picked
+        #  every operable row and the compliance step every living one. The economy cycle now skips an entity
+        #  whose own flag is off. The re-screen reads no entity flag, because an entity may not opt out of being
+        #  re-screened (section 11: compliance is continuous, not bolted on); so the record keeps the flag and
+        #  says it is not read, rather than letting a consent appear to decide something it does not.
+        "read_by_the_beat": {"auto_economy": True, "auto_compliance": False},
         "basis": (
             (f"stated on this entity: {', '.join(stated)}. " if stated else "")
             + (f"not stated and therefore read as ON: {', '.join(absent)} - " + TENDING_ABSENT_MEANS + ". "
                if absent else "")
             + "Whether a cycle actually runs needs the ORGANISM's lever on and its heartbeat beating too; "
-              "these flags say whether this entity consents to be tended, not whether anything is beating."),
+              "these flags say whether this entity consents to be tended, not whether anything is beating. "
+              "The beat reads auto_economy: an entity with it off is not operated. auto_compliance is recorded "
+              "and NOT read: the section 11 re-screen takes every living entity in turn while the organism's own "
+              "re-screen lever is on, because an entity may not opt out of being re-screened."),
     }
 
 
@@ -713,6 +718,9 @@ def operate_one() -> Optional[Dict[str, Any]]:
     entries = [v for v in d.values() if isinstance(v, dict) and isinstance(v.get("vsb_id"), str)]
     #  P3.26 clause (2) — a dormant or retired entity is not picked, so the beat stops operating it
     entries = [v for v in entries if lifecycle(v)["operable"]]
+    #  W799 (FU-1161) - and an entity whose OWN economy flag is off is not operated: its statement said so, and
+    #  until now this picked it anyway. Absent still reads as ON (tending()), so no legacy entity stops.
+    entries = [v for v in entries if tending(v)["flags"]["auto_economy"]]
     if not entries:
         return None
     # pick the least-recently-operated (None sorts first). §8 (W340) — FAIR under bursts: the
