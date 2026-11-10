@@ -70304,3 +70304,28 @@ def test_w783_fu890_what_the_archived_fund_left_unimported_is_archived_or_record
     assert "## W783 (FU-890)" in dv and "It was not removed" in dv
     assert "firebase-admin" in pathlib.Path("requirements.txt").read_text(encoding="utf-8").lower(), (
         "a dependency was removed outside FU-283's retry plan")
+
+
+def test_w784_fu865_each_forge_stage_is_one_persona_prompt_through_the_gateway(client, monkeypatch):
+    """W784 (FU-865) - the Forge page states each stage is a persona prompt through the gateway, with provenance
+    for the run and not per stage; nothing failed if that stopped being true. Driven on a run."""
+    import pathlib
+    from agentic_core.api import forge as _fg
+    calls = []
+
+    async def _cap(prompt, agent="", **k):
+        calls.append((agent, prompt))
+        return {"output": f"[{agent}] composed", "served_by": "native", "is_external": False}
+    monkeypatch.setattr(_fg.gateway, "query_meta", _cap)       # the gateway each stage goes through
+    sids = list(_fg._STAGES)[:2]
+    r = client.post("/api/v1/forge/run", json={"objective": "w784 probe", "stages": [{"type": s} for s in sids]})
+    assert r.status_code == 200, r.text[:300]
+    for sid in sids:
+        mine = [p for a, p in calls if a == f"forge_{sid}"]
+        assert len(mine) == 1, (sid, [a for a, _ in calls])
+        assert mine[0].startswith(_fg._STAGES[sid]["prompt"]), (sid, mine[0][:120])
+    out = {s["resource"]: s for s in r.json()["stage_outputs"]}
+    for sid in sids:
+        assert out[sid]["output"] == f"[forge_{sid}] composed", out.get(sid)
+    page = pathlib.Path("apps/workstation-superapp/src/pages/developers/ForgePipeline.tsx").read_text(encoding="utf-8")
+    assert "Composed by a persona prompt through the gateway. Provenance is recorded for the run," in page
