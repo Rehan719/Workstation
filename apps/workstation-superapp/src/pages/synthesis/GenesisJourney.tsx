@@ -28,8 +28,9 @@ interface JourneyResult {
     // W485 — `selected` is null when every candidate was vetoed; nothing is carried forward then.
     method: string; selected: string | null; selection_basis: string;
     vetoed?: string[]; blocked_by_screen?: boolean; blocked_reason?: string | null;
-    candidates: { id: string; framing: string; rank: number; score: number; coverage: number;
-      specificity: number; structure: number; approach: string }[];
+    // W797 - rank and score are null when the candidates are not alternatives: nothing was compared
+    candidates: { id: string; framing: string; rank: number | null; score: number | null; coverage: number;
+      specificity: number; structure: number; approach: string; not_ranked_basis?: string }[];
     // W434/W436 — whether the "alternatives" genuinely differ. When they do not, ranking them is a
     // comparison that never happened, and the note replaces the ranked cards.
     candidates_are_alternatives?: boolean;
@@ -926,7 +927,9 @@ export const GenesisJourney: React.FC = () => {
                 {result.stage_5_model_simulate_rank.selection_basis}
                 {result.stage_5_model_simulate_rank.blocked_by_screen
                   ? " — nothing is carried into Design: the journey stops here."
-                  : " — the winner is carried into Design."}
+                  : result.stage_5_model_simulate_rank.candidates_are_alternatives === false
+                    ? " — that one text is carried into Design; nothing was chosen over anything."
+                    : " — the winner is carried into Design."}
               </p>
               {/* W485 (ledger v5 R1.3) — every candidate vetoed means the journey STOPPED. Said where the
                   reader is, not only in the payload. */}

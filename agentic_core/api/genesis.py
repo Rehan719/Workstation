@@ -555,6 +555,12 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
     # position and the payload reported the winner as "selected on evidence" regardless.
     _top = [c["id"] for c in _eligible if c["score"] == winner["score"]]
     _tied = len(_top) > 1
+    #  W797 (FU-980, ledger v17 R1[2]) - ONE TEXT RETURNED FOR EVERY CANDIDATE IS NOT RANKED. The page already
+    #  shows one answer in place of three ranked cards when the candidates are not alternatives, but the payload
+    #  still numbered them 1, 2, 3, gave each the same composite score, and EVIDENCE.md printed that rank and
+    #  score for the one carried forward. A rank is a comparison, and nothing was compared. The figures are
+    #  computed as before (the tie and the veto read them) and withdrawn once stage 5 is assembled.
+    _not_alternatives = len(candidates) > 1 and _distinct <= 1
 
     # W613 (FU-475, M1 v8 R1.0) — WHAT WAS MEASURED IS COMPUTED FROM THIS RUN. `criteria_measured` was the
     # constant _CAND_MEASURED and `honesty` a fixed sentence saying compliance and safety "are measured here",
@@ -632,8 +638,8 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
         "candidates_distinct": _distinct,
         "candidates_are_alternatives": _distinct > 1,
         "comparison_note": (None if _distinct > 1 else
-                            "All " + str(len(candidates)) + " candidates returned IDENTICAL text, so "
-                            "no comparison was possible and the ranking below carries no information. "
+                            "All " + str(len(candidates)) + " candidates returned IDENTICAL text: "
+                            "no comparison was possible, so no candidate carries a rank or a score. "
                             "The owned floor composes from the concept and the requested headings; "
                             "the framing that was meant to differentiate them ('pragmatic' / "
                             "'innovative' / 'lean') is prose it cannot act on. Show one answer, not "
@@ -650,13 +656,27 @@ async def genesis_journey(req: JourneyRequest, user: dict | None = Depends(get_c
                    + ("FORM is a shape proxy, not solution quality — it saturates at 1.000 for any "
                       "candidate past ~2800 characters."),
         "selection_basis": (
-            (f"TIE at {winner['score']} across {len(_top)} candidates ({', '.join(_top)}) — resolved "
-             f"by list order, NOT by evidence. ") if _tied else "") + (
-            ("NOTHING SELECTED — every candidate was vetoed for §11 failure: "
-             + ", ".join(_vetoed)) if _blocked else
-            f"selected {winner['id']} on {winner['score_basis']}"
-            + (f"; vetoed for §11 failure: {', '.join(_vetoed)}" if _vetoed else "")),
+            ("NOTHING SELECTED — every candidate was vetoed for §11 failure: " + ", ".join(_vetoed))
+            if _blocked else
+            #  W797 - identical candidates were not ranked, so this does not open with a tie at a score
+            (f"NOT RANKED — all {len(candidates)} candidates returned identical text, so nothing was compared "
+             f"and no rank or score is given; {winner['id']} is carried forward as the first in the declared "
+             f"framing order, NOT by evidence. Its form score, a shape proxy of that one text, is "
+             f"{winner.get('form_score')}"
+             + (f"; vetoed for §11 failure: {', '.join(_vetoed)}" if _vetoed else ""))
+            if _not_alternatives else
+            (((f"TIE at {winner['score']} across {len(_top)} candidates ({', '.join(_top)}) — resolved "
+               f"by list order, NOT by evidence. ") if _tied else "")
+             + f"selected {winner['id']} on {winner['score_basis']}"
+             + (f"; vetoed for §11 failure: {', '.join(_vetoed)}" if _vetoed else ""))),
     }
+    if _not_alternatives:
+        for c in candidates:
+            c["rank"] = None
+            c["score"] = None
+            c["not_ranked_basis"] = (f"NOT RANKED - all {len(candidates)} candidates returned identical text, so "
+                                     f"there was nothing to compare; form_score is the one figure, a shape "
+                                     f"proxy of that text")
 
     # W485 (ledger v5 R1.3) — THE VETO STOPS THE JOURNEY. With no eligible candidate there is nothing
     # to design, nothing to commercialise and nothing to establish; composing a body from a vetoed

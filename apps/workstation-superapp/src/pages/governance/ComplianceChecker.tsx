@@ -10,6 +10,8 @@ interface Result {
   subject: string; jurisdiction: string; overall: string;
   compliant: boolean | null; verdicts: Verdict[];
   coverage_gaps?: string[]; assessed_by?: string[]; basis?: string;
+  // W797 - the third list: frameworks matched only by a word list, which are in neither list above
+  vocabulary_only?: string[];
 }
 
 // W455 — two more honest states: not_checked (this row cannot read this kind of subject) and error
@@ -117,12 +119,19 @@ export const ComplianceChecker: React.FC = () => {
                   <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${_c.cls}`} title={_c.title}>{_c.label}</span>
                   <span className="text-[10px] font-mono text-slate-500 ml-auto">{result.jurisdiction}</span>
                 </div>
-                <p className="text-[10px] text-slate-400 mt-2 leading-relaxed">
+                <p data-testid="compliance-coverage-line" className="text-[10px] text-slate-400 mt-2 leading-relaxed">
                   {_assessed
                     ? `Assessed by: ${(result.assessed_by ?? []).join(' · ')}.`
                     : 'NOTHING here assessed this subject. A keyword screen can refuse a subject; it cannot clear one.'}
                   {(result.coverage_gaps ?? []).length > 0 &&
                     ` Not assessed: ${(result.coverage_gaps ?? []).join(' · ')}.`}
+                  {/* W797 (FU-980, ledger v17 R1[1]) - THE THIRD LIST. The screen returns three lists that
+                      between them account for every framework it screened, and this line printed two. A
+                      framework matched only by a word list was in neither, so a halal-food subject read
+                      "Not assessed" without its halal row, and a reader taking the two as the whole concluded
+                      that area was fine - the reading the backend's third list was added to stop. */}
+                  {(result.vocabulary_only ?? []).length > 0 &&
+                    ` Matched only by a word list, which establishes nothing either way: ${(result.vocabulary_only ?? []).join(' · ')}.`}
                 </p>
               </Card>
             );

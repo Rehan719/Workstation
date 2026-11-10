@@ -1262,7 +1262,8 @@ def test_candidates_selected_on_simulated_evidence(client):
             assert abs(c["form_score"] - round(0.6 * c["modelled_score"] + 0.4 * c["simulation_score"], 3)) < 1e-9
         # and the composite now carries REAL criteria, with its arithmetic declared per candidate
         sc = c.get("screen") or {}
-        if sc.get("compliance") is not None:
+        #  W797 (FU-980 R1[2]) - a candidate compared with nothing carries no score, so there is no arithmetic to check
+        if sc.get("compliance") is not None and c["score"] is not None:
             assert abs(c["score"] - round(0.40 * c["form_score"] + 0.35 * sc["compliance"]
                                           + 0.25 * sc["safety"], 3)) < 1e-9
             assert "compliance" in c["score_basis"] and "safety" in c["score_basis"]
@@ -1277,7 +1278,10 @@ def test_candidates_selected_on_simulated_evidence(client):
     if wa["form"] == 1.0:
         assert wa["compliance"] is None and wa["safety"] is None, wa
         assert "1.00 form" in method and "contributed NOTHING" in method, method
-        assert all(abs(c["score"] - c["form_score"]) < 1e-9 for c in cands), cands
+        if s5.get("candidates_are_alternatives") is False:       # W797 - identical: no rank and no score
+            assert all(c["score"] is None and c["rank"] is None for c in cands), cands
+        else:
+            assert all(abs(c["score"] - c["form_score"]) < 1e-9 for c in cands), cands
     else:
         assert wa["compliance"] == 0.35 and wa["safety"] == 0.25, wa
         assert "0.40 form" in method and "0.35 compliance" in method and "0.25 safety" in method
@@ -70635,3 +70639,97 @@ def test_w796_fu980_r1_3_a_scholar_can_be_retired_and_a_queued_item_says_what_co
                 p.write_bytes(b)
     panel = pathlib.Path("apps/workstation-superapp/src/components/qep/ScholarReviewPanel.tsx").read_text(encoding="utf-8")
     assert '{it.served_by_basis && <p className="text-[10px] text-amber-400/80 mt-1" data-testid="scholar-item-served-by">' in panel
+
+
+def test_w797_fu980_r1_the_remaining_disclosures_hold_where_a_person_reads_them(client):
+    """W797 (FU-980, ledger v17 R1) - the region's remaining smallest honest fixes, each driven at its surface.
+
+    R1[1] the compliance page printed two of the screen's three lists, so a framework matched only by a word
+          list was in neither; and the vision's lever sentence left out that the lever survives a restart and
+          that the re-screen is a rotation, one entity a beat.
+    R1[2] Genesis numbered identical candidates 1, 2, 3 and scored each, and EVIDENCE.md printed that rank; the
+          bar's `not_measured` read 16 beside a summary saying "14 not measured".
+    R1[3] LearnTeach said the scholar roster was EMPTY whatever it held.
+    """
+    import pathlib
+    import re as _re797
+    _root797 = pathlib.Path(__file__).resolve().parents[1]
+
+    def _code797(rel):
+        #  the code, not the file: a comment naming an expression must not satisfy a leg that asks for it rendered
+        _s = _re797.sub(r"/\*.*?\*/", "", (_root797 / rel).read_text(encoding="utf-8"), flags=_re797.S)
+        return "\n".join(ln for ln in _s.splitlines() if not ln.lstrip().startswith("//"))
+
+    # -- R1[1] the screen's three lists account for what it screened, and the page prints all three ---------------
+    _d797 = client.post("/api/v1/compliance/check",
+                        json={"subject": "a halal food delivery service in London"}).json()
+    _a797, _g797, _v797 = (set(_d797["assessed_by"]), set(_d797["coverage_gaps"]), set(_d797["vocabulary_only"]))
+    assert "sharia_halal" in _v797 and not (_a797 & _g797 or _a797 & _v797 or _g797 & _v797), _d797
+    assert _a797 | _g797 | _v797 == set(_d797["frameworks_screened"]), (
+        "the screen's three lists no longer account for every framework it screened", _d797)
+    _cc797 = _code797("apps/workstation-superapp/src/pages/governance/ComplianceChecker.tsx")
+    for _list797 in ("assessed_by", "coverage_gaps", "vocabulary_only"):
+        assert f"(result.{_list797} ?? []).join(' · ')" in _cc797, (
+            "the compliance page does not print this list, so its line reads as the whole reading when it is "
+            "not: a framework matched only by a word list is in neither of the other two", _list797)
+
+    # -- R1[1] the vision's lever sentence, and each fact it names, in the tree ------------------------------------
+    _vis797 = (_root797 / "docs/WORKSTATION_IDBO_WHOLE_VISION.md").read_text(encoding="utf-8").replace("\r\n", "\n")
+    _n11_797 = _vis797[_vis797.index("## 11. Compliance"):_vis797.index("\n## 12.")]
+    for _fact797 in ("starts with the server", "organism_autonomy.json", "once every N beats",
+                     "POST /api/v1/heartbeat/configure"):
+        assert _fact797 in _n11_797, ("section 11's lever sentence does not say what the tree does", _fact797)
+    _hb797 = (_root797 / "agentic_core/organism/heartbeat.py").read_text(encoding="utf-8")
+    assert 'data_path("organism_autonomy.json")' in _hb797, "the lever is no longer kept where the note says"
+    assert "auto_compliance" in _hb797.split("_AUTONOMY_KEYS = (", 1)[1].split(")", 1)[0], (
+        "the re-screen lever is no longer among the settings that survive a restart, as the note says it is")
+    assert ('target = sorted(living, key=lambda v: ((hist.get(v.get("vsb_id"), {}) or {}).get("last_at") or ""))[0]'
+            in _hb797), "the re-screen no longer takes one entity a beat, least recently screened first"
+    _app797 = (_root797 / "agentic_core/app_mvp.py").read_text(encoding="utf-8")
+    assert "include_router(heartbeat_api.router, dependencies=[_Depends(_require_admin)])" in _app797
+    assert "heartbeat.start()" in _app797, "the heartbeat no longer starts with the server, as the note says"
+
+    # -- R1[2] identical candidates carry no rank and no score ------------------------------------------------------
+    _j797 = client.post("/api/v1/genesis/journey", json={
+        "problem": "w797 a neighbourhood tool library lending power tools", "domain": "community"}).json()
+    _s5_797 = _j797["stage_5_model_simulate_rank"]
+    _cands797 = _s5_797["candidates"]
+    if _s5_797["candidates_are_alternatives"] is False:
+        for _c797 in _cands797:
+            assert _c797["rank"] is None and _c797["score"] is None, (
+                "a candidate that was compared with nothing still carries a rank or a score", _c797)
+            assert "NOT RANKED" in _c797["not_ranked_basis"] and isinstance(_c797["form_score"], (int, float)), _c797
+        if not _s5_797["blocked_by_screen"]:
+            _sb797 = _s5_797["selection_basis"]
+            assert _sb797.startswith("NOT RANKED") and "NOT by evidence" in _sb797, _sb797
+            assert str(_cands797[0]["form_score"]) in _sb797, _sb797
+    else:
+        assert [_c["rank"] for _c in _cands797] == list(range(1, len(_cands797) + 1)), _cands797
+
+    # -- R1[2] the evidence file prints no rank for a candidate that was not ranked ---------------------------------
+    _est797 = client.post("/api/v1/genesis/establish", json={
+        "problem": "w797 a neighbourhood tool library", "domain": "community", "owner_id": "pytest",
+        "journey_id": _j797["journey_id"], "selected_candidate": {"id": _cands797[0]["id"]}}).json()
+    assert _est797.get("vsb_id"), _est797
+    client.post(f"/api/v1/vsb/{_est797['vsb_id']}/repo")
+    from agentic_core.api.vsb import _REPO_STORE as _store797
+    _ev797 = (_store797 / _est797["vsb_id"] / "EVIDENCE.md").read_text(encoding="utf-8")
+    assert "rank: None" not in _ev797 and "score: None" not in _ev797, _ev797
+    if _s5_797["candidates_are_alternatives"] is False:
+        assert "NOT RANKED" in _ev797, _ev797
+
+    # -- R1[2] the bar's not_measured and its summary say the same thing --------------------------------------------
+    _bm797 = _j797["quality_assurance"]["quality"]["bar_measured"]
+    _nums797 = {k: int(n) for n, k in _re797.findall(r"(\d+) (screen-only|not measured)", _bm797["summary"])}
+    assert _nums797.get("not measured", 0) + _nums797.get("screen-only", 0) == _bm797["not_measured"], _bm797
+    assert _bm797["not_measured_basis"].startswith(f"{_bm797['not_measured']} = "), _bm797["not_measured_basis"]
+    assert f"+ {_bm797['screen_only']} screen-only" in _bm797["not_measured_basis"], _bm797["not_measured_basis"]
+
+    # -- R1[3] LearnTeach reads the roster when it loads, and the sentence follows the count ------------------------
+    _lt797 = _code797("apps/workstation-superapp/src/components/LearnTeachModule.tsx")
+    assert '"/api/v1/scholar-review/status"' in _lt797 and "useEffect(" in _lt797, (
+        "the page does not read the roster on load, so its sentence cannot follow it")
+    assert "gateScholars === 0 ?" in _lt797 and "gateScholars === null ?" in _lt797, (
+        "the scholar sentence no longer branches on the count, so it says EMPTY whatever the roster holds")
+    _st797 = client.get("/api/v1/scholar-review/status").json()
+    assert isinstance(_st797["scholars_on_roster"], int) and _st797["footing"]["authentication"] in ("on", "off")

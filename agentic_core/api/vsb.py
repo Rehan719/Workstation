@@ -215,7 +215,11 @@ def _build_repo_files(vsb: dict) -> dict:
         _ev_lines += [("## Candidate Supplied by the Caller (NOT measured by this platform)" if _caller668 else
                        "## Selected Candidate (§4.5 evidence-ranked)" if _ranked else
                        "## Candidate Carried Forward (NOT evidence-ranked — see comparison below)"),
-                      f"- id: {_cand.get('id')} · rank: {_cand.get('rank')} · score: {_cand.get('score')}",
+                      #  W797 (FU-980 R1[2]) - a candidate that was not ranked has no rank to print
+                      (f"- id: {_cand.get('id')} · rank: {_cand.get('rank')} · score: {_cand.get('score')}"
+                       if _cand.get("rank") is not None else
+                       f"- id: {_cand.get('id')} · NOT RANKED: "
+                       + str(_cand.get("not_ranked_basis") or "the candidate carries no rank, so none is printed")),
                       f"- coverage {_cand.get('coverage')} · specificity {_cand.get('specificity')} · structure {_cand.get('structure')}",
                       f"- framing: {str(_cand.get('framing') or '')[:160]}"]
         if _caller668:

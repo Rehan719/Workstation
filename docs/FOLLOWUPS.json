@@ -19356,11 +19356,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W797",
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region on the M3 item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Ledger v17 R1, each smallest honest fix driven at its surface. R1[1]: the compliance page prints the screen's third list (frameworks matched only by a word list, in neither 'Assessed by' nor 'Not assessed' - a halal-food subject read 'Not assessed' without its halal row); section 11's lever sentence re-measured: the heartbeat starts with the server, the lever is an administrator's route once sign-in is on and survives a restart (organism_autonomy.json), and the re-screen is a rotation, one entity a beat. R1[2]: identical candidates carry rank and score None with not_ranked_basis, selection_basis opens NOT RANKED, the page carries 'that one text' into Design, and EVIDENCE.md prints no rank for an unranked candidate; bar_measured.not_measured_basis states the arithmetic its summary splits (16 = 14 with no source + 2 screen-only). R1[3]: retire route and served_by on each queued item (W796); LearnTeach reads the roster on load and its sentence follows the count (not read / empty / N, attested-not-verified with sign-in off). Floor frames stay queued, labelled, rather than unqueued as the row suggested: a floor frame is religious text the platform serves, and only a queued item can be approved. R1[4] and R1[5]: nothing for honesty, per the row; the gap is the build itself. R1[6]: Appendix A and rule 4 re-measured (W795). Guard test_w797, six blinds red."
     },
     {
       "id": "FU-981",
@@ -23001,6 +23004,25 @@
       "note": "",
       "slot_source": "P3.30 carries unreached code and the class W778 closed",
       "tier": 3
+    },
+    {
+      "id": "FU-1161",
+      "title": "An entity's own tending flags are said to decide whether the organism tends it, and neither beat step reads them",
+      "why": "Measured 2026-11-10 (W797, re-measuring section 11's lever sentence). economy/living_vsbs.py records auto_economy and auto_compliance on each entity (TENDING_FLAGS, P3.2 clause (1)); its comment says tending requires BOTH the organism's lever and the entity's own flag, and the entity's statement says 'this entity is NOT being tended. Its own flags do not allow it' when one is off. Neither beat step reads them: living_vsbs.operate_one picks from every operable roster row, and organism/heartbeat.py _compliance_beat picks from list_living(). No route sets a flag off today (register() is called only with its defaults), so no entity is affected yet; the day one is, the statement and the beat disagree. Smallest fix: operate_one skips an entity whose own auto_economy is off. For auto_compliance decide first whether an entity may opt out of being re-screened at all - recommended: it may not, and the statement says the re-screen does not depend on the entity's flag.",
+      "source": "W797 measurement",
+      "found": "2026-11-10",
+      "files": [
+        "agentic_core/economy/living_vsbs.py",
+        "agentic_core/organism/heartbeat.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 3,
+      "slot_source": "P3.30 carries tier-3 findings, and this one is latent: no route sets a flag off, so no entity is affected yet; P3.2, which built the flags, is done"
     }
   ],
   "routes": [

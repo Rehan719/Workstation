@@ -560,8 +560,13 @@ are integrated into every synthesis/generative/operational workflow, not bolted 
 > living entities (`organism/heartbeat.py`) and the delivery quality gate (`vbs/quality.py`), and from
 > nowhere else. The Forge pipeline (`api/forge.py`) does not call it, and the Synthesis studio
 > (`api/synthesis_studio.py`) screens none of its stage outputs - the entity its cascade registers is screened
-> once, at birth, by the shared enrichment. "Continuously" is the heartbeat's re-screen, which runs only while
-> its `auto_compliance` lever is on; the lever is off unless the Owner turns it on.
+> once, at birth, by the shared enrichment. "Continuously" is the heartbeat's re-screen, re-measured 2026-11-10
+> (W797): the heartbeat starts with the server, and the re-screen runs only while its `auto_compliance` lever is
+> on. The lever is off until the Owner sets it (`POST /api/v1/heartbeat/configure`, an administrator's route once
+> sign-in is on, each change written to the audit log), and once set it survives a restart (it is kept in
+> `organism_autonomy.json`). Each beat re-screens ONE living entity, the least recently screened, and one
+> living deliverable, so a roster of N entities is re-screened once every N beats: a rotation, not a watch
+> kept on each.
 
 **The faith-content constitution (Owner-established, delivered W439 — immovable):** where the
 platform touches sacred text, honesty constraints bind harder than anywhere else.
