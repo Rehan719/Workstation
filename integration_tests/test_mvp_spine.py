@@ -71862,3 +71862,41 @@ def test_w818_a_development_action_is_said_to_be_given_not_acted_on(client, monk
     assert "each tier develops the one below" not in page, "the heading still claims an outcome"
     assert "whether each acted on it is not assessed" in page, "the heading does not say the outcome is unassessed"
     assert "title={cascade.development_applied_basis ?? undefined}" in page, "the heading does not carry the basis"
+
+
+def test_w819_the_employment_tools_pass_what_the_person_wrote(client, monkeypatch):
+    """FU-824 (W819). Each employment tool passes every free-text field a person fills as the person's own words -
+    the statement the native floor attributes from - and not the role alone."""
+    from agentic_core.api import employment as _em
+    from agentic_core.api._ai_provenance import person_said as _real
+
+    seen = []
+
+    def _spy(*parts):
+        seen.append(parts)
+        return _real(*parts)
+    monkeypatch.setattr(_em, "person_said", _spy)
+
+    cases = [
+        ("/api/v1/employment/cv", {"target_role": "W819 analyst", "experience": "W819EXPERIENCE ten years",
+                                   "skills": ["W819SKILL"]}, ["W819EXPERIENCE", "W819SKILL"]),
+        ("/api/v1/employment/cover-letter", {"target_role": "W819 analyst", "company": "W819 Co",
+                                             "highlights": "W819HIGHLIGHT"}, ["W819HIGHLIGHT"]),
+        ("/api/v1/employment/interview-prep", {"target_role": "W819 analyst", "competencies": ["W819COMPETENCY"]},
+         ["W819COMPETENCY"]),
+        ("/api/v1/employment/career-path", {"current_role": "W819 clerk", "target_role": "W819 analyst",
+                                            "constraints": "W819CONSTRAINT"}, ["W819CONSTRAINT"]),
+        ("/api/v1/employment/salary-negotiation", {"target_role": "W819 analyst", "current_salary": "W819CURRENT",
+                                                   "offered_salary": "W819OFFER", "leverage": "W819LEVERAGE"},
+         ["W819CURRENT", "W819OFFER", "W819LEVERAGE"]),
+        ("/api/v1/employment/application", {"target_role": "W819 analyst", "person_spec": "W819SPEC",
+                                            "experience": "W819EVIDENCE", "questions": ["W819QUESTION?"]},
+         ["W819SPEC", "W819EVIDENCE", "W819QUESTION"]),
+    ]
+    for path, body, words in cases:
+        seen.clear()
+        r = client.post(path, json=body)
+        assert r.status_code == 200, (path, r.status_code, r.text[:200])
+        said = " ".join(_real(*p) or "" for p in seen)
+        for w in words:
+            assert w in said, (f"{path} does not pass {w!r} as the person's own words", said[:300])

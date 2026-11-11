@@ -70,7 +70,7 @@ async def tailor_cv(req: CVRequest):
         "## Gaps & Recommendations (honest gaps for this role and how to address them)"
     )
     cv, provenance = await ai_text(prompt, "employment_cv", realm=req.realm,
-        user_text=person_said(req.target_role))
+        user_text=person_said(req.target_role, req.experience, req.skills))      # W819 (FU-824)
     return {
         "cv_id": uuid.uuid4().hex[:10],
         "target_role": req.target_role,
@@ -104,7 +104,7 @@ async def cover_letter(req: CoverLetterRequest):
         "and a confident close. Avoid clichés and generic filler."
     )
     letter, provenance = await ai_text(prompt, "employment_cover_letter", realm=req.realm,
-        user_text=person_said(req.target_role, req.company))
+        user_text=person_said(req.target_role, req.company, req.highlights))     # W819 (FU-824)
     return {
         "letter_id": uuid.uuid4().hex[:10],
         "target_role": req.target_role,
@@ -139,7 +139,7 @@ async def interview_prep(req: InterviewPrepRequest):
         "## Preparation Checklist"
     )
     prep, provenance = await ai_text(prompt, "employment_interview", realm=req.realm,
-        user_text=person_said(req.target_role))
+        user_text=person_said(req.target_role, req.competencies))                # W819 (FU-824)
     return {
         "prep_id": uuid.uuid4().hex[:10],
         "target_role": req.target_role,
@@ -176,7 +176,7 @@ async def career_path(req: CareerPathRequest):
         "## Risks & Honest Assessment (how realistic the transition is, and key dependencies)"
     )
     roadmap, provenance = await ai_text(prompt, "employment_career_path", realm=req.realm,
-        user_text=person_said(req.target_role, req.current_role))
+        user_text=person_said(req.target_role, req.current_role, req.constraints))   # W819 (FU-824)
     return {
         "path_id": uuid.uuid4().hex[:10],
         "current_role": req.current_role,
@@ -228,7 +228,8 @@ async def salary_negotiation(req: SalaryNegotiationRequest):
         "as reasoned estimates to validate."
     )
     plan, provenance = await ai_text(prompt, "employment_salary", realm=req.realm,
-        user_text=person_said(req.target_role, req.location))
+        user_text=person_said(req.target_role, req.location, req.current_salary,   # W819 (FU-824)
+                              req.offered_salary, req.leverage))
     return {
         "negotiation_id": uuid.uuid4().hex[:10],
         "target_role": req.target_role,
@@ -287,7 +288,8 @@ async def application_support(req: ApplicationRequest):
         "A short checklist of which person-spec criteria are well-evidenced, partially evidenced, or a gap."
     )
     statement, provenance = await ai_text(prompt, "employment_application", realm=req.realm,
-        user_text=person_said(req.target_role, req.organisation))
+        user_text=person_said(req.target_role, req.organisation, req.person_spec,  # W819 (FU-824)
+                              req.experience, req.questions))
     #  P3.30 (ledger v16 R5.11) - `questions_answered` was the number of questions in the REQUEST, returned
     #  whatever served: the floor composes a frame around headings and answers none, and the field said 1.
     #  The number asked is added under its own name. The older field keeps its name and is a number only when

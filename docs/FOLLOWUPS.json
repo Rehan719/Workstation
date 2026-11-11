@@ -16136,11 +16136,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W819",
       "note": "",
       "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Each of the six employment routes passed one or two fields as the person's own words (user_text, what the native floor attributes from - W640) and left the rest of what the person wrote out. Every free-text field a person fills is now passed: the CV's experience and skills, the cover letter's highlights, the interview's competencies, the career path's constraints, the salary's figures and leverage, and the application's person specification, experience and questions. Typed choices and numbers are not the person's words and are not passed. Guard test_w819 (a spy on person_said over all six routes), 6 blinds red."
     },
     {
       "id": "FU-825",
