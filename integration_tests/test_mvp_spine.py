@@ -71987,3 +71987,22 @@ def test_w822_the_cockpit_plan_tab_shows_the_action_plan_layer():
     assert "{plan.action_plan}" in _layer and "{layerSource(plan as any, 'action_plan') ??" in _layer, (
         "the plan tab does not show the action plan with what wrote it")
     assert 'data-testid="cockpit-plan-action-plan-absent"' in _layer, "the plan tab does not say when there is none"
+
+
+def test_w823_education_feedback_on_the_floor_says_its_next_steps_are_not_drawn_from_the_work(client):
+    """FU-829 (W823). Driven on the native floor: the three frame sections say they are the request's most frequent
+    terms and not findings about them, and the two marking sections are withheld (v13 R5[3]); the floor's closing
+    note now also says its next steps are general ones, not drawn from the student's work."""
+    r = client.post("/api/v1/education/feedback", json={
+        "student_work": "W823 the water cycle has four stages: evaporation, condensation, precipitation, collection.",
+        "task": "Explain the water cycle", "level": "KS3", "subject": "Geography"})
+    assert r.status_code == 200, r.text[:300]
+    body = r.json()
+    assert (body.get("ai_provenance") or {}).get("served_by") == "native", (
+        "this guard drives the native floor (the suite runs with no model)", body.get("ai_provenance"))
+    fb = body["feedback"]
+    for head in ("## Overall Impression", "## Strengths", "## Areas to Develop"):
+        _sect = fb[fb.index(head):].split("\n## ", 1)[0]
+        assert "not findings about them" in _sect, (f"the floor's {head} frame does not say it is not a finding", _sect)
+    assert "its next steps are general ones, not drawn from the work" in fb, (
+        "the floor's next steps are not said to be general", fb[-400:])

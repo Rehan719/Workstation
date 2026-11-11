@@ -16242,11 +16242,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W823",
       "note": "",
       "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Driven on the native floor and read: Overall Impression, Strengths and Areas to Develop each say they are a structured frame over the request's most frequent terms, 'not findings about them' - no over-claim, unchanged. Actionable Next Steps holds the floor's general notes (validate, route to a model, iterate the cascade) under a heading a student reads as steps for their work: it stays, as v13 R5[3] kept it, and the floor's closing note now says its next steps are general ones, not drawn from the work. Decision taken on the recommendation (label rather than withhold, so the earlier round's ruling and pins stand). Guard test_w823, 1 blind red."
     },
     {
       "id": "FU-830",

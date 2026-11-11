@@ -288,7 +288,8 @@ async def marking_feedback(req: FeedbackRequest):
             feedback = ((feedback + "\n\n") if feedback else "") + (
                 f"_Withheld on the native floor: {' · '.join(sections_withheld)}. The floor does not read the "
                 f"student's work, so no assessment against criteria and no level or grade is offered here; "
-                f"what remains above is a structured frame, not marking._")
+                f"what remains above is a structured frame, not marking, and its next steps are general ones, "
+                f"not drawn from the work._")       # W823 (FU-829)
 
     if _cut:
         #  said in the TEXT, so it travels with a copy, a download and a saved version
