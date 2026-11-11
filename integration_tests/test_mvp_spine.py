@@ -72153,3 +72153,54 @@ def test_w827_whether_a_ratified_method_amendment_was_carried_out_can_be_read(cl
     _plant(f"ratified through {cca}")
     a = _mine()
     assert a["carried_out"] == "yes" and a["lessons"][0]["names_this_record"] is True, a
+
+
+def test_w828_a_sovereign_evolution_cycle_reads_what_the_previous_one_did(client, monkeypatch, tmp_path):
+    """FU-907 (W828). A cycle reads the previous roadmap: its directives, and the status NOW of each change it
+    submitted to Change Control. Both are put before the CEO triage and recorded on the new roadmap
+    (previous_cycle). With no previous roadmap it says this is the first; an unreadable one is said, never read as
+    none."""
+    import json as _j
+    from agentic_core.api import sovereign_evolution as _se
+    from agentic_core.api.change_control import SubmitChangeRequest, submit_change, _load_change
+
+    monkeypatch.setattr(_se, "_ROADMAP", tmp_path / "sovereign_evolution_roadmap.json")
+    assert _se._previous_cycle()["created_at"] is None and "first" in _se._previous_cycle()["basis"]
+    (tmp_path / "sovereign_evolution_roadmap.json").write_text("{not json", encoding="utf-8")
+    assert _se._previous_cycle()["read"] is False, "an unreadable previous roadmap was read as none"
+
+    sub = _ensure_loop().run_until_complete(submit_change(SubmitChangeRequest(
+        title="W828 a prior submission", change_type="config_minor", description="W828 probe",
+        rationale="W828 probe", affected_systems=["W828"], submitted_by="sovereign-evolution-office")))
+    cca = sub["cca_id"] if isinstance(sub, dict) else getattr(sub, "cca_id", None)
+    now = (_load_change(cca) or {}).get("status")
+    (tmp_path / "sovereign_evolution_roadmap.json").write_text(_j.dumps({
+        "created_at": "2026-11-01T00:00:00Z",
+        "ceo_directives": [{"title": "W828 a prior directive", "function": "maintenance", "priority": "P2"}],
+        "change_control_submissions": [{"cca_id": cca, "title": "W828 a prior submission", "status": "stale"}]}),
+        encoding="utf-8")
+
+    prompts = []
+    _real_q = _se._q
+
+    async def _spy(prompt, agent, user_text=None):
+        prompts.append((agent, prompt))
+        return await _real_q(prompt, agent, user_text=user_text)
+    monkeypatch.setattr(_se, "_q", _spy)
+    r = client.post("/api/v1/sovereign-evolution/cycle", json={"focus": "", "submit_to_change_control": False})
+    assert r.status_code == 200, r.text[:300]
+    pc = r.json().get("previous_cycle") or {}
+    assert pc.get("created_at") == "2026-11-01T00:00:00Z" and pc.get("read") is True, pc
+    assert pc["directives"][0]["title"] == "W828 a prior directive", pc
+    assert pc["submissions"][0]["cca_id"] == cca and pc["submissions"][0]["status_now"] == now, pc["submissions"]
+    assert pc["submissions"][0]["status_then"] == "stale", "the status recorded then is not kept beside the status now"
+    ceo = next(p for a, p in prompts if a == "sovereign_evo_ceo")
+    assert "W828 a prior directive" in ceo and f"W828 a prior submission - {now}" in ceo, (
+        "the CEO triage is not given what the previous cycle did", ceo[-600:])
+
+    import pathlib as _pl828
+    pg = _code_only((_pl828.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages"
+                     / "evolution" / "SovereignEvolution.tsx").read_bytes().decode("utf-8"))
+    assert "roadmap.previous_cycle.basis" in pg and "s.status_then" in pg and "s.status_now" in pg, (
+        "the Sovereign Evolution page does not show what the previous cycle did")
+    assert "evolution-previous-absent" in pg, "a roadmap saved before a cycle read its predecessor is not said to be"

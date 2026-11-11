@@ -17888,11 +17888,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W828",
       "note": "",
       "slot_source": "found in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A Sovereign Evolution cycle now reads the previous roadmap before its CEO triage: the last cycle's directives, and the status NOW of each change it submitted to Change Control (looked up on the change record, beside the status recorded then). Both are put before the CEO and recorded on the new roadmap as previous_cycle. With no previous roadmap it says this is the first; an unreadable one is said (read False), never read as none. The Sovereign Evolution page shows them (the basis sentence, the directives, each submission's status then and now), and says when a saved roadmap predates a cycle reading its predecessor. Driven in the guard with an isolated roadmap and a spy on the triage prompt. Guard test_w828, 6 blinds red."
     },
     {
       "id": "FU-908",
