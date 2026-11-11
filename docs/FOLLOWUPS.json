@@ -16940,11 +16940,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W825",
       "note": "",
       "slot_source": "what a closed tier-3 bundle row left undone; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built across W824 and W825. The four domain list routes each reach their page: the Science hub's two methodology selects read GET /api/v1/science/methodologies (the design select typed eight of ten, the synthesis form offered none, W824); the Law template select reads GET /api/v1/law/templates for names and the hub says which template is held for a qualified read and why; the Care tool select reads GET /api/v1/care/tools for the runnable tools' names (withheld and retired instruments stay out, as its label says); and every service GET /api/v1/employment/services lists has its tab on the Employment hub (parity measured and guarded, not re-rendered). The manufacturing-record (GMP) gate has routes and no screen, and the Science hub now says so (W824). Guards test_w824 (4 blinds) and test_w825 (6 blinds)."
     },
     {
       "id": "FU-863",

@@ -72031,3 +72031,39 @@ def test_w824_the_science_selects_read_the_methodology_list_and_the_gmp_gate_is_
                                                         "methodology": "meta_analysis"})
     assert r.status_code == 200 and r.json().get("methodology") == "meta_analysis", r.text[:300]
     assert 'data-testid="science-gmp-absent"' in sh and "/api/v1/science/gmp/" in sh, "the GMP gate's absence is not said"
+
+
+def test_w825_the_law_and_care_selects_read_the_api_lists_and_the_employment_tabs_match_its_services(client):
+    """FU-862 (W825, with W824's Science hub). The Law template select reads GET /api/v1/law/templates for each
+    template's name and the hub says which template is held for a qualified read and why; the Care tool select reads
+    GET /api/v1/care/tools for the runnable tools' names and offers exactly the tools the API can run; and every
+    service GET /api/v1/employment/services lists has its tab on the Employment hub."""
+    import pathlib as _pl
+    import re as _re
+    src = _pl.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages" / "domains"
+
+    def _page(n):
+        return _code_only((src / n).read_bytes().decode("utf-8"))
+
+    t = client.get("/api/v1/law/templates").json()
+    assert t["templates"] and (t.get("held") or {}).get("templates"), t.get("held")
+    law = _page("LawHub.tsx")
+    assert "fetch('/api/v1/law/templates')" in law and "optionLabels: templateNames" in law, "the template select types its own"
+    assert 'data-testid="law-templates-held"' in law and "{templatesHeld!.reason}" in law, "the held template is not said"
+
+    tools = client.get("/api/v1/care/tools").json()["tools"]
+    runnable = {x["id"] for x in tools if x.get("type") not in ("withheld", "retired")}
+    care = _page("CareHub.tsx")
+    m = _re.search(r"name: 'tool', label: '[^']*', type: 'select', options: \[([^\]]*)\]", care)
+    assert m, "the Care tool select is not where this guard reads it"
+    offered = set(_re.findall(r"'([a-z0-9_]+)'", m.group(1)))
+    assert offered == runnable, ("the Care select and the tools the API can run differ", sorted(offered ^ runnable))
+    assert "fetch('/api/v1/care/tools')" in care and "optionLabels: toolNames" in care, "the tool select shows ids"
+
+    services = {x["id"] for x in client.get("/api/v1/employment/services").json()["services"]}
+    tab_of = {"cv": "cv", "cover_letter": "cover", "interview_prep": "interview", "career_path": "path",
+              "application": "application", "salary_negotiation": "salary"}
+    assert services <= set(tab_of), ("the API lists a service this guard maps to no tab", sorted(services - set(tab_of)))
+    emp = _page("EmploymentHub.tsx")
+    for sid in services:
+        assert f"activeTab === '{tab_of[sid]}'" in emp, f"the Employment hub offers no tab for the {sid} service"

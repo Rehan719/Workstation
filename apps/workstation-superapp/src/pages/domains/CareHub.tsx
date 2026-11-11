@@ -1,5 +1,5 @@
 import { StartProjectCTA } from '../../components/StartProjectCTA';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, Badge, Button } from '@workstation/ui';
 import { Layers, HeartPulse, History } from 'lucide-react';
@@ -12,6 +12,22 @@ export const CareHub: React.FC = () => {
   const navigate = useNavigate();
   const { layout, emotionalAdjustment } = useAdaptiveUI();
   const [activeTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'clinical');
+  // W825 (FU-862) - the tools the API lists (GET /api/v1/care/tools had no caller): the select shows each runnable
+  // tool's name and sends its id. Withheld and retired instruments stay out of the select, as its label says.
+  const [toolNames, setToolNames] = useState<Record<string, string>>({});
+  useEffect(() => {
+    let alive = true;
+    fetch('/api/v1/care/tools')
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        if (!alive || !Array.isArray(d?.tools)) return;
+        const names: Record<string, string> = {};
+        d.tools.forEach((t: any) => { if (t?.id && t?.name && t?.type !== 'withheld' && t?.type !== 'retired') names[String(t.id)] = String(t.name); });
+        setToolNames(names);
+      })
+      .catch(() => { /* the ids stay as the labels: nothing is claimed about a list that could not be read */ });
+    return () => { alive = false; };
+  }, []);
 
   return (
     <div className="space-y-12 pb-24">
@@ -112,7 +128,7 @@ export const CareHub: React.FC = () => {
                   </div>
                 )}
                 fields={[
-                  { name: 'tool', label: 'Tool (news2 computes a score; the other four are narrative only; must and waterlow are withheld on their owners terms and the falls count is retired)', type: 'select', options: ['news2', 'dementia_care', 'mental_health', 'discharge', 'safeguarding'], default: 'news2' },
+                  { name: 'tool', label: 'Tool (news2 computes a score; the other four are narrative only; must and waterlow are withheld on their owners terms and the falls count is retired)', type: 'select', options: ['news2', 'dementia_care', 'mental_health', 'discharge', 'safeguarding'], optionLabels: toolNames, default: 'news2' },
                   { name: 'patient_data', label: 'Observations / data (key: value per line)', type: 'keyvalue', default: 'resp_rate: \nspo2: \noxygen: air\nsystolic_bp: \npulse: \ntemp: \nconsciousness: alert' },
                   { name: 'clinical_context', label: 'Clinical context (optional)', type: 'textarea', placeholder: 'e.g. 72yo post-op day 2, query chest infection' },
                 ]}

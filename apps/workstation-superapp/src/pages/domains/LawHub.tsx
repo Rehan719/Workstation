@@ -1,5 +1,5 @@
 import { StartProjectCTA } from '../../components/StartProjectCTA';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, Badge, Button } from '@workstation/ui';
 import { Layers, Landmark, History } from 'lucide-react';
@@ -14,6 +14,28 @@ export const LawHub: React.FC = () => {
   const navigate = useNavigate();
   const { layout, emotionalAdjustment } = useAdaptiveUI();
   const [activeTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'compliance');
+  // W825 (FU-862) - the templates the API lists (GET /api/v1/law/templates had no caller), with the one it HOLDS for a
+  // qualified read said on the page. A failed read is said, and the typed ids are offered.
+  const [templates, setTemplates] = useState<string[] | null>(null);
+  const [templateNames, setTemplateNames] = useState<Record<string, string>>({});
+  const [templatesHeld, setTemplatesHeld] = useState<{ templates?: string[]; reason?: string } | null>(null);
+  const [templatesNote, setTemplatesNote] = useState('');
+  useEffect(() => {
+    let alive = true;
+    fetch('/api/v1/law/templates')
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then(d => {
+        if (!alive) return;
+        const list = Array.isArray(d?.templates) ? d.templates : [];
+        const ids = list.map((t: any) => String(t?.id ?? '')).filter(Boolean);
+        if (ids.length === 0) throw new Error('the list came back empty');
+        const names: Record<string, string> = {};
+        list.forEach((t: any) => { if (t?.id && t?.name) names[String(t.id)] = String(t.name); });
+        setTemplates(ids); setTemplateNames(names); setTemplatesHeld(d?.held ?? null); setTemplatesNote('');
+      })
+      .catch(e => { if (alive) { setTemplates(null); setTemplatesNote(`The template list could not be read (${String(e?.message ?? e)}), so the templates typed on this page are offered and which is held is not known.`); } });
+    return () => { alive = false; };
+  }, []);
   return (
     <div className="space-y-12 pb-24">
       <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6">
@@ -71,12 +93,18 @@ export const LawHub: React.FC = () => {
             ) : activeTab === 'draft' ? (
               <DomainTool
                 title={T['draft'].title}
-                description={<>Pick a template — Workstation's <span className="text-aura">own</span> AI drafts the full document (clause-numbered Markdown) for your parties and jurisdiction, in-house.</>}
+                description={<>Pick a template — Workstation's <span className="text-aura">own</span> AI drafts the full document (clause-numbered Markdown) for your parties and jurisdiction, in-house.
+                  {(templatesHeld?.templates ?? []).length > 0 && (
+                    <span className="block text-[10px] text-amber-400 mt-1" data-testid="law-templates-held">
+                      Held for a qualified read: {(templatesHeld!.templates ?? []).map(t => templateNames[t] ?? t).join(', ')} - {templatesHeld!.reason}
+                    </span>
+                  )}
+                  {templatesNote && <span className="block text-[10px] text-amber-400 mt-1" data-testid="law-templates-note">{templatesNote}</span>}</>}
                 endpoint="/api/v1/law/generate"
                 resultKey="document"
                 submitLabel="Draft document"
                 fields={[
-                  { name: 'template_id', label: 'Template', type: 'select', options: ['nda', 'employment_contract', 'service_agreement', 'partnership_deed', 'privacy_policy', 'terms_of_service', 'ip_assignment', 'et1_claim', 'cease_desist', 'data_processing_agreement'], default: 'nda' },
+                  { name: 'template_id', label: 'Template', type: 'select', options: (templates && templates.length > 0 ? templates : ['nda', 'employment_contract', 'service_agreement', 'partnership_deed', 'privacy_policy', 'terms_of_service', 'ip_assignment', 'et1_claim', 'cease_desist', 'data_processing_agreement']), optionLabels: templateNames, default: 'nda' },
                   { name: 'parties', label: 'Parties (key: value per line)', type: 'keyvalue', default: 'party_a: \nparty_b: ' },
                   { name: 'custom_instructions', label: 'Custom instructions (optional)', type: 'textarea', placeholder: 'e.g. 2-year term, mutual confidentiality, governed by English law' },
                   { name: 'jurisdiction', label: 'Jurisdiction', type: 'text', default: 'England & Wales' },
