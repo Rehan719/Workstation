@@ -17094,11 +17094,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W833",
       "note": "",
       "slot_source": "what a closed tier-3 bundle row left undone; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The restore route is built (the Owner's ruling: a restore route before any removal): the Owner proposes a restore of a retired entity through Change Control (POST /api/v1/economy/living-vsbs/{vsb_id}/propose-restore, entity_restore, HIGH), and only the implement step - re-checking under the roster lock that the entity is still retired - returns it to the state its retirement recorded it leaving. Nothing is recreated, its books are unchanged, and the balance its retirement moved to the Capital Fund stays in the fund (returning it is a fund decision). Refused for an entity not retired or whose history records no move to retired. Naming the Owner's own two entities is the Owner's: routed to a new OWNER row. The Cockpit offers the restore where a retired entity is shown, takes the Owner's reason, and says what was filed or why it was refused. Guard test_w833, 5 blinds red."
     },
     {
       "id": "FU-870",
@@ -23200,6 +23203,23 @@
       "note": "",
       "slot_source": "found in this round and not done in it",
       "tier": 2
+    },
+    {
+      "id": "FU-1165",
+      "title": "OWNER: name your own two protected entities (Settings, Protected enterprises)",
+      "why": "Your ruling of 2026-10-11 protects your own two entities and the apex. The shipped rule names the apex; it cannot name your two, because their ids are not in the repository and these rounds do not read the data directory. Until you name them (the Settings page's Protected enterprises, which calls PUT /api/v1/economy/protected-entities), the named-in-a-ruling rule stays not assessable and every removal stays refused. The restore route your ruling asked for before any removal was built in W833.",
+      "source": "W833 (the other half of FU-869)",
+      "found": "2026-11-11",
+      "files": [
+        "agentic_core/economy/turnover.py"
+      ],
+      "severity": "low",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 3
     }
   ],
   "routes": [

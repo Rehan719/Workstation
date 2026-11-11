@@ -351,6 +351,8 @@ _TIER_MAP: dict[str, ImpactTier] = {
     "entity_retirement":    "HIGH",
     # P3.26 clause (5) (W609) — an entity dividing creates a new one and moves funds: also MAJOR
     "entity_mitosis":       "HIGH",
+    # FU-869 (W833) — returning a retired entity to the roster is the mirror of its death: also MAJOR
+    "entity_restore":       "HIGH",
     # W464 (FU-014, the Owner's ruling of 2026-09-14) — both fell through to MEDIUM by the default, so their tier
     # was an accident rather than a decision. A code correction is HIGH (a review's approval waits for Board
     # ratification); a material economy action is CRITICAL (decided only by the Owner's explicit decision).
@@ -2279,6 +2281,18 @@ def _implement_locked(cca_id: str, force: bool, principal: str, verified: bool,
         applied = _mit
         _retirement_effect = _mit["basis"]
         c["audit_trail"].append({"event": "entity_divided", "ts": now, "applied": _mit})
+    # FU-869 (W833) — A RESTORE is applied here and nowhere else, re-checking that the entity is still retired
+    if c.get("change_type") == "entity_restore":
+        from agentic_core.economy.turnover import apply_restore
+        _rst = apply_restore(str(c.get("vsb_id") or ""), cca_id)
+        if not _rst.get("restored"):
+            c["audit_trail"].append({"event": "implement_refused_restore", "ts": now, "by": principal,
+                                     "by_verified": verified, "basis": _rst.get("basis")})
+            _save_change(c)
+            raise HTTPException(status_code=409, detail=_rst)
+        applied = _rst
+        _retirement_effect = _rst["basis"]
+        c["audit_trail"].append({"event": "entity_restored", "ts": now, "applied": _rst})
 
     c["status"] = "implemented"
     c["implemented_at"] = now

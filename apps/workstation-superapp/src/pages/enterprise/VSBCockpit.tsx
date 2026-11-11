@@ -161,6 +161,9 @@ export const VSBCockpit: React.FC = () => {
   //  blanking the cockpit around it.
   const [operating, setOperating] = useState<Dict | null>(null);
   const [operatingErr, setOperatingErr] = useState('');
+  //  FU-869 (W833) - proposing the restore of a retired entity, and what Change Control answered
+  const [restoreWhy, setRestoreWhy] = useState('');
+  const [restoreNote, setRestoreNote] = useState('');
   const [delivType, setDelivType] = useState('report');
   const [delivBrief, setDelivBrief] = useState('');
   const [delivProducing, setDelivProducing] = useState(false);
@@ -1506,6 +1509,30 @@ export const VSBCockpit: React.FC = () => {
                       )}
                     </p>
                     {operating.lifecycle_basis && <p className="text-[9px] text-slate-600 leading-relaxed">{String(operating.lifecycle_basis)}</p>}
+                    {/* FU-869 (W833) - a retired entity can be brought back: the Owner proposes a restore through Change Control */}
+                    {operating.lifecycle_state === 'retired' && (
+                      <div data-testid="cockpit-restore" className="mt-2 space-y-1">
+                        <div className="flex gap-2">
+                          <input value={restoreWhy} onChange={e => setRestoreWhy(e.target.value)} placeholder="Why restore it?"
+                            className="flex-1 text-[10px] bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200" />
+                          <button type="button" data-testid="cockpit-restore-propose" disabled={!restoreWhy.trim()}
+                            className="px-2 py-0.5 rounded border border-slate-700 text-[9px] text-slate-300 hover:bg-slate-800 disabled:opacity-40"
+                            onClick={async () => {
+                              const r = await axios.post<Dict>(`/api/v1/economy/living-vsbs/${selected}/propose-restore`, { why: restoreWhy }, { validateStatus: () => true });
+                              setRestoreNote(r.status === 200 && r.data
+                                ? String((r.data as Dict).basis ?? 'filed through Change Control')
+                                : `The restore was not filed (HTTP ${r.status}): ${String((r.data as any)?.detail?.basis ?? (r.data as any)?.detail ?? '')}`);
+                            }}>
+                            Propose a restore
+                          </button>
+                        </div>
+                        {restoreNote && <p data-testid="cockpit-restore-note" className="text-[9px] text-slate-400 leading-relaxed">{restoreNote}</p>}
+                        <p className="text-[9px] text-slate-600 leading-relaxed">
+                          A restore is filed through Change Control and applied only when it is approved and implemented. It returns
+                          the entity to the state it was retired from; the balance its retirement moved to the Capital Fund stays in the fund.
+                        </p>
+                      </div>
+                    )}
                     {/* FU-470 — the lineage: whom this entity descends from, and how deep it sits */}
                     <p data-testid="cockpit-lineage" className="text-[9px] text-slate-500 mt-2 leading-relaxed">
                       {operating.lineage_state === 'resolved'

@@ -72392,3 +72392,103 @@ def test_w832_a_runs_checks_can_state_what_served_a_stage_how_long_it_took_and_i
                                             v.json()["criteria"])
     finally:
         client.delete(f"/api/v1/resources/compositions/{comp['id']}")
+
+
+def test_w833_a_retired_entity_can_be_restored_through_change_control(client):
+    """FU-869, the restore half (W833; Owner ruling 2026-10-11: removable only by the Owner, as a reversible move,
+    and a restore route is built before any removal can be performed). A retirement is reversed by its mirror: the
+    Owner proposes a restore, Change Control files it, and only its implement step - which re-checks that the
+    entity is still retired - returns it to the state its retirement recorded it leaving. Nothing is recreated, the
+    books are as the retirement left them, and the balance it moved to the Capital Fund stays in the fund."""
+    import json as _js833
+
+    from agentic_core.api import change_control as _cc833
+    from agentic_core.api.capital_fund import _load_fund
+    from agentic_core.config import data_path as _dp833
+    from agentic_core.economy import living_vsbs as _lv833
+    from agentic_core.economy.ledger import VirtualLedger
+
+    _ids = [client.post("/api/v1/genesis/establish", json={"problem": f"W833 restore {i}", "name": f"W833 R{i}",
+                                                           "domain": "enterprise", "ship_output": False}).json()["vsb_id"]
+            for i in range(2)]          # two: the retired one must not be the last in its realm and domain
+    _pf = _dp833("governance/protected_entities.json")
+    _pf.parent.mkdir(parents=True, exist_ok=True)
+    _had, _prev = _pf.exists(), (_pf.read_bytes() if _pf.exists() else None)
+
+    def _approve(cid):
+        c = _cc833._load_change(cid)
+        c.update(status="approved", decision_source="admin_override", owner_decision_acknowledged=True,
+                 twin_prevalidation={"verdict": "pass", "source": "twin_marker"})
+        _cc833._save_change(c)
+
+    try:
+        _pf.write_text(_js833.dumps({"entities": {}}), encoding="utf-8")
+        _no = client.post(f"/api/v1/economy/living-vsbs/{_ids[0]}/propose-restore", json={"why": "W833 not retired"})
+        assert _no.status_code == 409 and _no.json()["detail"]["refused"] == "not_retired", _no.text[:200]
+        #  a state other than the default, so a restore that returned the default would be caught
+        assert _lv833.set_lifecycle(_ids[0], "mature", by="W833 probe")["changed"] is True
+        _was = _lv833._load()[_ids[0]].get("lifecycle_state")
+        assert _was == "mature", _was
+
+        VirtualLedger(_ids[0]).record("revenue", 30.0, memo="W833 probe intake")
+        _p = client.post(f"/api/v1/economy/living-vsbs/{_ids[0]}/propose-removal", json={"why": "W833 probe"})
+        assert _p.status_code == 200 and _p.json()["filed"], _p.text[:200]
+        _approve(_p.json()["cca_id"])
+        assert client.post(f"/api/v1/cca/{_p.json()['cca_id']}/implement").status_code == 200
+        assert _lv833._load()[_ids[0]]["lifecycle_state"] == "retired"
+        _books = VirtualLedger(_ids[0]).chart_balances()
+        _fund = float(_load_fund().get("total_capital") or 0)
+
+        # ── PROPOSED through Change Control, naming why; nothing changes at filing ──────────────────────
+        _r = client.post(f"/api/v1/economy/living-vsbs/{_ids[0]}/propose-restore", json={"why": "W833 brought back"})
+        assert _r.status_code == 200 and _r.json()["filed"], _r.text[:200]
+        _cid = _r.json()["cca_id"]
+        _c = _cc833._load_change(_cid)
+        assert _c["change_type"] == "entity_restore" and _c["vsb_id"] == _ids[0], _c.get("change_type")
+        assert _cc833.effective_tier(_c) == "HIGH", "returning an entity is not a MAJOR change"
+        assert "stays in the fund" in _c["description"], _c["description"][:200]
+        assert _lv833._load()[_ids[0]]["lifecycle_state"] == "retired", "a restore changed the roster at filing"
+
+        # ── IMPLEMENTED: back to the state it left; the record kept, no balance moved ────────────────────
+        _approve(_cid)
+        _im = client.post(f"/api/v1/cca/{_cid}/implement")
+        assert _im.status_code == 200 and _im.json()["status"] == "implemented", _im.text[:300]
+        _row = _lv833._load()[_ids[0]]
+        assert _row.get("lifecycle_state") == _was, ("not returned to the state it was retired from", _was, _row)
+        assert _row["retirement"]["cca_id"] == _p.json()["cca_id"] and _row["restorations"][-1]["cca_id"] == _cid, _row
+        assert _row["lifecycle_history"][-1]["from"] == "retired" and _row["lifecycle_history"][-1]["by"] == f"cca:{_cid}"
+        assert _lv833.lifecycle(_row)["operable"] is True, _row
+        assert VirtualLedger(_ids[0]).chart_balances() == _books, "a restore moved a balance in the entity's books"
+        assert float(_load_fund().get("total_capital") or 0) == _fund, "a restore moved money out of the Capital Fund"
+        assert "stays in the fund" in _cc833._load_change(_cid)["implementation_effect_basis"]
+
+        # ── RE-CHECKED AT IMPLEMENT: a second restore of a live entity is refused and consumes nothing ───
+        _bad = {**_c, "cca_id": _cid + "-w833", "status": "approved", "decision_source": "admin_override",
+                "owner_decision_acknowledged": True, "twin_prevalidation": {"verdict": "pass", "source": "twin_marker"},
+                "audit_trail": []}
+        _cc833._save_change(_bad)
+        _im2 = client.post(f"/api/v1/cca/{_bad['cca_id']}/implement")
+        assert _im2.status_code == 409 and _im2.json()["detail"]["refused"] == "not_retired", _im2.text[:200]
+        assert _cc833._load_change(_bad["cca_id"])["status"] == "approved", "a refused restore consumed the approval"
+
+        # ── a record retired without a recorded move (a failed division's child) has no state to return to ──
+        with __import__("agentic_core.config", fromlist=["store_lock"]).store_lock(_lv833._STORE):
+            _d = _lv833._load()
+            _d[_ids[1]]["lifecycle_state"] = "retired"
+            _lv833._save(_d)
+        _un = client.post(f"/api/v1/economy/living-vsbs/{_ids[1]}/propose-restore", json={"why": "W833 unknown"})
+        assert _un.status_code == 409 and _un.json()["detail"]["refused"] == "state_unknown", _un.text[:200]
+
+        # ── WHERE A RETIRED ENTITY IS SHOWN, THE RESTORE IS OFFERED: the Cockpit proposes it through the route ──
+        import pathlib as _pl833
+        _ck = _code_only((_pl833.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+                          / "pages" / "enterprise" / "VSBCockpit.tsx").read_bytes().decode("utf-8"))
+        _i = _ck.index('data-testid="cockpit-restore"')
+        assert "operating.lifecycle_state === 'retired' && (" in _ck[_i - 200:_i], "the restore is not offered for a retired entity"
+        assert "/propose-restore`, { why: restoreWhy }" in _ck and 'data-testid="cockpit-restore-note"' in _ck, (
+            "the Cockpit does not propose the restore through its route, or does not say what was filed")
+    finally:
+        if _had:
+            _pf.write_bytes(_prev)
+        elif _pf.exists():
+            _pf.unlink()

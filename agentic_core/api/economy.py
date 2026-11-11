@@ -978,6 +978,27 @@ async def living_vsb_propose_removal(vsb_id: str, req: RemovalRequest, user: dic
     return res
 
 
+class RestoreRequest(BaseModel):
+    why: str
+
+
+@router.post("/living-vsbs/{vsb_id}/propose-restore")
+async def living_vsb_propose_restore(vsb_id: str, req: RestoreRequest, user: dict | None = Depends(get_current_user)):
+    """FU-869 (W833, Owner ruling 2026-10-11) — PROPOSE returning a retired entity to the living roster, through
+    Change Control: the way back from a removal, built before any removal can be performed. The Owner's alone, as a
+    removal is. Refused (409) for an entity that is not retired, or whose state before retirement is not recorded;
+    nothing changes until the change is approved and implemented, which re-checks before it restores anything. The
+    balance its retirement moved to the Capital Fund stays in the fund."""
+    _require_economy_access(vsb_id, user)
+    _owner_only_r5(user, "propose the restore of an entity")
+    from agentic_core.economy.turnover import propose_restore
+    _who = ((user.get("username") or user.get("user_id")) if isinstance(user, dict) else None)
+    res = await propose_restore(vsb_id, req.why, by=str(_who or "owner (single-user mode)"))
+    if not res.get("filed"):
+        raise HTTPException(status_code=409, detail=res)
+    return res
+
+
 @router.get("/living-vsbs/{vsb_id}/retirement-check")
 async def living_vsb_retirement_check(vsb_id: str, user: dict | None = Depends(get_current_user)):
     """P3.26 clause (4) — every never-auto-retire rule for this entity, each with its verdict and basis. Read-only:
