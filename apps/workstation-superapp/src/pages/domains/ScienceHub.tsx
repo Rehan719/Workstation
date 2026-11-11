@@ -1,5 +1,5 @@
 import { StartProjectCTA } from '../../components/StartProjectCTA';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, Badge, Button } from '@workstation/ui';
 import { BookOpen, Heart, Sparkles, MessageCircle, History, Info, ShieldCheck, Zap, Globe, HeartPulse, Network, Binary, Compass, Anchor, Wind, Layers, Microscope } from 'lucide-react';
@@ -13,6 +13,27 @@ export const ScienceHub: React.FC = () => {
   const navigate = useNavigate();
   const { layout, emotionalAdjustment } = useAdaptiveUI();
   const [activeTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'research');
+  // W824 (FU-862) - the methodologies the API lists (GET /api/v1/science/methodologies had no caller: the design select
+  // typed eight of its ten and the synthesis form offered none). Null = not read; a failed read is SAID.
+  const [methods, setMethods] = useState<string[] | null>(null);
+  const [methodNames, setMethodNames] = useState<Record<string, string>>({});
+  const [methodsNote, setMethodsNote] = useState('');
+  useEffect(() => {
+    let alive = true;
+    fetch('/api/v1/science/methodologies')
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then(d => {
+        if (!alive) return;
+        const list = Array.isArray(d?.methodologies) ? d.methodologies : [];
+        const ids = list.map((m: any) => String(m?.id ?? '')).filter(Boolean);
+        if (ids.length === 0) throw new Error('the list came back empty');
+        const names: Record<string, string> = {};
+        list.forEach((m: any) => { if (m?.id && m?.name) names[String(m.id)] = String(m.name); });
+        setMethods(ids); setMethodNames(names); setMethodsNote('');
+      })
+      .catch(e => { if (alive) { setMethods(null); setMethodsNote(`The methodology list could not be read (${String(e?.message ?? e)}), so only the methodologies typed on this page are offered.`); } });
+    return () => { alive = false; };
+  }, []);
 
   return (
     <div className="space-y-12 pb-24">
@@ -56,6 +77,12 @@ export const ScienceHub: React.FC = () => {
          </div>
 
          <div className="space-y-12">
+            {methodsNote && <p className="text-[10px] text-amber-400" data-testid="science-methods-note">{methodsNote}</p>}
+            {/* W824 (FU-862) - A STATED ABSENCE. The manufacturing-record gate has routes and no screen. */}
+            <p className="text-[10px] text-slate-500 leading-relaxed" data-testid="science-gmp-absent">
+              Not on this page: the manufacturing-record (GMP) gate - a roster of named signatories, batch records, and
+              their signing. Its routes exist (/api/v1/science/gmp/...) and no screen calls them.
+            </p>
             {activeTab === 'hypothesis' ? (
               <DomainTool
                 title={T['hypothesis'].title}
@@ -79,7 +106,7 @@ export const ScienceHub: React.FC = () => {
                 submitLabel="Design the study"
                 fields={[
                   { name: 'hypothesis', label: 'Hypothesis to test', type: 'textarea', placeholder: 'e.g. A 10-minute daily mindfulness app reduces self-reported anxiety in undergraduates' },
-                  { name: 'methodology', label: 'Methodology', type: 'select', options: ['experimental', 'rct', 'cohort_study', 'case_control', 'mixed_methods', 'computational', 'survey', 'grounded_theory'], default: 'experimental' },
+                  { name: 'methodology', label: 'Methodology', type: 'select', options: (methods && methods.length > 0 ? methods : ['experimental', 'rct', 'cohort_study', 'case_control', 'mixed_methods', 'computational', 'survey', 'grounded_theory']), optionLabels: methodNames, default: 'experimental' },
                   { name: 'domain', label: 'Domain', type: 'text', default: 'psychology', placeholder: 'psychology | biology | materials | …' },
                   { name: 'constraints', label: 'Constraints (optional)', type: 'textarea', placeholder: 'budget, time, sample availability, ethics' },
                   { name: 'sample_size_hint', label: 'Effect-size / sample context (optional)', type: 'text', placeholder: 'e.g. expect a small-to-medium effect; ~200 available' },
@@ -108,6 +135,7 @@ export const ScienceHub: React.FC = () => {
                 fields={[
                   { name: 'research_question', label: 'Research question', type: 'textarea', placeholder: 'e.g. Does intermittent fasting reduce inflammatory markers in adults?' },
                   { name: 'domain', label: 'Domain', type: 'text', default: 'medicine', placeholder: 'medicine | physics | social science' },
+                  { name: 'methodology', label: 'Methodology', type: 'select', options: (methods && methods.length > 0 ? methods : ['systematic_review']), optionLabels: methodNames, default: 'systematic_review' },
                   { name: 'depth', label: 'Depth', type: 'select', options: ['brief', 'standard', 'comprehensive'], default: 'standard' },
                 ]}
               />

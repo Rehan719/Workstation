@@ -72006,3 +72006,28 @@ def test_w823_education_feedback_on_the_floor_says_its_next_steps_are_not_drawn_
         assert "not findings about them" in _sect, (f"the floor's {head} frame does not say it is not a finding", _sect)
     assert "its next steps are general ones, not drawn from the work" in fb, (
         "the floor's next steps are not said to be general", fb[-400:])
+
+
+def test_w824_the_science_selects_read_the_methodology_list_and_the_gmp_gate_is_said_absent(client):
+    """FU-862 (W824, the Science hub). Both methodology selects are filled from GET /api/v1/science/methodologies,
+    showing each name and sending its id, with what the page typed as the fallback; the synthesis form, which offered
+    none, now offers them and the route takes the one chosen. The manufacturing-record gate, which has routes and no
+    screen, is said to be absent."""
+    import pathlib as _pl
+    ids = [m["id"] for m in client.get("/api/v1/science/methodologies").json()["methodologies"]]
+    assert {"systematic_review", "experimental", "meta_analysis"} <= set(ids), ids
+    sh = _code_only((_pl.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages"
+                     / "domains" / "ScienceHub.tsx").read_bytes().decode("utf-8"))
+    assert "fetch('/api/v1/science/methodologies')" in sh, "the hub does not read the methodology list"
+    design = sh[sh.index("activeTab === 'design' ? ("):sh.index("activeTab === 'literature' ? (")]
+    assert "options: (methods && methods.length > 0 ? methods : [" in design and "optionLabels: methodNames" in design, (
+        "the design select still types its methodologies")
+    synth = sh[sh.index('endpoint="/api/v1/science/synthesise"'):]
+    synth = synth[:synth.index("]}")]
+    assert ("{ name: 'methodology', label: 'Methodology', type: 'select', options: (methods && methods.length > 0 ? "
+            "methods : ['systematic_review']), optionLabels: methodNames, default: 'systematic_review' }") in synth, (
+        "the synthesis form offers no methodology")
+    r = client.post("/api/v1/science/synthesise", json={"research_question": "W824 does X affect Y?",
+                                                        "methodology": "meta_analysis"})
+    assert r.status_code == 200 and r.json().get("methodology") == "meta_analysis", r.text[:300]
+    assert 'data-testid="science-gmp-absent"' in sh and "/api/v1/science/gmp/" in sh, "the GMP gate's absence is not said"
