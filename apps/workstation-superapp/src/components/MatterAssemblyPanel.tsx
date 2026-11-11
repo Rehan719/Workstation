@@ -64,6 +64,10 @@ export const MatterAssemblyPanel: React.FC = () => {
               </li>
             ))}
           </ul>
+          {art.authorities_held?.basis && (
+            // W821 (FU-1001) - what an authority is resolved against, however thin
+            <p className="text-[10px] text-slate-500" data-testid="matter-authorities-held">{String(art.authorities_held.basis)}</p>
+          )}
           <ul className="space-y-1" data-testid="matter-authorities">
             {(art.authorities || []).map((a: Dict, i: number) => (
               <li key={i} className={a.resolved ? 'text-slate-300' : 'text-vital'}>{String(a.authority)}: {a.resolved ? 'resolved' : 'REFUSED'} — {String(a.basis)}</li>

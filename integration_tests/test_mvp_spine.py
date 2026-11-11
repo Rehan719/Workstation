@@ -71948,3 +71948,24 @@ def test_w820_four_returned_fields_reach_the_page_that_shows_their_subject(clien
         "the twin does not say which input it restates")
     board = _page("pages/enterprise/BoardOfDirectors.tsx")
     assert 'data-testid="directive-restated-kind"' in board and "restates your last recorded decision" in board
+
+
+def test_w821_the_matter_panel_says_how_many_provisions_an_authority_is_resolved_against(client):
+    """FU-1001 (W821). An assembly says what an authority is resolved against: the count of provisions the
+    employment-law ontology lists by name and the statutes they belong to, and that its other concepts are not
+    read. The matter panel shows it beside the authorities."""
+    import pathlib as _pl
+    from agentic_core.legal import specialist as _sp
+
+    rules = _sp._ontology_rules()
+    r = client.post("/api/v1/law/matter/assemble", json={"template_id": "witness_statement",
+                                                         "authorities": ["Equality Act 2010"]})
+    assert r.status_code == 200, r.text[:300]
+    held = r.json().get("authorities_held") or {}
+    assert held.get("provisions") == len(rules) >= 1, ("the assembly does not count what it resolves against", held)
+    assert "Equality Act 2010" in (held.get("statutes") or []), held
+    assert f"{len(rules)} provision(s)" in str(held.get("basis")) and "concepts are not read" in str(held.get("basis")), held
+    page = _code_only((_pl.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "components"
+                       / "MatterAssemblyPanel.tsx").read_bytes().decode("utf-8"))
+    assert "{String(art.authorities_held.basis)}" in page and 'data-testid="matter-authorities-held"' in page, (
+        "the matter panel does not say what an authority is resolved against")

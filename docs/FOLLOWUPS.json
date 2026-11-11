@@ -19840,11 +19840,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W821",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The clerk resolves an authority only against the provisions the employment-law ontology lists by name (four sections of the Equality Act 2010); its machine-made concepts are not read. An assembly now carries authorities_held (the provision count, the statutes, and that the other concepts are not read) and the matter panel shows it beside the authorities, so a refusal reads against how thin the list is. The ontology itself is unchanged (its concepts are a corpus question, not the panel's). Guard test_w821, 3 blinds red."
     },
     {
       "id": "FU-1002",
