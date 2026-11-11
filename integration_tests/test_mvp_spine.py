@@ -47327,6 +47327,9 @@ def test_w627_p225_ceo_cites_and_studio_provenance(client, monkeypatch):
     assert _g.get("objectives") == 1 and isinstance(_g.get("cited"), dict), (
         "the chip still counts only what was HANDED IN, so an answer naming nothing reads as grounded", _g)
     _ans = "".join(_j.loads(l[6:]).get("content", "") for l in r.text.splitlines() if l.startswith("data: "))
+    #  W801 (FU-982 R3[9]) - on the floor the handed records are RECITED after the reply, and `cited` counts what the
+    #  reply itself names: the recital is cut off before the presence test, which is the property this leg holds
+    _ans = _ans.split("\n\n## What the CEO was handed", 1)[0]
     assert _g["cited"]["objectives"] == (1 if "zylophone outreach in bradford" in _ans.lower() else 0), (_g, _ans[:300])
     assert not any(k.startswith("_") for k in _g), ("the server's working texts leaked into the payload", sorted(_g))
     from agentic_core.api.v138.ceo import _cited
@@ -70911,3 +70914,55 @@ def test_w800_fu981_r2_the_page_the_file_and_the_flag_say_what_happened(client):
             "a seeded objective reads as one somebody set, or a real one reads as seeded", _line800)
     assert "has been written by the Owner, so none is shown." in _bp_md800, _bp_md800[-400:]
     assert "Aims & Objectives" in _files800["README.md"], "the README's list of plan sections was not derived again"
+
+
+def test_w801_fu982_r3_the_board_the_cascade_and_the_ceo_say_what_happened(client):
+    """W801 (FU-982, ledger v17 R3) - three small fixes, each where a person reads it.
+
+    R3[3] the Board's button said 'Chief deliberating…' while an instruction was filed, and nothing deliberates.
+    R3[6] the cascade's appraisal heading said each tier develops the one below on runs that applied no
+          development action; it follows development_applied.
+    R3[9] on the floor the AI CEO's answer named none of the directives and objectives it was handed; the stream
+          recites them as stored after the reply, counted apart from what the reply itself named.
+    """
+    import json as _json801
+    import pathlib
+    import re as _re801
+
+    def _code801(rel):
+        _s = _re801.sub(r"/\*.*?\*/", "", pathlib.Path(rel).read_text(encoding="utf-8"), flags=_re801.S)
+        return "\n".join(ln for ln in _s.splitlines() if not ln.lstrip().startswith("//"))
+
+    # -- R3[3] and R3[6], over the code the pages render --------------------------------------------------------------
+    _bd801 = _code801("apps/workstation-superapp/src/pages/enterprise/BoardOfDirectors.tsx")
+    assert "Chief deliberating" not in _bd801 and "'Filing the instruction…'" in _bd801
+    _sw801 = _code801("apps/workstation-superapp/src/components/organism/SwarmIntelligence.tsx")
+    assert "Object.keys(cascade.development_applied ?? {})" in _sw801, (
+        "the appraisal heading does not read what the run applied, so it claims development on every run")
+    assert "this run applied no development action from an earlier cycle" in _sw801
+
+    # -- R3[9] the stream, on an entity's own scope so no other record can crowd it -----------------------------------
+    _est801 = client.post("/api/v1/genesis/establish", json={
+        "problem": "w801 a repair cafe", "domain": "community", "owner_id": "pytest"}).json()
+    _scope801 = _est801["vsb_id"]
+    _ins801 = client.post("/api/v1/board/chief/instruct", json={
+        "instruction": "W801 GUARD: open the Leeds repair cafe", "cascade_to_ceo": False, "scope": _scope801})
+    assert _ins801.status_code == 200, _ins801.text[:200]
+    _obj801 = client.post("/api/v1/business-plan/objective", json={"scope": _scope801, "title": "W801 GUARD objective"})
+    assert _obj801.status_code == 200, _obj801.text[:200]
+    _r801 = client.post("/api/v138/ceo/chat", json={"message": "what next?", "scope": _scope801})
+    assert _r801.status_code == 200, _r801.text[:200]
+    _frames801 = [_json801.loads(ln[6:]) for ln in _r801.text.splitlines() if ln.startswith("data: ")]
+    _done801 = _frames801[-1]
+    _content801 = "".join(f.get("content", "") for f in _frames801)
+    if _done801.get("served_by") == "native":
+        assert '- Latest Board instruction: "W801 GUARD: open the Leeds repair cafe"' in _content801, (
+            "on the floor the CEO's reply still names nothing it was handed", _content801[-600:])
+        assert "W801 GUARD objective" in _content801.split("## What the CEO was handed", 1)[1], _content801[-600:]
+        _g801 = _done801["grounding"]
+        assert _g801["recited"]["directives"] == 1 and _g801["recited"]["objectives"] >= 1, _g801
+        assert "`cited` counts only what the reply itself named" in _g801["recited_basis"], _g801
+    else:
+        assert "## What the CEO was handed" not in _content801, "a served model's answer was given the floor's recital"
+    assert "m.grounding.recited ?" in _code801("apps/workstation-superapp/src/pages/CEOChat.tsx"), (
+        "the page's grounding chip does not say what was recited, so it reads 'names 0' beside the names quoted")

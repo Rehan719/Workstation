@@ -336,6 +336,29 @@ def _cited(answer: str, facts: dict) -> dict:
     return out
 
 
+def _floor_recital(facts: dict) -> str:
+    """W801 (FU-982, ledger v17 R3[9]) - ON THE FLOOR, THE HANDED RECORDS ARE RECITED AS STORED.
+
+    The AI CEO is handed the Board's latest directives and the plan's objectives, and the floor's reply framed
+    the question and named none of them, so a reader learned nothing the CEO had been given. On the floor the
+    stream now ends with the latest directive and the objective titles quoted as stored. It is a recital, not an
+    answer, and is counted apart from what the reply itself cited. Empty when nothing was handed."""
+    #  the Owner's instruction as typed, where the record holds one; the composed directive otherwise. Each is
+    #  flattened to one line, so a stored text with line breaks cannot break the list it is quoted in.
+    _said = [" ".join(str(t).split()) for t in facts.get("_instruction_texts") or [] if str(t).strip()]
+    dirs = _said or [" ".join(str(t).split()) for t in facts.get("_directive_texts") or [] if str(t).strip()]
+    objs = [" ".join(str(t).split()) for t in facts.get("_objective_titles") or [] if str(t).strip()]
+    if not dirs and not objs:
+        return ""
+    lines = ["", "", "## What the CEO was handed (quoted as stored, not answered from)",
+             "The structured floor served the reply above, so nothing in it was reasoned from these records."]
+    if dirs:
+        lines.append(f'- Latest Board instruction: "{dirs[0]}"')
+    if objs:
+        lines.append("- Objectives in the plan: " + "; ".join(objs))
+    return "\n".join(lines) + "\n"
+
+
 def _ungrounded_sections(answer: str, facts: dict) -> list:
     """Headings the answer filled with items while the grounding counted none. Empty when clean."""
     out = []
@@ -394,6 +417,8 @@ def _ceo_grounding(prompt: str, scope: str, owner_id: Optional[str]) -> tuple:
                 pass
             return raw[:240]
         facts["_directive_texts"] = [_directive_text(r) for r in rows[-3:][::-1]]
+        #  W801 (FU-982 R3[9]) - the Owner's own words, kept apart from the composed directive, for the floor's recital
+        facts["_instruction_texts"] = [str(r.get("instruction") or "").strip()[:240] for r in rows[-3:][::-1]]
         if rows:
             parts.append("## Board directives (most recent first)\n" + "\n".join(
                 f"- {_directive_text(r)}" for r in rows[-3:][::-1]))
@@ -536,12 +561,25 @@ async def generate_ceo_stream(prompt: str, scope: str, owner_id: Optional[str]):
                 _answer.append(str(ev["token"]))
                 yield f"data: {json.dumps({'content': ev['token'], 'done': False})}\n\n"
             elif ev.get("done"):
+                #  W801 (FU-982 R3[9]) - on the floor, what the CEO was handed, quoted as stored, after the reply
+                _recital801 = _floor_recital(facts) if ev.get("served_by") == "native" else ""
+                if _recital801:
+                    yield f"data: {json.dumps({'content': _recital801, 'done': False})}\n\n"
+                _grounding801 = _cited("".join(_answer), facts)
+                if _recital801:
+                    _grounding801["recited"] = {"directives": 1 if (facts.get("_instruction_texts")
+                                                                     or facts.get("_directive_texts")) else 0,
+                                                "objectives": len([t for t in facts.get("_objective_titles") or []
+                                                                   if str(t).strip()])}
+                    _grounding801["recited_basis"] = ("quoted as stored after the floor's reply; a recited record "
+                                                      "was not answered from, and `cited` counts only what the "
+                                                      "reply itself named")
                 yield "data: " + json.dumps({**_reply_evidence(ev.get('served_by')), 
                     "content": "", "done": True,
                     "served_by": ev.get("served_by"), "is_external": bool(ev.get("is_external")),
                     "guardrail_passed": ev.get("guardrail_passed"), "profile_applied": ev.get("profile_applied"),
                     "model_tokens": ev.get("model_tokens"), "model_tokens_basis": ev.get("model_tokens_basis"),   # W776 (FU-1105)
-                    "grounding": _cited("".join(_answer), facts),
+                    "grounding": _grounding801,
                     "grounding_conflicts": _ungrounded_sections("".join(_answer), facts),
                 }) + "\n\n"
     except Exception as exc:

@@ -354,7 +354,9 @@ export const BoardOfDirectors: React.FC = () => {
           </label>
           <Button onClick={instruct} disabled={running || !instruction.trim()} className="flex items-center gap-2 bg-highlight text-sovereign ml-auto">
             {running ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-            {running ? 'Chief deliberating…' : 'Issue Instruction'}
+            {/* W801 (FU-982 R3[3]) - the Chief is the Owner's standing charter and instructions, not an agent
+                that deliberates; the label says what the request is doing */}
+            {running ? 'Filing the instruction…' : 'Issue Instruction'}
           </Button>
           {error && <p className="text-vital text-xs font-bold flex items-center gap-2"><AlertCircle size={14} /> {error}</p>}
         </div>
