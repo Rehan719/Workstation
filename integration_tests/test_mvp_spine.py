@@ -72341,3 +72341,54 @@ def test_w831_the_digital_twin_page_composes_a_model_a_scenario_and_an_optimisat
     spec = src[src.index("complexity_spec = {"):src.index("}.get(req.complexity")]
     assert _re831.findall(r'"(\w+)":', spec) == ["simple", "standard", "complex"], spec
     assert "const COMPLEXITIES = ['simple', 'standard', 'complex'];" in pg, "the page's complexity choices drifted"
+
+
+def test_w832_a_runs_checks_can_state_what_served_a_stage_how_long_it_took_and_its_calls(client):
+    """FU-896 (W832). `assess` knew two kinds of criterion; structural ones could not be stated although the run's
+    own record holds the facts. served_by, duration and calls now read one recorded field each; a field the record
+    does not hold is not assessed (never met by default); a stand-in's row is said to be evidence about the
+    stand-in; and the free-text answer names every kind it reads. Driven on a planted record, then through
+    /cell/verify on a real composition run."""
+    from agentic_core.api import instrument_cell as _ic
+    run = {"duration_ms": 900, "qms_gate_passed": None, "real_resources": [
+        {"resource": "petri_dish", "outcome": "produced", "served_by": "native", "duration_ms": 120, "calls": 3},
+        {"resource": "reactor", "outcome": "produced", "duration_ms": None},
+        {"resource": "incubator", "outcome": "produced", "served_by": "native", "calls": 1,
+         "alternative_for": "reactor_x"}]}
+
+    def one(c):
+        return _ic.assess([c], run)["criteria"][0]
+    assert one({"kind": "served_by", "resource": "petri_dish", "is": "native"})["state"] == "met"
+    assert one({"kind": "served_by", "resource": "petri_dish", "is": "ollama"})["state"] == "unmet"
+    assert one({"kind": "served_by", "resource": "reactor", "is": "native"})["state"] == "not_assessed", (
+        "a row that does not say what served it was read as an answer")
+    assert one({"kind": "duration", "at_most_ms": 1000})["state"] == "met"
+    assert one({"kind": "duration", "at_most_ms": 500})["state"] == "unmet", "the run's own duration was not read"
+    assert one({"kind": "duration", "resource": "petri_dish", "at_most_ms": 100})["state"] == "unmet"
+    assert one({"kind": "duration", "resource": "reactor", "at_most_ms": 10_000})["state"] == "not_assessed", (
+        "an unrecorded duration was met by default")
+    assert one({"kind": "calls", "resource": "petri_dish", "at_most": 3})["state"] == "met"
+    assert one({"kind": "calls", "resource": "petri_dish", "at_most": 2})["state"] == "unmet"
+    assert one({"kind": "calls", "resource": "reactor", "at_most": 5})["state"] == "not_assessed", (
+        "a resource that reports no calls was met by default")
+    assert one({"kind": "calls", "resource": "absent", "at_most": 5})["state"] == "not_assessed"
+    assert one({"kind": "calls", "resource": "petri_dish", "at_most": "3"})["state"] == "not_assessed", (
+        "a limit that is not a number was read")
+    assert "STAND-IN" in one({"kind": "calls", "resource": "incubator", "at_most": 1})["basis"], (
+        "a stand-in's row was offered as evidence without saying so")
+    free = one("the run is fast")
+    assert free["state"] == "not_assessed" and all(k in free["basis"] for k in _ic.CRITERION_KINDS), free["basis"]
+
+    comp = client.post("/api/v1/resources/compose", json={
+        "name": "w832 criteria rig", "usage_area": "synthesis", "resource_ids": ["petri_dish"], "config": {}}).json()
+    try:
+        r = client.post(f"/api/v1/resources/compositions/{comp['id']}/run", json={"objective": "w832 probe"})
+        assert r.status_code == 200, r.text[:300]
+        v = client.post("/api/v1/resources/cell/verify", json={"run_id": r.json()["run_id"], "criteria": [
+            {"kind": "duration", "at_most_ms": 3_600_000}, {"kind": "duration", "at_most_ms": -1}]})
+        assert v.status_code == 200, v.text[:300]
+        states = [c["state"] for c in v.json()["criteria"]]
+        assert states == ["met", "unmet"], ("a real run's recorded duration was not read through /cell/verify",
+                                            v.json()["criteria"])
+    finally:
+        client.delete(f"/api/v1/resources/compositions/{comp['id']}")

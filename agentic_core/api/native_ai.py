@@ -1068,6 +1068,10 @@ NOT_AN_ANSWER: Dict[tuple, tuple] = {
     ("agentic_core/api/scholar_review.py", "submit"): (
         1, "the review queue's record of a composed item, naming what composed it for the scholar who reads "
            "it; it is a record kept for review, and the item's own answer states its level"),
+    #  W832 (FU-896) - the instrument cell's map from a structural criterion's kind to the run-record field it reads
+    ("agentic_core/api/instrument_cell.py", "<module>"): (
+        1, "the map from a structural criterion's kind to the field of a run's record it reads: its key is the "
+           "name of a criterion kind, it names no resource, and it answers nobody"),
 }
 
 

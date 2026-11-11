@@ -17662,11 +17662,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W832",
       "note": "",
       "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A run's checks can state structural criteria, read from one field of the run's own record each: served_by (what served a resource), duration (a resource or the whole run, at most at_most_ms) and calls (the calls a resource reported, at most at_most; the record's only per-stage count, read as attempts). A field the record does not hold is not assessed, never met by default; a stand-in's row is said to be evidence about the stand-in; the free-text answer names every kind assess reads. Guard test_w832 (planted record and /cell/verify on a real run), 3 blinds red."
     },
     {
       "id": "FU-897",
