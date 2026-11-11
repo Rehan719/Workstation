@@ -23162,11 +23162,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W834",
       "note": "",
       "slot_source": "found in this round and not done in it",
-      "tier": 1
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A refusal by the platform's constitutional gate is no longer queued for a scholar as text a model composed: the shared religion gate recognises a refusal first (served_by constitutional_policy_gate, or the gate's own \"[CONSTITUTIONAL REFUSAL]\" mark), shows it as given, withholds nothing and queues nothing, and the answer's note and disclaimer say no answer was composed. A model's composition is still queued and withheld until a named scholar approves that exact text. Driven through the fatwa route with a question the faith-ruling screen refuses, and on the shared gate for both marks. Guard test_w834, 3 blinds red."
     },
     {
       "id": "FU-1163",

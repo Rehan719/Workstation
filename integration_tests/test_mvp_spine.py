@@ -72492,3 +72492,41 @@ def test_w833_a_retired_entity_can_be_restored_through_change_control(client):
             _pf.write_bytes(_prev)
         elif _pf.exists():
             _pf.unlink()
+
+
+def test_w834_a_constitutional_refusal_is_not_queued_for_a_scholar_as_composed_text(client):
+    """W834. The religion tools decided "a model composed this" as served_by != "native", so a refusal by the
+    constitutional gate - its W734 faith-ruling screen over the person's own words - was queued for a named
+    scholar's review, withheld, and described as composed by a model. The platform's own rule answered and nothing
+    was composed. The refusal is now shown as given, nothing is queued, and the disclaimer claims no answer.
+    Driven through the fatwa route with a question the screen refuses, and on the shared gate directly."""
+    from agentic_core.api import religion as _rel834
+    from agentic_core.api import scholar_review as _sr834
+
+    def _queued():
+        return _sr834._load(_sr834._review_path())
+
+    before = set(_queued())
+    r = client.post("/api/v1/religion/fatwa-research", json={
+        "question": "What is the Islamic ruling on trading cryptocurrency?", "madhab": "hanafi"})
+    assert r.status_code == 200, r.text[:300]
+    d = r.json()
+    assert d["ai_provenance"]["served_by"] == "constitutional_policy_gate", (
+        "the faith-ruling screen did not refuse this question, so the leg proves nothing", d["ai_provenance"])
+    assert d["research"].startswith("[CONSTITUTIONAL REFUSAL]"), "the refusal was not shown as the gate gave it"
+    assert d["scholar_review"]["state"] == "refused" and d["scholar_review"]["content_key"] is None, d["scholar_review"]
+    assert "nothing was composed" in d["review_note"] and "A model composed" not in d["review_note"], d["review_note"]
+    assert "No answer was composed" in d["disclaimer"] and "WITHHELD" not in d["disclaimer"], d["disclaimer"]
+    assert not d["sections_withheld"], ("a refusal was cut as if it held composed sections", d["sections_withheld"])
+    assert set(_queued()) == before, ("the refusal was queued for a scholar's review", set(_queued()) - before)
+
+    #  the shared gate, as every religion tool calls it, on both of the refusal's marks
+    for prov, text in (({"served_by": "constitutional_policy_gate"}, "[CONSTITUTIONAL REFUSAL] Not done."),
+                       ({"served_by": "ollama:w834"}, "[CONSTITUTIONAL REFUSAL] Not done.")):
+        shown, held, review, note = _rel834._scholar_gated("w834-probe", text, "w834", ("## A",), prov)
+        assert shown == text and held == [] and review["state"] == "refused", (prov, review)
+    assert set(_queued()) == before, "the shared gate queued a refusal"
+    #  a model's composed text is still gated: queued, and none of it shown
+    shown, _h, review, _n = _rel834._scholar_gated("w834-probe", "## A\nA model's composed text for W834.",
+                                                   "w834", ("## A",), {"served_by": "ollama:w834"})
+    assert shown == "" and review["state"] in ("in_review", "withheld"), review

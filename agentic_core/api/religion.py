@@ -106,6 +106,9 @@ def _interfaith_sections(traditions: list, topic: str) -> tuple:
 _REVIEW_SURFACE = "religion-research"
 _WITHHELD_CLAIM = ("A model composed an answer and it is WITHHELD: no named scholar on the roster has approved that "
                    "exact text, so none of it is shown here.")
+#  W834 - the claim when the constitutional gate refused the request: there is no answer to make a claim about
+_REFUSED_CLAIM = ("No answer was composed: the platform's constitutional gate refused this request before any model "
+                  "ran, and the refusal above is the platform's own rule.")
 
 
 def _scholar_gated(tool: str, composed: str, asked: str, headings: tuple, provenance: "dict | None") -> tuple:
@@ -125,6 +128,16 @@ def _scholar_gated(tool: str, composed: str, asked: str, headings: tuple, proven
     from agentic_core.api import scholar_review as _sr
     _served = str((provenance or {}).get("served_by") or "a model")
     body = (composed or "").strip()
+    #  W834 - A REFUSAL IS NOT A COMPOSITION. The callers send everything the floor did not serve, and a refusal
+    #  by the constitutional gate (its faith-ruling screen over the person's own words, or its pre-gate) is not
+    #  the floor either. It was queued for a scholar as text a model composed; nothing was composed. It is
+    #  recognised by what the gate itself writes, shown as it was given, and nothing is queued.
+    from agentic_core.api._ai_provenance import REFUSAL_GATE as _gate834
+    if (provenance or {}).get("served_by") == _gate834 or body.startswith("[CONSTITUTIONAL REFUSAL]"):
+        _why = ("The platform's constitutional gate refused this request before any model ran, so nothing was "
+                "composed: what is shown is the refusal, as the gate gave it. Nothing was withheld and nothing was "
+                "queued for scholarly review.")
+        return body, [], {"state": "refused", "basis": _why, "content_key": None}, _why
     if not body:
         _why = ("A model served this request and nothing it composed remains to be reviewed (it returned no "
                 "text, or only sections that are removed on every path), so nothing was queued for scholarly "
@@ -174,6 +187,8 @@ def _gate_claim(review: "dict | None", approved_claim: str) -> str:
     text is shown. Anything else: the answer is withheld, so no claim about an answer is made."""
     if not review:
         return approved_claim
+    if review.get("state") == "refused":          # W834 - the platform's own rule answered; no answer exists
+        return _REFUSED_CLAIM
     if review.get("state") == "approved":
         return f"{approved_claim} It is shown because a named scholar approved this exact text: {review.get('basis')}"
     return _WITHHELD_CLAIM
