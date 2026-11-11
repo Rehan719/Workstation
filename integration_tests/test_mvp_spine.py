@@ -58474,7 +58474,10 @@ def test_pay_an_owner_payout_is_held_for_a_person_and_pays_the_accounts_recorded
     _vid, _bare, _none = f"pay-guard-{_tag}", f"pay-guard-noowner-{_tag}", f"pay-guard-never-{_tag}"
     _big, _full = f"pay-guard-big-{_tag}", f"pay-guard-full-{_tag}"
     _op.accrue(_vid, 100.0, "Amina Guard", memo="guard seed", simulated=False)
-    _op.accrue(_bare, 20.0, "", memo="guard seed", simulated=False)        # an account whose owner is empty
+    #  W813 (FU-887) - an account whose owner is empty is an OLD record: a new one is always opened under an owner
+    #  (the registry's, the one named, or the configured one), so it is planted as the store holds one
+    _op._mutate(lambda _d: _d.__setitem__(_bare, {"vsb_id": _bare, "owner": "", "currency": "WST", "accrued": 20.0,
+                                                  "paid_out": 0.0, "entries": []}))
 
     def _acct(v):
         return _op._read().get(v)
@@ -71495,3 +71498,109 @@ def test_w812_plans_chief_instructions_transformations_and_the_apex_board_take_t
         code = _code_only((src / rel).read_bytes().decode("utf-8"))
         assert not _re.search(r"\bowner(?:_id)?\s*:\s*['\"`]" + _not_label, code), f"{rel} sends an owner literal"
         assert not _re.search(r"\bowner(?:_id)?\s*:\s*[^,}\n]*\?\?\s*['\"`]", code), f"{rel} falls back to an owner literal"
+
+
+def test_w813_an_owner_account_is_opened_under_the_registered_owner_and_says_so(client, monkeypatch, tmp_path):
+    """FU-887 (W813). An owner account's recorded owner is its payee (Owner ruling 2026-10-12, R1). Driven in an
+    isolated store: a registered entity's cycle built naming no owner opens its account under the owner the living
+    registry records, not a name in the code, and an accrual naming another owner opens it the same way; a scope
+    that is not registered is opened under the owner its first accrual named, else the configured single-user
+    owner; each account records which, and its payee basis says so. An account opened under another owner is never
+    rewritten: its reader says the registry disagrees. An unreadable registry refuses to open an account (nothing is
+    written) and still lets an existing one accrue. The economy status of an unregistered id shows the configured
+    owner, not a name."""
+    import uuid as _uuid
+    from agentic_core import config as _cfg
+    from agentic_core.economy import living_vsbs as _lv
+    from agentic_core.economy import owner_payments as _op
+    from agentic_core.economy.metabolism import EconomicMetabolism
+
+    monkeypatch.delenv("AUTH_ENABLED", raising=False)
+    me = f"w813-owner-{_uuid.uuid4().hex[:8]}"
+    monkeypatch.setenv(_cfg.SINGLE_USER_OWNER_ENV, me)
+    monkeypatch.setattr(_op, "_STORE", tmp_path / "owner_payments.json")
+    monkeypatch.setattr(_op, "_PENDING", tmp_path / "owner_accruals_pending.json")
+    tag = _uuid.uuid4().hex[:6]
+    alice = f"w813-alice-{tag}"
+    reg, reg2, reg3 = f"vsb-w813r{tag}", f"vsb-w813s{tag}", f"vsb-w813t{tag}"
+    for v in (reg, reg2, reg3):
+        _lv.register(v, f"W813 {v}", entity_type="waqf_ltd_hybrid", owner=alice)
+    _lv.register(f"vsb-w813u{tag}", "W813 no owner named")          # a registration naming no owner
+    assert (_lv._load().get(f"vsb-w813u{tag}") or {}).get("owner") == me, _lv._load().get(f"vsb-w813u{tag}")
+
+    # (1) A REGISTERED ENTITY'S CYCLE, built naming no owner, opens the account under the registry's owner
+    m = EconomicMetabolism(reg, "waqf_ltd_hybrid")
+    assert m.owner == me and m.owner_named is None, ("a cycle naming no owner carries", m.owner, m.owner_named)
+    m.run_cycle(1000.0, 100.0)
+    a1 = _op._read().get(reg) or {}
+    assert a1.get("owner") == alice and a1.get("owner_source") == "living_registry", (
+        "a registered entity's account was opened under", a1.get("owner"), a1.get("owner_source"))
+    s1 = _op.status(reg)
+    assert s1["owner_matches_registry"] is True and "living registry" in s1["owner_basis"], s1["owner_basis"]
+    assert "the account's recorded owner" in s1["owner_basis"], s1["owner_basis"]
+
+    # (2) AN ACCRUAL NAMING ANOTHER OWNER for a registered entity opens it under the registry's owner too
+    a2 = _op.accrue(reg2, 10.0, f"w813-typed-{tag}", memo="w813", simulated=False)
+    assert a2["owner"] == alice and a2["owner_source"] == "living_registry", (a2["owner"], a2.get("owner_source"))
+
+    # (3) A SCOPE THAT IS NOT REGISTERED: the owner its first accrual named, else the configured owner
+    named, none = f"w813-sim-named-{tag}", f"w813-sim-none-{tag}"
+    a3 = _op.accrue(named, 5.0, f"w813-named-{tag}", memo="w813")
+    assert a3["owner"] == f"w813-named-{tag}" and a3["owner_source"] == "caller", (a3["owner"], a3.get("owner_source"))
+    a4 = _op.accrue(none, 5.0, memo="w813")
+    assert a4["owner"] == me and a4["owner_source"] == "configured", (a4["owner"], a4.get("owner_source"))
+    sim = f"w813-sim-cycle-{tag}"            # ...and an unregistered scope's cycle naming no owner names none
+    EconomicMetabolism(sim, "waqf_ltd_hybrid").run_cycle(1000.0, 100.0)
+    a5 = _op._read().get(sim) or {}
+    assert a5.get("owner") == me and a5.get("owner_source") == "configured", (
+        "an unregistered scope's cycle naming no owner opened its account as", a5.get("owner"), a5.get("owner_source"))
+    s4 = _op.status(none)
+    assert _cfg.single_user_owner()["basis"] in s4["owner_basis"], s4["owner_basis"]
+    assert s4["owner_matches_registry"] is None and s4["registry_owner"] is None, s4
+
+    # (4) AN ACCOUNT OPENED UNDER ANOTHER OWNER is never rewritten, and its reader says the registry disagrees
+    _op._mutate(lambda d: d.__setitem__(reg3, {"vsb_id": reg3, "owner": f"w813-earlier-{tag}", "currency": "WST",
+                                               "accrued": 1.0, "paid_out": 0.0, "entries": []}))
+    _op.accrue(reg3, 2.0, memo="w813", simulated=False)
+    s3 = _op.status(reg3)
+    assert s3["owner"] == f"w813-earlier-{tag}" and s3["accrued_total_wst"] == 3.0, ("the account was rewritten", s3)
+    assert s3["owner_matches_registry"] is False and s3["registry_owner"] == alice, s3
+    assert "not rewritten" in s3["owner_registry_basis"], s3["owner_registry_basis"]
+
+    # (5) AN UNREADABLE REGISTRY refuses to open an account, writes nothing, and lets an existing one accrue
+    def _unreadable():
+        raise _cfg.StoreUnavailable("w813 an unreadable roster")
+    _readable = _lv._load
+    monkeypatch.setattr(_lv, "_load", _unreadable)
+    before = _op._STORE.read_bytes()
+    try:
+        _op.accrue(f"w813-new-{tag}", 3.0, f"w813-x-{tag}", memo="w813")
+        raise AssertionError("an account was opened while the registry could not be read")
+    except _op.OwnerPaymentsUnavailable as exc:
+        assert "cannot be known" in str(exc) and "nothing was accrued" in str(exc), str(exc)
+    assert _op._STORE.read_bytes() == before, "a refused opening wrote to the store"
+    _op.accrue(reg2, 1.0, memo="w813", simulated=False)
+    assert (_op._read().get(reg2) or {}).get("accrued") == 11.0, "an existing account could not accrue"
+    monkeypatch.setattr(_lv, "_load", _readable)
+
+    # (6) THE ECONOMY STATUS of an id that is not registered shows the configured owner, said to be configured
+    st = client.get("/api/v1/economy/status", params={"vsb_id": f"w813-unregistered-{tag}"})
+    assert st.status_code == 200, st.text[:300]
+    assert st.json().get("owner") == me and st.json()["attribution"]["owner_source"] == "configured", (
+        st.json().get("owner"), st.json().get("attribution"))
+
+    # (7) THE CYCLE ROUTE naming no owner, for a scope that is not registered, opens the account under the
+    #     configured owner: its request no longer defaults to a name
+    simr = f"w813-route-{tag}"
+    cy = client.post("/api/v1/economy/cycle", json={"vsb_id": simr, "revenue": 1000})
+    assert cy.status_code == 200, cy.text[:300]
+    a7 = _op._read().get(simr) or {}
+    assert a7.get("owner") == me and a7.get("owner_source") == "configured", (
+        "the cycle route opened an unregistered scope's account as", a7.get("owner"), a7.get("owner_source"))
+
+    # (8) THE ECONOMY PAGE says a disagreement where it names the payee (comments stripped before reading)
+    import pathlib as _pl
+    _ve = _code_only((_pl.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages"
+                      / "enterprise" / "VSBEconomy.tsx").read_bytes().decode("utf-8"))
+    assert "pay.owner_matches_registry === false" in _ve and "{pay.owner_registry_basis}" in _ve, (
+        "the economy page does not say when the living registry disagrees with the recorded payee")

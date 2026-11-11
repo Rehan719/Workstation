@@ -17442,11 +17442,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W813",
       "note": "",
       "slot_source": "found in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A new owner account is opened under the owner the living registry records for a registered entity (the resolution the board pack and the cycle make), whatever name the caller passed; a scope that is not registered takes the owner its first accrual named, else the configured single-user owner. The account records which (owner_source and its basis) and the payee basis says so. An existing account's owner is never rewritten: its status says whether the registry agrees (owner_matches_registry, registry_owner, owner_registry_basis). An unreadable registry refuses to open an account and writes nothing (the cycle parks the credit; an existing account still accrues). A cycle, a registration and an economy status naming no owner, and the cycle and close-period requests, carry the configured owner, not a name in the code. The economy page says when the registry disagrees with the recorded payee. Guard test_w813, 13 blinds red."
     },
     {
       "id": "FU-888",

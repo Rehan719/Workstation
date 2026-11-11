@@ -116,8 +116,15 @@ _CYCLE_ROLE = {
 
 
 class EconomicMetabolism:
-    def __init__(self, vsb_id: str, entity_type: str = "waqf_ltd_hybrid", owner: str = "Rehan"):
+    def __init__(self, vsb_id: str, entity_type: str = "waqf_ltd_hybrid", owner: str | None = None):
         self.vsb_id = vsb_id
+        #  W813 (FU-887) - a cycle built naming no owner carries the configured single-user owner, not a name in
+        #  the code. What was NAMED is kept apart and is what the owner account is offered: it resolves its own
+        #  owner when first opened (the living registry's for a registered entity, else this, else the configured)
+        self.owner_named = owner or None
+        if not owner:
+            from agentic_core.config import single_user_owner as _suo813
+            owner = _suo813()["owner_id"]
         self.owner = owner
         self.template = get_template(entity_type)
         self.entity_type = entity_type
@@ -306,7 +313,7 @@ class EconomicMetabolism:
                 #  W658 - accrue() decides the mark itself (one floor for both of its callers); the cycle reads
                 #  it back from the ENTRY just written, so its own answer says what was recorded, not a second
                 #  opinion formed here
-                _acct658 = _accrue_owner(self.vsb_id, splits["owner"], self.owner,
+                _acct658 = _accrue_owner(self.vsb_id, splits["owner"], self.owner_named,
                                          memo="cycle owner share (§4 waterfall)")
                 owner_accrual["accrued"] = True
                 _last658 = ((_acct658 or {}).get("entries") or [{}])[-1] if isinstance(_acct658, dict) else {}
@@ -318,7 +325,7 @@ class EconomicMetabolism:
                 # Saying so (W465) was the right first step; it left the Owner short for ever.
                 try:
                     from .owner_payments import record_missed as _park_owner
-                    _parked = _park_owner(self.vsb_id, splits["owner"], self.owner,
+                    _parked = _park_owner(self.vsb_id, splits["owner"], self.owner_named,
                                           "cycle owner share (§4 waterfall)", owner_accrual["error"])
                     if isinstance(_parked, dict) and _parked.get("parked") is False:
                         owner_accrual["recoverable"] = False

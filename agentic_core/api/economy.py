@@ -151,7 +151,9 @@ async def economy_status(vsb_id: str = "workstation-idbo", entity_type: str | No
     _require_economy_access(vsb_id, user)
     _claimed_type = entity_type
     entity_type, et_source = _resolve_entity_type(vsb_id, entity_type)
-    owner, owner_source = "Rehan", "platform_default"
+    #  W813 (FU-887) - an entity with no registration is shown under the configured owner, not a name in the code
+    from agentic_core.config import single_user_owner as _suo813
+    owner, owner_source = _suo813()["owner_id"], _suo813()["source"]
     try:
         from agentic_core.economy.living_vsbs import _load as _lv_load
         rec = _lv_load().get(vsb_id)
@@ -183,7 +185,7 @@ class CycleRequest(BaseModel):
     revenue: float = Field(default=0.0, ge=0.0, le=1e15, allow_inf_nan=False)
     costs: float = Field(default=0.0, ge=0.0, le=1e15, allow_inf_nan=False)
     reserve_rate: float = Field(default=0.20, ge=0.0, le=1.0, allow_inf_nan=False)
-    owner: str = "Rehan"
+    owner: str = ""                  # W813 (FU-887) - none named: the registry's owner, else the configured one
 
 
 def _intake_not_back(e: BaseException) -> str:
@@ -259,7 +261,7 @@ async def run_cycle(req: CycleRequest, user: dict | None = Depends(get_current_u
             owner = reg.get("owner") or owner
             entity_type = reg.get("entity_type") or entity_type
             attribution = "living_registration"
-            if req.owner != "Rehan" and req.owner != owner:
+            if req.owner and req.owner != owner:          # W813 (FU-887) - an owner the request named
                 attribution = f"living_registration (request owner '{req.owner}' overridden)"
             # W488 (sweep S1.8, C5) — the OWNER override was disclosed and the FORM override was not.
             # The page highlighted a 'Charity · non-profit' card, sent entity_type='charity', and this
@@ -2096,7 +2098,7 @@ async def settle_contract(cid: str, user: dict | None = Depends(get_current_user
 class ClosePeriodRequest(BaseModel):
     vsb_id: str = "workstation-idbo"
     entity_type: str | None = None
-    owner: str = "Rehan"
+    owner: str = ""                  # W813 (FU-887) - none named: the configured single-user owner
 
 
 @router.post("/close-period")
@@ -2177,7 +2179,8 @@ async def board_pack(vsb_id: str = "workstation-idbo", entity_type: str | None =
     # /status and /close-period, left live on the surface the UI actually renders.
     _claimed_type = entity_type
     entity_type, _et_source = _resolve_entity_type(vsb_id, entity_type)
-    _owner, _owner_source = "Rehan", "platform_default"
+    from agentic_core.config import single_user_owner as _suo813      # W813 (FU-887) - as /status resolves it
+    _owner, _owner_source = _suo813()["owner_id"], _suo813()["source"]
     try:
         from agentic_core.economy.living_vsbs import _load as _lv_load
         _rec = _lv_load().get(vsb_id)

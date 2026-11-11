@@ -340,7 +340,7 @@ def tending(rec: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def register(vsb_id: str, name: str = "", entity_type: str = "waqf_ltd_hybrid",
-             domain: str = "enterprise", owner: str = "Rehan",
+             domain: str = "enterprise", owner: str = "",
              parent_vsb: str = "", auto_economy: bool = True,
              auto_compliance: bool = True) -> Dict[str, Any]:
     """Register an established VSB as a living entity the organism will autonomously tend.
@@ -357,6 +357,11 @@ def register(vsb_id: str, name: str = "", entity_type: str = "waqf_ltd_hybrid",
     or was never stated.
     """
     from agentic_core.config import store_lock
+    #  W813 (FU-887) - a registration naming no owner is the configured single-user owner's, not a name in the code
+    #  (an owner account opened for this entity takes the owner recorded here)
+    if not (owner or "").strip():
+        from agentic_core.config import single_user_owner as _suo813
+        owner = _suo813()["owner_id"]
     with store_lock(_STORE):
         d = _load()
         if vsb_id not in d:
@@ -787,7 +792,7 @@ def spend_self_investment(vsb_id: str, purpose: str, amount: float = DEV_SPEND_W
         d = _load()
         reg = d.get(vsb_id) or {}
         m = EconomicMetabolism(vsb_id, reg.get("entity_type", "waqf_ltd_hybrid"),
-                               reg.get("owner", "Rehan"))
+                               reg.get("owner"))      # W813 (FU-887) - none recorded: the configured owner
         if m.ledger.load_error:
             # W468 (register FU-041) — an unreadable ledger read as empty books, and this reported "balance empty — ran
             # unfunded" for a fund whose balance is unknown
@@ -1013,7 +1018,7 @@ def _operate_vsb_claimed(vsb_id: str, target: Dict[str, Any], _visit: str,
         from agentic_core.economy.revenue import peek_pending
         peek = peek_pending(vsb_id)
         res = governed_cycle_sync(vsb_id, target.get("entity_type", "waqf_ltd_hybrid"),
-                                  target.get("owner", "Rehan"), peek["revenue"], peek["costs"],
+                                  target.get("owner"), peek["revenue"], peek["costs"],   # W813 (FU-887)
                                   source="heartbeat", events=peek)
         report = res.get("cycle")
         if report is None:   # held/blocked by governance — revenue preserved, hold recorded,

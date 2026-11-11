@@ -96,6 +96,65 @@ def _new_account(vsb_id: str, owner: str) -> Dict[str, Any]:
     return {"vsb_id": vsb_id, "owner": owner, "currency": "WST", "accrued": 0.0, "paid_out": 0.0, "entries": []}
 
 
+def _registry_owner(vsb_id: str) -> Dict[str, Any]:
+    """The owner the living registry records for this id: {"owner": name or None, "unreadable": reason or None}."""
+    try:
+        from agentic_core.economy.living_vsbs import _load as _lv_load
+        _rec = (_lv_load() or {}).get(vsb_id)
+    except Exception as exc:
+        return {"owner": None, "unreadable": f"{type(exc).__name__}: {str(exc)[:160]}"}
+    _o = (_rec or {}).get("owner") if isinstance(_rec, dict) else None
+    return {"owner": (_o.strip() or None) if isinstance(_o, str) else None, "unreadable": None}
+
+
+def resolve_owner(vsb_id: str, offered: str | None = None) -> Dict[str, Any]:
+    """W813 (FU-887) - WHO A NEW ACCOUNT IS OPENED UNDER, and where that came from: {"owner", "source", "basis",
+    "unreadable"}. A registered entity's owner is the one its living registry records - the resolution the board
+    pack and the cycle make - whatever name the caller passed; a scope that is not registered takes the owner the
+    caller named, else the configured single-user owner. Used only when an account is first opened: an existing
+    account's owner is never rewritten (Owner ruling 2026-10-12, R1)."""
+    reg = _registry_owner(vsb_id)
+    if reg["unreadable"]:
+        return {"owner": None, "source": "living_registry_unavailable", "unreadable": reg["unreadable"],
+                "basis": f"the living registry could not be read ({reg['unreadable']}), so the owner cannot be known"}
+    if reg["owner"]:
+        return {"owner": reg["owner"], "source": "living_registry", "unreadable": None,
+                "basis": "opened under the owner the living registry records for this entity"}
+    named = offered.strip() if isinstance(offered, str) else ""
+    if named:
+        return {"owner": named, "source": "caller", "unreadable": None,
+                "basis": "opened under the owner its first accrual named (this scope is not a registered entity)"}
+    from agentic_core.config import single_user_owner
+    _s = single_user_owner()
+    return {"owner": _s["owner_id"], "source": _s["source"], "unreadable": None,
+            "basis": (f"opened under {_s['basis']}; its first accrual named no owner and this scope is not a "
+                      f"registered entity")}
+
+
+def _registry_check(stored: Any) -> Dict[str, Any]:
+    """W813 (FU-887) - the recorded owner, checked against the living registry. Read only: a disagreement is said,
+    and the account is never rewritten - a payout is for the recorded owner."""
+    if not isinstance(stored, dict):
+        return {"registry_owner": None, "owner_matches_registry": None,
+                "owner_registry_basis": "no account exists for this id, so there is no recorded owner to check"}
+    reg = _registry_owner(stored.get("vsb_id") or "")
+    if reg["unreadable"]:
+        return {"registry_owner": None, "owner_matches_registry": None,
+                "owner_registry_basis": f"the living registry could not be read ({reg['unreadable']}); not checked"}
+    if not reg["owner"]:
+        return {"registry_owner": None, "owner_matches_registry": None,
+                "owner_registry_basis": "this id is not a registered entity with an owner, so there is nothing "
+                                        "to check the recorded owner against"}
+    rec = stored.get("owner").strip() if isinstance(stored.get("owner"), str) else ""
+    if rec == reg["owner"]:
+        return {"registry_owner": reg["owner"], "owner_matches_registry": True,
+                "owner_registry_basis": "the recorded owner is the one the living registry records"}
+    return {"registry_owner": reg["owner"], "owner_matches_registry": False,
+            "owner_registry_basis": (f"the living registry records {reg['owner']!r} for this entity, and this "
+                                     f"account was opened under {rec or 'no owner'!r}. It is not rewritten: a "
+                                     f"payout is for the recorded owner (Owner ruling 2026-10-12, R1)")}
+
+
 #  OWNER RULINGS 2026-10-12 (R3) - THE HISTORY IS CUT, AND NOW SAYS SO. An account keeps its last
 #  _KEEP_ENTRIES entries; the cut used to be silent. Retention is NOT changed here: the cut stays, and the
 #  account now counts what it dropped and records where the kept history starts. The running totals
@@ -165,9 +224,11 @@ def payee_of(a: Any) -> Dict[str, Any]:
         return {"payee": None, "payee_recorded": False,
                 "payee_basis": ("the account records no owner: a payout reduces its balance and names no payee, "
                                 "because no name is invented for it")}
+    #  W813 (FU-887) - and where that name came from, when the account recorded it
+    _how = a.get("owner_source_basis") if isinstance(a.get("owner_source_basis"), str) else ""
     return {"payee": owner, "payee_recorded": True,
             "payee_basis": ("the account's recorded owner - the name stored on the account when it first "
-                            "accrued, not a name this request supplied")}
+                            "accrued, not a name this request supplied" + (f" ({_how})" if _how else ""))}
 
 
 def _pending_read() -> list:
@@ -241,7 +302,7 @@ def reconcile_missed(vsb_id: str | None = None) -> Dict[str, Any]:
             changed = True
             continue
         try:
-            accrue(row["vsb_id"], row["amount_wst"], row.get("owner") or "Rehan",
+            accrue(row["vsb_id"], row["amount_wst"], row.get("owner") or None,     # W813 (FU-887)
                    memo=f"{row.get('memo') or 'missed cycle owner share'} (reconciled)", ref=rid)
             out["applied"].append({"id": rid, "amount_wst": row.get("amount_wst")})
             changed = True
@@ -274,7 +335,7 @@ def pending_missed(vsb_id: str | None = None) -> Dict[str, Any]:
             "unreadable": None}
 
 
-def accrue(vsb_id: str, amount: float, owner: str = "Rehan", memo: str = "cycle owner share",
+def accrue(vsb_id: str, amount: float, owner: str | None = None, memo: str = "cycle owner share",
            ref: str | None = None, simulated: bool | None = None) -> Dict[str, Any] | None:
     """Accrue the Owner's share from a cycle (virtual WST). Returns the account, or None for a zero amount.
     Raises ValueError for a non-finite amount and OwnerPaymentsUnavailable / TimeoutError when the store cannot be
@@ -290,9 +351,17 @@ def accrue(vsb_id: str, amount: float, owner: str = "Rehan", memo: str = "cycle 
             simulated = not _is_registered(vsb_id)
         except Exception:
             simulated = False                 # unknown is not marked: a mark is a statement, and this is not known
+    #  W813 (FU-887) - resolved before the lock (the registry is another store), used only if the account is new
+    _opening = resolve_owner(vsb_id, owner)
 
     def change(d: Dict[str, Any]) -> Dict[str, Any]:
-        a = d.get(vsb_id) or _new_account(vsb_id, owner)
+        a = d.get(vsb_id)
+        if not a:                             # as before: an absent or empty record is a new account
+            if _opening["unreadable"]:
+                raise OwnerPaymentsUnavailable(
+                    f"{_opening['basis']}; no account was opened and nothing was accrued")
+            a = _new_account(vsb_id, _opening["owner"])
+            a["owner_source"], a["owner_source_basis"] = _opening["source"], _opening["basis"]
         d[vsb_id] = a
         a["accrued"] = round(a["accrued"] + amount, 2)
         if simulated:
@@ -326,6 +395,7 @@ def status(vsb_id: str) -> Dict[str, Any]:
         "vsb_id": vsb_id, "owner": who["payee"], "currency": "WST",
         "account_exists": stored is not None, "owner_recorded": who["payee_recorded"],
         "owner_basis": who["payee_basis"],
+        **_registry_check(stored),          # W813 (FU-887) - checked against the living registry, never rewritten
         "accrued_total_wst": a["accrued"], "paid_out_total_wst": a["paid_out"],
         "balance_wst": balance, "entries": a["entries"][-_SHOWN_ENTRIES:][::-1],
         #  R3 - what the stored history covers, said beside the entries it limits

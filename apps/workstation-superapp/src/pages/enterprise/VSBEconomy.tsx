@@ -494,8 +494,15 @@ export const VSBEconomy: React.FC = () => {
           {payErr && <p className="text-vital text-[10px] font-bold mt-2 flex items-center gap-1.5"><AlertCircle size={12} /> {payErr}</p>}
           <p className="text-[9px] text-slate-500 mt-2" data-testid="owner-payout-governed">
             {'Every payout is held at Change Control for the decision of a person, whatever its amount. A request pays nothing; once it is approved there, request the same amount again to apply it. The payee is the recorded owner of the account: '}
-            {pay.owner_recorded ? String(pay.owner) : 'none is recorded on this account'}.
+            <span title={pay.owner_basis}>{pay.owner_recorded ? String(pay.owner) : 'none is recorded on this account'}</span>.
           </p>
+          {/* W813 (FU-887) - the recorded owner, checked against the living registry: a disagreement is said here,
+              and the account is not rewritten */}
+          {pay.owner_matches_registry === false && (
+            <p className="text-amber-400 text-[10px] font-bold mt-2" data-testid="owner-payout-registry-differs">
+              {pay.owner_registry_basis}
+            </p>
+          )}
           {payHold && (
             <p role="status" data-testid="owner-payout-held" className="text-amber-400 text-[10px] font-bold mt-2">
               {payHold.status === 'rejected' ? 'Rejected' : 'Held'} — NOT PAID. {payHold.basis}
