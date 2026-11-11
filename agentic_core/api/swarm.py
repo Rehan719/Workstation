@@ -1279,9 +1279,16 @@ async def cascade_orchestration(req: CascadeRequest,
                                       "is honoured, a custom officer is not.")},
         # §5 — each tier manages, APPRAISES and DEVELOPS the tier below (arms-length upward appraisal).
         "appraisals": appraisals,
-        # §5 DEVELOP (W269) — which tiers received + applied the PREVIOUS cycle's Development Action
-        # (key → the run_id that set it); empty on a first run.
+        # §5 DEVELOP (W269) — which tiers were GIVEN the PREVIOUS cycle's Development Action in their prompt
+        # (key → the run_id that set it); empty on a first run. W818 (FU-909): given, which is all the key shows
         "development_applied": development_applied,
+        #  W818 (FU-909) - what the field records. It was read as an outcome ("applied"); it is an injection, and
+        #  nothing compares a tier's response with the action it was given
+        "development_applied_basis": (
+            "each listed tier was given, in its prompt, the development action its managing tier set after the "
+            "previous cycle's appraisal (key -> the run that set it). That it was given is recorded; whether the "
+            "tier's response acted on it is NOT assessed"
+            if any(k != "not_persisted" for k in development_applied) else None),
         # §5 (W281) — persistent tier identity: which tiers carried their accumulated record into
         # this run (edge → runs served so far); empty on a first run.
         "tier_identity_applied": tier_identity_applied,

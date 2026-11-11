@@ -17909,11 +17909,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W818",
       "note": "",
       "slot_source": "found in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "development_applied lists each tier whose prompt carried the development action its managing tier set after the previous cycle's appraisal: an injection, and nothing compares the response with the action. The cascade now says so (development_applied_basis: given, whether the tier acted on it NOT assessed), the comment no longer says 'applied', and the Swarm page's appraisal heading says how many tiers were given one and that whether each acted on it is not assessed (it said each tier develops the one below). The heading carries the basis as its title. The key and W801's two heading pins are kept. Guard test_w818, 3 blinds red."
     },
     {
       "id": "FU-910",

@@ -418,9 +418,9 @@ const SwarmIntelligence: React.FC = () => {
               <details className="bg-black/40 rounded-lg border border-white/5">
                 {/* W801 (FU-982, ledger v17 R3[6]) - the heading follows what the run applied. It said each tier
                     develops the one below on runs that applied no development action at all. */}
-                <summary data-testid="cascade-appraisal-heading" className="text-[9px] font-black uppercase tracking-widest text-white/60 px-3 py-2 cursor-pointer">
+                <summary data-testid="cascade-appraisal-heading" title={cascade.development_applied_basis ?? undefined} className="text-[9px] font-black uppercase tracking-widest text-white/60 px-3 py-2 cursor-pointer">
                   {Object.keys(cascade.development_applied ?? {}).filter((k: string) => k !== 'not_persisted').length > 0
-                    ? 'Management appraisal & development (each tier develops the one below)'
+                    ? `Management appraisal & development (an earlier cycle's development action was given to ${Object.keys(cascade.development_applied ?? {}).filter((k: string) => k !== 'not_persisted').length} tier(s); whether each acted on it is not assessed)`
                     : 'Management appraisal (this run applied no development action from an earlier cycle)'}
                 </summary>
                 <div className="px-3 pb-3 space-y-2">

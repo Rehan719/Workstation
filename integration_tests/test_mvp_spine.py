@@ -71822,3 +71822,43 @@ def test_w817_a_scholars_approval_of_a_rewrite_is_of_that_rewrite_of_that_draft(
     keys = {i["content_key"] for i in client.get("/api/v1/scholar-review/queue").json()["items"]
             if i["body"] == rewrite}
     assert len(keys - {key_a}) == 1, ("the other draft's rewrite was not queued as its own item", keys)
+
+
+def test_w818_a_development_action_is_said_to_be_given_not_acted_on(client, monkeypatch, tmp_path):
+    """FU-909 (W818). A cascade that gives tiers the development actions an earlier cycle set says what its
+    development_applied field records: the action was given in each tier's prompt, and whether the response acted
+    on it is not assessed. The page's appraisal heading says the same, and no longer that each tier develops the
+    one below."""
+    import json as _j
+    import pathlib as _pl
+    from agentic_core import config as _cfgm
+    from agentic_core.config import atomic_write_json as _aw
+
+    #  the development store alone is moved to this test's directory, so no other test's actions meet these
+    _real_dp = _cfgm.data_path
+    monkeypatch.setattr(_cfgm, "data_path",
+                        lambda name, *a, **k: (tmp_path / name) if str(name) == "tier_development.json"
+                        else _real_dp(name, *a, **k))
+    _dp = _cfgm.data_path
+
+    r1 = client.post("/api/v1/swarm/cascade", json={"mission": "w818 a development loop", "domain": "enterprise"})
+    assert r1.status_code == 200, r1.text[:300]
+    r1 = r1.json()
+    store = _dp("tier_development.json")
+    dev = _j.loads(store.read_text(encoding="utf-8")) if store.exists() else {}
+    for k in r1["appraisals"]:
+        dev[k] = {"action": f"W818 a development action for {k}", "run_id": r1["run_id"],
+                  "served_by": "ollama", "at": "2026-11-11T00:00:00Z"}
+    _aw(store, dev)
+    r2 = client.post("/api/v1/swarm/cascade", json={"mission": "w818 a development loop, round two",
+                                                    "domain": "enterprise"}).json()
+    given = {k for k in r2["development_applied"] if k != "not_persisted"}
+    assert given == set(r1["appraisals"]), (given, set(r1["appraisals"]))
+    basis = str(r2.get("development_applied_basis") or "")
+    assert "was given" in basis and "NOT assessed" in basis, ("the field is not said to record a giving", basis)
+
+    page = _code_only((_pl.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+                       / "components" / "organism" / "SwarmIntelligence.tsx").read_bytes().decode("utf-8"))
+    assert "each tier develops the one below" not in page, "the heading still claims an outcome"
+    assert "whether each acted on it is not assessed" in page, "the heading does not say the outcome is unassessed"
+    assert "title={cascade.development_applied_basis ?? undefined}" in page, "the heading does not carry the basis"
