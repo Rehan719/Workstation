@@ -17963,11 +17963,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W835",
       "note": "",
       "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Every facility run says what its engine persists. The row counted twenty-one undeclared; with the domain forms registered since there were forty-six. Each engine function was read from the fabric's dispatch down to its domain helpers' writes (the completion layer's own keeping stays outside the declaration, as _ENGINE_WRITES_NO_STORE says): thirty-three write nothing of their own and thirteen write records (the QMS-gated product engines, genesis, truth consensus, the org cascade, the four religion forms, and the two native handlers that chain a governance checkpoint). The declarations are held to the code: a form declared to write nothing calls a handler whose body makes no write, a religion form calls the queueing gate, each QMS engine calls the gate itself, and the petri dish is driven through a real composition run and seen to seal. The digital twin (a narrative resource whose handler chains the same checkpoint) is declared too, through a table the contract reads before its kind's default; every handler branch that chains a checkpoint, found by walking the dispatcher's source, must be declared to. Guard test_w835, 4 blinds red."
     },
     {
       "id": "FU-911",

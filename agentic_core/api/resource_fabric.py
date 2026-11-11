@@ -2012,6 +2012,87 @@ _FACILITY_PERSISTS = {
     "vsb_spawn": ("nothing", _NOTHING_STARTS),
     "genesis_establish": ("nothing", _NOTHING_STARTS),
 }
+#  W835 (FU-910) - THE OTHER FORTY-SIX, each declared from its engine function as read, from this module's dispatch
+#  down to the writes its domain helpers make. What the completion layer keeps (the gateway, the orchestrator, the
+#  outcome store, the work budget, and the shared AI wrapper's own quality and audit bookkeeping) stays outside the
+#  declaration, as _ENGINE_WRITES_NO_STORE says. A resource that both writes and changes live state is "records",
+#  and its sentence names the rest.
+_QMS_SEALS = ("its own QMS gate seals a quality record in the document-control registry and logs the compliance "
+              "screen to the UEG audit log on every run, including a floor-served run the gate could not assess; it "
+              "also fires a QMS signal")
+_CHECKPOINTED = ("its engine is the completion layer itself; this handler chains each completed run's governance "
+                 "checkpoint to the UEG audit log (a refused pre-gate is logged as a halt) and writes no store of its own")
+_SCHOLAR_QUEUED = ("whenever a model composes it - not the floor, and not a refusal by the constitutional gate - the "
+                   "composed text is queued for a named scholar's review, unless that exact text is already queued or "
+                   "the tool's queue is full; on the floor, and on a refusal, nothing is written")
+_FACILITY_PERSISTS.update({
+    #  intelligence engines and route functions: one or more completion calls, no write of their own
+    "bdp": ("nothing", _ENGINE_WRITES_NO_STORE),
+    "spi": ("nothing", _ENGINE_WRITES_NO_STORE),
+    "apie": ("nothing", _ENGINE_WRITES_NO_STORE),
+    "ddpie": ("nothing", _ENGINE_WRITES_NO_STORE),
+    "nexus": ("nothing", _ENGINE_WRITES_NO_STORE),
+    "mjm": ("nothing", _ENGINE_WRITES_NO_STORE),
+    "cognitive_cascade": ("nothing", _ENGINE_WRITES_NO_STORE),
+    "mega_project": ("nothing", _ENGINE_WRITES_NO_STORE),
+    "synthesis_studio": ("nothing", _ENGINE_WRITES_NO_STORE + "; composed here it runs the lab cascade, which saves "
+                                                              "no entity"),
+    "native_ensemble": ("nothing", ("its engine is the completion layer itself (orchestrator.ensemble); this handler "
+                                    "runs no gate and writes no store, so what the completion layer keeps about each "
+                                    "call is not declared here")),
+    "resource_optimizer": ("nothing", ("it builds a fresh optimiser for each call and holds the pool, the computed share "
+                                       "and any queued task on that instance, which is discarded with the response; it "
+                                       "makes no completion call and writes nothing")),
+    "compliance": ("nothing", ("a deterministic screen: its rules and its halal, UK-legal, ethical and gaas.v5 checks "
+                               "compute verdicts and write nothing; the certificate store is only read, and it makes "
+                               "no completion call")),
+    #  product engines that call the QMS gate themselves
+    "petri_dish": ("records", _QMS_SEALS),
+    "experimentation": ("records", _QMS_SEALS),
+    "studio": ("records", "with a configured series, " + _QMS_SEALS + "; with none, the handler declines and nothing "
+                                                                      "runs"),
+    "reactor": ("records", ("its experimentation stage seals a QMS quality record and logs the compliance screen to "
+                            "the UEG audit log on every run, and its studio stage does the same when a variant was "
+                            "scored; its incubator stage writes nothing")),
+    "genesis": ("records", ("the journey saves its own record on every run, including one the floor served throughout "
+                            "or the screen blocked; it logs the gate's checkpoint and the compliance screen to the UEG "
+                            "audit log, seals a QMS quality record, and stores a bill of materials only when a model "
+                            "served the develop stage; composed here, it establishes nothing")),
+    "native_orchestrator": ("records", _CHECKPOINTED),
+    "native_swarm": ("records", _CHECKPOINTED + "; a run over the stage ceiling is refused before anything runs"),
+    "truth_consensus": ("records", ("with claims configured, it appends each consensus cycle's results to the VSB UEG "
+                                    "audit log, including a cycle that accepted nothing; with none, the handler "
+                                    "declines and nothing runs")),
+    "vsb_org_swarm": ("records", ("the org cascade files its run record, a proposed-catalogue row, the tiers' identity "
+                                  "and development records and four document-control artefacts on every run, seals a "
+                                  "QMS quality record and logs its governance gate, compliance screen and provenance to "
+                                  "the UEG ledgers; it also fires live signals, spends ATP, and may requisition fabric "
+                                  "resources that write their own")),
+    #  the religion forms: a model's composition is queued for a named scholar
+    "form_rel_fiqh_research": ("records", _SCHOLAR_QUEUED),
+    "form_rel_hadith": ("records", _SCHOLAR_QUEUED),
+    "form_rel_halal": ("records", _SCHOLAR_QUEUED),
+    "form_rel_tafsir": ("records", ("it caches the sourced Arabic of each ayah not fetched before, on every path and "
+                                    "before anything is composed; and " + _SCHOLAR_QUEUED.replace(
+                                        "the composed text is", "the composed exegesis, its sacred sections cut first, is"))),
+})
+#  the other twenty-one domain forms: each calls its form's own route function, which makes one completion call
+#  through the shared AI wrapper and writes nothing of its own
+_FACILITY_PERSISTS.update({_rid: ("nothing", _ENGINE_WRITES_NO_STORE) for _rid in (
+    "form_law_analyse", "form_law_research", "form_law_generate",
+    "form_edu_curriculum", "form_edu_lesson_plan", "form_edu_feedback", "form_edu_assessment",
+    "form_care_plan", "form_care_risk_assess", "form_care_safeguarding", "form_care_handover",
+    "form_sci_synthesise", "form_sci_hypothesis", "form_sci_experiment", "form_sci_literature",
+    "form_emp_cv", "form_emp_cover_letter", "form_emp_interview", "form_emp_career_path", "form_emp_salary",
+    "form_emp_application")})
+#  W835 (FU-910) - A RESOURCE OF ANOTHER KIND WHOSE HANDLER WRITES NONETHELESS. A narrative persists nothing by its
+#  kind's sentence; the digital twin's handler chains the console's governance checkpoint, as the two native handlers
+#  above do, so its contract says that instead of the kind's default.
+_OTHER_KIND_PERSISTS = {
+    "digital_twin": ("records", ("it writes a scenario narrative from a persona prompt, and no simulator runs; this "
+                                 "handler chains each completed run's governance checkpoint to the UEG audit log (a "
+                                 "refused pre-gate is logged as a halt)")),
+}
 
 _KIND_PHRASE = {
     "status_read": "read platform state that was already there — no facility ran for this mission",

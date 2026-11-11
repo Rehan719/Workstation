@@ -443,6 +443,8 @@ def contract(rid: str) -> Dict[str, Any]:
     side = _fab._READ_SIDE_EFFECTS.get(rid)
     if side:
         persists, persists_basis = "side_effect", side
+    elif rid in _fab._OTHER_KIND_PERSISTS:                  # W835 (FU-910) - a handler that writes, whatever its kind
+        persists, persists_basis = _fab._OTHER_KIND_PERSISTS[rid]
     elif kind in ("status_read", "query", "blueprint", "narrative"):
         persists, persists_basis = "nothing", _WHEN_RUN[kind]
     elif rid in _fab._FACILITY_PERSISTS:

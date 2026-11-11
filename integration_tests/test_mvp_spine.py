@@ -49026,6 +49026,8 @@ def test_w640_the_instrument_cell_proposes_checks_and_verifies_and_runs_nothing(
             assert (_c["persists"], _c["persists_basis"]) == tuple(_fab._FACILITY_PERSISTS[_r["id"]]), _r["id"]
         elif _kind == "facility_run":
             assert _c["persists"] == "not_declared", ("an engine run was declared to persist nothing", _r["id"])
+        elif _r["id"] in _fab._OTHER_KIND_PERSISTS:          # W835 (FU-910) - a handler of another kind that writes
+            assert (_c["persists"], _c["persists_basis"]) == tuple(_fab._OTHER_KIND_PERSISTS[_r["id"]]), _r["id"]
         else:
             assert _c["persists"] == "nothing", _r["id"]
         for _e in _c["equivalents"]:
@@ -72530,3 +72532,73 @@ def test_w834_a_constitutional_refusal_is_not_queued_for_a_scholar_as_composed_t
     shown, _h, review, _n = _rel834._scholar_gated("w834-probe", "## A\nA model's composed text for W834.",
                                                    "w834", ("## A",), {"served_by": "ollama:w834"})
     assert shown == "" and review["state"] in ("in_review", "withheld"), review
+
+
+def test_w835_every_facility_run_says_what_its_engine_persists(client, monkeypatch):
+    """FU-910 (W835). What a facility run persists was declared for eight; forty-six read "not_declared" (the row
+    counted twenty-one before the domain forms were registered). Each engine function was read and each is declared.
+    The declarations are held to the code they were read from: a domain form declared to write nothing calls a
+    route function whose body makes no write and queues nothing; a religion form declared to queue a scholar's
+    review calls the gate that queues; each product engine declared to seal a QMS record calls the gate itself, and
+    one of them is driven through a real composition run and seen to."""
+    import importlib as _il835
+    import inspect as _in835
+    import re as _re835
+    from agentic_core.api import instrument_cell as _cell835
+    from agentic_core.api import products as _prd835
+    from agentic_core.api import resource_fabric as _fab835
+
+    runs = [rid for rid in _fab835._BY_ID if _fab835._resource_kind(rid) == "facility_run"]
+    assert len(runs) >= 54, ("fewer facility runs than were read, so this guard would cover less than it says", len(runs))
+    silent = sorted(rid for rid in runs if _cell835.contract(rid)["persists"] == "not_declared")
+    assert not silent, ("a facility run still does not say what its engine persists", silent)
+
+    _WRITES = _re835.compile(r"write_text|write_bytes|atomic_write_json|json\.dump\(|\.log\(\{|UEGLogger|"
+                             r"control_document|assure_delivery\(|_save\(|submit_if_new|_scholar_gated\(")
+    for form in _fab835._FORMS:
+        body = _in835.getsource(getattr(_il835.import_module(form["module"]), form["handler"]))
+        word, basis = _fab835._FACILITY_PERSISTS[form["id"]]
+        if word == "nothing":
+            assert not _WRITES.search(body), (form["id"], "is declared to write nothing and its handler writes",
+                                              _WRITES.search(body).group(0))
+        else:
+            assert "_scholar_gated(" in body and "scholar's review" in basis, (form["id"], word, basis[:80])
+    for rid, fn in (("petri_dish", _prd835.petri_culture), ("experimentation", _prd835.reactor_experiment),
+                    ("studio", _prd835.reactor_studio)):
+        assert _fab835._FACILITY_PERSISTS[rid][0] == "records" and "assure_delivery(" in _in835.getsource(fn), rid
+
+    #  EVERY HANDLER BRANCH THAT CHAINS A GOVERNANCE CHECKPOINT SAYS SO, whatever its resource's kind: computed from
+    #  the dispatcher's own source (the W694 walk), never a list typed here
+    import ast as _ast835
+    import textwrap as _tw835
+    tree = _ast835.parse(_tw835.dedent(_in835.getsource(_fab835._run_real_resource_handler)))
+    chaining = set()
+    for node in _ast835.walk(tree):
+        t = getattr(node, "test", None)
+        if not (isinstance(node, _ast835.If) and isinstance(t, _ast835.Compare) and isinstance(t.left, _ast835.Name)
+                and t.left.id == "rid" and len(t.comparators) == 1 and isinstance(t.comparators[0], _ast835.Constant)):
+            continue
+        if any(isinstance(c, _ast835.Call) and isinstance(c.func, _ast835.Name) and c.func.id == "_stage_checkpoint"
+               for stmt in node.body for c in _ast835.walk(stmt)):
+            chaining.add(t.comparators[0].value)
+    assert {"native_orchestrator", "digital_twin"} <= chaining, ("the walk is not reading the handler", chaining)
+    for rid in sorted(chaining):
+        ct = _cell835.contract(rid)
+        assert ct["persists"] == "records" and "checkpoint" in ct["persists_basis"], (
+            "a handler chains a governance checkpoint and its contract does not say so", rid, ct["persists"])
+
+    labels = []
+    _orig_ad = _prd835.assure_delivery
+
+    async def _spy_ad(*a, **k):
+        labels.append(k.get("label"))
+        return await _orig_ad(*a, **k)
+    monkeypatch.setattr(_prd835, "assure_delivery", _spy_ad)
+    comp = client.post("/api/v1/resources/compose", json={
+        "name": "w835 persists rig", "usage_area": "synthesis", "resource_ids": ["petri_dish"], "config": {}}).json()
+    try:
+        r = client.post(f"/api/v1/resources/compositions/{comp['id']}/run", json={"objective": "w835 probe"})
+        assert r.status_code == 200, r.text[:300]
+    finally:
+        client.delete(f"/api/v1/resources/compositions/{comp['id']}")
+    assert "petri" in labels, ("the petri dish is declared to seal a QMS record and its run sealed none", labels)
