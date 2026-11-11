@@ -16486,11 +16486,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W817",
       "note": "",
       "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A model's rewrite of religious content is queued for a scholar under a key that carries the draft's hash beside the rewrite's (its tool segment stays 'refine', so it counts towards the refine queue's cap as before), and the item's reference names the draft. An approval releases that rewrite of that draft; the identical rewrite of a different draft is a new item, withheld until it is decided itself. An approval entered before this round is under the old key and releases nothing now; the item is asked again under its draft. The second clause (the religious-content reading is a word list that can flag and never clear) was already said on the response (religious_screen) since W671 and is unchanged. Guard test_w817, 2 blinds red."
     },
     {
       "id": "FU-842",

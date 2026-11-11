@@ -71775,3 +71775,50 @@ def test_w816_the_law_authorities_are_typed_and_the_curriculum_select_shows_name
     assert "<option key={o} value={o}>{f.optionLabels?.[o] ?? o}</option>" in tool, "a select still shows its values"
     assert "optionLabels: frameworkNames" in hub and "names[String(f.id)] = String(f.name)" in hub, (
         "the framework select is not given the names the API lists")
+
+
+def test_w817_a_scholars_approval_of_a_rewrite_is_of_that_rewrite_of_that_draft(client, monkeypatch, tmp_path):
+    """FU-841 (W817). A model's rewrite of a religious draft is queued under a key that carries the draft as well as
+    the rewrite, with a reference that names the draft. Approved, it is released for that draft; the identical
+    rewrite of a different draft is a new item, withheld until it is decided itself."""
+    import agentic_core.api.refine as _rf
+    import agentic_core.api.scholar_review as _sr
+
+    monkeypatch.setattr(_sr, "_roster_path", lambda: tmp_path / "roster.json")
+    monkeypatch.setattr(_sr, "_review_path", lambda: tmp_path / "review.json")
+    draft_a = "## Notes\nW817 a short note on the opening chapter, as the person wrote it."
+    draft_b = "## Notes\nW817 another person's note on the same chapter, in other words."
+    rewrite = "ZZ-W817 a model's reworded study note on the opening chapter."
+
+    async def _ai(prompt, agent, **kw):
+        return rewrite, {"served_by": "test-model", "is_external": False}
+    monkeypatch.setattr(_rf, "ai_text", _ai)
+
+    def _refine(draft):
+        r = client.post("/api/v1/refine", json={"previous": draft, "instruction": "make it clearer",
+                                                "source_endpoint": "/api/v1/religion/quran-tafsir"})
+        assert r.status_code == 200, r.text[:300]
+        return r.json()
+
+    a = _refine(draft_a)
+    assert a["refine_withheld"] is True and a["refined"] == draft_a, a
+    items = [i for i in client.get("/api/v1/scholar-review/queue").json()["items"] if i["body"] == rewrite]
+    assert len(items) == 1, items
+    key_a = items[0]["content_key"]
+    assert key_a.startswith("religion-research:refine:") and key_a.count(":") == 3, (
+        "the queue key does not carry the draft", key_a)
+    assert "rewriting a draft that begins: ## Notes W817 a short note" in str(items[0].get("reference")), items[0]
+
+    assert client.post("/api/v1/scholar-review/roster", json={"scholar_id": "w817", "name": "Shaykh W817",
+                                                              "credential": "stated"}).status_code == 200
+    assert client.post("/api/v1/scholar-review/decide", json={"content_key": key_a, "scholar_id": "w817",
+                                                              "approve": True}).status_code == 200
+    a2 = _refine(draft_a)
+    assert a2["refine_withheld"] is False and a2["refined"] == rewrite, ("the approved rewrite was not released", a2)
+
+    b = _refine(draft_b)
+    assert b["refine_withheld"] is True and b["refined"] == draft_b and "ZZ-W817" not in str(b), (
+        "an approval of a rewrite of one draft released the same rewrite of another", b)
+    keys = {i["content_key"] for i in client.get("/api/v1/scholar-review/queue").json()["items"]
+            if i["body"] == rewrite}
+    assert len(keys - {key_a}) == 1, ("the other draft's rewrite was not queued as its own item", keys)

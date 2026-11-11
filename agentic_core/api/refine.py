@@ -93,8 +93,15 @@ async def refine(req: RefineRequest):
     _religious = _religious_reason(req, refined if provenance.get("served_by") != "native" else "")
     if _religious and provenance.get("served_by") != "native":
         from agentic_core.api.religion import _scholar_gated, _review_fields
+        #  W817 (FU-841) - THE APPROVAL IS OF THIS REWRITE OF THIS DRAFT. The key held only the rewrite's hash,
+        #  so an identical rewrite of another draft was released by the same approval, and the queue item's
+        #  reference held only the instruction. The draft's hash is in the key (its tool segment stays "refine",
+        #  so the item counts towards the refine queue as before) and the reference names the draft.
+        from agentic_core.api import scholar_review as _sr817
+        _draft817 = " ".join((req.previous or "").split())
         _shown, _held, _sr_state, _note = _scholar_gated(
-            "refine", refined, req.instruction, (), provenance)
+            "refine:" + _sr817.body_hash(_draft817)[:16], refined,
+            f"{req.instruction} (rewriting a draft that begins: {_draft817[:140]})", (), provenance)
         if _sr_state.get("state") == "approved":
             refined = _shown            # the text the gate approved, exactly - not the route's own copy of it
         else:
