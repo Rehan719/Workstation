@@ -363,8 +363,13 @@ class EconomicMetabolism:
             if splits.get("capital_fund", 0.0) > 0:
                 from agentic_core.api.capital_fund import contribute_from_cycle
                 capital_contribution = contribute_from_cycle(self.vsb_id, splits["capital_fund"])
-        except Exception:
-            capital_contribution = None
+        except Exception as _cf_err:
+            #  W814 (FU-877) - a contribution that could not be written is said, in the shape a refused one has; it
+            #  read as None, the same as a cycle with no capital-fund share at all
+            capital_contribution = {"vsb_id": self.vsb_id, "contributed": False,
+                                    "amount_wst": round(float(splits.get("capital_fund", 0.0) or 0.0), 2),
+                                    "reason": (f"the capital fund could not be written ({type(_cf_err).__name__}: "
+                                               f"{str(_cf_err)[:240]})")}
 
         # 5. Giving-back — intelligent charity allocation (nutrient-return loop)
         charity_alloc = self.charity.allocate(splits.get("charity", 0.0)) if splits.get("charity", 0.0) > 0 else None

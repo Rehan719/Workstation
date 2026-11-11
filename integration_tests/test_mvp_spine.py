@@ -22244,6 +22244,10 @@ def test_w496_a_default_is_not_a_decision(client, monkeypatch, tmp_path):
         assert "ratio against a constant" in _f["fund_health_basis"], _f["fund_health_basis"]
     _fund_store = _cf._FUND_STORE
     _fbackup = _fund_store.read_bytes() if _fund_store.exists() else None
+    #  W814 (FU-877) - the fund's creation record is restored with the store, or a store this leg removed would
+    #  read as a deleted fund to every later reader
+    _frec = _cf._created_record_path()
+    _frec_backup = _frec.read_bytes() if _frec.exists() else None
     try:
         _fund_store.parent.mkdir(parents=True, exist_ok=True)
         _fund_store.write_text('{"total_capital": 10000000, "available":', encoding="utf-8")
@@ -22258,6 +22262,10 @@ def test_w496_a_default_is_not_a_decision(client, monkeypatch, tmp_path):
             _fund_store.unlink(missing_ok=True)
         else:
             _fund_store.write_bytes(_fbackup)
+        if _frec_backup is None:
+            _frec.unlink(missing_ok=True)
+        else:
+            _frec.write_bytes(_frec_backup)
 
     # ── FU-120: a defaulted directive and an unparsed verdict are not decisions ─────────────────────
     _ev = client.post("/api/v1/sovereign-evolution/cycle",
@@ -56167,6 +56175,8 @@ def test_fu794_a_fund_allocation_is_held_until_a_person_approves_it(client, monk
 
     _store = _cf._FUND_STORE
     _backup = _store.read_bytes() if _store.exists() else None
+    _rec = _cf._created_record_path()                    # W814 (FU-877) - restored with the store
+    _rec_backup = _rec.read_bytes() if _rec.exists() else None
     _created, _project_id, _outside = [], None, None
     _seen = []
     _real_log = _g5.UEGLogger.log
@@ -56445,6 +56455,10 @@ def test_fu794_a_fund_allocation_is_held_until_a_person_approves_it(client, monk
             _store.unlink(missing_ok=True)
         else:
             _store.write_bytes(_backup)
+        if _rec_backup is None:
+            _rec.unlink(missing_ok=True)
+        else:
+            _rec.write_bytes(_rec_backup)
         for _id in _created:
             _cc._cca_path(_id).unlink(missing_ok=True)
         if _project_id:
@@ -71604,3 +71618,85 @@ def test_w813_an_owner_account_is_opened_under_the_registered_owner_and_says_so(
                       / "enterprise" / "VSBEconomy.tsx").read_bytes().decode("utf-8"))
     assert "pay.owner_matches_registry === false" in _ve and "{pay.owner_registry_basis}" in _ve, (
         "the economy page does not say when the living registry disagrees with the recorded payee")
+
+
+def test_w814_a_deleted_capital_fund_is_not_answered_as_a_new_fund(client, monkeypatch, tmp_path):
+    """FU-877 (W814). Driven in an isolated store. A fund with no store and no record of its creation is the first
+    creation: its status reads the seed, and its first write saves the store and records THAT the fund was created
+    (the record holds no balance). Once that record exists, a store that is not there is refused to every reader
+    and writer, naming when the fund was created and saying no balance is shown or reseeded: the status, the
+    portfolio and the report answer 503, and a contribution and an allocation write nothing. A restored store is
+    read again; a store made before the record gets one from its first whole read; and removing the record lets
+    the next write seed a new fund deliberately."""
+    import json as _j
+    import uuid as _uuid
+    from agentic_core.api import capital_fund as _cf
+    from agentic_core.config import StoreUnavailable
+    from agentic_core.economy import living_vsbs as _lv
+
+    monkeypatch.setattr(_cf, "_FUND_STORE", tmp_path / "capital_fund.json")
+    store, rec = _cf._FUND_STORE, _cf._created_record_path()
+    assert rec.parent == tmp_path, ("the creation record does not sit beside the store", rec)
+    tag = _uuid.uuid4().hex[:6]
+    vid = f"vsb-w814{tag}"
+    _lv.register(vid, "W814 Co", entity_type="waqf_ltd_hybrid", owner=f"w814-owner-{tag}")
+
+    # (1) FIRST CREATION: no store and no record - the status reads the seed; the first write saves both
+    s0 = client.get("/api/v1/fund/status")
+    assert s0.status_code == 200 and s0.json()["total_capital"] == 10_000_000, s0.text[:300]
+    assert not store.exists() and not rec.exists(), "a read of a fund never created wrote the store or its record"
+    assert _cf.contribute_from_cycle(vid, 250.0).get("contributed", True) is not False
+    assert store.exists() and rec.exists(), "the first write did not record that the fund was created"
+    made = _j.loads(rec.read_text(encoding="utf-8"))
+    assert made.get("created_at") and "no balance" in str(made.get("basis")), made
+    assert not [k for k in made if any(w in k for w in ("capital", "available", "allocated", "wst"))], (
+        "the creation record holds a balance", made)
+    saved = store.read_bytes()
+
+    # (2) THE STORE IS DELETED: every reader answers 503 in the store's words, and no seed is shown
+    store.unlink()
+    for r in (client.get("/api/v1/fund/status"), client.get("/api/v1/fund/portfolio"),
+              client.post("/api/v1/fund/report", json={})):
+        assert r.status_code == 503, (r.request.url.path, r.status_code, r.text[:200])
+        assert "deleted or moved" in r.text and "No balance is shown" in r.text, r.text[:300]
+        assert made["created_at"] in r.text, ("the refusal does not say when the fund was created", r.text[:300])
+        assert "10000000" not in r.text.replace(",", ""), ("a refusal shows the seed", r.text[:300])
+
+    # (3) WRITERS write nothing: a contribution refuses, an allocation answers 503
+    try:
+        _cf.contribute_from_cycle(vid, 100.0)
+        raise AssertionError("a contribution was written over a deleted fund")
+    except StoreUnavailable as exc:
+        assert "deleted or moved" in str(exc), str(exc)
+    _kept = rec.read_bytes()                  # a record that cannot be read is still a witness, and says so
+    rec.write_text("{not json", encoding="utf-8")
+    ur = client.get("/api/v1/fund/status")
+    assert ur.status_code == 503 and "could not be read, so when is not known" in ur.text, ur.text[:300]
+    rec.write_bytes(_kept)
+    al = client.post("/api/v1/fund/allocate", json={"project_id": f"w814-{tag}", "project_name": "W814",
+                                                    "amount": 10, "purpose": "w814"})
+    assert al.status_code == 503 and "deleted or moved" in al.text, (al.status_code, al.text[:200])
+    assert not store.exists(), "a writer made a new store over the deleted fund"
+    from agentic_core.economy.metabolism import EconomicMetabolism
+    cyc = EconomicMetabolism(vid, "waqf_ltd_hybrid", f"w814-owner-{tag}").run_cycle(1000.0, 100.0)
+    cc = cyc.get("capital_fund_contribution") or {}
+    assert cc.get("contributed") is False and "deleted or moved" in str(cc.get("reason")), (
+        "a cycle's contribution that could not be written reads as no contribution at all", cc)
+    assert not store.exists(), "a cycle made a new store over the deleted fund"
+
+    # (4) A RESTORED STORE is read again, with what it held
+    store.write_bytes(saved)
+    s4 = client.get("/api/v1/fund/status")
+    assert s4.status_code == 200 and s4.json()["total_capital"] == 10_000_250.0, s4.text[:200]
+
+    # (5) A STORE MADE BEFORE THE RECORD gets one from its first whole read
+    rec.unlink()
+    assert client.get("/api/v1/fund/status").status_code == 200
+    assert rec.exists(), "a whole read of a store made before the record did not record the fund"
+
+    # (6) REMOVING THE RECORD with the store lets the next write seed a new fund, deliberately
+    store.unlink()
+    rec.unlink()
+    assert client.get("/api/v1/fund/status").json()["total_capital"] == 10_000_000
+    _cf.contribute_from_cycle(vid, 5.0)
+    assert _j.loads(store.read_text(encoding="utf-8"))["total_capital"] == 10_000_005.0 and rec.exists()

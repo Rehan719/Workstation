@@ -265,7 +265,10 @@ def apply_retirement(vsb_id: str, cca_id: str) -> Dict[str, Any]:
     if total > 0:
         contribute_from_cycle(vsb_id, total)
     from agentic_core.api.capital_fund import _load_fund
-    fund_after = (_load_fund() or {}).get("total_capital")
+    try:
+        fund_after = (_load_fund() or {}).get("total_capital")
+    except Exception:                                   # W814 (FU-877) - a fund that cannot be known is not read
+        fund_after = None
     stamp = _lv._now()
     with store_lock(_lv._STORE):
         d = _lv._load()

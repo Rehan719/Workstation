@@ -17231,11 +17231,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W814",
       "note": "",
       "slot_source": "found while verifying an external audit and not done in this round",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "HYPOTHESIS confirmed in an isolated store, then built. The second witness is a record that the fund was created and when (capital_fund_created.json beside the store; it holds no balance), written at the first save and by the first whole read of an older store. A missing store with that record is refused to every reader and writer: the status, the portfolio and the report answer 503 naming when the fund was created and any quarantined copy, a contribution and an allocation write nothing, nothing is reseeded and no balance is shown. A restored store is read again; removing the record seeds a new fund deliberately. A record that exists and cannot be read is still a witness, and the refusal says its date is not known. A cycle whose contribution could not be written says so. Guard test_w814, 7 blinds red."
     },
     {
       "id": "FU-878",

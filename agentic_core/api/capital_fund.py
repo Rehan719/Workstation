@@ -36,6 +36,54 @@ router = APIRouter(prefix="/api/v1", tags=["capital-fund"])
 _FUND_STORE = data_path("capital_fund.json")
 
 
+#  W814 (FU-877) - THE SECOND WITNESS. A missing store was read as first creation, so a deleted fund came back as a
+#  new one of ten million and the next write made that permanent. This record says only THAT the fund was created
+#  and when - never a balance - so a missing store can be told apart from one that never existed. It sits beside
+#  the store (found from it, so a store moved for isolation takes its record with it).
+def _created_record_path() -> Path:
+    return _FUND_STORE.with_name(_FUND_STORE.stem + "_created.json")
+
+
+def _created_record() -> dict | None:
+    """The record that the fund was created, or None when there is none. A record that exists and cannot be read
+    is still a witness: the fund was created, and only its date is unknown."""
+    p = _created_record_path()
+    if not p.exists():
+        return None
+    try:
+        d = json.loads(p.read_text(encoding="utf-8"))
+        return d if isinstance(d, dict) else {"created_at": None}
+    except Exception:
+        return {"created_at": None, "record_unreadable": True}
+
+
+def _record_created(created_at: str | None) -> None:
+    """Write the record if it is not there. Best-effort and never raises: it runs after a save or a whole read
+    has already succeeded, and the fund's own answer must not fail on its witness."""
+    try:
+        p = _created_record_path()
+        if p.exists():
+            return
+        atomic_write_json(p, {
+            "created_at": created_at or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "basis": ("the Capital Fund's store existed by this time. This record holds no balance: it "
+                      "only lets a missing store be told apart from one that never existed (W814, FU-877)")})
+    except Exception:
+        pass
+
+
+def _missing_store_problem(record: dict) -> str:
+    _when = (f" on {record['created_at']}" if record.get("created_at") else
+             " (its record exists and could not be read, so when is not known)" if record.get("record_unreadable")
+             else "")
+    _q = sorted(_FUND_STORE.parent.glob(_FUND_STORE.stem + ".corrupt-*"))
+    _qtxt = f"; a quarantined copy is at {_q[-1].name}" if _q else ""
+    return (f"the capital fund was created{_when} (recorded in {_created_record_path().name}) and its store is "
+            f"not there: it was deleted or moved{_qtxt}. No balance is shown and none is reseeded - restore the "
+            f"store, or remove {_created_record_path().name} to seed a new fund deliberately")
+
+
 def _load_fund(strict: bool = False) -> dict:
     # W444 (comment corrected by the refuter round: load_json_tolerant recovers a truncated
     # tail but does NOT quarantine) — on unrecoverable corruption the corrupt file is now
@@ -54,8 +102,16 @@ def _load_fund(strict: bool = False) -> dict:
     # allocated, available - and a dropped tail is dropped ALLOCATIONS, which makes the fund read as
     # having more available than it has. A writer refuses; a reader is told, on the dict it reads.
     from agentic_core.config import read_json_reported
+    #  W814 (FU-877) - a missing store that the record says was created is refused to readers and writers alike
+    if not _FUND_STORE.exists():
+        _rec814 = _created_record()
+        if _rec814 is not None:
+            from agentic_core.config import StoreUnavailable
+            raise StoreUnavailable(_FUND_STORE, _missing_store_problem(_rec814))
     d, _why = read_json_reported(_FUND_STORE, None) if _FUND_STORE.exists() else (None, None)
     if isinstance(d, dict):
+        if not _why:
+            _record_created(d.get("created_at"))     # W814 - a store made before the record gets one
         if _why:
             if strict:
                 from agentic_core.config import StoreUnavailable
@@ -101,6 +157,7 @@ def _load_fund(strict: bool = False) -> dict:
 def _save_fund(fund: dict) -> None:
     _FUND_STORE.parent.mkdir(parents=True, exist_ok=True)
     atomic_write_json(_FUND_STORE, fund)
+    _record_created(fund.get("created_at"))          # W814 (FU-877) - the fund now exists, and that is recorded
 
 
 def contribute_from_cycle(vsb_id: str, amount_wst: float) -> dict:
@@ -175,10 +232,20 @@ def _organism_posture() -> dict:
         return {}
 
 
+def _load_fund_or_503() -> dict:
+    """W814 (FU-877) - a reader's load: a fund that cannot be known answers 503 in the store's own words, never a
+    seeded pool presented as this fund."""
+    from agentic_core.config import StoreUnavailable
+    try:
+        return _load_fund()
+    except StoreUnavailable as e:
+        raise HTTPException(status_code=503, detail=f"{e}")
+
+
 @router.get("/fund/status")
 async def fund_status():
     """Return Capital Fund health and overview, including the living organism's §8 posture."""
-    fund = _load_fund()
+    fund = _load_fund_or_503()
     allocation_count = len(fund.get("allocations", []))
     utilisation = round(fund["allocated"] / fund["total_capital"] * 100, 1) if fund["total_capital"] else 0
     # §12 (W496, FU-119a) - the page captioned this "the real capital fund", and 10,000,000 of it is a
@@ -631,7 +698,7 @@ def _allocate_governed(req: "AllocateRequest", fund: dict, user: dict | None):
 @router.get("/fund/portfolio")
 async def fund_portfolio():
     """Portfolio view of all capital allocations."""
-    fund = _load_fund()
+    fund = _load_fund_or_503()
     allocations = fund.get("allocations", [])
 
     by_domain: dict[str, float] = {}
@@ -675,7 +742,7 @@ class FundReportRequest(BaseModel):
 @router.post("/fund/report")
 async def generate_fund_report(req: FundReportRequest):
     """AI-generated Capital Fund performance report."""
-    fund = _load_fund()
+    fund = _load_fund_or_503()
     portfolio_summary = (
         f"Total capital: {fund['total_capital']} WST\n"
         f"Allocated: {fund['allocated']} WST ({round(fund['allocated']/fund['total_capital']*100, 1)}%)\n"
