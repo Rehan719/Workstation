@@ -125,19 +125,16 @@ jobs:
       - name: Build the frontend (the backend serves this dist)
         run: npm run build --workspace=apps/workstation-superapp
       - name: Install Chromium for Playwright
-        #  The runner's package mirror has failed to resolve for minutes at a time (two runs in a row on 2026-11-11
-        #  died here, before a page was opened). The INSTALL is retried with a pause and apt retries its own
-        #  fetches; the smoke step below is never retried, so a page that fails still fails the run.
+        #  The runner's package mirror has failed to resolve for long stretches (three runs on 2026-11-11 died
+        #  here, before a page was opened, while npm and PyPI resolved in the same job). The system packages come
+        #  from that mirror; the browser comes from Playwright's own host. So the install is tried once with its
+        #  packages, then the browser alone is installed and the runner image's own libraries and fonts are used.
+        #  The smoke step below is never retried: a page that fails, or a browser that cannot start, still fails
+        #  the run.
         run: |
-          echo 'Acquire::Retries "5";' | sudo tee /etc/apt/apt.conf.d/80-ci-retries > /dev/null
-          for attempt in 1 2 3; do
-            npx playwright install --with-deps chromium && exit 0
-            echo "browser install attempt $attempt failed; retrying in $((attempt * 60))s"
-            sleep $((attempt * 60))
-            sudo apt-get update || true
-          done
-          echo "the browser could not be installed after 3 attempts"
-          exit 1
+          npx playwright install --with-deps chromium && exit 0
+          echo "the browser's system packages could not be installed; installing the browser alone"
+          npx playwright install chromium
       - name: Start the backend (serves the built SPA)
         env:
           AI_DISABLE_LOCAL: '1'          # deterministic: the floor answers instantly, no model waits
