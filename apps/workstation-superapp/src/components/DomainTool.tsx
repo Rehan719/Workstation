@@ -16,6 +16,7 @@ export interface DomainField {
   label: string;
   type?: 'text' | 'textarea' | 'select' | 'keyvalue' | 'list' | 'claims';
   options?: string[];
+  optionLabels?: Record<string, string>;   // W816 (FU-835) - what a select shows for an option; its value is sent
   placeholder?: string;
   default?: string;
 }
@@ -290,7 +291,7 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
           {f.type === 'select' ? (
             <select aria-label={f.label} value={form[f.name]} onChange={e => setForm({ ...form, [f.name]: e.target.value })}
               className="block mt-1 text-[11px] font-black uppercase bg-slate-900 border border-slate-800 rounded-lg text-slate-300 px-3 py-2">
-              {(f.options || []).map(o => <option key={o} value={o}>{o}</option>)}
+              {(f.options || []).map(o => <option key={o} value={o}>{f.optionLabels?.[o] ?? o}</option>)}
             </select>
           ) : (f.type === 'textarea' || f.type === 'keyvalue' || f.type === 'list' || f.type === 'claims') ? (
             <textarea aria-label={f.label} value={form[f.name]} onChange={e => setForm({ ...form, [f.name]: e.target.value })} rows={3}

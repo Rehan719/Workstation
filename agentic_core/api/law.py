@@ -93,7 +93,9 @@ class ParticularSpec(BaseModel):
 class AssembleRequest(BaseModel):
     template_id: str
     particulars: list[ParticularSpec] = []   # each filled ONLY from a located bundle line
-    authorities: list = []        # names of statutes or cases - each resolved against the corpus or refused
+    #  W816 (FU-825) - typed: a non-string entry is refused at the door with a 422 naming the field, as a
+    #  particular sent in the wrong shape already is
+    authorities: list[str] = []   # names of statutes or cases - each resolved against the corpus or refused
 
 
 @router.post("/matter/assemble")

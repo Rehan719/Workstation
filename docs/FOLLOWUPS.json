@@ -16154,11 +16154,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W816",
       "note": "",
       "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The assembly request's authorities are typed as a list of names: a non-string entry is refused at the door with a 422 that names the field, as a particular in the wrong shape already is; a list of names is taken as before. Guard test_w816."
     },
     {
       "id": "FU-826",
@@ -16356,11 +16359,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W816",
       "note": "",
       "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The framework select shows the name GET /api/v1/education/frameworks gives each framework and still sends its id: DomainTool's select takes an optional label per option, and the Education hub passes the names it read. Guard test_w816, 3 blinds red (with FU-825)."
     },
     {
       "id": "FU-836",

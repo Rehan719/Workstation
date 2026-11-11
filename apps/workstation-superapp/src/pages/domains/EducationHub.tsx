@@ -16,6 +16,8 @@ export const EducationHub: React.FC = () => {
   // caller: this select offered four typed values, three of which that list does not hold). Null = not read
   // yet; a failed read is SAID, and only the default is offered then.
   const [frameworks, setFrameworks] = useState<string[] | null>(null);
+  // W816 (FU-835) - the select showed each framework's id; it shows the name the API gives and still sends the id
+  const [frameworkNames, setFrameworkNames] = useState<Record<string, string>>({});
   const [frameworksNote, setFrameworksNote] = useState('');
   useEffect(() => {
     let alive = true;
@@ -23,9 +25,12 @@ export const EducationHub: React.FC = () => {
       .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
       .then(d => {
         if (!alive) return;
-        const ids = (Array.isArray(d?.frameworks) ? d.frameworks : []).map((f: any) => String(f?.id ?? '')).filter(Boolean);
+        const list = Array.isArray(d?.frameworks) ? d.frameworks : [];
+        const ids = list.map((f: any) => String(f?.id ?? '')).filter(Boolean);
         if (ids.length === 0) throw new Error('the list came back empty');
-        setFrameworks(ids); setFrameworksNote('');
+        const names: Record<string, string> = {};
+        list.forEach((f: any) => { if (f?.id && f?.name) names[String(f.id)] = String(f.name); });
+        setFrameworks(ids); setFrameworkNames(names); setFrameworksNote('');
       })
       .catch(e => { if (alive) { setFrameworks(null); setFrameworksNote(`The framework list could not be read (${String(e?.message ?? e)}), so only the default framework is offered below.`); } });
     return () => { alive = false; };
@@ -83,7 +88,7 @@ export const EducationHub: React.FC = () => {
                   { name: 'subject', label: 'Subject', type: 'text', placeholder: 'e.g. Introduction to Machine Learning', default: 'Introduction to Machine Learning' },
                   { name: 'level', label: 'Level', type: 'text', placeholder: 'e.g. GCSE / A-Level / University Year 1', default: 'University Year 1' },
                   { name: 'duration_weeks', label: 'Duration (weeks)', type: 'text', default: '12' },
-                  { name: 'framework', label: 'Framework', type: 'select', options: (frameworks && frameworks.length > 0 ? frameworks : ['bloom']), default: 'bloom' },
+                  { name: 'framework', label: 'Framework', type: 'select', options: (frameworks && frameworks.length > 0 ? frameworks : ['bloom']), optionLabels: frameworkNames, default: 'bloom' },
                   { name: 'learning_objectives_count', label: 'Learning objectives', type: 'text', default: '6' },
                 ]}
               />

@@ -54973,7 +54973,9 @@ def test_p3b_r4_domain_qep_and_genesis_surfaces_say_what_exists(client, monkeypa
     _ids = [f["id"] for f in client.get("/api/v1/education/frameworks").json()["frameworks"]]
     _eh = _page("pages/domains/EducationHub.tsx")
     assert "fetch('/api/v1/education/frameworks')" in _eh, "the hub does not read the list"
-    assert "options: (frameworks && frameworks.length > 0 ? frameworks : ['bloom']), default: 'bloom' }" in _eh
+    #  W816 (FU-835) - the same select, now also given the names the API lists for its options
+    assert ("options: (frameworks && frameworks.length > 0 ? frameworks : ['bloom']), optionLabels: frameworkNames, "
+            "default: 'bloom' }") in _eh
     assert "bloom" in _ids, "the fallback and default the page types is not a framework the API lists"
     for _typed in ("solo", "backward_design", "competency"):
         assert (_typed in _ids) or (f"'{_typed}'" not in _eh), ("the page still types a framework the API does not list", _typed)
@@ -71750,3 +71752,26 @@ def test_w815_a_fabric_registration_says_what_it_runs_when_that_is_not_its_endpo
                        / "synthesis" / "ResourceFabric.tsx").read_bytes().decode("utf-8"))
     assert "{r.runs_instead && (" in page and "title={r.runs_instead_basis}" in page, "the card does not show it"
     assert "runs {r.runs_instead}, not {r.endpoint}" in page, "the card does not set what runs beside the endpoint"
+
+
+def test_w816_the_law_authorities_are_typed_and_the_curriculum_select_shows_names(client):
+    """FU-825, FU-835 (W816). An assembly request whose authorities hold a non-string entry is refused at the door
+    with a 422 that names the field, and one of names is still taken; the curriculum framework select shows the
+    name the API gives each framework, and still sends its id."""
+    import pathlib as _pl
+
+    bad = client.post("/api/v1/law/matter/assemble", json={"template_id": "witness_statement",
+                                                           "authorities": [{"name": "Equality Act 2010"}]})
+    assert bad.status_code == 422 and "authorities" in bad.text, (bad.status_code, bad.text[:300])
+    ok = client.post("/api/v1/law/matter/assemble", json={"template_id": "witness_statement",
+                                                          "authorities": ["Equality Act 2010"]})
+    assert ok.status_code != 422, ("a list of names is refused", ok.text[:300])
+
+    fw = client.get("/api/v1/education/frameworks").json()["frameworks"]
+    assert fw and all(f.get("id") and f.get("name") for f in fw), fw
+    src = _pl.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+    tool = _code_only((src / "components" / "DomainTool.tsx").read_bytes().decode("utf-8"))
+    hub = _code_only((src / "pages" / "domains" / "EducationHub.tsx").read_bytes().decode("utf-8"))
+    assert "<option key={o} value={o}>{f.optionLabels?.[o] ?? o}</option>" in tool, "a select still shows its values"
+    assert "optionLabels: frameworkNames" in hub and "names[String(f.id)] = String(f.name)" in hub, (
+        "the framework select is not given the names the API lists")
