@@ -2546,7 +2546,11 @@ async def run_composition(cid: str, req: RunCompositionRequest,
                        duration_ms=int((time.time() - _t0) * 1000),
                        # W495 (FU-125, S7.3) — a non-empty trace is not a quality verdict
                        success=bool(res.get("trace")),
-                       quality_gate=(res.get("quality") or {}).get("qms_gate_passed"), ref=cid)
+                       quality_gate=(res.get("quality") or {}).get("qms_gate_passed"), ref=cid,
+                       # W829 (FU-1119) - the caller it checked design access with: the run's seconds are that
+                       # entity's own, as the fabric swarm run's are (W743). The facility rows nested inside this
+                       # run name no owner, so the nest is booked to the entity once.
+                       owner_id=_fabric_owner(user))
     except Exception:
         pass
     try:
@@ -2687,6 +2691,7 @@ async def run_composition(cid: str, req: RunCompositionRequest,
             # come from the run, never 'real-engine' / False by default.
             _calls, _failed = rr.get("calls") or 0, rr.get("failed_calls") or 0
             _ok = not rr.get("error") and not (_calls and _failed >= _calls)
+            #  W829 (FU-1119) - no owner here: the composition_run row books this nest to its entity
             _ro("fabric_resource", f"fabric:{rr['resource']}",
                 served_by=str(rr.get("served_by") or ("real-engine" if _ok and not _calls else "none")),
                 is_external=bool(rr.get("is_external")),

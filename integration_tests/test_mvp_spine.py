@@ -72204,3 +72204,83 @@ def test_w828_a_sovereign_evolution_cycle_reads_what_the_previous_one_did(client
     assert "roadmap.previous_cycle.basis" in pg and "s.status_then" in pg and "s.status_now" in pg, (
         "the Sovereign Evolution page does not show what the previous cycle did")
     assert "evolution-previous-absent" in pg, "a roadmap saved before a cycle read its predecessor is not said to be"
+
+
+def test_w829_a_composition_run_and_a_vsb_scoped_cascade_book_their_work_to_the_entity_that_ran_it(client,
+                                                                                                    monkeypatch):
+    """FU-1119 + FU-1118 (W829).
+
+    1. run_composition holds its caller (it checks design access with it), and its composition_run outcome named no
+       owner, so the run's seconds counted as unattributed in the work budget while the fabric swarm run beside it
+       books its owner (W743). The row now names the owner the design was stamped with; the facility rows nested
+       inside the run name none, so the nest is booked to the entity once.
+    2. A VSB's own repository cascade and a contract delivery call the org cascade holding no user, so its tier calls
+       named no owner and no VSB although the scope names the VSB. A cascade scoped to a VSB now books its tier calls
+       to that VSB under its registered owner; an unscoped cascade with no caller still names no owner (none is
+       guessed). Both callers keep passing the scope. Measured first: the only reader that filters outcome rows by
+       VSB is GET /api/v1/operations/outcomes?vsb_id=, and the composition's own org cascade is unscoped."""
+    import pathlib as _pl829
+    from agentic_core.api import operational_excellence as _oe829
+    from agentic_core.api import vsb as _vsb829
+    seen = []
+    _orig = _oe829.record_outcome
+
+    def _spy(*a, **k):
+        seen.append((a[0] if a else k.get("kind"), k.get("owner_id"), k.get("vsb_id"), k.get("ref")))
+        return _orig(*a, **k)
+
+    monkeypatch.setattr(_oe829, "record_outcome", _spy)
+
+    # ── 1. A SAVED COMPOSITION'S RUN
+    comp = client.post("/api/v1/resources/compose", json={
+        "name": "w829 owner rig", "usage_area": "synthesis", "resource_ids": ["petri_dish"], "config": {}}).json()
+    try:
+        r = client.post(f"/api/v1/resources/compositions/{comp['id']}/run", json={"objective": "w829 owner probe"})
+        assert r.status_code == 200, r.text[:300]
+        runs = [s for s in seen if s[0] == "composition_run"]
+        assert runs and runs[-1][1] and runs[-1][1] == comp.get("owner_id"), (
+            "the composition run did not book its seconds to the entity that ran it", seen, comp.get("owner_id"))
+        nested = [s for s in seen if s[0] == "fabric_resource"]
+        assert nested, ("the probe ran no facility, so the nest was not driven", seen)
+        assert all(s[1] is None for s in nested), ("a facility row inside a composition run booked the entity a "
+                                                   "second time", seen)
+    finally:
+        client.delete(f"/api/v1/resources/compositions/{comp['id']}")
+
+    # ── 2. A CASCADE SCOPED TO A VSB, called holding no user (as the repository cascade and a delivery call it)
+    _vsb829._save_vsb({"vsb_id": "vsb-w829", "name": "W829 Probe", "owner_id": "w829-owner"})
+    seen.clear()
+    c = client.post("/api/v1/swarm/cascade", json={"mission": "w829 scoped cascade probe", "scope": "vsb-w829"})
+    assert c.status_code == 200, c.text[:300]
+    tiers = [s for s in seen if s[0] == "ai_call" and s[3] == c.json().get("run_id")]
+    assert tiers, ("the scoped cascade recorded no tier call", seen[:6])
+    assert all(s[1] == "w829-owner" and s[2] == "vsb-w829" for s in tiers), (
+        "a VSB-scoped cascade's tier calls were not booked to that VSB under its registered owner", tiers[:4])
+    seen.clear()
+    u = client.post("/api/v1/swarm/cascade", json={"mission": "w829 unscoped cascade probe"})
+    assert u.status_code == 200, u.text[:300]
+    free = [s for s in seen if s[0] == "ai_call" and s[3] == u.json().get("run_id")]
+    assert free and all(s[1] is None and s[2] is None for s in free), (
+        "an unscoped cascade with no caller was booked to an owner or a VSB nobody named", free[:4])
+
+    # ── 3. AN INTERNAL CALL UNDER SIGN-IN: called as the two callers call it, with no user, `user` is FastAPI's
+    #       Depends marker. The scope check read it as a person and raised; it is now nobody, and the tier calls are
+    #       still booked to the VSB under its registered owner.
+    import asyncio as _aio829
+    from agentic_core.ai import gateway as _gw829
+    from agentic_core.api import swarm as _swm829
+    seen.clear()
+    with monkeypatch.context() as _m829:
+        _m829.setenv("AUTH_ENABLED", "true")
+        _m829.setattr(_gw829.gateway._rate_limiter, "_lock", _aio829.Lock())
+        _int = _aio829.run(_swm829.cascade_orchestration(_swm829.CascadeRequest(
+            mission="w829 internal call under sign-in", scope="vsb-w829")))
+    _itiers = [s for s in seen if s[0] == "ai_call" and s[3] == _int.get("run_id")]
+    assert _itiers and all(s[1] == "w829-owner" and s[2] == "vsb-w829" for s in _itiers), (
+        "an internal scoped cascade under sign-in was not booked to the VSB's owner", _itiers[:4])
+
+    _api = _pl829.Path(__file__).resolve().parents[1] / "agentic_core" / "api"
+    assert "scope=vsb_id, objective_id=req.objective_id))" in (_api / "vsb.py").read_bytes().decode("utf-8"), (
+        "the VSB repository cascade no longer scopes its cascade to the VSB")
+    assert 'domain="enterprise", scope=c["provider_vsb"]))' in (_api / "economy.py").read_bytes().decode("utf-8"), (
+        "a contract delivery no longer scopes its cascade to the providing VSB")

@@ -22227,11 +22227,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W829",
       "note": "",
       "slot_source": "tier-3: disclosed as unattributed_seconds since W743; P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A cascade scoped to a VSB books its tier calls to that VSB under its registered owner, whoever called: a VSB's own repository cascade and a contract delivery call it holding no user, so their work was unattributed. An unscoped cascade, or a VSB with no registered owner, books to the caller when one is known, else to the platform total alone (no owner is guessed); the memory layer still receives the caller's identity. Passing the caller instead would have refused an admin at the cascade's W505 scope check. Found on the way and fixed: such an internal call's user is FastAPI's Depends marker, and under sign-in the scope check called .get on it and raised (500); it is now read as nobody, as _require_vsb_access reads it. Measured first: the only reader that filters outcome rows by VSB is GET /api/v1/operations/outcomes?vsb_id= (no page or test passes it), and the composition's org cascade is unscoped, so no nest is booked twice. Guard test_w829 legs 2-3, 7 blinds red."
     },
     {
       "id": "FU-1119",
@@ -22246,11 +22249,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W829",
       "note": "",
       "slot_source": "tier-3: disclosed as unattributed_seconds since W743; P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A saved composition's run books its seconds to the entity that ran it: its composition_run outcome names the owner the design was stamped with (the caller it checked design access with), as the fabric swarm run's does since W743. The facility rows nested inside the run name no owner, so the nest is booked to the entity once. Guard test_w829 leg 1 (a spy on record_outcome), blinds red."
     },
     {
       "id": "FU-1120",

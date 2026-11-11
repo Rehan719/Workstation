@@ -413,6 +413,13 @@ async def cascade_orchestration(req: CascadeRequest,
     start = time.time()
     # W452 (P1.4) — a cascade scoped to a VSB consults its Mode 3 review gates before a single
     # tier runs: a pending or rejected human review is a 409 with the gate named.
+    #  W829 (FU-1118) - an INTERNAL call (a VSB's repository cascade, a contract delivery, a composition's org
+    #  cascade) passes no user, so `user` is FastAPI's Depends marker, not a person: it is read as nobody, as
+    #  _require_vsb_access reads it. Under sign-in the scope check below called .get on the marker and raised; the
+    #  outer route has already checked access.
+    if user is not None and not isinstance(user, dict):
+        user = None
+    _gated_vsb = None             # W829 (FU-1118) - read again below: whose work the tier calls are
     if req.scope and req.scope != "workstation":
         from agentic_core.api.vsb import _load_vsb as _gate_load, _refuse_gated
         _gated_vsb = _gate_load(req.scope)
@@ -431,6 +438,15 @@ async def cascade_orchestration(req: CascadeRequest,
                     raise HTTPException(status_code=403, detail=(
                         f"the scope '{req.scope}' belongs to {_vsb_owner}; a cascade writes objectives into "
                         f"its business plan and records revenue against it, so it runs only for its owner."))
+
+    #  W829 (FU-1118) - WHOSE WORK THE TIER CALLS ARE, for the work budget (S18.6). A cascade scoped to a VSB is that
+    #  entity's work, so its tier calls are booked to the VSB under its registered owner, whoever called: a VSB's own
+    #  repository cascade and a contract delivery call this holding no user, and under sign-in the check above runs
+    #  a scoped cascade only for its owner. An unscoped cascade, or a VSB with no registered owner, books to the
+    #  caller when one is known, else to the platform total alone (W743: an owner is never guessed). The memory
+    #  layer still receives the caller's identity.
+    _book_vsb829 = req.scope if _gated_vsb else None
+    _book_owner829 = (_gated_vsb.get("owner_id") or None) if _gated_vsb else None
 
     biobus.fire_signal("cognitive", "swarm.cascade", f"CEO cascade: {req.mission[:80]}", 0.8)
 
@@ -522,7 +538,8 @@ async def cascade_orchestration(req: CascadeRequest,
             record_outcome("ai_call", f"agent:{agent}", served_by=sb,
                            is_external=bool(res.get("is_external")),
                            duration_ms=int((time.time() - _qt0) * 1000),
-                           owner_id=_owner_id,     # S18.6 (W743) - the caller's own budget, when known
+                           owner_id=(_book_owner829 or _owner_id),     # S18.6 (W743); the VSB's, W829
+                           vsb_id=_book_vsb829,                         # W829 (FU-1118) - the scope's VSB
                            # W495 (FU-125, S7.3) - no quality gate assesses a single AI call, so
                            # this records that it PRODUCED output and claims no verdict
                            success=bool((res.get("output") or "").strip()),
