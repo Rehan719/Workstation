@@ -1604,8 +1604,10 @@ Recorded so no future agent mistakes these for gaps, or lifts them out of the lo
 
 **A.10.1 The entire 2025 technology stack — EXCLUDED as dated.** Specific model rosters, speech and emotion
 SDKs, event-bus and database selections, hosting and free-tier strategies, and the vendor-ecosystem mapping
-all reflect mid-2025 availability. **Workstation supplies every one of these from §6 and §7.** QEP declares
-*capabilities*; the fabric decides what serves them. Naming a 2025 vendor in a QEP build would be a
+all reflect mid-2025 availability. **Workstation does not adopt this stack, and does not supply all of it
+either** (checked against the code 2026-11-11, W837): §6 and §7 say what serves each capability, no emotion SDK
+runs because §11 forbids emotion inference, speech runs only where a local engine is installed, and nothing is
+hosted. QEP declares *capabilities*; the fabric decides what serves them. Naming a 2025 vendor in a QEP build would be a
 regression, not a plan.
 
 **A.10.2 The service and event architecture — EXCLUDED as superseded.** The inherited design has a

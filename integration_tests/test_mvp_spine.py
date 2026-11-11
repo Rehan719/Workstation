@@ -72639,3 +72639,28 @@ def test_w836_the_fabric_ensemble_is_gated_and_the_mega_project_row_keeps_its_te
     monkeypatch.setattr(_mp836, "synthesise", _syn)
     mp = _aio836.run(_fab836._run_real_resource_handler("mega_project", {}, "w836 concept", "general"))
     assert mp.get("output") == "w836 the engine's own text", ("the mega-project row's output is not its text", mp)
+
+
+def test_w837_the_quran_document_says_what_workstation_runs_in_place_of_part_v(client):
+    """FU-868 (W837). The Quran platform document's status notes describe the three earlier build attempts and read
+    as history. Its one present-tense note about Workstation said it "supplies every one of these from its own native
+    fabric" - model rosters, speech and emotion SDKs, event bus, databases, hosting. Read against the code it does
+    not, and the note now says what runs in place of each, dated. Two of its statements are held to the code here:
+    emotion inference is not run (the voice engine's own engines are local and named), and speech is conditional."""
+    import pathlib as _pl837
+    root = _pl837.Path(__file__).resolve().parents[1]
+    doc = (root / "docs" / "QURAN_EDUCATION_PLATFORM_VISION.md").read_bytes().decode("utf-8")
+    assert "Workstation supplies every one of these from its own native fabric" not in doc, (
+        "the document still says Workstation supplies Part V's whole stack")
+    i = doc.index("Workstation does not adopt this stack")
+    note = doc[i:i + 1100]
+    assert "Checked\n> against the code on 2026-11-11 (W837)" in note, "the note does not say when it was checked"
+    for said in ("emotion inference is forbidden", "only where a local engine", "Nothing is hosted"):
+        assert said in note, (said, note[:400])
+    canon = (root / "docs" / "WORKSTATION_IDBO_WHOLE_VISION.md").read_bytes().decode("utf-8")
+    assert "Workstation supplies every one of these from §6 and §7" not in canon, (
+        "the canon's Appendix A.10.1 still says Workstation supplies the whole 2025 stack")
+    assert "does not supply all of it" in canon and "no emotion SDK" in canon, "A.10.1 does not say what is true"
+    voice = (root / "agentic_core" / "avatars" / "output" / "voice_engine.py").read_bytes().decode("utf-8")
+    for engine in ("whisper", "Piper", "Vosk", "pyttsx3"):
+        assert engine in voice and engine in note, ("the note names a speech engine the code does not use", engine)
