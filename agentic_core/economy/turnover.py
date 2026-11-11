@@ -432,6 +432,14 @@ def _mitosis_check(parent_id: str, amount: float) -> Dict[str, Any]:
 
 async def propose_mitosis(parent_id: str, child_name: str, amount: float, why: str, by: str) -> Dict[str, Any]:
     out: Dict[str, Any] = {"filed": False, "refused": None, "cca_id": None, "check": None, "basis": ""}
+    #  FU-1116 (W839) - a division is a birth: the derived carrying capacity is read and recorded on the proposal,
+    #  consulted and never enforced (refusing a birth over capacity is the Owner's decision)
+    try:
+        from agentic_core.molecular.work_budget import birth_reading
+        out["capacity_at_birth"] = birth_reading()
+    except Exception as exc:                        # noqa: BLE001 - said, never a silent absence
+        out["capacity_at_birth"] = {"consulted": False, "enforced": False,
+                                    "basis": f"the carrying capacity could not be read ({type(exc).__name__})"}
     if not str(child_name or "").strip() or not str(why or "").strip() or not str(by or "").strip():
         out.update(refused="incomplete", basis="REFUSED: a division names the child, why, and who proposes it")
         return out

@@ -22206,11 +22206,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W839",
       "note": "",
       "slot_source": "tier-3: disclosed beside the figures since W743 (reported, not enforced); P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A birth now consults the derived carrying capacity and records what it said: every Genesis establishment carries capacity_at_birth in its birth vitals, and every division's proposal carries it too, on every path including a refused one. It is consulted, never enforced: a birth while over capacity is still made, because whether a birth may be refused over capacity is the Owner's decision, routed to an OWNER row with the recommendation; the S18.1 switch does not reach births. A budget that cannot be read whole is said. Driven with a patched budget over its derived capacity. Guard test_w839, 3 blinds red."
     },
     {
       "id": "FU-1117",
@@ -23230,6 +23233,23 @@
       "found": "2026-11-11",
       "files": [
         "agentic_core/economy/turnover.py"
+      ],
+      "severity": "low",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "tier": 3
+    },
+    {
+      "id": "FU-1166",
+      "title": "OWNER: may a birth be refused when the platform is over its derived carrying capacity?",
+      "why": "S18.6 rules the carrying capacity derived (W743). Since W839 every establishment and every division reads it and records the reading on the birth (capacity_at_birth: consulted true, enforced false), and nothing refuses. Whether a birth - a Genesis establishment, or a mature entity's division - may be REFUSED, or held for approval, when the platform is over that capacity is yours to decide; and if it may, whether that rides the S18.1 switch (WORKSTATION_WORK_BUDGET) as the throttle does. Recommendation: no refusal; keep it recorded and shown, because the capacity divides a stated assumption (one hour per window) and refusing a founder on an assumption would be a false statement about what the platform can carry.",
+      "source": "W839 (the decision half of FU-1116)",
+      "found": "2026-11-11",
+      "files": [
+        "agentic_core/molecular/work_budget.py"
       ],
       "severity": "low",
       "owner_gated": true,

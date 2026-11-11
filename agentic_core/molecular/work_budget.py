@@ -232,6 +232,24 @@ def _carrying_capacity(rec: Dict[str, Any]) -> Dict[str, Any]:
                       "STATED ASSUMPTION (capacity_basis). It is " + _ENTITY_GATE_NOTE)}
 
 
+def birth_reading() -> Dict[str, Any]:
+    """FU-1116 (W839) - what the derived carrying capacity says at a birth: read, recorded on the birth, and never
+    acted on. Whether a birth may be refused over capacity is the Owner's decision, so nothing refuses on it, and the
+    S18.1 switch (WORKSTATION_WORK_BUDGET) does not reach births. A budget that cannot be read whole is said."""
+    rec, why = _load()
+    if why:
+        cap = {"entities": None, "entities_measured": None, "over_capacity": None,
+               "basis": f"the work budget could not be read whole ({why}), so no capacity was derived at this birth"}
+    else:
+        cap = _carrying_capacity(rec)
+    return {"consulted": True, "enforced": False,
+            "carrying_capacity": cap.get("entities"), "entities_measured": cap.get("entities_measured"),
+            "over_capacity": cap.get("over_capacity"), "capacity_basis": cap.get("basis"),
+            "basis": ("the derived carrying capacity, read at this birth and recorded on it. Nothing is refused over "
+                      "it: whether a birth may be refused over capacity is the Owner's decision, and the S18.1 "
+                      "switch does not reach births")}
+
+
 def _entity_view(rec: Dict[str, Any], why: Optional[str], owner_id: Optional[str],
                  vsb_id: Optional[str]) -> Dict[str, Any]:
     owners = _owners(rec)

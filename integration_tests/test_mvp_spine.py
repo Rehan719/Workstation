@@ -72736,3 +72736,36 @@ def test_w838_each_kind_of_stored_output_carries_the_eight_items_of_one_evidence
         for fields in kind.values():
             for f in fields:
                 assert f"`{f}`" in table, ("the assessment's table does not name a field the guard reads", f)
+
+
+def test_w839_a_birth_reads_the_derived_carrying_capacity_and_records_it_never_enforcing_it(client, monkeypatch,
+                                                                                           tmp_path):
+    """FU-1116 (W839). S18.6 derives the carrying capacity and W743 shows it beside each entity's own figure, but no
+    birth consulted it. An establishment and a division now read it and record the reading on what they answer -
+    consulted, never enforced: a birth while over capacity is still made, because whether a birth may be refused over
+    capacity is the Owner's decision. Driven with a patched budget that is over its derived capacity."""
+    import asyncio as _aio839
+    from agentic_core.economy import turnover as _tv839
+    from agentic_core.molecular import work_budget as _wb839
+
+    monkeypatch.setattr(_wb839, "_store", lambda: tmp_path / "budget_w839.json")
+    monkeypatch.setattr(_wb839, "CAPACITY_SECONDS", 100.0)
+    monkeypatch.delenv("WORKSTATION_WORK_BUDGET", raising=False)
+    _wb839.spend(seconds=60.0, owner_id="w839-owner", vsb_id="vsb-w839-a")
+    _wb839.spend(seconds=60.0, owner_id="w839-owner", vsb_id="vsb-w839-b")
+    reading = _wb839.birth_reading()
+    assert reading["consulted"] is True and reading["enforced"] is False, reading
+    assert reading["carrying_capacity"] == 1 and reading["entities_measured"] == 2 and reading["over_capacity"] is True, (
+        "the reading is not the derived capacity", reading)
+    assert "Owner's decision" in reading["basis"], reading["basis"]
+
+    e = client.post("/api/v1/genesis/establish", json={
+        "problem": "W839 a village bakery", "name": "W839 Bakery", "domain": "enterprise", "ship_output": False})
+    assert e.status_code == 200, ("a birth was refused while over capacity, which is the Owner's to decide", e.text[:300])
+    cab = e.json()["birth_vitals"]["capacity_at_birth"]
+    assert cab["consulted"] is True and cab["enforced"] is False and cab["over_capacity"] is True, cab
+
+    res = _aio839.run(_tv839.propose_mitosis("vsb-w839-not-on-roster", "W839 child", 1.0, "w839 probe", "w839"))
+    assert res["refused"] == "not_on_roster", res
+    assert res["capacity_at_birth"]["consulted"] is True and res["capacity_at_birth"]["enforced"] is False, (
+        "a division's proposal does not record the carrying capacity it was proposed under", res)

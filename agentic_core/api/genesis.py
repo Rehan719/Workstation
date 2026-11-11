@@ -1216,6 +1216,16 @@ _ESTABLISHED_THROUGH_GENESIS = ("established by the Genesis journey (POST /api/v
                                 "door), which keeps a journey record, evidence and review gates before the entity exists")
 
 
+def _capacity_at_birth() -> dict:
+    """FU-1116 (W839) - the derived carrying capacity at this establishment, read and recorded, never enforced."""
+    try:
+        from agentic_core.molecular.work_budget import birth_reading
+        return birth_reading()
+    except Exception as exc:                        # noqa: BLE001 - a birth is not lost to the reading; said
+        return {"consulted": False, "enforced": False,
+                "basis": f"the carrying capacity could not be read at this birth ({type(exc).__name__})"}
+
+
 def _establish_gate(gov) -> dict:
     """W460 — what the establish gate actually checked. It screens the constant intent string and the
     domain, never the enterprise's content, so it cannot attest constitutional alignment: that stays
@@ -1683,6 +1693,7 @@ async def genesis_establish(req: EstablishRequest, user: dict | None = Depends(g
     # organism's living loops immediately instead of waiting inert for its first rotation. Runs
     # BEFORE the birth ship so the shipped body reflects the entity WITH its first vitals.
     birth_vitals: Dict[str, Any] = {}
+    birth_vitals["capacity_at_birth"] = _capacity_at_birth()      # FU-1116 (W839) - consulted, never enforced
     try:
         from agentic_core.organism.heartbeat import screen_living_vsb
         birth_vitals["first_screen"] = screen_living_vsb(vsb_id)
@@ -1896,6 +1907,7 @@ async def genesis_establish_stream(req: EstablishRequest, user: dict | None = De
         # 6b — §3×§8×§12 (W309): BIRTH IS ALIVE — first §11 screen + first governed economy cycle
         # at establishment (watchable; runs before the ship so the body reflects the vitals)
         birth_vitals: Dict[str, Any] = {}
+        birth_vitals["capacity_at_birth"] = _capacity_at_birth()  # FU-1116 (W839) - consulted, never enforced
         try:
             from agentic_core.organism.heartbeat import screen_living_vsb
             birth_vitals["first_screen"] = screen_living_vsb(vsb_id)
