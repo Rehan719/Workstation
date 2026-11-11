@@ -2114,6 +2114,7 @@ async def generate_vsb_board_pack(vsb_id: str, user: dict | None = Depends(get_c
         _pack_dcs, _pack_dcs_why = None, f"{type(_exc656).__name__}: {str(_exc656)[:120]}"
     pack = {
         "vsb_id": vsb_id, "name": name, "kind": "board_pack", "generated_at": ts,
+        "owner_id": vsb.get("owner_id"),       # W838 (FU-746) - who owns the record: the entity's owner, stamped on it
         "layers": layers,
         # W496 (FU-104) - the page chipped all four names as present; this is the measured list
         "layers_present": layers_present,

@@ -2881,6 +2881,9 @@ async def run_composition(cid: str, req: RunCompositionRequest,
                                 "The calls each REAL resource made are NOT in this figure: they are on that "
                                 "resource's row in real_resources"),
             "qms_gate_passed": qa["quality"].get("qms_gate_passed"),
+            #  W838 (FU-746) - WHAT WAS HASHED: the gate seals this run's quality record in the document-control
+            #  registry, and its hash was not kept on the run
+            "quality_record_hash": qa["quality"].get("quality_record_hash"),
             "plan_binding": plan_binding,
             "duration_ms": int((time.time() - _t0) * 1000),
             "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),

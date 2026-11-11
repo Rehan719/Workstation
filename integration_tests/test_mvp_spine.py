@@ -72664,3 +72664,75 @@ def test_w837_the_quran_document_says_what_workstation_runs_in_place_of_part_v(c
     voice = (root / "agentic_core" / "avatars" / "output" / "voice_engine.py").read_bytes().decode("utf-8")
     for engine in ("whisper", "Piper", "Vosk", "pyttsx3"):
         assert engine in voice and engine in note, ("the note names a speech engine the code does not use", engine)
+
+
+def test_w838_each_kind_of_stored_output_carries_the_eight_items_of_one_evidence_contract(client):
+    """FU-746 (W838). An external assessment named eight things a stored output should carry: what was requested,
+    what ran, what served it, what was measured, what was not assessed, which gate decided, what was hashed, who owns
+    the record. One of each kind - a deliverable, a composition run, a Board Pack - is produced here and read field by
+    field from its STORED record, by the same table the assessment carries. Two gaps the reading found are closed:
+    the run keeps its sealed quality record's hash, and the pack stamps its entity's owner."""
+    import pathlib as _pl838
+
+    def _get(rec, dotted):
+        cur = rec
+        for part in dotted.split("."):
+            if not isinstance(cur, dict) or part not in cur:
+                return (False, None)
+            cur = cur[part]
+        return (True, cur)
+
+    contract = {
+        "deliverable": {"requested": ["type", "brief"], "ran": ["versions"], "served_by": ["ai_provenance.served_by"],
+                        "measured": ["quality_assurance.quality.bar_measured"],
+                        "not_assessed": ["quality_assurance.quality.qms_basis"],
+                        "gate": ["quality_assurance.quality.qms_gate_passed"],
+                        "hashed": ["quality_assurance.quality.quality_record_hash"], "owner": ["owner_id"]},
+        "composition_run": {"requested": ["objective", "composed"], "ran": ["real_resources"], "served_by": ["served_by"],
+                            "measured": ["duration_ms"], "not_assessed": ["needs_unmet_at_run"],
+                            "gate": ["qms_gate_passed"], "hashed": ["quality_record_hash"], "owner": ["owner_id"]},
+        "board_pack": {"requested": ["vsb_id", "kind"], "ran": ["layers_present", "layers_state"],
+                       "served_by": ["ai_provenance.served_by"], "measured": ["quality_assurance.quality.bar_measured"],
+                       "not_assessed": ["layers_state"], "gate": ["quality_assurance.quality.qms_gate_passed"],
+                       "hashed": ["content_hash", "dcs_hash"], "owner": ["owner_id"]},
+    }
+    assert all(len(v) == 8 for v in contract.values()), "the contract is eight items for every kind"
+
+    d = client.post("/api/v1/deliverables/produce", json={
+        "type": "brief", "brief": "w838 evidence contract probe",
+        "content": "# Probe\n\n## Objective\nA verbatim body for the W838 evidence contract probe."})
+    assert d.status_code == 200, d.text[:300]
+    deliverable = client.get(f"/api/v1/deliverables/{d.json()['id']}").json()
+
+    comp = client.post("/api/v1/resources/compose", json={
+        "name": "w838 evidence rig", "usage_area": "synthesis", "resource_ids": ["petri_dish"], "config": {}}).json()
+    try:
+        r = client.post(f"/api/v1/resources/compositions/{comp['id']}/run", json={"objective": "w838 probe"})
+        assert r.status_code == 200, r.text[:300]
+        run = next(x for x in client.get("/api/v1/resources/compositions/runs").json()["runs"]
+                   if x["run_id"] == r.json()["run_id"])
+    finally:
+        client.delete(f"/api/v1/resources/compositions/{comp['id']}")
+
+    est = client.post("/api/v1/genesis/establish", json={
+        "problem": "W838 a village bakery", "domain": "enterprise", "owner_id": "w838-owner", "name": "W838 Bakery",
+        "concept": "a member-owned bakery", "design": "two ovens", "commercialisation": "a bread subscription"})
+    assert est.status_code == 200, est.text[:300]
+    vid = est.json()["vsb_id"]
+    assert client.post(f"/api/v1/vsb/{vid}/board-pack").status_code == 200
+    pack = client.get(f"/api/v1/vsb/{vid}/board-pack").json()
+
+    stored = {"deliverable": deliverable, "composition_run": run, "board_pack": pack}
+    missing = {kind: [(item, f) for item, fields in contract[kind].items() for f in fields
+                      if not _get(stored[kind], f)[0]] for kind in contract}
+    assert not any(missing.values()), ("a stored output does not carry an item of the evidence contract", missing)
+    assert _get(run, "quality_record_hash")[1], "the run's sealed quality record's hash is not kept on the run"
+    assert pack["owner_id"] == "w838-owner", ("the pack does not stamp its entity's owner", pack.get("owner_id"))
+
+    doc = (_pl838.Path(__file__).resolve().parents[1] / "docs" / "INSTRUMENT_CELL_BRIEF_ASSESSMENT.md").read_text(
+        encoding="utf-8")
+    table = doc[doc.index("**Measured in W838 (FU-746)"):]
+    for kind in contract.values():
+        for fields in kind.values():
+            for f in fields:
+                assert f"`{f}`" in table, ("the assessment's table does not name a field the guard reads", f)

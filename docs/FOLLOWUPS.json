@@ -14522,11 +14522,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W838",
       "note": "",
       "slot_source": "adopted from an external assessment the Owner asked to be considered",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The three kinds of stored output were read against one evidence contract: what was requested, what ran, what served it, what was measured, what was not assessed, which gate decided, what was hashed, who owns the record. One deliverable, one composition run and one Board Pack were produced and read field by field from their stored records; the matrix is written into the assessment (section 14.3), naming the field that carries each item in each kind. Two gaps it found are closed: a composition run keeps its sealed quality record's hash (the gate sealed it and the run did not keep it), and a Board Pack stamps its entity's owner (it named only the entity). The guard reads the same table off real records, so a field that stops being written fails it. Guard test_w838, 2 blinds red."
     },
     {
       "id": "FU-747",
