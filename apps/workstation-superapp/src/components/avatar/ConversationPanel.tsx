@@ -176,6 +176,10 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({ avatar }) 
                       <Compass size={9} /> {a.label} →
                     </button>
                   ))}
+                  {m.suggestedAreasBasis && (
+                    // W820 (FU-826) - how these were matched, in the server's words
+                    <p className="w-full text-[8px] text-slate-500" data-testid="suggested-areas-basis">{m.suggestedAreasBasis}</p>
+                  )}
                 </div>
               )}
             </div>

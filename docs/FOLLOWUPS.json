@@ -16178,11 +16178,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W820",
       "note": "",
       "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The four fields reach the page that shows their subject. The transfer panel reads GET /api/v1/economy/transfers/intake-sources (it had no caller) and shows its basis and every flagged credit (Owner ruling 2026-10-10: flagged, not reversed). The Charity Directives page shows directives_match_note, amber when a named id matches no known cause. The avatar's suggested-areas basis travels with the areas and is shown under them. An unprompted directive's restated kind was computed by the twin and returned only to the beat: the twin now passes it, the directive record keeps it (restated_kind; a prompted directive records none), and the Board's recent deliberations say whether it restates the last instruction or the last recorded decision. Guard test_w820, 7 blinds red."
     },
     {
       "id": "FU-827",

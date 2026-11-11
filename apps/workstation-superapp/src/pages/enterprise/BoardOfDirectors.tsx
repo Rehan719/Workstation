@@ -499,6 +499,12 @@ export const BoardOfDirectors: React.FC = () => {
                     <span data-testid="directive-unprompted" title={String((d as any).instruction_source ?? '')}
                       className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400">restated by your Chief on a beat — not a new instruction from you</span>
                   )}
+                  {(d as any).unprompted === true && (d as any).restated_kind && (
+                    <span data-testid="directive-restated-kind"
+                      className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-400">
+                      {(d as any).restated_kind === 'decision' ? 'restates your last recorded decision' : 'restates your last instruction'}
+                    </span>
+                  )}
                   {(d as any).status && (
                     <span data-testid="deliberation-status" title={(d as any).status_basis}
                       className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${(d as any).status === 'resolved' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>

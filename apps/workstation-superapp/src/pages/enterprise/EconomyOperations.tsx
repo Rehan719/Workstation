@@ -192,6 +192,18 @@ export const TransferPanel: React.FC<{ fromVsb: string; entities: { vsb_id: stri
         setOpenChecked(true);
       }).catch(() => { setOpenChecked(false); setOpenErr('Could not check for debited transfers awaiting completion.'); });
   useEffect(() => { loadOpen(); }, [fromVsb]);
+  // W820 (FU-826) - where this entity's recorded credits came from. A credit from a scope that is not a registered
+  // living entity is FLAGGED, not reversed (Owner ruling 2026-10-10); nothing here moves or reverses anything
+  const [intake, setIntake] = useState<{ basis?: string; credits?: { id?: string | null; sender?: string | null;
+    amount_wst?: number | null; flag?: string | null }[] } | null>(null);
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/v1/economy/transfers/intake-sources?vsb_id=${encodeURIComponent(fromVsb)}`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (alive) setIntake(d); })
+      .catch(() => { if (alive) setIntake(null); });
+    return () => { alive = false; };
+  }, [fromVsb]);
   const strandedIds = Array.from(new Set([...(stranded ? [stranded] : []), ...openLegs.map(l => l.transfer_id)]));
 
   const targets = entities.filter(e => e.vsb_id !== fromVsb);
@@ -392,6 +404,16 @@ export const TransferPanel: React.FC<{ fromVsb: string; entities: { vsb_id: stri
         </p>
       )}
       {completeMsg && <p className="text-emerald-400 text-[10px] font-bold mt-3" data-testid="transfer-complete-result">{completeMsg}</p>}
+      {intake?.basis && (
+        <div className="mt-4 space-y-1" data-testid="transfer-intake-sources">
+          <p className="text-[9px] text-slate-500">{intake.basis}</p>
+          {(intake.credits ?? []).filter(c => c.flag).map((c, i) => (
+            <p key={c.id ?? i} className="text-[9px] text-amber-400 font-bold" data-testid="transfer-intake-flagged">
+              {c.amount_wst ?? '?'} WST from {c.sender ?? 'an unnamed sender'}: {c.flag}
+            </p>
+          ))}
+        </div>
+      )}
       {completeErr && <p className="text-vital text-[10px] font-bold mt-3 flex items-center gap-1.5" data-testid="transfer-complete-error"><AlertCircle size={12} /> {completeErr}</p>}
     </Card>
   );

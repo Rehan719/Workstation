@@ -640,7 +640,8 @@ async def twin_directive_unprompted(scope: str = "workstation") -> Dict[str, Any
 
     #  `unprompted=True` is what keeps this from becoming its own input on the next beat
     res = await chief_instruct(
-        ChiefInstruction(instruction=_latest, cascade_to_ceo=True, scope=scope, unprompted=True),
+        ChiefInstruction(instruction=_latest, cascade_to_ceo=True, scope=scope, unprompted=True,
+                         restates=_restated_kind or ""),       # W820 (FU-826)
         user=None)
     out = {
         "issued": True,
@@ -825,6 +826,9 @@ class ChiefInstruction(BaseModel):
     # beat's idempotence, issuing a directive on every visit forever. Default False: a request with no
     # marker is a human's, which is what every directive before this change was.
     unprompted: bool = False
+    #  W820 (FU-826) - set by the twin: whether an unprompted directive restates the Owner's last instruction or
+    #  their last recorded decision. Recorded only on an unprompted directive.
+    restates: str = ""
 
 
 @router.post("/chief/instruct")
@@ -987,6 +991,8 @@ async def chief_instruct(req: ChiefInstruction, user: dict | None = Depends(get_
         # P3.4 (W587) — stamped so the founder model can tell the Owner's own words from the twin's
         # restatement of them. A row without this field predates the unprompted path and is the Owner's.
         "unprompted": bool(req.unprompted),
+        #  W820 (FU-826) - WHICH of the Owner's inputs an unprompted directive restates (instruction | decision)
+        "restated_kind": (req.restates or None) if req.unprompted else None,
         "instruction_source": ("the Owner's twin, restating on a beat their latest recorded instruction "
                                "(or, where they wrote none, their latest recorded decision) - NOT a new "
                                "instruction from the Owner, and not counted as one"

@@ -16,6 +16,7 @@ export interface AvatarMessage {
   servedBy?: string;     // which OWNED resource answered (in-house provenance)
   isExternal?: boolean;
   suggestedAreas?: AvatarSuggestedArea[];  // §5/§9 guided navigation — "Take me there"
+  suggestedAreasBasis?: string;            // W820 (FU-826) - how the areas were matched, as the server says
   // W490 (sweep S10.11, C7) — the backend ALREADY says when it could not honour the request:
   // image_understood=false when no vision model read the attachment, and language=null when the
   // deterministic floor could not answer in the language asked for. The hook dropped all of it, so a
@@ -256,6 +257,7 @@ export function useAvatarSession() {
         role: 'assistant', content: replyText,
         servedBy: resp.data.served_by, isExternal: resp.data.is_external,
         suggestedAreas: resp.data.suggested_areas || [],
+        suggestedAreasBasis: resp.data.suggested_areas_basis ?? undefined,
         // W490 — carried, because a reply that did not read the image must not look like one that did
         imageRequested: Boolean(imageBase64),
         imageUnderstood: Boolean(resp.data.image_understood),

@@ -31,6 +31,8 @@ interface Directives {
   priorities_source?: 'owner' | 'none_set' | 'never_set' | 'unreadable' | string;
   priorities_owner_named?: string[];
   priorities_note?: string;
+  // W820 (FU-826) - whether the ids named match a known cause: an unmatched exclusion excludes nothing
+  directives_match_note?: string; priorities_unknown?: string[]; exclusions_unknown?: string[];
   live_signals?: { enabled: boolean; approved_signal_count: number; note: string };
 }
 
@@ -141,6 +143,12 @@ export const CharityDirectives: React.FC = () => {
           {loaded.priorities_source !== 'owner' && loaded.priorities_note && (
             <p className="text-[9px] text-amber-400 font-bold mt-1" data-testid="directives-note">
               {loaded.priorities_note}
+            </p>
+          )}
+          {loaded.directives_match_note && (
+            <p className={`text-[9px] font-bold mt-1 ${((loaded.priorities_unknown?.length ?? 0) + (loaded.exclusions_unknown?.length ?? 0)) > 0 ? 'text-amber-400' : 'text-slate-500'}`}
+               data-testid="directives-match-note">
+              {loaded.directives_match_note}
             </p>
           )}
           </>

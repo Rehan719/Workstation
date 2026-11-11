@@ -71900,3 +71900,51 @@ def test_w819_the_employment_tools_pass_what_the_person_wrote(client, monkeypatc
         said = " ".join(_real(*p) or "" for p in seen)
         for w in words:
             assert w in said, (f"{path} does not pass {w!r} as the person's own words", said[:300])
+
+
+def test_w820_four_returned_fields_reach_the_page_that_shows_their_subject(client):
+    """FU-826 (W820). The transfer panel reads where an entity's credits came from and shows every flagged one;
+    the Charity Directives page shows whether the ids named match a known cause; the avatar's suggested areas carry
+    their basis; and an unprompted directive records which of the Owner's inputs it restates - a prompted one
+    records none - which the Board's recent deliberations show."""
+    import inspect as _insp
+    import pathlib as _pl
+    import uuid as _uuid
+    from agentic_core.api import board as _bd
+
+    src = _pl.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+
+    def _page(rel):
+        return _code_only((src / rel).read_bytes().decode("utf-8"))
+
+    # (1) the intake sources: the route answers, and the transfer panel reads it and shows each flagged credit
+    r = client.get("/api/v1/economy/transfers/intake-sources", params={"vsb_id": f"w820-{_uuid.uuid4().hex[:6]}"})
+    assert r.status_code == 200 and r.json().get("basis"), r.text[:200]
+    ops = _page("pages/enterprise/EconomyOperations.tsx")
+    assert "/api/v1/economy/transfers/intake-sources?vsb_id=" in ops, "nothing reads where an entity's credits came from"
+    assert "(intake.credits ?? []).filter(c => c.flag)" in ops and 'data-testid="transfer-intake-flagged"' in ops
+
+    # (2) the charity directives' match note
+    d = client.get("/api/v1/economy/charity/directives").json()
+    assert d.get("directives_match_note"), d
+    ch = _page("pages/enterprise/CharityDirectives.tsx")
+    assert "{loaded.directives_match_note}" in ch and 'data-testid="directives-match-note"' in ch
+
+    # (3) the avatar's suggested-areas basis travels with the areas and is shown under them
+    assert "suggestedAreasBasis: resp.data.suggested_areas_basis" in _page("hooks/useAvatarSession.ts")
+    panel = _page("components/avatar/ConversationPanel.tsx")
+    assert "{m.suggestedAreasBasis}" in panel and 'data-testid="suggested-areas-basis"' in panel
+
+    # (4) an unprompted directive records which input it restates; a prompted one records none
+    scope = f"vsb:w820-{_uuid.uuid4().hex[:6]}"
+    un = client.post("/api/v1/board/chief/instruct", json={"instruction": "W820 restated", "scope": scope,
+                                                           "cascade_to_ceo": False, "unprompted": True,
+                                                           "restates": "decision"})
+    assert un.status_code == 200 and un.json().get("restated_kind") == "decision", un.text[:300]
+    pr = client.post("/api/v1/board/chief/instruct", json={"instruction": "W820 the Owner's own", "scope": scope,
+                                                           "cascade_to_ceo": False, "restates": "decision"})
+    assert pr.status_code == 200 and pr.json().get("restated_kind") is None, pr.text[:300]
+    assert 'restates=_restated_kind or ""' in _code_only(_insp.getsource(_bd.twin_directive_unprompted)), (
+        "the twin does not say which input it restates")
+    board = _page("pages/enterprise/BoardOfDirectors.tsx")
+    assert 'data-testid="directive-restated-kind"' in board and "restates your last recorded decision" in board
