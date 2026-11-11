@@ -16792,11 +16792,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W830",
       "note": "",
       "slot_source": "found while closing the bundle rows and not done",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The Deliverables heading says what is produced: one text document per deliverable under its type's section headings (a report, a presentation, website copy, an app specification, a service description or a brief); an app or a website there is a document describing it and nothing is built, hosted or deployed. \"Kept living\" and \"in-house provenance\" are replaced by what is true: re-run from its stored brief or refined, every run kept as a version that records what wrote it, and the current version exported in the formats offered. Each type button shows its sections. Guard test_w830, 2 blinds red."
     },
     {
       "id": "FU-856",
@@ -23137,6 +23140,60 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Decided on the recommendation (Owner instruction 2026-11-10). The economy cycle honours the entity's own flag: living_vsbs.operate_one skips an entity whose auto_economy is off (absent still reads as ON, so no legacy entity stops). The section 11 re-screen reads no entity flag, deliberately: an entity may not opt out of being re-screened (section 11: compliance is continuous, not bolted on), and heartbeat._compliance_beat says so where it picks. Every reading says which flag the beat reads: tending() carries read_by_the_beat {auto_economy: True, auto_compliance: False} and its basis says auto_compliance is recorded and not read; living_statement's 'tended' follows the economy flag, so an entity is no longer reported untended because of a flag nothing reads. Guard test_w799 drives operate_one, the compliance step and the statement; five blinds red."
+    },
+    {
+      "id": "FU-1162",
+      "title": "The religion research tools queue a constitutional refusal for scholar review and say a model composed it",
+      "why": "Fatwa research, hadith study, tafsir, halal review and interfaith decide 'a model composed this' as served_by != native. A refusal by the constitutional gate (the W734 faith-ruling screen over the person's own words, or its pre-gate) answers served_by constitutional_policy_gate, so _scholar_gated queues the '[CONSTITUTIONAL REFUSAL] ...' sentence for a named scholar, withholds it, and the note says 'A model composed this answer (constitutional_policy_gate)'. Nothing was composed: the platform's own rule answered. Read from code (religion.py _scholar_gated and its five callers; gateway.py's two refusal answers).",
+      "source": "W829 (found by the FU-910 engine trace)",
+      "found": "2026-11-11",
+      "files": [
+        "agentic_core/api/religion.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 1
+    },
+    {
+      "id": "FU-1163",
+      "title": "The fabric's native_ensemble stage runs no constitutional pre-gate or checkpoint and passes no user_text",
+      "why": "The native_orchestrator stage runs _stage_pre_gate and _stage_checkpoint (W651) and the declared /native-ai/ensemble route gates; the fabric's native_ensemble branch calls orchestrator.ensemble directly with neither and passes no user_text, so a composition-run ensemble is never screened, and the screens that read the person's own words never see the objective. Its ran label names the declared route whose gates it skips. Read from code.",
+      "source": "W829 (found by the FU-910 engine trace)",
+      "found": "2026-11-11",
+      "files": [
+        "agentic_core/api/resource_fabric.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 2
+    },
+    {
+      "id": "FU-1164",
+      "title": "The fabric's mega_project stage reads keys the engine does not return, so its run row's output is a JSON dump",
+      "why": "The stage reads r.get('synthesis') or r.get('deliverables'); mega_project.synthesise returns its text as 'deliverable', so the stored row's output is json.dumps of the whole response, cut at 600 characters. Read from code.",
+      "source": "W829 (found by the FU-910 engine trace)",
+      "found": "2026-11-11",
+      "files": [
+        "agentic_core/api/resource_fabric.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P3.30",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "found in this round and not done in it",
+      "tier": 2
     }
   ],
   "routes": [

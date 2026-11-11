@@ -158,10 +158,15 @@ export const Deliverables: React.FC = () => {
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · Living Deliverables</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Living Deliverables</h1>
-        <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed">
-          Reports · presentations · websites · apps · services — produced on Workstation's <span className="text-highlight">own</span> AI
-          fabric and kept <span className="text-highlight">living</span>: re-generate and reconfigure any deliverable at any time, with full
-          version history and in-house provenance.
+        {/* W830 (FU-855, ledger v16 R2.15) - every type is ONE text document under its type's section headings
+            (GET /api/v1/deliverables/types). The heading listed websites and apps as if they were built, and said
+            each deliverable was kept living; it now says what is produced and what re-running it does. */}
+        <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed" data-testid="deliverables-what-is-produced">
+          One text document per deliverable, under its type's section headings: a report, a presentation, website copy,
+          an app specification, a service description or a brief. An app or a website here is a document that describes
+          it; nothing is built, hosted or deployed. A deliverable can be re-run from its stored brief or refined; every
+          run is kept as a version that records what wrote it, and the current version can be exported in the formats
+          offered.
         </p>
       </header>
 
@@ -173,6 +178,7 @@ export const Deliverables: React.FC = () => {
         <div className="flex flex-wrap gap-2 mb-3">
           {types.map(t => (
             <button key={t.id} onClick={() => setType(t.id)}
+              title={`one document with the sections: ${(t.sections || []).join(' · ')}`}
               className={`text-[10px] font-black uppercase px-3 py-1.5 rounded-lg ${type === t.id ? 'bg-aura text-sovereign' : 'bg-slate-900 text-slate-400'}`}>
               {t.id}
             </button>

@@ -72284,3 +72284,24 @@ def test_w829_a_composition_run_and_a_vsb_scoped_cascade_book_their_work_to_the_
         "the VSB repository cascade no longer scopes its cascade to the VSB")
     assert 'domain="enterprise", scope=c["provider_vsb"]))' in (_api / "economy.py").read_bytes().decode("utf-8"), (
         "a contract delivery no longer scopes its cascade to the providing VSB")
+
+
+def test_w830_the_deliverables_page_says_it_produces_one_text_document_per_deliverable(client):
+    """FU-855 (W830, ledger v16 R2.15). The page was headed reports, presentations, websites, apps and services,
+    produced on the platform's own AI fabric and kept living. Every type is one text document under its type's
+    section headings: an app or a website there is a document describing it. The heading says so, says nothing is
+    built, hosted or deployed, says what re-running does instead of "kept living", and each type button shows its
+    section headings. The types are read from the route, so a type added later is held to the same sentence."""
+    import pathlib as _pl830
+    types = client.get("/api/v1/deliverables/types").json()["types"]
+    assert types and all(isinstance(t.get("sections"), list) and t["sections"] for t in types), types
+    pg = _code_only((_pl830.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages"
+                     / "Deliverables.tsx").read_bytes().decode("utf-8"))
+    head = pg[pg.index('data-testid="deliverables-what-is-produced"'):]
+    head = head[:head.index("</p>")]
+    assert "One text document per deliverable" in head and "nothing is built, hosted or deployed" in head, head
+    assert "kept living" not in pg and "Reports · presentations · websites · apps · services" not in pg, (
+        "the page still heads its deliverables as built products kept living")
+    assert "in-house provenance" not in pg, "the page claims in-house provenance a version's own record states"
+    assert "records what wrote it" in head, head
+    assert "(t.sections || []).join(' · ')" in pg, "a type button does not show the sections that type produces"
