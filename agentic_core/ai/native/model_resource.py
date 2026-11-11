@@ -95,6 +95,87 @@ def local_model_digest(name: str) -> Optional[str]:
     return (_MODELS_CACHE.get("digests") or {}).get(name)
 
 
+_EXTERNAL_SERVERS = ("anthropic", "claude", "openai")      # the names the gateway gives an external answer
+
+
+def _running_models() -> Optional[List[Dict[str, Any]]]:
+    """W842 (FU-1092) - the models the local runtime reports as LOADED now (its /api/ps), or None when it cannot be
+    read. Read when an answer is labelled, not cached: the row is what is loaded at that moment."""
+    if os.getenv("AI_DISABLE_LOCAL", "").lower() in ("1", "true", "yes"):
+        return None
+    try:
+        import httpx
+        r = httpx.get(f"{_ollama_base()}/api/ps", timeout=1.0)
+        return list(r.json().get("models") or []) if r.status_code == 200 else None
+    except Exception:
+        return None
+
+
+def _running_row(name: str) -> Optional[Dict[str, Any]]:
+    """The runtime's own row for a loaded model, matched by its name with or without the ':latest' tag."""
+    want = {name, name[:-len(":latest")] if name.endswith(":latest") else f"{name}:latest"}
+    for m in _running_models() or []:
+        if str(m.get("name") or m.get("model") or "") in want:
+            return m
+    return None
+
+
+def _processor_of(row: Dict[str, Any]) -> Optional[str]:
+    """Where a loaded model runs, from the sizes the runtime reports (the split its own `ps` prints), or None."""
+    size, vram = row.get("size"), row.get("size_vram")
+    if not isinstance(size, (int, float)) or not isinstance(vram, (int, float)) or size <= 0:
+        return None
+    if vram <= 0:
+        return "100% CPU"
+    if vram >= size:
+        return "100% GPU"
+    gpu = round(100 * vram / size)
+    return f"{100 - gpu}%/{gpu}% CPU/GPU"
+
+
+def served_identity(served_by: Any) -> Dict[str, Any]:
+    """W842 (FU-1092) - WHICH MODEL AND WHICH BUILD answered, and where it ran, as the local runtime reports them,
+    beside the server name an answer already carries. A name is not a build: a tag can be pulled again to a
+    different one. The loaded model's own row is read first; the installed list only when it is not loaded."""
+    sb = str(served_by or "")
+    if sb == "ollama" or sb.startswith("ollama:"):
+        #  the same resolution the orchestrator's _run_model makes for the bare runtime name
+        name = (sb.split(":", 1)[1].strip() if ":" in sb
+                else (effective_default_local() or configured_default_local()))
+        if not name:
+            return {"model": None, "build_digest": None, "processor": None,
+                    "basis": "the local runtime was named and no local model is its default, so which model answered "
+                             "is not known"}
+        run = _running_row(name)
+        if run and run.get("digest"):
+            dg, src = str(run["digest"]), "the runtime's list of loaded models"
+        else:
+            dg = local_model_digest(name) or (local_model_digest(name[:-len(":latest")])
+                                              if name.endswith(":latest") else None)
+            src = "the runtime's list of installed models"
+        proc = _processor_of(run) if run else None
+        return {"model": name, "build_digest": dg, "processor": proc,
+                "basis": ((f"the model the answer was routed to, and the build digest {src} reports for it now"
+                           if dg else
+                           "the model the answer was routed to; the runtime reports no digest for it, so which build "
+                           "answered is not known")
+                          + "; " + (f"it ran on {proc}, as the runtime reports the loaded model" if proc else
+                                    "where it ran (the processor) is not known: the runtime did not report the model "
+                                    "as loaded with its sizes"))}
+    if sb == "constitutional_policy_gate":
+        return {"model": None, "build_digest": None, "processor": None,
+                "basis": "refused by the platform's own rule before any model ran"}
+    if not sb or sb == "native":
+        return {"model": None, "build_digest": None, "processor": None,
+                "basis": "the deterministic floor answered: no model ran"}
+    if sb in _EXTERNAL_SERVERS:
+        return {"model": sb, "build_digest": None, "processor": None,
+                "basis": "an external provider answered; this platform reads no model build or device from it"}
+    return {"model": None, "build_digest": None, "processor": None,
+            "basis": f"the server name {sb!r} is not one this platform resolves to a model, so which model answered "
+                     "is not known"}
+
+
 def promoted_default_state() -> Dict[str, Any]:
     """W841 (FU-1087) - whether the promoted serving default is still the build that was measured and promoted."""
     st = lifecycle_state()

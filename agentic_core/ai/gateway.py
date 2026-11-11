@@ -148,6 +148,17 @@ def language_verdict(requested: str | None, served_by: str, is_floor: bool) -> d
                                f" measured")}
 
 
+def served_identity_of(served_by: str | None) -> dict:
+    """W842 (FU-1092) - which model and which build answered, beside the server's name. Never raises: a failure to
+    read it is said, never a silent absence."""
+    try:
+        from agentic_core.ai.native.model_resource import served_identity
+        return served_identity(served_by)
+    except Exception as _e:                          # noqa: BLE001 - said, never swallowed into silence
+        return {"model": None, "build_digest": None, "processor": None,
+                "basis": f"which model answered could not be read ({type(_e).__name__})"}
+
+
 class _RateLimiter:
     """Token-bucket rate limiter — prevents runaway API spend."""
 
@@ -504,7 +515,9 @@ class ModelGateway:
                 #  W738 - what the Arabic rule did to this answer (withheld passages, or kept and labelled)
                 "arabic": _arabic738,
                 #  W741 (S18.1) - what the serving model reported it spent, or null and why nothing counted
-                "model_tokens": _mt, "model_tokens_basis": _mt_basis}
+                "model_tokens": _mt, "model_tokens_basis": _mt_basis,
+                #  W842 (FU-1092) - which model and which build answered, beside the server's name
+                "served_identity": served_identity_of(served_by)}
 
     #  W744 - `_call`, the legacy external-first cascade (Anthropic, then OpenAI, then a local model), and
     #  `_preferred_provider`, which only it read, are archived verbatim at
@@ -691,7 +704,9 @@ class ModelGateway:
                     "model_tokens_basis": model_tokens_basis or (
                         FLOOR_TOKENS_BASIS if self._is_floor(served_by) else
                         f"NOT COUNTED - {served_by} served this and this platform reads no token count from it; "
-                        "null, never 0")}
+                        "null, never 0"),
+                    #  W842 (FU-1092) - which model and which build answered, beside the server's name
+                    "served_identity": served_identity_of(served_by)}
 
         # 1 — the OWNED local model: genuine token-by-token streaming
         if (os.getenv("AI_DISABLE_LOCAL", "").lower() not in ("1", "true", "yes")

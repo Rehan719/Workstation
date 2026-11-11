@@ -72906,3 +72906,76 @@ def test_w841_a_model_is_made_the_serving_default_on_an_evaluation_of_that_build
             lp.unlink(missing_ok=True)
         else:
             lp.write_bytes(saved)
+
+
+def test_w842_an_answer_names_the_model_and_the_build_that_answered(client, monkeypatch):
+    """FU-1092 (W842). Answer provenance named only the server (for example the local runtime), never the model, its
+    build or where it ran, so two answers under one label could come from different builds. The gateway's two
+    returns (query_meta and the stream's final frame) now carry served_identity: the model the answer was routed to
+    and the build digest the runtime reports for it, the processor said to be not reported (the runtime's list does
+    not say), and what the floor, a refusal and an external provider are. The shared AI wrapper's provenance - which
+    every domain router returns - carries it, driven through a domain route both ways, and the shared domain tool
+    shows it where the answer is and keeps it with the text a person copies or downloads."""
+    import asyncio as _aio842
+    import pathlib as _pl842
+    from agentic_core.ai import gateway as _gw842
+    from agentic_core.ai.native import model_resource as _mr842
+
+    assert _mr842.served_identity("native")["model"] is None
+    assert "no model ran" in _mr842.served_identity("native")["basis"]
+    assert "refused" in _mr842.served_identity("constitutional_policy_gate")["basis"]
+    assert _mr842.served_identity("openai")["build_digest"] is None
+    assert "not known" in _mr842.served_identity("w842-unheard-of")["basis"], "an unknown server was given a model"
+
+    #  both of the gateway's own returns carry it (the floor serves here: no local model in the suite)
+    qm = _aio842.run(_gw842.gateway.query_meta("W842 what is a deposit", agent="assistant"))
+    assert "no model ran" in (qm.get("served_identity") or {}).get("basis", ""), qm.get("served_identity")
+
+    async def _frames():
+        return [f async for f in _gw842.gateway.stream_meta("W842 what is a deposit", agent="assistant")]
+    fin = [f for f in _aio842.run(_frames()) if f.get("done")][-1]
+    assert "no model ran" in (fin.get("served_identity") or {}).get("basis", ""), fin.get("served_identity")
+
+    monkeypatch.setattr(_mr842, "local_model_digest", lambda n: "sha256:w842build" if n == "w842-model" else None)
+    monkeypatch.setattr(_mr842, "effective_default_local", lambda: "w842-model")
+    named = _mr842.served_identity("ollama:w842-model")
+    assert named["model"] == "w842-model" and named["build_digest"] == "sha256:w842build", named
+    assert named["processor"] is None and "processor) is not known" in named["basis"], named
+    assert _mr842.served_identity("ollama")["model"] == "w842-model", "the bare runtime name is not resolved"
+    assert _mr842.served_identity("ollama:w842-model:latest")["build_digest"] == "sha256:w842build"
+    assert _mr842.served_identity("ollama:w842-other")["build_digest"] is None, "a build was named that is not known"
+
+    body = {"document_text": "W842 1. The tenant pays a deposit of one month's rent.", "document_type": "contract"}
+    floor = client.post("/api/v1/law/analyse", json=body)
+    assert floor.status_code == 200, floor.text[:300]
+    assert "no model ran" in floor.json()["ai_provenance"]["served_identity"]["basis"], floor.json()["ai_provenance"]
+
+    async def _served(prompt, **_kw):
+        return {"output": "## Executive Summary\nW842 a model's text.", "served_by": "ollama:w842-model",
+                "is_external": False}
+    monkeypatch.setattr(_gw842.gateway, "query_meta", _served)
+    m = client.post("/api/v1/law/analyse", json=body)
+    assert m.status_code == 200, m.text[:300]
+    sid = m.json()["ai_provenance"]["served_identity"]
+    assert sid["model"] == "w842-model" and sid["build_digest"] == "sha256:w842build", (
+        "an answer a local model gave does not name the model and build that gave it", sid)
+
+    #  the runtime reports the LOADED model (its /api/ps): that row's build, and where it ran, are what is said
+    monkeypatch.setattr(_mr842, "_running_models", lambda: [
+        {"name": "w842-model:latest", "digest": "w842loaded", "size": 1000, "size_vram": 400}])
+    loaded = client.post("/api/v1/law/analyse", json=body).json()["ai_provenance"]["served_identity"]
+    assert loaded["build_digest"] == "w842loaded" and loaded["processor"] == "60%/40% CPU/GPU", (
+        "the loaded build and the processor the runtime reports are not what the answer says", loaded)
+    assert "loaded models" in loaded["basis"] and "60%/40% CPU/GPU" in loaded["basis"], loaded
+    assert _mr842._processor_of({"size": 10, "size_vram": 10}) == "100% GPU"
+    assert _mr842._processor_of({"size": 10, "size_vram": 0}) == "100% CPU"
+    assert _mr842._processor_of({"size": 10}) is None, "a processor was given that the runtime did not report"
+
+    tool = _code_only((_pl842.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+                       / "components" / "DomainTool.tsx").read_bytes().decode("utf-8"))
+    assert 'data-testid="domain-served-identity"' in tool and "served_identity.basis" in tool, (
+        "the domain tool does not show which model and build answered")
+    assert "[Answered by: ${data.ai_provenance.served_identity.model}" in tool, (
+        "which model answered does not travel with the text a person keeps")
+    assert 'data-testid="domain-served-processor"' in tool and "ran on ${data.ai_provenance.served_identity.processor" in tool, (
+        "where the answer ran is not shown where the answer is, or not kept with its text")

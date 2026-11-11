@@ -105,6 +105,9 @@ const withDisclosures = (body: string, data: any): string =>
   + (!data?.floor_note && data?.ai_provenance?.floor_note ? `\n\n[${data.ai_provenance.floor_note}]` : '')
   // W688 (Owner ruling 2026-10-12) — the tier of review travels with the text a person keeps, as the floor note does
   + (data?.ai_provenance?.review?.label ? `\n\n[Review: ${data.ai_provenance.review.label} — ${data.ai_provenance.review.basis}]` : '')
+  // W842 (FU-1092) — which model and which build answered travels with the text a person keeps
+  + (data?.ai_provenance?.served_identity?.model
+      ? `\n\n[Answered by: ${data.ai_provenance.served_identity.model} — build ${data.ai_provenance.served_identity.build_digest || 'not known'} — ran on ${data.ai_provenance.served_identity.processor || 'not known'}]` : '')
   // REL (Owner ruling 2026-10-11) — the scholar gate's statement travels with the text a person keeps, exactly as
   // the floor note does: why a model's answer is withheld, or who approved the text that is shown
   + (typeof data?.review_note === 'string' && data.review_note ? `\n\n[${data.review_note}]` : '')
@@ -399,6 +402,16 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
             <p data-testid="domain-review-tier" className="text-[10px] text-slate-400 leading-relaxed border border-slate-800 rounded-lg p-2">
               <span className="font-black uppercase tracking-widest text-[9px] text-slate-300">Review: {(effectiveProv as any).review.label}</span>
               {' — '}{(effectiveProv as any).review.basis}.
+            </p>
+          )}
+          {/* W842 (FU-1092) — which model and which build answered, in the server's words. The floor names no
+              model, and its own note below says what it did not do. */}
+          {(effectiveProv as any)?.served_identity?.model && (
+            <p data-testid="domain-served-identity" className="text-[10px] text-slate-400 leading-relaxed border border-slate-800 rounded-lg p-2">
+              <span className="font-black uppercase tracking-widest text-[9px] text-slate-300">Answered by: {(effectiveProv as any).served_identity.model}</span>
+              {' — build '}{(effectiveProv as any).served_identity.build_digest || 'not known'}
+              {' — ran on '}<span data-testid="domain-served-processor">{(effectiveProv as any).served_identity.processor || 'not known'}</span>
+              {' — '}{(effectiveProv as any).served_identity.basis}.
             </p>
           )}
           {/* W627 (FU-536) — floor output says what was NOT done, where the output is, not only in a badge */}

@@ -303,6 +303,10 @@ async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
                                   "model_tokens_basis": res.get("model_tokens_basis"),
                                   #  W698 - the level of evidence this answer is, or that a refusal is none
                                   **reply_evidence(served_by)}
+    #  W842 (FU-1092) - the model and the build that answered, beside the server's name: the gateway's own statement,
+    #  or the same reading of the server's name when a return carries none (a refusal's early return)
+    from agentic_core.ai.gateway import served_identity_of as _sid842
+    provenance["served_identity"] = res.get("served_identity") or _sid842(served_by)
     if _material is not None:
         provenance["material"] = _material          # how much was read of how much, on every answer
     #  W688 (OWNER RULING 2026-10-12, the review cell's first clause) - THE TIER OF REVIEW THIS TOOL HAS REACHED,

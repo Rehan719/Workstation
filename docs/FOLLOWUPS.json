@@ -21686,11 +21686,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W842",
       "note": "",
       "slot_source": "serving provenance of a model tier is this item's",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Answer provenance named only its server. The gateway's two returns (query_meta, and the stream's final frame) now carry served_identity: the model the answer was routed to (the bare runtime name resolved as the orchestrator resolves it), the build digest the local runtime reports for it - from its list of LOADED models (/api/ps, read when the answer is labelled) and, when the model is not listed there, from the installed list W841 reads - and where it ran, from the sizes the runtime reports for the loaded model (the CPU/GPU split its own ps prints), said to be not known when it reports none. The floor says no model ran, a refusal that the platform's own rule refused before any model ran, an external provider is named with no build, and a server name the platform does not resolve is given no model. The shared AI wrapper carries it on the provenance every domain router returns (read from the server's name when a return carries none, as a refusal's early return does), and the shared domain tool shows which model and build answered, and where it ran, where the answer is, and keeps them with the text a person copies or downloads. Not driven against a live runtime here: no local model runs in this environment, so the guard reads the runtime's rows through stand-ins. Guard test_w842, 11 blinds red."
     },
     {
       "id": "FU-1093",
