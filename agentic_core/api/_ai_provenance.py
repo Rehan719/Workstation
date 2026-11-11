@@ -169,15 +169,29 @@ def note_withheld(provenance: "dict | None", sections_withheld: "list | None") -
         return provenance
     qa = provenance.get("quality_assurance")
     if isinstance(qa, dict):
-        n = len(sections_withheld)
+        #  W806 (FU-839) - SECTIONS, NOT ENTRIES. The scholar gate's list carries summary entries beside the named
+        #  sections: "N further section(s) under the model's own headings" is N sections, and "text under no
+        #  heading" is none. Counting entries reported each of those as one section.
+        n, _unheaded806 = 0, False
+        for _e806 in sections_withheld:
+            _m806 = re.match(r"\s*(\d+) further section", str(_e806))
+            if _m806:
+                n += int(_m806.group(1))
+            elif str(_e806).strip() == "text under no heading":
+                _unheaded806 = True
+            else:
+                n += 1
         qa["delivery_coverage_before_withholding"] = qa.get("delivery_coverage")
         qa["delivery_coverage"] = None
         qa["stub_found"] = None
         qa["sections_withheld_count"] = n
+        if _unheaded806:
+            qa["text_without_heading_withheld"] = True
         _was = str(qa.get("qms_basis") or "").rstrip()
         qa["qms_basis"] = ((_was + " ") if _was else "") + (
-            f"Coverage and the stub check were measured on the text BEFORE {n} section(s) were withheld; no "
-            f"figure is reported for the text returned.")
+            f"Coverage and the stub check were measured on the text BEFORE {n} section(s)"
+            + (" and the text under no heading" if _unheaded806 else "")
+            + " were withheld; no figure is reported for the text returned.")
     return provenance
 
 

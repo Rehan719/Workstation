@@ -71156,3 +71156,37 @@ def test_w805_fu823_forge_runs_what_its_record_lists_and_configures_each_stage_w
                           .read_text(encoding="utf-8"), flags=_re805.S)
     assert "typeof _b?.detail === 'string' ? _b.detail : ''" in _page805, (
         "the Forge page still shows a refused pipeline as a bare status number")
+
+
+def test_w806_fu837_fu840_fu839_a_withheld_or_refined_answer_travels_with_what_is_true_of_it():
+    """W806 (FU-837, FU-840, FU-839). A domain answer the scholar gate withheld went on to Genesis as an empty text
+    with nothing said; after a refine, the copy and download carried the ORIGINAL answer's review note; and the
+    withheld-sections count counted list entries, so 'N further section(s)' read as one and unheaded text as one."""
+    import pathlib
+    import re as _re806
+    from agentic_core.api._ai_provenance import note_withheld as _nw806
+
+    # -- FU-839: sections, not entries --------------------------------------------------------------------------------
+    _qa806 = _nw806({"quality_assurance": {"delivery_coverage": 1.0, "stub_found": False, "qms_basis": "measured."}},
+                    ["Tafsir", "Fiqh", "2 further section(s) under the model's own headings",
+                     "text under no heading"])["quality_assurance"]
+    assert _qa806["sections_withheld_count"] == 4 and _qa806["text_without_heading_withheld"] is True, _qa806
+    assert "BEFORE 4 section(s) and the text under no heading were withheld" in _qa806["qms_basis"], _qa806["qms_basis"]
+    _one806 = _nw806({"quality_assurance": {"delivery_coverage": 1.0}}, ["Tafsir"])["quality_assurance"]
+    assert _one806["sections_withheld_count"] == 1 and "text_without_heading_withheld" not in _one806, _one806
+
+    # -- FU-837 and FU-840, over the code the pages run ---------------------------------------------------------------
+    def _code806(rel):
+        _s = _re806.sub(r"/\*.*?\*/", "", pathlib.Path(rel).read_text(encoding="utf-8"), flags=_re806.S)
+        return "\n".join(ln for ln in _s.splitlines() if not ln.lstrip().startswith("//"))
+    _dt806 = _code806("apps/workstation-superapp/src/components/DomainTool.tsx")
+    assert "output_withheld: (!String(result?.[resultKey]" in _dt806, (
+        "a withheld answer still reaches Genesis as an empty text with no reason")
+    assert "withDisclosures(displayText, refineData" in _dt806 and (
+        "review_note: refineData.review_note, scholar_review: refineData.scholar_review" in _dt806), (
+        "after a refine the export still carries the original answer's review note")
+    assert "refineData?.scholar_review?.state === 'approved'" in _dt806 and 'data-testid="refine-approved"' in _dt806
+    _gj806 = _code806("apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx")
+    assert "s?.output_withheld ? String(s.output_withheld)" in _gj806, "Genesis does not read why the seed is empty"
+    assert "{seedWithheld && (" in _gj806 and 'data-testid="genesis-seed-withheld"' in _gj806, (
+        "Genesis does not say that the journey starts from the question only")

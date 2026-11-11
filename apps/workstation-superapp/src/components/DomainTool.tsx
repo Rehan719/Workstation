@@ -141,6 +141,8 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
   const [refineText, setRefineText] = useState('');
   const [refining, setRefining] = useState(false);
   const [refineNote, setRefineNote] = useState('');   // W671 - why a rewrite was withheld, in the server's words
+  // W806 (FU-840) - the refine's own response: its review note and scholar review travel with the refined text
+  const [refineData, setRefineData] = useState<any>(null);
   const [refinedText, setRefinedText] = useState<string | null>(null);
   const [refineProv, setRefineProv] = useState<Record<string, any> | null>(null);
   const [refineCount, setRefineCount] = useState(0);
@@ -199,7 +201,11 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
   // W457 - copy/download carry the computed score line (the on-screen block is rendered separately)
   // W506 (FU-161) - ...AND the disclosures, through the same composition the save uses. `displayText` is
   // the refined text when a refine has run, so a refine no longer strips them either (S9.8).
-  const exportText = withDisclosures(displayText, result);
+  // W806 (FU-840) - after a refine, the review fields are the REFINE's: the original's note described other text
+  const exportText = withDisclosures(displayText, refineData
+    ? { ...result, review_note: refineData.review_note, scholar_review: refineData.scholar_review,
+        ai_provenance: refineData.ai_provenance ?? result?.ai_provenance }
+    : result);
   const effectiveProv = refineProv ?? prov;
 
   const refine = async () => {
@@ -213,6 +219,7 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
       const newText = String(r.data.refined ?? displayText);
       setRefinedText(newText);
       setRefineProv(r.data.ai_provenance ?? null);
+      setRefineData(r.data ?? null);
       setRefineCount(c => c + 1);
       setRefineText('');
       // §3A (W337) — the refined version PERSISTS: My Work previously kept only v1, so every
@@ -413,6 +420,10 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
           <div className="pt-3 border-t border-slate-800/60 space-y-2">
             <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">Refine this output</label>
             {refineNote && <p role="status" data-testid="refine-withheld" className="text-[10px] text-amber-400 font-semibold leading-relaxed">Scholar review — the rewrite is withheld: {refineNote}</p>}
+            {/* W806 (FU-840) - an approved rewrite says who approved it, as the original answer's note did */}
+            {!refineNote && refineData?.scholar_review?.state === 'approved' && typeof refineData?.scholar_review?.basis === 'string' && (
+              <p role="status" data-testid="refine-approved" className="text-[10px] text-emerald-400 font-semibold leading-relaxed">Scholar review — this rewrite was approved: {refineData.scholar_review.basis}</p>
+            )}
             <div className="flex items-center gap-2 flex-wrap">
               <input aria-label="Refinement instruction" value={refineText} onChange={e => setRefineText(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') refine(); }}
@@ -431,7 +442,7 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
                 Want to take this further? Commercialise it end-to-end into your own <span className="text-highlight font-bold">VSB IDBO enterprise</span>, run by the heartbeat levers you turn on.
               </p>
               <Button type="button"
-                onClick={() => { const sid = `seed_${Date.now().toString(36)}`; try { sessionStorage.setItem(`ws_genesis_${sid}`, JSON.stringify({ title, domain: domainSeed, input: primary ? form[primary] : '', output: String(result?.[resultKey] ?? result?.deliverable ?? '') })); } catch { /* seed best-effort */ } navigate(`/genesis?seed=${sid}${domainSeed ? `&domain=${encodeURIComponent(domainSeed)}` : ''}`); }}
+                onClick={() => { const sid = `seed_${Date.now().toString(36)}`; try { sessionStorage.setItem(`ws_genesis_${sid}`, JSON.stringify({ title, domain: domainSeed, input: primary ? form[primary] : '', output: String(result?.[resultKey] ?? result?.deliverable ?? ''), output_withheld: (!String(result?.[resultKey] ?? result?.deliverable ?? '').trim() && typeof result?.review_note === 'string' && result.review_note ? result.review_note : '') })); } catch { /* seed best-effort */ } navigate(`/genesis?seed=${sid}${domainSeed ? `&domain=${encodeURIComponent(domainSeed)}` : ''}`); }}
                 className="bg-highlight text-sovereign flex items-center gap-2 text-xs shrink-0">
                 <Rocket size={14} /> Commercialise via Genesis
               </Button>

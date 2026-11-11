@@ -16396,11 +16396,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W806",
       "note": "",
       "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The Genesis seed carries output_withheld - the gate's own reason - when a domain answer was withheld, and the Genesis page says the journey starts from the question only, with that reason. Guard test_w806; blinds red on the seed and the page."
     },
     {
       "id": "FU-838",
@@ -16435,11 +16438,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W806",
       "note": "",
       "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "note_withheld counts sections, not list entries: 'N further section(s) under the model's own headings' is N, and 'text under no heading' is none and is said separately (text_without_heading_withheld, and in the basis). Guard test_w806 drives both; two blinds red."
     },
     {
       "id": "FU-840",
@@ -16453,11 +16459,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W806",
       "note": "",
       "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "After a refine, the copy and download compose their disclosures from the refine's own review fields (review_note, scholar_review, provenance), not the original answer's; an approved rewrite says who approved it on the page. Guard test_w806; blind red on the export."
     },
     {
       "id": "FU-841",

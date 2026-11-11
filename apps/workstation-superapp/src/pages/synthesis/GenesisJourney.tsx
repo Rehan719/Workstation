@@ -175,7 +175,8 @@ interface ReviewGates {
 
 // W303 — idempotent seed reader: module-level cache survives React StrictMode's double-mount
 // (a side-effectful useState initializer would consume the seed on the discarded first mount).
-const _seedCache: Record<string, { title?: string; domain?: string; input?: string; output?: string } | null> = {};
+// W806 (FU-837) - output_withheld: why the domain tool's answer is absent (the scholar gate withheld it)
+const _seedCache: Record<string, { title?: string; domain?: string; input?: string; output?: string; output_withheld?: string } | null> = {};
 function readGenesisSeed(sid: string) {
   if (!(sid in _seedCache)) {
     try {
@@ -211,6 +212,12 @@ export const GenesisJourney: React.FC = () => {
       }
     }
     return sp.get('problem') || '';
+  });
+  // W806 (FU-837) - a withheld answer is said, so a journey seeded from the question alone does not read as a full seed
+  const [seedWithheld] = useState<string>(() => {
+    const sid = sp.get('seed');
+    const s = sid ? readGenesisSeed(sid) : null;
+    return s?.output_withheld ? String(s.output_withheld) : '';
   });
   const [domain, setDomain] = useState(() => { const d = sp.get('domain') || 'science'; return DOMAINS.includes(d) ? d : 'science'; });
   const [realm, setRealm] = useState(() => { const r = sp.get('realm') || 'enterprise'; return REALMS.includes(r) ? r : 'enterprise'; });
@@ -692,6 +699,11 @@ export const GenesisJourney: React.FC = () => {
             rows={4}
             className="w-full bg-slate-900 border border-slate-800 rounded-2xl p-4 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-highlight/50 resize-none"
           />
+          {seedWithheld && (
+            <p role="status" data-testid="genesis-seed-withheld" className="mt-2 text-[10px] text-amber-400 font-semibold leading-relaxed">
+              The domain tool's answer was withheld, so this journey starts from your question only: {seedWithheld}
+            </p>
+          )}
           {/* §9 — multimodal input: attach your own data and/or dictate the challenge by voice */}
           <div className="mt-2 flex items-start gap-2 flex-wrap">
             <AttachDocument
