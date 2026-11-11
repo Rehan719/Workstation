@@ -16187,11 +16187,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W803",
       "note": "",
       "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Examined and built: the workflow tree passes the goal the person typed, and the ensemble its prompt, as user_text to every node and member (orchestrator.orchestrate_tree / ensemble, native_ai routes), so a floor node states the person's subject. Guard test_w803 drives both routes with a recording complete(); blinds red on the orchestrator and on both routes."
     },
     {
       "id": "FU-828",
@@ -16852,11 +16855,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W803",
       "note": "",
       "slot_source": "what a closed tier-3 bundle row left undone; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W801 (FU-982 R3[6]): the cascade's appraisal heading follows development_applied, and on a run that applied none it reads 'Management appraisal (this run applied no development action from an earlier cycle)' - the named fix, said beside the heading. Guard test_w801; blind red."
     },
     {
       "id": "FU-861",
@@ -19413,11 +19419,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W803",
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region on the M3 item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Ledger v17 R4. [1] built in W730 and re-measured: the cognitive cascade returns no alignment or threat figure (None, NOT ASSESSED), since nothing computes either. [5] each Forge stage output carries kind persona_prompt and a basis naming the facility whose own engine was not called. [7] the workflow tree passes the goal and the ensemble its prompt as user_text, so a floor node or member states the person's subject. The saved-cascade path keeps ledger v16 R4.17's rule, guarded there: its saved text is its designer's words, not the words of the person running it, so only what that person types for the run is passed as theirs - the v17 fix's 'saved context' leg would undo a reasoned earlier ruling, and is not taken. [2] [3] [4] [6] [8] need nothing for honesty, per the row. Guard test_w803; five blinds red."
     },
     {
       "id": "FU-984",

@@ -404,7 +404,8 @@ class NativeOrchestrator:
                 "model_tokens": None, "model_tokens_basis": FLOOR_TOKENS_BASIS}   # W741 (S18.1)
 
     async def ensemble(self, prompt: str, agent: str = "ensemble", models: Optional[List[str]] = None,
-                       synthesize: bool = True, timeout: float = 30.0) -> Dict[str, Any]:
+                       synthesize: bool = True, timeout: float = 30.0,
+                       user_text: Optional[str] = None) -> Dict[str, Any]:
         """§6 — run a prompt across MULTIPLE owned models in parallel, then synthesise a consensus. Owned
         orchestration as a composable resource. Defaults to the discovered local models (each routed by name)
         plus the native floor; every member reports which owned resource served it."""
@@ -416,7 +417,9 @@ class NativeOrchestrator:
         models = [m for m in models if m][:5]
         _fire("cognitive", f"native.{agent}", f"ensemble across {len(models)} owned models", 0.6)
         results = await asyncio.gather(
-            *[self.complete(prompt, agent=f"{agent}-{i}", prefer=m, timeout=timeout) for i, m in enumerate(models)],
+            #  W803 (FU-983 R4[7]) - the person's words travel with each member, so the floor states their subject
+            *[self.complete(prompt, agent=f"{agent}-{i}", prefer=m, timeout=timeout, user_text=user_text)
+              for i, m in enumerate(models)],
             return_exceptions=True)
         members: List[Dict[str, Any]] = []
         for m, r in zip(models, results):
@@ -698,7 +701,8 @@ class NativeOrchestrator:
         return self._plan_tree(goal), "deterministic_template"
 
     async def orchestrate_tree(self, goal: str, context: str = "", max_parallel: int = 4,
-                               prefer_external: bool = False, timeout: float = 30.0) -> Dict[str, Any]:
+                               prefer_external: bool = False, timeout: float = 30.0,
+                               user_text: Optional[str] = None) -> Dict[str, Any]:
         """Plan + run an autonomous workflow TREE for a goal — the living-organism cascade: the goal is
         decomposed into a dependency tree, executed IN-HOUSE-FIRST per node with PARALLEL branches,
         biomimetically mediated (immune-throttled parallelism + biobus nervous signals + the learning
@@ -739,7 +743,9 @@ class NativeOrchestrator:
                 + dep_block
                 + f"Your task: {n['task']}\n\n## {nid} output"
             )
-            res = await self.complete(prompt, agent=f"tree:{nid}", timeout=timeout, prefer_external=prefer_external)
+            #  W803 (FU-983 R4[7]) - each node carries the goal the person typed, so a floor node states its subject
+            res = await self.complete(prompt, agent=f"tree:{nid}", timeout=timeout, prefer_external=prefer_external,
+                                      user_text=user_text)
             # §6↔§7 — when a fabric resource genuinely matches this node's task, ALSO invoke its REAL
             # handler in-process and fold the genuine result into the node (honest provenance: resource
             # id + the kind the handler is + the endpoint serving the same logic + the word-overlap

@@ -187,8 +187,13 @@ async def _execute(req: ForgeRunRequest) -> Dict[str, Any]:
                   + f"Prior pipeline context: {context[-600:]}")
         result = await _q(prompt, f"forge_{sid}")
         context += f"\n\n## {stage['name']} output\n{result[:400]}"
+        #  W803 (FU-983, ledger v17 R4[5]) - WHAT THE STAGE IS. Each is a prompt asking the serving resource to act as
+        #  the facility it is named after; the facility's own engine is not called. The page said so; the body did not.
         outputs.append({"resource": sid, "name": stage["name"], "biomimetic": stage["biomimetic"],
-                        "config": cfg, "output": result})
+                        "config": cfg, "output": result,
+                        "kind": "persona_prompt",
+                        "kind_basis": (f"a prompt asking the serving resource to act as the {stage['name']}; the "
+                                       f"{stage['name']} facility's own engine was not called")})
 
     # 3. CoE integrates the multi-type outputs (swarm synthesis)
     integration = await _q(

@@ -1358,7 +1358,8 @@ async def native_ensemble(req: EnsembleRequest):
         return {"agent": req.agent, "members": [], "synthesis": None, "refused": True,
                 "final": f"[CONSTITUTIONAL REFUSAL] {_halt.get('refused_reason')}", "governance_checkpoint": _halt}
     res = await orchestrator.ensemble(req.prompt, agent=req.agent,
-                                      models=req.models or None, synthesize=req.synthesize)
+                                      models=req.models or None, synthesize=req.synthesize,
+                                      user_text=(req.prompt or None))   # W803 (FU-983 R4[7]) - typed by the person
     #  W642 (FU-646, ledger v14 R4) - THE CHECKPOINT SCREENS WHAT THE CALLER RECEIVES. With no synthesis this
     #  screened an empty string and returned post_checked and post_compliant true over member outputs it had
     #  never read. It screens the synthesis when there is one, the member outputs when there is not, and when
@@ -1785,6 +1786,7 @@ async def native_tree(req: TreeRequest):
                 "final": f"[CONSTITUTIONAL REFUSAL] {_halt.get('refused_reason')}", "governance_checkpoint": _halt}
     res = await orchestrator.orchestrate_tree(
         req.goal, context=req.context, max_parallel=req.max_parallel,
-        prefer_external=req.prefer_external, timeout=req.timeout)
+        prefer_external=req.prefer_external, timeout=req.timeout,
+        user_text=(req.goal or None))   # W803 (FU-983 R4[7]) - the goal the person typed
     res["governance_checkpoint"] = console_post_gate("tree", str(res.get("final") or ""))
     return res

@@ -49457,7 +49457,7 @@ def test_w642_five_stated_figures_and_verdicts_are_what_the_platform_measured_or
     import agentic_core.ai.native.orchestrator as _om
     _orc = _na.orchestrator
 
-    async def _bad_member(prompt, agent="ensemble", models=None, synthesize=True, timeout=30.0):
+    async def _bad_member(prompt, agent="ensemble", models=None, synthesize=True, timeout=30.0, user_text=None):   # W803
         return {"prompt": prompt[:200], "models_run": ["native"], "synthesis": None, "method": "driven",
                 "members": [{"model": "native", "served_by": "native", "is_external": False,
                              "output": "Exploit the unpatched vulnerability on the host to steal credentials."}]}
@@ -49478,7 +49478,7 @@ def test_w642_five_stated_figures_and_verdicts_are_what_the_platform_measured_or
     assert _bad["governance_checkpoint"]["post_compliant"] is False, (
         "a member output the screen refuses was certified compliant", _bad["governance_checkpoint"])
 
-    async def _nothing(prompt, agent="ensemble", models=None, synthesize=True, timeout=30.0):
+    async def _nothing(prompt, agent="ensemble", models=None, synthesize=True, timeout=30.0, user_text=None):   # W803
         return {"prompt": prompt[:200], "models_run": ["native"], "synthesis": None, "method": "driven",
                 "members": [{"model": "native", "error": "down"}]}
     monkeypatch.setattr(_orc, "ensemble", _nothing)
@@ -71044,3 +71044,51 @@ def test_w802_fu982_r3_1_a_medium_change_nothing_read_waits_for_an_explicit_deci
     _gh802 = pathlib.Path("apps/workstation-superapp/src/pages/governance/GovernanceHub.tsx").read_text(encoding="utf-8")
     assert "c.hold_reason" in _re802.sub(r"/\*.*?\*/", "", _gh802, flags=_re802.S), (
         "the Sanctum no longer lists held changes, so a held MEDIUM change has nowhere to be decided")
+
+
+def test_w803_fu983_r4_the_forge_says_what_its_stages_are_and_the_floor_hears_the_goal(client, monkeypatch):
+    """W803 (FU-983, ledger v17 R4) - the region's two remaining fixes, and the one W730 built.
+
+    R4[1] (W730) the cognitive cascade returns no alignment or threat figure, since nothing computes either.
+    R4[5] each Forge stage is a prompt asking the serving resource to act as the facility it is named after; the
+          run body now says so on every stage.
+    R4[7] the workflow tree and the ensemble pass what the person typed (the goal; the prompt) as user_text, so a
+          floor node states their subject. A saved cascade keeps ledger v16 R4.17's rule (guarded there): its saved
+          text is its designer's words, not those of the person running it.
+    """
+    # -- R4[1] the figures nothing computes are not returned -----------------------------------------------------------
+    _c803 = client.post("/api/v1/cognitive/cascade", json={"problem": "w803 a repair cafe for small electricals"})
+    assert _c803.status_code == 200, _c803.text[:200]
+    _cj803 = _c803.json()
+    _cr803 = _cj803.get("cascade") or _cj803.get("result") or _cj803
+    _al803 = (_cr803.get("alignment") or {}) if isinstance(_cr803, dict) else {}
+    _alerts803 = (_cr803.get("alerts") or {}) if isinstance(_cr803, dict) else {}
+    assert _al803.get("alignment") is None and _al803.get("status") != "SUCCESS", _al803
+    assert not isinstance(_alerts803, dict) or _alerts803.get("threat_score") is None, _alerts803
+
+    # -- R4[5] every Forge stage says it is a persona prompt -----------------------------------------------------------
+    _f803 = client.post("/api/v1/forge/run", json={"objective": "w803 prototype a parts-sorting jig"})
+    assert _f803.status_code == 200, _f803.text[:200]
+    _so803 = _f803.json()["stage_outputs"]
+    assert _so803 and all(s["kind"] == "persona_prompt" and s["name"] in s["kind_basis"]
+                          and "engine was not called" in s["kind_basis"] for s in _so803), _so803[:1]
+
+    # -- R4[7] the tree's nodes and the ensemble's members carry the person's words ------------------------------------
+    from agentic_core.ai.native.orchestrator import orchestrator as _orc803
+    _calls803 = []
+
+    async def _complete803(prompt, agent="assistant", timeout=30.0, prefer_external=False, prefer="auto",
+                           user_text=None, language=None):
+        _calls803.append({"agent": agent, "user_text": user_text})
+        return {"output": "## out\nw803", "served_by": "native", "is_external": False, "resources_tried": []}
+    monkeypatch.setattr(_orc803, "complete", _complete803)
+    _t803 = client.post("/api/v1/native-ai/tree", json={"goal": "Velloran orchard irrigation plan"})
+    assert _t803.status_code == 200, _t803.text[:200]
+    _nodes803 = [c for c in _calls803 if str(c["agent"]).startswith("tree:")]
+    assert _nodes803 and all(c["user_text"] == "Velloran orchard irrigation plan" for c in _nodes803), _nodes803
+    _calls803.clear()
+    _e803 = client.post("/api/v1/native-ai/ensemble", json={"prompt": "Quorrel ferry timetable", "models": ["native"],
+                                                            "synthesize": False})
+    assert _e803.status_code == 200, _e803.text[:200]
+    _members803 = [c for c in _calls803 if str(c["agent"]).startswith("ensemble-")]
+    assert _members803 and all(c["user_text"] == "Quorrel ferry timetable" for c in _members803), _calls803
