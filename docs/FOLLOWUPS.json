@@ -18028,11 +18028,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W826",
       "note": "",
       "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The walk the row asks for, as a guard: the capabilities that answer not implemented are called and their answers read (POST /api/v1/ingest/url answers 501; GET /api/qep/analytics/overview answers measured False, 'not implemented'), and no live catalogue product may list either as a feature; qep-sdk's unbuilt analytics must stay under features_declared_not_built. Measured: the one live offender (qep-sdk's analytics) was moved to declared-not-built by W666, so no catalogue entry changes. A route that comes to answer not implemented belongs in the walk. Guard test_w826, 2 blinds red."
     },
     {
       "id": "FU-915",

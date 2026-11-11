@@ -72067,3 +72067,34 @@ def test_w825_the_law_and_care_selects_read_the_api_lists_and_the_employment_tab
     emp = _page("EmploymentHub.tsx")
     for sid in services:
         assert f"activeTab === '{tab_of[sid]}'" in emp, f"the Employment hub offers no tab for the {sid} service"
+
+
+def test_w826_no_live_catalogue_feature_is_a_capability_that_answers_not_implemented(client):
+    """FU-914 (W826). A catalogue entry cannot know that a feature works without calling it, so this walks the
+    capabilities that answer "not implemented" - each called here and its answer read - and holds that no live
+    catalogue product lists one as a feature; one listed as declared and not built is said to be so. A route that
+    comes to answer "not implemented" belongs in this walk."""
+    from agentic_core.catalog.api import list_products
+
+    walk = []
+    u = client.post("/api/v1/ingest/url", json={"url": "https://example.org/w826"})
+    assert u.status_code == 501 and "does not fetch URLs" in u.text, ("URL ingestion no longer answers as unbuilt",
+                                                                       u.status_code, u.text[:200])
+    walk.append(("URL ingestion", ("url ingestion", "web ingestion", "fetch a url", "fetching", "scrap")))
+    a = client.get("/api/qep/analytics/overview")
+    assert a.status_code == 200 and a.json().get("measured") is False, a.text[:200]
+    assert "not implemented" in str(a.json().get("detail")), a.text[:200]
+    walk.append(("QEP analytics", ("analytics",)))
+
+    products = list_products()
+    for p in products:
+        if not p.get("live"):
+            continue
+        feats = " | ".join(str(f) for f in (p.get("features") or [])).lower()
+        for cap, words in walk:
+            hit = [w for w in words if w in feats]
+            assert not hit, (f"the live product {p.get('slug')} lists {cap} as a feature, and it answers not implemented",
+                             hit, p.get("features"))
+    qep = next(p for p in products if p.get("slug") == "qep-sdk")
+    assert any("analytics" in str(f).lower() for f in (qep.get("features_declared_not_built") or [])), (
+        "the unbuilt analytics are not said to be declared and not built", qep)
