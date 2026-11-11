@@ -70850,3 +70850,64 @@ def test_w799_fu1161_the_beat_reads_the_entity_flag_its_statement_says_it_reads(
         "the Cockpit shows the entity's compliance flag as if it decided something the beat does not read")
     assert "The §11 re-screen reads no entity flag: an entity may not opt out of being re-screened" in _ck799, (
         "the Cockpit still says tending needs both flags, and the re-screen reads neither")
+
+
+def test_w800_fu981_r2_the_page_the_file_and_the_flag_say_what_happened(client):
+    """W800 (FU-981, ledger v17 R2) - three small fixes, each where a person reads it.
+
+    R2[1] the Research and Operational Intelligence subtitles promised research and an assessment over stages the
+          floor served from the founder's own words; each follows a flag the stage's verification now carries.
+    R2[7] every deliverable carried `living: True` with nothing saying what living means or when it holds.
+    R2[8] the repo's BUSINESS_PLAN.md had no aims or objectives while the plan record held seeded ones.
+    """
+    import pathlib
+    import re as _re800
+    _root800 = pathlib.Path(__file__).resolve().parents[1]
+
+    # -- R2[1] the verification says whether the floor served the stage, and the page follows it -------------------
+    _j800 = client.post("/api/v1/genesis/journey", json={
+        "problem": "w800 a repair cafe for small electricals", "domain": "community"}).json()
+    _sv800 = _j800["stage_verifications"]
+    for _k800 in ("concept", "research", "design", "operations", "commercialisation"):
+        assert isinstance(_sv800[_k800].get("floor_served"), bool) or _sv800[_k800].get("ran") is False, (
+            "a stage's verification does not say whether the floor served it", _k800, _sv800[_k800])
+        if _sv800[_k800].get("floor_served") is True:
+            assert _sv800[_k800]["verified"] is None, _sv800[_k800]
+    _gj800 = _re800.sub(r"/\*.*?\*/", "", (_root800 / "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx")
+                        .read_text(encoding="utf-8"), flags=_re800.S)
+    for _stage800 in ("research", "operations"):
+        assert f"result.stage_verifications?.{_stage800}?.floor_served === true" in _gj800, (
+            "the stage's subtitle does not follow what served it, so it promises a model's work over a floor frame",
+            _stage800)
+    assert "No approach was found, researched or compared." in _gj800
+    assert "nothing under them assessed any of the three" in _gj800
+
+    # -- R2[7] a deliverable says what living means ------------------------------------------------------------------
+    _d800 = client.post("/api/v1/deliverables/produce", json={
+        "type": "report", "brief": "w800 a one-page note on repair cafes", "domain": "community"})
+    assert _d800.status_code == 200, _d800.text[:200]
+    _dv800 = _d800.json()
+    _dv800 = _dv800.get("deliverable", _dv800)
+    assert _dv800["living"] is True and "re-screened by the heartbeat" in _dv800["living_basis"], _dv800.get("living_basis")
+    assert "only while the organism's re-screen lever is on" in _dv800["living_basis"]
+
+    # -- R2[8] the repo plan carries the plan record's objectives, each seeded one labelled ------------------------
+    _est800 = client.post("/api/v1/genesis/establish", json={
+        "problem": "w800 a repair cafe for small electricals", "domain": "community", "owner_id": "pytest"}).json()
+    assert _est800.get("vsb_id"), _est800
+    from agentic_core.api.vsb import _build_repo_files as _build800, _load_vsb as _load800
+    from agentic_core.api.business_plan import _load as _bp800, is_seeded_draft as _seeded800
+    _ent800 = _load800(_est800["vsb_id"])
+    _files800 = _build800(_ent800)
+    _bp_md800 = _files800["BUSINESS_PLAN.md"]
+    assert "## Aims & Objectives" in _bp_md800, _bp_md800[-800:]
+    _plan800 = _bp800(_ent800.get("business_plan_scope") or _ent800["vsb_id"]) or {}
+    _objs800 = [o for o in (_plan800.get("objectives") or []) if isinstance(o, dict)]
+    assert _objs800, ("the entity's plan record holds no objectives, so this leg reads nothing", _plan800)
+    for _o800 in _objs800:
+        _line800 = next((ln for ln in _bp_md800.splitlines() if ln.startswith(f"- {_o800['title']} — ")), None)
+        assert _line800, ("an objective in the plan record is missing from the repo plan", _o800["title"], _bp_md800[-600:])
+        assert ("SEEDED by the platform at establishment" in _line800) is _seeded800(_o800), (
+            "a seeded objective reads as one somebody set, or a real one reads as seeded", _line800)
+    assert "has been written by the Owner, so none is shown." in _bp_md800, _bp_md800[-400:]
+    assert "Aims & Objectives" in _files800["README.md"], "the README's list of plan sections was not derived again"

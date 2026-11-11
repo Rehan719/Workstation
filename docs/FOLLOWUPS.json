@@ -19375,11 +19375,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W800",
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region on the M3 item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Ledger v17 R2. Built: [1] the Research and Operational Intelligence subtitles follow what served each stage, read from a floor_served flag every stage verification now carries (they promised research and an assessment over frames the floor built from the founder's words); [7] each deliverable carries living_basis saying what living means and when it holds (re-runnable and versioned; re-screened one a beat only while the organism's re-screen lever is on and a living entity exists); [8] BUSINESS_PLAN.md carries the plan record's aims and objectives, each seeded one labelled as a draft nobody has measured, and says which of mission and strategy the Owner has not written. [9] was built in W678 (the direct stage route answers 410 and names the proposal door). [2] [4] [5] [6] need nothing for honesty, per the row; [3] is capability work, disclosed (binding gate stages to the journey's stages). Guard test_w800; five blinds red."
     },
     {
       "id": "FU-982",

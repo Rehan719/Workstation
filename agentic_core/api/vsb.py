@@ -121,6 +121,34 @@ def _owner_written(vsb: dict) -> dict:
     return out
 
 
+def _plan_objectives_md(vsb: dict) -> str:
+    """W800 (FU-981, ledger v17 R2[8]) - the aims and objectives in this entity's plan record, for BUSINESS_PLAN.md.
+
+    The repo plan had no aims or objectives while the plan record held seeded ones, so the two said different
+    things about one entity. Each objective is written as recorded; one the platform seeded at establishment is
+    labelled as a draft nobody has measured, because it is not an objective anyone set. A plan that cannot be read
+    is said, never shown as an entity with no objectives."""
+    try:
+        from agentic_core.api.business_plan import _load as _bp_load800, is_seeded_draft as _seeded800
+        plan = _bp_load800(vsb.get("business_plan_scope") or vsb.get("vsb_id")) or {}
+    except Exception as exc:                     # noqa: BLE001 - said in the file, never read as "none"
+        return (f"## Aims & Objectives\n_The entity's plan could not be read ({type(exc).__name__}), so its aims "
+                f"and objectives are NOT shown here; this is not a statement that it has none._\n\n")
+    aims = [str(a).strip() for a in (plan.get("aims") or []) if str(a).strip()]
+    objs = [o for o in (plan.get("objectives") or []) if isinstance(o, dict)]
+    lines = [f"- Aim: {a[:300]}" for a in aims]
+    for o in objs:
+        _kpi = str(o.get("kpi") or "").strip()
+        lines.append(f"- {str(o.get('title') or 'untitled')[:200]} — "
+                     + (f"KPI: {_kpi[:200]}" if _kpi else "no KPI set")
+                     + f"; timeline: {o.get('timeline') or 'not set'}; owner: {o.get('owner_role') or 'not set'}"
+                     + (" — SEEDED by the platform at establishment: a draft nobody has measured, not an "
+                        "objective anyone set" if _seeded800(o) else ""))
+    if not lines:
+        lines = ["_No aims or objectives are recorded in this entity's plan._"]
+    return "## Aims & Objectives\n" + "\n".join(lines) + "\n\n"
+
+
 def _autonomy_phrase(vsb: dict) -> str:
     """W623 (FU-518) — the entity's operating state in words, read from its derived status, never a constant."""
     st = str(vsb.get("status") or "").strip()
@@ -287,7 +315,12 @@ def _build_repo_files(vsb: dict) -> dict:
                                 f"## Founder's Problem Statement\n{challenge}\n\n_No vision has been written by "
                                 f"the Owner; this is the problem the entity was founded on, not a vision._\n\n")
                              + f"## Design & Development\n{str(design)[:2000]}\n\n"
-                             f"## Commercialisation\n{str(commercial)[:2000]}\n")
+                             f"## Commercialisation\n{str(commercial)[:2000]}\n\n"
+                             #  W800 (FU-981 R2[8]) - the plan record's aims and objectives, and what was not written
+                             + _plan_objectives_md(vsb)
+                             + ("" if (_ow.get("mission") and _ow.get("strategy")) else
+                                "_No " + " or ".join(k for k in ("mission", "strategy") if not _ow.get(k))
+                                + " has been written by the Owner, so none is shown._\n"))
     import re as _re615
     f["README.md"] = f["README.md"].replace("{BP_SECTIONS}", " · ".join(
         _re615.findall(r"(?m)^## (.+)$", f["BUSINESS_PLAN.md"])))

@@ -52,7 +52,8 @@ interface JourneyResult {
   // veto stops it after Stage 5). It is ABSENT on a complete journey, so "absent" means ran, and
   // `verified: null` means ran-but-not-assessable. Three different things, none of them "done".
   journey_id?: string;   // W668 - the server keeps its own record of the journey under this id
-  stage_verifications?: Record<string, { verified: boolean | null; ran?: boolean; score: number; sections_present: string; basis?: string }>;
+  // W800 - floor_served: the deterministic floor, not a model, served this stage
+  stage_verifications?: Record<string, { verified: boolean | null; ran?: boolean; score: number; sections_present: string; basis?: string; floor_served?: boolean }>;
   stages_verified?: string;
   stages_floor_served?: number;
   stages_note?: string | null;
@@ -867,7 +868,14 @@ export const GenesisJourney: React.FC = () => {
                 <Eye size={15} className="text-aura" />
                 <h3 className="text-xs font-black uppercase tracking-widest text-aura">Innovate &amp; Research (§4.3)</h3>
               </div>
-              <p className="text-[10px] text-slate-600 mb-2">Best &amp; latest approaches + innovative options across science · technology · business · operations · law — feeding the candidate solutions below.</p>
+              {/* W800 (FU-981, ledger v17 R2[1]) - the subtitle follows what served the stage. It promised the
+                  best and latest approaches across five fields over a frame the floor built from the founder's
+                  own words. */}
+              <p data-testid="genesis-research-subtitle" className="text-[10px] text-slate-600 mb-2">
+                {result.stage_verifications?.research?.floor_served === true
+                  ? 'The structured floor served this stage, not a model: what follows is a frame built from your own words under the requested headings. No approach was found, researched or compared.'
+                  : 'Best & latest approaches + innovative options across science · technology · business · operations · law — feeding the candidate solutions below.'}
+              </p>
               <PlainText text={result.stage_3_innovate_research} />
             </Card>
           )}
@@ -964,7 +972,12 @@ export const GenesisJourney: React.FC = () => {
                 <ShieldCheck size={15} className="text-aura" />
                 <h3 className="text-xs font-black uppercase tracking-widest text-aura">Operational Intelligence (§4.7)</h3>
               </div>
-              <p className="text-[10px] text-slate-600 mb-2">Addresses deliverability, compliance (legal · regulatory · EHS · Sharia · ethical) and operability before commercialisation. The §11 screen below reads the design and commercialisation text — a keyword and vocabulary screen, not a certification.</p>
+              <p data-testid="genesis-operations-subtitle" className="text-[10px] text-slate-600 mb-2">
+                {result.stage_verifications?.operations?.floor_served === true
+                  ? 'The structured floor served this stage, not a model: the headings below name deliverability, compliance and operability, and nothing under them assessed any of the three.'
+                  : 'Addresses deliverability, compliance (legal · regulatory · EHS · Sharia · ethical) and operability before commercialisation.'}
+                {' '}The §11 screen below reads the design and commercialisation text — a keyword and vocabulary screen, not a certification.
+              </p>
               <PlainText text={result.stage_7_operational_intelligence} />
             </Card>
           )}

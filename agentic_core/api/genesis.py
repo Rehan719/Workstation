@@ -131,6 +131,8 @@ def _verify_stage(text: str, sections: List[str], floor_served: bool = False) ->
     m = _score_candidate(text or "", sections)
     present = sum(1 for s in sections if s.lower() in (text or "").lower())
     m["sections_present"] = f"{present}/{len(sections)}"
+    #  W800 (FU-981, ledger v17 R2[1]) - SAID AS A FLAG, so a page can follow it without reading the basis text
+    m["floor_served"] = bool(floor_served)
     if floor_served:
         m["verified"] = None
         m["basis"] = ("not assessable — floor-served: the deterministic floor emits the requested "
