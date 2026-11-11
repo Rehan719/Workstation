@@ -21590,11 +21590,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P3.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W841",
       "note": "",
       "slot_source": "the model lifecycle and its evaluation are this item's",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The hypothesis held when driven (an installed model with no evaluation was promoted) and is fixed: a model is made the serving default only on a recorded evaluation of THIS build on the pinned probe set - one in the lifecycle record that the model served, whose control it passed, run on the probe-set version and digest pinned now, and whose serving identity is the digest the runtime reports for the name now. The digest is kept with the default, and a promotion that recorded its build holds only while that build is installed: a re-pulled build under the same name is not served as the promoted default until it is evaluated and promoted again; /lifecycle says whether the promoted default still holds. A promotion made before this round recorded no build; it keeps serving and is said to be tied to no build. The decision reads the lifecycle's own evaluations and never the on-demand baseline runs, as P3.32 round 8 requires. The Native AI page says '(promoted)' only of the model the promotion serves (it said so whenever any promotion existed, so a fallen-back default read as promoted) and says when a promoted default no longer holds. Guard test_w841, 4 blinds red."
     },
     {
       "id": "FU-1088",

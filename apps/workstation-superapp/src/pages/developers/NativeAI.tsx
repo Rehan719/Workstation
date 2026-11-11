@@ -495,6 +495,8 @@ export const NativeAI: React.FC = () => {
     // empty estate, so this card said "Serving default: llama3.2" beside the page's own
     // "Deterministic floor active". What serves and what is configured are two fields now.
     configured_default?: string | null; serves?: string; serving_basis?: string;
+    // W841 (FU-1087) - whether the promoted default is still the build that was evaluated and promoted
+    promoted_default_state?: { promoted?: string | null; holds?: boolean | null; basis?: string } | null;
     discovered?: string[]; active_estate?: string[];
     // FU-894 - how many evaluations the record holds against the cap that drops older ones, in the server's words
     evaluations_held?: number; evaluations_kept_at_most?: number; evaluations_basis?: string;
@@ -1010,7 +1012,15 @@ export const NativeAI: React.FC = () => {
                 {lifecycle.effective_default ? (
                   <>
                     Serving: <span className="text-white font-black" data-testid="serving-default">{lifecycle.effective_default}</span>
-                    {lifecycle.promoted_default ? <span className="text-sky-300"> (promoted)</span> : <span> (env default, installed)</span>}
+                    {/* W841 (FU-1087) - "(promoted)" only of the model the promotion serves: a promotion whose build
+                        is no longer installed leaves the configured default serving, and that is said */}
+                    {lifecycle.promoted_default && lifecycle.promoted_default === lifecycle.effective_default
+                      ? <span className="text-sky-300"> (promoted)</span> : <span> (env default, installed)</span>}
+                    {lifecycle.promoted_default_state?.holds === false && (
+                      <span className="block text-amber-400/90" data-testid="promoted-default-not-held">
+                        Promoted {lifecycle.promoted_default_state.promoted}: {lifecycle.promoted_default_state.basis}
+                      </span>
+                    )}
                   </>
                 ) : (
                   <span data-testid="serving-default" title={lifecycle.serving_basis}>

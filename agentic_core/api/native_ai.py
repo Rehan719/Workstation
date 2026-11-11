@@ -328,7 +328,9 @@ async def model_lifecycle():
     # W492 (FU-183) — /models already guarded this ("default_local" only when something is discovered);
     # /lifecycle did not, so it published the OLLAMA_MODEL fallback NAME as the serving default with an
     # empty estate. What is configured and what serves are two facts, and the answer says which is which.
+    from agentic_core.ai.native.model_resource import promoted_default_state as _pds841
     return {"promoted_default": st.get("default_local"),
+            "promoted_default_state": _pds841(),          # W841 (FU-1087) - is it still the build promoted
             "effective_default": _eff,
             "configured_default": configured_default_local(),
             "serves": ("local_model" if _eff else "native_floor"),
@@ -941,7 +943,8 @@ _EVIDENCE_SURFACES = {
     "/route": ("configuration", "which tier a request would be sent to, by rule"),
     "/models": ("configuration", "the local model names the runtime lists"),
     "/lifecycle": ("configuration", "the promoted default and retired names; its `evaluations` are behaviour records"),
-    "/lifecycle/promote": ("configuration", "a named model is made the default; nothing about it is measured"),
+    "/lifecycle/promote": ("configuration", "a named model is made the default on a recorded evaluation of its build "
+                                            "on the pinned probe set (W841); the promotion itself measures nothing"),
     "/lifecycle/retire": ("configuration", "a named model is removed from the active list"),
     "/lifecycle/reinstate": ("configuration", "a named model is returned to the active list"),
     "/lifecycle/installed": ("configuration", "what the local runtime reports it holds - name, digest, size, parameter size, quantisation, family, format, parameter count, capabilities and licence - read at call time"),
@@ -1170,12 +1173,36 @@ async def promote_model(req: LifecycleModelRequest):
     if req.model not in local_models():
         raise HTTPException(status_code=409, detail=f"Model '{req.model}' is not discovered on the "
                             "local server — pull it first; promotion never pretends.")
+    #  W841 (FU-1087) - NOT ON BEING INSTALLED ALONE. A model becomes the serving default only on a recorded
+    #  EVALUATION of this build on the pinned probe set: an evaluation in this lifecycle record that the model served
+    #  (can_serve), whose control it passed, run on the probe-set version and digest pinned now, and whose serving
+    #  identity is the digest the runtime reports for the name now.
+    from agentic_core.ai.native.model_resource import local_model_digest
+    _dg = local_model_digest(req.model)
+    if not _dg:
+        raise HTTPException(status_code=409, detail=(
+            f"Model '{req.model}' was not promoted: the local runtime reports no build digest for this name, so no "
+            "evaluation can be tied to a build of it. A name is not a build."))
+    _set_now = {"version": _EVAL_PROBE_SET_VERSION, "digest": _eval_probe_digest()}
     st = _lifecycle_for_write()                              # W577 (FU-395)
+    _measured = [e for e in (st.get("evaluations") or []) if isinstance(e, dict) and e.get("model") == req.model
+                 and e.get("can_serve") is True and (e.get("control") or {}).get("marker_absent") is True
+                 and e.get("probe_set") == _set_now and (e.get("serving") or {}).get("identity") == _dg]
+    if not _measured:
+        raise HTTPException(status_code=409, detail=(
+            f"Model '{req.model}' was not promoted: no evaluation of this build ({_dg[:23]}) on the pinned probe set "
+            f"(version {_EVAL_PROBE_SET_VERSION}) that it served and whose control it passed is recorded. Run POST "
+            "/api/v1/native-ai/lifecycle/evaluate for it, then promote."))
     st["default_local"] = req.model
+    st["default_local_digest"] = _dg
+    st["default_local_evaluated_at"] = _measured[-1].get("at")
     st["retired"] = [m for m in (st.get("retired") or []) if m != req.model]
     save_lifecycle(st)
-    _ueg_lifecycle("promoted", req.model)
-    return {"promoted": req.model, "effective_default": req.model}
+    _ueg_lifecycle("promoted", req.model, {"digest": _dg, "evaluated_at": _measured[-1].get("at")})
+    return {"promoted": req.model, "effective_default": req.model, "digest": _dg,
+            "evaluated_at": _measured[-1].get("at"),
+            "promoted_basis": (f"promoted on the evaluation of this build at {_measured[-1].get('at')} on the pinned "
+                               "probe set; it serves as the default only while the runtime reports this build")}
 
 
 @router.post("/lifecycle/retire")
@@ -1190,6 +1217,8 @@ async def retire_model(req: LifecycleModelRequest):
         st["retired"].append(req.model)
     if st.get("default_local") == req.model:
         st["default_local"] = None            # a retired model cannot stay the promoted default
+        st.pop("default_local_digest", None)  # W841 (FU-1087) - nor its build
+        st.pop("default_local_evaluated_at", None)
     save_lifecycle(st)
     _ueg_lifecycle("retired", req.model)
     return {"retired": st["retired"], "promoted_default": st.get("default_local")}

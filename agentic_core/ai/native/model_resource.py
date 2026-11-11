@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import os
 import time
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 _OLLAMA_CACHE = {"at": 0.0, "up": False}
 _OLLAMA_TTL = 30.0
@@ -55,7 +55,7 @@ def ollama_up() -> bool:
     return up
 
 
-_MODELS_CACHE = {"at": 0.0, "models": []}
+_MODELS_CACHE = {"at": 0.0, "models": [], "digests": {}}      # W841 (FU-1087) - each build's digest, same fetch
 
 
 def local_models() -> List[str]:
@@ -67,17 +67,53 @@ def local_models() -> List[str]:
     if now - _MODELS_CACHE["at"] < _OLLAMA_TTL:
         return list(_MODELS_CACHE["models"])
     models: List[str] = []
+    digests: Dict[str, str] = {}
     try:
         import httpx
         r = httpx.get(f"{_ollama_base()}/api/tags", timeout=1.0)
         if r.status_code == 200:
+            _rows = r.json().get("models") or []
             models = [m.get("name", "").split(":")[0] if ":latest" in m.get("name", "") else m.get("name", "")
-                      for m in (r.json().get("models") or [])]
+                      for m in _rows]
             models = sorted({m for m in models if m})
+            #  W841 (FU-1087) - the build each name is, read from the same list (a name is not a build)
+            for m in _rows:
+                n = str(m.get("name") or "")
+                short = n.split(":")[0] if ":latest" in n else n
+                if short and m.get("digest"):
+                    digests[short] = str(m.get("digest"))
     except Exception:
-        models = []
-    _MODELS_CACHE.update(at=now, models=models)
+        models, digests = [], {}
+    _MODELS_CACHE.update(at=now, models=models, digests=digests)
     return models
+
+
+def local_model_digest(name: str) -> Optional[str]:
+    """W841 (FU-1087) - the build digest the local runtime reports for a discovered name, or None. Read from the same
+    cached list discovery reads, never guessed."""
+    local_models()
+    return (_MODELS_CACHE.get("digests") or {}).get(name)
+
+
+def promoted_default_state() -> Dict[str, Any]:
+    """W841 (FU-1087) - whether the promoted serving default is still the build that was measured and promoted."""
+    st = lifecycle_state()
+    name, then = st.get("default_local"), st.get("default_local_digest")
+    if not name:
+        return {"promoted": None, "digest_then": None, "digest_now": None, "holds": None,
+                "basis": "no model is promoted"}
+    now = local_model_digest(name)
+    if not then:
+        return {"promoted": name, "digest_then": None, "digest_now": now, "holds": None,
+                "basis": ("promoted before a promotion recorded the build it promoted: no evaluation ties this default "
+                          "to a build, so whether the installed build is the one that was chosen is not known")}
+    holds = bool(now) and now == then
+    return {"promoted": name, "digest_then": then, "digest_now": now, "holds": holds,
+            "evaluated_at": st.get("default_local_evaluated_at"),
+            "basis": ("the runtime reports the build that was measured and promoted" if holds else
+                      "the runtime reports another build under this name, or none: the promoted default was measured "
+                      "on a build that is not the one installed now, so it is not served as the default until this "
+                      "build is evaluated and promoted again")}
 
 
 # ── Owned-model LIFECYCLE (W276) — the registry is a managed estate, not a static enumeration:
@@ -165,7 +201,10 @@ def effective_default_local() -> Optional[str]:
     _present = set(active_local_models())
     promoted = st.get("default_local")
     if promoted and promoted not in set(st.get("retired") or []) and promoted in _present:
-        return promoted
+        #  W841 (FU-1087) - a promotion that recorded its build holds only while that build is installed
+        _then = st.get("default_local_digest")
+        if not _then or local_model_digest(promoted) == _then:
+            return promoted
     env_name = configured_default_local()
     return env_name if env_name and env_name in _present else None
 

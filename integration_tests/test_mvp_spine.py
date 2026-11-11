@@ -72835,3 +72835,74 @@ def test_w840_one_persons_journey_from_challenge_to_a_downloadable_operating_ent
     assert r1["ledger_cycles"] == r0["ledger_cycles"] + 1, ("one operating cycle is not one more in the ledger", r0, r1)
     assert r1["operating_cycles"] == r0["operating_cycles"], (
         "a cycle run outside the roster's operate step was counted as one the roster ran", r0, r1)
+
+
+def test_w841_a_model_is_made_the_serving_default_on_an_evaluation_of_that_build_not_on_being_installed(client,
+                                                                                                        monkeypatch):
+    """FU-1087 (W841). Promote made any discovered model the serving default after one check, that it was installed:
+    no evaluation on the probe set, no build identity; and the effective default re-checked only the name, although
+    a tag can be pulled again to a different build. A promotion now needs a recorded EVALUATION of this build on the
+    pinned probe set - one the model served, whose control it passed, whose serving identity is the digest the
+    runtime reports now - and keeps the digest: a re-pulled build is not served as the promoted default until it is
+    evaluated and promoted again. A promotion made before this round recorded no build; it keeps serving and is
+    reported as tied to no build. The decision reads the lifecycle's own evaluations and never the on-demand runs."""
+    from agentic_core.ai.native import model_resource as _mr841
+    from agentic_core.api import native_ai as _na841
+
+    lp = _mr841._lifecycle_path()
+    saved = lp.read_bytes() if lp.exists() else None
+    monkeypatch.setattr(_mr841, "local_models", lambda: ["w841-model"])
+    digest = {"now": "sha256:w841aaaa"}
+    monkeypatch.setattr(_mr841, "local_model_digest", lambda name: digest["now"] if name == "w841-model" else None)
+    set_now = {"version": _na841._EVAL_PROBE_SET_VERSION, "digest": _na841._eval_probe_digest()}
+
+    def _evaluation(identity, probe_set, can_serve=True, control_passed=True, at="2026-11-11T21:00:00Z"):
+        st = _mr841.lifecycle_state()
+        st.setdefault("evaluations", []).append({
+            "model": "w841-model", "can_serve": can_serve, "control": {"marker_absent": control_passed},
+            "probe_set": probe_set, "serving": {"identity": identity}, "at": at})
+        _mr841.save_lifecycle(st)
+
+    def _promote():
+        return client.post("/api/v1/native-ai/lifecycle/promote", json={"model": "w841-model"})
+    try:
+        r = _promote()
+        assert r.status_code == 409 and "no evaluation of this build" in r.json()["detail"], (
+            "a model was promoted on being installed alone", r.status_code, r.text[:200])
+        _evaluation("sha256:w841bbbb", set_now)                                   # another build
+        _evaluation("sha256:w841aaaa", {"version": "0", "digest": "stale"})       # an older probe set
+        _evaluation("sha256:w841aaaa", set_now, can_serve=False)                  # it did not serve
+        _evaluation("sha256:w841aaaa", set_now, control_passed=False)             # it failed the control
+        assert _promote().status_code == 409, "an evaluation of another build, probe set or outcome was accepted"
+        _evaluation("sha256:w841aaaa", set_now, at="2026-11-11T21:05:00Z")
+        ok = _promote()
+        assert ok.status_code == 200 and ok.json()["digest"] == "sha256:w841aaaa", ok.text[:300]
+        assert ok.json()["evaluated_at"] == "2026-11-11T21:05:00Z", ok.json()
+        assert _mr841.effective_default_local() == "w841-model", "the promoted, evaluated build does not serve"
+        st = client.get("/api/v1/native-ai/lifecycle").json()["promoted_default_state"]
+        assert st["holds"] is True and st["evaluated_at"] == "2026-11-11T21:05:00Z", st
+
+        digest["now"] = "sha256:w841cccc"                                         # the tag is pulled again
+        assert _mr841.effective_default_local() != "w841-model", (
+            "a re-pulled build under the promoted name is served as the evaluated default")
+        st2 = client.get("/api/v1/native-ai/lifecycle").json()["promoted_default_state"]
+        assert st2["holds"] is False and "not served as the default" in st2["basis"], st2
+
+        legacy = _mr841.lifecycle_state()                                         # promoted before builds were kept
+        legacy.pop("default_local_digest", None)
+        _mr841.save_lifecycle(legacy)
+        assert _mr841.effective_default_local() == "w841-model", "an earlier promotion stopped serving"
+        assert client.get("/api/v1/native-ai/lifecycle").json()["promoted_default_state"]["holds"] is None
+
+        import pathlib as _pl841
+        pg = _code_only((_pl841.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages"
+                         / "developers" / "NativeAI.tsx").read_bytes().decode("utf-8"))
+        assert "lifecycle.promoted_default && lifecycle.promoted_default === lifecycle.effective_default" in pg, (
+            "the page calls the serving model promoted whenever any promotion exists")
+        assert 'data-testid="promoted-default-not-held"' in pg and "promoted_default_state.basis" in pg, (
+            "the page does not say that a promoted default no longer holds")
+    finally:
+        if saved is None:
+            lp.unlink(missing_ok=True)
+        else:
+            lp.write_bytes(saved)
