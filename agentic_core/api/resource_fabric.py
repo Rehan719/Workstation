@@ -1741,7 +1741,8 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
         if rid == "mega_project":
             from agentic_core.api.mega_project import synthesise as mega_synthesise, SynthesiseRequest as MegaReq
             r = await mega_synthesise(MegaReq(concept=str(cfg.get("concept") or objective), domain=domain))
-            out = r.get("synthesis") or r.get("deliverables") or {k: v for k, v in r.items() if k != "posture"}
+            #  W836 - the engine returns its text as "deliverable"; reading other keys filed a JSON dump as the output
+            out = r.get("deliverable") or {k: v for k, v in r.items() if k != "posture"}
             return {"resource": "mega_project", "ran": "/api/v1/mega-project/synthesise",
                     "synthesis_id": r.get("synthesis_id"),
                     "output": (out if isinstance(out, str) else json.dumps(out, default=str))[:600]}
@@ -1782,15 +1783,22 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
                     "output": (res.get("output") or "")[:600]}
         if rid == "native_ensemble":
             from agentic_core.ai.native import orchestrator
+            #  W836 - the gates its siblings run: the declared /native-ai/ensemble route gates, and so does the
+            #  native_orchestrator stage above (W651); this branch reached the orchestrator with neither
+            _halt836 = _stage_pre_gate("native_ensemble", "fabric-ensemble")
+            if _halt836:
+                return _halt836
             res = await orchestrator.ensemble(str(cfg.get("prompt") or objective),
                                               agent="fabric-ensemble", models=_csv(cfg.get("models")) or None,
-                                              synthesize=bool(cfg.get("synthesize", True)))
+                                              synthesize=bool(cfg.get("synthesize", True)),
+                                              user_text=(objective or None))      # W836 - the person's words
             members = res.get("members") or []
             # synthesis when >1 member produced; else fall back to the single member's output
             out = (res.get("synthesis") or {}).get("output") or ""
             if not out:
                 out = next((m.get("output", "") for m in members if m.get("output")), "")
             return {**_reply_evidence(), "resource": "native_ensemble", "ran": "/api/v1/native-ai/ensemble",
+                    "governance_checkpoint": _stage_checkpoint("fabric-ensemble", out),        # W836
                     "models_run": res.get("models_run"), "members": len(members),
                     "served_by": ",".join(sorted({str(m.get("served_by")) for m in members if m.get("served_by")})),
                     "output": out[:600]}
@@ -2037,9 +2045,7 @@ _FACILITY_PERSISTS.update({
     "mega_project": ("nothing", _ENGINE_WRITES_NO_STORE),
     "synthesis_studio": ("nothing", _ENGINE_WRITES_NO_STORE + "; composed here it runs the lab cascade, which saves "
                                                               "no entity"),
-    "native_ensemble": ("nothing", ("its engine is the completion layer itself (orchestrator.ensemble); this handler "
-                                    "runs no gate and writes no store, so what the completion layer keeps about each "
-                                    "call is not declared here")),
+    "native_ensemble": ("records", _CHECKPOINTED),          # W836 - it runs the gates now, so it writes the checkpoint
     "resource_optimizer": ("nothing", ("it builds a fresh optimiser for each call and holds the pool, the computed share "
                                        "and any queued task on that instance, which is discarded with the response; it "
                                        "makes no completion call and writes nothing")),

@@ -23186,11 +23186,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W836",
       "note": "",
       "slot_source": "found in this round and not done in it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The fabric's native_ensemble stage runs the constitutional pre-gate and records the console's checkpoint, as its declared route and the native_orchestrator stage do, and passes the run's objective as the person's words; its declaration of what it persists now says the checkpoint. Driven through the fabric's dispatcher both ways (allowed, and refused by the pre-gate). Guard test_w836, blinds red."
     },
     {
       "id": "FU-1164",
@@ -23204,11 +23207,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W836",
       "note": "",
       "slot_source": "found in this round and not done in it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The fabric's mega_project stage reads the engine's own \"deliverable\" key, so its run row's output is the text the engine composed, not a JSON dump of the response. Driven through the fabric's dispatcher. Guard test_w836, blinds red."
     },
     {
       "id": "FU-1165",

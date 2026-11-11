@@ -72602,3 +72602,40 @@ def test_w835_every_facility_run_says_what_its_engine_persists(client, monkeypat
     finally:
         client.delete(f"/api/v1/resources/compositions/{comp['id']}")
     assert "petri" in labels, ("the petri dish is declared to seal a QMS record and its run sealed none", labels)
+
+
+def test_w836_the_fabric_ensemble_is_gated_and_the_mega_project_row_keeps_its_text(client, monkeypatch):
+    """W836 (found by the FU-910 trace). The fabric's native_ensemble stage reached the orchestrator with no
+    constitutional pre-gate and no checkpoint, unlike its declared route and the native_orchestrator stage, and
+    passed no user_text; it now runs both gates, passes the objective as the person's words, and is declared to
+    write the checkpoint. The mega_project stage read keys the engine does not return, so its row's output was a
+    JSON dump; it reads the engine's own "deliverable". Both are driven through the fabric's dispatcher."""
+    import asyncio as _aio836
+    from agentic_core.ai import gateway as _gw836
+    from agentic_core.ai.native import orchestrator as _orc836
+    from agentic_core.api import resource_fabric as _fab836
+
+    seen = {}
+
+    async def _ens(prompt, agent="ensemble", models=None, synthesize=True, timeout=30.0, user_text=None, **_k):
+        seen["user_text"] = user_text
+        return {"members": [{"output": "w836 member", "served_by": "native"}], "models_run": 1,
+                "synthesis": {"output": "w836 synthesis"}}
+    monkeypatch.setattr(_orc836, "ensemble", _ens)
+    monkeypatch.setattr(_gw836.gateway._rate_limiter, "_lock", _aio836.Lock())
+    out = _aio836.run(_fab836._run_real_resource_handler("native_ensemble", {}, "w836 the person's objective", "general"))
+    assert seen.get("user_text") == "w836 the person's objective", ("the ensemble was not given the person's words", seen)
+    assert out.get("governance_checkpoint"), ("the ensemble stage carried no governance checkpoint", sorted(out))
+    halts = []
+    monkeypatch.setattr(_gw836, "console_pre_gate", lambda agent: halts.append(agent) or {"refused_reason": "w836"})
+    refused = _aio836.run(_fab836._run_real_resource_handler("native_ensemble", {}, "w836 refused", "general"))
+    assert halts == ["fabric-ensemble"] and "constitutional refusal" in str(refused.get("error")), refused
+    assert _fab836._FACILITY_PERSISTS["native_ensemble"] == ("records", _fab836._CHECKPOINTED)
+
+    from agentic_core.api import mega_project as _mp836
+
+    async def _syn(req):
+        return {"synthesis_id": "mega-w836", "deliverable": "w836 the engine's own text", "posture": "x"}
+    monkeypatch.setattr(_mp836, "synthesise", _syn)
+    mp = _aio836.run(_fab836._run_real_resource_handler("mega_project", {}, "w836 concept", "general"))
+    assert mp.get("output") == "w836 the engine's own text", ("the mega-project row's output is not its text", mp)
