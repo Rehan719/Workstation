@@ -57244,7 +57244,10 @@ def test_p3d_r8_a_baseline_is_pinned_held_out_on_demand_and_can_be_re_read(clien
                         return "no marker here" if _p["id"] in wrong else f"reply with {_p['marker']} in it"
                 for _c in _cases:
                     if prompt == _c["prompt"]:
-                        return "no marker here" if _c["id"] in wrong else f"reply with {_c['marker']} in it"
+                        #  W843 - the reply each case's own computed check accepts
+                        return "no marker here" if _c["id"] in wrong else (
+                            json.dumps({k: 1 for k in _c["keys"]}) if _c.get("check") == "json_keys" else
+                            _c["marker"] if _c.get("check") == "only" else f"reply with {_c['marker']} in it")
                 return "unknown case"
             return _reply
 
@@ -72979,3 +72982,93 @@ def test_w842_an_answer_names_the_model_and_the_build_that_answered(client, monk
         "which model answered does not travel with the text a person keeps")
     assert 'data-testid="domain-served-processor"' in tool and "ran on ${data.ai_provenance.served_identity.processor" in tool, (
         "where the answer ran is not shown where the answer is, or not kept with its text")
+
+
+def test_w843_the_held_out_set_measures_injection_no_source_malformed_output_and_unsupported_claims(client,
+                                                                                                     monkeypatch,
+                                                                                                     tmp_path):
+    """FU-1090 (W843). The held-out set held three cases (format, arithmetic, join), each passed when its reply
+    contained a marker, so injection, a refusal without a source, malformed output and an unsupported claim went
+    unmeasured. Version 2 keeps those three and adds one case per behaviour, each scored by the computed check it
+    names - contains_not, only, json_keys - never a model's opinion. A case naming a check this code does not run is
+    a malformed set, refused whole. Driven through a baseline run: replies that a marker rule alone would pass fail
+    their case's own check. The cases are read from their file at run time; no prompt is copied here."""
+    import json as _j843
+    import pathlib as _pl843
+    import agentic_core.api.native_ai as _na843
+
+    held = _na843._load_heldout()
+    assert held["ok"] is True and held["version"] == "2", held.get("why")
+    assert _na843._HELDOUT_HISTORY["1"] == "763a1d22466ec97b", "a recorded version's digest was altered"
+    by_id = {c["id"]: c for c in held["cases"]}
+    assert {"h-format", "h-arithmetic", "h-join"} <= set(by_id), "version 1's cases were not kept"
+    kinds = {cid: c.get("check", "contains") for cid, c in by_id.items()}
+    assert kinds.get("h-injection") == "contains_not" and kinds.get("h-malformed") == "json_keys", kinds
+    assert kinds.get("h-no-source") == "only" and kinds.get("h-unsupported") == "only", kinds
+
+    #  the checks, computed
+    inj, ns, mal = by_id["h-injection"], by_id["h-no-source"], by_id["h-malformed"]
+    assert _na843._case_verdict(inj, f"{inj['marker']} the boiler failed")[0] is True
+    assert _na843._case_verdict(inj, f"{inj['marker']} {inj['forbidden'][0]}")[0] is False, "an obeyed injection passed"
+    assert _na843._case_verdict(ns, f"{ns['marker']}.")[0] is True
+    assert _na843._case_verdict(ns, f"{ns['marker']} - it was 42")[0] is False, "an added figure passed"
+    good = _j843.dumps({k: 1 for k in mal["keys"]})
+    assert _na843._case_verdict(mal, good)[0] is True
+    assert _na843._case_verdict(mal, "```json\n" + good + "\n```")[0] is False, "a fenced object passed"
+    assert _na843._case_verdict(mal, _j843.dumps({**{k: 1 for k in mal["keys"]}, "extra": 1}))[0] is False
+
+    #  a set naming a check this code does not run is refused whole, never scored as a marker case
+    doc = _j843.loads(_pl843.Path(_na843._heldout_path()).read_text(encoding="utf-8"))
+    odd = {**doc, "version": "w843-odd", "cases": [{**doc["cases"][0], "check": "a_model_judges"}] + doc["cases"][1:]}
+    p = tmp_path / "heldout_w843.json"
+    p.write_text(_j843.dumps(odd), encoding="utf-8")
+    monkeypatch.setattr(_na843, "_heldout_path", lambda: p)
+    monkeypatch.setitem(_na843._HELDOUT_HISTORY, "w843-odd", _na843._heldout_digest(odd["cases"]))
+    refused = _na843._load_heldout()
+    assert refused["ok"] is False and "computed check" in refused["why"], refused
+    monkeypatch.undo()
+
+    #  driven through a baseline run: each reply holds its marker, so a marker rule alone would pass them all
+    store = _pl843.Path(_na843._baseline_store())
+    saved = store.read_bytes() if store.exists() else None
+
+    def _stand_in(right):
+        async def _complete(prompt, agent="assistant", timeout=30.0, prefer_external=False, prefer="auto", **_kw):
+            for c in held["cases"]:
+                if prompt == c["prompt"]:
+                    k = c.get("check", "contains")
+                    if k == "json_keys":
+                        out = good if right else "```json\n" + good + "\n```"
+                    elif k == "only":
+                        out = c["marker"] if right else f"{c['marker']} - it was 42"
+                    elif k == "contains_not":
+                        out = f"{c['marker']} a summary" if right else f"{c['marker']} {c['forbidden'][0]}"
+                    else:
+                        out = f"reply with {c['marker']} in it"
+                    return {"output": out, "served_by": prefer, "is_external": False}
+            return {"output": "a public reply", "served_by": prefer, "is_external": False}
+        return _complete
+    try:
+        monkeypatch.setattr(_na843.orchestrator, "complete", _stand_in(right=False))
+        r = client.post("/api/v1/native-ai/baseline/run", json={"tier": "native"})
+        assert r.status_code == 200, r.text[:300]
+        rows = {c["case"]: c for c in r.json()["cases"] if c["set"] == "heldout"}
+        for cid in ("h-injection", "h-no-source", "h-malformed", "h-unsupported"):
+            assert rows[cid]["marker_present"] is True and rows[cid]["passed"] is False, (
+                "a reply a marker rule alone passes was not failed by its case's own check", rows[cid])
+            assert rows[cid]["check"] == kinds[cid], rows[cid]
+        assert all(rows[c]["passed"] is True for c in ("h-format", "h-arithmetic", "h-join")), rows
+        assert "computed check" in r.json()["established"] and "computed check" in r.json()["basis"], r.json()["basis"]
+
+        monkeypatch.setattr(_na843.orchestrator, "complete", _stand_in(right=True))
+        ok = client.post("/api/v1/native-ai/baseline/run", json={"tier": "native"}).json()
+        assert all(c["passed"] is True for c in ok["cases"] if c["set"] == "heldout"), [
+            c["case"] for c in ok["cases"] if c["set"] == "heldout" and not c["passed"]]
+    finally:
+        if saved is None:
+            store.unlink(missing_ok=True)
+        else:
+            store.write_bytes(saved)
+    page = _code_only((_pl843.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages"
+                       / "developers" / "NativeAI.tsx").read_bytes().decode("utf-8"))
+    assert "check ${c.check}" in page, "the page does not name the check a case was read on"

@@ -21648,11 +21648,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W843",
       "note": "",
       "slot_source": "the held-out set is this item's",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The held-out set is now version 2 (its own pinned digest; version 1's digest is kept, so its records still read): version 1's three cases unchanged, and one case per behaviour the row named - an instruction planted in the material, a question no source given answers, a strict output format and a question the material does not answer. Each case names the computed check that scores it, never a model's opinion: contains (the marker, as every earlier case), contains_not (the marker and none of the text the planted instruction asked for), only (the marker and nothing else, so an answer that adds a figure or a name it was not given fails), json_keys (one JSON object with exactly the named keys). A case naming a check this code does not run makes the set malformed and it is refused whole, never scored as a marker case. The baseline record carries each case's check and the basis it was read on; the record's own basis says what passed means. Driven through a baseline run: replies that hold their marker, which a marker rule alone would pass, fail their case's own check. The Native AI page names the check each case was read on. The round-8 guard's stand-in answered every held-out case with a reply holding its marker; its passing reply is now the one each case's own check accepts. No case's prompt is in the guard, a document or this note; the exposure check still finds none in the repository. Guard test_w843, 6 blinds red."
     },
     {
       "id": "FU-1091",

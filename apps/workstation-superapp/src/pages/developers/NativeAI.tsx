@@ -42,6 +42,7 @@ interface TreeSignal { input_strength: number; activation: number; supra_thresho
 interface BaselineCase {
   case: string; set: string; control: boolean; served_by?: string | null; on_target: boolean;
   marker_present: boolean; passed: boolean | null; passed_basis?: string;
+  check?: string;     // W843 (FU-1090) - the computed check the case was read on (contains, contains_not, only, json_keys)
   reply_excerpt: string; reply_chars: number; reply_truncated?: boolean; reply_sha256: string;
   reply_withheld?: string;
 }
@@ -1141,7 +1142,7 @@ export const NativeAI: React.FC = () => {
                     {blOpen === b.run_id && b.cases.map(c => (
                       <div key={`${c.set}:${c.case}`} data-testid="baseline-case" className="pl-2 border-l border-slate-800 mt-1">
                         <p className="text-[9px] text-slate-400">
-                          {c.case} ({c.set}{c.control ? ', control' : ''}) — {c.passed === true ? 'passed' : c.passed === false ? 'FAILED' : 'not read'} · served by {String(c.served_by ?? 'nothing')} · {c.reply_chars} characters{c.reply_truncated ? ', excerpt shown' : ''}
+                          {c.case} ({c.set}{c.control ? ', control' : ''}{c.check && !c.control ? `, check ${c.check}` : ''}) — {c.passed === true ? 'passed' : c.passed === false ? 'FAILED' : 'not read'} · served by {String(c.served_by ?? 'nothing')} · {c.reply_chars} characters{c.reply_truncated ? ', excerpt shown' : ''}
                         </p>
                         {c.passed_basis && <p className="text-[9px] text-slate-600">{c.passed_basis}</p>}
                         {c.reply_withheld

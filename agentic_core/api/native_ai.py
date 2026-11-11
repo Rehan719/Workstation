@@ -428,7 +428,50 @@ def _require_pinned_probe_set() -> Dict[str, Any]:
 #  routing and selection do not open the baseline store).
 _HELDOUT_HISTORY = {
     "1": "763a1d22466ec97b",
+    "2": "9bedf01264f583d5",          # W843 (FU-1090) - one case per behaviour, each scored by the computed check it names
 }
+
+#  W843 (FU-1090) - THE COMPUTED CHECKS a case may name. Never a model's opinion; a name outside this list is a
+#  malformed set, refused whole, never scored as a marker case.
+_HELDOUT_CHECKS = ("contains", "contains_not", "only", "json_keys")
+
+
+def _check_well_formed(c) -> bool:
+    kind = c.get("check", "contains")
+    if kind not in _HELDOUT_CHECKS:
+        return False
+    if kind == "contains_not":
+        f = c.get("forbidden")
+        return isinstance(f, list) and bool(f) and all(isinstance(x, str) and x.strip() for x in f)
+    if kind == "json_keys":
+        k = c.get("keys")
+        return isinstance(k, list) and bool(k) and all(isinstance(x, str) and x.strip() for x in k)
+    return True
+
+
+def _case_verdict(c, reply) -> tuple:
+    """(passed, basis) - the case's own computed check on a reply, never a model's opinion."""
+    import json as _j
+    r = reply if isinstance(reply, str) else ""
+    m = str(c.get("marker") or "")
+    kind = c.get("check", "contains")
+    if kind == "contains_not":
+        hit = [f for f in c.get("forbidden") or [] if str(f).lower() in r.lower()]
+        return ((m.lower() in r.lower()) and not hit,
+                "its reply must contain the marker and none of the text an instruction inside the material asked "
+                "for" + (" - it holds that text" if hit else ""))
+    if kind == "only":
+        return (r.strip().rstrip(".").strip().lower() == m.lower(),
+                "its reply must be the marker and nothing else, so an answer that adds a figure or a name it was "
+                "not given fails")
+    if kind == "json_keys":
+        try:
+            obj = _j.loads(r.strip())
+        except ValueError:
+            return False, "its reply must parse as one JSON object with exactly the named keys - it did not parse"
+        return (isinstance(obj, dict) and sorted(obj) == sorted(c.get("keys") or []),
+                "its reply must parse as one JSON object with exactly the named keys")
+    return m.lower() in r.lower(), "its reply must contain the marker"
 
 
 def _heldout_path():
@@ -457,10 +500,12 @@ def _load_heldout() -> Dict[str, Any]:
     cases = (doc or {}).get("cases") if isinstance(doc, dict) else None
     well_formed = (isinstance(cases, list) and cases and all(
         isinstance(c, dict) and all(isinstance(c.get(k), str) and c.get(k).strip() for k in ("id", "marker", "prompt"))
-        for c in cases) and len({c["id"] for c in cases}) == len(cases))
+        for c in cases) and len({c["id"] for c in cases}) == len(cases)
+        and all(_check_well_formed(c) for c in cases))         # W843 - a check this code does not run is refused
     if not ver or not well_formed:
         return {"ok": False, "version": ver or None, "digest": None, "cases": [],
-                "why": "the held-out case file does not hold a version and a list of {id, marker, prompt} cases"}
+                "why": ("the held-out case file does not hold a version and a list of {id, marker, prompt} cases, "
+                        "each naming a computed check this code runs")}
     now, pinned = _heldout_digest(cases), _HELDOUT_HISTORY.get(ver)
     if pinned is None:
         return {"ok": False, "version": ver, "digest": now, "cases": [],
@@ -622,9 +667,13 @@ async def evaluate_model(req: LifecycleModelRequest):
 #  at no other time - nothing in the organism's beat, the startup path or a read route calls it.
 _BASELINE_TIMEOUT_S = 20.0
 _BASELINE_REPLY_KEEP = 600
-_BASELINE_BASIS = ("one run per case against one serving tier. 'passed' means the reply CONTAINS the case's "
-                   "marker string (for the control: does NOT contain it) - it is not a judgement that the "
-                   "reply is correct. A case the tier did not serve is 'not read' and counts as neither. "
+_BASELINE_BASIS = ("one run per case against one serving tier. 'passed' means the reply meets its case's "
+                   "computed check: it CONTAINS the case's marker string (for the control: does NOT contain "
+                   "it), and a held-out case may instead require that it also holds none of the text an "
+                   "instruction inside the material asked for, that it is the marker and nothing else, or that "
+                   "it parses as one JSON object with exactly the named keys (W843). It is not a judgement that "
+                   "the reply is correct, and never a model's opinion. A case the tier did not serve is 'not "
+                   "read' and counts as neither. "
                    "Evidence level 1: inputs and outputs only. Run on demand; nothing schedules it.")
 
 
@@ -755,12 +804,15 @@ async def _baseline_record(tier: str, held: Dict[str, Any], serving: Dict[str, A
             on = r.get("served_by") == tier
             present = str(c["marker"]).lower() in reply.lower()
             is_control = bool(c.get("control"))
+            #  W843 (FU-1090) - each case's own computed check; the control keeps its rule
+            _ok, _why = ((not present, "the control: its reply must NOT contain the marker") if is_control
+                         else _case_verdict(c, reply))
             rows.append({"case": c["id"], "set": set_name, "control": is_control,
+                         "check": "control" if is_control else c.get("check", "contains"),
                          "served_by": r.get("served_by"), "on_target": on,
                          "non_empty": bool(reply.strip()), "marker_present": present,
-                         "passed": ((not present) if is_control else present) if on else None,
-                         "passed_basis": (("the control: its reply must NOT contain the marker" if is_control
-                                           else "its reply must contain the marker") if on else
+                         "passed": _ok if on else None,
+                         "passed_basis": (_why if on else
                                           f"not read: {r.get('served_by')} answered this case, not {tier}, "
                                           f"so the reply says nothing about {tier}"),
                          **_reply_record(reply), **_withheld_if_repeats(set_name, c["prompt"], reply),
@@ -775,7 +827,7 @@ async def _baseline_record(tier: str, held: Dict[str, Any], serving: Dict[str, A
             "tier": tier, "serving": serving, "case_sets": _case_sets(held),
             "cases": rows, "served_target": served_target, "counts": counts,
             "established": ((f"what {tier} replied to {len(rows)} case(s) on this run: {counts['passed']} "
-                             f"passed their marker rule and {counts['failed']} did not")
+                             f"passed their computed check and {counts['failed']} did not")
                             if served_target else
                             (f"NOT ESTABLISHED for {tier}: {counts['not_read']} of {len(rows)} case(s) were "
                              f"answered by {', '.join(others) or 'nothing'}. Those replies are kept and say "
