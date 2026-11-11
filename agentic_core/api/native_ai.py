@@ -1293,7 +1293,7 @@ _CAPABILITIES = [
      "description": "Real QMS quality gates + DCMS SHA3-512 versioning + BMS unit-economics + EMS + Mycelial backbone."},
     {"name": "UEG provenance", "endpoint": "GET /api/v1/ueg/verify", "kind": "provenance",
      "source": "ueg.logger", "in_house": True,
-     "description": "Real hash-chained SHA3-512 Merkle-DAG audit ledger with full-chain verify_chain()."},
+     "description": "Real hash-chained SHA3-512 audit ledger - a linear chain, not a Merkle tree - with full-chain verify_chain()."},
     {"name": "Degradation detection", "endpoint": "GET /api/v1/operations/degradation", "kind": "analysis",
      "source": "self_improvement.degradation_detector", "in_house": True,
      "description": "Real telemetry degradation detection (latency rise / accuracy drop) over the learning loop."},

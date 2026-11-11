@@ -962,7 +962,7 @@ class NativeOrchestrator:
         except Exception:
             signal_response = None
 
-        # UEG PROVENANCE (owned ledger): record this run to the real hash-chained SHA3-512 Merkle-DAG
+        # UEG PROVENANCE (owned ledger): record this run to the real hash-chained SHA3-512 log (a linear chain)
         # audit ledger — the in-house AI's actions get verifiable, tamper-evident provenance. Best-effort.
         ueg_hash = None
         try:
@@ -995,7 +995,7 @@ class NativeOrchestrator:
             "consensus": consensus,
             "signal_response": signal_response,
             "ueg_hash": ueg_hash,
-            "ueg_ledger": "hash-chained SHA3-512 Merkle-DAG (owned, verifiable)" if ueg_hash else None,
+            "ueg_ledger": ("hash-chained SHA3-512 log (owned; a linear chain - each event carries its parent's hash, so re-hashing verifies it; no Merkle tree is built)") if ueg_hash else None,
             "fabric_resources_drawn": sorted({(results[nid].get("fabric") or {}).get("resource")
                                               for nid in order if nid in results and results[nid].get("fabric")}
                                              - {None}),

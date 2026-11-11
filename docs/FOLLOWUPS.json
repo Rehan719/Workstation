@@ -16685,11 +16685,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W807",
       "note": "",
       "slot_source": "found while verifying the brief and not done",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Read and reworded: the UEG ledger is a linear hash chain (each event carries its parent's hash), described as a Merkle-DAG in the orchestrator's tree response (ueg_ledger), four docstrings (gaas/v5/ueg.py - the file this row named - ueg/registry.py, ueg/logger.py, api/ueg.py), the fabric's resource description, two comments and the Contribute page, and in logger.py as 'with IPFS pinning logic', which nothing does. The merkle_root key keeps its name for its readers and both routes now carry merkle_root_basis (the head of a linear chain; no Merkle tree is built). Guard test_w807 sweeps agentic_core and the app source for the phrase."
     },
     {
       "id": "FU-852",
@@ -16703,11 +16706,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W807",
       "note": "",
       "slot_source": "found in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Read each use: the name stays (Owner ruling); the Solutions page's log line said Genesis establishes 'something that actually runs' and now says Genesis registers a living VSB IDBO entity and that whether it then runs depends on the heartbeat and the levers turned on. The two dashboard cards already say they are run by the levers the person enables, so they are left as they are. Guard test_w807; blind red."
     },
     {
       "id": "FU-853",
@@ -16783,11 +16789,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W807",
       "note": "",
       "slot_source": "what a closed tier-3 bundle row left undone; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Archived, reversibly, after the reachability check: /api/csuite/cfo/metrics and /api/csuite/cto/infrastructure were mounted outside the versioned API and no page, script or route read them; the CFO figure was the token balance of a fixed 'demo_user', and the host figures are the organism vitals' own. agentic_core/api/csuite.py moved to _archive/ with a header saying how to restore it. Four tests that drove the routes (test_csuite_cfo_metrics, W746's two legs, W765's unit leg and a fund-report leg) now hold that the routes answer 404 and the archive keeps what they were. Guard test_w807."
     },
     {
       "id": "FU-857",

@@ -1,7 +1,8 @@
 """
 UEG Provenance API — Workstation's OWN tamper-evident audit ledger, exposed.
 
-The in-house AI fabric records its workflow-tree runs to a real hash-chained SHA3-512 Merkle-DAG ledger
+The in-house AI fabric records its workflow-tree runs to a real hash-chained SHA3-512 ledger - a linear chain
+(each event carries its parent's hash), not a Merkle tree -
 (agentic_core/ueg). This surface lets you VERIFY the chain's integrity (every event's parent_hash must
 equal the prior event's hash) and read recent events — verifiable provenance for the AI's actions.
 """
@@ -28,6 +29,7 @@ async def verify_chain():
     detail = ueg_ledger.verify_chain_detail()
     return {"chain_valid": bool(detail.get("valid")), "detail": detail,
             "merkle_root": ueg_ledger.merkle_root,
+            "merkle_root_basis": "the hash of the most recent event - the head of a linear chain. The key keeps its historical name; no Merkle tree is built (W807, FU-851)",
             "algo": "sha3_512", "log_path": ueg_ledger.log_path, "real": True}
 
 
@@ -52,7 +54,8 @@ async def recent_events(limit: int = 10):
         except OSError:
             pass
     events.reverse()  # newest first
-    return {"events": events, "count": len(events), "merkle_root": ueg_ledger.merkle_root}
+    return {"events": events, "count": len(events), "merkle_root": ueg_ledger.merkle_root,
+            "merkle_root_basis": "the hash of the most recent event - the head of a linear chain. The key keeps its historical name; no Merkle tree is built (W807, FU-851)"}
 
 
 class UEGLog(BaseModel):

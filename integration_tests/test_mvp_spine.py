@@ -261,22 +261,12 @@ def test_csuite_cfo_metrics(client):
     $15,000), under a docstring claiming "no hardcoded literals". The test guarded the wrong
     property and passed throughout.
     """
-    r = client.get("/api/csuite/cfo/metrics")
-    assert r.status_code == 200
-    body = r.json()
-
-    # The real things must be reported.
-    assert "portfolio" in body, list(body.keys())
-    for key in ("total_projects", "by_stage", "complete", "total_outputs"):
-        assert key in body["portfolio"], body["portfolio"]
-    assert "token_balance" in body
-
-    # No synthesised money. A valuation may exist only when something actually values a project.
-    assert body.get("valuation") is None, body.get("valuation")
-    for invented in ("revenue", "growth", "liquidity", "unrealised_gain", "realised_gain"):
-        assert invented not in body, (
-            f"{invented} is back in the CFO payload; it was derived from invented multipliers"
-        )
+    #  W807 (FU-856) - the routes are ARCHIVED: no page read them and the CFO figure was a fixed demo user's balance.
+    #  The property this test held (no synthesised valuation) is held by the archive, which serves nothing.
+    import pathlib as _pl807
+    assert client.get("/api/csuite/cfo/metrics").status_code == 404
+    _arc807 = (_pl807.Path(__file__).resolve().parents[1] / "_archive/agentic_core/api/csuite.py").read_text(encoding="utf-8")
+    assert "ARCHIVED W807 (FU-856)" in _arc807 and "No monetary valuation is synthesised" in _arc807
 
 
 def test_biometrics_status(client):
@@ -4756,7 +4746,7 @@ def test_native_validation_capability_in_house(client):
 
 
 def test_ueg_provenance_ledger_in_house(client):
-    # The in-house AI records its workflow-tree runs to a REAL hash-chained SHA3-512 Merkle-DAG audit
+    # The in-house AI records its workflow-tree runs to a REAL hash-chained SHA3-512 audit (a linear chain)
     # ledger (agentic_core/ueg) — cryptographically verifiable, tamper-evident, grows per run.
     t = client.post("/api/v1/native-ai/tree", json={"goal": "Build a halal compliance service"}).json()
     assert t.get("ueg_hash") and len(t["ueg_hash"]) == 128
@@ -52539,9 +52529,8 @@ def test_w666_a_start_that_did_not_start_says_so_and_a_route_asserts_only_what_i
     assert "No epoch report" in _ep["detail"], _ep
     assert client.get("/api/v1/economy/status").status_code == 200, "the route the detail points at does not answer"
 
-    # -- 4. THE CTO ROUTE names no provider it did not check -------------------------------------------
-    _cto = client.get("/api/csuite/cto/infrastructure").json()
-    assert _cto["ai_provider"] is None and _cto["ai_provider_status"].startswith("not_checked"), _cto
+    # -- 4. THE CTO ROUTE named no provider it did not check - W807 (FU-856): ARCHIVED, so it names nothing -----
+    assert client.get("/api/csuite/cto/infrastructure").status_code == 404
     assert client.get("/api/v1/native-ai/status").status_code == 200
 
     # -- 5. THE TRANSFORMATION PLAN returns no fixed list as a derived one ------------------------------
@@ -68208,10 +68197,9 @@ def test_w746_host_resources_are_read_once_and_say_what_they_cover(client, monke
     #  (b) the Home page's source
     _sum = client.get("/api/v1/projects/stats/summary").json()
     assert (_sum["cpu_percent"], _sum["memory_percent"], _sum["cpu_window_seconds"]) == (37.2, 42.0, 2.5), _sum
-    #  (c) the CTO infrastructure route, which slept 0.1 s on the event loop to take its own sample
-    _cto = client.get("/api/csuite/cto/infrastructure").json()
-    assert (_cto["cpu_percent"], _cto["memory_percent"], _cto["memory_used_gb"],
-            _cto["cpu_window_seconds"]) == (37.25, 42.0, 3.0, 2.5), _cto
+    #  (c) the CTO infrastructure route, which slept 0.1 s on the event loop to take its own sample - W807 (FU-856):
+    #  ARCHIVED with the CFO route (no page read either), so there is no reader here left to read the host apart
+    assert client.get("/api/csuite/cto/infrastructure").status_code == 404
     #  (d) the AI CEO's vitals tool, which slept the same 0.1 s
     _v = _aio.run(_ceo.ToolRegistry().get_system_vitals())
     assert (_v["cpu_load_percent"], _v["memory_percent"], _v["memory_used_gb"],
@@ -68367,8 +68355,8 @@ def test_w746_host_resources_are_read_once_and_say_what_they_cover(client, monke
     _sum0 = client.get("/api/v1/projects/stats/summary").json()
     assert (_sum0["cpu_percent"], _sum0["memory_percent"]) == (None, None), ("an unread figure is served as a number", _sum0)
     assert "NOT MEASURED" in _sum0["host_basis"], _sum0
-    _cto0 = client.get("/api/csuite/cto/infrastructure").json()
-    assert (_cto0["cpu_percent"], _cto0["memory_percent"], _cto0["memory_used_gb"]) == (None, None, None), _cto0
+    #  W807 (FU-856) - the CTO route is archived, so it serves no figure, read or unread
+    assert client.get("/api/csuite/cto/infrastructure").status_code == 404
     _v0 = _aio.run(_ceo.ToolRegistry().get_system_vitals())
     assert (_v0["cpu_load_percent"], _v0["memory_percent"], _v0["memory_used_gb"]) == (None, None, None), _v0
     #  through a client that returns a server error as a response, so a route that crashes on the unread figure
@@ -70018,13 +70006,9 @@ def test_w765_memory_is_one_unit_on_every_route_and_the_genome_comment_is_true(c
     from agentic_core.api.v138 import ceo as _ceo
     src = inspect.getsource(_ceo)
     assert "1024 ** 3" not in src and "_used / 1e9" in src and '"memory_unit": MEMORY_UNIT' in src
-    from agentic_core.api import csuite as _cs
-    assert '"memory_unit": MEMORY_UNIT' in inspect.getsource(_cs) and "10^9" in MEMORY_UNIT
-    r = client.get("/api/csuite/cto/infrastructure")
-    assert r.status_code == 200, r.text[:200]
-    _m = r.json()
-    _m = _m if "memory_unit" in _m else next((v for v in _m.values() if isinstance(v, dict) and "memory_unit" in v), {})
-    assert _m.get("memory_unit") == MEMORY_UNIT, r.text[:400]
+    #  W807 (FU-856) - the CTO route that carried the unit too is archived; the archive keeps the unit it used
+    assert "10^9" in MEMORY_UNIT and client.get("/api/csuite/cto/infrastructure").status_code == 404
+    assert '"memory_unit": MEMORY_UNIT' in pathlib.Path("_archive/agentic_core/api/csuite.py").read_text(encoding="utf-8")
     g = pathlib.Path("agentic_core/organism/genome.py").read_text(encoding="utf-8")
     assert "which no page fetches" not in g
     for page in ("OrganismDashboard.tsx", "DashboardNew.tsx"):
@@ -71190,3 +71174,37 @@ def test_w806_fu837_fu840_fu839_a_withheld_or_refined_answer_travels_with_what_i
     assert "s?.output_withheld ? String(s.output_withheld)" in _gj806, "Genesis does not read why the seed is empty"
     assert "{seedWithheld && (" in _gj806 and 'data-testid="genesis-seed-withheld"' in _gj806, (
         "Genesis does not say that the journey starts from the question only")
+
+
+def test_w807_fu851_fu852_fu856_the_ledger_is_called_what_it_is_and_two_dead_routes_are_archived(client):
+    """W807. FU-851: the UEG ledger is a linear hash chain that an API response, three docstrings and a page called
+    a Merkle-DAG (one also 'pinned to IPFS'). FU-852: a log line said Genesis establishes 'something that actually
+    runs'. FU-856: two C-Suite routes outside the versioned API that no page read are archived."""
+    import pathlib
+    import subprocess
+    _root807 = pathlib.Path(__file__).resolve().parents[1]
+
+    # -- FU-851 -------------------------------------------------------------------------------------------------------
+    _v807 = client.get("/api/v1/ueg/verify").json()
+    assert "head of a linear chain" in _v807["merkle_root_basis"] and "no Merkle tree" in _v807["merkle_root_basis"], _v807
+    _r807 = client.get("/api/v1/ueg/recent", params={"limit": 1}).json()
+    assert _r807["merkle_root_basis"] == _v807["merkle_root_basis"], _r807
+    _hits807 = subprocess.run(["git", "grep", "-n", "-i", "-e", "merkle-dag", "-e", "merkle dag", "-e", "ipfs pinning",
+                               "--", "agentic_core", "apps/workstation-superapp/src"],
+                              capture_output=True, text=True, cwd=_root807).stdout.strip()
+    assert _hits807 == "", ("the hash chain is still called a Merkle-DAG, or said to be pinned", _hits807)
+    import importlib as _il807
+    _om807 = _il807.import_module("agentic_core.ai.native.orchestrator")   # the MODULE: the package exports the instance
+    assert "no Merkle tree is built" in pathlib.Path(_om807.__file__).read_text(encoding="utf-8")
+
+    # -- FU-852 -------------------------------------------------------------------------------------------------------
+    _sol807 = "\n".join(ln for ln in (_root807 / "apps/workstation-superapp/src/pages/SolutionsPlatform.tsx")
+                         .read_text(encoding="utf-8").splitlines() if not ln.lstrip().startswith("//"))   # the page's text
+    assert "something that actually runs" not in _sol807
+    assert "whether that entity then runs depends on the heartbeat" in _sol807
+
+    # -- FU-856 -------------------------------------------------------------------------------------------------------
+    for _p807 in ("/api/csuite/cfo/metrics", "/api/csuite/cto/infrastructure"):
+        assert client.get(_p807).status_code == 404, _p807
+    assert not (_root807 / "agentic_core/api/csuite.py").exists()
+    assert "ARCHIVED W807 (FU-856)" in (_root807 / "_archive/agentic_core/api/csuite.py").read_text(encoding="utf-8")

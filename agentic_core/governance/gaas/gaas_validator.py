@@ -60,7 +60,7 @@ class GaaSValidatorV4:
 
         passed = (intent_conf >= min_conf) and not blocked
 
-        # 4. Merkle DAG Update
+        # 4. Hash-chain update (W807: a linear chain; the method keeps its historical name)
         self._update_merkle_dag(intent, passed)
 
         return {

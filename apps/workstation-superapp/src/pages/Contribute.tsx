@@ -42,7 +42,7 @@ export const Contribute: React.FC = () => {
                </div>
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
                   {[
-                    { title: 'Genomic Core', desc: 'Enhance the Merkle-DAG and GRN engine.', icon: Zap },
+                    { title: 'Genomic Core', desc: 'Enhance the hash-chained audit log and the GRN engine.', icon: Zap },
                     { title: 'Domains', desc: 'Build tools for the six domains: Religion, Science, Education, Law, Employment and Care.', icon: HeartPulse },
                     { title: 'Orchestration', desc: 'Optimize L9 swarms and L10 evolution.', icon: Terminal },
                     { title: 'Standards', desc: 'Contribute to ACP/A2A specifications.', icon: BookOpen },

@@ -266,7 +266,7 @@ Respond with a structured spec covering: overview, architecture layers, AI integ
       ? 'Readiness check: every service queried above answered. That is reachability, not readiness '
         + '\u2014 nothing here provisioned or tested infrastructure, and this page produces a plan only.'
       : 'Readiness check found problems above. No infrastructure was provisioned.', ready ? 'info' : 'warn');
-    appendLog('To establish something that actually runs, use Genesis \u2014 it creates a living VSB IDBO entity.', 'info');
+    appendLog('To establish an entity, use Genesis \u2014 it registers a living VSB IDBO entity; whether that entity then runs depends on the heartbeat and the levers you turn on.', 'info');
 
     setLaunching(false);
     setStatus(s => ({ ...s, launch: 'done' }));

@@ -217,9 +217,9 @@ app.include_router(ceo_v138.router, prefix="/api/v138", dependencies=[_Depends(_
 from agentic_core.api.v290 import ceo_generate
 app.include_router(ceo_generate.router, prefix="/api/v290", dependencies=[_Depends(_get_current_user)])
 
-# 4. C-Suite metrics (CFO/CTO — computed from project store)
-from agentic_core.api import csuite
-app.include_router(csuite.router, prefix="/api", dependencies=[_Depends(_get_current_user)])
+# 4. C-Suite metrics - W807 (FU-856): ARCHIVED (_archive/agentic_core/api/csuite.py). Two routes outside the versioned
+#    API that no page read; the CFO figure was a fixed demo user's token balance, and the host figures are the
+#    organism vitals' own.
 
 # 5. Synthesis (upload → AI → download)
 from agentic_core.synthesis import api as synthesis_api

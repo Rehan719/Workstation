@@ -1,3 +1,8 @@
+# ARCHIVED W807 (FU-856) - two routes, /api/csuite/cfo/metrics and /api/csuite/cto/infrastructure, mounted
+# outside the versioned API; no page read either. The CFO figure was the token balance of a fixed 'demo_user',
+# and the host figures are what the organism vitals already report. Restore by moving it back and mounting it
+# under /api/v1 with a reader, after the CFO figure reads a real account.
+
 """
 C-Suite API — real metrics computed from the project store and token ledger.
 

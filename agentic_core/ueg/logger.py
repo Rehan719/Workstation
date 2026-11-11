@@ -22,7 +22,8 @@ def _ser_default(o: Any) -> Any:
 class VSBUEGLogger:
     """
     IDBO Layer 7: Module Library / UEG.
-    Immutable SHA-3-512 Merkle-DAG Logger with IPFS pinning logic.
+    Append-only SHA-3-512 hash-chained logger: a linear chain in which each event carries its parent's hash.
+    W807 (FU-851): it builds no Merkle tree and pins nothing anywhere; `merkle_root` is the chain's head.
     """
     def __init__(self, log_path: str = str(data_path("ueg_audit.log"))):
         self.logger = logging.getLogger("VSB_UEG")
@@ -48,7 +49,7 @@ class VSBUEGLogger:
 
     async def log_event(self, event_type: str, data: Dict[str, Any], actor: str = "SYSTEM") -> str:
         """
-        Appends a new event to the Merkle-DAG chain.
+        Appends a new event to the chain.
         """
         payload = {
             "timestamp": time.time_ns(),
