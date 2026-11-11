@@ -2411,6 +2411,9 @@ async def run_composition(cid: str, req: RunCompositionRequest,
         _spec_now = _spec_cell.recheck(_spec)
     _spec_composed = [r["id"] for r in comp.get("resources", [])]
 
+    #  W810 (FU-900) - a composition saved with a spawner before this round is refused at its run, as at compose
+    _refuse_spawners([x.get("id") for x in comp.get("resources", [])])
+
     def _eff_cfg(r: Dict[str, Any]) -> Dict[str, Any]:
         # W273 — the effective config for THIS run: saved design params + per-run overrides.
         cfg = dict(r.get("config") or {})
@@ -2602,7 +2605,12 @@ async def run_composition(cid: str, req: RunCompositionRequest,
                 _alts = [a for a in _equivalents(r["id"]) if a not in _in_run and a not in _READ_SIDE_EFFECTS]
                 if _alts:
                     _a0 = time.time()
-                    _alt = await _run_real_resource(_alts[0], {}, objective, domain)
+                    #  W810 (FU-898) - THE STAND-IN'S OWN CONFIGURATION: it held none in this composition, so it runs
+                    #  with what composing it would give it - its registered parameters and any per-run override for
+                    #  it. An empty one was harmless only while every possible stand-in took none.
+                    _alt_cfg = {**((_BY_ID.get(_alts[0]) or {}).get("reconfigurable_params") or {}),
+                                **(((req.params or {}).get(_alts[0])) or {})}
+                    _alt = await _run_real_resource(_alts[0], _alt_cfg, objective, domain)
                     if _alt is not None:
                         _alt["duration_ms"] = int((time.time() - _a0) * 1000)
                         _alt["alternative_for"] = r["id"]
@@ -3383,6 +3391,19 @@ async def _simulate_configuration(name: str, resource_ids: List[str], usage_area
     return resolved, model, qa, commit_ready
 
 
+#  W810 (FU-900) - A SPAWNER IS NOT A STAGE. Two registered spawners (a VSB spawn pipeline and Genesis's establish)
+#  were selectable and composable, and the listing said the fabric runs no engine for them: composing one ran a
+#  prompt stage under its name and created nothing. Refused at every door a composition passes, naming the door that
+#  does establish an entity.
+def _refuse_spawners(resource_ids: List[str]) -> None:
+    _sp = [rid for rid in resource_ids if (_BY_ID.get(rid) or {}).get("type") == "spawner"]
+    if _sp:
+        raise HTTPException(status_code=422, detail=(
+            f"{', '.join(_sp)} {'establishes' if len(_sp) == 1 else 'establish'} an entity, and the fabric does not "
+            f"start one: composed, a spawner ran a prompt stage under its name and created nothing. Nothing was "
+            f"modelled, saved or run. Establish an entity through Genesis (/genesis)."))
+
+
 @router.post("/compose/simulate")
 async def simulate_composition(req: ComposeRequest):
     """§7 — MODEL + SIMULATE a configuration BEFORE commit. Returns the modelled structure + a living-QMS
@@ -3392,6 +3413,7 @@ async def simulate_composition(req: ComposeRequest):
         raise HTTPException(status_code=400, detail=f"Unknown resource ids: {unknown}")
     if not req.resource_ids:
         raise HTTPException(status_code=400, detail="Select at least one resource to model.")
+    _refuse_spawners(req.resource_ids)          # W810 (FU-900)
     resolved, model, qa, commit_ready = await _simulate_configuration(
         req.name or "(unnamed)", req.resource_ids, req.usage_area, req.config)
     return {"name": req.name, "usage_area": req.usage_area, "resources": resolved,
@@ -3412,6 +3434,7 @@ async def compose(req: ComposeRequest, user: dict | None = Depends(get_current_u
     unknown = [rid for rid in req.resource_ids if rid not in _BY_ID]
     if unknown:
         raise HTTPException(status_code=400, detail=f"Unknown resource ids: {unknown}")
+    _refuse_spawners(req.resource_ids)          # W810 (FU-900)
 
     resolved, model, qa, commit_ready = await _simulate_configuration(
         req.name, req.resource_ids, req.usage_area, req.config)

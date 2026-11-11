@@ -17666,11 +17666,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W810",
       "note": "",
       "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A stand-in now runs with its own configuration - its registered parameters and any per-run override for it, what composing it would give it - instead of an empty one, which was harmless only while every possible stand-in took none. Guard test_w810 reads the run site; blind red."
     },
     {
       "id": "FU-899",
@@ -17705,11 +17708,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W810",
       "note": "",
       "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The two registered spawners (vsb_spawn, genesis_establish) are refused at every door a composition passes - compose, compose/simulate, and a saved composition's run (one saved before this round) - with a 422 that says nothing was modelled, saved or run and names Genesis (/genesis) as the door that establishes an entity; composed, a spawner had run a prompt stage under its name and created nothing. The Resource Fabric page disables a spawner's toggle and says to use Genesis. W641's preview guard now picks its not-run resource from the non-spawners. Guard test_w810; three blinds red on the doors and the page."
     },
     {
       "id": "FU-901",

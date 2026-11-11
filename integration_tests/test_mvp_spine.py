@@ -49264,7 +49264,8 @@ def test_w641_the_preview_names_engines_the_fabric_will_not_run_and_no_shared_no
 
     _states = {r["id"]: _cell.availability(r["id"])["state"] for r in _fab._REGISTRY}
     _runs = next(i for i, s in _states.items() if s == "available")
-    _not = [i for i, s in _states.items() if s != "available"]
+    #  W810 (FU-900) - a spawner is refused before any preview is modelled, so it is not a resource to preview
+    _not = [i for i, s in _states.items() if s != "available" and _fab._BY_ID[i].get("type") != "spawner"]
 
     def _sim(ids):
         _area = _fab._BY_ID[ids[0]]["usable_in"][0]
@@ -71332,3 +71333,41 @@ def test_w809_fu1154_the_other_six_instruments_refuse_when_they_examined_nothing
     monkeypatch.setattr(_qt, "plan", lambda root: {"counts": {"entities": 0}, "skipped": []})
     monkeypatch.setattr(_qt.sys, "argv", ["quarantine_test_entities.py"])
     assert _qt.main() == 1 and "examined nothing" in capsys.readouterr().out
+
+
+def test_w810_fu900_fu898_a_composition_holds_no_spawner_and_a_stand_in_runs_with_its_own_configuration(client):
+    """W810. FU-900: two registered spawners were selectable and composable, and composing one ran a prompt stage
+    under its name and created nothing; every door a composition passes refuses them now, naming Genesis. FU-898: a
+    stand-in ran with an empty configuration; it runs with its own registered parameters and any per-run override."""
+    import pathlib
+    import re as _re810
+    from agentic_core.api import resource_fabric as _rf810
+    _spawners810 = [r["id"] for r in _rf810._REGISTRY if r.get("type") == "spawner"]
+    assert set(_spawners810) >= {"vsb_spawn", "genesis_establish"}, _spawners810
+    for _path810 in ("/api/v1/resources/compose/simulate", "/api/v1/resources/compose"):
+        _r810 = client.post(_path810, json={"name": "w810", "resource_ids": ["vsb_spawn"], "usage_area": "delivery"})
+        assert _r810.status_code == 422 and "/genesis" in _r810.json()["detail"], (_path810, _r810.status_code, _r810.text[:200])
+        assert "Nothing was modelled, saved or run" in _r810.json()["detail"]
+    #  a composition saved with one before this round is refused at its run
+    _comps810 = _rf810._load_compositions()
+    _old810 = {"id": "comp-w810old", "owner_id": "default", "name": "w810 saved before", "usage_area": "delivery",
+               "resources": [{"id": "genesis_establish", "name": "Establish Enterprise IDBO", "config": {}}]}
+    _rf810._save_compositions(_comps810 + [_old810])
+    try:
+        _run810 = client.post("/api/v1/resources/compositions/comp-w810old/run", json={})
+        assert _run810.status_code == 422 and "/genesis" in _run810.json()["detail"], (_run810.status_code, _run810.text[:200])
+    finally:
+        _rf810._save_compositions([c for c in _rf810._load_compositions() if c.get("id") != "comp-w810old"])
+    #  an ordinary composition still composes
+    _ok810 = client.post("/api/v1/resources/compose/simulate", json={"name": "w810 ok", "resource_ids": [
+        next(r["id"] for r in _rf810._REGISTRY if r.get("type") != "spawner")], "usage_area": "delivery"})
+    assert _ok810.status_code == 200, _ok810.text[:200]
+
+    #  FU-898, read where the stand-in is run: its own configuration, not an empty one
+    _src810 = pathlib.Path(_rf810.__file__).read_text(encoding="utf-8")
+    assert "_alt = await _run_real_resource(_alts[0], _alt_cfg, objective, domain)" in _src810
+    assert "_run_real_resource(_alts[0], {}, objective, domain)" not in _src810
+
+    _page810 = _re810.sub(r"/\*.*?\*/", "", pathlib.Path("apps/workstation-superapp/src/pages/synthesis/ResourceFabric.tsx")
+                          .read_text(encoding="utf-8"), flags=_re810.S)
+    assert "disabled={r.type === 'spawner'}" in _page810 and 'data-testid="resource-spawner"' in _page810

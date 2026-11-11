@@ -430,7 +430,8 @@ export const ResourceFabric: React.FC = () => {
           const runnable = !!RUN_CONFIGS[r.id];
           return (
             <div key={r.id} className="relative">
-              <button type="button" onClick={() => toggle(r.id)}
+              {/* W810 (FU-900) - a spawner establishes an entity, and a composition cannot hold one */}
+              <button type="button" onClick={() => { if (r.type !== 'spawner') toggle(r.id); }} disabled={r.type === 'spawner'}
                 className={`w-full h-full text-left p-5 rounded-2xl border transition-all ${sel ? 'bg-highlight/10 border-highlight/50' : 'bg-slate-900 border-slate-800 hover:border-slate-700'}`}>
                 <div className="flex items-start justify-between mb-2">
                   <div className="w-9 h-9 rounded-xl bg-highlight/10 flex items-center justify-center"><Icon size={15} className="text-highlight" /></div>
@@ -453,6 +454,11 @@ export const ResourceFabric: React.FC = () => {
                         : r.fabric_handler_kind === 'query' ? 'queries records — no engine run'
                         : r.fabric_handler_kind === 'blueprint' ? 'blueprint only — nothing provisioned'
                         : 'prompt stage only — engine not run'}
+                    </span>
+                  )}
+                  {r.type === 'spawner' && (
+                    <span data-testid="resource-spawner" className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
+                      establishes an entity — use Genesis, not a composition
                     </span>
                   )}
                   {r.fabric_runs_engine === null && (
