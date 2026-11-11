@@ -72305,3 +72305,39 @@ def test_w830_the_deliverables_page_says_it_produces_one_text_document_per_deliv
     assert "in-house provenance" not in pg, "the page claims in-house provenance a version's own record states"
     assert "records what wrote it" in head, head
     assert "(t.sections || []).join(' · ')" in pg, "a type button does not show the sections that type produces"
+
+
+def test_w831_the_digital_twin_page_composes_a_model_a_scenario_and_an_optimisation(client):
+    """FU-747 (W831, left from FU-716). DigitalTwins.tsx called only the two read routes, so the three routes that
+    compose text were API-only. The page now calls all three and shows each answer with its own statement of what it
+    is (W662's composition.basis). Found on the way: a scenario composed through /twin/simulate is stored in the same
+    `simulations` list as the pre-W481 transformation records, and the page labelled every such row, and the whole
+    model, as a pre-W481 record. The stored row's shape the page tells them apart by is driven here."""
+    import pathlib as _pl831
+    import re as _re831
+    m = client.post("/api/v1/twin/model", json={"system_name": "W831 bakery",
+                                               "system_description": "Two ovens and a delivery round."})
+    assert m.status_code == 200, m.text[:300]
+    mid = m.json()["model_id"]
+    s = client.post("/api/v1/twin/simulate", json={"model_id": mid, "scenario_name": "W831 a second oven",
+                                                  "scenario_description": "A second oven doubles the morning bake."})
+    assert s.status_code == 200 and s.json()["composition"]["computed"] is False, s.text[:300]
+    o = client.post("/api/v1/twin/optimise", json={"model_id": mid, "optimisation_objective": "Fewer late rounds"})
+    assert o.status_code == 200 and o.json()["composition"]["basis"], o.text[:300]
+    rows = client.get(f"/api/v1/twin/models/{mid}").json()["simulations"]
+    assert rows and rows[-1].get("simulation_id") and rows[-1].get("composition", {}).get("basis"), (
+        "a composed scenario's stored row no longer carries the id and basis the page tells it apart by", rows)
+
+    root = _pl831.Path(__file__).resolve().parents[1]
+    pg = _code_only((root / "apps" / "workstation-superapp" / "src" / "pages" / "developers" / "DigitalTwins.tsx")
+                    .read_bytes().decode("utf-8"))
+    for route in ("/api/v1/twin/model'", "/api/v1/twin/simulate'", "/api/v1/twin/optimise'"):
+        assert f"post('{route}" in pg, ("the page does not call", route)
+    assert "answer.basis" in pg and 'data-testid="twin-answer-basis"' in pg, "an answer is shown without its basis"
+    assert "selected.simulations?.some(s => !s.simulation_id)" in pg and "s.simulation_id ? (" in pg, (
+        "a scenario composed on this platform is still labelled as a pre-W481 record")
+    #  the complexity choices are the route's own: each selects its specification text
+    src = (root / "agentic_core" / "api" / "digital_twin.py").read_bytes().decode("utf-8")
+    spec = src[src.index("complexity_spec = {"):src.index("}.get(req.complexity")]
+    assert _re831.findall(r'"(\w+)":', spec) == ["simple", "standard", "complex"], spec
+    assert "const COMPLEXITIES = ['simple', 'standard', 'complex'];" in pg, "the page's complexity choices drifted"

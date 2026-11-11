@@ -14540,11 +14540,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W831",
       "note": "",
       "slot_source": "the undone part of a ledger row closed in W662",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The Digital Twin page composes a model, asks a selected model for a scenario or an optimisation, and shows each answer with its own statement of what it is (composition.basis: text, nothing computed). Found on the way and fixed: a scenario composed through /twin/simulate is stored beside the pre-W481 records, and the page labelled every such row and the whole model as a pre-W481 record; a composed row (it carries simulation_id) is now shown as a scenario with its basis. Guard test_w831, 3 blinds red."
     },
     {
       "id": "FU-748",
