@@ -13347,11 +13347,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W840",
       "note": "",
       "slot_source": "an instrument for disclosed and unreached capability, which is the item that holds the tier-3 rows",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "One person's journey is now driven start to finish and its surfaces read, as one guard (test_w840), on the floor: a challenge through the whole Genesis journey to an established entity (the journey says its stages were floor-served), the record agreeing with the answer and nothing claiming operation while Self-run is off, the body shipped at birth downloaded file for file (each shipped surface in the archive, its headers' counts matched, an absent section said to be absent), the Board Pack saying what served it and claiming no verdict on floor text, and the cycle at birth plus one more counted where the roster and the ledger count them. Measured on the way: every claim it reads held; nothing was found to fix. 3 blinds red."
     },
     {
       "id": "FU-689",

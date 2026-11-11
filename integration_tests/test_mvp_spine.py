@@ -72769,3 +72769,69 @@ def test_w839_a_birth_reads_the_derived_carrying_capacity_and_records_it_never_e
     assert res["refused"] == "not_on_roster", res
     assert res["capacity_at_birth"]["consulted"] is True and res["capacity_at_birth"]["enforced"] is False, (
         "a division's proposal does not record the carrying capacity it was proposed under", res)
+
+
+def test_w840_one_persons_journey_from_challenge_to_a_downloadable_operating_entity(client):
+    """FU-688 (W840). The audit samples regions; nothing followed ONE person's journey start to finish. Here one
+    challenge is driven through the whole Genesis journey on the floor to an established entity; its body is shipped
+    at birth and downloaded; one operating cycle is run; and the claims each surface makes are checked against what
+    happened, with the floor's service stated where the floor served."""
+    import io as _io840
+    import zipfile as _zf840
+
+    # ── 1. THE JOURNEY, stated as floor-served ─────────────────────────────────────────────────────────────
+    j = client.post("/api/v1/genesis/journey", json={
+        "problem": "W840 a village bakery cooperative supplying the school", "establish": True,
+        "name": "W840 Village Bakery"})
+    assert j.status_code == 200, j.text[:300]
+    J = j.json()
+    assert J["stages_floor_served"] >= 1 and "deterministic floor" in (J["stages_note"] or ""), (
+        "a floor-served journey does not say so", J["stages_floor_served"], J["stages_note"])
+    assert J["enterprise_established"] is True, J.get("enterprise_established_basis")
+    E = J["established_vsb"]
+    vid = E["vsb_id"]
+
+    # ── 2. THE RECORD agrees with the answer, and nothing claims operation that is not running ───────────────
+    D = client.get(f"/api/v1/vsb/{vid}").json()
+    assert D["status"] == E["status"], ("the dashboard and the establishment disagree on the status", D["status"],
+                                        E["status"])
+    assert J["enterprise_operating"] is False and E["living"]["autonomous_cycles"] is False, (
+        "operation is claimed while the organism's Self-run is off", J["enterprise_operating"], E["living"])
+
+    # ── 3. THE BODY shipped at birth is the body that downloads, file for file ─────────────────────────────
+    ship = E["initial_ship"]
+    assert ship["shipped"] is True and not ship["refused"], ship
+    z = client.get(f"/api/v1/vsb/{vid}/repo/zip")
+    assert z.status_code == 200 and z.headers["x-repo-missing"] == "none", dict(z.headers)
+    archive = _zf840.ZipFile(_io840.BytesIO(z.content))
+    names = archive.namelist()
+    assert len(names) == int(z.headers["x-repo-files"]) == int(z.headers["x-repo-declared"]), (
+        "the download does not hold the files its own headers count", len(names), dict(z.headers))
+    for surface, where in (("website", "web/"), ("webapp", "webapp/"), ("mobile", "mobile/"), ("repo", "README.md")):
+        assert surface in ship["surfaces"] and any(n.startswith(where) for n in names), (
+            "a surface said to be shipped is not in the body that downloads", surface, where)
+    ops = archive.read("OPERATIONS.md").decode("utf-8")
+    if E["body_absent"]["operations"]:
+        assert "Not provided" in ops, "an absent operations section is presented as built"
+    else:
+        assert "Not provided" not in ops, "the journey carried operational intelligence and the body says it did not"
+
+    # ── 4. THE PACK says what served it, and claims no verdict on floor text ───────────────────────────────
+    pk = client.get(f"/api/v1/vsb/{vid}/board-pack").json()
+    assert set((pk.get("ai_provenance") or {}).get("served_by") or {}) == {"native"}, pk.get("ai_provenance")
+    q = (pk.get("quality_assurance") or {}).get("quality") or {}
+    assert q.get("qms_gate_passed") is None and "floor-served" in (q.get("qms_basis") or ""), (
+        "the pack's floor-served narrative is not said to be floor-served", q.get("qms_basis"))
+
+    # ── 5. THE CYCLE AT BIRTH, and ONE MORE, are counted where the roster counts them and in the ledger ─────
+    def _row():
+        return next(r for r in client.get("/api/v1/economy/living-vsbs").json()["living_vsbs"] if r["vsb_id"] == vid)
+    r0 = _row()
+    assert E["birth_vitals"]["first_cycle"].get("cycle_ran"), E["birth_vitals"]["first_cycle"]
+    assert r0["establishment_cycles"] == 1 and r0["ledger_cycles"] == 1, ("the cycle at birth is not counted", r0)
+    c = client.post("/api/v1/economy/cycle", json={"vsb_id": vid})
+    assert c.status_code == 200, c.text[:300]
+    r1 = _row()
+    assert r1["ledger_cycles"] == r0["ledger_cycles"] + 1, ("one operating cycle is not one more in the ledger", r0, r1)
+    assert r1["operating_cycles"] == r0["operating_cycles"], (
+        "a cycle run outside the roster's operate step was counted as one the roster ran", r0, r1)
