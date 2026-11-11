@@ -19457,11 +19457,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W804",
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region on the M3 item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Ledger v17 R6. [5] built: the board pack's charitable_giving keeps total_given_wst for its reader and says what the figure is - label 'allocated (virtual, every grant unassessed)' and a basis (the charity pot's balance in virtual WST: allocated, not given; each grant carries the screen's verdict, which can refuse and cannot clear) - and the pack's card prints the label with the basis as its title in place of 'nutrient-return loop'. [2] keeps its stated scope, per the row. [1] is an Owner architecture decision (a global output gate) and [3] [4] [6] [7] need nothing for honesty, per the row. Guard test_w804; two blinds red. With this, all six ledger v17 region rows (FU-980 to FU-985) are closed."
     },
     {
       "id": "FU-986",

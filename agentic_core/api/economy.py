@@ -2257,7 +2257,13 @@ async def board_pack(vsb_id: str = "workstation-idbo", entity_type: str | None =
                               "funding_state": ventures.get("funding_state"),
                               "funding_basis": ventures.get("funding_basis"),
                               "holdings": ventures.get("holdings", [])[:5]},
-        "charitable_giving": {"total_given_wst": round(bal.get("charity", 0.0), 2)},
+        #  W804 (FU-985, ledger v17 R6[5]) - WHAT THE FIGURE IS. Its key and the card under it read as money given;
+        #  it is the charity pot's balance in virtual WST. The key stays (the page reads it) and the pack says the rest.
+        "charitable_giving": {"total_given_wst": round(bal.get("charity", 0.0), 2),
+                              "label": "allocated (virtual, every grant unassessed)",
+                              "basis": ("the charity pot's balance in virtual WST: allocated, not given - no real "
+                                        "money moves here - and each grant carries the compliance screen's verdict, "
+                                        "which can refuse a grant and cannot clear one ('review' means unassessed)")},
         "organism_posture": organism,
         # §9.1 — the CFO's three statements (current period, from the REAL double-entry postings)
         "statements": m.ledger.statements(),

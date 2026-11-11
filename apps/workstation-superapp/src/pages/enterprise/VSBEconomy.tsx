@@ -757,7 +757,10 @@ export const VSBEconomy: React.FC = () => {
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
               <p className="text-[8px] font-black uppercase tracking-widest text-slate-600 mb-1">Charitable giving (§5)</p>
               <p className="text-sm font-black text-aura">{(bp.charitable_giving?.total_given_wst ?? 0).toLocaleString()} WST</p>
-              <p className="text-[9px] text-slate-600 mt-0.5">nutrient-return loop</p>
+              {/* W804 (FU-985 R6[5]) - the figure is an allocation in virtual WST, and the pack says so */}
+              <p data-testid="pack-charity-label" className="text-[9px] text-slate-600 mt-0.5" title={bp.charitable_giving?.basis ?? ''}>
+                {bp.charitable_giving?.label ?? 'allocated (virtual)'}
+              </p>
             </div>
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-900">
               <p className="text-[8px] font-black uppercase tracking-widest text-slate-600 mb-1">§8 organism posture</p>

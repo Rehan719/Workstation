@@ -71092,3 +71092,22 @@ def test_w803_fu983_r4_the_forge_says_what_its_stages_are_and_the_floor_hears_th
     assert _e803.status_code == 200, _e803.text[:200]
     _members803 = [c for c in _calls803 if str(c["agent"]).startswith("ensemble-")]
     assert _members803 and all(c["user_text"] == "Quorrel ferry timetable" for c in _members803), _calls803
+
+
+def test_w804_fu985_r6_the_board_pack_says_charitable_giving_is_an_allocation(client):
+    """W804 (FU-985, ledger v17 R6[5]) - the board pack carried the charity pot's virtual balance under the key
+    total_given_wst and a card reading 'nutrient-return loop', both read as money given. The key stays for its
+    reader; the pack says what the figure is, and the card prints it."""
+    import pathlib
+    import re as _re804
+    _p804 = client.get("/api/v1/economy/board-pack")
+    assert _p804.status_code == 200, _p804.text[:200]
+    _cg804 = _p804.json()["charitable_giving"]
+    assert isinstance(_cg804["total_given_wst"], (int, float)), _cg804
+    assert _cg804["label"] == "allocated (virtual, every grant unassessed)", _cg804
+    assert "allocated, not given" in _cg804["basis"] and "cannot clear one" in _cg804["basis"], _cg804
+    _ve804 = _re804.sub(r"/\*.*?\*/", "", pathlib.Path("apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx")
+                        .read_text(encoding="utf-8"), flags=_re804.S)
+    assert "{bp.charitable_giving?.label ??" in _ve804 and "title={bp.charitable_giving?.basis" in _ve804, (
+        "the pack's card does not print what the charity figure is")
+    assert ">nutrient-return loop<" not in _ve804
