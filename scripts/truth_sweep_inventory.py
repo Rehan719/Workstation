@@ -24,6 +24,11 @@ for base in (SRC, UI):
         if apis or (renders and "/pages/" in rel) or rel.startswith("packages/ui/"):
             files.append({"file": rel, "lines": t.count("\n") + 1, "apis": apis})
 
+#  W808 (FU-1154) - an inventory of no surface is not an inventory: shards built from it would sweep nothing
+if not files:
+    raise SystemExit(f"REFUSING: examined nothing - no surface was found under {SRC} or {UI}, so there is no "
+                     f"inventory to shard.")
+
 # group by the directory a user thinks in (pages/<area>, components/<area>, lib, packages/ui)
 groups = defaultdict(list)
 for f in files:

@@ -69351,7 +69351,10 @@ def test_w749_an_instrument_that_examined_nothing_refuses_and_reads_what_it_name
                     "scripts/refutation_gate.py", "scripts/run_verdict.py", "scripts/sources_check.py",
                     "scripts/round_tools/blinds.py",
                     "scripts/selfcheck_diff.py", "scripts/entity_coverage_scan.py", "scripts/recovery_audit.py",
-                    "scripts/reach_audit.py", "scripts/browser_smoke.mjs"]
+                    "scripts/reach_audit.py", "scripts/browser_smoke.mjs",
+                    #  W808 (FU-1154) - six that gained their refusal
+                    "scripts/audit_surface_census.py", "scripts/auth_perimeter.py", "scripts/coupling.py",
+                    "scripts/privacy_check.py", "scripts/row_components.py", "scripts/truth_sweep_inventory.py"]
 
     def _emitted(src):
         """The strings a module can print or return - its docstrings left out, since a docstring saying the tool
@@ -69375,10 +69378,11 @@ def test_w749_an_instrument_that_examined_nothing_refuses_and_reads_what_it_name
     #  census above, an instrument whose refusal is not yet built (each named, and registered), or not an
     #  instrument (with what it is). A script added later is in none of them, and this fails until it is placed.
     _pending_refusal = {   # instruments that report on a set and carry no refusal for an empty one yet (FU-1154)
-        "scripts/audit_surface_census.py", "scripts/auth_perimeter.py", "scripts/coupling.py",
-        "scripts/pass_set_diff.py", "scripts/privacy_check.py", "scripts/readme_figures.py",
-        "scripts/render_fidelity_ledger.py", "scripts/row_components.py", "scripts/screen_phrasings.py",
-        "scripts/truth_sweep_inventory.py", "scripts/prune_test_entities.py", "scripts/quarantine_test_entities.py"}
+        #  W808 - audit_surface_census, auth_perimeter, coupling, privacy_check, row_components and
+        #  truth_sweep_inventory gained theirs and moved to the census list
+        "scripts/pass_set_diff.py", "scripts/readme_figures.py",
+        "scripts/render_fidelity_ledger.py", "scripts/screen_phrasings.py",
+        "scripts/prune_test_entities.py", "scripts/quarantine_test_entities.py"}
     _not_instruments = {
         "scripts/boot_audit_backend.py": "boots a backend", "scripts/boot_signin_check_backend.py": "boots a backend",
         "scripts/run_auth_backend.py": "boots a backend", "scripts/init_data.py": "seeds a data store",
@@ -71208,3 +71212,62 @@ def test_w807_fu851_fu852_fu856_the_ledger_is_called_what_it_is_and_two_dead_rou
         assert client.get(_p807).status_code == 404, _p807
     assert not (_root807 / "agentic_core/api/csuite.py").exists()
     assert "ARCHIVED W807 (FU-856)" in (_root807 / "_archive/agentic_core/api/csuite.py").read_text(encoding="utf-8")
+
+
+def test_w808_fu1154_six_instruments_refuse_when_they_examined_nothing(tmp_path, monkeypatch, capsys):
+    """W808 (FU-1154, the first six). FU-671's rule: a check that examined nothing refuses. Each is DRIVEN over an
+    empty set here, and row_components is driven the other way too: a register whose rows are all closed is a real
+    state and is reported, not refused."""
+    import importlib.util as _ilu
+    import json as _json808
+    import pathlib
+    import shutil
+    import subprocess
+    import sys as _sys808
+    _root808 = pathlib.Path(__file__).resolve().parents[1]
+
+    def _load808(rel, name):
+        _spec = _ilu.spec_from_file_location(name, str(_root808 / rel))
+        _m = _ilu.module_from_spec(_spec)
+        _spec.loader.exec_module(_m)
+        return _m
+
+    _pc = _load808("scripts/privacy_check.py", "_pc808")
+    monkeypatch.setattr(_pc.pe, "scan", lambda *a, **k: {"findings": [], "count": 0, "files_read": 0, "checked": [],
+                                                         "not_checked": [], "not_checked_basis": "", "history_basis": ""})
+    assert _pc.main([]) == 2 and "examined nothing" in capsys.readouterr().out
+    #  the hook's own case: a commit that stages no content (a deletion) is not blocked, and says nothing was scanned
+    monkeypatch.setattr(_pc.pe, "staged", lambda root: [])
+    assert _pc.main(["--staged"]) == 0 and "nothing was scanned" in capsys.readouterr().out
+
+    _rc = _load808("scripts/row_components.py", "_rc808")
+    _empty = tmp_path / "empty.json"
+    _empty.write_text(_json808.dumps({"items": []}), encoding="utf-8")
+    monkeypatch.setattr(_rc, "REGISTER", str(_empty))
+    assert _rc.main() == 1 and "examined nothing" in capsys.readouterr().out
+    _closed = tmp_path / "closed.json"
+    _closed.write_text(_json808.dumps({"items": [{"id": "FU-1", "status": "done", "slot": "P1.1", "files": []}]}),
+                       encoding="utf-8")
+    monkeypatch.setattr(_rc, "REGISTER", str(_closed))
+    assert _rc.main() == 0 and "0 component(s) over 0 open row(s)" in capsys.readouterr().out, (
+        "a register whose rows are all closed was refused, and that is a reading, not an empty set")
+
+    _cp = _load808("scripts/coupling.py", "_cp808")
+    monkeypatch.setattr(_cp, "coupling", lambda targets, depth=600: {"commits_analysed": 0, "files": {}})
+    assert _cp.main(["scripts/coupling.py"]) == 1 and "examined nothing" in capsys.readouterr().out
+
+    _ac = _load808("scripts/audit_surface_census.py", "_ac808")
+    monkeypatch.setattr(_ac, "api_routes", lambda: ([], []))
+    monkeypatch.setattr(_ac, "pages", lambda: ([], [], [], 0))
+    assert _ac.main() == 1 and "examined nothing" in capsys.readouterr().err
+
+    _ap = _load808("scripts/auth_perimeter.py", "_ap808")
+    monkeypatch.setattr(_ap, "measure", lambda app=None, declared_path=None: ([], [], False))
+    assert _ap.main() == 1 and "examined nothing" in capsys.readouterr().out
+
+    #  the inventory runs at import, so it is run as a script from an empty tree of its own
+    (tmp_path / "scripts").mkdir()
+    shutil.copy(_root808 / "scripts/truth_sweep_inventory.py", tmp_path / "scripts/truth_sweep_inventory.py")
+    _ts = subprocess.run([_sys808.executable, str(tmp_path / "scripts/truth_sweep_inventory.py")],
+                         capture_output=True, text=True, cwd=str(tmp_path))
+    assert _ts.returncode == 1 and "examined nothing" in _ts.stderr, (_ts.returncode, _ts.stdout[-200:], _ts.stderr[-300:])

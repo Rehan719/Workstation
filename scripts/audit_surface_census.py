@@ -98,6 +98,11 @@ def main() -> int:
                           text=True).stdout.strip()
     routes, excluded = api_routes()
     pgs, redirects, unparsed, declared = pages()
+    #  W808 (FU-1154) - a census that read no route and no page is not a census of an empty surface
+    if not routes and not declared:
+        print("REFUSING: examined nothing - no API route was mounted and no page route was declared, so there is "
+              "no surface to census.", file=sys.stderr)
+        return 1
     #  the census must account for every <Route> it saw, or it under-reports its own denominator
     assert len(pgs) + len(redirects) + len(unparsed) == declared, (len(pgs), len(redirects), len(unparsed), declared)
     json.dump({"head": head, "routes": routes, "pages": pgs, "redirects": redirects, "unparsed_pages": unparsed,
