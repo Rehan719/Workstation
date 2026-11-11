@@ -5,7 +5,9 @@ import { FabricLink } from '../../components/FabricLink';
 import { provenanceMapBadge } from '../../lib/api';
 
 interface Resource { id: string; name: string; role: string; biomimetic: string }
-interface StageOutput { resource: string; name: string; biomimetic: string; output: string }
+// W805 (FU-823) - each stage now says what served it, and what kind of stage it is
+interface StageOutput { resource: string; name: string; biomimetic: string; output: string;
+  served_by?: string | null; kind?: string; kind_basis?: string }
 // W490 (sweep S8.12, C7) — the run's ai_provenance was returned and never rendered: each stage card is
 // named for a fabric engine (Petri Dish / Laboratory / Factory) with a biomimetic subtitle, and every
 // one is in fact a persona prompt through the gateway. On the floor all five calls compose scaffolds.
@@ -56,7 +58,12 @@ export const ForgePipeline: React.FC = () => {
     setRunning(true); setError(''); setResult(null);
     try {
       const r = await fetch('/api/v1/forge/run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ objective, stages: selected.map(t => ({ type: t, config: parseConfig(stageConfig[t] || '').config })) }) });
-      if (!r.ok) { setError(`HTTP ${r.status}`); setRunning(false); return; }
+      // W805 (FU-823) - a refused pipeline says WHY: the route's sentence, not a bare status number
+      if (!r.ok) {
+        let _why = '';
+        try { const _b = await r.json(); _why = typeof _b?.detail === 'string' ? _b.detail : ''; } catch { /* not JSON */ }
+        setError(_why ? `HTTP ${r.status} — ${_why}` : `HTTP ${r.status}`); setRunning(false); return;
+      }
       setResult(await r.json());
     } catch (e: any) { setError(e?.message ?? String(e)); }
     setRunning(false);
@@ -173,17 +180,16 @@ export const ForgePipeline: React.FC = () => {
           </div>
           {result.stage_outputs.map((s, i) => (
             <Card key={i} className="p-0 overflow-hidden border-slate-800/80">
-              <button type="button" onClick={() => setOpen(open === s.resource ? '' : s.resource)} className={`w-full flex items-center justify-between p-4 text-left ${open === s.resource ? 'bg-slate-800/30' : ''}`}>
+              <button type="button" onClick={() => setOpen(open === String(i) ? '' : String(i))} className={`w-full flex items-center justify-between p-4 text-left ${open === String(i) ? 'bg-slate-800/30' : ''}`}>
                 <div className="flex items-center gap-3"><FlaskConical size={13} className="text-highlight" /><p className="font-black text-white text-sm">{s.name}</p><span className="text-[9px] text-slate-600 italic">{s.biomimetic}</span></div>
-                {open === s.resource ? <ChevronUp size={13} className="text-slate-500" /> : <ChevronDown size={13} className="text-slate-500" />}
+                {open === String(i) ? <ChevronUp size={13} className="text-slate-500" /> : <ChevronDown size={13} className="text-slate-500" />}
               </button>
-              {open === s.resource && <div className="px-4 pb-5 border-t border-slate-800/50 pt-3">
-                {/* W490 (refutation) — each stage is a persona prompt through the gateway, and the
-                    API records provenance only for the RUN, not per stage. Saying which is honest;
-                    saying nothing let the engine-named card read as a fabric engine's own output. */}
+              {open === String(i) && <div className="px-4 pb-5 border-t border-slate-800/50 pt-3">
+                {/* W490 (refutation) — each stage is a persona prompt through the gateway. W805 (FU-823): the API
+                    now records what served EACH stage, so the card says it rather than pointing at the run badge. */}
                 <p className="text-[9px] font-bold text-slate-600 mb-2" data-testid="forge-stage-scope">
-                  Composed by a persona prompt through the gateway. Provenance is recorded for the run,
-                  not per stage — see the run badge above.
+                  Composed by a persona prompt through the gateway, served by {s.served_by ?? 'nothing — the call failed'};
+                  the {s.name} facility's own engine was not called.
                 </p>
                 <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{s.output}</p></div>}
             </Card>

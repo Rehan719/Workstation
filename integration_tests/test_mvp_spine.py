@@ -70359,8 +70359,11 @@ def test_w784_fu865_each_forge_stage_is_one_persona_prompt_through_the_gateway(c
     out = {s["resource"]: s for s in r.json()["stage_outputs"]}
     for sid in sids:
         assert out[sid]["output"] == f"[forge_{sid}] composed", out.get(sid)
+        assert out[sid]["served_by"] == "native", ("W805 (FU-823): each stage records what served it", out.get(sid))
     page = pathlib.Path("apps/workstation-superapp/src/pages/developers/ForgePipeline.tsx").read_text(encoding="utf-8")
-    assert "Composed by a persona prompt through the gateway. Provenance is recorded for the run," in page
+    #  W805 - provenance is recorded per stage now, so the card says what served it instead of pointing at the run
+    assert "Composed by a persona prompt through the gateway, served by {s.served_by ??" in page
+    assert "Provenance is recorded for the run," not in page, "the card still says no stage records what served it"
 
 
 def test_w785_the_audit_instruments_name_no_machines_home_directory():
@@ -71111,3 +71114,45 @@ def test_w804_fu985_r6_the_board_pack_says_charitable_giving_is_an_allocation(cl
     assert "{bp.charitable_giving?.label ??" in _ve804 and "title={bp.charitable_giving?.basis" in _ve804, (
         "the pack's card does not print what the charity figure is")
     assert ">nutrient-return loop<" not in _ve804
+
+
+def test_w805_fu823_forge_runs_what_its_record_lists_and_configures_each_stage_where_it_stands(client):
+    """W805 (FU-823) - the loop ran the first seven stages while the record listed all; configurations were keyed
+    by stage type, so two of one type shared the last one's (and the rerun recovered them the same way); no stage
+    said what served it; the page showed a refused pipeline as a bare status number."""
+    import pathlib
+    import re as _re805
+    from agentic_core.api import forge as _fg805
+    _ids805 = sorted(_fg805._STAGES)
+
+    # -- a pipeline longer than a run is refused, and nothing is stored --------------------------------------------
+    _before805 = len(client.get("/api/v1/forge/runs").json().get("runs") or [])
+    _long805 = client.post("/api/v1/forge/run", json={"objective": "w805 too long",
+                                                       "stages": [{"type": _ids805[0]}] * 8})
+    assert _long805.status_code == 422, _long805.text[:200]
+    assert "at most 7 stages" in _long805.json()["detail"] and "nothing was stored" in _long805.json()["detail"]
+    assert len(client.get("/api/v1/forge/runs").json().get("runs") or []) == _before805, "a refused pipeline was stored"
+
+    # -- two stages of one type keep their own configuration, and each says what served it -------------------------
+    _a805, _b805 = {"depth": "shallow"}, {"depth": "deep"}
+    _run805 = client.post("/api/v1/forge/run", json={"objective": "w805 two of a kind", "stages": [
+        {"type": _ids805[0], "config": _a805}, {"type": _ids805[0], "config": _b805}]})
+    assert _run805.status_code == 200, _run805.text[:200]
+    _rj805 = _run805.json()
+    assert _rj805["pipeline"] == [_ids805[0], _ids805[0]], _rj805["pipeline"]
+    assert [o["config"] for o in _rj805["stage_outputs"]] == [_a805, _b805], (
+        "two stages of one type shared one configuration", [o["config"] for o in _rj805["stage_outputs"]])
+    assert all(o.get("served_by") for o in _rj805["stage_outputs"]), "a stage does not say what served it"
+
+    # -- the rerun keeps each configuration where it stood ---------------------------------------------------------
+    _rr805 = client.post(f"/api/v1/forge/runs/{_rj805['run_id']}/rerun").json()
+    assert [o["config"] for o in _rr805["stage_outputs"]] == [_a805, _b805], _rr805.get("stage_outputs")
+    assert _rr805["config_carried_by_position"] == [
+        {"position": 1, "stage": _ids805[0], "carried": True},
+        {"position": 2, "stage": _ids805[0], "carried": True}], _rr805["config_carried_by_position"]
+
+    # -- the page shows the refusal's sentence ---------------------------------------------------------------------
+    _page805 = _re805.sub(r"/\*.*?\*/", "", pathlib.Path("apps/workstation-superapp/src/pages/developers/ForgePipeline.tsx")
+                          .read_text(encoding="utf-8"), flags=_re805.S)
+    assert "typeof _b?.detail === 'string' ? _b.detail : ''" in _page805, (
+        "the Forge page still shows a refused pipeline as a bare status number")
