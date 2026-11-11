@@ -71371,3 +71371,34 @@ def test_w810_fu900_fu898_a_composition_holds_no_spawner_and_a_stand_in_runs_wit
     _page810 = _re810.sub(r"/\*.*?\*/", "", pathlib.Path("apps/workstation-superapp/src/pages/synthesis/ResourceFabric.tsx")
                           .read_text(encoding="utf-8"), flags=_re810.S)
     assert "disabled={r.type === 'spawner'}" in _page810 and 'data-testid="resource-spawner"' in _page810
+
+
+def test_w811_fu924_every_one_round_probe_says_on_its_first_line_that_it_is_history():
+    """W811 (FU-924). Fifty-two underscore-prefixed browser probes and seeds sat beside the instruments, each opening
+    with what it drove and none saying it is not an instrument. Each now says so on its first line, with its round.
+    _session_measured.py is the one live file behind an underscore: night_sim.py and session_forecast.py import it."""
+    import pathlib
+    import re as _re811
+    import subprocess
+    _root811 = pathlib.Path(__file__).resolve().parents[1]
+    _files811 = subprocess.run(["git", "ls-files", "scripts/_*"], cwd=_root811, capture_output=True, text=True,
+                               check=True).stdout.split()
+    assert len(_files811) > 40, ("git listed too few probe files to be reading the right place", len(_files811))
+    _live811 = {"scripts/_session_measured.py"}
+    _unmarked811 = []
+    for _rel in _files811:
+        if _rel in _live811:
+            continue
+        _first = (_root811 / _rel).read_text(encoding="utf-8").splitlines()[0]
+        if "HISTORY (W811, FU-924)" not in _first:
+            _unmarked811.append(_rel)
+            continue
+        _m = _re811.search(r"_w(\d{3})_probe", _rel)
+        if _m:
+            assert f"W{_m.group(1)}" in _first, ("a probe's history line names the wrong round", _rel, _first)
+    assert not _unmarked811, ("a one-round probe does not say on its first line that it is history", _unmarked811[:5])
+    for _live in _live811:
+        _src = (_root811 / _live).read_text(encoding="utf-8")
+        assert "HISTORY (W811" not in _src, "the one live file behind an underscore was marked as history"
+        assert any("_session_measured.py" in (_root811 / s).read_text(encoding="utf-8")
+                   for s in ("scripts/night_sim.py", "scripts/session_forecast.py")), "nothing imports it any more"

@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W453 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W453 (delivery-plan P1.5) — provenanceBadge class-kill part 2, in a real browser against the built bundle
 // on a FRESH backend (AI_DISABLE_LOCAL=1 → the floor serves every call): the migrated badge sites must
 // render the helper's AMBER floor chip — never an emerald "in-house" — on a produced deliverable, the

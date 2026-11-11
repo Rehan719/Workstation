@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W460 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W460 (delivery-plan P1.12) — the Visual Composer is retired and no surface claims compliance nobody
 // evaluated, in a real browser against the built bundle on a FRESH backend (AI_DISABLE_LOCAL=1):
 //   · the built bundle carries none of the retired claims ("GaaS COMPLIANT", the fictional model names,

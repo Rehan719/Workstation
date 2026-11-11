@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W452 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W452 (delivery-plan P1.4) — Mode 3 review gates GATE, in a real browser against the built bundle on a
 // FRESH backend (AI_DISABLE_LOCAL=1): on the Genesis page a founder gates the design stage and rejects it;
 // the panel now says what that does; the Cockpit's Ship button is refused with the gate named (legible,

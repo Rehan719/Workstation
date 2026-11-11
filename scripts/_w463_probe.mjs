@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W463 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W463 — economy approvals release only what they were filed for, in a real browser against the built bundle on a
 // FRESH backend (AI_DISABLE_LOCAL=1, ECONOMY_MATERIALITY_WST=1000; virtual WST only):
 //   · /economy: a material cycle is held; after a rejection the same cycle says it is asked again when the action

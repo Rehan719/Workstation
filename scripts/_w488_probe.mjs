@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W488 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W488 (P1.18, the C5 batch + its refutation) — the page and the API say the same thing.
 // Fresh backend + the real pages in a real browser: the plan's refusal REACHES the Owner (it used to
 // crash the page and blank a tab), the form the economy actually used is the one the picker marks, and

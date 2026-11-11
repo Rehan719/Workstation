@@ -1,3 +1,4 @@
+# HISTORY (W811, FU-924): the seed data for round W468's one-round browser probe. Nothing runs it; it is kept as that round's record.
 """W468 probe seed — run with the probe backend's isolated DATA_DIR/WORKSTATION_DATA_DIR/WORKSTATION_UEG_PATH env BEFORE
 starting that backend. Registers two living entities (also saved as VSB entities, so the cockpit lists them), gives each
 real books with one cycle (materiality raised in THIS process only), then makes ONE ledger unreadable the way a stray

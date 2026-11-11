@@ -18200,11 +18200,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W811",
       "note": "",
       "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Decided per file: none of the fifty-two underscore-prefixed probes and seeds is an instrument (nothing runs any of them: no workflow, package script, test or script calls one; the plan cites them only as patterns to reuse), so each now says so on its first line - a one-round browser probe kept as the record of its named round, true at that round's HEAD, or that round's seed, or (the two interactive sweeps) a pattern last measured 2026-09-01. Each kept its own opening comment saying what it drove. They stay in place because dated documents cite their paths. _session_measured.py is the exception and is left as it is: a live instrument night_sim.py and session_forecast.py import. Guard test_w811; two blinds red."
     },
     {
       "id": "FU-925",

@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W489 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W489 (P1.18 + P2.4 + P2.8 + P2.9, the C3 batch taken repo-wide) — a reading is measured, or it is
 // not presented as a reading. Fresh backend + the real pages in a real browser.
 //   node scripts/_w489_probe.mjs http://127.0.0.1:8094

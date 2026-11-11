@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W451 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W451 (delivery-plan P1.3) — the AI CEO chat on the fabric, in a real browser against the built bundle on a
 // FRESH backend (AI_DISABLE_LOCAL=1 → the floor serves): the default tab of the Living Organisation hub
 // must answer through the owned gateway with per-message provenance (amber floor badge), a pill that reads

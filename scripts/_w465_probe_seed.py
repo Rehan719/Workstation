@@ -1,3 +1,4 @@
+# HISTORY (W811, FU-924): the seed data for round W465's one-round browser probe. Nothing runs it; it is kept as that round's record.
 """W465 probe seed — run with the probe backend's isolated DATA_DIR/WORKSTATION_DATA_DIR/WORKSTATION_UEG_PATH env BEFORE
 starting that backend: registers two living entities and funds the client with one cycle (the materiality threshold is
 raised in THIS process only, so the seed files no hold). Prints the two entity ids for scripts/_w465_probe.mjs.

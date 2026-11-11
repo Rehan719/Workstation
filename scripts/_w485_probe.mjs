@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W485 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W485 (P1.18: FU-097, FU-101, FU-128) — a veto stops the journey, a pack says whose text it
 // screened, and exported text carries its provenance. Fresh backend + the page in a real browser.
 //   node scripts/_w485_probe.mjs http://127.0.0.1:8092

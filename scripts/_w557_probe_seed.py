@@ -1,3 +1,4 @@
+# HISTORY (W811, FU-924): the seed data for round W557's one-round browser probe. Nothing runs it; it is kept as that round's record.
 """Seed the three record shapes P2.16's page must render, through the KERNEL'S OWN PATH.
 
     python scripts/_w557_probe_seed.py

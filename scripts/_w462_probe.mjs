@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W462 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W462 — the follow-up register is visible where the plan is read, in a real browser against the built
 // bundle on a FRESH backend (AI_DISABLE_LOCAL=1):
 //   · GET /api/v1/plan/followups serves the register with integrity ok, and /api/v1/plan carries its counts;

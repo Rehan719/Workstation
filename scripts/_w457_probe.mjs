@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W457 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W457 (delivery-plan P1.9) — Care scoring computes, in a real browser against the built bundle on a FRESH
 // backend (AI_DISABLE_LOCAL=1 → the floor serves the narrative): /care?tab=risk with the assessor's
 // observations renders a computed "NEWS2 6 · medium · urgent ward-based response" block FIRST, with its

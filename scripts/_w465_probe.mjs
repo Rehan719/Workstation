@@ -1,3 +1,4 @@
+// HISTORY (W811, FU-924): a one-round browser probe, kept as the record of what round W465 drove (its entry in docs/AUTONOMOUS_PROGRESS.md). It is not an instrument: nothing runs it, and what it checked was true at that round's HEAD.
 // W465 — service contracts paid once and said as they are, and the owner-payments store refused rather than read as
 // empty, in a real browser against the built bundle on a FRESH backend (AI_DISABLE_LOCAL=1, ECONOMY_MATERIALITY_WST=1000;
 // virtual WST only). Seed first with scripts/_w465_probe_seed.py <tag> under the same isolated env, then:
