@@ -17936,11 +17936,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W815",
       "note": "",
       "slot_source": "moved when the Instrument Cell item was marked done on the Owner's ruling of 2026-10-12: an improvement the item's clauses do not ask for, kept on the general third-phase item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Measured from every handler's own 'ran' value against its registration: eight differ, where the row counted five at W674 (sovereign_evolution, genome, capital_fund, change_control, immune, nervous_system, synthesis_studio, digital_twin). Each run already said what ran; the registration a composer reads now says it too (runs_instead and runs_instead_basis, from one table beside the handler, in the run's own words), the listing carries it and the Resource Fabric card shows 'runs X, not <endpoint>'. The guard derives the set from the handler source, so a resource that drifts later is caught, and refuses a table entry for a resource that runs its endpoint. Guard test_w815, 4 blinds red."
     },
     {
       "id": "FU-912",

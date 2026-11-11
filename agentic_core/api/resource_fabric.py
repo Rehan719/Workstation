@@ -1361,6 +1361,38 @@ def _stage_checkpoint(agent: str, output) -> Dict[str, Any]:
     return console_post_gate(agent, str(output or ""))
 
 
+#  W815 (FU-911) - WHAT A COMPOSED RESOURCE RUNS, where that is not its declared endpoint. Each run already says what
+#  ran (its "ran" field), while the registration a composer reads before composing still named another route: one
+#  declared a write and only read status, another declared a read and encoded and saved. This table, beside the
+#  handler, puts the run's own words on the registration; a guard derives the set from the handler's "ran" values,
+#  so a resource whose handler drifts from its endpoint without saying so is caught.
+RUNS_INSTEAD: Dict[str, Dict[str, str]] = {
+    "sovereign_evolution": {"runs": "/api/v1/sovereign-evolution/status",
+                            "basis": ("a bounded reading of the office's last cycle and roadmap; composing it runs no "
+                                      "self-improvement cycle")},
+    "genome": {"runs": "/api/v1/organism/genome/encode",
+               "basis": "encodes a genome for the objective and saves it; the declared route only reads one"},
+    "capital_fund": {"runs": "/api/v1/fund/status",
+                     "basis": "reads the fund's status and portfolio; composing it allocates nothing"},
+    "change_control": {"runs": "/api/v1/cca/submit (assess · not persisted)",
+                       "basis": "classifies the change and reads the organism gate; no change record is filed"},
+    "immune": {"runs": "organism.immune.status() (in-process)",
+               "basis": "the immune system's own reading; the declared route is the self-healing system's"},
+    "nervous_system": {"runs": "/api/v1/organism/nervous/stimulate",
+                       "basis": ("fires one real nervous signal and reads the organism back; the declared route "
+                                 "only reads")},
+    "synthesis_studio": {"runs": "run_lab_cascade (the laboratory cascade; no entity is saved)",
+                         "basis": ("the laboratory cascade as a function; the declared Studio route is retired and "
+                                   "is not called")},
+    "digital_twin": {"runs": "orchestrator.complete with a simulator persona",
+                     "basis": "a completion with a simulator persona; /api/v1/twin/simulate is NOT called"},
+}
+for _rid815, _ri815 in RUNS_INSTEAD.items():
+    if _rid815 in _BY_ID:
+        _BY_ID[_rid815]["runs_instead"] = _ri815["runs"]
+        _BY_ID[_rid815]["runs_instead_basis"] = _ri815["basis"]
+
+
 async def _run_real_resource_handler(rid: str, config: dict, objective: str, domain: str) -> Optional[Dict[str, Any]]:
     """§7 deep integration — invoke a composed resource's REAL endpoint logic (not a prompt approximation),
     built from the user's reconfigured params, so a committed composition runs the ACTUAL engines/resources.

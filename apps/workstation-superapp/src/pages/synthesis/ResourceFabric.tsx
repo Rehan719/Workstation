@@ -40,6 +40,8 @@ interface Resource {
   methods: string[]; reusable: boolean; rerunnable: boolean; biomimetic: boolean; usable_in: string[];
   // W641 (FU-674) — whether composing this resource runs its engine; null = the server could not check
   fabric_runs_engine?: boolean | null; fabric_runs_basis?: string; fabric_handler_kind?: string | null;
+  // W815 (FU-911) - what composing it runs, where that is not its declared endpoint
+  runs_instead?: string; runs_instead_basis?: string;
 }
 interface Composition {
   id: string; name: string; usage_area: string;
@@ -454,6 +456,12 @@ export const ResourceFabric: React.FC = () => {
                         : r.fabric_handler_kind === 'query' ? 'queries records — no engine run'
                         : r.fabric_handler_kind === 'blueprint' ? 'blueprint only — nothing provisioned'
                         : 'prompt stage only — engine not run'}
+                    </span>
+                  )}
+                  {r.runs_instead && (
+                    <span data-testid="resource-runs-instead" title={r.runs_instead_basis}
+                      className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
+                      runs {r.runs_instead}, not {r.endpoint}
                     </span>
                   )}
                   {r.type === 'spawner' && (

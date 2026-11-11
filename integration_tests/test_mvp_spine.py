@@ -71700,3 +71700,53 @@ def test_w814_a_deleted_capital_fund_is_not_answered_as_a_new_fund(client, monke
     assert client.get("/api/v1/fund/status").json()["total_capital"] == 10_000_000
     _cf.contribute_from_cycle(vid, 5.0)
     assert _j.loads(store.read_text(encoding="utf-8"))["total_capital"] == 10_000_005.0 and rec.exists()
+
+
+def test_w815_a_fabric_registration_says_what_it_runs_when_that_is_not_its_endpoint(client):
+    """FU-911 (W815). Every composed resource's handler says what it ran. Where that is not the registration's
+    declared endpoint, the registration says so before anything runs (runs_instead, with its basis), in the run's
+    own words - the set is derived here from the handler's source, so a resource that drifts later is caught - and
+    the table names no resource whose handler runs its endpoint after all. The listing carries it, and the Resource
+    Fabric page shows it on the resource's card."""
+    import inspect as _insp
+    import pathlib as _pl
+    import re as _re
+    from agentic_core.api import resource_fabric as _rf
+
+    src = _insp.getsource(_rf._run_real_resource_handler)
+    drift = {}
+    for block in _re.split(r"\n        if rid (?:==|in) ", src)[1:]:
+        head = block.split(":\n", 1)[0]
+        ran = _re.findall(r'"ran":\s*"([^"]*)"', block)          # a literal only: an f-string is per request
+        invoked = _re.findall(r'"invoked":\s*"([^"]*)"', block)
+        for rid in _re.findall(r'"([a-z0-9_]+)"', head):
+            ep = (_rf._BY_ID.get(rid) or {}).get("endpoint")
+            if ran and ran[0] != ep:
+                drift[rid] = ran[0]
+            elif not ran and invoked:
+                drift[rid] = invoked[0]
+    assert len(drift) >= 8, ("fewer handlers drift from their endpoint than W815 measured - re-read them", drift)
+    for rid, ran in drift.items():
+        reg = _rf._BY_ID[rid]
+        assert reg.get("runs_instead") and reg.get("runs_instead_basis"), (
+            f"{rid} runs {ran!r} while its registration declares only {reg.get('endpoint')!r}")
+        if rid == "digital_twin":
+            assert "orchestrator.complete" in reg["runs_instead"] and "NOT called" in reg["runs_instead_basis"], reg
+        else:
+            assert reg["runs_instead"] == ran, ("the registration's words are not the run's", rid, reg["runs_instead"], ran)
+    stale = set(_rf.RUNS_INSTEAD) - set(drift)
+    assert not stale, ("the table names resources whose handler runs their declared endpoint", stale)
+
+    # the listing carries it
+    lst = client.get("/api/v1/resources")
+    assert lst.status_code == 200, lst.text[:200]
+    by = {r.get("id"): r for r in lst.json().get("resources", [])}
+    for rid in drift:
+        assert (by.get(rid) or {}).get("runs_instead") == _rf._BY_ID[rid]["runs_instead"], (
+            "the listing does not say what composing it runs", rid)
+
+    # the page shows it on the card (comments stripped before reading)
+    page = _code_only((_pl.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages"
+                       / "synthesis" / "ResourceFabric.tsx").read_bytes().decode("utf-8"))
+    assert "{r.runs_instead && (" in page and "title={r.runs_instead_basis}" in page, "the card does not show it"
+    assert "runs {r.runs_instead}, not {r.endpoint}" in page, "the card does not set what runs beside the endpoint"
