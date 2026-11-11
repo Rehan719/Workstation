@@ -71969,3 +71969,21 @@ def test_w821_the_matter_panel_says_how_many_provisions_an_authority_is_resolved
                        / "MatterAssemblyPanel.tsx").read_bytes().decode("utf-8"))
     assert "{String(art.authorities_held.basis)}" in page and 'data-testid="matter-authorities-held"' in page, (
         "the matter panel does not say what an authority is resolved against")
+
+
+def test_w822_the_cockpit_plan_tab_shows_the_action_plan_layer():
+    """FU-830 (W822). The Cockpit's plan tab shows the action-plan layer as the Business Plan page does: the text,
+    what wrote it - read through the Business Plan page's own helper, exported rather than copied - and its absence
+    said when no action plan is recorded."""
+    import pathlib as _pl
+    src = _pl.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages" / "enterprise"
+    ck = _code_only((src / "VSBCockpit.tsx").read_bytes().decode("utf-8"))
+    bp = _code_only((src / "BusinessPlan.tsx").read_bytes().decode("utf-8"))
+    assert "import { layerSource } from './BusinessPlan';" in ck, "the Cockpit does not read the shared helper"
+    assert "export const layerSource = (plan: Plan, field: 'strategy' | 'action_plan')" in bp
+    assert "const layerSource" not in ck, "the Cockpit carries its own copy of the helper"
+    _tab = ck[ck.index("{tab === 'plan' && plan && ("):]
+    _layer = _tab[_tab.index('data-testid="cockpit-plan-action-plan"'):_tab.index("Array.isArray(plan.aims)")]
+    assert "{plan.action_plan}" in _layer and "{layerSource(plan as any, 'action_plan') ??" in _layer, (
+        "the plan tab does not show the action plan with what wrote it")
+    assert 'data-testid="cockpit-plan-action-plan-absent"' in _layer, "the plan tab does not say when there is none"

@@ -16260,11 +16260,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W822",
       "note": "",
       "slot_source": "found in this round and not done in it; filed where the next rounds will meet it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The Cockpit's plan tab shows the action-plan layer as the Business Plan page does: the text, what wrote it (the latest action-plan cadence refresh whose text is still on screen) and its absence said. What wrote it is read through the Business Plan page's own layerSource, now exported and imported by the Cockpit rather than copied, so the two pages cannot drift apart (the gap opened the way FU-074's did). Guard test_w822, 3 blinds red."
     },
     {
       "id": "FU-831",

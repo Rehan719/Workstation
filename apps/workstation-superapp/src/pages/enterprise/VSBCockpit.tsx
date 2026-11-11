@@ -6,6 +6,7 @@ import axios from 'axios';
 import { Card, Button, Badge } from '@workstation/ui';
 import { Building2, Crown, Users, Target, ShieldCheck, Workflow, Loader2, Play, Boxes, ScrollText, MessageCircle, Send, Coins, Mic, Volume2, Paperclip, Download } from 'lucide-react';
 import { PlanOpening } from '../../components/PlanOpening';   // W505 (FU-074)
+import { layerSource } from './BusinessPlan';                  // W822 (FU-830) - one helper, both pages
 import { DictateButton } from '../../components/DictateButton';   // P3.30 (ledger v16 R3.14, R2.9)
 import { getPrefs } from '../../lib/userPrefs';
 import { domainLabel } from '../../lib/taxonomy';                 // P3.30 (ledger v16 R5.7)
@@ -1113,6 +1114,23 @@ export const VSBCockpit: React.FC = () => {
                   <p className="text-sm text-slate-300 leading-relaxed">{(val as string) || <span className="text-slate-600">Not set.</span>}</p>
                 </Card>
               ))}
+              {/* W822 (FU-830) - THE ACTION-PLAN LAYER, as the Business Plan page shows it: what wrote it, or its
+                  absence said */}
+              <div data-testid="cockpit-plan-action-plan">
+                <Card className="p-6">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-highlight mb-2">Action plan (§17.3)</h4>
+                  {typeof plan.action_plan === 'string' && plan.action_plan.trim() ? (
+                    <>
+                      <p className="text-sm text-slate-300 leading-relaxed">{plan.action_plan}</p>
+                      <p className="text-[10px] text-amber-300/80 mt-1 leading-relaxed" data-testid="cockpit-plan-action-plan-source">
+                        {layerSource(plan as any, 'action_plan') ?? 'No cadence refresh on record matches this text, so what composed it is not recorded here.'}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-[11px] text-slate-500" data-testid="cockpit-plan-action-plan-absent">No action plan is recorded for this scope: no action-plan refresh has been written to it.</p>
+                  )}
+                </Card>
+              </div>
               {Array.isArray(plan.aims) && plan.aims.length > 0 && (
                 <Card className="p-6">
                   <h4 className="text-[10px] font-black uppercase tracking-widest text-highlight mb-2">Aims</h4>

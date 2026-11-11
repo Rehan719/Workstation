@@ -31,7 +31,8 @@ interface Plan { provenance?: PlanProvenance; owner_edits?: Record<string, strin
 // P3.30 (ledger v16 R3.9) — WHAT WROTE THE TEXT ON SCREEN. The latest cadence refresh that was WRITTEN to this
 // field, and only while the field still holds that refresh's text: an Owner's edit or a model's draft made
 // since is not the cadence's, and saying so would mislabel it. Null means no such refresh is on record.
-const layerSource = (plan: Plan, field: 'strategy' | 'action_plan'): string | null => {
+// W822 (FU-830) - exported: the Cockpit's plan tab reads what wrote a layer through this same helper
+export const layerSource = (plan: Plan, field: 'strategy' | 'action_plan'): string | null => {
   const rows = (plan.refreshes ?? []).filter(r => !!r && r.plan_field === field && r.applied !== false);
   const last = rows[rows.length - 1];
   if (!last) return null;
