@@ -17906,11 +17906,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W827",
       "note": "",
       "slot_source": "found in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "POST /api/v1/method/amendment still never writes the method (a repository file, edited in a commit). Each filed batch is now kept beside its change record (data/method_amendments.json: kind, lesson ids, ruling, title, filed_at; a keeping that fails is said in the filing's answer), and GET /api/v1/method/amendments reads both artefacts: the record's decision, and per lesson whether the method holds it with a ratified field naming the record (a lesson there under another ruling does not count). carried_out: not decided / no (decided, recorded only) / partly / yes. The method's amended_by text says an edit carrying a proposal out names its record in ratified. A batch filed before W827 was not kept and is not listed. Guard test_w827, 3 blinds red."
     },
     {
       "id": "FU-909",

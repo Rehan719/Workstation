@@ -72098,3 +72098,58 @@ def test_w826_no_live_catalogue_feature_is_a_capability_that_answers_not_impleme
     qep = next(p for p in products if p.get("slug") == "qep-sdk")
     assert any("analytics" in str(f).lower() for f in (qep.get("features_declared_not_built") or [])), (
         "the unbuilt analytics are not said to be declared and not built", qep)
+
+
+def test_w827_whether_a_ratified_method_amendment_was_carried_out_can_be_read(client, monkeypatch, tmp_path):
+    """FU-908 (W827). A filed amendment is kept beside its change record, and GET /api/v1/method/amendments reads
+    both artefacts: not decided before its record is decided; decided and recorded only while the method does not
+    hold its lessons naming the record (a lesson there under another ruling does not count); carried out once each
+    lesson is in the method with a `ratified` that names the record. The route never writes the method."""
+    import json as _j
+    import shutil as _sh
+    import uuid as _uuid
+    from agentic_core.api import method as _m
+
+    monkeypatch.setattr(_m, "_amendments_path", lambda: tmp_path / "method_amendments.json")
+    tag = _uuid.uuid4().hex[:6]
+    lid = f"M-W827{tag}-1"
+    filed = client.post("/api/v1/method/amendment", json={"title": f"W827 {tag}", "lessons": [{
+        "id": lid, "group": "verification", "rule": "a driven rule", "defect": "W827: a driven defect",
+        "apply": "apply it", "why_not_enforced": "a guard's own probe"}]})
+    assert filed.status_code == 200, filed.text[:300]
+    cca = filed.json()["change_control"]["cca_id"]
+    assert str(filed.json().get("amendment_record", "")).startswith("kept"), filed.json().get("amendment_record")
+
+    def _mine():
+        r = client.get("/api/v1/method/amendments")
+        assert r.status_code == 200, r.text[:300]
+        return next((a for a in r.json()["amendments"] if a["cca_id"] == cca), None)
+
+    a = _mine()
+    assert a and a["carried_out"] == "not decided" and a["lessons"][0]["in_method"] is False, a
+
+    d = client.post(f"/api/v1/cca/{cca}/review", json={"override_decision": "approved",
+                                                       "owner_decision_acknowledged": True})
+    assert d.status_code == 200, d.text[:300]
+    a = _mine()
+    assert a["decided"] is True and a["carried_out"] == "no" and "recorded only" in a["carried_out_basis"], a
+
+    #  the method, in a copy: the lesson under ANOTHER ruling does not carry this record out; naming it does
+    root = tmp_path / "repo"
+    (root / "docs").mkdir(parents=True)
+    _sh.copy(_m._repo_root() / _m._METHOD_DOC, root / _m._METHOD_DOC)
+    monkeypatch.setattr(_m, "_repo_root", lambda: root)
+
+    def _plant(ratified):
+        doc = _j.loads((root / _m._METHOD_DOC).read_text(encoding="utf-8"))
+        doc["lessons"] = [l for l in doc["lessons"] if l.get("id") != lid] + [{
+            "id": lid, "group": "verification", "rule": "a driven rule", "defect": "W827: a driven defect",
+            "apply": "apply it", "enforced_by": None, "why_not_enforced": "a guard's own probe", "ratified": ratified}]
+        (root / _m._METHOD_DOC).write_text(_j.dumps(doc), encoding="utf-8")
+
+    _plant("another ruling entirely")
+    a = _mine()
+    assert a["lessons"][0]["in_method"] is True and a["carried_out"] == "no", ("a lesson under another ruling counted", a)
+    _plant(f"ratified through {cca}")
+    a = _mine()
+    assert a["carried_out"] == "yes" and a["lessons"][0]["names_this_record"] is True, a
