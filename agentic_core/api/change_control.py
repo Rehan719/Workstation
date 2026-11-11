@@ -14,12 +14,14 @@ constitutional GaaS gate, a 24h cooling period and a manual flag, none of which 
   LOW    — auto-approved at submit when composite health >= 0.6 AND immune threat is
            NOMINAL/ELEVATED; otherwise held for review
   MEDIUM — review required. A single [DECISION: …] marker from the serving model decides it. With
-           no marker (the deterministic floor) or conflicting markers, the verdict is the
-           ORGANISM-HEALTH THRESHOLD RULE (composite_health >= 0.5 → approved, else rejected), and the
-           record says so in `decision_source` and at the head of the review text. With auth
-           enabled, a rule verdict is applied only when an ADMIN requests the review; a non-admin's
-           review is HELD with the rule's verdict recorded as a recommendation.
-  HIGH   — as MEDIUM, plus a recorded §17.5 pre-validation PASS before /implement. W464 (FU-012, the Owner's
+           no marker (the deterministic floor) or conflicting markers, nothing read the change, so it is
+           HELD for an explicit decision (W802, FU-982): the ORGANISM-HEALTH THRESHOLD RULE's verdict
+           (composite_health >= 0.5 → approved, else rejected) is recorded as a recommendation, never applied.
+  HIGH   — review required as MEDIUM was before W802: a single marker decides it, and with no marker or
+           conflicting markers the health threshold rule's verdict is applied and the record says so in
+           `decision_source` and at the head of the review text. With auth enabled, a rule verdict is applied
+           only when an ADMIN requests the review; a non-admin's review is HELD with the rule's verdict
+           recorded as a recommendation. Plus a recorded §17.5 pre-validation PASS before /implement. W464 (FU-012, the Owner's
            ruling of 2026-09-14): a HIGH change approved by a REVIEW (the model's marker or the health rule)
            waits for BOARD RATIFICATION — /implement, and anything else acting on the approval, refuses it until
            the Board records the Owner's direction (POST /api/v1/board/ratifications/{cca_id}). The Owner's own
@@ -1934,6 +1936,22 @@ async def review_change(cca_id: str, req: ReviewDecision,
                 f"HELD — {why_no_marker}, so only the organism-health threshold rule could decide "
                 f"this change, and {rule_clause}. A rule with no evaluable input is not an "
                 "approval: this waits for an explicit decision."
+                + model_out)
+        elif tier == "MEDIUM":
+            #  W802 (FU-982, ledger v17 R3[1]) - A MEDIUM CHANGE IS NOT DECIDED BY A RULE THAT READ NONE OF IT. With
+            #  no marker the health rule decided a MEDIUM change from the organism's health alone: nothing read the
+            #  change, and a request for a review became an approval. Decided on the recommendation (Owner
+            #  instruction 2026-11-10): the rule's verdict is recorded as a RECOMMENDATION and the change waits for
+            #  an explicit decision, as a non-admin's review already does with sign-in on. HIGH is unchanged - a
+            #  review's approval of it waits for Board ratification (the Owner's ruling of 2026-09-14) - and LOW
+            #  keeps the rule.
+            decision, held, hold_reason = None, True, "nothing_read_the_change"
+            decision_source = "held_awaiting_admin"
+            recommendation = {"verdict": rule_verdict, "source": "health_threshold_rule"}
+            review_text = (
+                f"HELD — {why_no_marker}, so nothing read this change. The organism-health threshold rule "
+                f"({rule_clause}) measures the platform, not the change, so on a MEDIUM change its verdict is "
+                f"recorded as a recommendation and the change waits for an explicit decision."
                 + model_out)
         else:
             decision, decision_source = rule_verdict, "health_threshold_rule"

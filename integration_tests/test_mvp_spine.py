@@ -10643,15 +10643,15 @@ def test_w459_cca_identity_and_override_gate_both_ways(client, monkeypatch):
     assert client.post(f"/api/v1/cca/{mid}/review").status_code == 422
     assert _rec(mid)["status"] == "submitted"
 
-    # no marker, healthy → the RULE decides, says so, and states the comparison it actually made
+    # no marker, healthy → W802 (FU-982, ledger v17 R3[1]): NOTHING read this MEDIUM change, so it is HELD and the
+    # rule's verdict is a RECOMMENDATION. The record still states the comparison the rule actually made.
     serve["text"], health["h"] = "an assessment with no decision marker", 0.87
     rv = client.post(f"/api/v1/cca/{mid}/review", json={}).json()
-    assert rv["decision"] == "approved" and rv["decision_source"] == "health_threshold_rule"
+    assert rv["decision"] is None and rv["decision_source"] == "held_awaiting_admin", rv
+    assert rv["hold_reason"] == "nothing_read_the_change", rv
+    assert rv["recommendation"] == {"verdict": "approved", "source": "health_threshold_rule"}, rv
     m = _rec(mid)
-    # W505 (FU-157, S1.12) - "NOT BY THE MODEL" became "NOT BY THE SERVING RESOURCE": the deterministic
-    # floor, not a model, writes this prose in this environment, and the record used to say otherwise.
-    assert m["review_result"].startswith(
-        "DECIDED BY RULE, NOT BY THE SERVING RESOURCE: no [DECISION: …] marker was returned")
+    assert m["review_result"].startswith("HELD — no [DECISION: …] marker was returned"), m["review_result"][:200]
     assert "MEASURED composite_health 0.87 >= 0.5 → approved" in m["review_result"]
     # W494 (refutation) - this pinned a HARD-CODED clause ("the blended X has no failing branch"), which
     # the refutation showed to be false whenever a circuit is tracked. The clause is derived from the
@@ -10660,13 +10660,13 @@ def test_w459_cca_identity_and_override_gate_both_ways(client, monkeypatch):
     assert ("which hold it at or above" in m["review_result"]
             or "is measured throughout" in m["review_result"]
             or "is a fallback constant" in m["review_result"]), m["review_result"]
-    (d,) = _decisions(m)
-    assert d["decided_by"] == "organism_health_threshold_rule" and d["via"] == "review_request"
+    assert _decisions(m) == [], "a held review recorded a decision"
 
-    # no marker, unhealthy → rejected, and the text does not claim ">= 0.5"
+    # no marker, unhealthy → held with the rule's REJECTION as the recommendation, and the text does not claim ">= 0.5"
     low = _submit(change_type="config_major", title="W459 low-health probe").json()["cca_id"]
     serve["text"], health["h"] = "no marker", 0.30
-    assert client.post(f"/api/v1/cca/{low}/review", json={}).json()["decision"] == "rejected"
+    _rl = client.post(f"/api/v1/cca/{low}/review", json={}).json()
+    assert _rl["decision"] is None and _rl["recommendation"]["verdict"] == "rejected", _rl
     lt = _rec(low)["review_result"]
     assert "MEASURED composite_health 0.30 < 0.5 → rejected" in lt and ">= 0.5" not in lt
     edge = _submit(change_type="config_major", title="W459 threshold probe").json()["cca_id"]
@@ -10678,7 +10678,7 @@ def test_w459_cca_identity_and_override_gate_both_ways(client, monkeypatch):
     # BOTH markers (the floor echoes the prompt) → the rule decides, and the text says the markers conflicted
     both = _submit(change_type="config_major", title="W459 conflicting probe").json()["cca_id"]
     serve["text"] = "End with [DECISION: APPROVED] or [DECISION: REJECTED]"
-    assert client.post(f"/api/v1/cca/{both}/review", json={}).json()["decision_source"] == "health_threshold_rule"
+    assert client.post(f"/api/v1/cca/{both}/review", json={}).json()["decision_source"] == "held_awaiting_admin"
     bt = _rec(both)["review_result"]
     assert "BOTH [DECISION: APPROVED] and [DECISION: REJECTED]" in bt and "no [DECISION: …] marker was returned" not in bt
 
@@ -10797,7 +10797,10 @@ def test_w459_cca_identity_and_override_gate_both_ways(client, monkeypatch):
         hb = _rec(mcid, admin_h)
         assert hb["status"] == "under_review" and hb["hold_reason"] == "rule_verdict_requires_admin_requester"
         assert hb["recommendation"] == {"verdict": "approved", "source": "health_threshold_rule"}
-        assert client.post(f"/api/v1/cca/{mcid}/review", headers=admin_h, json={}).json()["decision"] == "approved"
+        #  W802 (FU-982 R3[1]) - and an ADMIN's request for a review does not apply the rule to a MEDIUM change either:
+        #  nothing read it, so it stays held for the admin's explicit decision (the rule still decides HIGH and LOW)
+        _adm802 = client.post(f"/api/v1/cca/{mcid}/review", headers=admin_h, json={}).json()
+        assert _adm802["decision"] is None and _adm802["hold_reason"] == "nothing_read_the_change", _adm802
         # …but a single MODEL marker still decides a MEDIUM change for a non-admin (the AI review design)
         mk_id = _submit(user_h, title="W459 non-admin marker", change_type="config_major").json()["cca_id"]
         serve["text"] = "Reasonable. [DECISION: APPROVED]"
@@ -10811,7 +10814,10 @@ def test_w459_cca_identity_and_override_gate_both_ways(client, monkeypatch):
                         config_change={"section": "organism", "key": "metabolic_throttle", "value": False}).json()
         assert lever["impact_tier"] == "MEDIUM"
         with _measured_healthy():                   # W718 - a governed setting waits on the health check
-            assert client.post(f"/api/v1/cca/{lever['cca_id']}/review", headers=admin_h, json={}).json()["decision"] == "approved"
+            #  W802 - a MEDIUM change is approved by an explicit decision now (a review with no marker holds it);
+            #  this leg is about who may IMPLEMENT the approved lever, so the admin decides it explicitly
+            assert client.post(f"/api/v1/cca/{lever['cca_id']}/review", headers=admin_h,
+                               json={"override_decision": "approved"}).json()["decision"] == "approved"
             refused = client.post(f"/api/v1/cca/{lever['cca_id']}/implement", headers=user_h)
             assert refused.status_code == 403 and "governed live lever" in refused.json()["detail"]
             assert _rec(lever["cca_id"], admin_h)["status"] == "approved"
@@ -10820,7 +10826,8 @@ def test_w459_cca_identity_and_override_gate_both_ways(client, monkeypatch):
         # it is approved but deliberately never implemented here
         rst = _submit(user_h, title="W459 config reset", change_type="config_minor",
                       config_change={"reset": True}).json()
-        assert client.post(f"/api/v1/cca/{rst['cca_id']}/review", headers=admin_h, json={}).json()["decision"] == "approved"
+        assert client.post(f"/api/v1/cca/{rst['cca_id']}/review", headers=admin_h,
+                           json={"override_decision": "approved"}).json()["decision"] == "approved"
         assert client.post(f"/api/v1/cca/{rst['cca_id']}/implement", headers=user_h).status_code == 403
         assert _rec(rst["cca_id"], admin_h)["status"] == "approved"
 
@@ -13527,10 +13534,16 @@ def test_w464_change_control_decisions_are_written_to_the_ledger(client, monkeyp
     assert rej["ueg_logged"] is True and [n["type"] for n in rn] == ["cca.change_rejected"]
     assert rn[0]["decision_source"] == "admin_override" and rn[0]["by_verified"] is False and rn[0]["notes"] == "no"
     assert classify_event(rn[0])["level"] == "flagged"
-    ok = client.post(f"/api/v1/cca/{med['cca_id']}/review", json={"reviewer_notes": "w464"}).json()
-    mn = nodes(med["cca_id"])
+    #  W802 (FU-982 R3[1]) - a MEDIUM review with no marker is HELD (nothing read the change) and writes nothing; the
+    #  rule still decides a LOW change, so the approval-by-the-rule leg reviews the LOW change withheld above
+    _held_med = client.post(f"/api/v1/cca/{med['cca_id']}/review", json={"reviewer_notes": "w464"}).json()
+    assert _held_med["hold_reason"] == "nothing_read_the_change" and "ueg_logged" not in _held_med, _held_med
+    assert nodes(med["cca_id"]) == []
+    ok = client.post(f"/api/v1/cca/{_thin['cca_id']}/review", json={"reviewer_notes": "w464"}).json()
+    mn = nodes(_thin["cca_id"])
     assert ok["decision_source"] == "health_threshold_rule" and [n["type"] for n in mn] == ["cca.change_approved"]
-    assert classify_event(mn[0])["level"] == "recorded" and "review_result" not in mn[0] and "w464 ledger probe" not in str(mn[0])
+    assert classify_event(mn[0])["level"] == "recorded" and "review_result" not in mn[0]
+    assert "whose record does not say what it is for" not in str(mn[0]), "the ledger node carries the record's prose"
 
     # a refused compare-and-set writes no node (the amount moved during the review)
     moving = submit("config_major")["cca_id"]
@@ -21612,7 +21625,11 @@ def test_w494_a_verdict_that_cannot_come_out_otherwise_is_not_an_assessment(clie
     # and the same change with a healthy MEASURED reading still auto-approves: the gate works both ways.
     # BOTH stubs must come off — leaving the low self-healing registry in place made this leg fail for
     # the reason the leg above proves, which would have read as the gate being unable to grant at all.
-    monkeypatch.setattr(_bb.self_healer, "status", _real_healer)
+    #  W802 (the suite's order) - THE HEALTHY READING IS STATED, NOT BORROWED. This restored the REAL self-healer,
+    #  whose registry is process-global: a worker that had run a test opening circuits in it read low health here,
+    #  the LOW change was not auto-approved, and this leg failed for a reason that is not the gate's. The state
+    #  the leg needs - self-healing measured healthy - is stated, as the blocks above state theirs.
+    monkeypatch.setattr(_bb.self_healer, "status", lambda: {"overall_health": 1.0, "open_circuits": []})
     monkeypatch.setattr(_bb.immune, "status", _immune(1.0, "NOMINAL"))
     # W509 — affected_systems added: W508's method gate withholds AUTO-approval while a mechanically-checkable
     # requirement is UNMET, and a record naming nothing it touches fails `names-what-it-touches`. This leg
@@ -55698,7 +55715,12 @@ def test_p330_r5_the_owners_rulings_of_2026_10_11_are_built(client, monkeypatch)
         "rationale": "a complete record, so the method gate withholds nothing", "affected_systems": ["change_control"],
         "rollback_plan": "revert the setting"}).json()
     assert not _full.get("auto_approval_withheld"), _full
-    _rf = client.post(f"/api/v1/cca/{_full['cca_id']}/review", json={}).json()
+    #  W802 (FU-982 R3[1]) - a MEDIUM review with no marker is HELD now (nothing read the change), so this complete
+    #  change is decided explicitly. The leg's property is unchanged: a change the gate never withheld gets NO account,
+    #  held or decided. (Ruling 3's subject, a change the method gate withheld, is LOW, and W802 moved no LOW decision.)
+    _rh = client.post(f"/api/v1/cca/{_full['cca_id']}/review", json={}).json()
+    assert _rh["decision"] is None and "decision_account" not in _rh, _rh
+    _rf = client.post(f"/api/v1/cca/{_full['cca_id']}/review", json={"override_decision": "approved"}).json()
     assert _rf["decision"] == "approved" and "decision_account" not in _rf, _rf
     assert "decision_account" not in _cc._load_change(_full["cca_id"])
     assert _cc._decision_account({"auto_approval_withheld": "x"}, None, "held_awaiting_admin", "nothing") is None, (
@@ -56257,8 +56279,11 @@ def test_fu794_a_fund_allocation_is_held_until_a_person_approves_it(client, monk
                                                        "description": "a control for the health rule",
                                                        "rationale": "fu794 control"}).json()["cca_id"]
         _created.append(_ctl)
+        #  W802 (FU-982 R3[1]) - an ordinary MEDIUM change is held too now, so the control is the rule's VERDICT on
+        #  it: in this very state the rule would approve it, and the fund's change below is held for its own reason
         _rv = client.post(f"/api/v1/cca/{_ctl}/review", json={}).json()
-        assert _rv["decision"] == "approved" and _rv["decision_source"] == "health_threshold_rule", (
+        assert (_rv["recommendation"] == {"verdict": "approved", "source": "health_threshold_rule"}
+                and _rv["hold_reason"] == "nothing_read_the_change"), (
             "the control did not reach the health rule, so the leg below would prove nothing", _rv)
         #    the fund's change, same state, same call: held, undecided
         _hv = client.post(f"/api/v1/cca/{_cid}/review", json={}).json()
@@ -70966,3 +70991,56 @@ def test_w801_fu982_r3_the_board_the_cascade_and_the_ceo_say_what_happened(clien
         assert "## What the CEO was handed" not in _content801, "a served model's answer was given the floor's recital"
     assert "m.grounding.recited ?" in _code801("apps/workstation-superapp/src/pages/CEOChat.tsx"), (
         "the page's grounding chip does not say what was recited, so it reads 'names 0' beside the names quoted")
+
+
+def test_w802_fu982_r3_1_a_medium_change_nothing_read_waits_for_an_explicit_decision(client, monkeypatch):
+    """W802 (FU-982, ledger v17 R3[1]) - with no model marker, the health rule decided a MEDIUM change from the
+    organism's health alone: nothing read the change, and a request for a review became an approval. Decided on
+    the recommendation: the rule's verdict is a RECOMMENDATION and the change waits for an explicit decision. HIGH
+    keeps its route (a review's approval waits for Board ratification, the Owner's ruling of 2026-09-14) and LOW
+    keeps the rule. The pages say where the decision is made."""
+    import pathlib
+    import re as _re802
+    import uuid as _uuid802
+    from agentic_core.api import change_control as _cc802
+    _w464_serving(monkeypatch, _cc802, review="an assessment with no decision marker")
+    _w464_healthy(monkeypatch, _cc802)
+
+    def _submit802(change_type):
+        return client.post("/api/v1/cca/submit", json={
+            "title": f"W802 {change_type} {_uuid802.uuid4().hex[:6]}", "change_type": change_type,
+            "description": "w802 probe", "rationale": "drives the floor's review of each tier",
+            "affected_systems": ["change_control"]}).json()
+
+    # MEDIUM: held, the rule's verdict a recommendation, nothing decided, nothing implementable
+    _med802 = _submit802("config_major")
+    _rv802 = client.post(f"/api/v1/cca/{_med802['cca_id']}/review", json={}).json()
+    assert _rv802["decision"] is None and _rv802["hold_reason"] == "nothing_read_the_change", _rv802
+    assert _rv802["recommendation"] == {"verdict": "approved", "source": "health_threshold_rule"}, _rv802
+    _rec802 = _cc802._load_change(_med802["cca_id"])
+    assert _rec802["status"] == "under_review" and _rec802["decision_source"] == "held_awaiting_admin", _rec802
+    assert "nothing read this change" in _rec802["review_result"], _rec802["review_result"][:240]
+    assert not [e for e in _rec802["audit_trail"] if e["event"] in ("approved", "rejected")]
+    #    and the explicit decision is what moves it
+    _ok802 = client.post(f"/api/v1/cca/{_med802['cca_id']}/review", json={"override_decision": "approved"}).json()
+    assert _ok802["decision"] == "approved" and _ok802["decision_source"] == "admin_override", _ok802
+
+    # LOW, reviewed rather than auto-approved: the rule still decides it
+    _low802 = client.post("/api/v1/cca/submit", json={
+        "title": f"W802 low {_uuid802.uuid4().hex[:6]}", "change_type": "config_minor",
+        "description": "a low-tier change whose record does not say what it is for"}).json()
+    assert _low802["status"] == "submitted", _low802
+    _lv802 = client.post(f"/api/v1/cca/{_low802['cca_id']}/review", json={}).json()
+    assert _lv802["decision"] == "approved" and _lv802["decision_source"] == "health_threshold_rule", _lv802
+
+    # the module's own list of what the code does, and the pages
+    assert "HELD for an explicit decision (W802, FU-982)" in (_cc802.__doc__ or ""), "the tier list still says the rule decides MEDIUM"
+    _ccp802 = _re802.sub(r"/\*.*?\*/", "", pathlib.Path("apps/workstation-superapp/src/pages/enterprise/ChangeControlAgency.tsx")
+                         .read_text(encoding="utf-8"), flags=_re802.S)
+    assert "' — nothing read this change (no model returned a decision)" in _ccp802, (
+        "the change page does not say why a MEDIUM change is held")
+    assert "|| detail.hold_reason === 'nothing_read_the_change'" in _ccp802, (
+        "the change page tells a held MEDIUM change that an admin's review request decides it, and it does not")
+    _gh802 = pathlib.Path("apps/workstation-superapp/src/pages/governance/GovernanceHub.tsx").read_text(encoding="utf-8")
+    assert "c.hold_reason" in _re802.sub(r"/\*.*?\*/", "", _gh802, flags=_re802.S), (
+        "the Sanctum no longer lists held changes, so a held MEDIUM change has nowhere to be decided")

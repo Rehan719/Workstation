@@ -19394,11 +19394,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W802",
       "note": "",
       "slot_source": "the Owner ruled 2026-10-09 that tier-3 findings get one row per region on the M3 item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Ledger v17 R3. [1] built in W802, decided on the recommendation (Owner instruction 2026-11-10): with no model marker a MEDIUM change is HELD for an explicit decision - nothing read it - with the health rule's verdict recorded as a recommendation, never applied (hold_reason nothing_read_the_change), whoever requested the review; HIGH keeps its route (a review's approval waits for Board ratification, the Owner's ruling of 2026-09-14) and LOW keeps the rule. The Change Control page says why it is held and sends it to the Sovereign Sanctum, which already lists every held change. [3] [6] [9] built in W801: the Board's button says 'Filing the instruction…'; the cascade's appraisal heading follows development_applied; on the floor the AI CEO's stream recites the Owner's latest instruction and the objective titles as stored, counted as recited apart from cited, and its chip says both. [2] [4] [5] [7] [8] need nothing at the surface, per the row. Guards test_w801, test_w802; nine blinds red."
     },
     {
       "id": "FU-983",

@@ -381,8 +381,13 @@ function CCACard({ entry, onReview, onImplement, refreshing, actionError }: {
                   {detail.recommendation?.verdict
                     ? ` (recommendation: ${detail.recommendation.verdict}, from ${detail.recommendation.source === 'model_decision_marker' ? 'the reviewing model' : 'the organism-health rule'})`
                     : ''}
+                  {/* W802 (FU-982 R3[1]) - a MEDIUM change no model decided is held whoever asks for the review */}
+                  {detail.hold_reason === 'nothing_read_the_change'
+                    ? ' — nothing read this change (no model returned a decision), so the rule\u2019s verdict is only a recommendation'
+                    : ''}
                   {/* W463 — a hold that follows a rejection is held again by any review; only an explicit decision moves it */}
                   {detail.impact_tier === 'CRITICAL' || detail.hold_reason === 'follows_rejection_requires_explicit_decision'
+                    || detail.hold_reason === 'nothing_read_the_change'
                     ? ' — decide it in the Governance hub\u2019s Sovereign Sanctum'
                     : ' — a review requested by an admin decides it'}
                 </p>
