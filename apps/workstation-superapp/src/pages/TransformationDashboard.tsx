@@ -167,7 +167,7 @@ export const TransformationDashboard: React.FC = () => {
     try {
       // Ledger cluster 2 — an error body must never reach the orch.validation render (it crashed the page)
       setOrch(await apiJson('/api/v1/transformation/orchestrate', {
-        method: 'POST', body: { scope: 'workstation', owner_id: 'Rehan' } }));
+        method: 'POST', body: { scope: 'workstation' /* W812 (FU-1153): no owner is sent - the server takes the plan's own */ } }));
       loadRuns();
     } catch (e) { setError(errorMessage(e)); }
     setOrchestrating(false);

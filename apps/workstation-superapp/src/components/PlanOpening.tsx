@@ -91,7 +91,8 @@ export const PlanOpening: React.FC<Props> = ({ plan, scope, onSaved, fields = AB
     setSaving(true);
     // only what the owner CHANGED is sent: an untouched template is never re-stamped as the owner's words
     const clear = OPENING.map(([k]) => k).filter(k => !edit[k].trim() && (plan as any)[k]);
-    const body: Record<string, unknown> = { scope, owner: plan.owner ?? 'Rehan', clear };
+    // W812 (FU-1153) - no owner of its own: none is sent, and the server keeps the plan's or the configured one
+    const body: Record<string, unknown> = { scope, ...(plan.owner ? { owner: plan.owner } : {}), clear };
     OPENING.forEach(([k]) => {
       const v = edit[k].trim();
       if (v && v !== (((plan as any)[k] as string) || '')) body[k] = v;

@@ -28,7 +28,7 @@ interface PendingRatification {
   twin_prevalidation?: { verdict?: string; source?: string; source_label?: string } | null;
 }
 interface Status {
-  board: string; represents_owner: string; hierarchy: string[];
+  board: string; represents_owner: string; represents_owner_basis?: string; hierarchy: string[];
   chief: Director; directors: Director[]; live?: { organism_health?: number };
   recent_directives?: any[];
   // W671 (ledger v16 R3.5)
@@ -189,7 +189,8 @@ export const BoardOfDirectors: React.FC = () => {
     try {
       const r = await fetch('/api/v1/board/chief/instruct', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ instruction, owner: status?.represents_owner ?? 'Rehan', cascade_to_ceo: cascade }),
+        // W812 (FU-1153) - no owner is sent: the server records the configured owner and says it was not asked for
+        body: JSON.stringify({ instruction, cascade_to_ceo: cascade }),
       });
       if (!r.ok) { setError(`HTTP ${r.status}`); setRunning(false); return; }
       setResult(await r.json());
@@ -204,7 +205,7 @@ export const BoardOfDirectors: React.FC = () => {
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Board of Directors</h1>
         <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed">
           The apex governance tier — above the AI CEO. Chaired by your <span className="text-highlight">Chief</span>,
-          standing for you ({status?.represents_owner ?? 'the Owner'}) in your presence and absence and directing the
+          standing for you (<span title={status?.represents_owner_basis}>{status?.represents_owner ?? 'the Owner'}</span>) in your presence and absence and directing the
           whole organism on your behalf.
         </p>
         {/* W623 (FU-528, M1 v9 R3.5) — this said "no digital-twin model… Mode 2 is planned" while the same page labelled

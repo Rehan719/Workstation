@@ -160,7 +160,7 @@ export const VSBSpawnStudio: React.FC = () => {
   const orchestrateVsb = async (vsbId: string) => {
     setOrchBusy(vsbId);
     try {
-      const r = await axios.post('/api/v1/transformation/orchestrate', { scope: vsbId, owner_id: 'Rehan' });
+      const r = await axios.post('/api/v1/transformation/orchestrate', { scope: vsbId /* W812 (FU-1153): no owner is sent - the server takes the entity plan's own */ });
       setOrch(prev => ({ ...prev, [vsbId]: r.data }));
     } catch (e: any) { setError(`Orchestration failed — ${e?.response?.status ? `HTTP ${e.response.status}` : 'backend unreachable'}`); }   // W329
     setOrchBusy(null);

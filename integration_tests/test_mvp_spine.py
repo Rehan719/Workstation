@@ -71402,3 +71402,96 @@ def test_w811_fu924_every_one_round_probe_says_on_its_first_line_that_it_is_hist
         assert "HISTORY (W811" not in _src, "the one live file behind an underscore was marked as history"
         assert any("_session_measured.py" in (_root811 / s).read_text(encoding="utf-8")
                    for s in ("scripts/night_sim.py", "scripts/session_forecast.py")), "nothing imports it any more"
+
+
+def test_w812_plans_chief_instructions_transformations_and_the_apex_board_take_the_configured_owner(client, monkeypatch):
+    """FU-1153 (W812). Driven with sign-in off and the owner configured to a value this test computes: a business
+    plan with no record is owned by the configured owner; a plan set by a request naming an owner takes it, and a
+    later request naming none leaves it (an existing plan's owner is never rewritten); a Chief instruction naming no
+    owner is recorded under the configured owner, with how that was decided and that none was asked for, while one
+    naming an owner keeps it; a transformation run naming no owner is chartered under the plan's own owner; and the
+    apex board names the configured owner as the one it represents - on its status, its charter and the ratifying
+    board. Unconfigured, each carries the configuration's role word. None of the four pages that sent a first name
+    sends an owner literal, or falls back to one."""
+    import pathlib as _pl
+    import re as _re
+    import uuid as _uuid
+    from agentic_core import config as _cfg
+    from agentic_core.api import board as _bd
+    from agentic_core.api import business_plan as _bp
+
+    monkeypatch.delenv("AUTH_ENABLED", raising=False)
+    me = f"w812-owner-{_uuid.uuid4().hex[:8]}"
+    monkeypatch.setenv(_cfg.SINGLE_USER_OWNER_ENV, me)
+    tag = _uuid.uuid4().hex[:8]
+    fresh, own, earlier = f"vsb:w812-fresh-{tag}", f"vsb:w812-own-{tag}", f"w812-earlier-{tag}"
+
+    # (1) A PLAN WITH NO RECORD belongs to the configured owner
+    g = client.get("/api/v1/business-plan", params={"scope": fresh})
+    assert g.status_code == 200, g.text[:300]
+    assert g.json().get("owner") == me, ("a plan with no record is not owned by the configured owner",
+                                         g.json().get("owner"))
+
+    # (2) A REQUEST NAMING NO OWNER on that plan records the configured owner, and says the request named none
+    s = client.post("/api/v1/business-plan/set", json={"scope": fresh, "vision": "W812 a vision, no owner named"})
+    assert s.status_code == 200, s.text[:300]
+    p = _bp._load(fresh)
+    assert p.get("owner") == me, ("a plan set with no owner named was recorded under", p.get("owner"))
+    assert "named no owner" in str(p.get("owner_source") or ""), p.get("owner_source")
+
+    # (3) A REQUEST NAMING AN OWNER keeps it, and a later request naming none never rewrites it
+    a = client.post("/api/v1/business-plan/set", json={"scope": own, "owner": earlier, "vision": "W812 named"})
+    assert a.status_code == 200, a.text[:300]
+    assert _bp._load(own).get("owner") == earlier, _bp._load(own).get("owner")
+    b = client.post("/api/v1/business-plan/set", json={"scope": own, "mission": "W812 a later edit, no owner named"})
+    assert b.status_code == 200, b.text[:300]
+    assert _bp._load(own).get("owner") == earlier, ("a request naming no owner rewrote the plan's owner",
+                                                     _bp._load(own).get("owner"))
+
+    # (4) A CHIEF INSTRUCTION naming no owner is recorded under the configured owner, says how, and that none was
+    #     asked for; one naming an owner keeps it
+    c = client.post("/api/v1/board/chief/instruct", json={"instruction": "W812 probe, no owner named",
+                                                          "scope": fresh, "cascade_to_ceo": False})
+    assert c.status_code == 200, c.text[:300]
+    cr = c.json()
+    assert cr.get("owner") == me, ("a Chief instruction naming no owner was recorded under", cr.get("owner"))
+    assert cr.get("owner_as_requested") is None, ("the record says an owner was asked for", cr.get("owner_as_requested"))
+    assert _cfg.single_user_owner()["basis"] in str(cr.get("owner_source") or ""), cr.get("owner_source")
+    n = client.post("/api/v1/board/chief/instruct", json={"instruction": "W812 probe, an owner named",
+                                                          "owner": earlier, "scope": own, "cascade_to_ceo": False})
+    assert n.status_code == 200, n.text[:300]
+    assert n.json().get("owner") == earlier and n.json().get("owner_as_requested") == earlier, (
+        "a Chief instruction naming an owner did not keep it", n.json().get("owner"))
+
+    # (5) A TRANSFORMATION RUN naming no owner is chartered under the plan's own owner
+    for scope, who in ((own, earlier), (fresh, me)):
+        t = client.post("/api/v1/transformation/orchestrate", json={"objective": "W812 probe", "scope": scope})
+        assert t.status_code == 200, t.text[:300]
+        chief = str((((t.json().get("cascade") or [{}])[0]).get("output") or {}).get("chief") or "")
+        assert who in chief, (f"a transformation of {scope} naming no owner was chartered as", chief[:200])
+
+    # (6) THE APEX BOARD names the configured owner it represents, and where that came from
+    st = client.get("/api/v1/board/status").json()
+    assert st.get("represents_owner") == me, st.get("represents_owner")
+    assert st.get("represents_owner_basis") == _cfg.single_user_owner()["basis"], st.get("represents_owner_basis")
+    assert (client.get("/api/v1/board/charter").json().get("owner") or {}).get("name") == me
+    assert _bd._ratifying_board(None)["represents_owner"] == me, _bd._ratifying_board(None)
+
+    # (7) UNCONFIGURED, each carries the configuration's role word - never a name
+    monkeypatch.delenv(_cfg.SINGLE_USER_OWNER_ENV, raising=False)
+    role = _cfg.SINGLE_USER_OWNER_ROLE
+    assert client.get("/api/v1/business-plan", params={"scope": f"vsb:w812-unset-{tag}"}).json().get("owner") == role
+    assert client.get("/api/v1/board/status").json().get("represents_owner") == role
+    assert (client.get("/api/v1/board/charter").json().get("owner") or {}).get("name") == role
+    assert _bd._ratifying_board(None)["represents_owner"] == role
+
+    # (8) THE PAGES send no owner literal, and fall back to none (comments are stripped before reading). The old
+    #     single-user label is not a name: the server reads it as no owner named (W753), and the retired spawn
+    #     handler that no control calls still sends it, so it alone is allowed.
+    src = _pl.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+    _not_label = f"(?!{_re.escape(_cfg.SINGLE_USER_LABEL)}['\"`])"
+    for rel in ("components/PlanOpening.tsx", "pages/enterprise/BoardOfDirectors.tsx",
+                "pages/enterprise/VSBSpawnStudio.tsx", "pages/TransformationDashboard.tsx"):
+        code = _code_only((src / rel).read_bytes().decode("utf-8"))
+        assert not _re.search(r"\bowner(?:_id)?\s*:\s*['\"`]" + _not_label, code), f"{rel} sends an owner literal"
+        assert not _re.search(r"\bowner(?:_id)?\s*:\s*[^,}\n]*\?\?\s*['\"`]", code), f"{rel} falls back to an owner literal"

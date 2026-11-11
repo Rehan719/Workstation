@@ -47,8 +47,9 @@ router = APIRouter(prefix="/api/v1/board", tags=["board-of-directors"])
 _STORE = data_path("board_directives.json")
 
 # The Owner this top-level board represents. (Per-VSB boards carry their own owner.)
+#  W812 (FU-1153) - the record carries no name: WHO the board represents is the configured single-user owner, read
+#  when asked (_apex_owner), never a first name written in the code.
 _OWNER = {
-    "name": "Rehan",
     "role": "Founder / Owner / Curator",
     "vision_summary": (
         "Workstation IDBO AI-mediates working for any user in any realm/domain — taking a "
@@ -457,6 +458,13 @@ def board_for_owner(owner_name: str, vision_summary: str = "", domain: str = "")
     }
 
 
+def _apex_owner() -> Dict[str, Any]:
+    """W812 (FU-1153) - the owner the top-level board represents, and where that came from: the configured
+    single-user owner (config.single_user_owner - WORKSTATION_OWNER_ID, else the role word), read when asked."""
+    from agentic_core.config import single_user_owner as _suo812
+    return _suo812()
+
+
 @router.get("/status")
 async def board_status(scope: str = "workstation"):
     """§14 (W300) — the apex-governance READ side is scope-aware: scope='workstation' returns the
@@ -480,6 +488,10 @@ async def board_status(scope: str = "workstation"):
             "board": f"{vsb.get('name', scope)} — Board of Directors",
             "scope": scope,
             "represents_owner": vsb.get("owner_id") or board.get("chief", {}).get("represents") or "the founder",
+            #  W812 (FU-1153) - where that came from, as the apex board says it
+            "represents_owner_basis": ("the entity record's owner" if vsb.get("owner_id") else
+                                       "the entity board's Chief record" if board.get("chief", {}).get("represents")
+                                       else "no owner is recorded for this entity, so the founder's role is named"),
             "hierarchy": ["Founder", "Chief (the founder's charter)", "Board of Directors",
                           "AI CEO", "C-Suite", "CoE", "BTO", "Operational Delivery"],
             "chief": board.get("chief"),
@@ -487,10 +499,12 @@ async def board_status(scope: str = "workstation"):
             "live": snapshot,
             **_recent_with_owner([r for r in _load() if r.get("business_plan_scope") == scope]),
         }
+    _apex812 = _apex_owner()
     return {
         "board": "Workstation IDBO Board of Directors",
         "scope": "workstation",
-        "represents_owner": _OWNER["name"],
+        "represents_owner": _apex812["owner_id"],
+        "represents_owner_basis": _apex812["basis"],      # W812 (FU-1153)
         "hierarchy": ["Owner", "Chief (the Owner's charter)", "Board of Directors",
                       "AI CEO", "C-Suite", "CoE", "BTO", "Operational Delivery"],
         "chief": _BOARD[0],
@@ -707,7 +721,7 @@ async def chief_model(scope: "str | None" = None, owner: "str | None" = None):
 @router.get("/charter")
 async def board_charter():
     return {
-        "owner": _OWNER,
+        "owner": {**_OWNER, "name": _apex_owner()["owner_id"], "name_basis": _apex_owner()["basis"]},   # W812
         "board": _BOARD,
         "arms_length_agency": (
             "The AI CEO and below cannot instruct the board or mutate the genome directly. "
@@ -733,7 +747,7 @@ def _ratifying_board(vsb_id: str | None) -> Dict[str, Any]:
     """
     if not vsb_id:
         return {"scope": "workstation", "tier": "apex",
-                "represents_owner": _OWNER["name"], "vsb_id": None}
+                "represents_owner": _apex_owner()["owner_id"], "vsb_id": None}     # W812 (FU-1153)
     owner = vsb_id
     try:
         from agentic_core.economy.living_vsbs import _load as _vsb_roster
@@ -801,7 +815,7 @@ async def decide_ratification(cca_id: str, req: RatificationDecision,
 class ChiefInstruction(BaseModel):
     model_config = STRICT   # W628 (FU-398): an undeclared field here is a lost instruction - see _strict_models
     instruction: str
-    owner: str = "Rehan"
+    owner: str = ""                  # W812 (FU-1153) - none named: the configured single-user owner
     cascade_to_ceo: bool = True
     scope: str = "workstation"   # which living business plan receives the objectives (e.g. a vsb_id)
     # P3.4 (W587) — WHOSE WORDS THE INSTRUCTION IS. The twin can issue a directive unprompted from the
@@ -820,6 +834,13 @@ async def chief_instruct(req: ChiefInstruction, user: dict | None = Depends(get_
     faithfully (representing the Owner), issues a board-level directive, and delegates a
     timelined/resourced action plan to the AI CEO.
     """
+    #  W812 (FU-1153) - THE OWNER IS THE CONFIGURED ONE when the request names none, never a name in the code. What
+    #  was asked is kept apart, so the record can say which it was.
+    from agentic_core.config import single_user_owner as _suo812
+    _asked812 = req.owner
+    _cfg812 = _suo812()
+    if not req.owner:
+        req.owner = _cfg812["owner_id"]
     directive_id = f"dir-{uuid.uuid4().hex[:8]}"
     provenance: Dict[str, Any] = {"posture": "in-house-first", "served_by": {}, "any_external": False, **_reply_evidence()}
 
@@ -959,8 +980,9 @@ async def chief_instruct(req: ChiefInstruction, user: dict | None = Depends(get_
         "owner": _owner,
         "owner_source": ("the authenticated principal (a client-supplied owner is not trusted while auth "
                          "is enabled)" if auth_enabled() else
-                         "the caller's own label \u2014 single-user mode has no principal to stamp"),
-        "owner_as_requested": req.owner,
+                         "the caller's own label \u2014 single-user mode has no principal to stamp" if _asked812 else
+                         _cfg812["basis"] + " (the request named no owner)"),
+        "owner_as_requested": _asked812 or None,
         "instruction": req.instruction,
         # P3.4 (W587) — stamped so the founder model can tell the Owner's own words from the twin's
         # restatement of them. A row without this field predates the unprompted path and is the Owner's.

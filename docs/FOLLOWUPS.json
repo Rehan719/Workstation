@@ -22910,11 +22910,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W812",
       "note": "",
       "slot_source": "found in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Business plans, Chief instructions and transformation runs take the configured single-user owner (config.single_user_owner) when the request names none, and the apex Board names that owner as the one it represents (status, charter, ratifying board) with represents_owner_basis; its owner record carries no name. A request naming an owner keeps it; a plan's own owner is never rewritten by a request naming none; a transformation is chartered under the plan's own owner. The four pages send no owner of their own (the retired spawn handler, which no control calls, still sends the old label, read as none since W753). The money records' typed defaults are FU-887's. Guard test_w812, 17 blinds red."
     },
     {
       "id": "FU-1154",
