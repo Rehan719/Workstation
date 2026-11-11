@@ -231,6 +231,10 @@ def coverage(regions, census):
 
 def main(src, dst, head, date, port="8024", version="3", round_name="W446", census=None):
     regions = json.load(open(src, encoding="utf-8"))
+    #  W809 (FU-1154) - a ledger of no region is not a ledger with no finding
+    if not regions:
+        raise SystemExit(f"REFUSING TO WRITE: examined nothing - {src} holds no region, so there is no ledger to "
+                         f"render.")
     by_key = {r["region"]: r for r in regions}
     ver = int(version)
     #  W639 (FU-602) — FROM v14 A RUN STATES ITS COVERAGE OR IS NOT WRITTEN. The Owner's stopping rule counts a

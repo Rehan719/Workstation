@@ -124,6 +124,10 @@ UNSAFE_OUTPUT = [
 
 
 def _table(name, rows, fn):
+    #  W809 (FU-1154) - a table of no phrasing measures no screen; "0/0 as intended" would read as a pass
+    if not rows:
+        raise SystemExit(f"REFUSING: examined nothing - the {name} table has no phrasing to drive, so no screen was "
+                         f"measured.")
     print()
     print(f"=== {name} " + "=" * max(0, 72 - len(name)))
     missed, noise, ok = [], [], 0

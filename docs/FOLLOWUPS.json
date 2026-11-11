@@ -22919,11 +22919,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W809",
       "note": "",
       "tier": 3,
-      "slot_source": "rides FU-1145 (W777), the P3.30 census row it was split from"
+      "slot_source": "rides FU-1145 (W777), the P3.30 census row it was split from",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "All twelve instruments that report on a set now refuse when they examined nothing (FU-671's rule), six in W808 and six in W809, and test_w749's pending set is empty: privacy_check (a whole-tree scan of no file; the hook allows a commit that stages no content and says nothing was scanned), truth_sweep_inventory, row_components (a register with no row; an all-closed register still reports), coupling, audit_surface_census, auth_perimeter, pass_set_diff (it already refused; its basis now says so in the census's words), readme_figures (before --fix could write zeros), render_fidelity_ledger, screen_phrasings, prune_test_entities (no store, or a store with no readable record) and quarantine_test_entities. test_w808 and test_w809 drive each refusal; fourteen blinds red."
     },
     {
       "id": "FU-1155",

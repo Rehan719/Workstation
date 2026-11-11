@@ -126,6 +126,11 @@ def stated() -> dict:
 
 def main() -> int:
     m, s = measured(), stated()
+    #  W809 (FU-1154) - a measurement of no operation and no route is a reading of nothing, and --fix would write it
+    if not m["ops"] and not m["routes"]:
+        print("REFUSING: examined nothing - the app mounted no API operation and App.tsx declared no route, so "
+              "there are no figures to check or to write.")
+        return 1
     print(f"MEASURED  api: {m['ops']} operations over {m['paths']} distinct paths")
     print(f"          frontend: {m['routes']} routes ({m['route_paths']} distinct paths) in App.tsx")
     print(f"          files defining routes: {', '.join(m['route_files']) or 'none'}")

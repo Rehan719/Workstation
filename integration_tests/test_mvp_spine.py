@@ -69354,7 +69354,11 @@ def test_w749_an_instrument_that_examined_nothing_refuses_and_reads_what_it_name
                     "scripts/reach_audit.py", "scripts/browser_smoke.mjs",
                     #  W808 (FU-1154) - six that gained their refusal
                     "scripts/audit_surface_census.py", "scripts/auth_perimeter.py", "scripts/coupling.py",
-                    "scripts/privacy_check.py", "scripts/row_components.py", "scripts/truth_sweep_inventory.py"]
+                    "scripts/privacy_check.py", "scripts/row_components.py", "scripts/truth_sweep_inventory.py",
+                    #  W809 (FU-1154) - the other six
+                    "scripts/pass_set_diff.py", "scripts/readme_figures.py", "scripts/render_fidelity_ledger.py",
+                    "scripts/screen_phrasings.py", "scripts/prune_test_entities.py",
+                    "scripts/quarantine_test_entities.py"]
 
     def _emitted(src):
         """The strings a module can print or return - its docstrings left out, since a docstring saying the tool
@@ -69377,12 +69381,9 @@ def test_w749_an_instrument_that_examined_nothing_refuses_and_reads_what_it_name
     #  W777 (FU-1145) - THE CENSUS IS NOT TYPED SHUT. Every tracked script is classified here: an instrument in the
     #  census above, an instrument whose refusal is not yet built (each named, and registered), or not an
     #  instrument (with what it is). A script added later is in none of them, and this fails until it is placed.
-    _pending_refusal = {   # instruments that report on a set and carry no refusal for an empty one yet (FU-1154)
-        #  W808 - audit_surface_census, auth_perimeter, coupling, privacy_check, row_components and
-        #  truth_sweep_inventory gained theirs and moved to the census list
-        "scripts/pass_set_diff.py", "scripts/readme_figures.py",
-        "scripts/render_fidelity_ledger.py", "scripts/screen_phrasings.py",
-        "scripts/prune_test_entities.py", "scripts/quarantine_test_entities.py"}
+    #  instruments that report on a set and carry no refusal for an empty one yet - NONE since W809 (FU-1154): W808
+    #  gave six theirs and W809 the other six. A new one is placed here, and registered, until it gains one.
+    _pending_refusal: set = set()
     _not_instruments = {
         "scripts/boot_audit_backend.py": "boots a backend", "scripts/boot_signin_check_backend.py": "boots a backend",
         "scripts/run_auth_backend.py": "boots a backend", "scripts/init_data.py": "seeds a data store",
@@ -71271,3 +71272,63 @@ def test_w808_fu1154_six_instruments_refuse_when_they_examined_nothing(tmp_path,
     _ts = subprocess.run([_sys808.executable, str(tmp_path / "scripts/truth_sweep_inventory.py")],
                          capture_output=True, text=True, cwd=str(tmp_path))
     assert _ts.returncode == 1 and "examined nothing" in _ts.stderr, (_ts.returncode, _ts.stdout[-200:], _ts.stderr[-300:])
+
+
+def test_w809_fu1154_the_other_six_instruments_refuse_when_they_examined_nothing(tmp_path, monkeypatch, capsys):
+    """W809 (FU-1154, the other six), each DRIVEN over an empty set. readme_figures must refuse before --fix could
+    write zeros into the README; the pruning tools must not report '0 test entities' over a store they never read."""
+    import importlib.util as _ilu
+    import json as _json809
+    import pathlib
+    import pytest as _pt809
+    _root809 = pathlib.Path(__file__).resolve().parents[1]
+
+    def _load809(rel, name):
+        _spec = _ilu.spec_from_file_location(name, str(_root809 / rel))
+        _m = _ilu.module_from_spec(_spec)
+        _spec.loader.exec_module(_m)
+        return _m
+
+    _ps = _load809("scripts/pass_set_diff.py", "_ps809")
+    _a, _b = tmp_path / "a.xml", tmp_path / "b.xml"
+    for _f in (_a, _b):
+        _f.write_text('<?xml version="1.0"?><testsuites><testsuite tests="0"></testsuite></testsuites>', encoding="utf-8")
+    _cmp = _ps.compare(str(_a), str(_b))
+    assert _cmp["verdict"] != _ps.SAME and "examined nothing" in _cmp["basis"], _cmp
+
+    _rf = _load809("scripts/readme_figures.py", "_rf809")
+    monkeypatch.setattr(_rf, "measured", lambda: {"ops": 0, "paths": 0, "routes": 0, "route_paths": 0, "route_files": []})
+    #  a COPY of the README, so that no mutation of the script under test can write the real one
+    _readme809 = tmp_path / "README.md"
+    _readme809.write_bytes((_root809 / "README.md").read_bytes())
+    monkeypatch.setattr(_rf, "README", str(_readme809))
+    _readme_before = _readme809.read_bytes()
+    monkeypatch.setattr(_rf.sys, "argv", ["readme_figures.py", "--fix"])
+    assert _rf.main() == 1 and "examined nothing" in capsys.readouterr().out
+    assert _readme809.read_bytes() == _readme_before, "--fix wrote figures from a measurement of nothing"
+
+    _rl = _load809("scripts/render_fidelity_ledger.py", "_rl809")
+    (_src := tmp_path / "regions.json").write_text("[]", encoding="utf-8")
+    with _pt809.raises(SystemExit) as _e:
+        _rl.main(str(_src), str(tmp_path / "out.md"), "deadbeef", "2026-11-11")
+    assert "examined nothing" in str(_e.value) and not (tmp_path / "out.md").exists()
+
+    _sp = _load809("scripts/screen_phrasings.py", "_sp809")
+    with _pt809.raises(SystemExit) as _e2:
+        _sp._table("an empty table", [], lambda t: True)
+    assert "examined nothing" in str(_e2.value)
+
+    _pr = _load809("scripts/prune_test_entities.py", "_pr809")
+    monkeypatch.setattr(_pr, "data_path", lambda name: str(tmp_path / "no-such-store"))
+    monkeypatch.setattr(_pr.sys, "argv", ["prune_test_entities.py"])
+    _o1 = (_pr.main(), capsys.readouterr().out)
+    assert _o1[0] == 1 and "examined nothing - there is no entity store at" in _o1[1], _o1
+    (tmp_path / "empty-store").mkdir()
+    monkeypatch.setattr(_pr, "data_path", lambda name: str(tmp_path / "empty-store"))
+    _o2 = (_pr.main(), capsys.readouterr().out)
+    assert _o2[0] == 1 and "holds no entity record that could be read" in _o2[1], _o2
+
+    _qt = _load809("scripts/quarantine_test_entities.py", "_qt809")
+    monkeypatch.setattr(_qt, "plan", lambda root: {"counts": {"entities": 0}, "skipped": []})
+    monkeypatch.setattr(_qt.sys, "argv", ["quarantine_test_entities.py"])
+    assert _qt.main() == 1 and "examined nothing" in capsys.readouterr().out
