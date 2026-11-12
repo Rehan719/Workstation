@@ -162,6 +162,20 @@ def served_identity_of(served_by: str | None) -> dict:
                 "basis": f"which model answered could not be read ({type(_e).__name__})"}
 
 
+def _external_budget_allows(provider: str) -> bool:
+    """W869 (FU-1128) - THE HOURLY EXTERNAL CAP, ON A STREAM AS ON A QUERY. The orchestrator's sliding-hour cap
+    (EXTERNAL_MAX_CALLS_PER_HOUR) was taken only by its own _run_model, so a stream served externally was bounded
+    by GATEWAY_RPM alone. Each external stream now takes the same check, in the same window, under the provider
+    name the orchestrator uses. A refusal is a skip: the next provider or the floor serves, and nothing is
+    recorded against the provider, because it did not fail."""
+    from agentic_core.ai.native.orchestrator import ResourceSkipped, orchestrator as _orc869
+    try:
+        _orc869._external_budget_check(provider)
+        return True
+    except ResourceSkipped:
+        return False                             # W869 - refused by the cap: a skip, not a failure
+
+
 class _RateLimiter:
     """Token-bucket rate limiter — prevents runaway API spend."""
 
@@ -215,7 +229,8 @@ class ModelGateway:
          breaker is open;
       2. the external accelerants, ONLY when AI_ALLOW_EXTERNAL=true, a key is set AND the caller asks
          (prefer_external) - W755 (FU-1124, Owner ruling 2026-11-06, option (a)): the in-house-first order,
-         as a query has it (Anthropic, then OpenAI; outside the orchestrator's hourly external cap, W335);
+         as a query has it (Anthropic, then OpenAI; each inside the orchestrator's hourly external cap, W335,
+         as a query's external call is - W869, FU-1128);
       3. the native floor, chunked - the guaranteed terminal.
 
     With AI_ALLOW_EXTERNAL off (the default) neither path reaches an external provider. With it on, NEITHER
@@ -751,7 +766,7 @@ class ModelGateway:
         #     before the floor; a caller must also ask (prefer_external), as an orchestrator caller does. With no
         #     ask, the floor answers, exactly as a gateway query does.
         if os.getenv("AI_ALLOW_EXTERNAL", "false").lower() == "true" and prefer_external:
-            if self.anthropic_key and not self_healer.is_open("claude"):
+            if self.anthropic_key and not self_healer.is_open("claude") and _external_budget_allows("anthropic"):
                 _t0 = time.time()
                 try:
                     import anthropic
@@ -775,7 +790,7 @@ class ModelGateway:
                 except Exception:
                     self_healer.record_failure("claude")
                     _record("claude", True, _t0, False)
-            if self.openai_key and not self_healer.is_open("openai"):
+            if self.openai_key and not self_healer.is_open("openai") and _external_budget_allows("openai"):
                 _t0 = time.time()
                 try:
                     from openai import AsyncOpenAI

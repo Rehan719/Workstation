@@ -22530,11 +22530,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P4.3",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W869",
       "note": "",
       "slot_source": "latent until the external switch is flipped; P4.3 owns the accelerants and must close it before the flip",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built as the row names: before each external stream (Anthropic, then OpenAI) the gateway takes the orchestrator's own _external_budget_check, in the same sliding-hour window and under the provider names the orchestrator uses; a refusal is a skip (the provider is not called, nothing is recorded against it, the next provider or the floor serves); the class docstring's 'outside the orchestrator's hourly external cap' clause is replaced. Driven with the switch on in the test process only, with placeholder keys and fake clients: for each provider a stream inside the cap is served externally and counted, and one past it is not attempted. AI_ALLOW_EXTERNAL itself is untouched."
     },
     {
       "id": "FU-1129",

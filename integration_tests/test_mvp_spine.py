@@ -74729,3 +74729,104 @@ def test_w868_a_route_called_from_code_reads_no_person_from_its_default_and_both
     dl = client.post(f"/api/v1/economy/contracts/{cid}/deliver", headers=H)
     assert dl.status_code == 200 and dl.json().get("status") == "delivered", dl.text[:300]
     assert (dl.json().get("delivery") or {}).get("run_id"), "the delivery ran no cascade"
+
+
+def test_w869_a_stream_served_externally_counts_against_the_hourly_external_cap(client, monkeypatch):
+    """FU-1128 (W869). The orchestrator's sliding-hour cap on external calls was taken only by its own _run_model, so a
+    stream served by an external accelerant was bounded by GATEWAY_RPM alone. Driven with the switch on IN THIS
+    PROCESS ONLY, placeholder keys and fake clients, so no network call is made. Each external stream, Anthropic's
+    and OpenAI's, now takes the same check in the same window: a stream inside the cap is served externally and
+    counted; one past it is not attempted, nothing is recorded against the provider, and the floor serves. The class
+    docstring no longer says the stream is outside the cap."""
+    import asyncio as _aio869
+    import sys
+    import time
+    import types
+    from agentic_core.ai import gateway as _g869
+    import importlib
+    #  the MODULE: the package re-exports the orchestrator OBJECT under the same name (W734's note)
+    _o869 = importlib.import_module("agentic_core.ai.native.orchestrator")
+    from agentic_core.organism.self_healing import self_healer as _sh869
+    calls = []
+
+    class _Stream:
+        def __init__(self, **kw):
+            calls.append("anthropic")
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *exc):
+            return False
+
+        @property
+        def text_stream(self):
+            async def _gen():
+                for t in ("w869 ", "external ", "reply."):
+                    yield t
+            return _gen()
+
+    class _Anthropic:
+        def __init__(self, api_key=None, **_k):
+            self.messages = types.SimpleNamespace(stream=lambda **kw: _Stream(**kw))
+
+    class _Chunk:
+        def __init__(self, t):
+            self.choices = [types.SimpleNamespace(delta=types.SimpleNamespace(content=t))]
+
+    class _Completions:
+        async def create(self, **kw):
+            calls.append("openai")
+
+            async def _gen():
+                for t in ("w869 ", "openai ", "reply."):
+                    yield _Chunk(t)
+            return _gen()
+
+    class _OpenAI:
+        def __init__(self, api_key=None, **_k):
+            self.chat = types.SimpleNamespace(completions=_Completions())
+    fa, fo = types.ModuleType("anthropic"), types.ModuleType("openai")
+    fa.AsyncAnthropic, fo.AsyncOpenAI = _Anthropic, _OpenAI
+    monkeypatch.setitem(sys.modules, "anthropic", fa)
+    monkeypatch.setitem(sys.modules, "openai", fo)
+    monkeypatch.setenv("AI_ALLOW_EXTERNAL", "true")
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "1")
+    monkeypatch.setenv("EXTERNAL_MAX_CALLS_PER_HOUR", "2")
+    monkeypatch.setattr(_g869.gateway._rate_limiter, "_lock", _aio869.Lock())
+    monkeypatch.setattr(_o869.NativeOrchestrator, "_external_calls", [])
+    for p in ("claude", "openai"):
+        if _sh869.is_open(p):
+            _sh869.record_success(p)
+
+    def stream():
+        async def _go():
+            return [ev async for ev in _g869.gateway.stream_meta("w869: name one risk", agent="w869", prefer_external=True)]
+        return _aio869.run(_go())[-1]
+
+    def circuit(p):
+        c = _sh869._circuits[p]
+        return (c.total_calls, c.total_failures)
+
+    for provider, served, key_attr, other_attr in (("anthropic", "claude", "anthropic_key", "openai_key"),
+                                                   ("openai", "openai", "openai_key", "anthropic_key")):
+        monkeypatch.setattr(_g869.gateway, key_attr, "w869-placeholder-not-a-key")
+        monkeypatch.setattr(_g869.gateway, other_attr, None)
+        calls.clear()
+        _o869.NativeOrchestrator._external_calls = []
+        #  1. inside the cap: served externally, and counted in the orchestrator's own window
+        done = stream()
+        assert done.get("served_by") == served and done.get("is_external") is True, (provider, done)
+        assert calls == [provider], (provider, calls)
+        assert len(_o869.NativeOrchestrator._external_calls) == 1, (provider, "the external stream was not counted")
+        #  2. the window full: not attempted, nothing recorded against the provider, and the floor serves
+        _o869.NativeOrchestrator._external_calls = [time.time()] * 2
+        before = circuit(served)
+        done = stream()
+        assert done.get("is_external") is False and done.get("served_by") != served, (provider, done)
+        assert calls == [provider], (provider, "a stream past the hourly cap still called the provider", calls)
+        assert circuit(served) == before, (provider, "a refusal by the cap was recorded against the provider")
+
+    #  3. the class docstring says the stream is inside the cap
+    doc = " ".join((_g869.ModelGateway.__doc__ or "").split())
+    assert "outside the orchestrator's hourly external cap" not in doc and "inside the orchestrator's hourly external cap" in doc
