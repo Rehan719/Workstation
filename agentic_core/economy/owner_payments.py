@@ -151,8 +151,9 @@ def _registry_check(stored: Any) -> Dict[str, Any]:
                 "owner_registry_basis": "the recorded owner is the one the living registry records"}
     return {"registry_owner": reg["owner"], "owner_matches_registry": False,
             "owner_registry_basis": (f"the living registry records {reg['owner']!r} for this entity, and this "
-                                     f"account was opened under {rec or 'no owner'!r}. It is not rewritten: a "
-                                     f"payout is for the recorded owner (Owner ruling 2026-10-12, R1)")}
+                                     f"account was opened under {rec or 'no owner'!r}. That name is not "
+                                     f"rewritten and is kept as history: a payout is for {reg['owner']!r}, the "
+                                     f"owner the entity's record names (Owner ruling 2026-10-12, amended)")}
 
 
 #  OWNER RULINGS 2026-10-12 (R3) - THE HISTORY IS CUT, AND NOW SAYS SO. An account keeps its last
@@ -211,24 +212,34 @@ def _history(a: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def payee_of(a: Any) -> Dict[str, Any]:
-    """OWNER RULING 2026-10-12 (R1) - WHO A PAYOUT IS FOR: the owner RECORDED ON THE ACCOUNT, never a name a
-    request supplies (a typed name can only be wrong). `a` is the stored account, or None when none exists.
-    An account with no owner recorded is said to have none; no name is invented for it."""
+    """OWNER RULING 2026-10-12, AMENDED THE SAME DAY (FU-1007, W860) - WHO A PAYOUT IS FOR: the owner the ENTITY'S
+    RECORD in the living registry names - never a name a request supplies, and no longer the name stored on the
+    account, which was whatever its first accrual passed and is kept as history (`account_name`). An account whose
+    entity has no owner record has no payee, and none is invented; nor does an unreadable registry name one.
+    `a` is the stored account, or None when none exists. `payee_recorded` is true only when a payee is named."""
     if not isinstance(a, dict):
-        return {"payee": None, "payee_recorded": False,
-                "payee_basis": ("no account exists for this id - nothing has accrued to it, so no owner is "
-                                "recorded and there is nothing to pay")}
-    owner = a.get("owner")
-    owner = owner.strip() if isinstance(owner, str) else ""
-    if not owner:
-        return {"payee": None, "payee_recorded": False,
-                "payee_basis": ("the account records no owner: a payout reduces its balance and names no payee, "
-                                "because no name is invented for it")}
-    #  W813 (FU-887) - and where that name came from, when the account recorded it
+        return {"payee": None, "payee_recorded": False, "account_name": None,
+                "payee_basis": ("no account exists for this id - nothing has accrued to it, so there is nothing "
+                                "to pay")}
+    stored = a.get("owner").strip() if isinstance(a.get("owner"), str) else ""
     _how = a.get("owner_source_basis") if isinstance(a.get("owner_source_basis"), str) else ""
-    return {"payee": owner, "payee_recorded": True,
-            "payee_basis": ("the account's recorded owner - the name stored on the account when it first "
-                            "accrued, not a name this request supplied" + (f" ({_how})" if _how else ""))}
+    _hist = (f"; the account's own name, {stored!r}" + (f" ({_how})" if _how else "")
+             + ", is kept as history and is not the payee") if stored else ""
+    reg = _registry_owner(a.get("vsb_id") or "")
+    if reg["unreadable"]:
+        return {"payee": None, "payee_recorded": False, "account_name": stored or None,
+                "payee_basis": (f"the living registry could not be read ({reg['unreadable']}), so the entity's "
+                                f"owner record, which names the payee, was not read and no payee is named" + _hist)}
+    if not reg["owner"]:
+        return {"payee": None, "payee_recorded": False, "account_name": stored or None,
+                "payee_basis": ("this entity has no owner record in the living registry, so the account has no "
+                                "payee and none is invented (Owner ruling 2026-10-12, amended)" + _hist)}
+    return {"payee": reg["owner"], "payee_recorded": True, "account_name": stored or None,
+            "payee_basis": ("the entity's owner record in the living registry (Owner ruling 2026-10-12, amended), "
+                            "not a name this request supplied"
+                            + (_hist.replace(", is kept as history and is not the payee",
+                                             ", differs and is kept as history")
+                               if stored and stored != reg["owner"] else ""))}
 
 
 def _pending_read() -> list:
@@ -395,6 +406,8 @@ def status(vsb_id: str) -> Dict[str, Any]:
         "vsb_id": vsb_id, "owner": who["payee"], "currency": "WST",
         "account_exists": stored is not None, "owner_recorded": who["payee_recorded"],
         "owner_basis": who["payee_basis"],
+        #  W860 (FU-1007) - the name stored on the account, kept as history beside the payee
+        "account_name": who["account_name"],
         **_registry_check(stored),          # W813 (FU-887) - checked against the living registry, never rewritten
         "accrued_total_wst": a["accrued"], "paid_out_total_wst": a["paid_out"],
         "balance_wst": balance, "entries": a["entries"][-_SHOWN_ENTRIES:][::-1],

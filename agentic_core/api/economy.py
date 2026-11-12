@@ -885,8 +885,8 @@ def _payout_governed(req: "PayoutRequest", user: dict | None) -> dict:
                  " (a name the platform did not check)")
               + f" as an explicit decision, and this payout spent that approval. {amount} WST left the "
                 f"owner-payments account '{_shown}'"
-              + (f" for its recorded owner '{out.get('payee')}'" if out.get("payee_recorded") else
-                 "; the account records no owner, so no payee is named")
+              + (f" for '{out.get('payee')}', the owner the entity's record names" if out.get("payee_recorded") else
+                 "; the entity has no owner record, so no payee is named")
               + ". No real money moved.")
     return {
         **out,

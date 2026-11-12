@@ -58499,6 +58499,10 @@ def test_pay_an_owner_payout_is_held_for_a_person_and_pays_the_accounts_recorded
     _tag = uuid.uuid4().hex[:6]
     _vid, _bare, _none = f"pay-guard-{_tag}", f"pay-guard-noowner-{_tag}", f"pay-guard-never-{_tag}"
     _big, _full = f"pay-guard-big-{_tag}", f"pay-guard-full-{_tag}"
+    #  FU-1007 (W860) - the payee is the owner the entity's record names (ruling 2026-10-12, amended): these probe ids
+    #  stand in for registered entities whose record names Amina Guard; the planted ownerless account has no record
+    _named_w860 = {_vid: "Amina Guard", _big: "Amina Guard", _full: "Amina Guard"}
+    monkeypatch.setattr(_op, "_registry_owner", lambda v: {"owner": _named_w860.get(v), "unreadable": None})
     _op.accrue(_vid, 100.0, "Amina Guard", memo="guard seed", simulated=False)
     #  W813 (FU-887) - an account whose owner is empty is an OLD record: a new one is always opened under an owner
     #  (the registry's, the one named, or the configured one), so it is planted as the store holds one
@@ -58570,7 +58574,7 @@ def test_pay_an_owner_payout_is_held_for_a_person_and_pays_the_accounts_recorded
         assert _j1["governance"]["request_recorded"] == "recorded", _j1["governance"]
         #    the payee is the account's recorded owner, and the answer says on what basis
         assert _j1["payee"] == "Amina Guard" and _j1["payee_recorded"] is True, ("the held answer does not name the payee", _j1)
-        assert "the account's recorded owner" in _j1["payee_basis"], _j1["payee_basis"]
+        assert "the entity's owner record in the living registry" in _j1["payee_basis"], _j1["payee_basis"]
         #    asked again while undecided: the same hold, and still nothing paid
         _again = _ask(_vid, 40).json()
         assert _again["cca_id"] == _cid and _again["status"] == "held" and _snap(_vid) == _s0, (
@@ -58621,7 +58625,8 @@ def test_pay_an_owner_payout_is_held_for_a_person_and_pays_the_accounts_recorded
         assert _jp["status"] == "paid" and _jp["applied"] is True and _jp["cca_id"] == _cid, ("the approved payout was not paid", _jp)
         assert _jp["paid_wst"] == 40.0 and _jp["remaining_balance_wst"] == 60.0, ("the payout is not exactly the amount", _jp)
         assert _jp["payee"] == "Amina Guard" and _jp["payee_recorded"] is True, ("the paid answer does not name the payee", _jp)
-        assert "the account's recorded owner" in _jp["payee_basis"], ("the paid answer does not say on what basis", _jp["payee_basis"])
+        assert "the entity's owner record in the living registry" in _jp["payee_basis"], (
+            "the paid answer does not say on what basis", _jp["payee_basis"])
         assert _jp["real_money_moved"] is False, _jp
         assert _snap(_vid) == (100.0, 40.0, 2), ("the account did not move by exactly one payout", _snap(_vid))
         _e = _acct(_vid)["entries"][-1]
@@ -58721,11 +58726,11 @@ def test_pay_an_owner_payout_is_held_for_a_person_and_pays_the_accounts_recorded
         # -- 8. AN ACCOUNT WITH NO RECORDED OWNER says so; no name is invented ---------------------------
         _hb = _ask(_bare, 5).json()
         assert _hb["status"] == "held" and _hb["payee"] is None and _hb["payee_recorded"] is False, _hb
-        assert "records no owner" in _hb["payee_basis"], _hb["payee_basis"]
+        assert "has no owner record in the living registry" in _hb["payee_basis"], _hb["payee_basis"]
         assert _decide(_hb["cca_id"], "approved").status_code == 200
         _pb = _ask(_bare, 5).json()
         assert _pb["status"] == "paid" and _pb["payee"] is None and _pb["payee_recorded"] is False, ("a payee was invented", _pb)
-        assert "records no owner" in _pb["governance"]["basis"] and "Rehan" not in json.dumps(_pb), _pb
+        assert "has no owner record" in _pb["governance"]["basis"] and "Rehan" not in json.dumps(_pb), _pb
         assert _acct(_bare)["entries"][-1]["payee"] is None, _acct(_bare)["entries"][-1]
 
         # -- 9. THE STATUS OF A NEVER-ACCRUED ACCOUNT echoes no caller's name ----------------------------
@@ -71568,7 +71573,7 @@ def test_w813_an_owner_account_is_opened_under_the_registered_owner_and_says_so(
         "a registered entity's account was opened under", a1.get("owner"), a1.get("owner_source"))
     s1 = _op.status(reg)
     assert s1["owner_matches_registry"] is True and "living registry" in s1["owner_basis"], s1["owner_basis"]
-    assert "the account's recorded owner" in s1["owner_basis"], s1["owner_basis"]
+    assert "the entity's owner record in the living registry" in s1["owner_basis"], s1["owner_basis"]   # W860
 
     # (2) AN ACCRUAL NAMING ANOTHER OWNER for a registered entity opens it under the registry's owner too
     a2 = _op.accrue(reg2, 10.0, f"w813-typed-{tag}", memo="w813", simulated=False)
@@ -71594,7 +71599,9 @@ def test_w813_an_owner_account_is_opened_under_the_registered_owner_and_says_so(
                                                "accrued": 1.0, "paid_out": 0.0, "entries": []}))
     _op.accrue(reg3, 2.0, memo="w813", simulated=False)
     s3 = _op.status(reg3)
-    assert s3["owner"] == f"w813-earlier-{tag}" and s3["accrued_total_wst"] == 3.0, ("the account was rewritten", s3)
+    #  W860 (FU-1007) - the stored name is kept as history; the payee is the owner the registry records
+    assert s3["account_name"] == f"w813-earlier-{tag}" and s3["accrued_total_wst"] == 3.0, ("the account was rewritten", s3)
+    assert s3["owner"] == alice and s3["owner_recorded"] is True, ("the payee is not the registry's owner", s3)
     assert s3["owner_matches_registry"] is False and s3["registry_owner"] == alice, s3
     assert "not rewritten" in s3["owner_registry_basis"], s3["owner_registry_basis"]
 
@@ -74158,3 +74165,70 @@ def test_w859_the_care_tools_hand_what_the_person_recorded_over_as_material_and_
             body = src[m.end():j]
             pasted += [f"{name}: req.{f}" for f in fields if _re859.search(r"\{req\.%s\b" % f, body)]
     assert pasted == [], ("a person's free text is still pasted into an instruction", pasted)
+
+
+def test_w860_a_payout_is_for_the_owner_the_entitys_record_names_and_the_accounts_name_is_kept_as_history(
+        client, monkeypatch, tmp_path):
+    """FU-1007 (W860). Forty-four of ninety-nine owner accounts with a balance named a test owner, because an account's
+    name was whatever its first accrual passed. Ruled 2026-10-12, amending the same day's earlier ruling: the payee is
+    resolved from the entity's owner record and the account's name is kept as history; an account whose entity has no
+    record has no payee. Driven in an isolated store against the real living registry."""
+    import pathlib as _pl860
+    import uuid as _uuid860
+    from agentic_core import config as _cfg860
+    from agentic_core.economy import living_vsbs as _lv860
+    from agentic_core.economy import owner_payments as _op860
+
+    monkeypatch.setattr(_op860, "_STORE", tmp_path / "owner_payments.json")
+    monkeypatch.setattr(_op860, "_PENDING", tmp_path / "owner_accruals_pending.json")
+    tag = _uuid860.uuid4().hex[:6]
+    alice, reg, unreg = f"w860-alice-{tag}", f"vsb-w860r{tag}", f"w860-unregistered-{tag}"
+    _lv860.register(reg, f"W860 {reg}", entity_type="waqf_ltd_hybrid", owner=alice)
+
+    def plant(v, name):
+        _op860._mutate(lambda d: d.__setitem__(v, {"vsb_id": v, "owner": name, "currency": "WST", "accrued": 10.0,
+                                                   "paid_out": 0.0, "entries": []}))
+    plant(reg, f"pytest-{tag}")
+    plant(unreg, "pytest")
+
+    #  a registered entity: the payee is its record's owner; the stored name is kept as history, never rewritten
+    s = _op860.status(reg)
+    assert (s["owner"], s["owner_recorded"], s["account_name"]) == (alice, True, f"pytest-{tag}"), s
+    assert "the entity's owner record in the living registry" in s["owner_basis"], s["owner_basis"]
+    assert "differs and is kept as history" in s["owner_basis"], s["owner_basis"]
+    assert s["owner_matches_registry"] is False and "kept as history" in s["owner_registry_basis"], s
+    chk = _op860.payout_check(reg, 4)
+    assert chk["payee"] == alice and chk["payee_recorded"] is True, chk
+    paid = _op860.payout(reg, 4, cca_id=f"cca-w860-{tag}")
+    assert paid["payee"] == alice and paid["remaining_balance_wst"] == 6.0, paid
+    stored = _op860._read()[reg]
+    assert stored["owner"] == f"pytest-{tag}" and stored["entries"][-1]["payee"] == alice, stored
+
+    #  an account whose entity has no record has no payee, and none is invented
+    u = _op860.status(unreg)
+    assert (u["owner"], u["owner_recorded"], u["account_name"]) == (None, False, "pytest"), u
+    assert "has no owner record in the living registry" in u["owner_basis"] and "none is invented" in u["owner_basis"]
+    assert "'pytest'" in u["owner_basis"] and "is kept as history and is not the payee" in u["owner_basis"], u["owner_basis"]
+    up = _op860.payout(unreg, 1, cca_id=f"cca-w860u-{tag}")
+    assert up["payee"] is None and up["payee_recorded"] is False and _op860._read()[unreg]["entries"][-1]["payee"] is None
+
+    #  an unreadable registry names no payee and says why
+    def _unreadable():
+        raise _cfg860.StoreUnavailable("w860 an unreadable roster")
+    monkeypatch.setattr(_lv860, "_load", _unreadable)
+    x = _op860.status(reg)
+    assert x["owner"] is None and x["owner_recorded"] is False and "could not be read" in x["owner_basis"], x
+    assert x["account_name"] == f"pytest-{tag}", x
+
+    root = _pl860.Path(__file__).resolve().parents[1]
+    econ = (root / "agentic_core" / "api" / "economy.py").read_text(encoding="utf-8")
+    assert "the owner the entity's record names" in econ and "the entity has no owner record" in econ
+    assert "for its recorded owner" not in econ, "the paid answer still says the payout was for the recorded owner"
+    gov = (root / "agentic_core" / "economy" / "governance.py").read_text(encoding="utf-8")
+    assert "paid to the account's recorded" not in gov and "paid to the owner the entity's" in gov, (
+        "the payout hold still tells its decider the payout goes to the account's recorded owner")
+    page = _code_only((root / "apps" / "workstation-superapp" / "src" / "pages" / "enterprise"
+                       / "VSBEconomy.tsx").read_bytes().decode("utf-8"))
+    assert 'data-testid="owner-payout-account-name"' in page and "pay.account_name" in page, (
+        "the economy page does not say the account's own name is kept as history")
+    assert "The payee is the recorded owner of the account" not in page

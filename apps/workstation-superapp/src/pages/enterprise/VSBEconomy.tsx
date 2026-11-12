@@ -293,7 +293,7 @@ export const VSBEconomy: React.FC = () => {
       const left = typeof d.remaining_balance_wst === 'number' ? d.remaining_balance_wst.toLocaleString() : 'not stated';
       if (d.applied === true) {
         // PAID: an approval was spent for this payout. Who was paid and on what basis are the server's words.
-        setPayMsg(`Virtual payout applied — released by Change Control ${String(d.cca_id)}. Payee: ${d.payee_recorded ? String(d.payee) : 'none recorded on this account'} (${String(d.payee_basis)}). No real money moved. Remaining ${left} WST. Audit event: ${String(d.audit_event)}.`);
+        setPayMsg(`Virtual payout applied — released by Change Control ${String(d.cca_id)}. Payee: ${d.payee_recorded ? String(d.payee) : 'none - the entity has no owner record'} (${String(d.payee_basis)}). No real money moved. Remaining ${left} WST. Audit event: ${String(d.audit_event)}.`);
         setPayoutAmt(0);
       } else {
         // HELD or REJECTED: nothing was paid. The amount stays in the box, so the same payout can be requested
@@ -493,8 +493,12 @@ export const VSBEconomy: React.FC = () => {
           {payMsg && <p className="text-emerald-400 text-[10px] font-bold mt-2 flex items-center gap-1.5"><ShieldCheck size={12} /> {payMsg}</p>}
           {payErr && <p className="text-vital text-[10px] font-bold mt-2 flex items-center gap-1.5"><AlertCircle size={12} /> {payErr}</p>}
           <p className="text-[9px] text-slate-500 mt-2" data-testid="owner-payout-governed">
-            {'Every payout is held at Change Control for the decision of a person, whatever its amount. A request pays nothing; once it is approved there, request the same amount again to apply it. The payee is the recorded owner of the account: '}
-            <span title={pay.owner_basis}>{pay.owner_recorded ? String(pay.owner) : 'none is recorded on this account'}</span>.
+            {'Every payout is held at Change Control for the decision of a person, whatever its amount. A request pays nothing; once it is approved there, request the same amount again to apply it. The payee is the owner the entity\'s record names, not the name stored on the account: '}
+            <span title={pay.owner_basis}>{pay.owner_recorded ? String(pay.owner) : 'none - the entity has no owner record'}</span>.
+            {/* W860 (FU-1007) - the account's own name, kept as history */}
+            {pay.account_name && pay.account_name !== pay.owner && (
+              <span data-testid="owner-payout-account-name"> The account's own name, {String(pay.account_name)}, is kept as history and is not paid.</span>
+            )}
           </p>
           {/* W813 (FU-887) - the recorded owner, checked against the living registry: a disagreement is said here,
               and the account is not rewritten */}

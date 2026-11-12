@@ -20008,11 +20008,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W860",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built as ruled (2026-10-12, amending the same day's R1): payee_of reads the entity's owner record in the living registry, and that owner is the payee; an account whose entity has no record, or a registry that cannot be read, names no payee and invents none, and says why. The name stored on the account is never rewritten: it is returned beside the payee as account_name with where it came from, and the registry check says it is kept as history. The paid answer, the economy page (which shows the account's own name as history when it differs) and the guards of R1 and W813 read the amended ruling. Virtual WST only; every payout is still held for a person's decision. test_w860 drives a registered entity with a different stored name, an unregistered account and an unreadable registry against the real registry."
     },
     {
       "id": "FU-1008",

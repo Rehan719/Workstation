@@ -39,7 +39,7 @@ FUND_HOLD_TITLE_PREFIX = "[economy] capital fund allocation — "
 #  OWNER RULING 2026-10-12 - AN OWNER PAYOUT IS A GOVERNED ACTION TOO, and like the fund's allocation its
 #  class has NO THRESHOLD: every payout is held for a person's decision, whatever its amount. The actor is
 #  the account (the id that stands where a VSB id stands), there is no counterparty (the payee is the owner
-#  recorded on the account, read when the payout is paid), and one live hold exists per account.
+#  the entity's record names - W860, FU-1007 - read when the payout is paid), and one live hold exists per account.
 PAYOUT_SOURCE = "payout"
 PAYOUT_HOLD_TITLE_PREFIX = "[economy] owner payout — "
 
@@ -673,8 +673,9 @@ def _describe(vsb_id: str, source: str, est: float, counterparty: Optional[str],
         return (f"Virtual owner payout from the owner-payments account {vsb_id}: {est} WST. Every owner payout "
                 "is held for a person's explicit decision whatever its amount (Owner ruling 2026-10-12) - no "
                 "threshold lets one pass. Held until approved (virtual WST only — no real funds). An approval "
-                "releases ONE payout from this account of at most this amount, paid to the account's recorded "
-                "owner when the payout is requested again; approving pays nothing by itself. While submitted, "
+                "releases ONE payout from this account of at most this amount, paid to the owner the entity's "
+                "record names (W860, FU-1007) when the payout is requested again; approving pays nothing by "
+                "itself. While submitted, "
                 "the amount is kept current." + after)
     return (f"{what}: estimated {est} WST ≥ materiality threshold {MATERIALITY_WST} WST. Held until approved "
             "(virtual WST only — no real funds). An approval releases ONE action on the intake recorded on this "
