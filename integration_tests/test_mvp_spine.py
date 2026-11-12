@@ -43923,7 +43923,7 @@ def test_w599_p35_an_image_is_read_or_the_refusal_names_what_is_missing(client):
     #  a vision model would have changed nothing while the prose read as conditional.
     import inspect as _insp35
     _reg_src = _insp35.getsource(_t35.registry)
-    assert "vision_resources(_models)" in _reg_src, (
+    assert "vision_resources(_models" in _reg_src, (                  # W846 - and the runtime's capabilities
         "the perception tier's resources are not COMPUTED from the pulled models, so the §18 boundary is "
         "permanent in code while reading as conditional in prose - installing a model would change nothing")
     assert _t35.vision_resources(["llama2", "llava"])["matched"] == ["llava"], (
@@ -73216,3 +73216,47 @@ def test_w845_the_claim_scan_says_what_it_read_and_the_evidence_block_stands_wit
         assert page.index(testid) > card_end, (
             "drawn inside the lifecycle card, so a failed lifecycle read draws none of it", testid)
     assert "evLevels.claims_check.scope.roots.join" in page, "the page does not say which directories the scan read"
+
+
+def test_w846_the_vision_tier_reads_what_the_runtime_says_each_model_can_do(monkeypatch):
+    """FU-1129 (W846). The vision tier recognised a vision model only by matching its name against a typed family
+    list, while the runtime states each model's capabilities in every row of its model list. The capabilities are
+    now kept with the names, and the screen takes them: a model the runtime reports with vision reads images on its
+    word, one it reports without vision is text-only on its word, and the family list is used only for a model the
+    runtime states nothing for - where it still can only recognise, never clear. Driven from the runtime's row
+    through the cache to the registry and the image intake."""
+    import httpx as _hx846
+    from agentic_core.ai.native import model_resource as _mr846
+    from agentic_core.ai.native import tiers as _t846
+
+    caps = {"w846-vlm:4b": ["completion", "vision"], "llava": ["completion"]}
+    v = _t846.vision_resources(["w846-vlm:4b", "llava", "llama3.2", "w846-mystery"], caps)
+    assert v["matched"] == ["w846-vlm:4b"], ("a build the runtime says reads images was not counted", v)
+    assert "llava" not in v["matched"] + v["unknown"] and "text-only on its own statement: llava" in v["basis"], (
+        "a recognised name the runtime says cannot read images was counted", v)
+    assert v["unknown"] == ["llama3.2", "w846-mystery"] and "runtime's own statement" in v["basis"], v
+    assert _t846.vision_resources(["llava", "w846-mystery"])["matched"] == ["llava"], "the family list stopped working"
+    assert "cannot establish that a model is NOT" in _t846.vision_resources(["w846-mystery"], {})["basis"]
+
+    #  the runtime's own row, through the cache: a row with capabilities, and a row without
+    class _R:
+        status_code = 200
+
+        def json(self):
+            return {"models": [{"name": "w846-vlm:4b", "digest": "d1", "capabilities": ["completion", "vision"]},
+                               {"name": "w846-plain:latest", "digest": "d2"}]}
+    monkeypatch.delenv("AI_DISABLE_LOCAL", raising=False)
+    monkeypatch.setattr(_hx846, "get", lambda *a, **k: _R())
+    monkeypatch.setattr(_mr846, "_MODELS_CACHE", {"at": -1e9, "models": [], "digests": {}, "capabilities": {}})
+    assert _mr846.local_models() == ["w846-plain", "w846-vlm:4b"]
+    assert _mr846.local_model_capabilities("w846-vlm:4b") == ["completion", "vision"]
+    assert _mr846.local_model_capabilities("w846-plain") is None, "capabilities were given that the runtime did not state"
+
+    monkeypatch.setattr(_mr846, "ollama_up", lambda: True)
+    reg = _t846.registry()
+    assert reg["tiers"]["perception"]["resources"] == ["w846-vlm:4b"], reg["tiers"]["perception"]
+    assert "matched by the vision screen" in reg["tiers"]["perception"]["resources_basis"], (
+        "the tier holds a resource and its basis says none is assigned", reg["tiers"]["perception"]["resources_basis"])
+    intake = _t846.image_intake()
+    assert intake["can_read_images"] is True and intake["resources"] == ["w846-vlm:4b"], intake
+    assert intake["unrecognised_models"] == ["w846-plain"], intake

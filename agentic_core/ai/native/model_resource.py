@@ -69,7 +69,8 @@ def ollama_up() -> bool:
     return up
 
 
-_MODELS_CACHE = {"at": 0.0, "models": [], "digests": {}}      # W841 (FU-1087) - each build's digest, same fetch
+_MODELS_CACHE = {"at": 0.0, "models": [], "digests": {},      # W841 (FU-1087) - each build's digest, same fetch
+                 "capabilities": {}}                            # W846 (FU-1129) - what the runtime says each can do
 
 
 def local_models() -> List[str]:
@@ -82,6 +83,7 @@ def local_models() -> List[str]:
         return list(_MODELS_CACHE["models"])
     models: List[str] = []
     digests: Dict[str, str] = {}
+    caps: Dict[str, List[str]] = {}
     try:
         import httpx
         r = httpx.get(f"{_ollama_base()}/api/tags", timeout=1.0)
@@ -96,10 +98,21 @@ def local_models() -> List[str]:
                 short = n.split(":")[0] if ":latest" in n else n
                 if short and m.get("digest"):
                     digests[short] = str(m.get("digest"))
+                #  W846 (FU-1129) - the capabilities the runtime states for each model, from the same row
+                if short and isinstance(m.get("capabilities"), list):
+                    caps[short] = [str(c) for c in m["capabilities"]]
     except Exception:
-        models, digests = [], {}
-    _MODELS_CACHE.update(at=now, models=models, digests=digests)
+        models, digests, caps = [], {}, {}
+    _MODELS_CACHE.update(at=now, models=models, digests=digests, capabilities=caps)
     return models
+
+
+def local_model_capabilities(name: str) -> Optional[List[str]]:
+    """W846 (FU-1129) - the capabilities the local runtime states for a discovered name (for example completion,
+    tools, vision), or None when its model list states none for it. Read from the same cached list, never guessed."""
+    local_models()
+    got = (_MODELS_CACHE.get("capabilities") or {}).get(name)
+    return list(got) if isinstance(got, list) else None
 
 
 def local_model_digest(name: str) -> Optional[str]:

@@ -186,41 +186,63 @@ VISION_CANNOT_CLEAR = (
     "not recognise this model' and 'this model cannot read an image' are different statements")
 
 
-def vision_resources(models: List[str]) -> Dict[str, Any]:
+def vision_resources(models: List[str], capabilities: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Which of the pulled models can read an image. THREE STATES, and the middle one is the point.
 
     A PURE function over a list of names, not a reader of the environment: `local_models()` returns [] under
     AI_DISABLE_LOCAL and the suite sets it, so a check that asked the environment could never be driven — it
     would see "nothing installed" forever and pass whatever this logic did.
 
-      matched   : models whose family is recognised as vision-capable
-      unknown   : models whose family is NOT recognised — reported, never silently dropped
+      matched   : models that can read an image - the runtime says so, or (when it states nothing for the model)
+                  its family is recognised as vision-capable
+      (neither)   W846 (FU-1129) - a model the runtime itself reports WITHOUT vision; the basis names it text-only
+                  on the runtime's word
+      unknown   : models the runtime states nothing for and whose family is NOT recognised - reported, never dropped
       basis     : what the result does and does not establish, including the cannot-clear statement
+
+    `capabilities` maps a model name to the capability list the local runtime stated for it (W846). It is handed in,
+    never read here, so the screen stays a function of what it is given. The runtime's own statement is read first;
+    the family list is used only for a model it states nothing for.
     """
-    matched, unknown = [], []
+    matched, unknown, text_only, by_runtime = [], [], [], []
+    caps = capabilities or {}
     for m in models or []:
         name = str(m or "").strip().lower()
         if not name:
+            continue
+        stated = caps.get(m)
+        if isinstance(stated, list):
+            by_runtime.append(m)
+            (matched if "vision" in [str(c).lower() for c in stated] else text_only).append(m)
             continue
         family = name.split(":", 1)[0]
         if any(family == f or family.startswith(f) for f in VISION_FAMILIES):
             matched.append(m)
         else:
             unknown.append(m)
+    by_family = [m for m in matched if m not in by_runtime]
     return {
         "matched": matched,
         "unknown": unknown,
+        #  W846 - a model the runtime reports without vision is in neither list: the basis names it as text-only on
+        #  the runtime's own statement, where every reader of this screen already reads it
         "basis": (
-            (f"{len(matched)} pulled model(s) belong to a recognised vision-capable family: "
-             f"{', '.join(matched)}. " if matched else
-             "no pulled model belongs to a recognised vision-capable family. ")
+            (f"{len([m for m in matched if m in by_runtime])} model(s) read images on the runtime's own statement "
+             f"(its capabilities name vision): {', '.join(m for m in matched if m in by_runtime)}. "
+             if any(m in by_runtime for m in matched) else "")
+            + (f"{len(text_only)} model(s) the runtime reports without vision, so they are text-only on its own "
+               f"statement: {', '.join(text_only)}. " if text_only else "")
+            + (f"{len(by_family)} pulled model(s) the runtime states nothing for belong to a recognised "
+               f"vision-capable family: {', '.join(by_family)}. " if by_family else
+               ("no pulled model belongs to a recognised vision-capable family. " if not matched else ""))
             + (f"{len(unknown)} model(s) were NOT RECOGNISED either way ({', '.join(unknown[:6])}): they are "
                f"not counted as vision-capable and are not claimed to be text-only. " if unknown else "")
             + VISION_CANNOT_CLEAR),
     }
 
 
-def image_intake(models: Optional[List[str]] = None) -> Dict[str, Any]:
+def image_intake(models: Optional[List[str]] = None,
+                 capabilities: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """P3.5 clauses (2) and (3) — what this deployment can read from an image, and the REFUSAL when nothing.
 
     clause (2): where no owned vision resource is installed it REFUSES with an accurate reason naming WHAT IS
@@ -234,11 +256,13 @@ def image_intake(models: Optional[List[str]] = None) -> Dict[str, Any]:
     """
     if models is None:
         try:
-            from agentic_core.ai.native.model_resource import local_models
+            from agentic_core.ai.native.model_resource import local_models, local_model_capabilities
             models = local_models()
+            #  W846 (FU-1129) - what the runtime states each model can do, handed to the screen
+            capabilities = {m: local_model_capabilities(m) for m in models}
         except Exception:                       # noqa: BLE001 — reported, never silently treated as empty
             models = []
-    v = vision_resources(models)
+    v = vision_resources(models, capabilities)
     state, why = runnable("perception")
     spec = TIERS["perception"]
     return {
@@ -272,15 +296,16 @@ def registry() -> Dict[str, Any]:
     m = machine()
     #  What the platform can actually reach, asked rather than assumed.
     try:
-        from agentic_core.ai.native.model_resource import local_models, ollama_up
+        from agentic_core.ai.native.model_resource import local_models, ollama_up, local_model_capabilities
         _up = ollama_up()
         _models = local_models() if _up else []
+        _caps = {n: local_model_capabilities(n) for n in _models}      # W846 (FU-1129) - the runtime's word
         _models_basis = (f"{len(_models)} model(s) pulled locally, read from the local runtime"
                          if _up else
                          "the local model runtime is not answering, so no local model can be reached "
                          "right now — which is a statement about reachability, not about what is pulled")
     except Exception as e:                        # noqa: BLE001
-        _up, _models = None, []
+        _up, _models, _caps = None, [], {}
         _models_basis = f"NOT MEASURED: the model registry could not be consulted ({e.__class__.__name__})"
 
     tiers = {}
@@ -298,7 +323,8 @@ def registry() -> Dict[str, Any]:
             #  machine can serve them". True of this machine and written as an assignment, so pulling a
             #  vision model would have changed nothing and the §18 boundary would have been permanent in
             #  code while reading as conditional in prose.
-            res = vision_resources(_models)["matched"]
+            _vis846 = vision_resources(_models, _caps)
+            res = _vis846["matched"]
         else:
             res = []
         tiers[name] = {
@@ -311,8 +337,9 @@ def registry() -> Dict[str, Any]:
             "resources_basis": (
                 _models_basis if name == "reflex_routing" else
                 "the floor runs in this process and is always present" if name == "deterministic_logic"
-                else (f"NO RESOURCE IS ASSIGNED TO THIS TIER, and that is the honest state rather than "
-                      f"an omission: {why}")),
+                else (f"matched by the vision screen: {_vis846['basis']}" if (name == "perception" and res)
+                      else (f"NO RESOURCE IS ASSIGNED TO THIS TIER, and that is the honest state rather than "
+                            f"an omission: {why}"))),
         }
     return {
         "machine": m,

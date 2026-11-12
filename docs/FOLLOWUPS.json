@@ -22507,11 +22507,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W846",
       "note": "",
       "slot_source": "found in this round and not done in it: W745 built the runtime's description of each model on P3.32, and this reader of it is the next step there",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The capabilities the local runtime states in each row of its model list are now kept with the names (the same fetch W841 reads digests from; model_resource.local_model_capabilities), and the vision screen takes them: a model the runtime reports with vision reads images on its own statement, a model it reports without vision is text-only on its own statement, and the typed family list is used only for a model the runtime states nothing for - where it still can only recognise, never clear. The screen stays a function of what it is handed; the registry's perception tier and the image intake hand it what the runtime reported. The perception tier's resources_basis said no resource was assigned even when the screen had matched one; it now says what matched it. Driven from a stand-in runtime row through the cache to the registry and the image intake; not driven against a live runtime here, and whether a multimodal build reports vision is still not measured, since none is installed. Guard test_w846, 5 blinds red."
     },
     {
       "id": "FU-1130",
