@@ -75668,3 +75668,90 @@ def test_w881_every_revenue_figure_says_where_its_value_entered(client):
     page = (pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages" / "enterprise"
             / "VSBCockpit.tsx").read_text(encoding="utf-8")
     assert 'data-testid="ledger-revenue-entered"' in page and "ledger.revenue_entered.basis" in page
+
+
+def test_w882_a_high_change_is_not_decided_by_its_submitter_once_a_second_administrator_exists(client, monkeypatch):
+    """FU-850 (W882). The Owner ruled: for a high or critical change the person deciding it must differ from the
+    person who submitted it once more than one administrator exists - one comparison at review, override and
+    ratification; with one Owner the present behaviour stands. Driven over HTTP with sign-in on and two
+    administrators: the submitter's override and review are refused and write nothing, another administrator's
+    stand, the submitter's ratification is refused and another's stands; a medium change and a single administrator
+    keep the present behaviour; an unreadable account store refuses rather than guess."""
+    import uuid as _uuid882
+    import agentic_core.auth.core as _ac882
+    from agentic_core.api import change_control as _cc882
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    users = _ac882._load_users()
+    who = {}
+    for k in ("a", "b"):
+        name = f"w882-{k}-{_uuid882.uuid4().hex[:6]}"
+        users[name] = {"username": name, "hashed_password": _ac882._pwd_ctx.hash("pw12345678"), "role": "admin"}
+        who[k] = name
+    _ac882._save_users(users)
+    H = {}
+    for k, name in who.items():
+        tok = client.post("/api/v1/auth/token", data={"username": name, "password": "pw12345678"})
+        assert tok.status_code == 200, tok.text[:200]
+        H[k] = {"Authorization": "Bearer " + tok.json()["access_token"]}
+    assert (_cc882.admins_counted() or 0) >= 2
+
+    def submit(change_type="code_change"):
+        r = client.post("/api/v1/cca/submit", headers=H["a"], json={
+            "title": f"W882 {change_type} {_uuid882.uuid4().hex[:6]}", "change_type": change_type,
+            "description": "w882 who decides a change", "rationale": "w882"})
+        assert r.status_code == 200, r.text[:300]
+        cid = r.json()["cca_id"]
+        rec = _cc882._load_change(cid)
+        assert rec["submitted_by"] == who["a"] and rec["submitted_by_verified"] is True, rec.get("submitted_by")
+        return cid
+
+    override = {"override_decision": "approved", "owner_decision_acknowledged": True, "reviewer_notes": "w882"}
+    #  1. the submitter's override of a HIGH change is refused and writes nothing; another administrator's stands
+    c1 = submit()
+    assert _cc882.effective_tier(_cc882._load_change(c1)) == "HIGH"
+    before = _cc882._load_change(c1)
+    r = client.post(f"/api/v1/cca/{c1}/review", headers=H["a"], json=override)
+    assert r.status_code == 403 and "may not decide" in r.json()["detail"], r.text[:300]
+    after = _cc882._load_change(c1)
+    assert after.get("status") == before.get("status") and after.get("audit_trail") == before.get("audit_trail")
+    r = client.post(f"/api/v1/cca/{c1}/review", headers=H["b"], json=override)
+    assert r.status_code == 200 and _cc882._load_change(c1)["status"] == "approved", r.text[:300]
+    last = [e for e in _cc882._load_change(c1)["audit_trail"] if e.get("event") == "approved"][-1]
+    assert last["by"] == who["b"] and last["decider_is_submitter"] is False, last
+
+    #  2. the submitter's own review of a HIGH change is refused too; a review by another reaches the Board, where
+    #     the submitter's ratification is refused and another administrator's stands
+    c2 = submit()
+    r = client.post(f"/api/v1/cca/{c2}/review", headers=H["a"], json={"reviewer_notes": "w882 own review"})
+    assert r.status_code == 403, r.text[:300]
+    r = client.post(f"/api/v1/cca/{c2}/review", headers=H["b"], json={"reviewer_notes": "w882 review"})
+    assert r.status_code == 200, r.text[:300]
+    if _cc882.awaiting_board_ratification(_cc882._load_change(c2)):
+        rat = {"decision": "ratify", "notes": "w882", "on_owner_direction": True}
+        r = client.post(f"/api/v1/board/ratifications/{c2}", headers=H["a"], json=rat)
+        assert r.status_code == 403 and "may not decide" in r.json()["detail"], r.text[:300]
+        assert _cc882._ratification_decision(_cc882._load_change(c2)) is None
+        r = client.post(f"/api/v1/board/ratifications/{c2}", headers=H["b"], json=rat)
+        assert r.status_code == 200 and _cc882._ratification_decision(_cc882._load_change(c2)) == "ratified", r.text[:300]
+    #     the ratification step is guarded on its own as well, whatever the review decided
+    rec2 = _cc882._load_change(c2)
+    try:
+        _cc882.refuse_own_decision(rec2, who["a"], True, "ratified")
+        raise AssertionError("the submitter's ratification was not refused")
+    except _cc882.HTTPException as e:
+        assert e.status_code == 403
+    _cc882.refuse_own_decision(rec2, who["b"], True, "ratified")
+
+    #  3. what stays as it was: a MEDIUM change, a single administrator, and names nobody checked
+    low = dict(_cc882._load_change(c1), impact_tier="MEDIUM", change_type="config_minor")
+    _cc882.refuse_own_decision(low, who["a"], True, "decided")
+    monkeypatch.setattr(_cc882, "admins_counted", lambda: 1)
+    _cc882.refuse_own_decision(_cc882._load_change(c1), who["a"], True, "decided")
+    _cc882.refuse_own_decision(_cc882._load_change(c1), who["a"], False, "decided")
+    #  4. an account store that cannot be read refuses, never guesses
+    monkeypatch.setattr(_cc882, "admins_counted", lambda: None)
+    try:
+        _cc882.refuse_own_decision(_cc882._load_change(c1), who["a"], True, "decided")
+        raise AssertionError("an unreadable account store let the submitter decide")
+    except _cc882.HTTPException as e:
+        assert e.status_code == 503 and "not known" in e.detail

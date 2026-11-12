@@ -16706,11 +16706,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P4.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W882",
       "note": "",
       "slot_source": "ruled by the Owner on 2026-10-11: fixed in one authentication-readiness round after P5 and before the final audit",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built as ruled: for a high or critical change, once a second administrator exists, the person who submitted it may not decide it - one comparison at review (an override included) and at Board ratification, on two names the auth layer checked, refused (403) before anything is written; with one administrator, a medium change, or names nobody checked, the present behaviour stands; an account store that cannot be read refuses (503, not known) rather than guess. A review that only holds decides nothing and is not refused. Driven over HTTP with sign-in on and two administrators (test_w882)."
     },
     {
       "id": "FU-851",

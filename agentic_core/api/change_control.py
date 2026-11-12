@@ -184,7 +184,7 @@ def _decider_and_submitter(c: dict, principal: Any, verified: bool) -> dict:
     """W672 (OWNER RULING 2026-10-11) - WHETHER THE PERSON DECIDING A CHANGE IS THE PERSON WHO SUBMITTED IT,
     recorded on the decision. It is a fact about two CHECKED names, so it is stated only when both were
     checked by the auth layer; otherwise it is None and the basis says why. Nothing is refused on it here:
-    the rule that they must differ applies once a second administrator exists, and is not built yet."""
+    refuse_own_decision (W882) applies the rule that they must differ, once a second administrator exists."""
     _sub = c.get("submitted_by")
     if verified and c.get("submitted_by_verified") and _sub:
         _same = str(principal) == str(_sub)
@@ -197,6 +197,38 @@ def _decider_and_submitter(c: dict, principal: Any, verified: bool) -> dict:
                                        if not auth_enabled() else
                                        "the submitter or the decider was not a checked account "
                                        f"(submitted by {_sub or 'nobody recorded'})"))}
+
+
+def admins_counted() -> int | None:
+    """W882 (FU-850) - how many administrator accounts exist, or None when the account store cannot be read."""
+    try:
+        from agentic_core.auth.core import _load_users
+        return sum(1 for u in (_load_users() or {}).values() if isinstance(u, dict) and u.get("role") == "admin")
+    except Exception:                                    # noqa: BLE001 - not known is said, never guessed
+        return None
+
+
+def refuse_own_decision(c: dict, principal: Any, verified: bool, step: str) -> None:
+    """W882 (FU-850; OWNER RULING) - A HIGH OR CRITICAL CHANGE IS NOT DECIDED BY THE PERSON WHO SUBMITTED IT once a
+    second administrator exists. One comparison, at review (an override included) and at ratification, on two
+    names the auth layer checked; with one administrator the present behaviour stands. Raised inside the record's
+    critical section, so a refusal writes nothing."""
+    tier = str(effective_tier(c) or "").upper()
+    if tier not in ("HIGH", "CRITICAL"):
+        return
+    if _decider_and_submitter(c, principal, verified).get("decider_is_submitter") is not True:
+        return
+    n = admins_counted()
+    if n is None:
+        raise HTTPException(status_code=503, detail=(
+            f"Change {c.get('cca_id')} was not {step}: the account store could not be read, so whether a second "
+            f"administrator exists - and so whether the person who submitted this {tier} change may decide it - is "
+            f"not known. Nothing was changed."))
+    if n >= 2:
+        raise HTTPException(status_code=403, detail=(
+            f"Change {c.get('cca_id')} was not {step}: it is a {tier} change and {principal} submitted it. With {n} "
+            f"administrators, the person who submitted a high or critical change may not decide it (the Owner's "
+            f"ruling); another administrator must. Nothing was changed."))
 
 
 @contextmanager
@@ -1767,6 +1799,13 @@ async def review_change(cca_id: str, req: ReviewDecision,
                 + (" A material economy action is CRITICAL: it is decided only by the Owner's explicit decision "
                    "(the Governance hub's Sovereign Sanctum)." if c.get("change_type") == "economy_material" else "")))
 
+    #  W882 (FU-850) - BEFORE ANYTHING IS WRITTEN: a review that will decide (an override, or a HIGH change whose
+    #  review an administrator asked for) is refused to the change's submitter once a second administrator exists.
+    #  A review that only holds (a CRITICAL change without an override, a non-admin's review) decides nothing.
+    _u882 = _principal(user)
+    if req.override_decision or (tier == "HIGH" and bool(_u882 and _u882.get("role") == "admin")):
+        refuse_own_decision(c, principal, _verified(user), "decided")
+
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
     def _start(fresh: dict) -> None:
@@ -2364,6 +2403,7 @@ def ratify_change(cca_id: str, decision: str, notes: str, principal: str, verifi
                 f"{approval_source(fresh) or 'nothing recorded'}"
                 + (f", Board decision {_ratification_decision(fresh)}" if _ratification_decision(fresh) else "")
                 + "). Only a HIGH change approved by a review waits for the Board."))
+        refuse_own_decision(fresh, principal, verified, "ratified")               # W882 (FU-850)
         seen["approval_decision_source"] = approval_source(fresh)
         fresh["board_ratification"] = {
             "decision": "ratified" if decision == "ratify" else "refused", "at": now, "by": principal,
