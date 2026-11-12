@@ -2257,14 +2257,20 @@ Kept after both refuters (the register rows are added by this round, each with t
    builds or runs it. Put to the Owner as a decision (below).
 2. Model promotion: the lifecycle promote route makes any installed model the serving default after checking only
    that it is installed - no evaluation, licence, digest or health gate. (Prepared round RF on P3.32.)
+   Built W841 (FU-1087): a promotion needs a recorded evaluation of that build on the pinned probe set, and keeps
+   its digest, so a re-pulled build is not served as the promoted default.
 3. The ruled routing tie-break order is encoded nowhere and no guard holds it, so the ruling cannot fail. (P4.3,
    whose bar is the in-house-first order proven by test.)
 4. Sign-in and signup have no limit on attempts. (P4.1.)
 5. The held-out evaluation set (`agentic_core/ai/native/heldout_cases.json`) has three cases; injection, refusal without a source, malformed output and
-   unsupported claims are unmeasured. (P3.32.)
+   unsupported claims are unmeasured. (P3.32.) Built W843 (FU-1090): version 2 of the set keeps those three
+   cases and adds one per behaviour, each scored by the computed check it names, never a model's opinion.
 6. A baseline of a served model records no runtime settings, so P3.32's "reproducible from its recorded
-   versions" cannot hold. (P3.32.)
+   versions" cannot hold. (P3.32.) Built W844 (FU-1091): the options sent (none) and the runtime whose
+   defaults applied, with its version, are recorded, and a re-run under other settings is refused.
 7. An answer names its server ("ollama") but never the model or build that answered, or where it ran. (P3.32.)
+   Built W842 (FU-1092): an answer's provenance names the model, the build digest the runtime reports and, where
+   the runtime reports the loaded model's sizes, the processor.
 8. The ensemble counts the deterministic floor as a second server, so one model can write a "consensus" of
    itself. (P3.30.)
 9. The plan still names an old fidelity instrument as the measure in three places. (P2.40.)

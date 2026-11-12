@@ -725,6 +725,17 @@ def _serving_identity(tier: str) -> Dict[str, Any]:
                                    "IDENTITY NOT RECORDED: the floor engine's source could not be read"),
                 "settings": {**settings, "sampling": "none: the floor samples nothing"}}
     dg = _local_model_digest(tier.split(":", 1)[1])
+    #  W844 (FU-1091) - the options this run sends, read from the one constant the request reads, and the runtime
+    #  whose defaults apply to whatever it does not send
+    from agentic_core.ai.native.orchestrator import LOCAL_REQUEST_OPTIONS as _opts844
+    from agentic_core.ai.native.model_resource import local_runtime_version as _rtv844
+    _sent, _ver = dict(_opts844), _rtv844()
+    settings = {**settings, "options_sent": _sent, "runtime": {"name": "ollama", "version": _ver},
+                "sampling": ((f"as sent: {_sent}; for anything not sent, the runtime's own defaults applied"
+                              if _sent else "none sent: the runtime's own defaults applied")
+                             + (f" - ollama {_ver}" if _ver else
+                                "; the runtime did not report its version, so which defaults applied is not "
+                                "recorded"))}
     return {"tier": tier, "kind": "local_model", "identity": dg,
             "identity_kind": "runtime_digest" if dg else None,
             "identity_basis": ("the digest the local runtime reported for this model name at the time of the run"
@@ -960,7 +971,27 @@ async def reproduce_baseline(run_id: str):
             f"baseline {run_id} was served by identity {was} and {tier} now reports "
             f"{serving.get('identity') or 'no identity'}. A run now would be of a different thing. "
             f"Nothing was run."))
+    #  W844 (FU-1091) - the same settings, or nothing is run: the options sent, and the runtime whose defaults
+    #  applied, when the record names them (a record made before W844 names neither, and that is said)
+    _st_then = ((rec.get("serving") or {}).get("settings") or {})
+    _st_now = (serving.get("settings") or {})
+    if "options_sent" in _st_then and _st_then.get("options_sent") != _st_now.get("options_sent"):
+        raise HTTPException(status_code=409, detail=(
+            f"baseline {run_id} sent the runtime the options {_st_then.get('options_sent')} and a run now would "
+            f"send {_st_now.get('options_sent')}. A run now would be under different settings. Nothing was run."))
+    _v_then = (_st_then.get("runtime") or {}).get("version")
+    if _v_then and _v_then != (_st_now.get("runtime") or {}).get("version"):
+        raise HTTPException(status_code=409, detail=(
+            f"baseline {run_id} ran under the runtime's own defaults as ollama {_v_then} has them, and the runtime "
+            f"now reports {(_st_now.get('runtime') or {}).get('version') or 'no version'}. Its defaults may differ, "
+            f"so a run now is not known to be under the same settings. Nothing was run."))
     record = await _baseline_record(tier, held, serving)
+    record["settings_compared"] = (
+        "the options sent and the runtime version are the ones the record names" if _v_then else
+        ("the options sent are the ones the record names; it names no runtime version, so whether the runtime's "
+         "defaults were the same is not known" if "options_sent" in _st_then else
+         "the record names no settings (it was made before they were recorded), so whether this run is under the "
+         "same settings is not known" if tier != "native" else "the floor samples nothing"))
     then = {(c.get("set"), c.get("case")): c for c in (rec.get("cases") or []) if isinstance(c, dict)}
     cmp_rows = []
     for c in record["cases"]:

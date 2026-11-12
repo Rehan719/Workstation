@@ -49,7 +49,11 @@ interface BaselineCase {
 interface BaselineRun {
   run_id: string; at: string; tier: string; trigger?: string; served_target: boolean;
   counts: { passed: number; failed: number; not_read: number }; established: string; basis?: string;
-  serving: { identity: string | null; identity_basis: string };
+  serving: { identity: string | null; identity_basis: string;
+             //  W844 (FU-1091) - the options sent, and the runtime whose defaults applied, in the server's words
+             settings?: { sampling?: string; options_sent?: Record<string, unknown>;
+                          runtime?: { name: string; version: string | null } } };
+  settings_compared?: string;
   case_sets: { public: { version: string; digest: string; cases: number };
                heldout: { version: string; digest: string; cases: number } };
   cases: BaselineCase[]; reproduction_of?: string | null;
@@ -1134,7 +1138,10 @@ export const NativeAI: React.FC = () => {
                     </p>
                     <p className="text-[9px] text-slate-500">{b.established}</p>
                     <p data-testid="baseline-identity" className="text-[9px] text-slate-500">Serving identity: {b.serving.identity ?? 'not recorded'} — {b.serving.identity_basis}</p>
-                    {b.reproduction && <p className="text-[9px] text-slate-500">Re-run of {String(b.reproduction_of ?? '')}: {b.reproduction.basis}</p>}
+                    {b.serving.settings?.sampling && <p data-testid="baseline-settings" className="text-[9px] text-slate-500">Settings: {b.serving.settings.sampling}
+                      {b.serving.settings.runtime && <span data-testid="baseline-runtime"> · runtime {b.serving.settings.runtime.name} {b.serving.settings.runtime.version ?? '(its version was not reported)'}</span>}
+                      {b.serving.settings.options_sent && <span data-testid="baseline-options-sent"> · options sent: {Object.keys(b.serving.settings.options_sent).length ? JSON.stringify(b.serving.settings.options_sent) : 'none'}</span>}</p>}
+                    {b.reproduction && <p className="text-[9px] text-slate-500">Re-run of {String(b.reproduction_of ?? '')}: {b.reproduction.basis}{b.settings_compared ? ` Settings: ${b.settings_compared}.` : ''}</p>}
                     <button type="button" onClick={() => setBlOpen(blOpen === b.run_id ? null : b.run_id)}
                       className="text-[9px] text-sky-400 underline underline-offset-2">
                       {blOpen === b.run_id ? 'hide the replies' : 'read the replies'}

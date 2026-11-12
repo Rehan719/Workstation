@@ -30,6 +30,20 @@ def _ollama_base() -> str:
     return url.rsplit("/api/", 1)[0] if "/api/" in url else url
 
 
+def local_runtime_version() -> Optional[str]:
+    """W844 (FU-1091) - the version the local runtime reports (its /api/version), or None when it cannot be read.
+    Its defaults are what a request that sends no options runs under, so a record names them by this."""
+    if os.getenv("AI_DISABLE_LOCAL", "").lower() in ("1", "true", "yes"):
+        return None
+    try:
+        import httpx
+        r = httpx.get(f"{_ollama_base()}/api/version", timeout=1.0)
+        v = r.json().get("version") if r.status_code == 200 else None
+        return str(v) if v else None
+    except Exception:
+        return None
+
+
 def ollama_up() -> bool:
     """Probe the local Ollama server (cached). Owned/self-hosted, no external dependency.
 

@@ -21670,11 +21670,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W844",
       "note": "",
       "slot_source": "baselines are this item's",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The options the platform sends the local runtime are now one constant (orchestrator.LOCAL_REQUEST_OPTIONS, empty today) that both requests to the runtime read - the orchestrator's generation and the gateway's stream - and that a baseline of a local tier records as sent. A run that sent none records that the runtime's own defaults applied and names the runtime and the version it reports (its /api/version), or says the version was not reported and which defaults applied is not recorded. A re-run of a recorded baseline is refused, with nothing run, when the record names options and the options now sent differ, or names a runtime version and the runtime now reports another (its defaults may differ); a record made before this round names neither, and the re-run says so. The Native AI page shows the settings a baseline ran under - the runtime and its version, and the options sent - and, on a re-run, how they were compared. Both requests were driven against a stand-in runtime and their bodies read; not driven against a live runtime here, since no local model runs in this environment. Guard test_w844, 8 blinds red."
     },
     {
       "id": "FU-1092",

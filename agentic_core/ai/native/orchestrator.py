@@ -74,6 +74,11 @@ FLOOR_TOKENS_BASIS = ("NOT COUNTED - the deterministic floor served this and run
                       "tokens to count; null, never 0")
 REFUSED_TOKENS_BASIS = "NOT COUNTED - the request was refused before any model ran; null, never 0"
 
+#  W844 (FU-1091) - THE OPTIONS this platform sends the local runtime with a generation: none. One constant, read by
+#  both requests to the runtime and by the record a baseline keeps, so the record cannot say other than what was
+#  sent. Empty means the runtime's own defaults apply - and the record names the runtime and its version.
+LOCAL_REQUEST_OPTIONS: Dict[str, Any] = {}
+
 
 def ollama_counted(text: str, final: Optional[Dict[str, Any]]) -> CountedText:
     """`text`, carrying the tokens Ollama reported in its FINAL object (the one with `done: true`).
@@ -526,7 +531,9 @@ class NativeOrchestrator:
                 final: Optional[Dict[str, Any]] = None     # W741 - Ollama's last object carries its count
                 async with httpx.AsyncClient(timeout=to) as client:
                     async with client.stream("POST", url, json={"model": model, "prompt": prompt,
-                                                                "stream": True}) as r:
+                                                                "stream": True,
+                                                                **({"options": dict(LOCAL_REQUEST_OPTIONS)}
+                                                                   if LOCAL_REQUEST_OPTIONS else {})}) as r:
                         async for line in r.aiter_lines():
                             if not line.strip():
                                 continue

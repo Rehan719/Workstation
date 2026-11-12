@@ -73072,3 +73072,106 @@ def test_w843_the_held_out_set_measures_injection_no_source_malformed_output_and
     page = _code_only((_pl843.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages"
                        / "developers" / "NativeAI.tsx").read_bytes().decode("utf-8"))
     assert "check ${c.check}" in page, "the page does not name the check a case was read on"
+
+
+def test_w844_a_baseline_records_the_settings_it_sent_and_whose_defaults_applied(client, monkeypatch):
+    """FU-1091 (W844). The platform sends the local runtime no options, and a baseline record said only that the
+    runtime's defaults applied and were not recorded, so a model tier's baseline could not be reproduced from its
+    record. The options sent are now one constant that both requests to the runtime read and that a baseline
+    records as sent; a run that sent none records that the runtime's own defaults applied, naming the runtime and
+    the version it reports; and a re-run is refused, with nothing run, when the runtime or the options now differ
+    from the ones the record names. Both requests are driven against a stand-in runtime and their bodies read."""
+    import asyncio as _aio844
+    import json as _j844
+    import pathlib as _pl844
+    import sys as _sys844
+    import httpx as _hx844
+    import agentic_core.api.native_ai as _na844
+    from agentic_core.ai import gateway as _gw844
+    from agentic_core.ai.native import model_resource as _mr844
+    _om844 = _sys844.modules["agentic_core.ai.native.orchestrator"]
+
+    assert _om844.LOCAL_REQUEST_OPTIONS == {}, "the platform now sends options; this guard's premise changed"
+    store = _pl844.Path(_na844._baseline_store())
+    saved = store.read_bytes() if store.exists() else None
+    monkeypatch.setattr(_na844, "_local_model_digest", lambda name: "sha-w844")
+    monkeypatch.setattr(_mr844, "local_runtime_version", lambda: "0.40.5")
+
+    async def _complete(prompt, agent="assistant", timeout=30.0, prefer_external=False, prefer="auto", **_kw):
+        return {"output": "a reply", "served_by": prefer, "is_external": False}
+    monkeypatch.setattr(_na844.orchestrator, "complete", _complete)
+    try:
+        r = client.post("/api/v1/native-ai/baseline/run", json={"tier": "ollama:w844-model"})
+        assert r.status_code == 200, r.text[:300]
+        st = r.json()["serving"]["settings"]
+        assert st["options_sent"] == {} and st["runtime"] == {"name": "ollama", "version": "0.40.5"}, st
+        assert "none sent: the runtime's own defaults applied - ollama 0.40.5" in st["sampling"], st
+        run_id = r.json()["run_id"]
+
+        again = client.post(f"/api/v1/native-ai/baseline/{run_id}/reproduce")
+        assert again.status_code == 200, again.text[:300]
+        assert "runtime version are the ones the record names" in again.json()["settings_compared"], again.json()
+
+        n = len(_j844.loads(store.read_text(encoding="utf-8")))
+        monkeypatch.setattr(_mr844, "local_runtime_version", lambda: "0.41.0")         # the runtime was upgraded
+        up = client.post(f"/api/v1/native-ai/baseline/{run_id}/reproduce")
+        assert up.status_code == 409 and "defaults may differ" in up.json()["detail"], up.text[:300]
+        monkeypatch.setattr(_mr844, "local_runtime_version", lambda: "0.40.5")
+        monkeypatch.setattr(_om844, "LOCAL_REQUEST_OPTIONS", {"num_ctx": 4096})         # options are now sent
+        diff = client.post(f"/api/v1/native-ai/baseline/{run_id}/reproduce")
+        assert diff.status_code == 409 and "different settings" in diff.json()["detail"], diff.text[:300]
+        assert len(_j844.loads(store.read_text(encoding="utf-8"))) == n, "a refused re-run recorded something"
+        sent = client.post("/api/v1/native-ai/baseline/run", json={"tier": "ollama:w844-model"}).json()
+        assert sent["serving"]["settings"]["options_sent"] == {"num_ctx": 4096}, sent["serving"]
+        assert sent["serving"]["settings"]["sampling"].startswith("as sent"), sent["serving"]
+    finally:
+        if saved is None:
+            store.unlink(missing_ok=True)
+        else:
+            store.write_bytes(saved)
+
+    #  the requests themselves read the same constant: both driven against a stand-in runtime
+    bodies = []
+
+    class _Resp:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        async def aiter_lines(self):
+            yield _j844.dumps({"response": "ok", "done": True})
+
+    class _Client:
+        def __init__(self, *a, **k):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        def stream(self, method, url, json=None, **k):
+            bodies.append(json)
+            return _Resp()
+    monkeypatch.setattr(_hx844, "AsyncClient", _Client)
+    monkeypatch.delenv("AI_DISABLE_LOCAL", raising=False)
+
+    async def _drain(gen):
+        return [t async for t in gen]
+    for opts in ({"num_ctx": 4096}, {}):
+        monkeypatch.setattr(_om844, "LOCAL_REQUEST_OPTIONS", opts)
+        _aio844.run(_na844.orchestrator._run_model("ollama:w844-model", "W844 hello"))
+        _aio844.run(_drain(_gw844.gateway._stream_owned_model("W844 hello")))
+        assert len(bodies) >= 2 and all(b.get("options") == (opts or None) for b in bodies[-2:]), (
+            "a request to the runtime does not send what the baseline records as sent", bodies[-2:])
+
+    page = _code_only((_pl844.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages"
+                       / "developers" / "NativeAI.tsx").read_bytes().decode("utf-8"))
+    assert 'data-testid="baseline-settings"' in page and "b.serving.settings.sampling" in page, (
+        "the page does not show the settings a baseline ran under")
+    assert ("b.serving.settings.runtime.version" in page
+            and "JSON.stringify(b.serving.settings.options_sent)" in page), (
+        "the page does not name the runtime and the options a baseline ran under")

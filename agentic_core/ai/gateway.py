@@ -549,10 +549,12 @@ class ModelGateway:
         import json as _json
         timeout = httpx.Timeout(connect=5.0, read=120.0, write=5.0, pool=5.0)
         async with httpx.AsyncClient(timeout=timeout) as client:
+            from agentic_core.ai.native.orchestrator import LOCAL_REQUEST_OPTIONS as _opts844
             async with client.stream("POST", self.ollama_url, json={
                 "model": self._effective_ollama_model,
                 "prompt": augmented,
                 "stream": True,
+                **({"options": dict(_opts844)} if _opts844 else {}),     # W844 (FU-1091) - the one constant
             }) as r:
                 async for line in r.aiter_lines():
                     if line:
