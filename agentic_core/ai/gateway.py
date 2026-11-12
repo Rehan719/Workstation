@@ -659,6 +659,7 @@ class ModelGateway:
         _preamble = load_preamble(owner_id)
         augmented = _preamble + augmented
         from agentic_core.organism.self_healing import self_healer   # W323 — breaker on the stream path
+        from agentic_core.ai.native.orchestrator import external_counted as _external_counted   # W870 (FU-1100)
 
         def _log(text: str, served_by: str | None = None) -> None:
             try:
@@ -780,9 +781,16 @@ class ModelGateway:
                         async for chunk in s.text_stream:
                             full += chunk
                             yield {"token": chunk}
+                        #  W870 (FU-1100) - the usage the server reported travels on the stream's final message
+                        _final_msg870 = None
+                        try:
+                            _final_msg870 = await s.get_final_message()
+                        except Exception:
+                            pass
+                    _c870 = _external_counted(full, getattr(_final_msg870, "usage", None), "anthropic")
                     self_healer.record_success("claude")
-                    _record("claude", True, _t0, True)
-                    _fin = _final(full, "claude", True)
+                    _record("claude", True, _t0, True, tokens=_c870.model_tokens)
+                    _fin = _final(full, "claude", True, _c870.model_tokens, _c870.model_tokens_basis)
                     if not _fin["guardrail_passed"]:
                         yield {"token": _NOTICE}
                     yield _fin
@@ -796,19 +804,25 @@ class ModelGateway:
                     from openai import AsyncOpenAI
                     client = AsyncOpenAI(api_key=self.openai_key)
                     full = ""
+                    _usage870 = None             # W870 (FU-1100) - a stream reports its usage only when asked
                     async for chunk in await client.chat.completions.create(
                         model="gpt-4o-mini",
                         messages=[{"role": "user", "content": augmented}],
                         stream=True,
+                        stream_options={"include_usage": True},
                         max_tokens=self.max_tokens,
                     ):
-                        delta = chunk.choices[0].delta.content or ""
+                        if getattr(chunk, "usage", None) is not None:
+                            _usage870 = chunk.usage
+                        #  the chunk that carries the usage carries no choices
+                        delta = (chunk.choices[0].delta.content or "") if chunk.choices else ""
                         full += delta
                         if delta:
                             yield {"token": delta}
+                    _c870 = _external_counted(full, _usage870, "openai")
                     self_healer.record_success("openai")
-                    _record("openai", True, _t0, True)
-                    _fin = _final(full, "openai", True)
+                    _record("openai", True, _t0, True, tokens=_c870.model_tokens)
+                    _fin = _final(full, "openai", True, _c870.model_tokens, _c870.model_tokens_basis)
                     if not _fin["guardrail_passed"]:
                         yield {"token": _NOTICE}
                     yield _fin

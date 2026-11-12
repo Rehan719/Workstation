@@ -21908,11 +21908,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P4.3",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W870",
       "note": "",
       "slot_source": "external accelerants run only behind P4.3's switch",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built as the row names: the orchestrator's Anthropic and OpenAI branches return their text carrying the count the answer's usage reports (input+output tokens; prompt+completion tokens), summing only the fields present, null never 0 when none is; the gateway stream reads the Anthropic final message's usage and asks OpenAI for its usage (stream_options include_usage), reading it from the last chunk; the count is on the done frame and is the one the outcome row spends, so it reaches the work budget with the seconds, and the work budget's basis no longer says such usage is unread. Driven with the switch on in the test process only, with fake clients. AI_ALLOW_EXTERNAL is untouched."
     },
     {
       "id": "FU-1101",

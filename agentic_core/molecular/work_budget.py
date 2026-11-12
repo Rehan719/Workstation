@@ -13,7 +13,7 @@ WHAT IT MEASURES, and what it refuses to measure
     only `response`. The native orchestrator's local route and the gateway's stream now read that count and
     hand it to `record_outcome(tokens=...)`, which passes it to `spend()` in the SAME call as the run's
     seconds, so a counted run is still one run. A run nothing counted (the deterministic floor runs no model;
-    an external accelerant's reported usage is not read) adds nothing, and `tokens_spent` stays None with a
+    an external answer that names no usage) adds nothing, and `tokens_spent` stays None with a
     reason until something has counted, because zero would read as "no tokens were used" when the truth is
     "nobody counted".
 
@@ -330,7 +330,8 @@ def state() -> Dict[str, Any]:
                          f"{int(rec.get('calls') or 0)} spend(s) were recorded in all, which is not a count of "
                          "answers: since W847 a nest spends once, with every model answer inside it, and a run "
                          "nothing counted adds no tokens (the deterministic floor runs no model, and an external "
-                         "accelerant's reported usage is not read)"
+                         "accelerant's answer is counted from the usage it reports, since W870, or not at all when "
+                         "it names none)"
                          if tokens is not None else
                          "NOT RECORDED — no run this window reported a token count (a count comes only from a "
                          "model's own answer; the deterministic floor runs no model), so this is null rather "

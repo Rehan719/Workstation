@@ -102,6 +102,33 @@ def ollama_counted(text: str, final: Optional[Dict[str, Any]]) -> CountedText:
     return out
 
 
+#  W870 (FU-1100) - THE TWO EXTERNAL ACCELERANTS' ANSWERS CARRY THE USAGE THEIR OWN SERVERS REPORTED, and both were
+#  dropped. Anthropic names input_tokens and output_tokens; OpenAI names prompt_tokens and completion_tokens.
+EXTERNAL_USAGE_FIELDS: Dict[str, tuple] = {"anthropic": ("input_tokens", "output_tokens"),
+                                           "openai": ("prompt_tokens", "completion_tokens")}
+
+
+def external_counted(text: str, usage: Any, provider: str) -> CountedText:
+    """`text`, carrying the tokens an external accelerant's server reported in its answer's usage object. The count
+    sums only the fields the usage actually carries, and the basis names them. An answer naming neither field, or
+    carrying no usage at all, is None: not counted, never 0."""
+    out = CountedText(text)
+
+    def _field(k):
+        v = usage.get(k) if isinstance(usage, dict) else getattr(usage, k, None)
+        return v if type(v) is int and v >= 0 else None
+    fields = [k for k in EXTERNAL_USAGE_FIELDS.get(provider, ()) if _field(k) is not None]
+    if fields:
+        out.model_tokens = sum(_field(k) for k in fields)
+        out.model_tokens_basis = (f"measured - {out.model_tokens} token(s) {provider} reported in its answer's "
+                                  f"usage ({' + '.join(fields)})")
+    else:
+        out.model_tokens_basis = (f"NOT COUNTED - {provider}'s answer "
+                                  + ("carried no usage" if usage is None else "named no token count in its usage")
+                                  + "; null, never 0")
+    return out
+
+
 def _breaker_open(name: str) -> bool:
     """§6×§8 (W278) — consult the organism's self-healing circuit breaker before spending a
     timeout on a model that keeps failing. Fail-open: no organism → no skip."""
@@ -555,14 +582,14 @@ class NativeOrchestrator:
             msg = await client.messages.create(model=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6"),
                                                max_tokens=int(os.getenv("GATEWAY_MAX_TOKENS", "4096")),
                                                messages=[{"role": "user", "content": prompt}])
-            return msg.content[0].text
+            return external_counted(msg.content[0].text, getattr(msg, "usage", None), "anthropic")   # W870
         if name == "openai":
             self._external_budget_check("openai")      # §6 (W335) — spend guard on the REAL spend path
             from openai import AsyncOpenAI
             client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
             comp = await client.chat.completions.create(model="gpt-4o-mini", timeout=25,
                                                         messages=[{"role": "user", "content": prompt}])
-            return comp.choices[0].message.content or ""
+            return external_counted(comp.choices[0].message.content or "", getattr(comp, "usage", None), "openai")   # W870
         raise ResourceSkipped(name, "unknown resource")   # W458 — nothing was attempted
 
     _external_calls: List[float] = []   # timestamps of external attempts (sliding hour window)

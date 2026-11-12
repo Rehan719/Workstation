@@ -74830,3 +74830,127 @@ def test_w869_a_stream_served_externally_counts_against_the_hourly_external_cap(
     #  3. the class docstring says the stream is inside the cap
     doc = " ".join((_g869.ModelGateway.__doc__ or "").split())
     assert "outside the orchestrator's hourly external cap" not in doc and "inside the orchestrator's hourly external cap" in doc
+
+
+def test_w870_an_external_answer_is_counted_from_the_usage_its_server_reports(client, monkeypatch):
+    """FU-1100 (W870). The orchestrator's two external branches dropped the usage the Anthropic and OpenAI answers carry,
+    and so did the gateway stream's; OpenAI reports usage on a stream only when asked. Driven with the switch on IN
+    THIS PROCESS ONLY, placeholder keys and fake clients, so no network call is made: each answer is now counted from
+    the usage its server reported, that count is the one the outcome row spends, and an answer naming no usage is
+    null, never 0."""
+    import asyncio as _aio870
+    import sys
+    import types
+    from agentic_core.ai import gateway as _g870
+    import importlib
+    #  the MODULE: the package re-exports the orchestrator OBJECT under the same name (W734's note)
+    _o870 = importlib.import_module("agentic_core.ai.native.orchestrator")
+    from agentic_core.api import operational_excellence as _oe870
+    from agentic_core.organism.self_healing import self_healer as _sh870
+    NS = types.SimpleNamespace
+
+    #  1. the reading itself: the fields the usage carries are summed and named; none is null, never 0
+    c = _o870.external_counted("x", NS(input_tokens=11, output_tokens=7), "anthropic")
+    assert c == "x" and c.model_tokens == 18 and "input_tokens + output_tokens" in c.model_tokens_basis
+    assert _o870.external_counted("y", {"prompt_tokens": 5, "completion_tokens": 9}, "openai").model_tokens == 14
+    for none in (None, NS(), NS(input_tokens=-1, output_tokens="7")):
+        n = _o870.external_counted("z", none, "anthropic")
+        assert n.model_tokens is None and n.model_tokens_basis.startswith("NOT COUNTED"), (none, n.model_tokens)
+
+    #  fakes for both providers, each reporting a usage
+    kwargs = {}
+
+    class _Msg:
+        content = [NS(text="w870 anthropic reply")]
+        usage = NS(input_tokens=12, output_tokens=30)
+
+    class _Stream:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *exc):
+            return False
+
+        @property
+        def text_stream(self):
+            async def _gen():
+                for t in ("w870 ", "streamed."):
+                    yield t
+            return _gen()
+
+        async def get_final_message(self):
+            return NS(usage=NS(input_tokens=3, output_tokens=4))
+
+    class _Messages:
+        async def create(self, **kw):
+            return _Msg()
+
+        def stream(self, **kw):
+            return _Stream()
+
+    class _Anthropic:
+        def __init__(self, api_key=None, **_k):
+            self.messages = _Messages()
+
+    def _chunk(t):
+        return NS(choices=[NS(delta=NS(content=t))], usage=None)
+
+    class _Completions:
+        async def create(self, **kw):
+            kwargs.update(kw)
+            if not kw.get("stream"):
+                return NS(choices=[NS(message=NS(content="w870 openai reply"))], usage=NS(prompt_tokens=8, completion_tokens=13))
+
+            async def _gen():
+                yield _chunk("w870 ")
+                yield _chunk("streamed.")
+                yield NS(choices=[], usage=NS(prompt_tokens=2, completion_tokens=5))
+            return _gen()
+
+    class _OpenAI:
+        def __init__(self, api_key=None, **_k):
+            self.chat = NS(completions=_Completions())
+    fa, fo = types.ModuleType("anthropic"), types.ModuleType("openai")
+    fa.AsyncAnthropic, fo.AsyncOpenAI = _Anthropic, _OpenAI
+    monkeypatch.setitem(sys.modules, "anthropic", fa)
+    monkeypatch.setitem(sys.modules, "openai", fo)
+    monkeypatch.setenv("AI_ALLOW_EXTERNAL", "true")
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "1")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "w870-placeholder-not-a-key")
+    monkeypatch.setenv("OPENAI_API_KEY", "w870-placeholder-not-a-key")
+    monkeypatch.setattr(_o870.NativeOrchestrator, "_external_calls", [])
+    monkeypatch.setattr(_g870.gateway._rate_limiter, "_lock", _aio870.Lock())
+    for p in ("claude", "openai"):
+        if _sh870.is_open(p):
+            _sh870.record_success(p)
+
+    #  2. the orchestrator's two external branches return the count their answers carry
+    a = _aio870.run(_o870.orchestrator._run_model("anthropic", "w870 prompt"))
+    o = _aio870.run(_o870.orchestrator._run_model("openai", "w870 prompt"))
+    assert (a, a.model_tokens) == ("w870 anthropic reply", 42) and (o, o.model_tokens) == ("w870 openai reply", 21)
+
+    #  3. the stream's two external branches: the count is on the done frame and is the one the outcome row spends
+    spent = []
+    _real = _oe870.record_outcome
+
+    def _spy(*args, **kw):
+        if kw.get("served_by") in ("claude", "openai"):
+            spent.append((kw.get("served_by"), kw.get("tokens")))
+        return _real(*args, **kw)
+    monkeypatch.setattr(_oe870, "record_outcome", _spy)
+
+    def stream():
+        async def _go():
+            return [ev async for ev in _g870.gateway.stream_meta("w870: name one risk", agent="w870", prefer_external=True)]
+        return _aio870.run(_go())[-1]
+    monkeypatch.setattr(_g870.gateway, "anthropic_key", "w870-placeholder-not-a-key")
+    monkeypatch.setattr(_g870.gateway, "openai_key", None)
+    done = stream()
+    assert done.get("served_by") == "claude" and done.get("model_tokens") == 7, done
+    assert done.get("model_tokens_basis", "").startswith("measured"), done.get("model_tokens_basis")
+    monkeypatch.setattr(_g870.gateway, "anthropic_key", None)
+    monkeypatch.setattr(_g870.gateway, "openai_key", "w870-placeholder-not-a-key")
+    done = stream()
+    assert done.get("served_by") == "openai" and done.get("model_tokens") == 7, done
+    assert kwargs.get("stream_options") == {"include_usage": True}, "the OpenAI stream did not ask for its usage"
+    assert spent == [("claude", 7), ("openai", 7)], spent
