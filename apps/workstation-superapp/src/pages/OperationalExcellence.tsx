@@ -57,6 +57,7 @@ const pct = (n: number) => `${Math.round((n ?? 0) * 100)}%`;
 export const OperationalExcellence: React.FC = () => {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [rankings, setRankings] = useState<Ranking[]>([]);
+  const [rankingsBasis, setRankingsBasis] = useState('');   // W873 (FU-1039) - what the ranking ranks
   const [outcomes, setOutcomes] = useState<Outcome[]>([]);
   const [models, setModels] = useState<ModelHealth[]>([]);
   const [failures, setFailures] = useState<Failures | null>(null);   // W583 (P3.25)
@@ -72,6 +73,7 @@ export const OperationalExcellence: React.FC = () => {
       fetch('/api/v1/operations/failures?limit=20').then(r => r.json()),
     ]).then(([s, r, o, m, f]) => {
       setSummary(s); setRankings(r.rankings || []); setOutcomes(o.outcomes || []); setModels(m.models || []);
+      setRankingsBasis(typeof r.basis === 'string' ? r.basis : 'What this ranking ranks was not stated by the server.');
       setFailures(f && typeof f === 'object' && 'state' in f ? (f as Failures) : null);
     })
       .catch(() => setError('Failed to load operational metrics'))
@@ -85,7 +87,8 @@ export const OperationalExcellence: React.FC = () => {
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Learning Loop</h1>
         <p className="text-slate-500 font-bold mt-2 max-w-2xl leading-relaxed">
           The real, recorded outcomes of every run on Workstation's <span className="text-highlight">own</span> resources —
-          swarm cascades, deliverables, transformations — aggregated into honest per-resource rankings the platform learns from.
+          swarm cascades, deliverables, transformations — aggregated per resource: what ran, what produced output and,
+          only where a quality gate assessed it, what passed.
           Empty until runs happen; never fabricated.
         </p>
       </header>
@@ -133,6 +136,9 @@ export const OperationalExcellence: React.FC = () => {
       <div>
         <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2"><TrendingUp size={14} /> Resource rankings</h3>
         {!loading && rankings.length === 0 && <p className="text-[11px] text-slate-600">No runs recorded yet — run a swarm, produce a deliverable, or orchestrate a transformation, and outcomes will appear here.</p>}
+        {rankings.length > 0 && rankingsBasis && (
+          <p data-testid="rankings-basis" className="text-[10px] text-slate-500 mb-2 max-w-3xl leading-relaxed">{rankingsBasis}</p>
+        )}
         {rankings.length > 0 && (
           <Card className="p-0 overflow-hidden">
             <table className="w-full text-left">

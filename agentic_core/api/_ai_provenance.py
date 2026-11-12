@@ -303,17 +303,8 @@ async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
     output = res.get("output", "")
     served_by = res.get("served_by", "native")
     is_external = bool(res.get("is_external"))
-    try:
-        from agentic_core.api.operational_excellence import record_outcome
-        record_outcome("ai_call", f"agent:{agent}", served_by=served_by, is_external=is_external,
-                       # W495 (FU-125, S7.3) — this wrapper sees no quality gate at all, so it records
-                       # that the run PRODUCED output and leaves the verdict unset (NOT ASSESSED) rather
-                       # than filing "the floor returned text" as a success.
-                       duration_ms=int((time.monotonic() - t0) * 1000), success=bool(output),
-                       owner_id=owner_id,     # S18.6 (W743) - booked to that owner's own budget
-                       quality_gate=None)
-    except Exception:
-        pass
+    #  W873 (FU-1039) - the call's own seconds, taken before the gate below runs: the row records them after it
+    _call_ms873 = int((time.monotonic() - t0) * 1000)
     provenance: Dict[str, Any] = {"posture": "in-house-first", "served_by": served_by,
                                   "is_external": is_external,
                                   #  P3.6 clause (2) — the verdict travels WITH the provenance the page
@@ -385,4 +376,16 @@ async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
         }
     except Exception as exc:   # the gate itself must never cost the user their output
         provenance["quality_assurance_error"] = str(exc)
+    #  W873 (FU-1039, ruled) - THE ROW'S QUALITY FIELD IS WRITTEN FROM THE GATE THAT HOLDS THE VERDICT. This row was
+    #  written before the gate above ran, so it carried no verdict on every domain tool's answer (W495 recorded
+    #  NOT ASSESSED rather than "the floor returned text"). It is written now with the gate's own verdict: pass or
+    #  fail when the gate assessed the text, None when it did not (the floor is not assessable) or could not run.
+    try:
+        from agentic_core.api.operational_excellence import record_outcome
+        record_outcome("ai_call", f"agent:{agent}", served_by=served_by, is_external=is_external,
+                       duration_ms=_call_ms873, success=bool(output),
+                       owner_id=owner_id,     # S18.6 (W743) - booked to that owner's own budget
+                       quality_gate=(provenance.get("quality_assurance") or {}).get("qms_gate_passed"))
+    except Exception:
+        pass
     return output, provenance

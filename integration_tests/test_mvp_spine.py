@@ -75046,3 +75046,65 @@ def test_w872_every_block_comment_strip_in_the_suite_goes_through_the_masking_pa
     _list872 = "'text/*', 'application/json'"
     assert _list872 in paired and _list872 not in naive, (
         "the page no longer holds the token this guard shows the cut on")
+
+
+def test_w873_the_quality_field_is_written_from_the_gate_and_the_ranking_says_what_it_ranks(client, monkeypatch):
+    """FU-1039 (W873, ruled). Every domain tool's answer passes the QMS gate inside ai_text, and the ai_call row was
+    written before that gate ran, so the operations record's quality field never held a verdict while the ranking
+    and the page called the result excellence. The row is now written after the gate, with the gate's own verdict
+    (None when nothing assessed the text, or the gate could not run), and with the call's own seconds. The ranking
+    says what it ranks, from the rows it ranks."""
+    import inspect
+    import pathlib
+    from agentic_core.api import _ai_provenance as _ap873
+    from agentic_core.api import operational_excellence as _oe873
+    from agentic_core.vbs import quality as _q873
+    rows = []
+    _real = _oe873.record_outcome
+
+    def _spy(kind, resource, **kw):
+        if kind == "ai_call" and resource == "agent:law_researcher":
+            rows.append(kw)
+        return _real(kind, resource, **kw)
+    monkeypatch.setattr(_oe873, "record_outcome", _spy)
+
+    def ask():
+        r = client.post("/api/v1/law/research", json={"question": "w873 can a landlord keep a deposit for wear and tear?"})
+        assert r.status_code == 200, r.text[:200]
+        return r.json(), rows[-1]
+
+    #  1. as the floor serves it: the gate does not assess floor text, and the row says so
+    a, row = ask()
+    assert (a["ai_provenance"].get("quality_assurance") or {}).get("qms_gate_passed") is None
+    assert row.get("quality_gate") is None, row
+    #  2. a verdict the gate gave is the row's verdict, both ways
+    for verdict in (True, False):
+        async def _gate(*_a, _v=verdict, **_k):
+            return {"quality": {"qms_gate_passed": _v, "qms_basis": "w873 stand-in", "compliance": {}}}
+        monkeypatch.setattr(_q873, "assure_delivery", _gate)
+        a, row = ask()
+        assert a["ai_provenance"]["quality_assurance"]["qms_gate_passed"] is verdict
+        assert row.get("quality_gate") is verdict, (verdict, row)
+    #  3. a gate that could not run leaves the verdict unset, and the row is still written
+    async def _broken(*_a, **_k):
+        raise RuntimeError("w873 the gate is down")
+    monkeypatch.setattr(_q873, "assure_delivery", _broken)
+    n = len(rows)
+    a, row = ask()
+    assert len(rows) == n + 1 and row.get("quality_gate") is None and a["ai_provenance"].get("quality_assurance_error")
+    #  4. the call's seconds are taken before the gate, and the row is written after it
+    body = inspect.getsource(_ap873.ai_text)
+    assert body.index("_call_ms873 = ") < body.index("assure_delivery(") < body.index('record_outcome("ai_call"'), (
+        "the row is not written from the gate, or its seconds include the gate's")
+
+    #  5. the ranking says what it ranks, from the rows it ranks
+    none = _oe873.rankings_basis([{"quality_verdict": None}] * 3)
+    assert none["assessed_rows"] == 0 and "ranks what produced output" in none["basis"], none
+    some = _oe873.rankings_basis([{"quality_verdict": True}, {"quality_verdict": False}] + [{}] * 3)
+    assert some["assessed_rows"] == 2 and some["rows"] == 5 and "2 of 5 recorded run(s)" in some["basis"], some
+    got = client.get("/api/v1/operations/rankings").json()
+    assert isinstance(got.get("rankings"), list) and got.get("basis") and isinstance(got.get("assessed_rows"), int)
+    page = (pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/pages/OperationalExcellence.tsx"
+            ).read_text(encoding="utf-8")
+    assert 'data-testid="rankings-basis"' in page and "{rankingsBasis}" in page and "r.basis" in page
+    assert "honest per-resource rankings the platform learns from" not in page

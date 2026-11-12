@@ -20666,11 +20666,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.10",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W873",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built as ruled: ai_text writes its ai_call row after the QMS gate it runs, with that gate's verdict (pass or fail when assessed; None when the floor's text is not assessable or the gate could not run) and the call's own seconds taken before the gate. GET /operations/rankings says what it ranks, from the rows it ranks (how many carry a verdict; with none, that it ranks what produced output), and the page shows that sentence above the ranking. Driven: floor None, a stand-in gate's True and False carried onto the row, a broken gate leaving it unset."
     },
     {
       "id": "FU-1040",

@@ -549,9 +549,26 @@ async def degradation(resource: Optional[str] = None, cycles: int = 3, window: i
             "method": "PerformanceDegradationDetector (owned self_improvement)"}
 
 
+def rankings_basis(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """W873 (FU-1039, ruled) - WHAT THE RANKING RANKS, from the rows it ranks. A resource is ordered by its gate pass
+    rate where a gate assessed it, then by in-house rate, speed and volume; where nothing assessed it, its place says
+    how it ran and that it produced output, not how good the output was."""
+    assessed = sum(1 for r in rows if r.get("quality_verdict") is not None)
+    return {"rows": len(rows), "assessed_rows": assessed,
+            "basis": (f"{assessed} of {len(rows)} recorded run(s) carry a quality gate's verdict. Resources are "
+                      f"ordered by their gate pass rate where a gate assessed them, then by how much ran in-house, "
+                      f"speed and volume. A resource no gate assessed is ranked by how it ran and that it produced "
+                      f"output, which is not how good its output was."
+                      if assessed else
+                      f"None of {len(rows)} recorded run(s) carries a quality gate's verdict, so this ranks what "
+                      f"produced output - by how much ran in-house, speed and volume - and not how good any output "
+                      f"was.")}
+
+
 @router.get("/rankings")
 async def rankings():
-    return {"rankings": _rankings([r for r in _load() if r.get("kind") != "model_attempt"])}
+    _rows873 = [r for r in _load() if r.get("kind") != "model_attempt"]
+    return {"rankings": _rankings(_rows873), **rankings_basis(_rows873)}      # W873 (FU-1039)
 
 
 class RebaselineRequest(BaseModel):
