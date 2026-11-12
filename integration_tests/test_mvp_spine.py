@@ -74232,3 +74232,96 @@ def test_w860_a_payout_is_for_the_owner_the_entitys_record_names_and_the_account
     assert 'data-testid="owner-payout-account-name"' in page and "pay.account_name" in page, (
         "the economy page does not say the account's own name is kept as history")
     assert "The payee is the recorded owner of the account" not in page
+
+
+def test_w861_an_allocation_is_reversed_by_a_recorded_reversal_held_for_a_person(client, monkeypatch, tmp_path):
+    """FU-1005 (W861). Three June allocations to project ids that are not entities, still active, held half the fund
+    and nothing could release them. Ruled 2026-10-12: reversed by a recorded reversal. A reversal is a governed
+    action of its own class with no threshold: requested with a reason, held at Change Control, applied once when it
+    is requested again after a person approves it - the allocation kept and marked reversed with its reason, who
+    asked, when and the change that released it, and its amount returned to the fund. Driven in an isolated fund."""
+    import pathlib as _pl861
+    import uuid as _uuid861
+    from agentic_core.api import capital_fund as _cf861
+    from agentic_core.api import change_control as _cc861
+    from agentic_core.economy import governance as _gv861
+
+    monkeypatch.setattr(_cf861, "_FUND_STORE", tmp_path / "capital_fund.json")
+    tag = _uuid861.uuid4().hex[:6]
+    aid, other = f"alloc-w861-{tag}", f"alloc-w861b-{tag}"
+    _cf861._save_fund({
+        "total_capital": 10000.0, "currency": "WST", "allocated": 1005.0, "available": 8995.0,
+        "created_at": "2026-06-01T00:00:00Z",
+        "allocations": [
+            {"allocation_id": aid, "project_id": f"w861-not-an-entity-{tag}", "project_name": "June test",
+             "amount": 5.0, "purpose": "test", "domain": "w861dom", "realm": "w861realm", "status": "active",
+             "allocated_at": "2026-06-29T10:00:00Z"},
+            {"allocation_id": other, "project_id": f"w861-other-{tag}", "project_name": "kept", "amount": 1000.0,
+             "purpose": "kept", "domain": "w861keep", "realm": "w861realm", "status": "active",
+             "allocated_at": "2026-06-29T10:00:00Z"}]})
+    why = "a June test allocation to a project id that is no entity; nothing else can release it"
+    created = []
+
+    def ask(a=aid, reason=why):
+        return client.post(f"/api/v1/fund/allocations/{a}/reverse", json={"reason": reason})
+
+    try:
+        assert ask(reason="too short").status_code == 422
+        assert ask(a=f"alloc-none-{tag}").status_code == 404
+
+        #  1. a request is HELD, whatever its amount (five WST is far under the materiality threshold)
+        h = ask()
+        assert h.status_code == 200, h.text[:300]
+        hj = h.json()
+        assert hj["status"] == "held" and hj["applied"] is False and hj["cca_id"], hj
+        created.append(hj["cca_id"])
+        assert hj["basis"].startswith("HELD, NOT REVERSED") and hj["real_money_moved"] is False, hj
+        c = _cc861._load_change(hj["cca_id"])
+        assert c["title"] == _gv861.FUND_REVERSAL_HOLD_TITLE_PREFIX + aid and c["counterparty"] == aid, c
+        assert "Reversal of capital fund allocation" in c["description"] and "no threshold" in c["description"]
+        assert c["reversal_request"]["reason"] == why and c["reversal_request"]["amount"] == 5.0, c
+        f0 = _cf861._load_fund(strict=True)
+        assert (f0["available"], f0["allocated"]) == (8995.0, 1005.0), "a held reversal moved the fund"
+        assert _gv861._source_class(_gv861.FUND_REVERSAL_SOURCE_PREFIX + aid) == "fund_reversal"
+        #  the request is read back where a person decides: the portfolio lists it, with its reason
+        rv = [x for x in client.get("/api/v1/fund/portfolio").json()["reversal_requests"] if x["cca_id"] == hj["cca_id"]]
+        assert rv and (rv[0]["status"], rv[0]["reason"], rv[0]["allocation_id"]) == ("submitted", why, aid), rv
+        assert rv[0]["requested_by"] == "single-user-mode" and rv[0]["requested_at"], rv
+
+        #  2. approved by a person, then requested again: applied once, the row kept and marked
+        d = client.post(f"/api/v1/cca/{hj['cca_id']}/review", json={
+            "override_decision": "approved", "admin_decision_for_critical": True, "reviewer_notes": "w861"})
+        assert d.status_code == 200, d.text[:300]
+        assert _cf861._load_fund(strict=True)["available"] == 8995.0, "approving reversed it by itself"
+        r = ask()
+        assert r.status_code == 200, r.text[:300]
+        rj = r.json()
+        assert rj["status"] == "reversed" and rj["applied"] is True and rj["cca_id"] == hj["cca_id"], rj
+        assert (rj["available"], rj["allocated"]) == (9000.0, 1000.0), rj
+        assert rj["basis"].startswith("REVERSED (VIRTUAL)") and rj["real_money_moved"] is False, rj
+        f1 = _cf861._load_fund(strict=True)
+        row = next(a for a in f1["allocations"] if a["allocation_id"] == aid)
+        assert row["status"] == "reversed" and row["reversal"]["reason"] == why, row
+        assert row["reversal"]["cca_id"] == hj["cca_id"] and row["reversal"]["requested_by"] == "single-user-mode"
+        assert _cc861._load_change(hj["cca_id"])["status"] == "implemented", "the approval was not spent"
+        assert len(f1["allocations"]) == 2, "the reversed allocation was deleted"
+
+        #  3. once reversed, it cannot be reversed again; the other allocation is untouched
+        assert ask().status_code == 409
+        assert next(a for a in f1["allocations"] if a["allocation_id"] == other)["status"] == "active"
+
+        #  4. the portfolio counts what is active, and shows the reversed row as reversed
+        p = client.get("/api/v1/fund/portfolio").json()
+        assert "w861dom" not in p["by_domain"] and p["by_domain"].get("w861keep") == 1000.0, p["by_domain"]
+        prow = next(a for a in p["allocations"] if a["allocation_id"] == aid)
+        assert prow["status"] == "reversed" and prow["reversal"]["reason"] == why, prow
+    finally:
+        for cid in created:
+            _cc861._cca_path(cid).unlink(missing_ok=True)
+
+    page = _code_only((_pl861.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages"
+                       / "profile" / "Wallet.tsx").read_text(encoding="utf-8"))
+    for needle in ("/reverse`", 'data-testid="wallet-allocation-reverse"', 'data-testid="wallet-allocation-reversed"',
+                   "alloc.reversal.reason", 'data-testid="wallet-reversal-request"', "portfolioRes.data.reversal_requests",
+                   "r.data.request_recorded"):
+        assert needle in page, ("the wallet does not offer or show the reversal", needle)

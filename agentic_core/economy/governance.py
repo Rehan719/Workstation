@@ -42,6 +42,11 @@ FUND_HOLD_TITLE_PREFIX = "[economy] capital fund allocation — "
 #  the entity's record names - W860, FU-1007 - read when the payout is paid), and one live hold exists per account.
 PAYOUT_SOURCE = "payout"
 PAYOUT_HOLD_TITLE_PREFIX = "[economy] owner payout — "
+#  W861 (FU-1005; OWNER RULING 2026-10-12 - "reversed by a recorded reversal") - A REVERSAL OF A FUND ALLOCATION IS A
+#  GOVERNED ACTION of its own class, with NO THRESHOLD like the allocation it undoes: the fund is the actor, the
+#  allocation is the counterparty, and the hold's title names the allocation.
+FUND_REVERSAL_SOURCE_PREFIX = "fund-reversal:"
+FUND_REVERSAL_HOLD_TITLE_PREFIX = "[economy] capital fund reversal — "
 
 
 def _now() -> str:
@@ -159,6 +164,9 @@ def _hold_title(vsb_id: str, source: str) -> str:
     if str(source or "").startswith(CONTRACT_SOURCE_PREFIX):
         cid = str(source).split(":", 1)[1].strip() or "unnamed"
         return f"{CONTRACT_HOLD_TITLE_PREFIX}{vsb_id} · contract {cid}"
+    if str(source or "").startswith(FUND_REVERSAL_SOURCE_PREFIX):
+        # W861 (FU-1005) - one hold per allocation, and the title names the allocation
+        return FUND_REVERSAL_HOLD_TITLE_PREFIX + (str(source).split(":", 1)[1].strip() or "unnamed")
     if str(source or "").startswith(FUND_SOURCE_PREFIX):
         # FU-794 - one hold per recipient, and the title says who the recipient is
         return FUND_HOLD_TITLE_PREFIX + (str(source).split(":", 1)[1].strip() or "unnamed")
@@ -451,6 +459,11 @@ def unreleasable_reason(c: Dict[str, Any]) -> Optional[str]:
         if not counterparty:
             return "a capital fund allocation hold that names no recipient can match no allocation"
         source = FUND_SOURCE_PREFIX + str(counterparty)
+    if source == "fund_reversal":
+        #  W861 (FU-1005) - a reversal's title names its allocation, so the identity is rebuilt from it
+        if not counterparty:
+            return "a capital fund reversal hold that names no allocation can match no reversal"
+        source = FUND_REVERSAL_SOURCE_PREFIX + str(counterparty)
     if not _is_economy_hold(c, vsb_id, _hold_title(vsb_id, source), source, counterparty):
         return "no economy action presents this record's identity"
     if c.get("status") == "approved" and not _owner_decided(c):
@@ -513,6 +526,8 @@ def _source_class(source: str) -> str:
     source = str(source or "")
     if source.startswith(CONTRACT_SOURCE_PREFIX):
         return "contract"
+    if source.startswith(FUND_REVERSAL_SOURCE_PREFIX):
+        return "fund_reversal"                          # W861 (FU-1005) - its own class too, with no threshold
     if source.startswith(FUND_SOURCE_PREFIX):
         return "fund"                                   # FU-794 - its own class: no cycle or transfer hold matches it
     if source == PAYOUT_SOURCE:
@@ -638,7 +653,8 @@ def _held(c: Dict[str, Any], est: float, note: str, status: str = "held_for_chan
     #  W760 (FU-884) - a fund allocation and an owner payout are held AT ANY AMOUNT: they are not "material" and
     #  there is no threshold to state, so neither the word nor the figure is carried for them
     _title = str(c.get("title") or "")
-    _no_threshold = _title.startswith((FUND_HOLD_TITLE_PREFIX, PAYOUT_HOLD_TITLE_PREFIX))
+    _no_threshold = _title.startswith((FUND_HOLD_TITLE_PREFIX, PAYOUT_HOLD_TITLE_PREFIX,
+                                       FUND_REVERSAL_HOLD_TITLE_PREFIX))      # W861 (FU-1005)
     if _no_threshold and note.startswith("Material action"):
         note = "Governed action" + note[len("Material action"):]
     return {"status": status, "cca_id": c.get("cca_id"), "impact_tier": effective_tier(c),
@@ -660,6 +676,14 @@ def _describe(vsb_id: str, source: str, est: float, counterparty: Optional[str],
         after = (f" FOLLOWS A REJECTION: {follows.get('cca_id')} (for {follows.get('est_distributable_wst')} WST) was "
                  "rejected" + (f"; {len(again)} of its recognised events are included again here" if again else "")
                  + ". Only an explicit decision can approve this.")
+    if _source_class(source) == "fund_reversal":
+        #  W861 (FU-1005) - its own sentence: no threshold, and nothing leaves the fund
+        return (f"Reversal of capital fund allocation {counterparty}: {est} WST returned to the fund's available "
+                "capital. Every reversal is held for a person's explicit decision whatever its amount (Owner ruling "
+                "2026-10-12: an allocation is reversed by a recorded reversal) - no threshold lets one pass. Held "
+                "until approved (virtual WST only — no real funds). An approval releases ONE reversal of this "
+                "allocation, applied when the reversal is requested again; approving moves nothing by itself."
+                + after)
     if _source_class(source) == "fund":
         #  FU-794 - its own sentence: the general one below states a threshold this class does not have
         return (f"Virtual allocation from the Capital Fund to {counterparty}: {est} WST. Every "
@@ -804,8 +828,9 @@ def _materiality_gate(vsb_id: str, est_distributable: float, source: str,
     #  FU-794 (Owner ruling 2026-10-11) - the capital fund's class has no threshold: an allocation of any
     #  amount is held. Every other class keeps the threshold exactly as it was.
     if est_distributable < MATERIALITY_WST and _source_class(source) != "fund":
-        #  Owner ruling 2026-10-12 - nor has the owner payout's class a threshold: a payout of any amount is held
-        if _source_class(source) != "payout":
+        #  Owner ruling 2026-10-12 - nor has the owner payout's class a threshold: a payout of any amount is held;
+        #  W861 (FU-1005) - nor has a fund reversal's
+        if _source_class(source) not in ("payout", "fund_reversal"):
             return None, None
     try:
         # W463 — the scan and the filing are not atomic: concurrent first requests for the same action each

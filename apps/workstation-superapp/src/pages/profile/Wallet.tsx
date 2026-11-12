@@ -27,7 +27,33 @@ interface Allocation {
   cca_id?: string | null;
   record_state?: string;
   record_state_label?: string;
+  // W861 (FU-1005) - an allocation is reversed by a recorded reversal, held for a person's decision first
+  status?: string;
+  reversal?: { reason: string; reversed_at: string; requested_by?: string; cca_id?: string } | null;
 }
+
+// W861 (FU-1005) - request the reversal of an active allocation: held at Change Control, applied when requested again
+const ReverseAllocation: React.FC<{ id: string }> = ({ id }) => {
+  const [reason, setReason] = useState('');
+  const [said, setSaid] = useState('');
+  const ask = async () => {
+    const r = await axios.post(`/api/v1/fund/allocations/${encodeURIComponent(id)}/reverse`, { reason },
+      { validateStatus: () => true });
+    setSaid(r.status === 200
+      ? String(r.data?.basis ?? '') + (r.data?.request_recorded && r.data.request_recorded !== 'recorded'
+          ? ` The request's details were ${String(r.data.request_recorded)} on the hold.` : '')
+      : flat(r.data?.detail));
+  };
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-2" data-testid="wallet-allocation-reverse">
+      <input value={reason} onChange={e => setReason(e.target.value)} placeholder="why this allocation is reversed…"
+        className="text-[10px] bg-slate-900 border border-slate-800 rounded p-1.5 text-slate-300 w-64" />
+      <button type="button" onClick={ask} disabled={reason.trim().length < 12}
+        className="text-[9px] font-black uppercase px-2 py-1 rounded border border-slate-700 text-slate-300 disabled:opacity-40">request reversal</button>
+      {said && <span data-testid="wallet-allocation-reverse-said" className="text-[9px] text-amber-400/80 normal-case">{said}</span>}
+    </div>
+  );
+};
 
 // FU-794 - a REQUEST for an allocation, as its Change Control record stands now. Not an allocation.
 interface AllocationRequest {
@@ -52,6 +78,9 @@ export const Wallet: React.FC = () => {
   const [allocBasis, setAllocBasis] = useState<string | null>(null);   // W577 (FU-298)
   const [requests, setRequests] = useState<AllocationRequest[]>([]);          // FU-794
   const [requestsUnread, setRequestsUnread] = useState<string | null>(null);  // FU-794
+  //  W861 (FU-1005) - the reversal requests, each as its Change Control record stands, with its reason
+  const [reversals, setReversals] = useState<any[] | null>([]);
+  const [reversalsBasis, setReversalsBasis] = useState<string>('');
   const [portfolioErr, setPortfolioErr] = useState<string | null>(null);      // FU-794
   const [loading, setLoading] = useState(true);
   const [down, setDown] = useState(false);
@@ -70,6 +99,8 @@ export const Wallet: React.FC = () => {
           ? (portfolioRes.data.allocations_basis ?? '') : null);
         setAllocations(allocs.slice(-8).reverse());
         // FU-794 - an unreadable list arrives as null with its reason, and is never shown as an empty one
+        setReversals(Array.isArray(portfolioRes.data.reversal_requests) ? portfolioRes.data.reversal_requests.slice(0, 8) : null);
+        setReversalsBasis(flat(portfolioRes.data.reversal_requests_basis ?? ''));
         const reqs: unknown = portfolioRes.data.allocation_requests;
         if (Array.isArray(reqs)) {
           setRequests((reqs as AllocationRequest[]).slice(0, 8));
@@ -159,6 +190,20 @@ export const Wallet: React.FC = () => {
             </div>
           ))}
         </div>
+        {reversals === null && (
+          <p data-testid="wallet-reversals-unread" className="text-[11px] font-bold px-2 py-1 rounded bg-amber-500/20 text-amber-400 mt-3">{reversalsBasis}</p>
+        )}
+        {reversals && reversals.length > 0 && (
+          <div className="mt-6 space-y-2" data-testid="wallet-reversal-requests">
+            <h4 className="text-xs font-black uppercase tracking-widest text-slate-400" title={reversalsBasis}>Reversal requests</h4>
+            {reversals.map((rv: any) => (
+              <p key={rv.cca_id} className="text-[10px] text-slate-400" data-testid="wallet-reversal-request">
+                {rv.allocation_id} · {typeof rv.amount === 'number' ? rv.amount.toLocaleString() : '—'} WST · {rv.status} · change {rv.cca_id}
+                {rv.reason ? ` · "${rv.reason}"` : ''}{rv.requested_by ? ` · asked by ${rv.requested_by}` : ''}{rv.requested_at ? ` at ${rv.requested_at}` : ''}
+              </p>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="p-8 rounded-3xl bg-slate-900/40 border border-slate-800">
@@ -194,6 +239,11 @@ export const Wallet: React.FC = () => {
                      {alloc.record_state_label && (
                        <p data-testid="wallet-allocation-state" className="text-[9px] text-slate-500 mt-1 normal-case">{alloc.record_state_label}{alloc.cca_id ? ` · change ${alloc.cca_id}` : ''}</p>
                      )}
+                     {alloc.status === 'reversed' && alloc.reversal ? (
+                       <p data-testid="wallet-allocation-reversed" className="text-[9px] text-slate-400 mt-1 normal-case">
+                         REVERSED {alloc.reversal.reversed_at}: {alloc.reversal.reason}{alloc.reversal.cca_id ? ` · change ${alloc.reversal.cca_id}` : ''}{alloc.reversal.requested_by ? ` · asked by ${alloc.reversal.requested_by}` : ''}
+                       </p>
+                     ) : (alloc.status ?? 'active') === 'active' && <ReverseAllocation id={alloc.allocation_id} />}
                    </div>
                  </div>
                  <div className="text-lg font-black text-vital">
