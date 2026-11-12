@@ -75755,3 +75755,73 @@ def test_w882_a_high_change_is_not_decided_by_its_submitter_once_a_second_admini
         raise AssertionError("an unreadable account store let the submitter decide")
     except _cc882.HTTPException as e:
         assert e.status_code == 503 and "not known" in e.detail
+
+
+def test_w883_with_sign_in_on_a_second_person_reaches_none_of_the_first_persons_projects(client, monkeypatch,
+                                                                                         tmp_path):
+    """FU-1061 (W883, first group: projects). With sign-in on, a guard signs in as a second person and shows that the
+    first person's records are not found, route by route. Every route on one project already answered not found;
+    three did not look at the caller at all: the portfolio figures counted every person's projects, the proposal
+    list showed every person's proposals, and any signed-in person could approve another person's proposal and so
+    advance their project. Driven over HTTP as two people."""
+    import time
+    import uuid as _uuid883
+    import agentic_core.auth.core as _ac883
+    from agentic_core.projects import api as _pa883
+    (tmp_path / "proposals").mkdir()
+    monkeypatch.setattr(_pa883, "_PROPOSALS_DIR", tmp_path / "proposals")
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    users = _ac883._load_users()
+    who = {}
+    for k in ("one", "two"):
+        name = f"w883-{k}-{_uuid883.uuid4().hex[:6]}"
+        users[name] = {"username": name, "hashed_password": _ac883._pwd_ctx.hash("pw12345678"), "role": "user"}
+        who[k] = name
+    _ac883._save_users(users)
+    H = {}
+    for k, name in who.items():
+        tok = client.post("/api/v1/auth/token", data={"username": name, "password": "pw12345678"})
+        assert tok.status_code == 200, tok.text[:200]
+        H[k] = {"Authorization": "Bearer " + tok.json()["access_token"]}
+
+    c = client.post("/api/v1/projects/", headers=H["one"], json={"title": "W883 mine",
+                                                                 "description": "the first person's project"})
+    assert c.status_code == 201 and c.json()["owner_id"] == who["one"], c.text[:300]
+    pid = c.json()["id"]
+    p = _pa883._load(pid)
+    p.outputs.append(_pa883.ProjectOutput(output_id=f"w883-{pid[:8]}", stage=p.stage, created_at=time.time(),
+                                          download_url="/w883", preview="w883", served_by="native"))
+    _pa883._save(p)
+    prop = client.post(f"/api/v1/projects/{pid}/propose-advance", headers=H["one"])
+    assert prop.status_code == 201, prop.text[:300]
+    prop_id = prop.json()["id"]
+
+    #  1. every route on one project: not found for the second person, and nothing changed
+    for method, path, kw in (("get", f"/api/v1/projects/{pid}", {}),
+                             ("patch", f"/api/v1/projects/{pid}", {"json": {"title": "w883 taken"}}),
+                             ("get", f"/api/v1/projects/{pid}/outputs", {}),
+                             ("post", f"/api/v1/projects/{pid}/advance", {}),
+                             ("post", f"/api/v1/projects/{pid}/propose-advance", {}),
+                             ("post", f"/api/v1/projects/{pid}/run", {}),
+                             ("delete", f"/api/v1/projects/{pid}", {})):
+        r = getattr(client, method)(path, headers=H["two"], **kw)
+        assert r.status_code == 404, (method, path, r.status_code, r.text[:200])
+    mine = client.get(f"/api/v1/projects/{pid}", headers=H["one"])
+    assert mine.status_code == 200 and mine.json()["title"] == "W883 mine", mine.text[:200]
+    assert pid not in [x["id"] for x in client.get("/api/v1/projects/", headers=H["two"]).json()]
+
+    #  2. the portfolio figures are the caller's own
+    s1 = client.get("/api/v1/projects/stats/summary", headers=H["one"]).json()
+    s2 = client.get("/api/v1/projects/stats/summary", headers=H["two"]).json()
+    assert s1["total_projects"] >= 1 and s2["total_projects"] == 0, (s1, s2)
+
+    #  3. the second person neither sees the first person's proposal nor decides it; its owner does
+    def listed(k):
+        return [x["id"] for x in client.get("/api/v1/projects/governance/proposals", headers=H[k]).json()]
+    assert prop_id in listed("one") and prop_id not in listed("two")
+    before = _pa883._load(pid).stage
+    v = client.post(f"/api/v1/projects/governance/proposals/{prop_id}/vote", headers=H["two"], params={"approve": True})
+    assert v.status_code == 404, v.text[:200]
+    assert _pa883._load(pid).stage == before and _pa883._load_proposal(prop_id).status == "pending"
+    v1 = client.post(f"/api/v1/projects/governance/proposals/{prop_id}/vote", headers=H["one"], params={"approve": True})
+    assert v1.status_code == 200 and _pa883._load(pid).stage != before, v1.text[:300]

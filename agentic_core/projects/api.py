@@ -336,9 +336,12 @@ def _with_waiting(project: "Project", read: tuple[list[Proposal], int] | None = 
 # ── Static-path routes MUST come before /{project_id} ─────────────────────────
 
 @router.get("/stats/summary")
-async def project_stats() -> dict:
-    """Aggregated portfolio metrics derived from all projects on disk."""
-    projects = _all_projects()
+async def project_stats(user: dict | None = Depends(get_current_user)) -> dict:
+    """Aggregated portfolio metrics derived from the projects on disk the caller may see. W883 (FU-1061) - with
+    sign-in on they are the caller's own: these figures counted every person's portfolio."""
+    if user is not None and not isinstance(user, dict):
+        user = None
+    projects = [p for p in _all_projects() if user_can_access(user, p.owner_id)]
     by_stage: dict[str, int] = {"concept": 0, "prototype": 0, "commercialise": 0}
     by_realm: dict[str, int] = {}
     total_outputs = 0
@@ -374,13 +377,30 @@ async def project_stats() -> dict:
 
 
 @router.get("/governance/proposals", response_model=list[Proposal])
-async def list_proposals() -> list[Proposal]:
-    return _all_proposals()
+async def list_proposals(user: dict | None = Depends(get_current_user)) -> list[Proposal]:
+    """W883 (FU-1061) - the proposals on projects the caller may see. With sign-in on this listed every person's
+    proposals, and with them their project ids. A proposal whose project is gone has no owner to match, so it is
+    shown only to whoever may see unowned records."""
+    if user is not None and not isinstance(user, dict):
+        user = None
+    owners = {p.id: p.owner_id for p in _all_projects()}
+    return [pr for pr in _all_proposals() if user_can_access(user, owners.get(pr.project_id))]
 
 
 @router.post("/governance/proposals/{proposal_id}/vote", response_model=Proposal)
-async def vote_proposal(proposal_id: str, approve: bool = True) -> Proposal:
+async def vote_proposal(proposal_id: str, approve: bool = True,
+                        user: dict | None = Depends(get_current_user)) -> Proposal:
+    if user is not None and not isinstance(user, dict):
+        user = None
     proposal = _load_proposal(proposal_id)
+    #  W883 (FU-1061) - a proposal is decided only by someone who may see its project. Any signed-in person could
+    #  approve another person's proposal, and so advance their project. Not found, never forbidden (W364).
+    try:
+        _owner883 = _load(proposal.project_id).owner_id
+    except HTTPException:
+        _owner883 = None
+    if not user_can_access(user, _owner883):
+        raise HTTPException(status_code=404, detail=f"Proposal {proposal_id} not found")
     if proposal.status != "pending":
         raise HTTPException(status_code=400, detail=f"Proposal already {proposal.status}.")
     # §5 (W495, FU-131, S10.1) — this approved first and applied blindly. The proposal RECORDS the
