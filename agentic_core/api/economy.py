@@ -613,7 +613,9 @@ async def owner_payments(vsb_id: str = "workstation-idbo", user: dict | None = D
         raise HTTPException(status_code=503, detail=str(e))
     #  Owner ruling 2026-10-12 - the payout requests for this account and where each stands, read from the
     #  Change Control records every time (a request's state is never stored on the account)
-    return {**account, **_payout_requests(vsb_id)}
+    #  W880 (FU-1009) - the owner's share on the book of record, beside what this account accrued, read every time
+    from agentic_core.economy.populations import owner_share as _owner_share880
+    return {**account, **_payout_requests(vsb_id), "owner_share_reconciliation": _owner_share880(vsb_id)}
 
 
 class PayoutRequest(BaseModel):

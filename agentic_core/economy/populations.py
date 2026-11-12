@@ -68,15 +68,15 @@ def _read_ledgers() -> Dict[str, Any]:
         files = sorted(store.glob("*_ledger.json")) if store.exists() else []
     except OSError as exc:
         return {"ids": None, "problem": _problem("the ledgers", exc)}
-    ids, unreadable = set(), []
+    ids, unreadable, owner = set(), [], {}
     for p in files:
         vsb = p.name[: -len("_ledger.json")]
         ids.add(vsb)
         try:
-            _led.read_strict(p, vsb)
+            owner[vsb] = owner_book(_led.read_strict(p, vsb))      # W880 (FU-1009) - its owner share, read once
         except Exception:                         # noqa: BLE001 - present, and named as unreadable
             unreadable.append(vsb)
-    return {"ids": ids, "problem": None, "unreadable": unreadable}
+    return {"ids": ids, "problem": None, "unreadable": unreadable, "owner": owner}
 
 
 def _read_accounts() -> Dict[str, Any]:
@@ -87,7 +87,146 @@ def _read_accounts() -> Dict[str, Any]:
         return {"ids": None, "problem": _problem("the owner accounts", exc)}
     mismatched = [{"id": str(k), "account_says": a.get("vsb_id")} for k, a in sorted(d.items())
                   if isinstance(a, dict) and a.get("vsb_id") not in (None, k)]
-    return {"ids": {str(k) for k in d}, "problem": None, "id_mismatch": mismatched}
+    return {"ids": {str(k) for k in d}, "problem": None, "id_mismatch": mismatched, "accounts": d}
+
+
+#  W880 (FU-1009) - WHICH RECORD IS THE OWNER'S SHARE. Every cycle's owner share is recorded twice: in the owner pot
+#  (record("owner", ...)) and, since double entry began, as a posting Dr distribution_owner / Cr cash. It is accrued a
+#  third time, to the owner account a payout draws on, and a failed accrual waits as a claim since W505.
+OWNER_SHARE_RECORD = ("The owner's share is what the book of record distributed to the owner: the double-entry owner "
+                      "postings (the Owner's ruling of 2026-10-12). The owner account is the record a payout draws on; "
+                      "where it differs from the book of record, the difference is said here and nothing is "
+                      "corrected. The pot is a derived view and holds books older than double entry.")
+
+
+def owner_book(data: Dict[str, Any]) -> Dict[str, Any]:
+    """The owner's share as one ledger's two books hold it. A period close credits distribution_owner back to retained
+    earnings, so the share distributed is the debits to it that are not a close, less any credit that is not one."""
+    postings = [p for p in (data.get("postings") or []) if isinstance(p, dict)]
+    booked = 0.0
+    for p in postings:
+        if p.get("source") == "period_close" or str(p.get("memo") or "").startswith("period close"):
+            continue                              # a close moves the share into retained earnings and pays nobody
+        if p.get("debit") == "distribution_owner":
+            booked += float(p.get("amount") or 0.0)
+        elif p.get("credit") == "distribution_owner":
+            booked -= float(p.get("amount") or 0.0)
+    first = min((str(p.get("ts") or "") for p in postings if p.get("ts")), default=None)
+    before = sum(float(e.get("amount") or 0.0) for e in (data.get("entries") or [])
+                 if isinstance(e, dict) and e.get("account") == "owner" and e.get("kind", "credit") == "credit"
+                 and (first is None or str(e.get("ts") or "") < first))
+    return {"book_of_record_wst": round(booked, 2),
+            "pot_wst": round(float((data.get("balances") or {}).get("owner", 0.0) or 0.0), 2),
+            "double_entry_began": first, "pot_before_double_entry_wst": round(before, 2)}
+
+
+def _share_row(vid: str, book: Optional[Dict[str, Any]], book_problem: Optional[str], acct: Any,
+               acct_problem: Optional[str], pending: Any, pending_problem: Optional[str]) -> Dict[str, Any]:
+    out: Dict[str, Any] = {"vsb_id": vid, "owner_share_is": OWNER_SHARE_RECORD}
+    problems = [x for x in (book_problem, acct_problem,
+                            pending_problem and f"the claims from failed accruals could not be read ({pending_problem})")
+                if x]
+    if problems:
+        out.update({"known": False, "basis": "NOT KNOWN: " + "; ".join(problems) + ". Nothing is compared."})
+        return out
+    acct = acct if isinstance(acct, dict) else None
+    accrued = round(float((acct or {}).get("accrued") or 0.0), 2)
+    paid = round(float((acct or {}).get("paid_out") or 0.0), 2)
+    pend = round(float(pending or 0.0), 2)
+    out.update({"known": True, "ledger_exists": book is not None, "account_exists": acct is not None,
+                "accrued_wst": accrued, "paid_out_wst": paid, "pending_claims_wst": pend,
+                "simulated": bool((acct or {}).get("simulated")), **(book or {})})
+    if book is None:
+        out.update({"not_accrued_wst": None, "accrued_beyond_book_wst": None})
+        parts = [f"There is no ledger for {vid}, so what its owner account accrued ({accrued:,.2f} WST) has no book "
+                 f"of record to be checked against."]
+    else:
+        b = book["book_of_record_wst"]
+        gap = round(b - accrued - pend, 2)
+        out["not_accrued_wst"] = gap if gap >= 0.005 else 0.0
+        out["accrued_beyond_book_wst"] = round(-gap, 2) if gap <= -0.005 else 0.0
+        parts = [f"The book of record distributed {b:,.2f} WST to the owner (the double-entry owner postings); the "
+                 f"pot, a derived view, says {book['pot_wst']:,.2f}"
+                 + (f", {book['pot_before_double_entry_wst']:,.2f} of it from before double entry began "
+                    f"({book['double_entry_began']})." if book["double_entry_began"] else
+                    ", and these books hold no double-entry posting at all."),
+                 (f"The owner account accrued {accrued:,.2f} and paid out {paid:,.2f}" if acct is not None else
+                  "There is no owner account for it")
+                 + (f"; {pend:,.2f} waits as a claim from accruals that failed." if pend else ".")]
+        if gap >= 0.005:
+            parts.append(f"{gap:,.2f} WST distributed on the book of record was neither accrued nor held as a "
+                         f"claim: a cycle whose accrual failed before W505, when a failure left no claim (before W465 "
+                         f"it was not even said), or a cycle run before owner accruals were recorded. The stores "
+                         f"cannot tell these apart.")
+        elif gap <= -0.005:
+            parts.append(f"The account holds {-gap:,.2f} WST more than the book of record distributed: accruals "
+                         f"from cycles run before double entry began, whose share the book of record never held.")
+        else:
+            parts.append("The account and the book of record agree.")
+    if (acct or {}).get("simulated"):
+        parts.append("This is a simulation's account: its share is shown and never paid (the Owner's ruling of "
+                     "2026-10-13).")
+    parts.append("Read only: nothing was accrued or posted to close a difference.")
+    out["basis"] = " ".join(parts)
+    return out
+
+
+def owner_share(vsb_id: str) -> Dict[str, Any]:
+    """W880 (FU-1009) - one id's owner share: the book of record, the pot, the owner account and the claims from
+    failed accruals, with the difference said and its causes named. Read only."""
+    from agentic_core.economy import ledger as _led
+    from agentic_core.economy import owner_payments as _op
+    vid = str(vsb_id or "")
+    book, book_problem = None, None
+    if not vid or any(c in vid for c in "/\\") or vid in (".", ".."):
+        book_problem = f"{vid!r} is not an id a ledger can be filed under"
+    else:
+        path = _led._STORE / f"{vid}_ledger.json"
+        if path.exists():
+            try:
+                book = owner_book(_led.read_strict(path, vid))
+            except Exception as exc:              # noqa: BLE001 - not known, never zero
+                book, book_problem = None, _problem("the ledger", exc)
+    try:
+        acct, acct_problem = _op._read().get(vid), None
+    except Exception as exc:                      # noqa: BLE001 - not known, never zero
+        acct, acct_problem = None, _problem("the owner accounts", exc)
+    pend = _op.pending_missed(vid)
+    return _share_row(vid, book, book_problem, acct, acct_problem, pend.get("total_wst"), pend.get("unreadable"))
+
+
+def _owner_shares(read: Dict[str, Any]) -> Dict[str, Any]:
+    """Every id with a ledger or an owner account, compared; the largest differences first."""
+    from agentic_core.economy import owner_payments as _op
+    books = read["ledgers"].get("owner") or {}
+    accounts = read["owner_accounts"].get("accounts")
+    if read["ledgers"]["ids"] is None or accounts is None:
+        return {"known": False, "rows": [], "owner_share_is": OWNER_SHARE_RECORD,
+                "basis": "the ledgers or the owner accounts could not be read whole, so no owner share is compared"}
+    pend = _op.pending_missed()
+    by: Dict[str, float] = {}
+    for r in pend.get("rows") or []:
+        if isinstance(r, dict):
+            by[str(r.get("vsb_id"))] = round(by.get(str(r.get("vsb_id")), 0.0) + float(r.get("amount_wst") or 0.0), 2)
+    skip = set(read["ledgers"].get("unreadable") or [])
+    rows = [_share_row(v, books.get(v), None, accounts.get(v), None, by.get(v, 0.0), pend.get("unreadable"))
+            for v in sorted((set(books) | set(accounts)) - skip)]
+    known = [r for r in rows if r.get("known")]
+    short = [r for r in known if (r.get("not_accrued_wst") or 0) > 0]
+    beyond = [r for r in known if (r.get("accrued_beyond_book_wst") or 0) > 0]
+    rows.sort(key=lambda r: -max(r.get("not_accrued_wst") or 0, r.get("accrued_beyond_book_wst") or 0))
+    not_accrued = round(sum(r["not_accrued_wst"] for r in short), 2)
+    beyond_wst = round(sum(r["accrued_beyond_book_wst"] for r in beyond), 2)
+    return {"known": True, "compared": len(known), "not_known": len(rows) - len(known),
+            "rows": rows[:LIST_CAP], "rows_listed": min(len(rows), LIST_CAP),
+            "not_accrued_wst": not_accrued, "ids_not_accrued": len(short),
+            "accrued_beyond_book_wst": beyond_wst, "ids_accrued_beyond_book": len(beyond),
+            "owner_share_is": OWNER_SHARE_RECORD,
+            "basis": (f"{len(known)} id(s) with a ledger or an owner account compared. On {len(short)} the book of "
+                      f"record distributed {not_accrued:,.2f} WST to the owner that was neither accrued nor held as a "
+                      f"claim; on {len(beyond)} the account holds {beyond_wst:,.2f} WST more than the book of record "
+                      f"distributed (accruals from before double entry began). " + OWNER_SHARE_RECORD
+                      + (f" {len(skip)} unreadable ledger(s) are not compared." if skip else ""))}
 
 
 def _reads_as(held: Dict[str, Optional[bool]], platform: Optional[str]) -> Dict[str, Any]:
@@ -181,5 +320,6 @@ def reconcile() -> Dict[str, Any]:
             "complete": complete, "reconciled": bool(complete and need == 0 and not mismatch),
             "shapes": rows, "unreadable": unreadable, "id_mismatch": mismatch,
             "platform_scopes": dict(PLATFORM_SCOPES), "basis": basis,
+            "owner_shares": _owner_shares(read),          # W880 (FU-1009)
             "fund": "read on its own route: GET /api/v1/fund/status, set_aside_reconciliation (W876)",
             "writes": "none"}

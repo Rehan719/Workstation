@@ -75492,3 +75492,112 @@ def test_w879_one_read_says_which_of_the_four_stores_hold_each_id_and_which_a_pe
     assert d.status_code == 403 and "w879-whole" not in d.text, d.text[:200]
     a = _read(headers=heads["admin"])
     assert a.status_code == 200 and a.json()["populations"]["roster"] == 7, a.text[:200]
+
+
+def test_w880_the_owners_share_is_what_the_book_of_record_distributed_and_the_account_is_read_against_it(
+        client, monkeypatch, tmp_path):
+    """FU-1009 (W880). On the Owner's store the apex account had accrued 30,200 while its ledger's owner pot said
+    343,500, and two entities differed by one cycle. As ruled (2026-10-12) double entry is the book of record, so the
+    owner's share is what it distributed to the owner. Each id now reads its share from the book of record, beside the
+    pot, its owner account and the claims waiting from failed accruals, with the difference said and its causes
+    named. Driven on this test's own ledgers, accounts and claims: a share one cycle short with two period closes (one
+    from before closes were tagged), books older than double entry, a simulation, an account with no ledger, and an
+    unreadable ledger. Nothing is written."""
+    import hashlib
+    import json as _json
+    import pathlib
+    from agentic_core.api import vsb as _vsb880
+    from agentic_core.economy import ledger as _led880
+    from agentic_core.economy import living_vsbs as _lv880
+    from agentic_core.economy import owner_payments as _op880
+    from agentic_core.economy import populations as _pop880
+    books, records = tmp_path / "economy", tmp_path / "vsb_entities"
+    books.mkdir()
+    records.mkdir()
+    monkeypatch.setattr(_lv880, "_STORE", tmp_path / "living_vsbs.json")
+    monkeypatch.setattr(_vsb880, "_VSB_STORE", records)
+    monkeypatch.setattr(_led880, "_STORE", books)
+    monkeypatch.setattr(_op880, "_STORE", tmp_path / "economy_owner_payments.json")
+    monkeypatch.setattr(_op880, "_PENDING", tmp_path / "economy_owner_accruals_pending.json")
+
+    def _entry(amount, ts):
+        return {"ts": ts, "account": "owner", "kind": "credit", "amount": amount, "memo": "circulation → owner"}
+
+    def _post(debit, credit, amount, ts, memo="circulation → owner", source=None):
+        return {"posting_id": f"pst-w880-{ts}", "ts": ts, "debit": debit, "credit": credit, "amount": amount,
+                "memo": memo, **({"source": source} if source else {})}
+
+    def _books(v, entries, postings):
+        d = _led880._new_books(v)
+        d["entries"], d["postings"] = entries, postings
+        d["balances"]["owner"] = round(sum(e["amount"] for e in entries), 2)
+        (books / f"{v}_ledger.json").write_text(_json.dumps(d), encoding="utf-8")
+
+    def _account(v, accrued, simulated=False):
+        return {"vsb_id": v, "owner": "w880-owner", "currency": "WST", "accrued": accrued, "paid_out": 0.0,
+                "entries": [], **({"simulated": True} if simulated else {})}
+
+    close = "period close — expenses → retained earnings"
+    _books("w880-short",
+           [_entry(100.0, "2026-01-01T00:00:00Z"), _entry(100.0, "2026-01-02T00:00:00Z")]
+           + [_entry(100.0, f"2026-03-0{i}T00:00:00Z") for i in range(1, 5)],
+           [_post("distribution_owner", "cash", 100.0, f"2026-03-0{i}T00:00:00Z") for i in range(1, 5)]
+           + [_post("retained_earnings", "distribution_owner", 200.0, "2026-03-05T00:00:00Z", close, "period_close"),
+              _post("retained_earnings", "distribution_owner", 100.0, "2026-03-06T00:00:00Z", close)])
+    _books("w880-old", [_entry(100.0, f"2026-01-0{i}T00:00:00Z") for i in range(1, 4)], [])
+    _books("w880-sim", [_entry(30.0, "2026-04-01T00:00:00Z")],
+           [_post("distribution_owner", "cash", 30.0, "2026-04-01T00:00:00Z")])
+    (books / "w880-broken_ledger.json").write_text("{not json", encoding="utf-8")
+    (tmp_path / "economy_owner_payments.json").write_text(_json.dumps({
+        "w880-short": _account("w880-short", 250.0), "w880-old": _account("w880-old", 300.0),
+        "w880-sim": _account("w880-sim", 30.0, simulated=True), "w880-acct": _account("w880-acct", 10.0)}),
+        encoding="utf-8")
+    (tmp_path / "economy_owner_accruals_pending.json").write_text(_json.dumps([
+        {"id": "pend-w880", "vsb_id": "w880-short", "owner": "w880-owner", "amount_wst": 50.0,
+         "memo": "cycle owner share (§4 waterfall)"}]), encoding="utf-8")
+
+    def _digest():
+        return hashlib.sha256(b"".join(p.relative_to(tmp_path).as_posix().encode() + b"\0" + p.read_bytes()
+                                       for p in sorted(tmp_path.rglob("*")) if p.is_file())).hexdigest()
+    before = _digest()
+
+    #  1. a share one cycle short: the closes move the share and pay nobody, and a waiting claim is counted
+    s = _pop880.owner_share("w880-short")
+    assert s["known"] is True and s["book_of_record_wst"] == 400.0 and s["pot_wst"] == 600.0, s
+    assert s["pot_before_double_entry_wst"] == 200.0 and s["double_entry_began"] == "2026-03-01T00:00:00Z", s
+    assert s["accrued_wst"] == 250.0 and s["pending_claims_wst"] == 50.0, s
+    assert s["not_accrued_wst"] == 100.0 and s["accrued_beyond_book_wst"] == 0.0, s
+    assert "100.00 WST distributed on the book of record was neither accrued nor held as a claim" in s["basis"], s["basis"]
+    assert "W505" in s["basis"] and "nothing was accrued or posted" in s["basis"]
+    assert s["owner_share_is"].startswith("The owner's share is what the book of record distributed to the owner")
+    #  2. books older than double entry: the account holds more than the book of record ever held
+    o = _pop880.owner_share("w880-old")
+    assert o["book_of_record_wst"] == 0.0 and o["double_entry_began"] is None and o["accrued_beyond_book_wst"] == 300.0, o
+    assert "no double-entry posting at all" in o["basis"] and "before double entry began" in o["basis"], o["basis"]
+    #  3. a simulation's share agrees with its books and is said never to be paid
+    m = _pop880.owner_share("w880-sim")
+    assert m["not_accrued_wst"] == 0.0 and m["accrued_beyond_book_wst"] == 0.0 and m["simulated"] is True, m
+    assert "never paid" in m["basis"] and "agree" in m["basis"], m["basis"]
+    #  4. an account with no ledger has no book of record to be read against; an unreadable one is not known
+    a = _pop880.owner_share("w880-acct")
+    assert a["known"] is True and a["ledger_exists"] is False and a["not_accrued_wst"] is None, a
+    b = _pop880.owner_share("w880-broken")
+    assert b["known"] is False and "NOT KNOWN" in b["basis"] and "ledger could not be read whole" in b["basis"], b
+    assert _pop880.owner_share("../w880-short")["known"] is False
+
+    #  5. the owner-payments read carries it, and the reconciliation compares every id, largest difference first
+    r = client.get("/api/v1/economy/owner-payments", params={"vsb_id": "w880-short"})
+    assert r.status_code == 200, r.text[:300]
+    assert r.json()["owner_share_reconciliation"]["not_accrued_wst"] == 100.0, r.json().get("owner_share_reconciliation")
+    rec = client.get("/api/v1/economy/reconciliation").json()["owner_shares"]
+    assert rec["known"] is True and rec["compared"] == 4, rec
+    assert rec["ids_not_accrued"] == 1 and rec["not_accrued_wst"] == 100.0, rec
+    assert rec["ids_accrued_beyond_book"] == 1 and rec["accrued_beyond_book_wst"] == 300.0, rec
+    assert [x["vsb_id"] for x in rec["rows"][:2]] == ["w880-old", "w880-short"], [x["vsb_id"] for x in rec["rows"]]
+    assert "unreadable ledger" in rec["basis"], rec["basis"]
+    assert _digest() == before, "a read of the owner's share wrote to a store"
+
+    #  6. the economy page shows the sentence beside the account
+    page = (pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages" / "enterprise"
+            / "VSBEconomy.tsx").read_text(encoding="utf-8")
+    assert 'data-testid="owner-share-reconciliation"' in page and "pay.owner_share_reconciliation.basis" in page

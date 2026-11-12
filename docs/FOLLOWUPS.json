@@ -20062,11 +20062,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W880",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Reconciled and said, as the row asked. As ruled (2026-10-12) double entry is the book of record, so the owner's share is what it distributed to the owner: the distribution_owner postings less the period closes, tagged or not. The owner account is the record a payout draws on; the pot is a derived view holding older books. Each id now reads its share on the book of record beside the pot (and how much of it predates double entry), what its account accrued and paid out, and the claims waiting from failed accruals; a share neither accrued nor claimed is said with its two causes (an accrual that failed before W505, or a cycle before owner accruals were recorded), an account above the book of record as accruals from before double entry, a simulation's share as never paid, and an unreadable ledger or claim store as not known. Nothing is accrued or posted. On /economy/owner-payments, the economy page, and /economy/reconciliation for every id, largest difference first."
     },
     {
       "id": "FU-1010",

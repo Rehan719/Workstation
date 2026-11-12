@@ -477,6 +477,12 @@ export const VSBEconomy: React.FC = () => {
             <Metric label="Paid out (virtual)" value={`${(pay.paid_out_total_wst ?? 0).toLocaleString()} WST`} />
             <Metric label="Balance" value={`${(pay.balance_wst ?? 0).toLocaleString()} WST`} tone="good" />
           </div>
+          {/* W880 (FU-1009) - the owner's share on the book of record beside what this account accrued */}
+          {pay.owner_share_reconciliation?.basis && (
+            <p data-testid="owner-share-reconciliation" className="text-[9px] text-slate-400 mt-2 leading-snug">
+              {String(pay.owner_share_reconciliation.basis)}
+            </p>
+          )}
           <div className="flex items-end gap-3 mt-5 flex-wrap">
             <div className="flex-1 min-w-[160px]">
               <label className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-400 mb-2 block">Virtual payout (WST)</label>
