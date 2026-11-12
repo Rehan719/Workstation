@@ -19993,11 +19993,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W876",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Read and said, as the row asked: a share set aside and not received is a simulation's (never paid in, ruled 2026-10-10, said per cycle since W658), from before W294 (nothing was paid in), or a write that failed (silent until W814, said since). GET /fund/status carries set_aside_reconciliation from the stores: every ledger's fund pot, what the fund received, how much was a simulation's (by entity, as the roster reads now), and how much a registered entity set aside that the fund has no record of receiving, with the two causes the stores cannot tell apart named; an unreadable roster is 'not known', an unreadable ledger is named. Shown on the capital dashboard. On the Owner's store the sentence gives the split for the 500,364 / 1,464."
     },
     {
       "id": "FU-1007",

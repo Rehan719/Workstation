@@ -196,6 +196,60 @@ def contribute_from_cycle(vsb_id: str, amount_wst: float) -> dict:
     return entry
 
 
+def set_aside_reconciliation() -> dict:
+    """W876 (FU-1006) - WHERE THE SHARES CYCLES SET ASIDE FOR THE FUND WENT, read from the stores and never guessed.
+
+    Every ledger's capital_fund pot is what its cycles set aside for the fund; the fund keeps the running total it
+    received (cycle contributions, retirements included). Read from the code, a share set aside and not received has
+    three possible causes: the scope was not a registered entity, so its cycle was a simulation whose share is never
+    paid in (the Owner's ruling of 2026-10-10, said on each such cycle since W658); the cycle ran before W294, when the
+    stage only wrote a ledger row; or the write failed, which was silent until W814 and is said on the cycle since.
+    The first is counted here by entity, as the roster reads now. The other two cannot be told apart from the stores,
+    so what remains is said as not received, with both causes named."""
+    from agentic_core.economy import ledger as _led876
+    from agentic_core.economy.living_vsbs import is_registered as _reg876
+    rows, unreadable = [], []
+    for f in sorted(_led876._STORE.glob("*_ledger.json")):
+        vsb = f.name[: -len("_ledger.json")]
+        try:
+            pot = round(float((((json.loads(f.read_text(encoding="utf-8")) or {}).get("balances") or {})
+                               .get("capital_fund", 0.0)) or 0.0), 2)
+        except Exception:                                # noqa: BLE001 - counted and named, never skipped silently
+            unreadable.append(vsb)
+            continue
+        if pot <= 0:
+            continue
+        try:
+            reg = bool(_reg876(vsb))
+        except Exception:                                # the roster could not be read: not known, never "no"
+            reg = None
+        rows.append({"vsb_id": vsb, "set_aside_wst": pot, "registered": reg})
+    try:
+        received = round(float((_load_fund() or {}).get("cycle_contributions_total_wst", 0) or 0), 2)
+    except Exception as _e876:                           # noqa: BLE001 - said
+        return {"known": False, "basis": f"the fund could not be read ({type(_e876).__name__}), so nothing is reconciled"}
+    set_aside = round(sum(r["set_aside_wst"] for r in rows), 2)
+    sims = round(sum(r["set_aside_wst"] for r in rows if r["registered"] is False), 2)
+    unknown = round(sum(r["set_aside_wst"] for r in rows if r["registered"] is None), 2)
+    registered = round(set_aside - sims - unknown, 2)
+    not_received = round(max(registered - received, 0.0), 2)
+    basis = (f"Cycles set aside {set_aside:,.2f} WST for the fund across {len(rows)} ledger(s), and the fund recorded "
+             f"{received:,.2f} WST received. {sims:,.2f} WST was set aside by scopes that are not registered entities: "
+             f"simulations, whose share is never paid in (ruled 2026-10-10). {registered:,.2f} WST was set aside by "
+             f"registered entities, as the roster reads now, and {not_received:,.2f} WST of it is not recorded as "
+             f"received: set aside before W294, when nothing was paid in, or a write that failed silently before W814. "
+             f"The stores cannot tell those two apart.")
+    if unknown:
+        basis += f" For {unknown:,.2f} WST the roster could not be read, so whether its scope is registered is not known."
+    if unreadable:
+        basis += f" {len(unreadable)} ledger(s) could not be read and are not counted: {', '.join(unreadable[:10])}."
+    return {"known": True, "set_aside_wst": set_aside, "received_wst": received,
+            "set_aside_by_simulations_wst": sims, "set_aside_by_registered_wst": registered,
+            "registration_not_known_wst": unknown, "registered_not_received_wst": not_received,
+            "ledgers_counted": len(rows), "ledgers_unreadable": unreadable,
+            "largest": sorted(rows, key=lambda r: -r["set_aside_wst"])[:10], "basis": basis}
+
+
 
 # ── Capital Fund ──────────────────────────────────────────────────────────────
 
@@ -273,6 +327,8 @@ async def fund_status():
         "seed_capital_wst": _seed,
         "contributed_wst": _contrib,
         "capital_basis": _basis,
+        #  W876 (FU-1006) - what cycles set aside for the fund, what it received, and where the rest went
+        "set_aside_reconciliation": set_aside_reconciliation(),
         "fund_health": "HEALTHY" if utilisation < 80 else "CONSTRAINED" if utilisation < 95 else "DEPLETED",
         # the health is a ratio of allocations to the POOL, and the pool is mostly the seed - so on a
         # freshly seeded store it cannot come out anything but HEALTHY

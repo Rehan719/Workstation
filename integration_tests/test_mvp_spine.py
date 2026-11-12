@@ -75242,3 +75242,53 @@ def test_w875_how_long_a_time_limit_runs_is_arithmetic_on_the_rules_own_words_wi
     assert page.index("<TimeLimitPanel />") < page.index("<MatterAssemblyPanel />") < page.index("<DomainTool")
     panel = (src / "components" / "TimeLimitPanel.tsx").read_text(encoding="utf-8")
     assert "{got.basis}" in panel and "{got.does_not_account_for}" in panel and "{got.route.name}" in panel
+
+
+def test_w876_the_fund_says_where_the_shares_cycles_set_aside_for_it_went(client, monkeypatch, tmp_path):
+    """FU-1006 (W876). The fund received 1,464 of the 500,364 WST the ledgers' fund pots hold on the Owner's store, and
+    the row asked to read the contribution path and say which cause it was. Read: a simulation's share is never paid in
+    (ruled 2026-10-10); before W294 nothing was paid in; a failed write was silent until W814. The fund now says, from
+    the stores, what was set aside, what it received, how much was a simulation's, and how much a registered entity's
+    it holds no record of receiving, naming the two causes the stores cannot tell apart. Driven on this test's own
+    ledgers, roster and fund."""
+    import json as _json
+    import pathlib
+    from agentic_core.api import capital_fund as _cf876
+    from agentic_core.economy import ledger as _led876
+    from agentic_core.economy import living_vsbs as _lv876
+    from agentic_core.config import StoreUnavailable
+    monkeypatch.setattr(_led876, "_STORE", tmp_path)
+    (tmp_path / "vsb-w876_ledger.json").write_text(_json.dumps({"balances": {"capital_fund": 100.0}}), encoding="utf-8")
+    (tmp_path / "sim-w876_ledger.json").write_text(_json.dumps({"balances": {"capital_fund": 400.0}}), encoding="utf-8")
+    (tmp_path / "none-w876_ledger.json").write_text(_json.dumps({"balances": {"capital_fund": 0.0}}), encoding="utf-8")
+    (tmp_path / "broken-w876_ledger.json").write_text("{not json", encoding="utf-8")
+    monkeypatch.setattr(_lv876, "is_registered", lambda v: v == "vsb-w876")
+    monkeypatch.setattr(_cf876, "_load_fund", lambda strict=False: {"cycle_contributions_total_wst": 40.0})
+
+    #  1. each part, from the stores
+    r = _cf876.set_aside_reconciliation()
+    assert r["known"] is True and r["set_aside_wst"] == 500.0 and r["received_wst"] == 40.0, r
+    assert r["set_aside_by_simulations_wst"] == 400.0 and r["set_aside_by_registered_wst"] == 100.0, r
+    assert r["registered_not_received_wst"] == 60.0 and r["ledgers_counted"] == 2, r
+    assert r["ledgers_unreadable"] == ["broken-w876"], "an unreadable ledger was skipped without being said"
+    assert "simulations" in r["basis"] and "before W294" in r["basis"] and "W814" in r["basis"], r["basis"]
+    #  2. a roster that cannot be read is not known, never "not registered"
+    def _down(v):
+        raise StoreUnavailable("w876 the roster is unreadable")
+    monkeypatch.setattr(_lv876, "is_registered", _down)
+    u = _cf876.set_aside_reconciliation()
+    assert u["registration_not_known_wst"] == 500.0 and u["set_aside_by_simulations_wst"] == 0.0, u
+    assert "roster could not be read" in u["basis"]
+    #  3. a fund that cannot be read reconciles nothing, and says so
+    def _gone(strict=False):
+        raise StoreUnavailable("w876 the fund is unreadable")
+    monkeypatch.setattr(_cf876, "_load_fund", _gone)
+    assert _cf876.set_aside_reconciliation()["known"] is False
+
+    #  4. the status route carries it, and the dashboard shows its sentence
+    monkeypatch.undo()
+    s = client.get("/api/v1/fund/status").json()
+    assert isinstance(s.get("set_aside_reconciliation"), dict) and s["set_aside_reconciliation"].get("basis"), s.get("set_aside_reconciliation")
+    page = (pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages" / "enterprise"
+            / "CapitalDashboard.tsx").read_text(encoding="utf-8")
+    assert 'data-testid="fund-set-aside"' in page and "{fund.set_aside_reconciliation.basis}" in page

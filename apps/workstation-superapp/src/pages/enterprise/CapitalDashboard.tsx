@@ -44,6 +44,8 @@ interface FundStatus {
   seed_capital_wst?: number | null;
   contributed_wst?: number | null;
   capital_basis?: string | null;
+  // W876 (FU-1006) - what cycles set aside for the fund, what it received, and where the rest went, read from the stores
+  set_aside_reconciliation?: { known?: boolean; basis?: string; set_aside_wst?: number; received_wst?: number } | null;
   fund_health_basis?: string | null;
   // W577 (FU-298) — an unreadable tail is dropped ALLOCATIONS, so `allocated` and `utilisation_pct`
   // are understated and `fund_health` is computed from them: the page can read HEALTHY of a fund
@@ -219,6 +221,11 @@ export const CapitalDashboard: React.FC = () => {
               {fund?.capital_basis && (
                 <p data-testid="fund-capital-basis" className="text-[9px] font-bold text-amber-400/90 mt-1 leading-snug">
                   {fund.capital_basis}
+                </p>
+              )}
+              {fund?.set_aside_reconciliation?.basis && (
+                <p data-testid="fund-set-aside" className="text-[9px] text-slate-400 mt-1 leading-snug">
+                  {fund.set_aside_reconciliation.basis}
                 </p>
               )}
             </Card>
