@@ -1385,6 +1385,10 @@ export const VSBCockpit: React.FC = () => {
                         )}
                       </div>
                     )}
+                    {/* W881 (FU-1010) - where this ledger's revenue entered, as each cycle's intake recorded it */}
+                    {ledger.revenue_entered?.basis && (
+                      <p data-testid="ledger-revenue-entered" className="text-[10px] text-slate-400 mt-1">{String(ledger.revenue_entered.basis)}</p>
+                    )}
                     {/* W503 (FU-169, S1.19 C5) — the tiles above are the CUMULATIVE view. The server has
                         said so since W442 (`balances_note`, `reserve_fund_wst`) and this page printed
                         neither, so a tile read "reserves 2,020" while the fund held 2,019 after a 1 WST

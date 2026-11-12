@@ -15039,10 +15039,11 @@ def test_w467_a_heartbeat_cycle_distributes_its_recognised_events_once(client, m
         # simulating — a stub thinner than its producer tests the stub. Kept EXPLICIT rather than
         # absorbed into **kw on purpose: a stub that silently swallows a new argument stops reporting
         # that the producer changed, and that report is worth a red run.
-        def _record(self, account, amount, memo="", kind="credit", ref=None, source=None):
+        #  W881 - `entered_as` added to match the producer, as W506 added `source`
+        def _record(self, account, amount, memo="", kind="credit", ref=None, source=None, entered_as=None):
             if account == account_name:
                 raise OSError(f"w467 the ledger write for {account_name} failed")
-            return real_record(self, account, amount, memo, kind, ref, source)
+            return real_record(self, account, amount, memo, kind, ref, source, entered_as)
         return _record
     monkeypatch.setattr(VirtualLedger, "record", _fails_at("revenue"))
     failed3 = lv.operate_vsb(h3)
@@ -75601,3 +75602,69 @@ def test_w880_the_owners_share_is_what_the_book_of_record_distributed_and_the_ac
     page = (pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages" / "enterprise"
             / "VSBEconomy.tsx").read_text(encoding="utf-8")
     assert 'data-testid="owner-share-reconciliation"' in page and "pay.owner_share_reconciliation.basis" in page
+
+
+def test_w881_every_revenue_figure_says_where_its_value_entered(client):
+    """FU-1010 (W881). Revenue here is a number the caller of a cycle supplies, and every later figure - the owner's
+    share, charity, the fund - is arithmetic on it. Ruled (2026-10-12): every figure in the finance view says where
+    its value entered. Each cycle's intake now records what it was made of, the ledger says where its revenue entered
+    with older intakes not stated and never attributed, the cycle report says it for its own intake, and the cockpit
+    shows it under the book of record. Driven through a typed cycle, the heartbeat's governed cycle on recorded events
+    (a buyer's spend and the simulated delivery tariff), and an intake written as one was before."""
+    import pathlib
+    import uuid as _uuid881
+    from agentic_core.economy import metabolism as _met881
+    from agentic_core.economy.governance import governed_cycle_sync as _gcs881
+    from agentic_core.economy.ledger import VirtualLedger as _VL881
+    from agentic_core.economy.revenue import peek_pending as _peek881, record_event as _rec881
+
+    #  1. what one intake was made of: typed, stated by source, a short statement, an over-claim
+    f = _met881.revenue_entered_as
+    assert f(100.0, None, 20.0, 5.0) == {"typed_at_cycle": 100.0, "venture_returns": 20.0, "transfers_received": 5.0}
+    assert f(300.0, {"recognised:marketplace_sale": 50.0, "recognised:cascade_delivery": 250.0}, 0.0, 0.0) == {
+        "recognised:marketplace_sale": 50.0, "recognised:cascade_delivery": 250.0}
+    assert f(300.0, {"recognised:cascade_delivery": 250.0}, 0.0, 0.0) == {"recognised:cascade_delivery": 250.0,
+                                                                          "not_stated": 50.0}
+    assert f(100.0, {"recognised:cascade_delivery": 250.0}, 0.0, 0.0) == {"not_stated": 100.0}, \
+        "a statement claiming more than the caller supplied was used"
+    assert f(0.0, None, 0.0, 0.0) == {}
+
+    #  2. a cycle whose revenue a caller typed says so, on its report and on the ledger
+    typed = f"vsb-w881-typed-{_uuid881.uuid4().hex[:6]}"
+    r = client.post("/api/v1/economy/cycle", json={"vsb_id": typed, "revenue": 120.0})
+    assert r.status_code == 200, r.text[:300]
+    rep = r.json().get("cycle") or r.json()
+    assert rep.get("revenue_entered_as") == {"typed_at_cycle": 120.0}, rep.get("revenue_entered_as")
+    led = client.get(f"/api/v1/economy/ledger/{typed}").json()
+    ent = led["revenue_entered"]
+    assert ent["said_wst"] == 120.0 and ent["not_said_wst"] == 0.0, ent
+    assert ent["by_entry"][0]["entered_as"] == "typed_at_cycle" and "not earned from a customer" in ent["by_entry"][0]["what"]
+    assert "share of this revenue" in ent["basis"] and "Virtual WST only" in ent["basis"], ent["basis"]
+
+    #  3. the heartbeat's governed cycle on recorded events says each event's source
+    earned = f"vsb-w881-events-{_uuid881.uuid4().hex[:6]}"
+    _rec881(earned, "revenue", 250.0, "cascade_delivery", ref="w881-delivery")
+    _rec881(earned, "revenue", 40.0, "marketplace_sale", ref="w881-sale")
+    peek = _peek881(earned)
+    assert all(it.get("source") for it in peek["items"].values()), peek["items"]
+    res = _gcs881(earned, "waqf_ltd_hybrid", "w881-owner", peek["revenue"], peek["costs"], source="heartbeat",
+                  events=peek)
+    rep2 = res.get("cycle")
+    assert rep2, res.get("governance")
+    assert rep2["revenue_entered_as"] == {"recognised:cascade_delivery": 250.0, "recognised:marketplace_sale": 40.0}, \
+        rep2["revenue_entered_as"]
+    ent2 = _VL881(earned).statement()["revenue_entered"]
+    whats = {x["entered_as"]: x["what"] for x in ent2["by_entry"]}
+    assert "simulated tariff" in whats["recognised:cascade_delivery"] and "buyer" in whats["recognised:marketplace_sale"], whats
+
+    #  4. an intake written as one was before says nothing, and is not attributed to any way in
+    older = f"vsb-w881-older-{_uuid881.uuid4().hex[:6]}"
+    _VL881(older).record("revenue", 70.0, memo="cycle intake (revenue)")
+    ent3 = _VL881(older).statement()["revenue_entered"]
+    assert ent3["not_said_wst"] == 70.0 and ent3["intakes_not_said"] == 1 and ent3["by_entry"] == [], ent3
+    assert "is not attributed" in ent3["basis"], ent3["basis"]
+
+    #  5. the cockpit shows the sentence under the book of record
+    page = (pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages" / "enterprise"
+            / "VSBCockpit.tsx").read_text(encoding="utf-8")
+    assert 'data-testid="ledger-revenue-entered"' in page and "ledger.revenue_entered.basis" in page

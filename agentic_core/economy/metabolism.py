@@ -115,6 +115,37 @@ _CYCLE_ROLE = {
 }
 
 
+def revenue_entered_as(typed: float, origin: Any, returns: float, transfers: float) -> Dict[str, float]:
+    """W881 (FU-1010) - WHAT ONE CYCLE'S INTAKE WAS MADE OF. `origin` is the caller's statement of where the revenue
+    it supplied entered (the heartbeat names the recorded events it consumed, by their source); without one, the
+    revenue is a number the caller typed at the cycle. What the cycle drained itself is added by name. A statement
+    that claims more than the caller supplied is not used, and one that claims less leaves the rest not stated."""
+    out: Dict[str, float] = {}
+    stated: Dict[str, float] = {}
+    if isinstance(origin, dict) and origin:
+        for k, v in origin.items():
+            try:
+                amt = round(float(v), 2)
+            except (TypeError, ValueError):
+                continue
+            if amt >= 0.005:
+                stated[str(k)] = round(stated.get(str(k), 0.0) + amt, 2)
+    total = round(sum(stated.values()), 2)
+    if stated and total <= typed + 0.005:
+        out.update(stated)
+        if typed - total >= 0.005:
+            out["not_stated"] = round(typed - total, 2)
+    elif stated:
+        out["not_stated"] = round(typed, 2)
+    elif typed >= 0.005:
+        out["typed_at_cycle"] = round(typed, 2)
+    if returns >= 0.005:
+        out["venture_returns"] = round(returns, 2)
+    if transfers >= 0.005:
+        out["transfers_received"] = round(transfers, 2)
+    return out
+
+
 class EconomicMetabolism:
     def __init__(self, vsb_id: str, entity_type: str = "waqf_ltd_hybrid", owner: str | None = None):
         self.vsb_id = vsb_id
@@ -163,6 +194,7 @@ class EconomicMetabolism:
         between the gate and this cycle waits for the next one (it used to be drained and distributed
         without the Change Control hold its size required). None = drain everything (ungoverned use)."""
         revenue = max(0.0, float(revenue))
+        _typed881 = revenue          # W881 (FU-1010) - what the caller supplied, before this cycle drains anything
         costs = max(0.0, float(costs))
 
         # W468 (register FU-041) — a ledger that cannot be read whole is refused BEFORE anything is drained from the
@@ -252,10 +284,13 @@ class EconomicMetabolism:
         # and receipts this cycle drained go back to their queues (they used to vanish, posted nowhere). W467 (FU-022):
         # the caller learns whether the ledger was written (`progress`), so a cycle that wrote nothing can give back the
         # events it consumed, and the released action counts as run only once it has written.
+        _entered881 = revenue_entered_as(_typed881, (progress or {}).get("revenue_origin"),
+                                         returns_recycled, transfers_received)
         try:
             self.ledger.record("revenue", revenue, memo="cycle intake (revenue)",
                                source="cycle_intake",
-                               ref=(progress or {}).get("cycle_token"))
+                               ref=(progress or {}).get("cycle_token"),
+                               entered_as=_entered881)
         except BaseException:
             given = self._give_back_drained(returns_recycled, transfers_received)
             if progress is not None:
@@ -431,6 +466,7 @@ class EconomicMetabolism:
             "intake_revenue": revenue,
             "venture_returns_recycled_wst": returns_recycled,   # §6 — returns that re-entered this waterfall
             "inter_vsb_received_wst": transfers_received,       # federation — receipts from other VSBs (W262)
+            "revenue_entered_as": _entered881,                  # W881 (FU-1010) - what this intake was made of
             **({"inter_vsb_receipts_error": receipts_error} if receipts_error else {}),   # W465 — none taken, and why
             "homeostasis_reserves": reserves,
             "operating_costs": costs,                  # W475 — posted as an expense, not inside the reserve

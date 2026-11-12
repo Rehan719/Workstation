@@ -20083,11 +20083,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W881",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built as ruled: every revenue figure says where its value entered. Each cycle's intake records entered_as: a number the caller typed at the cycle; recorded events by their source (a buyer's WST spend on a listing, the declared simulated delivery tariff); venture returns and transfers received. The heartbeat's governed cycle names the events it consumed; a statement claiming more than the caller supplied is not used, one claiming less leaves the rest not stated. The ledger statement carries revenue_entered, with intakes from before this counted as not said and never attributed, and says every distributed figure is a share of this revenue; the cycle report carries revenue_entered_as; the cockpit shows it under the book of record."
     },
     {
       "id": "FU-1011",

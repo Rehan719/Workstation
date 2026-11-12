@@ -469,7 +469,8 @@ class VirtualLedger:
         return posting
 
     def record(self, account: str, amount: float, memo: str = "", kind: str = "credit",
-               ref: Optional[str] = None, source: Optional[str] = None) -> Dict[str, Any]:
+               ref: Optional[str] = None, source: Optional[str] = None,
+               entered_as: Optional[Dict[str, float]] = None) -> Dict[str, Any]:
         """Record an entry (LEGACY single-sided surface — kept intact for existing readers). Also
         makes the corresponding BALANCED double-entry posting, so the real books stay double-entry
         while the legacy balances/statement remain byte-compatible."""
@@ -483,6 +484,8 @@ class VirtualLedger:
                 "account": account, "kind": kind, "amount": round(amount, 2),
                 "memo": memo, "balance_after": self._data["balances"][account],
                 **({"ref": ref} if ref else {}),
+                #  W881 (FU-1010) - what this intake was made of, when its writer says (a cycle's intake does)
+                **({"entered_as": dict(entered_as)} if entered_as is not None else {}),
             }
             self._data["entries"].append(entry)
             # the balanced posting this legacy entry really means
@@ -777,6 +780,7 @@ class VirtualLedger:
             "totals_book": "pots",
             "book_of_record": self.BOOK_OF_RECORD,
             "revenue_reconciliation": self.revenue_reconciliation(),
+            "revenue_entered": self.revenue_entered(),      # W881 (FU-1010) - where the revenue's value entered
             "total_distributed": round(sum(bal.get(a, 0.0) for a in
                                        ("owner", "self_investment", "capital_fund",
                                         "user_projects", "charity")), 2),
@@ -840,6 +844,49 @@ class VirtualLedger:
                    ("Since then every pot revenue entry has its posting. " if first else ""))
                 + "Nothing is posted to close a gap here: it is said."),
         }
+
+    #  W881 (FU-1010; OWNER RULING 2026-10-12 - every figure in the view says where its value entered)
+    REVENUE_ORIGINS = {
+        "typed_at_cycle": "typed at a cycle: a number the cycle's caller supplied, not earned from a customer",
+        "recognised:marketplace_sale": "a buyer's spend of virtual WST on a listing attributed to this entity",
+        "recognised:cascade_delivery": "the declared simulated tariff for a delivery that passed its quality gate",
+        "venture_returns": "returns from venture positions, recycled into the cycle",
+        "transfers_received": "received by transfer from another entity",
+        "not_stated": "part of an intake whose caller did not say where it entered",
+    }
+
+    def revenue_entered(self) -> Dict[str, Any]:
+        """Where this ledger's revenue entered, from what each cycle's intake recorded. An intake recorded before
+        intakes said so is counted as not stated, never attributed to a way it might have entered."""
+        by: Dict[str, float] = {}
+        before, n_before = 0.0, 0
+        for e in (self._data.get("entries") or []):
+            if not isinstance(e, dict) or e.get("account") != "revenue" or e.get("kind", "credit") != "credit":
+                continue
+            parts = e.get("entered_as")
+            if not isinstance(parts, dict):
+                before = round(before + float(e.get("amount") or 0.0), 2)
+                n_before += 1
+                continue
+            for k, v in parts.items():
+                try:
+                    by[str(k)] = round(by.get(str(k), 0.0) + float(v or 0.0), 2)
+                except (TypeError, ValueError):
+                    continue
+        rows = [{"entered_as": k, "wst": v,
+                 "what": self.REVENUE_ORIGINS.get(k) or (f"a recorded revenue event ({k.split(':', 1)[1]})"
+                                                         if k.startswith("recognised:") else "not described")}
+                for k, v in sorted(by.items(), key=lambda kv: -kv[1])]
+        said = "; ".join(f"{r['wst']:,.2f} WST {r['what']}" for r in rows)
+        return {"by_entry": rows, "said_wst": round(sum(by.values()), 2),
+                "not_said_wst": round(before, 2), "intakes_not_said": n_before,
+                "basis": ("Revenue on these books entered as each cycle's intake recorded it: "
+                          + (said + ". " if rows else "no intake has said yet. ")
+                          + (f"{before:,.2f} WST in {n_before} intake(s) was recorded before intakes said where "
+                             f"their value entered, and is not attributed. " if n_before else "")
+                          + "Every distributed figure on these books - the owner's share, charity, the fund, the "
+                            "reserves - is a share of this revenue, so its value entered as the revenue did. "
+                            "Virtual WST only.")}
 
     def _cycles_posted(self) -> Dict[str, Any]:
         """Cycles as the LEDGER records them: distinct cycle tokens on the intake entries a cycle writes,

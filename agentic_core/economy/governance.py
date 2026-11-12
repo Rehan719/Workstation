@@ -1099,6 +1099,17 @@ async def governed_cycle(vsb_id: str, entity_type: str, owner: str, revenue: flo
     return {"cycle": report, "governance": governance}
 
 
+def _events_origin881(items: Dict[str, Any], ids: List[str]) -> Dict[str, float]:
+    """W881 (FU-1010) - the revenue the consumed events carry, by the source each event was recorded with."""
+    out: Dict[str, float] = {}
+    for i in ids:
+        it = items.get(i) or {}
+        if it.get("kind") == "revenue":
+            k = f"recognised:{it.get('source') or 'not_stated'}"
+            out[k] = round(out.get(k, 0.0) + float(it.get("amount_wst") or 0.0), 6)
+    return out
+
+
 def governed_cycle_sync(vsb_id: str, entity_type: str, owner: str, revenue: float,
                         costs: float = 0.0, reserve_rate: float = 0.20,
                         source: str = "heartbeat",
@@ -1266,6 +1277,8 @@ def governed_cycle_sync(vsb_id: str, entity_type: str, owner: str, revenue: floa
               "cca_id": (consumed or {}).get("cca_id"), "consume_id": (consumed or {}).get("consume_id"),
               "note": "consumed before the cycle runs; the cycle's first ledger entry carries this token"})
     progress: Dict[str, Any] = {"cycle_token": token,
+                                #  W881 (FU-1010) - the consumed events, by their source, are where this revenue entered
+                                "revenue_origin": _events_origin881(items, flipped),
                                 "on_ledger_written": lambda: _mark_action_ran(consumed, vsb_id, f"{source} cycle wrote its ledger")}
     try:
         report = metab.run_cycle(revenue, costs, reserve_rate, max_returns_wst=cap_returns,
