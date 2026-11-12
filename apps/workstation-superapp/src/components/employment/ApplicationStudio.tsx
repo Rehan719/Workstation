@@ -35,6 +35,7 @@ interface ClassificationNotice {
   confidence: number | null;
   reasoning?: string;
   category?: string;   // W489 (refutation) — the CATEGORY decides what was classified, not the confidence
+  readBasis?: string | null;   // W856 (FU-1059) - how much of the file the classification was made on
 }
 
 // W454 — an ILLUSTRATIVE example listing: no url, no posting date (they were invented), a salary estimate
@@ -96,7 +97,9 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
   // W574 (M1 R5.1) — none_basis: WHY a search produced nothing. A bare zero here reads as "no roles
   // match", which is a claim about the job market; the truth is that every line the floor returned
   // was the prompt's own field template, which is a claim about this deployment.
-  const [jobSearchMeta, setJobSearchMeta] = useState<{ query: string; basis?: string; total?: number; none_basis?: string | null; ai_provenance?: { served_by?: string | null; is_external?: boolean } } | null>(null);
+  const [jobSearchMeta, setJobSearchMeta] = useState<{ query: string; basis?: string; total?: number; none_basis?: string | null; ai_provenance?: { served_by?: string | null; is_external?: boolean };
+    // W856 (FU-1059) - how much of what the person supplied the search read, and a sentence when it was not all of it
+    read_basis?: string | null; read_cut?: string | null } | null>(null);
   const [jobSearchError, setJobSearchError] = useState('');
   const [usingListingUrl, setUsingListingUrl] = useState<string | null>(null);
   const [usedListingUrls, setUsedListingUrls] = useState<string[]>([]);
@@ -152,6 +155,7 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
           confidence: resp.data.classification.confidence ?? null,
           reasoning: resp.data.classification.reasoning,
           category,
+          readBasis: resp.data.read_basis ?? null,
         });
       }
       setClassificationNotices(notices);
@@ -241,7 +245,8 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
         limit: 12,
       });
       setJobResults(resp.data.results);
-      setJobSearchMeta({ query: resp.data.query, basis: resp.data.basis, total: resp.data.total, none_basis: resp.data.none_basis, ai_provenance: resp.data.ai_provenance });
+      setJobSearchMeta({ query: resp.data.query, basis: resp.data.basis, total: resp.data.total, none_basis: resp.data.none_basis, ai_provenance: resp.data.ai_provenance,
+        read_basis: resp.data.read_basis ?? null, read_cut: resp.data.read_cut ?? null });
     } catch (err) {
       setJobSearchError('Example-listing synthesis failed. Try again.');
     } finally {
@@ -366,6 +371,7 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
                       ) : (
                         <span className="text-amber-400">"{n.filename}" was NOT classified — {n.reasoning || 'nothing was read from it'}</span>
                       )}
+                      {n.readBasis && <span className="block text-[9px] text-slate-500 font-normal" data-testid="classify-read-basis">{n.readBasis}</span>}
                     </li>
                   ))}
                 </ul>
@@ -459,6 +465,12 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
             </p>
             {jobSearchMeta.ai_provenance && (() => { const b = provenanceBadge(jobSearchMeta.ai_provenance?.served_by, jobSearchMeta.ai_provenance?.is_external); return <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
           </div>
+        )}
+        {/* W856 (FU-1059) - a profile the search could not read whole is said, never cut silently */}
+        {jobSearchMeta?.read_cut && (
+          <p data-testid="job-search-read-cut" className="text-[10px] text-amber-400 font-semibold leading-relaxed mt-2" title={jobSearchMeta.read_basis ?? undefined}>
+            {jobSearchMeta.read_cut}
+          </p>
         )}
         {/* W574 (M1 R5.1) — an absence that would otherwise read as a fact. */}
         {jobSearchMeta?.none_basis && (

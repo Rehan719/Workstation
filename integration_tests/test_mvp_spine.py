@@ -73890,3 +73890,83 @@ def test_w855_the_operations_summary_says_how_many_of_its_rows_predate_the_suite
                        / "OperationalExcellence.tsx").read_text(encoding="utf-8"))
     assert 'data-testid="ops-before-isolation"' in page and "summary.rows_before_suite_isolation_basis" in page, (
         "the operations page does not say how many rows predate the isolation")
+
+
+def test_w856_the_career_tools_hand_a_persons_documents_over_as_material_and_say_when_they_were_not_read_whole(
+        client, monkeypatch):
+    """FU-1059, first part (W856). Three callers of the shared helper cut a person's text inside the instruction and
+    said nothing: the career classifier at 2,000 characters, the career generator at 600 characters a file (while
+    saying it assembles only what the candidate recorded) and the job search at 300. A heading inside the pasted text
+    was read as a section the answer must have. Each now hands what the person supplied over as MATERIAL - marked as
+    data, cut only at the helper, the cut recorded on the answer and, where it bites, said in its own words."""
+    import pathlib as _pl856
+    from agentic_core.api import career as _car856
+    from agentic_core.api._ai_provenance import MATERIAL_SLOT as _slot856
+    from agentic_core.ingestion.api import ingestion_manager as _im856
+
+    real = _car856.ai_text
+    seen = []
+
+    async def _cap(prompt, agent, **k):
+        seen.append((prompt, agent, k))
+        return ("captured", {"served_by": "native", "is_external": False})
+
+    marker = "W856-MARKER-PAST-THE-OLD-CUT"
+    cv = ("## Fake Section\n" + "Analyst at Example Ltd since 2019. " * 70)[:2500] + marker + " Led a team of 4."
+    entries = [{"file_id": "w856-cv", "status": "EXTRACTED", "category": "cv_history", "filename": "cv.txt",
+                "extracted_text": cv},
+               {"file_id": "w856-long", "status": "EXTRACTED", "category": "cv_history", "filename": "long.txt",
+                "extracted_text": "Analyst at Example Ltd since 2019. " * 1000}]
+    _im856.registry.extend(entries)
+    try:
+        #  1. what each tool sends: the person's text as material, never pasted into the instruction
+        monkeypatch.setattr(_car856, "ai_text", _cap)
+        doc = ("## Fake Section\n" + "a plain career document line. " * 200)[:4000] + marker
+        up = client.post("/api/v1/career/uploads/auto", files={"file": ("w856.txt", doc.encode(), "text/plain")})
+        assert up.status_code == 200, up.text[:200]
+        p, agent, k = seen[-1]
+        assert agent == "career_classifier" and marker not in p and "## Fake Section" not in p and _slot856 in p, p[:300]
+        assert marker in k["material"] and k["material_label"] == "DOCUMENT" and k["material_limit"] == 2000, k.keys()
+
+        g = client.post("/api/v1/career/generate", json={"file_ids": ["w856-cv"], "output_types": ["cover_letter"],
+                                                         "instructions": "W856-INSTRUCTION please stress analysis"})
+        assert g.status_code == 200 and g.json()["refused"] is None, g.text[:300]
+        p, agent, k = seen[-1]
+        assert agent == "career_generator" and marker not in p and "## Fake Section" not in p, p[:400]
+        assert "W856-INSTRUCTION" not in p and _slot856 in p, "the person's instructions are still in the instruction"
+        assert "Use ONLY facts stated in the candidate profile context" in p
+        assert marker in k["material"] and "W856-INSTRUCTION" in k["material"], "the record was cut, or lost the role"
+        assert k["material_label"] == "CANDIDATE RECORD" and k["material_limit"] == _car856.CANDIDATE_RECORD_LIMIT
+
+        s = client.post("/api/v1/career/job-search", json={"file_ids": ["w856-cv"], "query": "W856-QUERY analyst"})
+        assert s.status_code == 200, s.text[:200]
+        p, agent, k = seen[-1]
+        assert agent == "career_job_search" and marker not in p and "W856-QUERY" not in p and _slot856 in p, p[:300]
+        assert marker in k["material"] and "W856-QUERY" in k["material"] and k["material_label"] == "SEARCH", k.keys()
+        bare = client.post("/api/v1/career/job-search", json={})
+        assert bare.status_code == 200 and "material" not in seen[-1][2] and _slot856 not in seen[-1][0]
+
+        #  2. what the helper records, and what is said when a cut bites
+        monkeypatch.setattr(_car856, "ai_text", real)
+        up2 = client.post("/api/v1/career/uploads/auto", files={"file": ("w856b.txt", doc.encode(), "text/plain")})
+        assert "ONLY the first 2,000 of" in (up2.json().get("read_basis") or ""), up2.json().get("read_basis")
+        whole = client.post("/api/v1/career/generate", json={"file_ids": ["w856-cv"], "output_types": ["cover_letter"]})
+        wc = whole.json()["results"][0]
+        assert wc["ai_provenance"]["material"]["read_whole"] is True and "ONLY PART OF" not in wc["content"], wc["ai_provenance"].get("material")
+        cut = client.post("/api/v1/career/generate", json={"file_ids": ["w856-long"], "output_types": ["cover_letter"]})
+        cc = cut.json()["results"][0]
+        assert cc["ai_provenance"]["material"]["read_whole"] is False, cc["ai_provenance"].get("material")
+        assert "ONLY PART OF THE CANDIDATE RECORD WAS READ: the first 24,000 of" in cc["content"], cc["content"][-300:]
+        sc = client.post("/api/v1/career/job-search", json={"file_ids": ["w856-long"]}).json()
+        assert (sc["read_cut"] or "").startswith("ONLY PART OF WHAT YOU SUPPLIED WAS READ: the first 6,000 of"), sc["read_cut"]
+        assert client.post("/api/v1/career/job-search", json={"file_ids": ["w856-cv"]}).json()["read_cut"] is None
+    finally:
+        for e in entries:
+            if e in _im856.registry:
+                _im856.registry.remove(e)
+
+    page = _code_only((_pl856.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+                       / "components" / "employment" / "ApplicationStudio.tsx").read_text(encoding="utf-8"))
+    for needle in ('data-testid="job-search-read-cut"', "read_cut: resp.data.read_cut", 'data-testid="classify-read-basis"',
+                   "readBasis: resp.data.read_basis"):
+        assert needle in page, ("the studio does not say how much of a document was read", needle)

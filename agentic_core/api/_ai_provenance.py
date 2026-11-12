@@ -220,6 +220,33 @@ def wrap_material(material: str, label: str = "MATERIAL", limit: int = DEFAULT_M
     return f"{MATERIAL_OPEN.format(label=label)}\n{read}\n{MATERIAL_CLOSE}", record
 
 
+#  W856 (FU-1059) - THE THREE PIECES EVERY CALLER MOVING A PERSON'S TEXT OUT OF ITS INSTRUCTION USES (career,
+#  employment, science and care): the material keywords, a short field put on one line, and the sentence said when the
+#  material was not read whole.
+def one_line(value) -> str:
+    """A short field a person typed, put on one line for the instruction: a line break typed into it cannot open a
+    section there."""
+    return " ".join(str(value or "").split())
+
+
+def person_material(label: str, limit: int = DEFAULT_MATERIAL_LIMIT, **parts) -> Dict[str, Any]:
+    """The ai_text keywords that hand what a person wrote over as material, each named part under its own heading -
+    or none at all when they wrote nothing, so no empty block is sent."""
+    body = "".join(f"{name.replace('_', ' ').upper()}:\n{text}\n" for name, text in parts.items()
+                   if str(text or "").strip())
+    #  keyword arguments for ai_text(**...), not an answer's fields
+    return dict(material=body, material_label=label, material_limit=limit) if body else {}
+
+
+def material_cut_said(provenance, what: str = "WHAT YOU SUPPLIED"):
+    """A sentence when the person's material was not read whole (the helper cut it at its limit), else None."""
+    m = (provenance or {}).get("material") or {}
+    if not m or m.get("read_whole", True):
+        return None
+    return (f"ONLY PART OF {what} WAS READ: the first {m.get('read_chars', 0):,} of {m.get('chars', 0):,} "
+            f"characters. Nothing here speaks for the rest.")
+
+
 from agentic_core.api.operational_excellence import spans_run as _spans_run847
 
 
