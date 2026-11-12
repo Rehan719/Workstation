@@ -45,7 +45,7 @@ async def minimisation_status(user: dict | None = Depends(get_current_user)) -> 
 
     _tfel: Dict[str, Any]
     try:
-        from core.transcendent_subsystems.tfel import ThermodynamicFreeEnergyLedger
+        from agentic_core.transcendent_subsystems.tfel import ThermodynamicFreeEnergyLedger   # W877 (FU-605)
         _led = ThermodynamicFreeEnergyLedger()
         _tfel = {"available": True, "temperature_kelvin": _led.temperature,
                  "joules_per_bit_floor": _led.E_min,

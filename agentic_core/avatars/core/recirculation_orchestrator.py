@@ -28,7 +28,7 @@ from agentic_core.governance.uci_interceptor import RecirculationPreflight
 
 # ARTICLE 1137: Landauer-bounded computation (TFEL)
 try:
-    from core.transcendent_subsystems.tfel import ThermodynamicFreeEnergyLedger
+    from agentic_core.transcendent_subsystems.tfel import ThermodynamicFreeEnergyLedger   # W877 (FU-605)
 except ImportError:
     class ThermodynamicFreeEnergyLedger:
         """The ledger is UNAVAILABLE, and this says so rather than inventing a budget.
@@ -47,7 +47,7 @@ except ImportError:
 
         def __init__(self, **kwargs):
             self.available = False
-            self.basis = ("NOT AVAILABLE: core.transcendent_subsystems.tfel could not be imported in "
+            self.basis = ("NOT AVAILABLE: agentic_core.transcendent_subsystems.tfel could not be imported in "
                           "this deployment, so no information cost is metered and no Landauer floor is "
                           "computed. Nothing here is a measurement")
 

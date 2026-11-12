@@ -30,6 +30,19 @@ This was **Stage 1** (whole-dir archival). A later, more surgical Stage 2 may ar
 **modules inside partially-wired dirs**. The real-vs-mock record of the integration sweep is in
 `docs/AGENTIC_CORE_INTEGRATION_AUDIT.md`; the canonical vision/state docs are in `docs/`.
 
+## Later moves: core/ (2026-11-12, W877)
+
+**What moved:** the rest of the top-level `core/` package. Its one live module,
+`core/transcendent_subsystems/tfel.py` (the thermodynamic free-energy ledger), moved into the live tree as
+`agentic_core/transcendent_subsystems/tfel.py`, and its two importers (`agentic_core/api/minimisation.py` and
+`agentic_core/avatars/core/recirculation_orchestrator.py`) now import it from there. `core/identity.py`, which
+imports two modules this archive already holds (`nemoclaw_runtime`, `hardware_abstraction`) and so could not be
+imported at all, and `core/__init__.py` moved here beside the rest of `_archive/core/`.
+
+**On whose ruling:** the Owner's refusal (a) of 2026-09-30, ratified: NO PARALLEL SOURCE TREE beside agentic_core,
+one organism, one home. The Stage 1 archive above kept `core/` because one module in it was reachable; it was never
+moved after that. Nothing was deleted.
+
 ## Later moves: products/capital_fund (2026-10-12)
 
 **What moved:** the whole Python package `products/capital_fund/` (41 tracked files, its tree kept) to

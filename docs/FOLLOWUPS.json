@@ -11623,11 +11623,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W877",
       "note": "MEASURED W637 (whole-tree grep): the two live importers - agentic_core/api/minimisation.py:48 and agentic_core/avatars/core/recirculation_orchestrator.py:31 - take ONLY core.transcendent_subsystems.tfel. core/identity.py is imported by nothing and CANNOT be imported: it imports core.nemoclaw_runtime, a file that is not in the tree. Remedy when worked: move tfel into agentic_core with both importers updated; archive core/identity.py.",
       "slot_source": "a tree-shape question no open build item owns; it rides P5.1 with the other riders the Owner placed there",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Measured as the row asked, then moved: core/ predates the refusal (the 2026-06-24 Stage 1 archive kept it for its one reachable module and it was never moved), both live importers take one class (the thermodynamic free-energy ledger), and refusal (a) names no exception for an older tree - so it was a breach. tfel.py now lives at agentic_core/transcendent_subsystems/tfel.py with both importers and five suite imports updated; core/identity.py (it imports two modules the archive holds, so it could not be imported) moved verbatim to _archive/core/; _archive/README.md records the move and the ruling. Two more trees the measure found (config/, src/) are registered as a new row."
     },
     {
       "id": "FU-606",
@@ -23375,6 +23378,25 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Two routes now act for the signed-in learner on their own record only (the same id resolution as W848): GET /api/v1/qep/learner/{uid}/export returns it whole - memorisation cards, review sessions, set portions and recorded awards - and says when a part does not exist; DELETE /api/v1/qep/learner/{uid} removes it, with any copy a corrupt read set aside, and says what it removed. Another learner's record is not found for either. With sign-in off both refuse and say why: a record keyed by whatever id is sent is tied to no person, so it is neither handed out nor removed as anyone's. Found while building it: the QEP studio sent the fixed id 'local' on every call, which W848 answers as not found once sign-in is on; it now asks who is signed in and uses that learner's own id (still 'local' with sign-in off), and offers 'download my record' and 'delete my record' to a signed-in learner - with sign-in off it says these are offered once sign-in is on. The W684 guard read the practice panel mounted with the fixed id and now reads it mounted with the learner's own; the W686 guard, which checks every route whose path takes a learner's id against the routes it drives, now lists the two new ones and drives them with sign-in off, where they refuse and carry no record - and the delete's answer says whose record it removed, as every learner answer does. Guard test_w852 (two signed-in users; sign-in off), 5 blinds red."
+    },
+    {
+      "id": "FU-1168",
+      "title": "Two more source trees stand beside agentic_core: config/ and src/, each imported by live modules",
+      "why": "Measured in W877 while closing FU-605. The Owner's ratified refusal (a) of 2026-09-30 is NO PARALLEL SOURCE TREE beside agentic_core. config/ (paths.py, loader.py, database.py) is imported by nine live modules, the memory store, the interaction log and the CEO and synthesis routes among them, beside agentic_core/config.py. src/ is imported by the avatar tool registry (src.organism.python.organs.openclaw_adapter and src.organism.python.neural.event_bus). products/ holds 203 Python files that no live module imports. Read before moving: what each importer takes, whether config/paths.py and agentic_core/config.py name the same places, and whether products/ is product output rather than source.",
+      "source": "W877 (measured while closing FU-605)",
+      "found": "2026-11-12",
+      "files": [
+        "config/paths.py",
+        "agentic_core/avatars/tools/tool_registry.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the same ruled refusal and the same item as FU-605, which W877 closed for core/",
+      "tier": 3
     }
   ],
   "routes": [

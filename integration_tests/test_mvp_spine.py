@@ -32874,7 +32874,7 @@ def test_w546_the_thermodynamic_ledger_meters_what_a_stage_handled_and_reports_a
     assert "DECLARED, NOT MEASURED" in _rec["energy_basis"], _rec["energy_basis"]
 
     # ── L4. COMPLIANCE IS THREE-STATE: an empty ledger is not a compliant one ────────────────────
-    from core.transcendent_subsystems.tfel import ThermodynamicFreeEnergyLedger as _TFEL
+    from agentic_core.transcendent_subsystems.tfel import ThermodynamicFreeEnergyLedger as _TFEL   # W877
     _fresh = _TFEL()
     _empty = _fresh.export_cycle_ledger("w546-empty")
     assert _empty["compliance"] is None, ("a cycle that metered nothing reported compliance",
@@ -32910,7 +32910,7 @@ def test_w546_the_thermodynamic_ledger_meters_what_a_stage_handled_and_reports_a
         return False
 
     _literal_callers = []
-    for _f in list((_root2 / "agentic_core").rglob("*.py")) + list((_root2 / "core").rglob("*.py")):
+    for _f in list((_root2 / "agentic_core").rglob("*.py")):          # W877 - core/ moved into agentic_core
         try:
             _tree2 = ast.parse(_f.read_text(encoding="utf-8", errors="replace"))
         except SyntaxError:
@@ -32958,7 +32958,7 @@ def test_w546_the_thermodynamic_ledger_meters_what_a_stage_handled_and_reports_a
     #  raised TypeError in a test while every direct caller was correct. The real parameters are read
     #  from the module rather than typed here, so this cannot drift from them.
     import inspect as _insp
-    from core.transcendent_subsystems.tfel import ThermodynamicFreeEnergyLedger as _RealTFEL
+    from agentic_core.transcendent_subsystems.tfel import ThermodynamicFreeEnergyLedger as _RealTFEL   # W877
     _real_params = set(_insp.signature(_RealTFEL.meter_operation).parameters) - {"self"}
     _suite_src = _pl.Path(__file__).read_text(encoding="utf-8")
     _suite_tree = ast.parse(_suite_src)
@@ -32984,7 +32984,7 @@ def test_w546_the_thermodynamic_ledger_meters_what_a_stage_handled_and_reports_a
 
     # ── L6. THE CAUSAL SIMULATOR METERS ITS REAL BATCH, and drops three more invented figures ────
     from agentic_core.simverse.causal_simulator import DynamoInference
-    from core.transcendent_subsystems.tfel import ThermodynamicFreeEnergyLedger as _TFEL2
+    from agentic_core.transcendent_subsystems.tfel import ThermodynamicFreeEnergyLedger as _TFEL2   # W877
     _batch = [{"task": "a", "payload": "x" * 50}, {"task": "b"}]
     _d = _aio.run(DynamoInference(_TFEL2()).schedule_disaggregated(_batch))
     _independent, _ = _payload_bits(_batch)
@@ -33002,7 +33002,7 @@ def test_w546_the_thermodynamic_ledger_meters_what_a_stage_handled_and_reports_a
 def test_w546_a_fresh_backend_without_the_ledger_refuses_instead_of_inventing_a_budget(tmp_path):
     """The fresh-backend probe P3.17's bar names — and the only way to reach the fallback at all.
 
-    The import of core.transcendent_subsystems.tfel SUCCEEDS here, so the except branch in
+    The import of agentic_core.transcendent_subsystems.tfel SUCCEEDS here, so the except branch in
     recirculation_orchestrator is never executed by this suite: it is the branch most likely to run on a
     deployment whose path differs and least likely to be tested, and what it returned was
     `{"budget_remaining": 1e9}` — a billion bits of headroom from a class that meters nothing. This probe
@@ -33027,7 +33027,7 @@ def test_w546_a_fresh_backend_without_the_ledger_refuses_instead_of_inventing_a_
         "import importlib.abc, importlib.machinery, json\n"
         "class _Block(importlib.abc.MetaPathFinder):\n"
         "    def find_spec(self, name, path=None, target=None):\n"
-        "        if name == 'core.transcendent_subsystems.tfel':\n"
+        "        if name == 'agentic_core.transcendent_subsystems.tfel':\n"
         "            raise ImportError('blocked by the W546 probe')\n"
         "        return None\n"
         "sys.meta_path.insert(0, _Block())\n"
@@ -51999,7 +51999,7 @@ def test_w660_the_minimisation_status_says_one_thing_about_its_solver_and_the_le
     assert _j["omega_functional"]["J"] is None
 
     #  THE LEDGER: the floor is what erasing that many bits WOULD cost; the count is the caller's
-    from core.transcendent_subsystems.tfel import ThermodynamicFreeEnergyLedger as _L
+    from agentic_core.transcendent_subsystems.tfel import ThermodynamicFreeEnergyLedger as _L   # W877
     _led = _L()
     _op = _led.meter_operation("w660-probe", bits=800.0, bits_basis="the serialised size of a 100-byte payload")
     assert _m.isclose(_op["landauer_floor_joules"], 800.0 * _led.E_min * _led.hw), "the figure changed"
@@ -75292,3 +75292,43 @@ def test_w876_the_fund_says_where_the_shares_cycles_set_aside_for_it_went(client
     page = (pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages" / "enterprise"
             / "CapitalDashboard.tsx").read_text(encoding="utf-8")
     assert 'data-testid="fund-set-aside"' in page and "{fund.set_aside_reconciliation.basis}" in page
+
+
+def test_w877_no_parallel_source_tree_stands_beside_agentic_core_where_core_stood(client):
+    """FU-605 (W877). A top-level core/ package stood beside agentic_core, against the Owner's ratified refusal (a) of
+    2026-09-30 (NO PARALLEL SOURCE TREE), imported by two live modules. Measured first: it predates the refusal (the
+    Stage 1 archive kept it for one reachable module and it was never moved), both importers take one class, and the
+    refusal names no exception for an older tree. Its live module now lives in agentic_core and both importers use it
+    from there; its dead module, which could not be imported at all, is archived verbatim; the archive says so."""
+    import ast
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    assert not (root / "core").exists(), "a top-level core/ tree stands beside agentic_core again"
+    assert (root / "agentic_core" / "transcendent_subsystems" / "tfel.py").exists()
+    assert (root / "_archive" / "core" / "identity.py").exists(), "the dead module was not kept in the archive"
+
+    #  1. no live module imports the old tree
+    bad = []
+    for f in sorted((root / "agentic_core").rglob("*.py")):
+        try:
+            tree = ast.parse(f.read_text(encoding="utf-8"))
+        except SyntaxError:
+            continue
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and node.level == 0 and node.module and (
+                    node.module == "core" or node.module.startswith("core.")):
+                bad.append(f"{f.relative_to(root)}:{node.lineno}")
+            elif isinstance(node, ast.Import) and any(a.name == "core" or a.name.startswith("core.") for a in node.names):
+                bad.append(f"{f.relative_to(root)}:{node.lineno}")
+    assert not bad, ("a live module still imports the top-level core/ tree", bad)
+
+    #  2. the ledger works from its new home, and both importers use it - not the fallback
+    from agentic_core.transcendent_subsystems.tfel import ThermodynamicFreeEnergyLedger as _L877
+    from agentic_core.avatars.core import recirculation_orchestrator as _ro877
+    assert _ro877.ThermodynamicFreeEnergyLedger is _L877, "the recirculation loop fell back: its import failed"
+    led = client.get("/api/v1/minimisation/status").json()["thermodynamic_ledger"]
+    assert led["available"] is True and led["joules_per_bit_floor"], led
+
+    #  3. the archive says what moved, and on whose ruling
+    readme = (root / "_archive" / "README.md").read_text(encoding="utf-8")
+    assert "## Later moves: core/ (2026-11-12, W877)" in readme and "NO PARALLEL SOURCE TREE" in readme
