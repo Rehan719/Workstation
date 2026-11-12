@@ -220,6 +220,10 @@ def wrap_material(material: str, label: str = "MATERIAL", limit: int = DEFAULT_M
     return f"{MATERIAL_OPEN.format(label=label)}\n{read}\n{MATERIAL_CLOSE}", record
 
 
+from agentic_core.api.operational_excellence import spans_run as _spans_run847
+
+
+@_spans_run847("ai_call")          # W847 (FU-1121) - the model attempt inside is held, not spent twice
 async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
                   owner_id: str | None = None, augment: bool = False,
                   realm: str = "", domain: str = "",

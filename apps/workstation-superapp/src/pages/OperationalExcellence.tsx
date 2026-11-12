@@ -42,6 +42,7 @@ interface Outcome {
   is_external: boolean; duration_ms: number; success: boolean | null; created_at: string;
   produced?: boolean; quality_gate?: boolean | null; success_basis?: string;
   reported_by?: string;   // W672 - 'caller' when the row was written over the public route
+  budget?: string;        // W847 (FU-1121) - whether this run's seconds were spent, or held by the run around it
 }
 interface ModelHealth { name: string; runs: number; success_rate: number; avg_ms: number; deprioritised: boolean;
   // W577 (FU-298) — a declared baseline that could not be read does not leave a model unscored: it
@@ -288,7 +289,9 @@ export const OperationalExcellence: React.FC = () => {
                       title="written through POST /operations/record: what served this run is the caller's claim, not something the platform observed">caller-reported</span>
               )}
               {(() => { const b = provenanceBadge(o.served_by, o.is_external); return <span className={`ml-auto text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${b.cls}`} title={b.title}>{b.label}</span>; })()}
-              <span className="text-slate-600">{o.duration_ms}ms</span>
+              <span className="text-slate-600" data-testid="outcome-budget" title={o.budget ?? 'recorded before W847 said whether its seconds were spent'}>
+                {o.duration_ms}ms{o.budget?.startsWith('held') ? ' · held by the run around it' : ''}
+              </span>
             </div>
           ))}
           {!loading && outcomes.length === 0 && <p className="text-[11px] text-slate-600">No outcomes recorded yet.</p>}

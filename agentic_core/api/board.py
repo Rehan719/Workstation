@@ -131,6 +131,10 @@ def _floor_composed(provenance: Dict[str, Any], agent: str) -> bool:
     return bool(sb) and floor_served(sb)
 
 
+from agentic_core.api.operational_excellence import spans_run    # W847 (FU-1121)
+
+
+@spans_run("ai_call")              # W847 (FU-1121) - the model attempt inside is held
 async def _q(prompt: str, agent: str, provenance: Dict[str, Any] | None = None,
              user_text: str | None = None) -> str:
     """§6 (W270) — the APEX tier runs on the same in-house-first fabric as every lower tier:

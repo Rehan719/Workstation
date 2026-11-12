@@ -22337,11 +22337,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W847",
       "note": "",
       "slot_source": "tier-3: disclosed by spend_basis; P3.30 owns tier-3 rows (Owner ruling 2026-10-09)",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "A run span now marks a nest (operational_excellence.run_span and its decorator spans_run), and only the outermost run of a nest spends the work budget. The run that opens a span records one outcome of its kind; an outcome recorded inside it by another kind is held by the span rather than spent - its seconds, the tokens it counted and the first owner it named. The outermost run spends its own duration, which covers what ran inside it, with the tokens its inner runs counted, booked to its own owner or, when it names none, the first owner an inner run named; a run inside another span hands its total up instead of spending; a span whose run records nothing (it raised) hands up or spends what it held; work that outlives its span (a task started inside it) goes to the next open span out or is spent; and a model call with no run around it spends as before, so the gateway calls with no outer row are still counted. Marked: the shared AI wrapper, the deliverable route, the composition and swarm runs, the board's and the cascade's AI calls, and the transformation route. Each outcome row says, under budget, whether its seconds were spent or held by the run around it - the Learning Loop's recent outcomes show it - and spend_basis says what is counted once and where the mark does not reach (a worker thread started without it). One spend can now carry several counted model answers, so spend() is told how many and the budget's count of counted answers stays a count of answers. Driven through the functions, two concurrent nests under the decorator, and the deliverable route on the floor (one spend for the deliverable and every run inside it); not driven with a live model. Guard test_w847, 9 blinds red."
     },
     {
       "id": "FU-1122",

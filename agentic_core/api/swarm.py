@@ -20,6 +20,7 @@ from agentic_core.config import data_path
 
 from fastapi import APIRouter, HTTPException, Depends
 from agentic_core.api._ai_provenance import reply_evidence as _reply_evidence   # W698: the level travels with the record
+from agentic_core.api.operational_excellence import spans_run    # W847 (FU-1121)
 # W505 (P2.6) - owner scoping on the cascade: a scope naming a VSB must belong to the principal.
 from agentic_core.auth.core import get_current_user
 from pydantic import BaseModel
@@ -125,6 +126,7 @@ async def delegate_task(req: DelegateRequest):
     # registers its honest cognitive demand with the homeostatic controller.
     provenance: dict = {"posture": "in-house-first", "served_by": {}, "any_external": False, **_reply_evidence()}
 
+    @spans_run("ai_call")          # W847 (FU-1121) - the model attempt inside is held
     async def _dq(prompt: str, agent: str) -> str:
         _t0 = time.time()
         res = await gateway.query_meta(prompt, agent=agent, augment=False,
@@ -518,6 +520,7 @@ async def cascade_orchestration(req: CascadeRequest,
 
     _served_by_agent: dict = {}
 
+    @spans_run("ai_call")          # W847 (FU-1121) - the model attempt inside is held
     async def _q(prompt: str, agent: str) -> str:
         _qt0 = time.time()
         # §17.5 invariant 1 (W343, FU-276) — the caller's identity reaches the memory layer, or what

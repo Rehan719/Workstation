@@ -73260,3 +73260,108 @@ def test_w846_the_vision_tier_reads_what_the_runtime_says_each_model_can_do(monk
     intake = _t846.image_intake()
     assert intake["can_read_images"] is True and intake["resources"] == ["w846-vlm:4b"], intake
     assert intake["unrecognised_models"] == ["w846-plain"], intake
+
+
+def test_w847_only_the_outermost_run_of_a_nest_spends_the_work_budget(client, monkeypatch, tmp_path):
+    """FU-1121 (W847). Every recorded run fed spend(), and runs nest - an AI call around the orchestrator's
+    model_attempt for the same call, a deliverable around an AI call - so the platform total counted the same
+    seconds more than once whenever a real model served. A run span marks a nest: an outcome recorded inside it by
+    another kind is HELD, the outermost run spends its own duration with the tokens its inner runs counted and the
+    owner they named, a run inside another span hands its total up, a span whose run records nothing spends what it
+    held, and a model call with no run around it spends as before. Each outcome row says which happened. Driven
+    through the functions, concurrently under the decorator, and through the deliverable route on the floor."""
+    import asyncio as _aio847
+    from agentic_core.api import operational_excellence as _oe847
+    from agentic_core.molecular import work_budget as _wb847
+
+    monkeypatch.setattr(_oe847, "_STORE", tmp_path / "operations_outcomes.json", raising=False)
+    monkeypatch.setattr(_wb847, "_store", lambda: tmp_path / "work_budget.json")
+    _real_spend = _wb847.spend
+    _real_spend(seconds=1.0, tokens=10, answers=2)                    # one spend carrying two counted answers
+    assert _wb847.state()["tokens_counted_calls"] == 2 and _wb847.state()["calls_recorded"] == 1, _wb847.state()
+    spends, answered = [], []
+
+    def _spy(seconds=0.0, tokens=None, owner_id=None, vsb_id=None, answers=None, **_k):
+        spends.append((round(float(seconds), 3), tokens, owner_id))
+        answered.append(answers)
+    monkeypatch.setattr(_wb847, "spend", _spy)
+
+    bare = _oe847.record_outcome("model_attempt", "model:w847", duration_ms=500, tokens=7)
+    assert spends == [(0.5, 7, None)] and bare["budget"].startswith("spent: no run around it"), (spends, bare)
+    spends.clear()
+
+    with _oe847.run_span("ai_call"):
+        inner = _oe847.record_outcome("model_attempt", "model:w847", duration_ms=400, tokens=9, owner_id="w847-own")
+        outer = _oe847.record_outcome("ai_call", "agent:w847", duration_ms=450)
+    assert spends == [(0.45, 9, "w847-own")], ("an AI call and the model attempt inside it were not spent once", spends)
+    assert "held by the ai_call run" in inner["budget"] and "outermost" in outer["budget"], (inner, outer)
+    spends.clear()
+    answered.clear()
+
+    with _oe847.run_span("ai_call"):                       # two counted answers inside one run: one spend, both counted
+        _oe847.record_outcome("model_attempt", "model:w847-a", duration_ms=200, tokens=5)
+        _oe847.record_outcome("model_attempt", "model:w847-b", duration_ms=200, tokens=6)
+        _oe847.record_outcome("ai_call", "agent:w847-two", duration_ms=420)
+    assert spends == [(0.42, 11, None)] and answered == [2], ("the answers a spend carries were not counted", answered)
+    spends.clear()
+
+    with _oe847.run_span("deliverable"):
+        with _oe847.run_span("ai_call"):
+            _oe847.record_outcome("model_attempt", "model:w847", duration_ms=300, tokens=4)
+            mid = _oe847.record_outcome("ai_call", "agent:w847", duration_ms=320)
+        _oe847.record_outcome("deliverable", "deliverable:w847", duration_ms=900, owner_id="w847-entity")
+    assert spends == [(0.9, 4, "w847-entity")] and "held by the deliverable run" in mid["budget"], (spends, mid)
+    spends.clear()
+
+    try:
+        with _oe847.run_span("deliverable"):
+            _oe847.record_outcome("model_attempt", "model:w847", duration_ms=250, tokens=3, owner_id="w847-x")
+            raise RuntimeError("w847: the outer run failed before it recorded")
+    except RuntimeError:
+        pass
+    assert spends == [(0.25, 3, "w847-x")], ("what a failed run's inner run did was lost", spends)
+    spends.clear()
+
+    @_oe847.spans_run("ai_call")
+    async def _call(n):
+        await _aio847.sleep(0)
+        _oe847.record_outcome("model_attempt", f"model:w847-{n}", duration_ms=100, tokens=n)
+        await _aio847.sleep(0)
+        return _oe847.record_outcome("ai_call", f"agent:w847-{n}", duration_ms=110)
+
+    async def _both():
+        return await _aio847.gather(_call(1), _call(2))
+    _aio847.run(_both())
+    assert sorted(spends) == [(0.11, 1, None), (0.11, 2, None)], ("concurrent nests saw each other's span", spends)
+    spends.clear()
+
+    async def _late():
+        await _aio847.sleep(0.01)
+        return _oe847.record_outcome("model_attempt", "model:w847-late", duration_ms=120, tokens=2)
+
+    async def _outlives():
+        with _oe847.run_span("ai_call"):
+            task = _aio847.ensure_future(_late())          # started inside the span, it finishes after it
+            _oe847.record_outcome("ai_call", "agent:w847-outlived", duration_ms=50)
+        return await task
+    late = _aio847.run(_outlives())
+    assert (0.12, 2, None) in spends and late["budget"].startswith("spent: no run around it"), (
+        "work that outlived its span was held by a span that will spend nothing more", spends, late["budget"])
+    spends.clear()
+
+    #  the marked run paths carry the mark, and the deliverable route spends once on the floor
+    from agentic_core.api import _ai_provenance as _ap847, board as _bd847, deliverables as _dl847
+    from agentic_core.api import resource_fabric as _rf847, transformation_orchestration as _to847
+    for fn in (_ap847.ai_text, _dl847.produce, _rf847.run_composition, _rf847.run_swarm, _bd847._q,
+               _to847.orchestrate):
+        assert fn.__code__.co_filename.endswith("operational_excellence.py") and hasattr(fn, "__wrapped__"), (
+            "a run path that nests other runs is not marked", fn.__name__)
+    r = client.post("/api/v1/deliverables/produce", json={"type": "brief", "title": "W847 nest",
+                                                         "brief": "W847 a one-page brief on a tenancy deposit"})
+    assert r.status_code == 200, r.text[:300]
+    assert len(spends) == 1, ("a deliverable and the runs inside it were spent more than once", spends)
+    import pathlib as _pl847
+    page = _code_only((_pl847.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages"
+                       / "OperationalExcellence.tsx").read_bytes().decode("utf-8"))
+    assert 'data-testid="outcome-budget"' in page and "title={o.budget" in page, (
+        "the Learning Loop does not say whether a run's seconds were spent or held by the run around it")

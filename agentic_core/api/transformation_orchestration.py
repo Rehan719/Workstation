@@ -146,7 +146,11 @@ class OrchestrateRequest(BaseModel):
 
 
 # ── The cascade ───────────────────────────────────────────────────────────────
+from agentic_core.api.operational_excellence import spans_run    # W847 (FU-1121)
+
+
 @router.post("/orchestrate")
+@spans_run("transformation")       # W847 (FU-1121) - every run inside it is held
 async def orchestrate(req: OrchestrateRequest):
     _t0 = time.time()
     signals = 0

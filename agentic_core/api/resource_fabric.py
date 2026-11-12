@@ -2491,7 +2491,11 @@ async def get_specification(sid: str, request: Request, user: dict | None = Depe
                                  "equivalent is tried by the runner only for a status read that fails, once")}}
 
 
+from agentic_core.api.operational_excellence import spans_run    # W847 (FU-1121)
+
+
 @router.post("/compositions/{cid}/run")
+@spans_run("composition_run")      # W847 (FU-1121) - the stages' runs inside are held
 async def run_composition(cid: str, req: RunCompositionRequest,
                           user: dict | None = Depends(get_current_user)):
     """Run a saved configuration end-to-end on Workstation's OWN native swarm (§6): each composed resource
@@ -3276,6 +3280,7 @@ async def delete_swarm(sid: str, user: dict | None = Depends(get_current_user)):
 
 
 @router.post("/swarm/run")
+@spans_run("swarm_run")            # W847 (FU-1121) - the stages' model attempts inside are held
 async def run_swarm(req: RunSwarmRequest, user: dict | None = Depends(get_current_user)):
     """Run a swarm cascade (saved via swarm_id, or ad-hoc stages) on Workstation's OWN resources.
     Returns the per-stage trace with served_by + whether any external accelerant was used."""

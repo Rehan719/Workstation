@@ -255,7 +255,11 @@ async def output_formats():
     }
 
 
+from agentic_core.api.operational_excellence import spans_run    # W847 (FU-1121)
+
+
 @router.post("/produce")
+@spans_run("deliverable")          # W847 (FU-1121) - the AI call and model attempts inside are held
 async def produce(req: ProduceRequest, user: dict | None = Depends(get_current_user)):
     """Produce a new LIVING deliverable on the native fabric (in-house provenance)."""
     if req.type not in _TYPES and not req.sections:

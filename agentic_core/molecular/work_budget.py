@@ -124,7 +124,8 @@ def _book(rec: Dict[str, Any], owner_id: Optional[str], vsb_id: Optional[str], s
 
 
 def spend(seconds: float = 0.0, tokens: Optional[int] = None, *,
-          owner_id: Optional[str] = None, vsb_id: Optional[str] = None) -> None:
+          owner_id: Optional[str] = None, vsb_id: Optional[str] = None,
+          answers: Optional[int] = None) -> None:
     """Record work actually done. Never raises into a caller — accounting is not the work.
 
     Written under `store_lock` + `atomic_write_json`: this is a shared store, and the concurrency class that
@@ -154,7 +155,9 @@ def spend(seconds: float = 0.0, tokens: Optional[int] = None, *,
             #  count is kept beside the total, because a total over some runs is not a total over all of them.
             if tokens is not None:
                 rec["tokens_spent"] = int(rec.get("tokens_spent") or 0) + int(tokens)
-                rec["token_calls"] = int(rec.get("token_calls") or 0) + 1
+                #  W847 (FU-1121) - one spend can carry several counted answers: the outermost run of a nest
+                #  spends once with every count inside it, and says how many it carries
+                rec["token_calls"] = int(rec.get("token_calls") or 0) + (max(1, int(answers)) if answers else 1)
             rec["calls"] = int(rec.get("calls") or 0) + 1
             _book(rec, owner_id, vsb_id, seconds)       # S18.6 (W743) - the entity that ran it, and no other
             atomic_write_json(_store(), rec)
@@ -325,8 +328,8 @@ def state() -> Dict[str, Any]:
         "tokens_basis": (f"measured - {tokens} token(s) reported by the serving model itself, over "
                          f"{int(rec.get('token_calls') or 0)} counted model answer(s) this window; "
                          f"{int(rec.get('calls') or 0)} spend(s) were recorded in all, which is not a count of "
-                         "answers: a wrapper that times the same call records its own, and a run nothing "
-                         "counted adds no tokens (the deterministic floor runs no model, and an external "
+                         "answers: since W847 a nest spends once, with every model answer inside it, and a run "
+                         "nothing counted adds no tokens (the deterministic floor runs no model, and an external "
                          "accelerant's reported usage is not read)"
                          if tokens is not None else
                          "NOT RECORDED — no run this window reported a token count (a count comes only from a "
@@ -341,9 +344,12 @@ def state() -> Dict[str, Any]:
         "holding_reason": _hold_reason(fraction, why),
         "gate_basis": _gate_basis(fraction, why),
         #  W742 - what the figure is a sum OF, said where the gate reads it
-        "spend_basis": ("the sum of every run duration the platform recorded; a run recorded inside another "
-                        "(a model attempt inside the AI call or run that made it) can be counted at each level, "
-                        "so this can exceed the wall-clock time actually worked. Durations a caller reported "
+        "spend_basis": ("the sum of the run durations the platform recorded, each nest counted once (W847): a run "
+                        "recorded inside a marked run (a model attempt inside the AI call that made it; an AI call "
+                        "inside a deliverable, a composition, a swarm, a cascade tier, the board or a "
+                        "transformation) is held by the outermost run, which spends its own duration with the "
+                        "tokens its inner runs counted. A run made where the mark does not reach (a worker thread "
+                        "started without it) can still be counted at two levels. Durations a caller reported "
                         "through /api/v1/operations/record are not counted"),
         "basis": (f"{spent:.1f}s of a stated {CAPACITY_SECONDS:.0f}s capacity is recorded spent this window, "
                   f"from {int(rec.get('calls') or 0)} run(s) whose duration was measured — and "
