@@ -20853,11 +20853,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W851",
       "note": "",
       "slot_source": "what a delivery earns is the finance item's; the Owner's question on it is section 28.6",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built on the recommendation the Owner's standing instruction adopts (decisions go with the recommendation): only an accepted contract's amount is earned, and a constant never is. A cascade run now records the version of what it delivered - the sha256 of the operational delivery its quality gate reads - on the run record and the answer. A person accepts that version of an entity's delivery at POST /api/v1/swarm/cascade/runs/{run_id}/accept: under sign-in the entity's owner (the economy's own owner check, 404 for anyone else); with sign-in off, the operator of the single-user deployment, said to be unverified. The acceptance records who, when and which version, once; another version, a second acceptance, a run that recorded no version and a run scoped to the platform itself are refused. By itself acceptance earns nothing - an accepted contract's agreed amount is earned through the contract's own settlement - and the delivery's answer says so where it said no acceptance route existed. The cascade run list carries each run's acceptance and the Swarm page offers 'accept this delivery' (naming the version) and shows who accepted. Driven with the quality gate made to pass, so the delivery is one the old rule would have paid: nothing was earned. Guard test_w851, 6 blinds red."
     },
     {
       "id": "FU-1050",

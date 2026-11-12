@@ -73506,3 +73506,65 @@ def test_w850_the_ruled_routing_tie_break_order_is_encoded_and_each_term_decides
     assert 'data-testid="route-decision"' in page and "/api/v1/native-ai/route?" in page, "no page asks the router"
     assert "rtRes.tie_break.decided_by" in page and "rtRes.tie_break.order" in page, (
         "the page does not show the ruled order and which term decided")
+
+
+def test_w851_a_person_accepts_a_version_of_an_entitys_delivery_and_acceptance_alone_earns_nothing(client, monkeypatch):
+    """FU-1049 (W851). Ruled in W676: nothing earns on a structure pass, and the answer said no acceptance route
+    existed. Built on the recommendation the standing instruction adopts - only an accepted contract's amount is
+    earned, and a constant never is. A cascade run records the version of what it delivered; a person may accept
+    that version of an entity's delivery, once, and the acceptance says who, when and which version; another version,
+    a second acceptance and a run scoped to the platform itself are refused; nothing is earned; the run list and the
+    page carry it. Driven with the quality gate made to pass, so the delivery is one the old rule would have paid."""
+    import pathlib as _pl851
+    import uuid as _uu851
+    import agentic_core.api.swarm as _sw851
+    from agentic_core.economy import revenue as _rev851
+
+    async def _passes(text, sections, **kw):
+        return {"quality": {"qms_gate_passed": True, "qms_basis": "w851: made to pass", "delivery_coverage": 1.0,
+                            "stub_found": False, "substantive_length": True}, "biomimetic": {}}
+    monkeypatch.setattr(_sw851, "assure_delivery", _passes)
+    vid = "w851-" + _uu851.uuid4().hex[:6]
+
+    def _earned():
+        p = _rev851.peek_pending(vid)
+        return (p["revenue"], p["costs"], p["events"])
+
+    r = client.post("/api/v1/swarm/cascade", json={"mission": "w851 an entity's delivery", "domain": "enterprise",
+                                                    "scope": vid})
+    assert r.status_code == 200, r.text[:300]
+    j = r.json()
+    sha, run_id = j["delivery_sha256"], j["run_id"]
+    assert isinstance(sha, str) and len(sha) == 64, sha
+    ev = j["economic_event"]
+    assert f"/cascade/runs/{run_id}/accept" in ev["basis"] and "accepts" in ev["basis"] and "earns nothing" in ev["basis"], ev
+
+    before = _earned()
+    other = client.post(f"/api/v1/swarm/cascade/runs/{run_id}/accept", json={"delivery_sha256": "0" * 64})
+    assert other.status_code == 409 and "not the version" in other.json()["detail"], other.text[:200]
+    ok = client.post(f"/api/v1/swarm/cascade/runs/{run_id}/accept", json={"delivery_sha256": sha})
+    assert ok.status_code == 200, ok.text[:300]
+    a = ok.json()
+    assert a["accepted"] is True and a["delivery_sha256"] == sha and a["at"] and a["accepted_by"], a
+    assert a["accepted_by_verified"] is False, ("with sign-in off, who accepted is not verified", a)
+    assert a["earned_wst"] is None and "earns nothing" in a["earns_basis"], a
+    assert _earned() == before, ("acceptance earned something by itself", _earned(), before)
+    twice = client.post(f"/api/v1/swarm/cascade/runs/{run_id}/accept", json={"delivery_sha256": sha})
+    assert twice.status_code == 409 and "already accepted" in twice.json()["detail"], twice.text[:200]
+
+    row = next(x for x in client.get("/api/v1/swarm/cascade/runs").json()["runs"] if x["run_id"] == run_id)
+    assert row["acceptance"]["delivery_sha256"] == sha and row["delivery_sha256"] == sha, row.get("acceptance")
+
+    w = client.post("/api/v1/swarm/cascade", json={"mission": "w851 platform", "domain": "enterprise",
+                                                    "scope": "workstation"}).json()
+    refused = client.post(f"/api/v1/swarm/cascade/runs/{w['run_id']}/accept",
+                          json={"delivery_sha256": w["delivery_sha256"]})
+    assert refused.status_code == 409, ("a run scoped to the platform itself was accepted as a delivery", refused.text)
+    assert client.post("/api/v1/swarm/cascade/runs/w851-no-such/accept",
+                       json={"delivery_sha256": sha}).status_code == 404
+
+    page = _code_only((_pl851.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+                       / "components" / "organism" / "SwarmIntelligence.tsx").read_bytes().decode("utf-8"))
+    assert 'data-testid="cascade-run-accept"' in page and 'data-testid="cascade-run-accepted"' in page, (
+        "the page neither offers acceptance nor shows it")
+    assert "delivery_sha256: cr.delivery_sha256" in page, "the page accepts without naming the version"

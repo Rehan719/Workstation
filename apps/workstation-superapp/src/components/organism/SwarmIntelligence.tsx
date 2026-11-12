@@ -542,6 +542,27 @@ const SwarmIntelligence: React.FC = () => {
                     ))}
                     {cr.plan_binding?.result && <span className="text-[8px] text-emerald-400/70">plan: {cr.plan_binding.result}</span>}
                   </div>
+                  {/* W851 (FU-1049) - a person accepts THIS version of an entity's delivery; acceptance earns nothing by itself */}
+                  {cr.acceptance ? (
+                    <p data-testid="cascade-run-accepted" className="text-[8px] text-emerald-400/80" title={cr.acceptance.earns_basis}>
+                      accepted by {cr.acceptance.accepted_by}{cr.acceptance.accepted_by_verified ? '' : ' (not verified)'} at {cr.acceptance.at} — version {String(cr.acceptance.delivery_sha256).slice(0, 12)}
+                      {' — '}{cr.acceptance.earned_wst == null ? 'earned nothing by itself' : `earned ${cr.acceptance.earned_wst} WST`}
+                    </p>
+                  ) : cr.acceptance_basis ? (
+                    <p data-testid="cascade-run-acceptance-unread" className="text-[8px] text-amber-400">{cr.acceptance_basis}</p>
+                  ) : cr.delivery_sha256 && cr.business_plan_scope && cr.business_plan_scope !== 'workstation' ? (
+                    <button type="button" data-testid="cascade-run-accept"
+                      title="Records that you accepted this version of the delivery. Acceptance by itself earns nothing: only an accepted contract's agreed amount is earned."
+                      onClick={async () => {
+                        try {
+                          await axios.post(`/api/v1/swarm/cascade/runs/${cr.run_id}/accept`, { delivery_sha256: cr.delivery_sha256 });
+                          loadCascadeRuns();
+                        } catch (e) { setCascadeErr(errorMessage(e)); }
+                      }}
+                      className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded border border-white/10 text-white/50 hover:text-emerald-300">
+                      accept this delivery
+                    </button>
+                  ) : null}
                 </div>
               ))}
             </div>
