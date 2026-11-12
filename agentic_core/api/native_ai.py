@@ -227,7 +227,7 @@ async def native_tiers():
 
 @router.get("/route")
 @_states_level("/route")
-async def native_route(domain: str = "", risk: str = "normal"):
+async def native_route(domain: str = "", risk: str = "normal", data_class: str = "internal"):
     """Which tier would serve this, and WHY — including every tier rejected on the way down.
 
     The walk starts at the tier the request WANTS and descends to the deterministic floor, which always
@@ -236,7 +236,7 @@ async def native_route(domain: str = "", risk: str = "normal"):
     skipped because this machine is 4.31 GB short of what it needs.
     """
     from agentic_core.ai.native.tiers import route as _route
-    return _route(domain, risk)
+    return _route(domain, risk, data_class)          # W850 (FU-1088) - privacy fit is read for this data class
 
 
 @router.get("/models")

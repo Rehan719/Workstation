@@ -522,6 +522,15 @@ export const NativeAI: React.FC = () => {
   const [blOpen, setBlOpen] = useState<string | null>(null);
   const [evLevels, setEvLevels] = useState<EvidenceLevels | null>(null);
   const [evErr, setEvErr] = useState('');
+  //  W850 (FU-1088) - which tier would serve a request, why, and the Owner's ruled tie-break that ordered its resources
+  const [rtForm, setRtForm] = useState({ domain: 'classification', risk: 'normal', data_class: 'internal' });
+  const [rtRes, setRtRes] = useState<any>(null);
+  const [rtErr, setRtErr] = useState('');
+  const askRoute = () => {
+    setRtErr('');
+    const q = new URLSearchParams(rtForm as Record<string, string>).toString();
+    apiJson(`/api/v1/native-ai/route?${q}`).then(setRtRes).catch(e => { setRtRes(null); setRtErr(errorMessage(e)); });
+  };
   // P3.32 (W745) - the installed models as the runtime describes them, and the candidate leads; each read has its
   // own error line. FU-918 - and the lifecycle read now says when it failed instead of drawing nothing.
   const [installed, setInstalled] = useState<InstalledModels | null>(null);
@@ -1101,6 +1110,38 @@ export const NativeAI: React.FC = () => {
                 </p>
               ))}
             </div>
+              {/* W850 (FU-1088) - the router's decision in its own words: the tier, every tier rejected and why, and
+                  the Owner's ruled tie-break (privacy fit, risk fit, domain match, resource headroom) - no score */}
+              <div data-testid="route-decision" className="mt-3 space-y-1 border-t border-slate-900 pt-2">
+                <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">Which tier would serve a request, and why</p>
+                <div className="flex flex-wrap gap-1 items-center">
+                  <input aria-label="Domain" value={rtForm.domain} onChange={e => setRtForm({ ...rtForm, domain: e.target.value })}
+                    className="bg-slate-900 border border-slate-800 rounded px-2 py-0.5 text-[10px] text-slate-200 w-36" />
+                  <select aria-label="Risk" value={rtForm.risk} onChange={e => setRtForm({ ...rtForm, risk: e.target.value })}
+                    className="bg-slate-900 border border-slate-800 rounded px-1 py-0.5 text-[10px] text-slate-200">
+                    {['normal', 'elevated', 'high'].map(r => <option key={r} value={r}>{r} risk</option>)}
+                  </select>
+                  <select aria-label="Data class" value={rtForm.data_class} onChange={e => setRtForm({ ...rtForm, data_class: e.target.value })}
+                    className="bg-slate-900 border border-slate-800 rounded px-1 py-0.5 text-[10px] text-slate-200">
+                    {['public', 'internal', 'personal', 'special'].map(d => <option key={d} value={d}>{d} data</option>)}
+                  </select>
+                  <button type="button" data-testid="route-ask" onClick={askRoute}
+                    className="text-[9px] font-black uppercase px-2 py-0.5 rounded border border-slate-800 text-slate-400 hover:text-aura">ask the router</button>
+                </div>
+                {rtErr && <p role="alert" className="text-[9px] font-bold text-vital">{rtErr}</p>}
+                {rtRes && (
+                  <div className="text-[9px] text-slate-400 space-y-0.5">
+                    <p data-testid="route-chosen"><span className="font-mono text-slate-200">{rtRes.tier}</span> — {rtRes.basis}</p>
+                    {(rtRes.considered ?? []).map((c: any) => <p key={c.tier} className="text-slate-600">rejected {c.tier}: {c.why_not}</p>)}
+                    {rtRes.tie_break && (
+                      <p data-testid="route-tie-break">
+                        Tie-break, in the ruled order {(rtRes.tie_break.order ?? []).join(' → ')}: {rtRes.tie_break.basis}
+                        {rtRes.tie_break.decided_by ? ` (decided by ${rtRes.tie_break.decided_by})` : ''}. Resources in order: {(rtRes.tie_break.ordered ?? []).join(', ') || 'none'}. {rtRes.tie_break.data_class_basis}. {rtRes.tie_break.no_score}.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
               <div data-testid="evidence-levels" className="mt-3 space-y-1 border-t border-slate-900 pt-2">
                 <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">What each statement about a model on this page rests on</p>
                 {evErr && <p role="alert" data-testid="evidence-levels-error" className="text-[9px] font-bold text-vital">{evErr}</p>}

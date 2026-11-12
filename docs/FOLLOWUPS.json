@@ -21624,11 +21624,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P4.3",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W850",
       "note": "",
       "slot_source": "its bar is the in-house-first order proven by test",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The Owner's ruled tie-break order is now one constant (tiers.TIE_BREAK_ORDER: privacy fit, risk fit, domain match, resource headroom), and one pure function (tiers.tie_break) applies it to candidates that passed the hard constraints: the first term in the ruled order on which two candidates differ decides between them - never a sum or a weight - and on a full tie the given order stands. Privacy fit is tied to the data class of the call: an owned, local resource fits any data class, an external one only public data, and a data class the router does not know is read as internal, never public. Risk fit prefers the lower-risk resource only for elevated or high risk. No numeric route score is computed or published. The tier router orders the chosen tier's resources by it and its record names the order, which term decided first place, and the data class it was read for (GET /native-ai/route takes data_class); on this platform a tier's resources are owned and local, so the record says when no term could separate them. No page showed the router's decision at all; the Native AI page now asks it (domain, risk, data class) and shows the tier, each tier rejected and why, and the tie-break - the ruled order and which term decided. Guard test_w850 drives a case each term decides, the precedence of an earlier term over every later one, an unknown data class, and that nothing numeric is published, and the page shows the order and the deciding term. 6 blinds red."
     },
     {
       "id": "FU-1089",

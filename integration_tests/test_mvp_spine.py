@@ -73448,3 +73448,61 @@ def test_w849_a_genesis_journeys_seven_stages_reach_the_founder_on_the_page_and_
         assert section in export, ("a stage the journey computes is left out of the document the founder keeps",
                                    section)
     assert "r5.selection_basis" in page and "c.not_ranked_basis" in page, "the ranking is exported without its basis"
+
+
+def test_w850_the_ruled_routing_tie_break_order_is_encoded_and_each_term_decides_a_case(client):
+    """FU-1088 (W850). Owner ruling 2026-09-30: routing is hard constraints, then the tie-break order privacy fit,
+    risk fit, domain match, resource headroom, and no numeric route score is ever published. No code named the order
+    and no guard held it, so the ruling could not fail. The order is one constant; one pure function applies it to
+    candidates that passed the hard constraints, the first differing term deciding; the tier router's record names
+    the order, which term decided and the data class it was read for. A case is driven for each term, and for the
+    order of precedence between them."""
+    import json as _j850
+    from agentic_core.ai.native import tiers as _t850
+
+    assert tuple(_t850.TIE_BREAK_ORDER) == ("privacy fit", "risk fit", "domain match", "resource headroom")
+    ext = {"name": "w850-external", "local": False}
+    loc = {"name": "w850-local", "local": True}
+
+    p = _t850.tie_break([ext, loc], data_class="personal")
+    assert p["ordered"][0] == "w850-local" and p["decided_by"] == "privacy fit", p
+    r = _t850.tie_break([ext, loc], data_class="public", risk="high")
+    assert r["ordered"][0] == "w850-local" and r["decided_by"] == "risk fit", r
+    d = _t850.tie_break([{"name": "w850-general"}, {"name": "w850-law", "domains": ["legal"]}],
+                        domain="legal research")
+    assert d["ordered"][0] == "w850-law" and d["decided_by"] == "domain match", d
+    h = _t850.tie_break([{"name": "w850-big", "headroom_gb": 1.5}, {"name": "w850-small", "headroom_gb": 6.0}])
+    assert h["ordered"][0] == "w850-small" and h["decided_by"] == "resource headroom", h
+    tied = _t850.tie_break([{"name": "w850-a"}, {"name": "w850-b"}])
+    assert tied["ordered"] == ["w850-a", "w850-b"] and tied["decided_by"] is None, tied
+
+    #  the ORDER is the ruling: an earlier term wins against every later one
+    first = _t850.tie_break([{"name": "w850-roomy-external", "local": False, "domains": ["legal"], "headroom_gb": 64.0},
+                             {"name": "w850-tight-local", "local": True, "headroom_gb": 0.5}],
+                            data_class="personal", domain="legal")
+    assert first["ordered"][0] == "w850-tight-local" and first["decided_by"] == "privacy fit", first
+    odd = _t850.tie_break([ext, loc], data_class="w850-unheard-of")
+    assert odd["data_class"] == "internal" and odd["ordered"][0] == "w850-local", ("an unknown data class read as public", odd)
+
+    #  no numeric route score is published, on the function or the route
+    def _numbers(x):
+        if isinstance(x, bool):
+            return []
+        if isinstance(x, (int, float)):
+            return [x]
+        if isinstance(x, dict):
+            return [n for v in x.values() for n in _numbers(v)]
+        if isinstance(x, list):
+            return [n for v in x for n in _numbers(v)]
+        return []
+    assert _numbers(first) == [], ("a number was published with the tie-break", first)
+    routed = client.get("/api/v1/native-ai/route", params={"domain": "classification", "data_class": "personal"}).json()
+    assert routed["tie_break"]["order"] == list(_t850.TIE_BREAK_ORDER) and routed["tie_break"]["data_class"] == "personal"
+    assert "score" not in _j850.dumps(routed["tie_break"]).replace("no_score", "").replace(
+        "no numeric route score", ""), routed["tie_break"]
+    import pathlib as _pl850
+    page = _code_only((_pl850.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages"
+                       / "developers" / "NativeAI.tsx").read_bytes().decode("utf-8"))
+    assert 'data-testid="route-decision"' in page and "/api/v1/native-ai/route?" in page, "no page asks the router"
+    assert "rtRes.tie_break.decided_by" in page and "rtRes.tie_break.order" in page, (
+        "the page does not show the ruled order and which term decided")

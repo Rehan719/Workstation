@@ -391,7 +391,56 @@ def wanted_tier(domain: str) -> Tuple[str, str]:
         f"that involves a model at all. A request nobody classified is not routed upward")
 
 
-def route(domain: str, risk: str = "normal") -> Dict[str, Any]:
+#  W850 (FU-1088) - THE OWNER'S RULED TIE-BREAK ORDER (constitution, ruling of 2026-09-30): routing is hard
+#  constraints, then these four terms IN THIS ORDER, and no numeric route score is ever published.
+TIE_BREAK_ORDER = ("privacy fit", "risk fit", "domain match", "resource headroom")
+DATA_CLASSES = ("public", "internal", "personal", "special")
+_RISK_CLASS_RANK = {"floor": 0, "local_model": 1, "external": 2}      # lower is the lower-risk resource
+_ELEVATED_RISK = ("elevated", "high")
+
+
+def _tie_terms(c: Dict[str, Any], data_class: str, risk: str, domain: str) -> Tuple[Any, ...]:
+    """Each ruled term as a value where larger is the better fit. Compared in the ruled order, term by term; never
+    summed, weighted or returned."""
+    local = bool(c.get("local", True))
+    privacy = 1 if (local or data_class == "public") else 0
+    rclass = c.get("risk_class") or ("local_model" if local else "external")
+    risk_fit = (-_RISK_CLASS_RANK.get(rclass, 1)) if str(risk or "").lower() in _ELEVATED_RISK else 0
+    d = str(domain or "").lower()
+    domain_fit = 1 if any(str(x).lower() in d for x in (c.get("domains") or []) if str(x).strip()) else 0
+    head = c.get("headroom_gb")
+    headroom = float(head) if isinstance(head, (int, float)) and not isinstance(head, bool) else float("-inf")
+    return (privacy, risk_fit, domain_fit, headroom)
+
+
+def tie_break(candidates: List[Dict[str, Any]], data_class: str = "internal", risk: str = "normal",
+              domain: str = "") -> Dict[str, Any]:
+    """W850 (FU-1088) - order candidates that ALL passed the hard constraints by the ruled terms, in the ruled order:
+    the first term on which two candidates differ decides between them; on a full tie the given order stands.
+    Returns the order and which term decided first place - no score."""
+    dc = data_class if data_class in DATA_CLASSES else "internal"
+    cands = [c for c in (candidates or []) if isinstance(c, dict) and str(c.get("name") or "").strip()]
+    keyed = sorted(((c, _tie_terms(c, dc, risk, domain)) for c in cands), key=lambda kc: kc[1], reverse=True)
+    ordered = [str(c["name"]) for c, _ in keyed]
+    if len(keyed) < 2:
+        decided = None
+        basis = ("one candidate passed the hard constraints, so there was nothing to break" if keyed else
+                 "no candidate passed the hard constraints")
+    else:
+        a, b = keyed[0][1], keyed[1][1]
+        decided = next((TIE_BREAK_ORDER[i] for i in range(len(TIE_BREAK_ORDER)) if a[i] != b[i]), None)
+        basis = (f"{ordered[0]} is ahead of {ordered[1]} on {decided}, the first term in the ruled order on which "
+                 f"they differ" if decided else
+                 "the candidates are tied on all four ruled terms here, so the order they were given in stands")
+    return {"order": list(TIE_BREAK_ORDER), "ordered": ordered, "decided_by": decided, "basis": basis,
+            "data_class": dc,
+            "data_class_basis": (f"read for data class {dc!r}" + ("" if dc == data_class else
+                                 f" ({data_class!r} is not a data class this router knows, so it is read as "
+                                 f"internal - never as public)")),
+            "no_score": "no numeric route score is computed or published (Owner ruling 2026-09-30)"}
+
+
+def route(domain: str, risk: str = "normal", data_class: str = "internal") -> Dict[str, Any]:
     """Choose a tier by domain and risk, starting from what the request WANTS and walking down.
 
     THE CHOICE CARRIES ITS BASIS — the bar's second clause — and the basis names what was considered and
@@ -433,8 +482,15 @@ def route(domain: str, risk: str = "normal") -> Dict[str, Any]:
             considered.append({"tier": name, "why_not": (
                 f"RUNNABLE here but no resource is assigned to it. {t['resources_basis']}")})
             continue
+        #  W850 (FU-1088) - the resources of the chosen tier, ordered by the ruled tie-break; on this platform a
+        #  tier's resources are owned and local, so privacy fit cannot separate them, and the record says which
+        #  term did, or that none could
+        _tb = tie_break([{"name": r, "local": True,
+                          "risk_class": "floor" if name == "deterministic_logic" else "local_model"}
+                         for r in t["resources"]], data_class=data_class, risk=risk, domain=domain)
         return {
-            "tier": name, "resources": t["resources"], "domain": domain, "risk": risk,
+            "tier": name, "resources": _tb["ordered"], "domain": domain, "risk": risk,
+            "tie_break": _tb,
             "wanted": want, "wanted_basis": want_why,
             "considered": considered,
             "fell_back": name != want,
