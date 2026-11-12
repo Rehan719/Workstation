@@ -74325,3 +74325,53 @@ def test_w861_an_allocation_is_reversed_by_a_recorded_reversal_held_for_a_person
                    "alloc.reversal.reason", 'data-testid="wallet-reversal-request"', "portfolioRes.data.reversal_requests",
                    "r.data.request_recorded"):
         assert needle in page, ("the wallet does not offer or show the reversal", needle)
+
+
+def test_w862_the_books_say_which_book_a_figure_is_from_and_reconcile_the_pots_with_the_book_of_record(
+        client, monkeypatch, tmp_path):
+    """FU-1004 (W862). On the Owner's store the pots record 3,277,900 of revenue and the double-entry postings 96,900:
+    history, not a live fault, except one cycle of 1,000 with a pot entry and no posting. Ruled: double-entry is the
+    book of record, and the view, the statements and any reconciliation say which book a figure is from. Driven on
+    books of this test's own: history planted before the first posting, a cycle recorded through both books, and a
+    pot entry after it with no posting."""
+    import pathlib as _pl862
+    import uuid as _uuid862
+    from agentic_core.economy import ledger as _lg862
+
+    monkeypatch.setattr(_lg862, "_STORE", tmp_path)
+    vid = f"vsb-w862-{_uuid862.uuid4().hex[:6]}"
+    led = _lg862.VirtualLedger(vid)
+
+    #  1. books with pots and no posting at all: none of their revenue is on the book of record
+    led._data["entries"].append({"ts": "2026-06-01T00:00:00Z", "account": "revenue", "kind": "credit",
+                                 "amount": 3000.0, "memo": "cycle intake (June)", "balance_after": 3000.0})
+    led._data["balances"]["revenue"] = 3000.0
+    led._save()
+    r0 = _lg862.VirtualLedger(vid).statement()["revenue_reconciliation"]
+    assert (r0["revenue_double_entry_wst"], r0["revenue_pots_wst"], r0["double_entry_began"]) == (0.0, 3000.0, None), r0
+    assert "hold no double-entry posting at all" in r0["basis"], r0["basis"]
+
+    #  2. a cycle recorded through both books, then a pot entry after it with no posting
+    led = _lg862.VirtualLedger(vid)
+    led.record("revenue", 100.0, memo="cycle intake w862", ref="cyc-w862")
+    led = _lg862.VirtualLedger(vid)
+    led._data["entries"].append({"ts": "2999-01-01T00:00:00Z", "account": "revenue", "kind": "credit",
+                                 "amount": 1000.0, "memo": "cycle intake (no posting)", "balance_after": 4100.0})
+    led._data["balances"]["revenue"] = 4100.0
+    led._save()
+    st = _lg862.VirtualLedger(vid).statement()
+    assert st["book_of_record"] == "double_entry" and st["totals_book"] == "pots" and st["total_revenue"] == 4100.0, st
+    r = st["revenue_reconciliation"]
+    assert (r["revenue_double_entry_wst"], r["revenue_pots_wst"], r["difference_wst"]) == (100.0, 4100.0, 4000.0), r
+    assert r["pots_revenue_before_double_entry_wst"] == 3000.0, r
+    assert r["pots_revenue_unposted_since_wst"] == 1000.0 and len(r["pots_revenue_unposted_since"]) == 1, r
+    assert r["pots_revenue_unposted_since"][0]["memo"] == "cycle intake (no posting)", r["pots_revenue_unposted_since"]
+    assert "the book of record is the double-entry book" in r["basis"] and "has no matching posting" in r["basis"], r["basis"]
+    assert "3000.0 of the pots' revenue was recorded before the first double-entry posting" in r["basis"], r["basis"]
+    assert "Nothing is posted to close a gap" in r["basis"]
+    assert len(_lg862.VirtualLedger(vid)._data["postings"]) == 1, "the reconciliation posted something"
+
+    page = _code_only((_pl862.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages"
+                       / "enterprise" / "VSBCockpit.tsx").read_bytes().decode("utf-8"))
+    assert 'data-testid="ledger-book-of-record"' in page and "ledger.revenue_reconciliation.revenue_double_entry_wst" in page
+    assert "Total revenue (the pots' cumulative view)" in page, "the card still gives the pots' total as plain revenue"

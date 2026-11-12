@@ -772,6 +772,11 @@ class VirtualLedger:
             "balances_note": ("'balances' is the cumulative legacy view (excludes transfers/closes); "
                               "'reserve_fund_wst' is the live double-entry reserve balance."),
             "total_revenue": round(bal.get("revenue", 0.0), 2),
+            #  W862 (FU-1004) - `total_revenue` and `total_distributed` are the POTS' cumulative figures, kept under
+            #  their names for their readers; the book of record is the double-entry book, reconciled beside them
+            "totals_book": "pots",
+            "book_of_record": self.BOOK_OF_RECORD,
+            "revenue_reconciliation": self.revenue_reconciliation(),
             "total_distributed": round(sum(bal.get(a, 0.0) for a in
                                        ("owner", "self_investment", "capital_fund",
                                         "user_projects", "charity")), 2),
@@ -783,6 +788,57 @@ class VirtualLedger:
             **self._cycles_posted(),
             "recent": self._data["entries"][-10:],
             "disclaimer": "Virtual/simulated WST units — not real money.",
+        }
+
+    #  W862 (FU-1004; OWNER RULING 2026-10-12 - double-entry is the book of record) - THE TWO BOOKS RECONCILED.
+    BOOK_OF_RECORD = "double_entry"
+
+    def revenue_reconciliation(self) -> Dict[str, Any]:
+        """Revenue as each book records it, and where they part: pot revenue recorded before the first double-entry
+        posting (history that book never held), and each pot revenue entry since then that no posting matches by
+        amount and memo. Read only; nothing is posted to close a gap - the gap is said."""
+        pots = round(float((self._data.get("balances") or {}).get("revenue", 0.0) or 0.0), 2)
+        postings = [p for p in (self._data.get("postings") or []) if isinstance(p, dict)]
+        rev_postings = [p for p in postings if p.get("credit") == "revenue"]
+        de = round(sum(float(p.get("amount") or 0.0) for p in rev_postings), 2)
+        first = min((str(p.get("ts") or "") for p in postings if p.get("ts")), default=None)
+        unmatched = {}
+        for p in rev_postings:
+            k = (round(float(p.get("amount") or 0.0), 2), str(p.get("memo") or ""))
+            unmatched[k] = unmatched.get(k, 0) + 1
+        before, unposted = 0.0, []
+        for e in (self._data.get("entries") or []):
+            if not isinstance(e, dict) or e.get("account") != "revenue" or e.get("kind", "credit") != "credit":
+                continue
+            amt = round(float(e.get("amount") or 0.0), 2)
+            k = (amt, str(e.get("memo") or ""))
+            if unmatched.get(k):                 # its own posting first: an entry and its posting can straddle a second
+                unmatched[k] -= 1
+                continue
+            if first is None or str(e.get("ts") or "") < first:
+                before = round(before + amt, 2)
+            elif amt >= 0.005:
+                unposted.append({"ts": e.get("ts"), "amount_wst": amt, "memo": e.get("memo"), "ref": e.get("ref")})
+        unposted_total = round(sum(u["amount_wst"] for u in unposted), 2)
+        return {
+            "book_of_record": self.BOOK_OF_RECORD,
+            "revenue_double_entry_wst": de, "revenue_pots_wst": pots,
+            "difference_wst": round(pots - de, 2),
+            "double_entry_began": first,
+            "pots_revenue_before_double_entry_wst": before,
+            "pots_revenue_unposted_since_wst": unposted_total,
+            "pots_revenue_unposted_since": unposted[-20:],
+            "basis": (
+                f"the book of record is the double-entry book (Owner ruling 2026-10-12): it records {de} of revenue; "
+                f"the pots record {pots}. "
+                + (f"{before} of the pots' revenue was recorded before the first double-entry posting ({first}), so "
+                   f"the book of record never held it. " if first else
+                   "These books hold no double-entry posting at all, so none of the pots' revenue is on the book of "
+                   "record. ")
+                + (f"{len(unposted)} pot revenue entr{'y' if len(unposted) == 1 else 'ies'} since then, {unposted_total} "
+                   f"in all, {'has' if len(unposted) == 1 else 'have'} no matching posting. " if unposted else
+                   ("Since then every pot revenue entry has its posting. " if first else ""))
+                + "Nothing is posted to close a gap here: it is said."),
         }
 
     def _cycles_posted(self) -> Dict[str, Any]:

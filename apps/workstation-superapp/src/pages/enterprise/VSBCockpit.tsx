@@ -1366,7 +1366,25 @@ export const VSBCockpit: React.FC = () => {
                         </div>
                       ))}
                     </div>
-                    <p className="text-[10px] text-slate-500 mt-3">Total revenue: <span className="text-white font-bold">{Number(ledger.total_revenue || 0).toLocaleString()}</span> · distributed: <span className="text-white font-bold">{Number(ledger.total_distributed || 0).toLocaleString()}</span> · entries: {ledger.entry_count ?? 0}</p>
+                    <p className="text-[10px] text-slate-500 mt-3">Total revenue (the pots' cumulative view): <span className="text-white font-bold">{Number(ledger.total_revenue || 0).toLocaleString()}</span> · distributed: <span className="text-white font-bold">{Number(ledger.total_distributed || 0).toLocaleString()}</span> · entries: {ledger.entry_count ?? 0}</p>
+                    {/* W862 (FU-1004) - the book of record is the double-entry book; the two are reconciled, never blended */}
+                    {ledger.revenue_reconciliation && (
+                      <div className="mt-1 space-y-0.5" data-testid="ledger-book-of-record" title={ledger.revenue_reconciliation.basis}>
+                        <p className="text-[10px] text-slate-400">
+                          Book of record: {String(ledger.book_of_record ?? ledger.revenue_reconciliation.book_of_record ?? '').replace('_', '-')} - the totals above are the {String(ledger.totals_book ?? 'pots')}'.
+                          {' '}Revenue on the book of record: <span className="text-white font-bold">{Number(ledger.revenue_reconciliation.revenue_double_entry_wst || 0).toLocaleString()}</span>
+                          {' '}· on the pots: {Number(ledger.revenue_reconciliation.revenue_pots_wst || 0).toLocaleString()}
+                        </p>
+                        {Number(ledger.revenue_reconciliation.difference_wst || 0) !== 0 && (
+                          <p className="text-[10px] text-amber-400/90" data-testid="ledger-reconciliation-gap">
+                            The pots hold {Number(ledger.revenue_reconciliation.difference_wst).toLocaleString()} more:
+                            {' '}{Number(ledger.revenue_reconciliation.pots_revenue_before_double_entry_wst || 0).toLocaleString()} recorded before double-entry began{ledger.revenue_reconciliation.double_entry_began ? ` (${ledger.revenue_reconciliation.double_entry_began})` : ''}
+                            {' '}and {Number(ledger.revenue_reconciliation.pots_revenue_unposted_since_wst || 0).toLocaleString()} since then with no posting
+                            {(ledger.revenue_reconciliation.pots_revenue_unposted_since ?? []).slice(0, 3).map((u: any) => ` · ${u.ts}: ${u.amount_wst} (${u.memo})`)}.
+                          </p>
+                        )}
+                      </div>
+                    )}
                     {/* W503 (FU-169, S1.19 C5) — the tiles above are the CUMULATIVE view. The server has
                         said so since W442 (`balances_note`, `reserve_fund_wst`) and this page printed
                         neither, so a tile read "reserves 2,020" while the fund held 2,019 after a 1 WST

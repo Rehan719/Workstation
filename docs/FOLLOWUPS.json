@@ -19954,11 +19954,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W862",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built as ruled (double-entry is the book of record): the ledger statement names book_of_record double_entry and says its cumulative total_revenue and total_distributed are the pots' (totals_book), and carries revenue_reconciliation - the revenue each book records, their difference, the pots' revenue recorded before the first double-entry posting (history the book of record never held), each pot revenue entry since then that no posting matches by amount and memo (the Owner's unposted cycle of 1,000 shows here), and a sentence saying so; nothing is posted to close a gap. An entry is matched to its own posting before it is classified, so a cycle straddling a second is not counted as history. The Cockpit's ledger card labels the pots' total and gives the book of record's revenue beside it. test_w862 drives books with no posting, then history, a cycle through both books and an unposted pot entry."
     },
     {
       "id": "FU-1005",
