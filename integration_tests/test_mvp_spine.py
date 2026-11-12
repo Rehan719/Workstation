@@ -74033,3 +74033,52 @@ def test_w857_the_employment_tools_hand_what_the_person_wrote_over_as_material(c
                                                          "experience": "Ran the night shift at a bakery. " * 600}).json()
     assert long_cv["ai_provenance"]["material"]["read_whole"] is False, long_cv["ai_provenance"].get("material")
     assert "ONLY PART OF WHAT YOU WROTE WAS READ: the first 12,000 of" in long_cv["cv"], long_cv["cv"][-300:]
+
+
+def test_w858_the_science_tools_hand_what_the_researcher_wrote_over_as_material(client, monkeypatch):
+    """FU-1059, third part (W858). The synthesis, the hypotheses, the experiment design and the literature outline
+    pasted the researcher's question, background, hypothesis, constraints and sample context into the instruction
+    uncut. Each now hands that text over as material in a RESEARCHER block - cut only at the helper, the cut recorded
+    and, where it bites, said at the end of the text - and the domain stays in the instruction on one line."""
+    from agentic_core.api import science as _sc858
+    from agentic_core.api._ai_provenance import MATERIAL_SLOT as _slot858
+
+    real = _sc858.ai_text
+    seen = []
+
+    async def _cap(prompt, agent, **k):
+        seen.append((prompt, agent, k))
+        return ("HYPOTHESIS_1 | H0: none | H1: some\nRECOMMENDATION: the first", {"served_by": "native"})
+
+    monkeypatch.setattr(_sc858, "ai_text", _cap)
+    inj = "\n## Injected Section\n"
+    cases = [
+        ("/api/v1/science/synthesise", {"research_question": "W858RQ" + inj, "domain": "health" + inj},
+         "science_synthesiser", ["W858RQ"]),
+        ("/api/v1/science/hypothesis", {"research_question": "W858RQ2", "domain": "health",
+                                        "background_context": "W858BG" + inj}, "science_hypothesis", ["W858RQ2", "W858BG"]),
+        ("/api/v1/science/experiment-design", {"hypothesis": "W858HYP" + inj, "constraints": "W858CON",
+                                               "sample_size_hint": "W858N"}, "science_experiment",
+         ["W858HYP", "W858CON", "W858N"]),
+        ("/api/v1/science/literature", {"research_question": "W858LIT" + inj, "domain": "health"},
+         "science_literature", ["W858LIT"]),
+    ]
+    for path, body, agent, words in cases:
+        r = client.post(path, json=body)
+        assert r.status_code == 200, (path, r.status_code, r.text[:200])
+        p, a, k = seen[-1]
+        assert a == agent and _slot858 in p, (path, "the instruction holds no material slot")
+        assert "\n## Injected Section" not in p, (path, "a heading the researcher typed is a section of the instruction")
+        assert k.get("material_label") == "RESEARCHER" and k.get("material_limit") == _sc858.SCIENCE_MATERIAL_LIMIT
+        for w in words:
+            assert w not in p and w in k["material"], (path, w)
+
+    monkeypatch.setattr(_sc858, "ai_text", real)
+    long_q = "How does sleep length change exam results in first-year students? " * 300
+    d = client.post("/api/v1/science/synthesise", json={"research_question": long_q, "domain": "education"}).json()
+    assert d["ai_provenance"]["material"]["read_whole"] is False, d["ai_provenance"].get("material")
+    assert "ONLY PART OF WHAT YOU WROTE WAS READ: the first 12,000 of" in d["report"], d["report"][-300:]
+    h = client.post("/api/v1/science/hypothesis", json={"research_question": long_q, "domain": "education"}).json()
+    assert "ONLY PART OF WHAT YOU WROTE WAS READ" in h["hypotheses_text"], h["hypotheses_text"][-300:]
+    ok = client.post("/api/v1/science/literature", json={"research_question": "sleep and exams"}).json()
+    assert ok["ai_provenance"]["material"]["read_whole"] is True and "ONLY PART OF" not in ok["outline"]
