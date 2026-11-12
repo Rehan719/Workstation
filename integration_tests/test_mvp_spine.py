@@ -73970,3 +73970,66 @@ def test_w856_the_career_tools_hand_a_persons_documents_over_as_material_and_say
     for needle in ('data-testid="job-search-read-cut"', "read_cut: resp.data.read_cut", 'data-testid="classify-read-basis"',
                    "readBasis: resp.data.read_basis"):
         assert needle in page, ("the studio does not say how much of a document was read", needle)
+
+
+def test_w857_the_employment_tools_hand_what_the_person_wrote_over_as_material(client, monkeypatch):
+    """FU-1059, second part (W857). Each employment tool pasted the person's free text into the instruction uncut, so a
+    heading inside it was read as a section the answer must have and nothing marked it as data. Each now hands that
+    text over as MATERIAL - cut only at the helper, the cut recorded and, where it bites, said at the end of the text -
+    and a short field left in the instruction is put on one line, so a typed line break cannot open a section."""
+    from agentic_core.api import employment as _em857
+    from agentic_core.api._ai_provenance import MATERIAL_SLOT as _slot857
+
+    real = _em857.ai_text
+    seen = []
+
+    async def _cap(prompt, agent, **k):
+        seen.append((prompt, agent, k))
+        return ("## Captured\\ncaptured", {"served_by": "native", "is_external": False})
+
+    monkeypatch.setattr(_em857, "ai_text", _cap)
+    inj = "\n## Injected Section\n"
+    cases = [
+        ("/api/v1/employment/cv", {"target_role": "analyst" + inj, "experience": "W857EXP" + inj, "skills": ["W857SKILL"]},
+         "employment_cv", ["W857EXP", "W857SKILL"]),
+        ("/api/v1/employment/cover-letter", {"target_role": "analyst", "company": "Co" + inj, "highlights": "W857HL" + inj},
+         "employment_cover_letter", ["W857HL"]),
+        ("/api/v1/employment/interview-prep", {"target_role": "analyst", "competencies": ["W857COMP" + inj]},
+         "employment_interview", ["W857COMP"]),
+        ("/api/v1/employment/career-path", {"current_role": "clerk" + inj, "target_role": "analyst",
+                                            "constraints": "W857CON" + inj}, "employment_career_path", ["W857CON"]),
+        ("/api/v1/employment/salary-negotiation", {"target_role": "analyst", "location": "W857LOC",
+                                                   "current_salary": "W857CUR", "offered_salary": "W857OFF",
+                                                   "leverage": "W857LEV" + inj},
+         "employment_salary", ["W857LOC", "W857CUR", "W857OFF", "W857LEV"]),
+        ("/api/v1/employment/application", {"target_role": "analyst", "organisation": "Trust" + inj,
+                                            "person_spec": "W857SPEC" + inj, "experience": "W857EV",
+                                            "questions": ["W857Q one?", "W857Q two?"]},
+         "employment_application", ["W857SPEC", "W857EV", "W857Q one?", "W857Q two?"]),
+    ]
+    for path, body, agent, words in cases:
+        r = client.post(path, json=body)
+        assert r.status_code == 200, (path, r.status_code, r.text[:200])
+        p, a, k = seen[-1]
+        assert a == agent and _slot857 in p, (path, "the instruction holds no material slot")
+        assert "\n## Injected Section" not in p, (path, "a heading the person typed is a section of the instruction")
+        assert k.get("material_label") == "CANDIDATE" and k.get("material_limit") == _em857.EMPLOYMENT_MATERIAL_LIMIT
+        for w in words:
+            assert w not in p, (path, f"{w} is still pasted into the instruction")
+            assert w in k["material"], (path, f"{w} is not in the material")
+    #  nothing written, nothing handed over: no slot and no material
+    assert client.post("/api/v1/employment/interview-prep", json={"target_role": "analyst"}).status_code == 200
+    assert "material" not in seen[-1][2] and _slot857 not in seen[-1][0]
+    #  the application still asks for the answers, now pointing at the questions in the block
+    app_prompt = [s for s in seen if s[1] == "employment_application"][0][0]
+    assert "## Application Question Answers" in app_prompt and "application questions in the CANDIDATE block" in app_prompt
+
+    #  with the real helper: a whole read says nothing; a cut is recorded and said at the end of the text
+    monkeypatch.setattr(_em857, "ai_text", real)
+    whole = client.post("/api/v1/employment/career-path", json={"current_role": "clerk", "target_role": "analyst",
+                                                                "constraints": "evenings only"}).json()
+    assert whole["ai_provenance"]["material"]["read_whole"] is True and "ONLY PART OF" not in whole["roadmap"]
+    long_cv = client.post("/api/v1/employment/cv", json={"target_role": "analyst",
+                                                         "experience": "Ran the night shift at a bakery. " * 600}).json()
+    assert long_cv["ai_provenance"]["material"]["read_whole"] is False, long_cv["ai_provenance"].get("material")
+    assert "ONLY PART OF WHAT YOU WROTE WAS READ: the first 12,000 of" in long_cv["cv"], long_cv["cv"][-300:]
