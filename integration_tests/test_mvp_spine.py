@@ -57008,7 +57008,9 @@ def _p3d_r8_model_claims(roots, suffixes=(".py", ".ts", ".tsx")):
         r"\b(?:embedding|latent)\s+(?:similarity|analysis|space|representation)s?\b",
         r"\binterpretab\w+",
     ]
-    negators = ("nothing", " not ", "never", " no ", "cannot", "neither", "n't", "without", "none ")
+    negators = ("nothing", " not ", "never", " no ", "cannot", "neither", "n't", "without", "none ",
+                #  W845 (FU-892) - the codebase's own explicit values for "this was not measured"
+                "not_scored", "not_assessed")
     rx = [re.compile(p, re.I) for p in claims]
     examined, flagged, negated = 0, [], []
     for root in roots:
@@ -57023,7 +57025,9 @@ def _p3d_r8_model_claims(roots, suffixes=(".py", ".ts", ".tsx")):
                     window = " " + flat[max(0, m.start() - 220):m.end() + 60].lower() + " "
                     row = (fp.as_posix(), m.group(0))
                     (negated if any(k in window for k in negators) else flagged).append(row)
-    return {"files_examined": examined, "flagged": flagged, "negated": negated}
+    return {"files_examined": examined, "flagged": flagged, "negated": negated,
+            #  W845 (FU-892) - the scan's own answer names what it read
+            "roots": [pathlib.Path(r).as_posix() for r in roots], "suffixes": list(suffixes)}
 
 
 def test_p3d_r8_a_baseline_is_pinned_held_out_on_demand_and_can_be_re_read(client, monkeypatch, tmp_path):
@@ -57368,8 +57372,9 @@ def test_p3d_r8_a_baseline_is_pinned_held_out_on_demand_and_can_be_re_read(clien
         _planted = _p3d_r8_model_claims([_pl])
         assert [pathlib.Path(f).name for f, _ in _planted["flagged"]] == ["over.tsx"] and len(_planted["negated"]) == 1, (
             "the claim scan does not flag a planted claim, or flags a sentence that denies one", _planted)
-        _scan = _p3d_r8_model_claims([_repo / "agentic_core" / "api", _repo / "agentic_core" / "ai",
-                                      _repo / "apps" / "workstation-superapp" / "src"])
+        #  W845 (FU-892) - the roots are the route's own constant, so the scope it states is the scope read
+        _scan = _p3d_r8_model_claims([_repo / r for r in _na._CLAIM_SCAN_ROOTS], tuple(_na._CLAIM_SCAN_SUFFIXES))
+        assert _scan["roots"] == [(_repo / r).as_posix() for r in _na._CLAIM_SCAN_ROOTS], _scan["roots"]
         assert _scan["files_examined"] >= 150, ("the claim scan examined too little to mean anything", _scan["files_examined"])
         assert _scan["flagged"] == [], (
             f"a sentence shaped like a claim about a model's insides, in {_scan['files_examined']} files examined "
@@ -73175,3 +73180,39 @@ def test_w844_a_baseline_records_the_settings_it_sent_and_whose_defaults_applied
     assert ("b.serving.settings.runtime.version" in page
             and "JSON.stringify(b.serving.settings.options_sent)" in page), (
         "the page does not name the runtime and the options a baseline ran under")
+
+
+def test_w845_the_claim_scan_says_what_it_read_and_the_evidence_block_stands_without_the_lifecycle(client, tmp_path):
+    """FU-892 + FU-918 (W845). The phrase scan for claims about a model's insides read three directories and neither
+    its answer nor the sentence on the Native AI page said which; the rest of the code was never read. Its roots are
+    now one constant beside the route that describes it: the scan reads them, its answer names them, and the route's
+    sentence and scope state them and what is not read. Widened to agentic_core/, scripts/ and the web app's source;
+    a match whose window holds the codebase's own not-scored or not-assessed value is counted as negated, never
+    cleared. FU-918's hypothesis - the evidence block is not drawn when the lifecycle read fails - was satisfied
+    by W745, which moved it out of the lifecycle card; this holds the structure that keeps it so."""
+    import pathlib as _pl845
+    import agentic_core.api.native_ai as _na845
+
+    assert set(_na845._CLAIM_SCAN_ROOTS) >= {"agentic_core", "scripts", "apps/workstation-superapp/src"}, (
+        "the claim scan reads less than the code")
+    cc = client.get("/api/v1/native-ai/evidence-levels").json()["claims_check"]
+    assert cc["scope"]["roots"] == list(_na845._CLAIM_SCAN_ROOTS), cc["scope"]
+    assert "scope names" in cc["where"] and "not read" in cc["where"], cc["where"]
+
+    plant = tmp_path / "w845"
+    plant.mkdir()
+    (plant / "scored.py").write_text('R = {"interpretability": "HIGH"}', encoding="utf-8")
+    (plant / "unscored.py").write_text('R = {"interpretability": "NOT_SCORED"}', encoding="utf-8")
+    seen = _p3d_r8_model_claims([plant])
+    assert seen["roots"] == [plant.as_posix()], "the scan's answer does not name what it read"
+    assert [_pl845.Path(f).name for f, _ in seen["flagged"]] == ["scored.py"], seen
+    assert [_pl845.Path(f).name for f, _ in seen["negated"]] == ["unscored.py"], seen
+
+    page = _code_only((_pl845.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages"
+                       / "developers" / "NativeAI.tsx").read_bytes().decode("utf-8"))
+    start = page.index("{lifecycle && (")
+    card_end = page.index("</Card>", start)
+    for testid in ('data-testid="evidence-levels"', 'data-testid="behaviour-baseline"', 'data-testid="lifecycle-error"'):
+        assert page.index(testid) > card_end, (
+            "drawn inside the lifecycle card, so a failed lifecycle read draws none of it", testid)
+    assert "evLevels.claims_check.scope.roots.join" in page, "the page does not say which directories the scan read"

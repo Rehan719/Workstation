@@ -1076,6 +1076,13 @@ def _unclassified_routes(paths=None) -> List[str]:
     return sorted([p for p in paths if (p in _EVIDENCE_SURFACES) == (p in _NOT_A_MODEL_STATEMENT)])
 
 
+#  W845 (FU-892) - WHAT THE CLAIM SCAN READS: one constant, read by the scan the suite runs and by the sentence this
+#  route returns, so the scope it states is the scope that was read.
+_CLAIM_SCAN_ROOTS = ("agentic_core", "scripts", "apps/workstation-superapp/src")
+_CLAIM_SCAN_SUFFIXES = (".py", ".ts", ".tsx")
+_CLAIM_SCAN_NOT_READ = "the documents, the tests and every other kind of file"
+
+
 @router.get("/evidence-levels")
 async def evidence_levels():
     """Which level of evidence each surface of this router rests on. Read-only."""
@@ -1091,8 +1098,11 @@ async def evidence_levels():
             "highest_level": "behaviour",
             #  THE WORDING CHECK, AND WHAT ITS TWO RESULTS MEAN. A phrase list has no third result.
             "claims_check": {"result_words": ["flagged", "nothing matched"],
-                             "where": ("a phrase scan the test suite runs over the API, the AI modules and the "
-                                       "web app's source. This route does not run it"),
+                             "where": (f"a phrase scan the test suite runs over the files of the kinds and under "
+                                       f"the directories its scope names; {_CLAIM_SCAN_NOT_READ} are not read. "
+                                       f"This route does not run it"),
+                             "scope": {"roots": list(_CLAIM_SCAN_ROOTS), "suffixes": list(_CLAIM_SCAN_SUFFIXES),
+                                       "not_read": _CLAIM_SCAN_NOT_READ},
                              "basis": ("a phrase list can FLAG a sentence shaped like a claim about a model's "
                                        "insides. When it flags none the result is 'nothing matched' in the "
                                        "files examined, which does not establish that no surface over-claims")},

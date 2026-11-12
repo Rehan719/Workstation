@@ -17593,11 +17593,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W845",
       "note": "",
       "slot_source": "found in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The claim scan's roots are now one constant beside the route that describes it (native_ai._CLAIM_SCAN_ROOTS): the scan the suite runs reads them, its own answer names the roots and suffixes it read, and the route's scope field names them - the Native AI page shows it - while its sentence says what is not read (the documents, the tests and every other kind of file). It is widened from three directories (agentic_core/api, agentic_core/ai, the web app's source; 237 files) to the whole of agentic_core/, scripts/ and the web app's source (616 files). The one sentence the wider scan flagged is a key whose own value says it was not scored (trustworthiness_engine: \"interpretability\": \"NOT_SCORED\"); a match whose window holds the codebase's own explicit not-scored or not-assessed value is now counted under negated, beside the negation words it already counted - never cleared, and a planted key with a scored value is still flagged. Guard test_w845 (with FU-918), 7 blinds red."
     },
     {
       "id": "FU-893",
@@ -18144,11 +18147,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W845",
       "note": "",
       "slot_source": "found in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "already_satisfied",
+      "because_means": "measured as satisfied by an earlier round; nothing was built for it here",
+      "close_note": "Measured: the hypothesis was right when written and W745 had already fixed it - the evidence-levels block, the behaviour baseline and the lifecycle error sit outside the lifecycle card, in their own card, so a failed lifecycle read still draws them. Read by rendering the built page with GET /api/v1/native-ai/lifecycle answering 500 (the lifecycle error, the evidence levels, the behaviour baseline and the installed models were all drawn and visible; only the lifecycle card's own serving default was not). Held by test_w845, which reads the page's own structure: each of the three is drawn after the lifecycle card closes; one blind moves them inside and is red."
     },
     {
       "id": "FU-919",

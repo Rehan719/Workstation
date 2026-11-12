@@ -68,7 +68,9 @@ interface BaselineList {
 interface EvidenceLevels {
   surfaces: { path: string; level: string; rests_on: string; stated_in_its_own_answer?: boolean }[];
   boundary: string; scope?: string;
-  claims_check?: { result_words: string[]; where: string; basis: string };
+  claims_check?: { result_words: string[]; where: string; basis: string;
+                   //  W845 (FU-892) - what the scan reads, and what it does not
+                   scope?: { roots: string[]; suffixes: string[]; not_read: string } };
 }
 // P3.32 (W745) - the installed models as the local runtime describes them (GET /lifecycle/installed). Each
 // field is the runtime's own; null means it was not reported, and `not_reported` names each such field.
@@ -1111,6 +1113,9 @@ export const NativeAI: React.FC = () => {
                 {evLevels?.claims_check && (
                   <p data-testid="evidence-claims-check" className="text-[9px] text-slate-500">
                     Wording check — it reports {evLevels.claims_check.result_words.join(' or ')}: {evLevels.claims_check.basis}. {evLevels.claims_check.where}.
+                    {evLevels.claims_check.scope && (
+                      <span data-testid="evidence-claims-scope"> Its scope: {evLevels.claims_check.scope.suffixes.join(', ')} files under {evLevels.claims_check.scope.roots.join(', ')}.</span>
+                    )}
                   </p>
                 )}
               </div>
