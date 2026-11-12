@@ -20041,11 +20041,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.9",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W879",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built as the ruling asks: GET /api/v1/economy/reconciliation reads the roster, the entity records, the ledgers and the owner accounts together and changes nothing. For every id any of them holds it says which stores hold it, groups the ids by that shape, and says what each shape means as the stores are written; a place on the roster with no record, books with no record, and an owner account with no ledger are counted as needing a person to say what they are. An unreadable store is 'not known', never an empty population; an unreadable record or ledger is counted as present and named; a record or account filed under an id it does not name is listed; the platform's own scope is named as having no record by design. Admin-only under sign-in. Driven on a store made wrong in each way it can be (test_w879). The fund stays on its own route (W876)."
     },
     {
       "id": "FU-1009",

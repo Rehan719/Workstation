@@ -75365,3 +75365,130 @@ def test_w878_a_document_says_which_metrics_are_measured_and_what_would_measure_
     for absent in ("A person completing a task", "A person returning", "Real-money revenue", "Paying customers"):
         assert states.get(absent) == "NOT MEASURED", (absent, states.get(absent))
     assert "virtual WST" in doc and "Owner" in doc
+
+
+def test_w879_one_read_says_which_of_the_four_stores_hold_each_id_and_which_a_person_must_explain(client, monkeypatch,
+                                                                                                    tmp_path):
+    """FU-1008 (W879). The roster, the entity records, the ledgers and the owner accounts are four stores keyed by the
+    same id; on the Owner's store they held 36, 70, 107 and 103, and 59 ledgers belonged to no entity record. The
+    Owner ruled (2026-10-12) that a reconciliation read across them comes before any clause of the money-on-paper
+    item, driven on a store made wrong in each way it can be. Driven here on this test's own four stores: every shape
+    of membership, an unreadable record and an unreadable ledger, a record and an account that name another id inside,
+    the platform's own scope, then each of two stores unreadable in turn. Nothing is written, and under sign-in only
+    an admin reads it."""
+    import hashlib
+    import json as _json
+    import uuid as _uuid879
+    from agentic_core.api import vsb as _vsb879
+    from agentic_core.economy import ledger as _led879
+    from agentic_core.economy import living_vsbs as _lv879
+    from agentic_core.economy import owner_payments as _op879
+    roster_p, records, books, acct_p = (tmp_path / "living_vsbs.json", tmp_path / "vsb_entities",
+                                        tmp_path / "economy", tmp_path / "economy_owner_payments.json")
+    records.mkdir()
+    books.mkdir()
+    monkeypatch.setattr(_lv879, "_STORE", roster_p)
+    monkeypatch.setattr(_vsb879, "_VSB_STORE", records)
+    monkeypatch.setattr(_led879, "_STORE", books)
+    monkeypatch.setattr(_op879, "_STORE", acct_p)
+
+    def _ledger(v):
+        (books / f"{v}_ledger.json").write_text(_json.dumps(_led879._new_books(v)), encoding="utf-8")
+
+    def _record(v, inner=None):
+        (records / f"{v}.json").write_text(_json.dumps({"vsb_id": inner or v, "name": v}), encoding="utf-8")
+
+    def _account(v, inner=None):
+        return {"vsb_id": inner or v, "owner": "w879-owner", "currency": "WST", "accrued": 0.0, "paid_out": 0.0,
+                "entries": []}
+
+    def _digest():
+        return hashlib.sha256(b"".join(p.relative_to(tmp_path).as_posix().encode() + b"\0" + p.read_bytes()
+                                       for p in sorted(tmp_path.rglob("*")) if p.is_file())).hexdigest()
+
+    def _read(**kw):
+        before = _digest()
+        r = client.get("/api/v1/economy/reconciliation", **kw)
+        assert _digest() == before, "the reconciliation wrote to a store it read"
+        return r
+
+    #  every shape of membership the four stores can take, and one of each way a member can be wrong
+    on_roster = ["w879-whole", "w879-new", "w879-lost", "w879-noshare", "w879-noledger", "w879-bom", "w879-badledger"]
+    roster_p.write_text(_json.dumps({v: {"vsb_id": v, "name": v, "owner": "w879-owner"} for v in on_roster}),
+                        encoding="utf-8")
+    for v in ("w879-whole", "w879-new", "w879-dereg", "w879-noshare", "w879-noledger", "w879-badledger"):
+        _record(v)
+    _record("w879-misfiled", inner="w879-elsewhere")
+    (records / "w879-bom.json").write_bytes(b"\xef\xbb\xbf" + _json.dumps({"vsb_id": "w879-bom"}).encode())
+    for v in ("w879-whole", "w879-dereg", "w879-sim", "w879-ledgeronly", "w879-noshare", "workstation-idbo"):
+        _ledger(v)
+    (books / "w879-badledger_ledger.json").write_text("{not json", encoding="utf-8")
+    accounts = {v: _account(v) for v in ("w879-whole", "w879-dereg", "w879-sim", "w879-noledger", "w879-badledger",
+                                         "workstation-idbo")}
+    accounts["w879-acctonly"] = _account("w879-acctonly", inner="w879-acct-elsewhere")
+    acct_p.write_text(_json.dumps(accounts), encoding="utf-8")
+
+    #  1. the four populations, and each id's shape with what it means
+    r = _read()
+    assert r.status_code == 200, r.text[:300]
+    j = r.json()
+    assert j["populations"] == {"roster": 7, "entity_records": 8, "ledgers": 7, "owner_accounts": 7}, j["populations"]
+    assert j["distinct_ids"] == 13 and j["in_all_four"] == 2 and j["writes"] == "none", j
+    by_id = {v: s for s in j["shapes"] for v in s["ids"]}
+    assert sorted(by_id) == sorted(set(on_roster) | {"w879-dereg", "w879-sim", "w879-ledgeronly", "w879-acctonly",
+                                                     "w879-misfiled", "workstation-idbo"}), sorted(by_id)
+    person = sorted(v for v, s in by_id.items() if s["needs_a_person"])
+    assert person == ["w879-acctonly", "w879-ledgeronly", "w879-lost", "w879-noledger", "w879-sim"], person
+    assert j["needs_a_person"] == 5 and "5 id(s) need a person" in j["basis"], j["basis"]
+    assert by_id["w879-whole"]["held_by"] == ["roster", "entity_records", "ledgers", "owner_accounts"]
+    assert "on the roster with no entity record" in by_id["w879-lost"]["reads_as"]
+    assert ("simulation's books" in by_id["w879-sim"]["reads_as"]
+            and "a person must say which" in by_id["w879-sim"]["reads_as"]), by_id["w879-sim"]
+    assert "owner account with no ledger" in by_id["w879-noledger"]["reads_as"]
+    assert "deregistered" in by_id["w879-dereg"]["reads_as"] and not by_id["w879-dereg"]["needs_a_person"]
+    assert "not been operated" in by_id["w879-new"]["reads_as"] and "no owner share" in by_id["w879-noshare"]["reads_as"]
+    assert (by_id["workstation-idbo"]["reads_as"].startswith("the platform's own scope")
+            and not by_id["workstation-idbo"]["needs_a_person"]), by_id["workstation-idbo"]
+
+    #  2. a member that cannot be read is present and named; a record or an account naming another id is said
+    assert j["unreadable"] == {"entity_records": ["w879-bom"], "ledgers": ["w879-badledger"]}, j["unreadable"]
+    assert j["id_mismatch"]["entity_records"] == [{"id": "w879-misfiled", "record_says": "w879-elsewhere"}]
+    assert j["id_mismatch"]["owner_accounts"] == [{"id": "w879-acctonly", "account_says": "w879-acct-elsewhere"}]
+    assert j["complete"] is False and j["reconciled"] is False and "Read only" in j["basis"]
+
+    #  3. a roster that cannot be read is not known - never an empty population - and is not written over
+    raw = roster_p.read_bytes()
+    roster_p.write_bytes(b"\xef\xbb\xbf" + raw)
+    u = _read().json()
+    assert u["populations"]["roster"] is None and "roster" in u["not_known"], u["populations"]
+    assert "NOT KNOWN" in u["basis"] and u["complete"] is False, u["basis"]
+    assert all(s["not_known"] == ["roster"] for s in u["shapes"]), [s["not_known"] for s in u["shapes"]]
+    assert "w879-lost" not in {v for s in u["shapes"] for v in s["ids"]}, "an id only the roster holds was drawn"
+    assert roster_p.read_bytes() == b"\xef\xbb\xbf" + raw
+
+    #  4. so are owner accounts that cannot be read
+    roster_p.write_bytes(raw)
+    acct_p.write_text("{not json", encoding="utf-8")
+    o = _read().json()
+    assert o["populations"]["owner_accounts"] is None and o["populations"]["roster"] == 7, o["populations"]
+    assert "the owner accounts could not be read whole" in o["basis"], o["basis"]
+
+    #  5. under sign-in it lists every entity's id, so only an admin reads it
+    import agentic_core.auth.core as _ac879
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    users = _ac879._load_users()
+    who = {}
+    for role in ("user", "admin"):
+        name = f"w879-{role}-{_uuid879.uuid4().hex[:6]}"
+        users[name] = {"username": name, "hashed_password": _ac879._pwd_ctx.hash("pw12345678"), "role": role}
+        who[role] = name
+    _ac879._save_users(users)
+    heads = {}
+    for role, name in who.items():
+        tok = client.post("/api/v1/auth/token", data={"username": name, "password": "pw12345678"})
+        assert tok.status_code == 200, tok.text[:200]
+        heads[role] = {"Authorization": "Bearer " + tok.json()["access_token"]}
+    d = _read(headers=heads["user"])
+    assert d.status_code == 403 and "w879-whole" not in d.text, d.text[:200]
+    a = _read(headers=heads["admin"])
+    assert a.status_code == 200 and a.json()["populations"]["roster"] == 7, a.text[:200]

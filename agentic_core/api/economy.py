@@ -22,7 +22,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from agentic_core.api._strict_models import STRICT
-from agentic_core.auth.core import get_current_user, user_can_access
+from agentic_core.auth.core import get_current_user, require_admin, user_can_access   # W879: require_admin
 from agentic_core.economy.entities import ENTITY_TEMPLATES, DEFAULT_ENTITY, get_template
 from agentic_core.economy.metabolism import (
     EconomicMetabolism, validate_waterfall, _load_waterfall_overrides,
@@ -2327,6 +2327,15 @@ async def repair_ledger(vsb_id: str, user: dict | None = Depends(get_current_use
         return _ledger.repair(_ledger._STORE / f"{vsb_id}_ledger.json", vsb_id)
     except LedgerUnavailable as e:
         raise HTTPException(status_code=409, detail=str(e))
+
+
+@router.get("/reconciliation")
+async def books_reconciliation(user: dict = Depends(require_admin)):
+    """W879 (FU-1008) - THE FOUR POPULATIONS, READ TOGETHER: the roster, the entity records, the ledgers and the
+    owner accounts. For every id any of them holds, which stores hold it and what that shape means, with the ids a
+    person must explain. Read only. Admin-only under sign-in, because it lists every entity's id."""
+    from agentic_core.economy.populations import reconcile
+    return reconcile()
 
 
 @router.get("/charity/candidates")
