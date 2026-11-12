@@ -22353,11 +22353,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P4.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W868",
       "note": "",
       "slot_source": "fails only with AUTH_ENABLED=true; P4.1 holds the signed-in perimeter rows",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The hypothesis was true until W829, which made the org cascade read FastAPI's Depends marker as nobody and drove the function. Closed by measurement and a guard, with no code change: driven over HTTP with sign-in on as the entities' owner, an entity's repository cascade runs and a contract is offered, accepted and delivered through a cascade; and over the tree, every function with an injected default that code calls directly (the cascade's three callers, evolve, cycle, journey, produce, listing) treats a non-dict as nobody or never reads it as a person."
     },
     {
       "id": "FU-1121",

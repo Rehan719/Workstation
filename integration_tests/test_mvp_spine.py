@@ -74653,3 +74653,79 @@ def test_w867_a_project_says_when_it_waits_on_a_person(client, monkeypatch, tmp_
     assert 'data-testid="project-list-waiting"' in page
     k = page.index("propose-advance`)")
     assert "axios.get(`/api/v1/projects/${project.id}`)" in page[k:k + 900], "the page does not re-read after a proposal"
+
+
+def test_w868_a_route_called_from_code_reads_no_person_from_its_default_and_both_cascades_run_under_sign_in(client, monkeypatch):
+    """FU-1120 (W868). The hypothesis: with sign-in on, an entity's own repository cascade and a contract delivery
+    fail before running, because the org cascade, called from code with no user, read a username from FastAPI's
+    Depends marker. W829 made the cascade read the marker as nobody and drove the function directly. The row asked
+    for the route paths to be driven and for the other route functions that code calls directly to be checked.
+    1. THE CLASS, measured over the tree: every function with an injected default that code in agentic_core calls
+       directly either treats a non-dict as nobody or never reads that parameter as a person.
+    2. THE TWO PATHS, driven over HTTP with sign-in on, as the entities' owner: both run."""
+    import ast
+    import pathlib
+    import re as _re868
+    import uuid as _uuid868
+    core = pathlib.Path(__file__).resolve().parents[1] / "agentic_core"
+    routes, sources = {}, {}
+    for f in core.rglob("*.py"):
+        src = f.read_text(encoding="utf-8", errors="replace")
+        sources[f] = src
+        if "Depends(" not in src:
+            continue
+        for node in ast.parse(src).body:
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                a = node.args
+                pos = a.args[len(a.args) - len(a.defaults):] if a.defaults else []
+                deps = [p.arg for p, d in zip(pos, a.defaults) if "Depends(" in ast.unparse(d)]
+                deps += [p.arg for p, d in zip(a.kwonlyargs, a.kw_defaults) if d is not None and "Depends(" in ast.unparse(d)]
+                if deps:
+                    routes.setdefault(node.name, []).append((f, deps, ast.get_source_segment(src, node) or ""))
+    called = {}
+    for f, src in sources.items():
+        for m in _re868.finditer(r"(?:await |= )(?:[A-Za-z_][A-Za-z_0-9]*\.)?([A-Za-z_][A-Za-z_0-9]*)\(", src):
+            if m.group(1) in routes:
+                called.setdefault(m.group(1), []).append(f.name)
+    #  not vacuous: the scan finds the callers this row is about, and the others code calls directly
+    assert len(called.get("cascade_orchestration", [])) >= 3, called.get("cascade_orchestration")
+    assert {"evolve_vsb", "run_cycle", "genesis_journey", "produce", "create_listing"} <= set(called), sorted(called)
+    bad = []
+    for name in called:
+        for f, deps, seg in routes[name]:
+            for p in deps:
+                reads = _re868.search(rf"\b{p}\.get\(|\(\s*{p}\s+or\s+\{{\}}\s*\)|\b{p}\[", seg)
+                if reads and f"isinstance({p}, dict)" not in seg:
+                    bad.append(f"{f.relative_to(core.parent)}:{name}({p})")
+    assert not bad, ("called from code, this route reads its injected default as a person without first treating a "
+                     "non-dict as nobody - under sign-in the marker has no .get", bad)
+
+    #  2. both paths, over HTTP, with sign-in on, as the owner of the entities
+    import agentic_core.auth.core as _ac868
+    from agentic_core.api import vsb as _vsb868
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    name = f"w868-{_uuid868.uuid4().hex[:6]}"
+    users = _ac868._load_users()
+    users[name] = {"username": name, "hashed_password": _ac868._pwd_ctx.hash("pw12345678"), "role": "user"}
+    _ac868._save_users(users)
+    tok = client.post("/api/v1/auth/token", data={"username": name, "password": "pw12345678"})
+    assert tok.status_code == 200, tok.text[:200]
+    H = {"Authorization": "Bearer " + tok.json()["access_token"]}
+    est = client.post("/api/v1/genesis/establish", headers=H, json={
+        "problem": "w868 provider venture", "ship_output": False, "name": "W868 Provider"})
+    assert est.status_code == 200, est.text[:300]
+    provider = est.json()["vsb_id"]
+    assert _vsb868._load_vsb(provider).get("owner_id") == name, "the entity is not the signed-in person's"
+    assert client.post(f"/api/v1/vsb/{provider}/repo", headers=H).status_code == 200
+    rc = client.post(f"/api/v1/vsb/{provider}/repo/cascade", headers=H, json={"mission": "w868 operate the entity"})
+    assert rc.status_code == 200 and (rc.json().get("run") or {}).get("run_id"), rc.text[:300]
+    buyer = f"vsb-w868-{_uuid868.uuid4().hex[:6]}"
+    _vsb868._save_vsb({"vsb_id": buyer, "name": "W868 Client", "owner_id": name})
+    ctr = client.post("/api/v1/economy/contracts", headers=H, json={
+        "client_vsb": buyer, "provider_vsb": provider, "brief": "w868 a short playbook", "price_wst": 10.0})
+    assert ctr.status_code == 200 and ctr.json().get("status") == "offered", ctr.text[:300]
+    cid = ctr.json()["id"]
+    assert client.post(f"/api/v1/economy/contracts/{cid}/accept", headers=H).json().get("status") == "accepted"
+    dl = client.post(f"/api/v1/economy/contracts/{cid}/deliver", headers=H)
+    assert dl.status_code == 200 and dl.json().get("status") == "delivered", dl.text[:300]
+    assert (dl.json().get("delivery") or {}).get("run_id"), "the delivery ran no cascade"
