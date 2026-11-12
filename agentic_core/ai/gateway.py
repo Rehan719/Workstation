@@ -136,10 +136,13 @@ def language_verdict(requested: str | None, served_by: str, is_floor: bool) -> d
             note = ("the deterministic native floor composed this, and it composes in English - which is"
                     " what was asked for")
         else:
+            #  W854 (FU-926) - this said "an owned model that writes <language> is not installed" on every such
+            #  answer, which nothing read. What the local models are is read; why the floor served is not claimed.
+            from agentic_core.ai.native.model_resource import local_estate_reading as _ler926
             note = (f"NOT DELIVERED IN {base.upper()}: the deterministic native floor composed this and it"
-                    f" composes in English only. The request's language was recorded and not honoured -"
-                    f" an owned model that writes {base.upper()} is not installed, and this platform does"
-                    f" not translate its own output")
+                    f" composes in English only. The request's language was recorded and not honoured, and"
+                    f" this platform does not translate its own output. Of the local models: "
+                    f"{_ler926()['sentence']}")
         return {"language_requested": base, "language_delivered": delivered, "language_basis": note}
     return {"language_requested": base, "language_delivered": None,
             "language_basis": (f"{served_by} served this and the platform does NOT inspect the language of"

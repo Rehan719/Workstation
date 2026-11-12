@@ -297,6 +297,11 @@ def _lifecycle_for_write() -> Dict[str, Any]:
                    f"evaluation already recorded has been lost") from None
 
 
+def _local_estate_reading854() -> Dict[str, Any]:
+    from agentic_core.ai.native.model_resource import local_estate_reading
+    return local_estate_reading()
+
+
 def _serving_basis(effective, promoted, configured, estate) -> str:
     """W492 - what serves, and why, from the two names and the estate that were actually read."""
     if effective:
@@ -304,7 +309,13 @@ def _serving_basis(effective, promoted, configured, estate) -> str:
                 + (" (promoted)" if effective == promoted else " (from OLLAMA_MODEL)"))
     absent = [n for n in (promoted, configured) if n and n not in set(estate or [])]
     if not estate:
-        return ("no local model is installed, so the deterministic native floor serves"
+        #  W854 (FU-926) - what is installed is read, not inferred from an empty estate: discovery is empty when local
+        #  models are switched off and when the runtime does not answer, as well as when it holds none
+        from agentic_core.ai.native.model_resource import local_estate_reading as _ler926
+        _r926 = _ler926()
+        _held926 = (f"every model the local runtime holds is retired ({', '.join(_r926['models'])})"
+                    if _r926["state"] == "installed" else _r926["sentence"])
+        return (f"the deterministic native floor serves: {_held926}"
                 + (f"; {', '.join(absent)} configured but absent" if absent else
                    "; none is configured either"))
     return ("the native floor serves: "
@@ -339,6 +350,8 @@ async def model_lifecycle():
             # non-empty but neither the promoted nor the configured name was in it. Both facts are read.
             "serving_basis": _serving_basis(_eff, st.get("default_local"),
                                             configured_default_local(), _estate),
+            #  W854 (FU-926) - the reading the serving basis rests on, for the page to say in its own words
+            "local_estate": _local_estate_reading854(),
             "retired": st.get("retired") or [],
             "discovered": local_models(), "active_estate": _estate,
             "evaluations": (st.get("evaluations") or [])[-10:],

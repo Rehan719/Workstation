@@ -20892,7 +20892,7 @@ def test_w492_the_page_says_what_the_engine_said(client):
     nai = (app / "pages/developers/NativeAI.tsx").read_text(encoding="utf-8")
     assert nai.count('data-testid="serving-default"') == 2   # BOTH branches: installed, and the floor
     assert '<span data-testid="serving-default" title={lifecycle.serving_basis}>' in nai
-    assert "no local model is installed" in nai
+    assert "lifecycle.local_estate?.sentence" in nai and "no local model is installed" not in nai   # W854
     assert "is configured but absent" in nai
 
     # ── FU-197 (S4.21): the domain survives, and one tier resolution governs share AND scheduling ──
@@ -73786,3 +73786,71 @@ def test_w853_a_defect_leaves_the_loop_closed_as_source_retired_or_not_reproduci
     for needle in ('data-testid="defect-close-retired"', 'data-testid="defect-not-reproducible"',
                    "'close-source-retired'", "'not-reproducible'", "open_from_retired_labels", "selRow.closure"):
         assert needle in page, ("the panel does not offer the two ways out, or does not show them", needle)
+
+
+def test_w854_what_is_installed_is_read_from_the_probe_by_the_serving_basis_the_page_the_language_note_and_the_registry(
+        client, monkeypatch):
+    """FU-926 (W854). Three statements typed where a probe exists. The serving basis and the Native AI page said "no
+    local model is installed" whenever discovery was empty - which it is when local models are switched off and when
+    the runtime does not answer. The floor language note said an owned model for the language "is not installed" on
+    every such answer. The engine registry said torchsde "is not installed" on a machine where it is. One reading now
+    says which of four things is known, "none is installed" only when the runtime answered with nothing."""
+    import importlib.util as _iu854
+    import pathlib as _pl854
+    import time as _t854
+    from agentic_core.ai.native import model_resource as _mr854
+    from agentic_core.ai import gateway as _gw854
+    from agentic_core.api.native_ai import _serving_basis as _sb854
+    import agentic_core.cognitive as _cog854
+
+    #  1. switched off (the suite's own setting): the reading says so, and nothing claims what is installed
+    lc = client.get("/api/v1/native-ai/lifecycle").json()
+    assert lc["local_estate"]["state"] == "switched_off", lc["local_estate"]
+    assert "switched off on this process" in lc["serving_basis"] and "no local model is installed" not in lc["serving_basis"]
+    fr = _gw854.language_verdict("fr", "native", True)["language_basis"]
+    assert "NOT DELIVERED IN FR" in fr and "switched off on this process" in fr, fr
+    assert "is not installed" not in fr, fr
+
+    #  2. the runtime did not answer: not read - never "none installed"
+    monkeypatch.delenv("AI_DISABLE_LOCAL", raising=False)
+    monkeypatch.setitem(_mr854._MODELS_CACHE, "at", _t854.monotonic())
+    monkeypatch.setitem(_mr854._MODELS_CACHE, "models", [])
+    monkeypatch.setitem(_mr854._MODELS_CACHE, "read", False)
+    monkeypatch.setitem(_mr854._MODELS_CACHE, "why", "ConnectError")
+    nr = _mr854.local_estate_reading()
+    assert nr["state"] == "not_read" and "(ConnectError)" in nr["sentence"] and "was not read" in nr["sentence"], nr
+    assert "did not give its model list" in _sb854(None, None, "llama3.2", [])
+    assert "did not give its model list" in _gw854.language_verdict("de", "native", True)["language_basis"]
+
+    #  3. read and empty: only now is "none is installed" said
+    monkeypatch.setitem(_mr854._MODELS_CACHE, "read", True)
+    em = _mr854.local_estate_reading()
+    assert em["state"] == "none_installed" and "holds no model, so none is installed" in em["sentence"], em
+    assert "none is installed" in _sb854(None, None, None, [])
+
+    #  4. read with models, all retired: said as retired, not as absent
+    monkeypatch.setitem(_mr854._MODELS_CACHE, "models", ["qwen2"])
+    assert _mr854.local_estate_reading()["state"] == "installed"
+    assert "every model the local runtime holds is retired (qwen2)" in _sb854(None, None, None, [])
+
+    #  5. the discovery read records whether it succeeded (a runtime that is not there)
+    monkeypatch.setitem(_mr854._MODELS_CACHE, "at", 0.0)
+    monkeypatch.setenv("OLLAMA_URL", "http://127.0.0.1:9/api/generate")
+    assert _mr854.local_models() == [] and _mr854._MODELS_CACHE["read"] is False, _mr854._MODELS_CACHE
+    assert _mr854.local_estate_reading()["state"] == "not_read"
+    monkeypatch.setitem(_mr854._MODELS_CACHE, "at", 0.0)
+
+    #  6. the registry reads whether torchsde is installed, both ways
+    bme = [v for v in _cog854.register_all()["declared_but_absent_basis"].values() if "torchsde" in v]
+    assert bme, "no absent engine's reason names torchsde"
+    said = "is installed here" if _iu854.find_spec("torchsde") else "is not installed here"
+    assert said in bme[0] and "{torchsde}" not in bme[0], bme[0]
+    _real854 = _iu854.find_spec
+    monkeypatch.setattr(_iu854, "find_spec", lambda name, *a, **k: None if name == "torchsde" else _real854(name, *a, **k))
+    assert "torchsde, which is not installed here" in [
+        v for v in _cog854.register_all()["declared_but_absent_basis"].values() if "torchsde" in v][0]
+
+    page = _code_only((_pl854.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages"
+                       / "developers" / "NativeAI.tsx").read_text(encoding="utf-8"))
+    assert "lifecycle.local_estate?.sentence" in page and "no local model is installed" not in page, (
+        "the page still types what is installed")

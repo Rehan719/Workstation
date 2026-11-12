@@ -61,9 +61,20 @@ _ABSENT_BASIS_BY_TIER = {
     EngineTier.BME: ("declared in EngineType and has no registered module. Built by P3.17. Its state is "
                      "mixed rather than absent: entropic optimal transport has LIVE code (whether its solver is "
                      "importable is read at /api/v1/minimisation/status, not stated here), the Omega-functional and Schrodinger bridge are archived, the "
-                     "diffusion process needs torchsde which is not installed, and the Landauer meter "
+                     "diffusion process is archived and needs torchsde, which {torchsde}, and the Landauer meter "
                      "already exists at core/transcendent_subsystems/tfel.py fed hardcoded bit counts"),
 }
+
+
+def _read_now(text: str) -> str:
+    """W854 (FU-926) - a reason that names a package says whether it is installed as read at this call, never typed
+    (the sentence said torchsde is not installed on a machine where it is)."""
+    if "{torchsde}" in text:
+        import importlib.util as _iu854
+        text = text.replace("{torchsde}", ("is installed here (read at this call; no module of this platform imports "
+                                           "it)") if _iu854.find_spec("torchsde") else
+                            "is not installed here (read at this call)")
+    return text
 
 
 def register_all() -> Dict[str, Any]:
@@ -107,9 +118,9 @@ def register_all() -> Dict[str, Any]:
         "unavailable": unavailable,
         "declared_but_absent": declared_absent,
         "declared_but_absent_basis": {
-            e.value: _ABSENT_BASIS_BY_TIER.get(
+            e.value: _read_now(_ABSENT_BASIS_BY_TIER.get(
                 ENGINE_TIERS.get(e),
-                "declared in EngineType, absent, and in no tier - which is itself a defect: see ENGINE_TIERS")
+                "declared in EngineType, absent, and in no tier - which is itself a defect: see ENGINE_TIERS"))
             for e in absent},
         "engine_type_declares": len(list(EngineType)),
         "by_tier": by_tier,

@@ -84,10 +84,15 @@ def local_models() -> List[str]:
     models: List[str] = []
     digests: Dict[str, str] = {}
     caps: Dict[str, List[str]] = {}
+    #  W854 (FU-926) - whether this read of the runtime succeeded: an empty list from a runtime that did not answer
+    #  is not a runtime that holds nothing
+    _read926, _why926 = False, "no answer"
     try:
         import httpx
         r = httpx.get(f"{_ollama_base()}/api/tags", timeout=1.0)
+        _why926 = f"HTTP {r.status_code}"
         if r.status_code == 200:
+            _read926 = True
             _rows = r.json().get("models") or []
             models = [m.get("name", "").split(":")[0] if ":latest" in m.get("name", "") else m.get("name", "")
                       for m in _rows]
@@ -101,10 +106,32 @@ def local_models() -> List[str]:
                 #  W846 (FU-1129) - the capabilities the runtime states for each model, from the same row
                 if short and isinstance(m.get("capabilities"), list):
                     caps[short] = [str(c) for c in m["capabilities"]]
-    except Exception:
+    except Exception as _e926:
         models, digests, caps = [], {}, {}
-    _MODELS_CACHE.update(at=now, models=models, digests=digests, capabilities=caps)
+        _read926, _why926 = False, _e926.__class__.__name__
+    _MODELS_CACHE.update(at=now, models=models, digests=digests, capabilities=caps, read=_read926, why=_why926)
     return models
+
+
+def local_estate_reading() -> Dict[str, Any]:
+    """W854 (FU-926) - what is known of the installed local models, from the read discovery makes: switched off on
+    this process, not read (the runtime did not answer), read and empty, or read with models. "None is installed" is
+    said only when the runtime answered with an empty list."""
+    if os.getenv("AI_DISABLE_LOCAL", "").lower() in ("1", "true", "yes"):
+        return {"state": "switched_off", "models": [],
+                "sentence": ("local models are switched off on this process (AI_DISABLE_LOCAL is set), so whether "
+                             "any is installed was not read")}
+    models = local_models()
+    if not _MODELS_CACHE.get("read"):
+        return {"state": "not_read", "models": [],
+                "sentence": (f"the local runtime at {_ollama_base()} did not give its model list "
+                             f"({_MODELS_CACHE.get('why') or 'no answer'}), so whether any model is installed "
+                             f"was not read")}
+    if not models:
+        return {"state": "none_installed", "models": [],
+                "sentence": "the local runtime answered and holds no model, so none is installed"}
+    return {"state": "installed", "models": list(models),
+            "sentence": f"the local runtime holds {', '.join(models)}"}
 
 
 def local_model_capabilities(name: str) -> Optional[List[str]]:

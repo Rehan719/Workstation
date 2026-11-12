@@ -18320,11 +18320,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P3.32",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W854",
       "note": "",
       "slot_source": "installed-model statements belong with the model register. W749 reconstructed the three sites: (1) api/native_ai.py and NativeAI.tsx say no local model is installed when local_models() returns none because AI_DISABLE_LOCAL is set; (2) ai/gateway.py's floor language note, the branch for a language other than English; (3) cognitive/__init__.py says torchsde is not installed while requirements.txt pins it, which the dependency pre-flight round decides. test_w492 pins the first sentence.",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "One probe, three readers, now all reading it. Discovery records whether its read of the local runtime succeeded, and one reading (switched off on this process, not read because the runtime did not answer, read and empty, read with models) is what the serving basis, the Native AI page and the floor language note say: \"none is installed\" only when the runtime answered with an empty list, and a runtime whose every model is retired is said so. The engine registry's torchsde clause is read at the call - it IS installed on this machine, where the sentence said it was not. test_w854 drives all four readings and the registry both ways; the W492 page pin now reads the server's sentence."
     },
     {
       "id": "FU-927",

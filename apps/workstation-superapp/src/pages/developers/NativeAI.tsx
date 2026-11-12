@@ -502,6 +502,8 @@ export const NativeAI: React.FC = () => {
     // empty estate, so this card said "Serving default: llama3.2" beside the page's own
     // "Deterministic floor active". What serves and what is configured are two fields now.
     configured_default?: string | null; serves?: string; serving_basis?: string;
+    // W854 (FU-926) - what is known of the installed local models, read: switched off, not read, none, or installed
+    local_estate?: { state: string; sentence: string; models?: string[] } | null;
     // W841 (FU-1087) - whether the promoted default is still the build that was evaluated and promoted
     promoted_default_state?: { promoted?: string | null; holds?: boolean | null; basis?: string } | null;
     discovered?: string[]; active_estate?: string[];
@@ -1041,7 +1043,7 @@ export const NativeAI: React.FC = () => {
                 ) : (
                   <span data-testid="serving-default" title={lifecycle.serving_basis}>
                     Serving: <span className="text-white font-black">the native floor</span>
-                    <span className="text-amber-400/80"> — no local model is installed
+                    <span className="text-amber-400/80" data-testid="local-estate-reading"> — {lifecycle.local_estate?.sentence ?? 'what is installed was not read'}
                       {lifecycle.configured_default ? ` (${lifecycle.configured_default} is configured but absent)` : ''}</span>
                   </span>
                 )}
