@@ -22862,11 +22862,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.10",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W871",
       "note": "",
       "slot_source": "the audit instrument's own rows ride the quality item (FU-993, FU-1036)",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built as the row names: after() reads the findings from the caller (--findings-by-lens FILE) or from the workflow's own result (findings_by_lens), and sets each lens's count against its verify agents (verify:<lens>:<finding>); more findings than verdicts, a verdict for an unreported finding, and findings for a lens that ran no agent each refuse. With no findings known the report says NOT RECONCILED and the command line exits non-zero; a result with no per-agent records says so too. Driven: matching, short, extra and ghost lenses, a declared result, and both command-line cases."
     },
     {
       "id": "FU-1144",

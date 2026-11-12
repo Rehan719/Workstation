@@ -160,16 +160,43 @@ def after(result: Any, findings_by_lens: Dict[str, int] | None = None) -> Dict[s
         dead_lenses = sorted(k for k, v in lenses.items() if v["done"] == 0)
         if dead_lenses:
             problems.append(f"every agent died in lens(es): {', '.join(dead_lenses)}")
-        #  AND THE FINDINGS AGAINST THE VERDICTS, when the caller can supply them. A slice() cap once
-        #  dropped findings silently in this very instrument, so a count is reconciled rather than read.
-        if findings_by_lens:
+        #  AND THE FINDINGS AGAINST THE VERDICTS. A slice() cap once dropped findings silently in this very
+        #  instrument, so a count is reconciled rather than read. W871 (FU-1143) - it ran only when a caller
+        #  supplied the findings, and no caller did, so it never ran; and it asked only whether the lens ran.
+        #  The findings are now read from the caller or from the workflow's own result (`findings_by_lens`),
+        #  and each lens's count is set against its verify agents: one agent, labelled verify:<lens>:<finding>,
+        #  judges each finding, so fewer verify agents is findings dropped before they were judged.
+        if findings_by_lens is None and isinstance(result.get("findings_by_lens"), dict):
+            findings_by_lens = result["findings_by_lens"]
+        verify_by_lens: Dict[str, int] = {}
+        for r in recs:
+            _vp = [p for p in str(r.get("label") or "").split(":") if p]
+            if len(_vp) >= 2 and _vp[0] == "verify":
+                verify_by_lens[_vp[1]] = verify_by_lens.get(_vp[1], 0) + 1
+        findings_problems: List[str] = []
+        if findings_by_lens is not None:
             for lens, n in sorted(findings_by_lens.items()):
                 if lens not in lenses:
-                    problems.append(f"findings are attributed to lens {lens!r}, which ran no agent")
+                    findings_problems.append(f"findings are attributed to lens {lens!r}, which ran no agent")
+                elif verify_by_lens.get(lens, 0) != n:
+                    findings_problems.append(f"lens {lens!r} reported {n} finding(s) and "
+                                             f"{verify_by_lens.get(lens, 0)} were verified")
+            for lens in sorted(set(verify_by_lens) - set(findings_by_lens)):
+                findings_problems.append(f"lens {lens!r} verified {verify_by_lens[lens]} finding(s) it never reported")
+        problems.extend(findings_problems)
         return {
             "complete": not problems,
             "launched": launched, "records": len(recs), "done": done,
             "by_state": by_state, "by_lens": lenses, "problems": problems,
+            "findings_reconciled": None if findings_by_lens is None else not findings_problems,
+            "verify_by_lens": verify_by_lens,
+            "findings_basis": (
+                "NOT RECONCILED - no findings by lens were given (pass --findings-by-lens, or have the workflow "
+                "return findings_by_lens), so whether every finding was judged is not known. This is not a pass"
+                if findings_by_lens is None else
+                f"RECONCILED - each of {len(findings_by_lens)} lens(es) reported as many finding(s) as were verified"
+                if not findings_problems else
+                "NOT RECONCILED - " + "; ".join(findings_problems)),
             "basis": (
                 f"{done} of {len(recs)} agent record(s) report state {AGENT_DONE!r}"
                 + (f", against {launched} launched" if launched is not None else "")
@@ -212,6 +239,10 @@ def after(result: Any, findings_by_lens: Dict[str, int] | None = None) -> Dict[s
         "complete": not problems,
         "launched": launched, "done": done, "errored": errored,
         "skipped": skipped, "empty": empty, "problems": problems,
+        #  W871 (FU-1143) - with no per-agent record there is no verify agent to count against a lens's findings
+        "findings_reconciled": None,
+        "findings_basis": ("NOT RECONCILED - the result holds no per-agent records, so no verify agent can be "
+                           "counted against a lens's findings. This is not a pass"),
         "basis": (
             f"all {launched} agent(s) finished, none errored, skipped or returned empty, so the finding "
             f"list covers every agent that was launched"
@@ -261,6 +292,8 @@ def main() -> int:
     b.add_argument("--agents", type=int, required=True)
     a = sub.add_parser("after", help="did every launched agent come back?")
     a.add_argument("--result", required=True, help="a JSON file holding the workflow result")
+    a.add_argument("--findings-by-lens", default=None,        # W871 (FU-1143)
+                   help="a JSON file mapping each lens to the number of findings it reported")
     sub.add_parser("cleanup", help="remove every secondary worktree")
     args = ap.parse_args()
 
@@ -277,10 +310,21 @@ def main() -> int:
             print(f"NOT KNOWN — the result file could not be read ({e.__class__.__name__}), so "
                   f"completeness is not decided. This is not a pass")
             return 1
-        rep = after(res)
+        fbl = None
+        if args.findings_by_lens:
+            try:
+                fbl = json.loads(Path(args.findings_by_lens).read_text(encoding="utf-8"))
+            except (OSError, ValueError) as e:
+                print(f"NOT KNOWN — the findings file could not be read ({e.__class__.__name__}), so the findings "
+                      f"are not reconciled. This is not a pass")
+                return 1
+        rep = after(res, fbl)
         print(("COMPLETE" if rep["complete"] else
                "INCOMPLETE" if rep["complete"] is False else "NOT KNOWN") + " — " + rep["basis"])
-        return 0 if rep["complete"] else 1
+        #  W871 (FU-1143) - and the findings against the verdicts, said on their own line. A refutation whose
+        #  findings were not reconciled does not pass: the gate cannot say every finding was judged.
+        print("FINDINGS " + str(rep.get("findings_basis") or "NOT RECONCILED - no basis was given"))
+        return 0 if rep["complete"] and rep.get("findings_reconciled") is True else 1
     rep = cleanup()
     print(rep["basis"])
     return 0 if not rep["failed"] else 1

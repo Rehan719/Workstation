@@ -74954,3 +74954,58 @@ def test_w870_an_external_answer_is_counted_from_the_usage_its_server_reports(cl
     assert done.get("served_by") == "openai" and done.get("model_tokens") == 7, done
     assert kwargs.get("stream_options") == {"include_usage": True}, "the OpenAI stream did not ask for its usage"
     assert spent == [("claude", 7), ("openai", 7)], spent
+
+
+def test_w871_the_refutation_gate_reconciles_the_findings_against_the_verdicts(monkeypatch, tmp_path, capsys):
+    """FU-1143 (W871). after() reconciled each lens's findings only when a caller supplied them, its CLI called it with
+    the result alone and no caller supplied them, so the check never ran; and the check it held only asked whether
+    the lens ran. The findings are now read from the caller or from the workflow's own result, each lens's count is
+    set against its verify agents, a mismatch refuses, and a result whose findings were not reconciled does not
+    pass at the command line."""
+    import importlib.util
+    import json as _json
+    import sys as _sys
+    _spec = importlib.util.spec_from_file_location(
+        "_w871_rg", __import__("pathlib").Path(__file__).resolve().parents[1] / "scripts" / "refutation_gate.py")
+    rg = importlib.util.module_from_spec(_spec)
+    _spec.loader.exec_module(rg)
+
+    def run(*labels):
+        return {"agentCount": len(labels),
+                "workflowProgress": [{"type": "workflow_agent", "state": "done", "label": lb} for lb in labels]}
+    res = run("refute:guards", "verify:guards:one", "verify:guards:two", "refute:routes", "verify:routes:three")
+
+    #  1. the findings agree with the verdicts: complete and reconciled
+    ok = rg.after(res, {"guards": 2, "routes": 1})
+    assert ok["complete"] is True and ok["findings_reconciled"] is True, ok
+    assert ok["verify_by_lens"] == {"guards": 2, "routes": 1}, ok["verify_by_lens"]
+    #  2. a finding that was never judged, a verdict for a finding never reported, a lens that never ran: refused
+    short = rg.after(res, {"guards": 3, "routes": 1})
+    assert short["complete"] is False and short["findings_reconciled"] is False, short
+    assert "lens 'guards' reported 3 finding(s) and 2 were verified" in short["basis"], short["basis"]
+    extra = rg.after(res, {"guards": 2})
+    assert extra["complete"] is False and "lens 'routes' verified 1 finding(s) it never reported" in extra["basis"]
+    ghost = rg.after(res, {"guards": 2, "routes": 1, "nowhere": 1})
+    assert ghost["complete"] is False and "lens 'nowhere', which ran no agent" in ghost["basis"]
+    #  3. the workflow may declare its findings in its own result, and they are reconciled
+    assert rg.after({**res, "findings_by_lens": {"guards": 2, "routes": 1}})["findings_reconciled"] is True
+    assert rg.after({**res, "findings_by_lens": {"guards": 1, "routes": 1}})["complete"] is False
+    #  4. nothing known: the agents may be complete, but the findings are said NOT RECONCILED - never silently
+    bare = rg.after(res)
+    assert bare["complete"] is True and bare["findings_reconciled"] is None, bare
+    assert bare["findings_basis"].startswith("NOT RECONCILED") and "not a pass" in bare["findings_basis"]
+    agg = rg.after({"agentCount": 3, "agents_done": 3, "agents_error": 0})
+    assert agg["findings_reconciled"] is None and "no per-agent records" in agg["findings_basis"]
+
+    #  5. the command line: no findings is not a pass; the findings given and agreeing is
+    rf = tmp_path / "result.json"
+    rf.write_text(_json.dumps(res), encoding="utf-8")
+    monkeypatch.setattr(_sys, "argv", ["refutation_gate.py", "after", "--result", str(rf)])
+    assert rg.main() == 1, "a refutation whose findings were not reconciled passed"
+    assert "FINDINGS NOT RECONCILED" in capsys.readouterr().out
+    ff = tmp_path / "findings.json"
+    ff.write_text(_json.dumps({"guards": 2, "routes": 1}), encoding="utf-8")
+    monkeypatch.setattr(_sys, "argv", ["refutation_gate.py", "after", "--result", str(rf), "--findings-by-lens", str(ff)])
+    assert rg.main() == 0
+    out = capsys.readouterr().out
+    assert out.startswith("COMPLETE") and "FINDINGS RECONCILED" in out, out
