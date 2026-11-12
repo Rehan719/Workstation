@@ -73365,3 +73365,55 @@ def test_w847_only_the_outermost_run_of_a_nest_spends_the_work_budget(client, mo
                        / "OperationalExcellence.tsx").read_bytes().decode("utf-8"))
     assert 'data-testid="outcome-budget"' in page and "title={o.budget" in page, (
         "the Learning Loop does not say whether a run's seconds were spent or held by the run around it")
+
+
+def test_w848_with_sign_in_on_a_learners_record_is_the_callers_own_and_anothers_is_not_found(client, monkeypatch):
+    """FU-1064 (W848). The learner routes asked who is calling, but a signed-in person could still read or write
+    another learner's record by typing that learner's id. Ruled 2026-10-12: the record is kept, said to be
+    unverified until sign-in, then the learner's own. Every route that takes a learner id now resolves it once:
+    with sign-in on, an id that is not the caller's username is answered as not found - read or write - and the
+    caller's own record is said to be verified as theirs, including for a username a store path could not hold;
+    with sign-in off, nothing changes and the record is said to be unverified. Driven with three signed-in users."""
+    import agentic_core.auth.core as _ac848
+
+    off = client.get("/api/v1/qep/hifz/progress/w848-anyone")
+    assert off.status_code == 200 and off.json()["identity_verified"] is False, off.text[:200]
+
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    users = _ac848._load_users()
+    for u in ("w848a", "w848b", "w848.c"):
+        users[u] = {"username": u, "hashed_password": _ac848._pwd_ctx.hash("pw12345678"), "role": "user"}
+    _ac848._save_users(users)
+
+    def hdr(u):
+        t = client.post("/api/v1/auth/token", data={"username": u, "password": "pw12345678"}).json()["access_token"]
+        return {"Authorization": f"Bearer {t}"}
+    ha, hb, hc = hdr("w848a"), hdr("w848b"), hdr("w848.c")
+
+    own = client.post("/api/v1/qep/hifz/schedule", json={"uid": "w848a", "surah_number": 1, "ayaat_range": [1, 3]},
+                      headers=ha)
+    assert own.status_code == 200 and own.json()["identity_verified"] is True, own.text[:300]
+    mine = client.get("/api/v1/qep/hifz/progress/w848a", headers=ha)
+    assert mine.status_code == 200 and mine.json()["identity_verified"] is True, mine.text[:300]
+    assert "signed-in caller's own" in mine.json()["identity_basis"], mine.json()["identity_basis"]
+
+    #  another learner's record: not found, whether read or written
+    portion = {"uid": "w848a", "track": "new_lesson", "unit": "page", "start": 2, "end": 2, "set_by": "learner"}
+    for call in (lambda: client.get("/api/v1/qep/hifz/progress/w848a", headers=hb),
+                 lambda: client.get("/api/v1/qep/hifz/portions/w848a", headers=hb),
+                 lambda: client.get("/api/v1/qep/gamification/w848a", headers=hb),
+                 lambda: client.post("/api/v1/qep/hifz/review", json={"uid": "w848a", "ayah_ref": "1:1", "quality": 5},
+                                     headers=hb),
+                 lambda: client.post("/api/v1/qep/hifz/schedule",
+                                     json={"uid": "w848a", "surah_number": 1, "ayaat_range": [1, 2]}, headers=hb),
+                 lambda: client.post("/api/v1/qep/hifz/portion", json=portion, headers=hb)):
+        r = call()
+        assert r.status_code == 404, ("another learner's record was offered to a signed-in caller", r.status_code,
+                                      r.text[:200])
+    after = client.get("/api/v1/qep/hifz/progress/w848a", headers=ha).json()
+    assert after == mine.json(), ("a refused write by another caller changed the record", after, mine.json())
+
+    #  a username a store path could not hold still reaches its own record, under a key derived from it
+    c = client.get("/api/v1/qep/hifz/progress/w848.c", headers=hc)
+    assert c.status_code == 200 and c.json()["identity_verified"] is True, c.text[:300]
+    assert client.get("/api/v1/qep/hifz/progress/w848a", headers=hc).status_code == 404

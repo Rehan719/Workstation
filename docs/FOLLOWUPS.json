@@ -21150,11 +21150,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.17",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W848",
       "note": "",
       "slot_source": "the Owner's rulings of 2026-10-12 on the learner's record",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Every route that takes a learner id (hifz schedule, review, progress, portion and portions; the gamification read and award) now resolves it once (religious_domain.api._learner_key). With sign-in on, an id that is not the signed-in caller's username is answered as not found, read or write, and the record is kept under the username - or under a store-safe key derived from it when the username holds characters a store path may not. With sign-in off nothing changes and the record is said to be unverified. Every answer says which: a signed-in caller's own record is said to be verified as theirs. Driven with three signed-in users (one whose username a store path could not hold) across the seven routes both ways, and with sign-in off. The ruling's last clause - the record is the learner's to export and delete - is not built here and is registered as its own row. Guard test_w848, 5 blinds red."
     },
     {
       "id": "FU-1065",
@@ -23285,6 +23288,24 @@
       "closed_by": null,
       "note": "",
       "tier": 3
+    },
+    {
+      "id": "FU-1167",
+      "title": "With sign-in on, a learner's Quran-platform record is not theirs to export or delete: neither route exists",
+      "why": "Ruled 2026-10-12: the record is kept, said to be unverified until sign-in, then the learner's to export and delete. Since W848 (FU-1064) the record is the signed-in caller's own and another's is not found, but there is no route that hands a learner their whole record (memorisation cards, sessions, portions, recorded awards) or removes it at their request. Smallest addition: with sign-in on, an export route that returns the caller's own record whole, and a delete route that removes it (or archives it, if the Owner prefers a record be kept) only for the caller; with sign-in off, both refuse and say why.",
+      "source": "W848 (FU-1064)",
+      "found": "2026-11-12",
+      "files": [
+        "agentic_core/religious_domain/api.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.17",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the same ruling and plan item as FU-1064, whose last clause this is",
+      "tier": 2
     }
   ],
   "routes": [
