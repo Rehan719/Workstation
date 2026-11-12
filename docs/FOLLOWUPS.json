@@ -21010,7 +21010,7 @@
       "tier": 2,
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
-      "close_note": "Built as ruled: agentic_core/care/hazards.py holds the open log - fourteen hazards across the four Care tools and one running through all four, each with the code that guards it named as module:symbol, how it guards and what it leaves, or no guard and UNGUARDED with why (an instruction in a prompt is never counted as a guard). Three are unguarded today: an invented care-plan detail, an individual identified or accused in safeguarding guidance, an invented or filled-in handover part. Each guard is resolved when the log is read, so a guard renamed or removed is reported missing and its hazard counted unguarded. Served at GET /api/v1/care/hazards and shown on the Care hub. test_w863 resolves every guard, checks every composing Care route has entries, and removes a guard to see it reported missing."
+      "close_note": "Built as ruled: agentic_core/care/hazards.py holds the open log - fourteen hazards, thirteen across the four Care tools and one running through all four, each with the code that guards it named as module:symbol, how it guards and what it leaves, or no guard and UNGUARDED with why (an instruction in a prompt is never counted as a guard). Three are unguarded today: an invented care-plan detail, an individual identified or accused in safeguarding guidance, an invented or filled-in handover part. Each guard is resolved when the log is read, so a guard renamed or removed is reported missing and its hazard counted unguarded. Served at GET /api/v1/care/hazards and shown on the Care hub. test_w863 resolves every guard, checks every composing Care route has entries, and removes a guard to see it reported missing."
     },
     {
       "id": "FU-1057",
@@ -23025,11 +23025,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P4.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W864",
       "note": "",
       "slot_source": "sign-in readiness owns who may hold which account name",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built as the row names: register and signup refuse the label 'default' (compared with spaces collapsed and case folded, so 'Default' is the label too), and signup refuses the configured single-user owner's name (the role word 'owner' when nothing is configured) - which the admin register route still allows, so the Owner can create their own account. A refusal creates nothing and says why the name cannot be held. test_w864 drives register and signup with sign-in on, the configured owner set and unset."
     },
     {
       "id": "FU-1153",

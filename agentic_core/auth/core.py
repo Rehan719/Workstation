@@ -394,10 +394,32 @@ async def refresh(req: RefreshRequest):
     return TokenResponse(access_token=access, refresh_token=new_refresh, expires_in=_ACCESS_TTL * 60)
 
 
+#  W864 (FU-1152) - NAMES NO PERSON MAY HOLD. Records made while sign-in was off are owned under the label 'default'
+#  (older ones) or the configured single-user owner (W753), and user_can_access compares a record's owner with the
+#  username: an account under either name would be shown every such record. The label is refused at register and
+#  signup; the configured owner's name is refused at signup and allowed only at the admin register route, where the
+#  Owner creates their own account.
+def _reserved_name_refusal(username: str, *, admin_register: bool) -> str | None:
+    from agentic_core.config import SINGLE_USER_LABEL, single_user_owner
+    name = " ".join(str(username or "").split()).casefold()
+    if name == SINGLE_USER_LABEL.casefold():
+        return (f"'{SINGLE_USER_LABEL}' is the label records made while sign-in was off carry, so an account under it "
+                f"would be shown every one of them: it cannot be an account's name. Nothing was created.")
+    owner = str(single_user_owner().get("owner_id") or "").casefold()
+    if not admin_register and owner and name == owner:
+        return ("that is the name records made while sign-in was off are owned under (this deployment's single-user "
+                "owner), so an account under it would be shown every one of them. Only the Owner's own account, "
+                "created by an admin, may hold it. Nothing was created.")
+    return None
+
+
 @router.post("/register")
 async def register(req: RegisterRequest, _admin: dict = Depends(require_admin)):
     """Register a new user. Admin only."""
     _require_auth_deps()
+    _why864 = _reserved_name_refusal(req.username, admin_register=True)
+    if _why864:
+        raise HTTPException(status_code=409, detail=_why864)
     with _users_mutation():                      # W369
         users = _load_users()
         if req.username in users:
@@ -452,6 +474,9 @@ async def self_serve_signup(req: SignupRequest):
     if len(req.username.strip()) < 3 or len(req.password) < 8:
         raise HTTPException(status_code=422,
                             detail="Username must be ≥3 chars and password ≥8 chars.")
+    _why864 = _reserved_name_refusal(req.username, admin_register=False)
+    if _why864:
+        raise HTTPException(status_code=409, detail=_why864)
     with _users_mutation():                      # W369
         users = _load_users()
         if req.username in users:

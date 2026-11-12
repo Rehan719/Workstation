@@ -74414,3 +74414,54 @@ def test_w863_the_care_tools_have_an_open_hazard_log_each_hazard_linked_to_its_g
                        / "domains" / "CareHub.tsx").read_bytes().decode("utf-8"))
     for needle in ('data-testid="care-hazard-log"', "/api/v1/care/hazards", "GUARD MISSING", "h.residual"):
         assert needle in page, ("the Care hub does not show the hazard log", needle)
+
+
+def test_w864_no_account_takes_the_name_records_made_with_sign_in_off_are_owned_under(client, monkeypatch):
+    """FU-1152 (W864). With sign-in on, the ownership check compares a record's owner with the username, so an account
+    named 'default' - the label records made while sign-in was off carry - or named as the configured single-user
+    owner would be shown every such record. The label is refused at register and at signup, in any case or spacing;
+    the configured owner's name is refused at signup and allowed at the admin register route, where the Owner creates
+    their own account. Nothing is created by a refusal."""
+    import uuid as _uuid864
+    import agentic_core.auth.core as _ac864
+    from agentic_core import config as _cfg864
+
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    tag = _uuid864.uuid4().hex[:6]
+    admin = f"w864-admin-{tag}"
+    users = _ac864._load_users()
+    users[admin] = {"username": admin, "hashed_password": _ac864._pwd_ctx.hash("pw12345678"), "role": "admin"}
+    _ac864._save_users(users)
+    tok = client.post("/api/v1/auth/token", data={"username": admin, "password": "pw12345678"}).json()["access_token"]
+    ha = {"Authorization": f"Bearer {tok}"}
+    owner = f"w864-owner-{tag}"
+    monkeypatch.setenv(_cfg864.SINGLE_USER_OWNER_ENV, owner)
+
+    def reg(name):
+        return client.post("/api/v1/auth/register", json={"username": name, "password": "pw12345678"}, headers=ha)
+
+    for name in ("default", "Default", "  default "):
+        r = reg(name)
+        assert r.status_code == 409 and "the label records made while sign-in was off carry" in r.json()["detail"], (
+            name, r.status_code, r.text[:200])
+    assert "default" not in _ac864._load_users() and "Default" not in _ac864._load_users()
+    #  the Owner's own account is created by an admin under the configured name
+    assert reg(owner).status_code == 200 and owner in _ac864._load_users()
+
+    #  self-serve signup refuses both names, and takes an ordinary one
+    monkeypatch.setenv("SELF_SERVE_SIGNUP_ENABLED", "true")
+    monkeypatch.setenv(_cfg864.SINGLE_USER_OWNER_ENV, f"w864-other-owner-{tag}")
+
+    def sign(name):
+        return client.post("/api/v1/auth/signup", json={"username": name, "password": "pw12345678"})
+
+    s1 = sign("DEFAULT")
+    assert s1.status_code == 409 and "cannot be an account's name" in s1.json()["detail"], s1.text[:200]
+    s2 = sign(f"W864-Other-Owner-{tag}")
+    assert s2.status_code == 409 and "Only the Owner's own account, created by an admin" in s2.json()["detail"], s2.text[:200]
+    assert f"W864-Other-Owner-{tag}" not in _ac864._load_users()
+    #  with nothing configured the records carry the role word, and signup refuses it too
+    monkeypatch.delenv(_cfg864.SINGLE_USER_OWNER_ENV)
+    assert sign(_cfg864.SINGLE_USER_OWNER_ROLE).status_code == 409
+    ok = sign(f"w864-person-{tag}")
+    assert ok.status_code == 200 and ok.json()["username"] == f"w864-person-{tag}", ok.text[:200]
