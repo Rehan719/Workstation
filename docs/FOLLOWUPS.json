@@ -20125,11 +20125,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.11",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W866",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built as the row asks: GET /api/v1/law/tools lists the Law tools in the page's order - the three that call no model first (a provision word for word from its publisher, where help from a person is, the matter's papers assembled from located lines), each with what it does and does not do, then the three forms, each with the disclaimer its answer carries when the native floor composed it, built from the same constants. The page opens on that list, says whether a model serves now from the one status read the forms already make, and shows each form's no-model sentence before the form when none is serving or that cannot be read; the statute reader and the matter assembly stand above the forms. Driven: each form's floor answer carries exactly the sentence the list gave for it."
     },
     {
       "id": "FU-1014",

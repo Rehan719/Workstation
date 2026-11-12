@@ -74527,3 +74527,61 @@ def test_w865_sign_in_and_signup_have_a_limit_on_attempts(client, monkeypatch):
     third = sign(f"w865-new3-{tag}")
     assert third.status_code == 429 and "accounts created from this address" in third.json()["detail"], third.text[:200]
     assert f"w865-new3-{tag}" not in _ac865._load_users()
+
+
+def test_w866_the_law_page_says_what_this_machine_does_before_a_form_and_the_no_model_tools_come_first(client):
+    """FU-1013 (W866). The page opened on three forms and a person learnt only inside an answer that no legal research
+    had been done. The page now says first what this machine does in Law: the tools that call no model, which come
+    first on the page and work now, and for each form the sentence its answer carries when no model composed it - read
+    from the router the answer is built in, so the page and the answer cannot say different things."""
+    import pathlib
+    import re as _re866
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+    listed = client.get("/api/v1/law/tools")
+    assert listed.status_code == 200, listed.text[:200]
+    tools = listed.json()
+    assert tools.get("composed") is False and tools.get("basis")
+    assert [t["id"] for t in tools["needs_no_model"]] == ["statute", "help", "matter"], tools["needs_no_model"]
+    assert all(t.get("name") and t.get("does") and t.get("does_not") for t in tools["needs_no_model"])
+    forms = {f["id"]: f for f in tools["needs_a_model"]}
+
+    #  1. each form's sentence is the disclaimer its own answer carries when the floor composed it - driven
+    drive = {
+        "compliance": ("/api/v1/law/analyse", {"document_text": "This agreement is between Alpha Ltd and Beta Ltd. "
+                                                                "Either party may end it on thirty days notice.",
+                                               "analysis_focus": "risk"}),
+        "research": ("/api/v1/law/research", {"question": "Can my employer change my working hours without asking me?"}),
+        "draft": ("/api/v1/law/generate", {"template_id": "nda", "parties": {"party_a": "Alpha Ltd", "party_b": "Beta Ltd"}}),
+    }
+    assert set(forms) == set(drive), sorted(forms)
+    for fid, (route, body) in drive.items():
+        assert forms[fid]["route"] == route, (fid, forms[fid]["route"])
+        r = client.post(route, json=body)
+        assert r.status_code == 200, (fid, r.text[:200])
+        a = r.json()
+        assert (a.get("ai_provenance") or {}).get("floor_note"), (fid, "this leg drives the floor and a model served")
+        assert a["disclaimer"] == forms[fid]["when_no_model_serves"], (fid, a["disclaimer"], forms[fid]["when_no_model_serves"])
+    assert "NO legal research" in forms["research"]["when_no_model_serves"]
+
+    #  2. the forms the list names are the forms the page offers: the registry's Law tabs
+    reg = (src / "lib" / "toolRegistry.ts").read_text(encoding="utf-8")
+    law = reg[reg.index("{ name: 'Law', route: '/law'"):]
+    law = law[:law.index("]}")]
+    assert set(_re866.findall(r"form\('([a-z-]+)'", law)) == set(forms), "the list and the page's forms differ"
+
+    #  3. the page: the statement first, then the tools that call no model, then the forms
+    page = _code_only((src / "pages" / "domains" / "LawHub.tsx").read_text(encoding="utf-8"))
+    assert "fetch('/api/v1/law/tools')" in page and 'data-testid="law-tools-note"' in page
+    i_card = page.index('data-testid="law-what-runs-here"')
+    i_statute, i_matter, i_forms = page.index("<StatutePanel />"), page.index("<MatterAssemblyPanel />"), page.index("<DomainTool")
+    assert i_card < i_statute < i_matter < i_forms, ("the order on the page", i_card, i_statute, i_matter, i_forms)
+    assert page.count("<StatutePanel />") == 1 and page.count("<MatterAssemblyPanel />") == 1
+    #  the sentence shown is the server's: rendered from the list, never typed on the page
+    assert "f.when_no_model_serves" in page and "{sentence}" in page and "NO legal research" not in page
+    #  whether a model serves now is the one shared status read, not a second reading
+    assert "useServingStatus()" in page and "servingIsFloor(serving)" in page and "/api/v1/native-ai/status" not in page
+    serving = (src / "components" / "ServingNow.tsx").read_text(encoding="utf-8")
+    assert serving.count("fetch(") == 1 and "export const useServingStatus" in serving and "export const servingIsFloor" in serving
+    #  a form's description no longer says research or analysis happens whatever is serving
+    assert "AI researches it" not in page and "AI runs a structured" not in page
+    assert page.count("With a model serving, Workstation") == 3

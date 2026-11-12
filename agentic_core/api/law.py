@@ -290,6 +290,14 @@ async def legal_research(req: ResearchRequest):
     }
 
 
+#  The drafter's disclaimer, in two parts: what a model's draft is, and what any draft needs before use. W866 named
+#  them here so the list of Law tools says, before the form, the sentence the answer carries when the floor served.
+_DRAFT_CLAIM = "This document is AI-generated and provided as a starting point only."
+_DRAFT_SAFETY = ("It must be reviewed by a qualified solicitor before use. "
+                 #  P3.23 — the not-legal-advice statement is on EVERY response a person reads, not only the matter's
+                 "Nothing here is legal advice.")
+
+
 class GenerateRequest(BaseModel):
     template_id: str
     parties: dict = {}
@@ -359,11 +367,7 @@ async def generate_document(req: GenerateRequest):
         "document": document,
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "disclaimer": disclaimer_for(
-            provenance, "This document is AI-generated and provided as a starting point only.",
-            "It must be reviewed by a qualified solicitor before use. "
-            #  P3.23 — the not-legal-advice statement is on EVERY response a person reads, not only the matter's
-            "Nothing here is legal advice."),
+        "disclaimer": disclaimer_for(provenance, _DRAFT_CLAIM, _DRAFT_SAFETY),
     }
 
 
@@ -408,6 +412,51 @@ HELP_FROM_A_PERSON = (
     {"name": "LawWorks", "link": "https://www.lawworks.org.uk/legal-advice-individuals",
      "for_what": "free legal advice clinics run by volunteer solicitors"},
 )
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W866 (FU-1013) - WHAT THIS MACHINE DOES IN LAW, said before a form is filled. The page opened on three forms
+#  and said only inside each answer that, with no model serving, no legal research had been done. This lists the
+#  Law tools in the order the page shows them: first the three that call no model, each with what it does and
+#  what it does not do; then the three forms, each with the sentence its answer carries when the native floor
+#  composed it, built from the same constants the answer is built from. Whether a model is serving now is the
+#  native status's reading, which the page already reads once per load; this list claims nothing about it.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+NO_MODEL_TOOLS = (
+    {"id": "statute", "name": "Read a provision of an Act",
+     "does": ("Fetches one provision from its publisher when you ask, and shows it word for word with the date of "
+              "its version and the changes not yet applied to it."),
+     "does_not": "It does not say whether the provision applies to your situation, or explain it."},
+    {"id": "help", "name": "Where help from a person is",
+     "does": ("Lists regulated and free legal help by name and address, says what this platform is not, and says "
+              "how to complain."),
+     "does_not": "It does not choose one for you, and nothing is copied from their sites."},
+    {"id": "matter", "name": "Assemble the matter's papers",
+     "does": ("Fills each particular only from a located line of a document in the matter's one folder, or leaves "
+              "it blank, and resolves each authority against the corpus or refuses it."),
+     "does_not": ("It does not compose a particular, an argument or a conclusion, and a filing-shaped draft waits "
+                  "for the Owner's approval.")},
+)
+
+
+@router.get("/tools")
+def law_tools():
+    """W866 (FU-1013) - the Law tools in the order the page shows them, those that call no model first, and what each
+    form's answer says when no model composed it. Nothing is composed here."""
+    return {
+        "needs_no_model": [dict(t) for t in NO_MODEL_TOOLS],
+        "needs_a_model": [
+            {"id": "compliance", "route": "/api/v1/law/analyse", "when_no_model_serves": _FLOOR_LAW},
+            {"id": "draft", "route": "/api/v1/law/generate",
+             "when_no_model_serves": disclaimer_for({"floor_note": "the native floor"}, _DRAFT_CLAIM, _DRAFT_SAFETY)},
+            {"id": "research", "route": "/api/v1/law/research", "when_no_model_serves": _FLOOR_LAW},
+        ],
+        "basis": ("Read from this router's code. The first three call no model at all: a publisher's text word for "
+                  "word, a list of names and addresses, lines located in the matter's folder. Each form's sentence is "
+                  "the disclaimer its answer carries when the native floor composed it. Whether a model is serving "
+                  "now is the native status's reading, not this list's."),
+        "composed": False,
+    }
 
 
 @router.get("/help")
