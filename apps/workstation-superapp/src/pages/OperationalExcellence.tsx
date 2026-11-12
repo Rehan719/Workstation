@@ -13,6 +13,8 @@ interface Summary {
   success_rate_basis?: string; produced_rate?: number;
   // W672 (ledger v16 R4.7) - how much of the in-house rate is a caller's claim
   caller_reported_runs?: number; in_house_rate_excluding_caller_reported?: number | null; in_house_rate_basis?: string;
+  // W855 (FU-1142) - how many of the rows read were recorded before the suite's store was isolated; they stay by decision
+  rows_before_suite_isolation?: number; rows_undated?: number; rows_before_suite_isolation_basis?: string;
 }
 // W583 (P3.25) — what the platform records when it FAILS. `state` is three-valued on purpose and the
 // page MUST distinguish the last two: no failures over a populated ledger is a reliability statement; no
@@ -112,6 +114,11 @@ export const OperationalExcellence: React.FC = () => {
           In-house rate: {summary.in_house_rate_basis}
           {(summary.caller_reported_runs ?? 0) > 0 && typeof summary.in_house_rate_excluding_caller_reported === 'number'
             ? ` Without those rows the rate is ${pct(summary.in_house_rate_excluding_caller_reported)}.` : ''}
+        </p>
+      )}
+      {summary?.rows_before_suite_isolation_basis && ((summary.rows_before_suite_isolation ?? 0) > 0 || (summary.rows_undated ?? 0) > 0) && (
+        <p className="text-[10px] text-slate-500 leading-relaxed" data-testid="ops-before-isolation">
+          {summary.rows_before_suite_isolation_basis}
         </p>
       )}
       {summary?.success_rate_basis && (

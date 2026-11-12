@@ -73854,3 +73854,39 @@ def test_w854_what_is_installed_is_read_from_the_probe_by_the_serving_basis_the_
                        / "developers" / "NativeAI.tsx").read_text(encoding="utf-8"))
     assert "lifecycle.local_estate?.sentence" in page and "no local model is installed" not in page, (
         "the page still types what is installed")
+
+
+def test_w855_the_operations_summary_says_how_many_of_its_rows_predate_the_suites_isolation_and_that_they_stay(
+        client, monkeypatch):
+    """FU-1142 (W855). 1,843 of the 2,000 rows of the Owner's operations record predate W394, the round that isolated
+    the suite's store, and nothing marks which were test runs. Decided on the recommendation (the Owner's standing
+    instruction of 2026-11-10): they stay - real floor outcomes, nothing identifies them as tests, and the store keeps
+    the newest rows so they leave on their own. What the summary could not say is how much of what it reads is from
+    then; it now counts them, says what that means and that they stay, and the operations page shows it."""
+    import pathlib as _pl855
+    import agentic_core.api.operational_excellence as _oe855
+
+    def row(at, resource="native"):
+        r = {"kind": "w855", "resource": resource, "served_by": "native", "success": True, "duration_ms": 1}
+        if at:
+            r["created_at"] = at
+        return r
+
+    rows = [row("2026-06-29T10:00:00Z"), row("2026-08-30T23:59:59Z"), row("2026-08-31T00:00:00Z"),
+            row("2026-10-01T09:00:00Z"), row(None)]
+    monkeypatch.setattr(_oe855, "_load", lambda: list(rows))
+    s = client.get("/api/v1/operations/summary").json()
+    assert (s["rows_before_suite_isolation"], s["rows_undated"], s["total_runs"]) == (2, 1, 5), s
+    b = s["rows_before_suite_isolation_basis"]
+    assert "2 of the 5 row(s) read here were recorded before 2026-08-31" in b and "stay by decision (FU-1142)" in b, b
+    assert "nothing on a row marks which were test runs" in b and "1 row(s) carry no date" in b, b
+
+    monkeypatch.setattr(_oe855, "_load", lambda: [row("2026-11-01T00:00:00Z")])
+    s2 = client.get("/api/v1/operations/summary").json()
+    assert s2["rows_before_suite_isolation"] == 0 and s2["rows_undated"] == 0
+    assert s2["rows_before_suite_isolation_basis"].startswith("None of the 1 row(s) read here"), s2
+
+    page = _code_only((_pl855.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages"
+                       / "OperationalExcellence.tsx").read_text(encoding="utf-8"))
+    assert 'data-testid="ops-before-isolation"' in page and "summary.rows_before_suite_isolation_basis" in page, (
+        "the operations page does not say how many rows predate the isolation")

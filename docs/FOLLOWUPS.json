@@ -22811,11 +22811,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.10",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W855",
       "note": "",
       "slot_source": "the operations record's quality is this item's, beside the test-double rows on the same item",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Decided on the recommendation, which the Owner's standing instruction of 2026-11-10 adopts: the rows recorded before the suite's store was isolated STAY - real floor outcomes of that period, nothing on a row identifies them as tests, and the store keeps only the newest 2,000 rows, so they leave as new outcomes are recorded. What the record could not say is how much of what it reads is from then: GET /operations/summary now counts the rows dated before 2026-08-31 (W394) and the undated ones, and says that suite runs before then wrote here, that nothing marks which were tests, and that they stay by this decision; the operations page shows that sentence whenever either count is above zero. test_w855 drives the boundary day, an undated row and an all-new record."
     },
     {
       "id": "FU-1143",

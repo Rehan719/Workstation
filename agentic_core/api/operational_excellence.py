@@ -651,6 +651,28 @@ async def model_health_view():
     }
 
 
+#  W855 (FU-1142) - the day the suite's store was isolated (W394). Suite runs before it wrote into the real store.
+SUITE_ISOLATED_ON = "2026-08-31"
+
+
+def _before_isolation(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """W855 (FU-1142; decided on the recommendation under the Owner's standing instruction of 2026-11-10) - the rows
+    recorded before the suite's store was isolated STAY: real floor outcomes of that period, nothing marks which were
+    test runs, and the store keeps only the newest rows, so they leave as new outcomes arrive. How many are read is said."""
+    n = len(rows)
+    pre = sum(1 for r in rows if r.get("created_at") and str(r["created_at"]) < SUITE_ISOLATED_ON)
+    undated = sum(1 for r in rows if not r.get("created_at"))
+    basis = ((f"{pre} of the {n} row(s) read here were recorded before {SUITE_ISOLATED_ON}, when the test suite's "
+              f"store was isolated (W394). Suite runs before then wrote into this store, and nothing on a row marks "
+              f"which were test runs, so they are counted with the rest. They stay by decision (FU-1142) and leave as "
+              f"newer outcomes are recorded.") if pre else
+             f"None of the {n} row(s) read here was recorded before {SUITE_ISOLATED_ON}, when the test suite's store "
+             f"was isolated (W394).")
+    if undated:
+        basis += f" {undated} row(s) carry no date, so when they were recorded is not known."
+    return {"rows_before_suite_isolation": pre, "rows_undated": undated, "rows_before_suite_isolation_basis": basis}
+
+
 @router.get("/summary")
 async def summary():
     rows = [r for r in _load() if r.get("kind") != "model_attempt"]
@@ -698,4 +720,5 @@ async def summary():
         #  run of it had failed. Only a resource that produced output is named; otherwise none is.
         "top_resource": next((r["resource"] for r in ranks if (r.get("produced_rate") or 0) > 0), None),
         "kinds": sorted({r.get("kind") for r in rows if r.get("kind")}),
+        **_before_isolation(rows),
     }
