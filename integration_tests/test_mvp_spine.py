@@ -75332,3 +75332,36 @@ def test_w877_no_parallel_source_tree_stands_beside_agentic_core_where_core_stoo
     #  3. the archive says what moved, and on whose ruling
     readme = (root / "_archive" / "README.md").read_text(encoding="utf-8")
     assert "## Later moves: core/ (2026-11-12, W877)" in readme and "NO PARALLEL SOURCE TREE" in readme
+
+
+def test_w878_a_document_says_which_metrics_are_measured_and_what_would_measure_the_rest(client):
+    """FU-743 (W878). No document said which business and product metrics are measured. docs/METRICS_MEASURED.md
+    does: each metric MEASURED or PARTLY names the route that returns it, mounted on this app, with its denominator
+    and freshness; each NOT MEASURED says what would measure it. Nothing records a person completing a task,
+    returning, or accepting an output across people, and the document says so rather than leaving it to be assumed."""
+    import pathlib
+    import re as _re878
+    doc = (pathlib.Path(__file__).resolve().parents[1] / "docs" / "METRICS_MEASURED.md").read_text(encoding="utf-8")
+    rows = []
+    for ln in doc.splitlines():
+        cells = [c.strip() for c in ln.strip().strip("|").split("|")]
+        if len(cells) == 7 and cells[1] in ("MEASURED", "PARTLY", "NOT MEASURED"):
+            rows.append(dict(zip(("metric", "state", "definition", "source", "denominator", "freshness", "would"), cells)))
+    assert len(rows) >= 18, len(rows)
+    from agentic_core.app_mvp import app
+    mounted = {r.path for r in app.routes if hasattr(r, "methods") and "GET" in r.methods}
+    for r in rows:
+        assert r["definition"], r
+        if r["state"] == "NOT MEASURED":
+            assert r["source"] == "none" and len(r["would"]) > 10, ("a metric not measured does not say what would measure it", r)
+            continue
+        m = _re878.fullmatch(r"GET (/\S+)", r["source"])
+        assert m and m.group(1) in mounted, ("a metric's source is not a mounted route", r["metric"], r["source"])
+        assert r["denominator"] and r["freshness"], r
+        if "{" not in m.group(1):
+            assert client.get(m.group(1)).status_code == 200, (r["metric"], m.group(1))
+    states = {r["metric"]: r["state"] for r in rows}
+    #  what the row named as unmeasured is said as unmeasured
+    for absent in ("A person completing a task", "A person returning", "Real-money revenue", "Paying customers"):
+        assert states.get(absent) == "NOT MEASURED", (absent, states.get(absent))
+    assert "virtual WST" in doc and "Owner" in doc

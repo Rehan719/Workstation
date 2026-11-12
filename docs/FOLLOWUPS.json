@@ -14473,11 +14473,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.6",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W878",
       "note": "",
       "slot_source": "the Owner asked 2026-10-10 for this work to be added to the plan",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built as the row names: docs/METRICS_MEASURED.md lists eighteen business and product metrics, each with a definition, source route, denominator and freshness, or NOT MEASURED and what would measure it. Measured or partly measured: entities, recorded revenue (the caller's figure, FU-1010), the fund, projects, AI calls and what served them, the quality pass rate over gate-assessed runs, the serving model, seconds and tokens, a learner's progress, support satisfaction, accepted deliveries, a person's saved outputs. Not measured: real-money revenue, paying customers, learners across the platform, a person completing a task or returning, time to a first useful output. The guard checks each source route is mounted and answers."
     },
     {
       "id": "FU-744",
