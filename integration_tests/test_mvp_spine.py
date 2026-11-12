@@ -74082,3 +74082,79 @@ def test_w858_the_science_tools_hand_what_the_researcher_wrote_over_as_material(
     assert "ONLY PART OF WHAT YOU WROTE WAS READ" in h["hypotheses_text"], h["hypotheses_text"][-300:]
     ok = client.post("/api/v1/science/literature", json={"research_question": "sleep and exams"}).json()
     assert ok["ai_provenance"]["material"]["read_whole"] is True and "ONLY PART OF" not in ok["outline"]
+
+
+def test_w859_the_care_tools_hand_what_the_person_recorded_over_as_material_and_all_eighteen_callers_are_moved(
+        client, monkeypatch):
+    """FU-1059, last part (W859). The care plan, the risk assessment, safeguarding and the handover pasted what the
+    person recorded into the instruction uncut. Each now hands it over as material in a CARE RECORD block - cut only at
+    the helper, the cut recorded and, where it bites, said at the end of the text - while what the platform computes
+    (the score) and what it fixes (setting, framework, handover type) stay in the instruction on one line. With these
+    every caller W680 classified is moved: no tool of the four routers pastes a person's text into its instruction."""
+    import pathlib as _pl859
+    import re as _re859
+    from agentic_core.api import care as _ca859
+    from agentic_core.api._ai_provenance import MATERIAL_SLOT as _slot859
+
+    real = _ca859.ai_text
+    seen = []
+
+    async def _cap(prompt, agent, **k):
+        seen.append((prompt, agent, k))
+        return ("## Situation\ncaptured", {"served_by": "native"})
+
+    monkeypatch.setattr(_ca859, "ai_text", _cap)
+    inj = "\n## Injected Section\n"
+    cases = [
+        ("/api/v1/care/care-plan", {"patient_profile": {"age": "W859AGE" + inj}, "care_needs": ["W859NEED" + inj]},
+         "care_planner", ["W859AGE", "W859NEED"]),
+        ("/api/v1/care/risk-assess", {"tool": "news2", "patient_data": {"respiration_rate": 18},
+                                      "clinical_context": "W859CTX" + inj}, "care_risk_assess", ["W859CTX"]),
+        ("/api/v1/care/safeguarding", {"concern": "W859CONCERN" + inj, "person_context": "W859PCTX"},
+         "care_safeguarding", ["W859CONCERN", "W859PCTX"]),
+        ("/api/v1/care/handover", {"patient_summary": "W859SUM" + inj, "current_situation": "W859SIT",
+                                   "background": "W859BG", "assessment": "W859AS", "recommendation": "W859REC"},
+         "care_handover", ["W859SUM", "W859SIT", "W859BG", "W859AS", "W859REC"]),
+    ]
+    for path, body, agent, words in cases:
+        r = client.post(path, json=body)
+        assert r.status_code == 200, (path, r.status_code, r.text[:200])
+        p, a, k = seen[-1]
+        assert a == agent and _slot859 in p, (path, "the instruction holds no material slot")
+        assert "\n## Injected Section" not in p, (path, "a heading the person typed is a section of the instruction")
+        assert k.get("material_label") == "CARE RECORD" and k.get("material_limit") == _ca859.CARE_MATERIAL_LIMIT
+        for w in words:
+            assert w not in p and w in k["material"], (path, w)
+    risk_prompt = [s for s in seen if s[1] == "care_risk_assess"][0][0]
+    assert "COMPUTED SCORE" in risk_prompt and "respiration_rate" not in risk_prompt, (
+        "the computed score left the instruction, or the recorded observations are still in it")
+    assert "respiration_rate: 18" in [s for s in seen if s[1] == "care_risk_assess"][0][2]["material"]
+
+    monkeypatch.setattr(_ca859, "ai_text", real)
+    long_sit = "Breathing settled after the nebuliser; observations every hour overnight. " * 200
+    h = client.post("/api/v1/care/handover", json={"patient_summary": "Mr A, 80", "current_situation": long_sit}).json()
+    assert h["ai_provenance"]["material"]["read_whole"] is False, h["ai_provenance"].get("material")
+    assert "ONLY PART OF WHAT YOU RECORDED WAS READ: the first 12,000 of" in h["handover"], h["handover"][-300:]
+    g = client.post("/api/v1/care/safeguarding", json={"concern": "bruising seen on a resident's arm"}).json()
+    assert g["guidance"].startswith(_ca859.IMMEDIATE_DANGER_FIRST), "the emergency line is no longer first"
+    assert "ONLY PART OF" not in g["guidance"]
+
+    #  all eighteen: no tool of the four routers puts a request's free-text field into its instruction any more
+    root = _pl859.Path(__file__).resolve().parents[1] / "agentic_core" / "api"
+    pasted = []
+    for name, fields in (("career.py", ("instructions", "query")),
+                         ("employment.py", ("experience", "highlights", "constraints", "leverage", "person_spec",
+                                            "current_salary", "offered_salary")),
+                         ("science.py", ("research_question", "hypothesis", "background_context", "constraints",
+                                         "sample_size_hint")),
+                         ("care.py", ("concern", "person_context", "clinical_context", "patient_summary",
+                                      "current_situation", "background", "assessment", "recommendation"))):
+        src = (root / name).read_text(encoding="utf-8")
+        for m in _re859.finditer(r"\bprompt = \(", src):        # each instruction, to its balanced close
+            depth, j = 1, m.end()
+            while j < len(src) and depth:
+                depth += {"(": 1, ")": -1}.get(src[j], 0)
+                j += 1
+            body = src[m.end():j]
+            pasted += [f"{name}: req.{f}" for f in fields if _re859.search(r"\{req\.%s\b" % f, body)]
+    assert pasted == [], ("a person's free text is still pasted into an instruction", pasted)

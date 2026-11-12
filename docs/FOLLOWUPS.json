@@ -21058,11 +21058,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.10",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W859",
       "note": "",
       "slot_source": "the quality item's clause on a person's text as data; found by classifying every caller in W680",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "All eighteen callers W680 classified hand what a person wrote to the shared helper as MATERIAL (the pattern W680 used for law and education) - marked as data, a heading in it never a section the answer must have, cut only at the helper with the cut recorded on the answer and said at the end of the text where it bites: the three career callers that cut silently (W856: the classifier's 2,000-character preview now recorded, the generator's 600 characters a file now the whole record, the job search's 300 now whole), the six employment tools (W857), the four science tools (W858) and the four care tools (W859). Short fields left in an instruction are put on one line, so a typed line break cannot open a section. Three shared pieces in _ai_provenance (person_material, one_line, material_cut_said). test_w859 reads every prompt expression in the four routers and finds no request free-text field in any."
     },
     {
       "id": "FU-1060",
