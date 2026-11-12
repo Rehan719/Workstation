@@ -74,6 +74,13 @@ _TOOLS = [
 ]
 
 
+@router.get("/hazards")
+async def hazard_log_route():
+    """W863 (FU-1056) - the open hazard log of the Care tools, each guard resolved now."""
+    from agentic_core.care.hazards import hazard_log
+    return hazard_log()
+
+
 @router.get("/tools")
 async def list_tools():
     return {"tools": _TOOLS, "total": len(_TOOLS)}

@@ -74375,3 +74375,42 @@ def test_w862_the_books_say_which_book_a_figure_is_from_and_reconcile_the_pots_w
                        / "enterprise" / "VSBCockpit.tsx").read_bytes().decode("utf-8"))
     assert 'data-testid="ledger-book-of-record"' in page and "ledger.revenue_reconciliation.revenue_double_entry_wst" in page
     assert "Total revenue (the pots' cumulative view)" in page, "the card still gives the pots' total as plain revenue"
+
+
+def test_w863_the_care_tools_have_an_open_hazard_log_each_hazard_linked_to_its_guard_or_marked_unguarded(
+        client, monkeypatch):
+    """FU-1056 (W863). Ruled 2026-10-12: an open log, one entry per hazard, each linked to its guard or marked
+    unguarded. Each guard is named as module:symbol and resolved when the log is read, so a guard that has gone is
+    reported missing and its hazard counted unguarded. An instruction in a prompt is never counted as a guard."""
+    import pathlib as _pl863
+    from agentic_core.api import care as _ca863
+    from agentic_core.care import hazards as _hz863
+
+    r = client.get("/api/v1/care/hazards")
+    assert r.status_code == 200, r.text[:300]
+    log = r.json()
+    assert log["count"] == len(_hz863.HAZARDS) >= 10 and log["guard_missing"] == [], log["guard_missing"]
+    ids = [h["id"] for h in log["hazards"]]
+    assert len(ids) == len(set(ids)), "two hazards share an id"
+    none_named = sorted(h["id"] for h in _hz863.HAZARDS if not h.get("guard"))
+    assert sorted(log["unguarded"]) == none_named and none_named, (log["unguarded"], none_named)
+    for h in log["hazards"]:
+        assert h["hazard"] and h["how"], h
+        if h["guard"]:
+            assert h["guard_present"] is True and h["guarded"] is True, ("a named guard does not resolve", h)
+        else:
+            assert h["how"].startswith("UNGUARDED"), ("an unguarded hazard does not say so", h)
+    #  every Care tool that composes text has its hazards in the log
+    tails = {r.path.rsplit("/", 1)[1] for r in _ca863.router.routes if "POST" in getattr(r, "methods", set())}
+    assert tails and tails <= set(log["tools"]), ("a Care tool has no entry in the hazard log", tails - set(log["tools"]))
+
+    #  a guard that has gone is reported missing, and its hazard counted unguarded
+    monkeypatch.delattr(_ca863, "IMMEDIATE_DANGER_FIRST")
+    gone = _hz863.hazard_log()
+    assert "CARE-HZ-08" in gone["guard_missing"] and "CARE-HZ-08" in gone["unguarded"], gone["guard_missing"]
+    assert "no longer present" in gone["basis"], gone["basis"]
+
+    page = _code_only((_pl863.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages"
+                       / "domains" / "CareHub.tsx").read_bytes().decode("utf-8"))
+    for needle in ('data-testid="care-hazard-log"', "/api/v1/care/hazards", "GUARD MISSING", "h.residual"):
+        assert needle in page, ("the Care hub does not show the hazard log", needle)

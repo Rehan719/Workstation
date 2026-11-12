@@ -29,6 +29,15 @@ export const CareHub: React.FC = () => {
     return () => { alive = false; };
   }, []);
 
+  //  W863 (FU-1056) - the open hazard log: each hazard with its guard, or said to be unguarded
+  const [hazards, setHazards] = useState<any>(null);
+  useEffect(() => {
+    let alive = true;
+    fetch('/api/v1/care/hazards').then(r => (r.ok ? r.json() : null)).then(d => { if (alive) setHazards(d); })
+      .catch(() => { /* the log is not shown rather than shown as empty */ });
+    return () => { alive = false; };
+  }, []);
+
   return (
     <div className="space-y-12 pb-24">
       <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6">
@@ -166,6 +175,23 @@ export const CareHub: React.FC = () => {
             )}
          </div>
       </Card>
+      {hazards?.hazards && (
+        <Card className="p-6" data-testid="care-hazard-log">
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Hazard log - open</h3>
+          <p className="text-[10px] text-slate-500 mb-3">{hazards.basis}</p>
+          <ul className="space-y-2">
+            {hazards.hazards.map((h: any) => (
+              <li key={h.id} className="text-[10px] text-slate-300" data-testid="care-hazard">
+                <span className="font-mono text-slate-500">{h.id}</span> · {h.tool} · {h.hazard} -{' '}
+                {h.guarded
+                  ? <span className="text-emerald-400">guarded: {h.how}</span>
+                  : <span className="text-amber-400">{h.guard && h.guard_present === false ? `GUARD MISSING (${h.guard}): ` : ''}{h.how}</span>}
+                {h.residual && <span className="text-slate-500"> Not covered: {h.residual}.</span>}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
     </div>
   );
 };
