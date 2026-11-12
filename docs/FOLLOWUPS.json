@@ -22946,11 +22946,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W872",
       "note": "",
       "slot_source": "a fault of a guard's own reach; the suite's reliability rows sit on this item (FU-1074 was here)",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built as the row names: every literal block-comment strip in the suite (39 calls measured now, 20 on the W739 tree) is rewritten by its parsed position to go through _slash_star_masked and _slash_star_restored, and nothing else changes. Measured: two components hold a quoted token with a block opener (AttachDocument.tsx's accept list, ConversationPanel.tsx), so a bare strip lost text there. The guard parses the suite and fails on any literal strip of raw text, and shows the cut on AttachDocument.tsx ('application/json' lost bare, kept by the pair)."
     },
     {
       "id": "FU-1148",

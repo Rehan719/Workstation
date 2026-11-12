@@ -37467,7 +37467,7 @@ def test_w572_a_scripture_surface_holds_no_text_of_its_own(client):
     #  COMMENTS ARE NOT CODE. The blind that deleted the retrieval call PASSED this leg, because the
     #  comment recording the fix names the route — the guard was reading its own documentation. Strip
     #  comments first, then look for the CALL rather than the string.
-    _code = _re572.sub(r"/\*.*?\*/", "", _src, flags=_re572.S)
+    _code = _slash_star_restored(_re572.sub(r"/\*.*?\*/", "", _slash_star_masked(_src), flags=_re572.S))
     _code = "\n".join(_l for _l in _code.splitlines() if not _l.lstrip().startswith("//"))
     assert _re572.search(r"apiJson<SourcedAyah>\(\s*`/api/v1/qep/ayah/", _code), (
         "the religion hub no longer CALLS the sourced route (a mention in a comment is not a call)")
@@ -37892,7 +37892,7 @@ def test_w573_a_completion_mark_is_read_from_the_state_not_written_beside_it(cli
     #  COMMENTS STRIPPED: the comment explaining why the absent-state is rendered necessarily quotes
     #  the words it renders, so a file-wide check passed with the badge deleted.
     _ck = (_app / "pages" / "enterprise" / "VSBCockpit.tsx").read_text(encoding="utf-8")
-    _ckc = _re573.sub(r"/\*.*?\*/", "", _ck, flags=_re573.S)
+    _ckc = _slash_star_restored(_re573.sub(r"/\*.*?\*/", "", _slash_star_masked(_ck), flags=_re573.S))
     assert "cockpit-stage-basis" in _ckc and "no stage reached" in _ckc, (
         "the cockpit prints a stage badge with no basis and no absent-state, so a reader cannot tell "
         "a stage that was never reached from a field that failed to load")
@@ -37927,7 +37927,7 @@ def test_w573_a_completion_mark_is_read_from_the_state_not_written_beside_it(cli
     #  removal necessarily quote. Rewording the comments would work once; stripping them is the
     #  property. (W572 hit the mirror image: a comment holding a REQUIRED string made a presence
     #  check pass with the code deleted.)
-    _gjc = _re573.sub(r"/\*.*?\*/", "", _gj, flags=_re573.S)
+    _gjc = _slash_star_restored(_re573.sub(r"/\*.*?\*/", "", _slash_star_masked(_gj), flags=_re573.S))
     _gjc = "\\n".join(_l for _l in _gjc.splitlines() if not _l.lstrip().startswith("//"))
     assert "done: !!vsb && surfaces" not in _gjc, (
         "the Operate milestone is ticked from a repository existing again")
@@ -37989,7 +37989,7 @@ def test_w574_a_name_a_number_and_a_placeholder_each_say_what_is_behind_them(cli
         """Source with comments stripped — a claim in a comment is not a claim on a surface, and a
         comment holding a required string makes a presence check pass with the code deleted."""
         t = p.read_text(encoding="utf-8")
-        t = _re574.sub(r"/\*.*?\*/", "", t, flags=_re574.S)
+        t = _slash_star_restored(_re574.sub(r"/\*.*?\*/", "", _slash_star_masked(t), flags=_re574.S))
         return "\n".join(l for l in t.splitlines() if not l.lstrip().startswith("//"))
 
     # ── (c) NOTHING ADVERTISED LEADS NOWHERE — the mechanism, not the eight edits ───────────────
@@ -38534,7 +38534,7 @@ def test_w583_p325_what_the_platform_records_when_it_fails(client, tmp_path):
     _page583 = (_root583 / "apps/workstation-superapp/src/pages/OperationalExcellence.tsx").read_text(
         encoding="utf-8", errors="replace")
     _code583 = _re583.sub(r"(?m)^\s*//.*$", " ",
-                         _re583.sub(r"/\*.*?\*/", " ", _page583, flags=_re583.S))
+                         _slash_star_restored(_re583.sub(r"/\*.*?\*/", " ", _slash_star_masked(_page583), flags=_re583.S)))
     #  the GATE with its opening brace (W503's class), and the three states rendered DIFFERENTLY
     assert "{failures && (" in _code583, "the page does not render the failures at all"
     #  W583 — THE GATE, with its opening brace. A blind proved the first cut vacuous: it asserted the
@@ -38920,7 +38920,7 @@ def test_w581_p218c_a_promise_the_record_can_hold_and_a_variance_it_can_read_bac
     _page581 = (_root / "apps/workstation-superapp/src/pages/enterprise/ChangeControlAgency.tsx").read_text(
         encoding="utf-8", errors="replace")
     _pcode581 = _re581.sub(r"(?m)^\s*//.*$", " ",
-                          _re581.sub(r"/\*.*?\*/", " ", _page581, flags=_re581.S))
+                          _slash_star_restored(_re581.sub(r"/\*.*?\*/", " ", _slash_star_masked(_page581), flags=_re581.S)))
     assert "{entry.commitment && (" in _pcode581, (
         "the promise reaches the queue and not the page a reviewer reads, which moves the untruth down a "
         "layer rather than removing it - clause (1) of this item's ACCEPT")
@@ -39169,7 +39169,7 @@ def test_w579_p218b_the_split_is_gone_and_a_page_is_actually_rendered(client):
         "change under review, not a side effect of a test runner",
         _pkg579["devDependencies"]["vitest"])
     _vcfg579 = (_app / "vite.config.js").read_text(encoding="utf-8", errors="replace")
-    _vcode579 = _re579.sub(r"//[^\n]*", " ", _re579.sub(r"/\*.*?\*/", " ", _vcfg579, flags=_re579.S))
+    _vcode579 = _re579.sub(r"//[^\n]*", " ", _slash_star_restored(_re579.sub(r"/\*.*?\*/", " ", _slash_star_masked(_vcfg579), flags=_re579.S)))
     assert "environment: 'jsdom'" in _vcode579, (
         "the runner has no DOM, so a 'rendered' test cannot render - comments stripped, because the "
         "explanation of the setting is not the setting")
@@ -39205,7 +39205,7 @@ def test_w579_p218b_the_split_is_gone_and_a_page_is_actually_rendered(client):
     #  deleted everything between any two slashes and the needle below survived by luck. They are now what
     #  they were meant to be: block comments, then whole-line comments.
     _khcode579 = _re579.sub(r"(?m)^\s*//.*$", " ",
-                            _re579.sub(r"/\*.*?\*/", " ", _khpage579, flags=_re579.S))
+                            _slash_star_restored(_re579.sub(r"/\*.*?\*/", " ", _slash_star_masked(_khpage579), flags=_re579.S)))
     assert "{insight.detail && (" in _khcode579, (
         "the insights list no longer renders an insight's DETAIL. W576 moved a failed computation into "
         "`insights` so no consumer could ignore it and put the clause refusing the 'you have no "
@@ -39395,7 +39395,7 @@ def test_w578_p218_the_third_surface_the_plan_pin_screen_and_a_rendered_meaning(
     # ── L4. FU-394 — THE QUALIFIER REACHES THE PAGE, AND THE PAGE DECLARES THE ROUTE IT READS ───────
     _page578 = (_root / "apps/workstation-superapp/src/pages/coe/KnowledgeHub.tsx").read_text(
         encoding="utf-8", errors="replace")
-    _code578 = _re578.sub(r"/\*.*?\*/", " ", _page578, flags=_re578.S)
+    _code578 = _slash_star_restored(_re578.sub(r"/\*.*?\*/", " ", _slash_star_masked(_page578), flags=_re578.S))
     _code578 = _re578.sub(r"(?m)^\s*//.*$", " ", _code578)
     assert "{data?.score_meaning && (" in _code578, (
         "the response-level statement about what every score on this page MEANS reaches no surface - the "
@@ -39458,7 +39458,7 @@ def test_w577_p218a_a_tolerant_read_is_never_a_write_base_and_a_reader_is_told(c
         (the comments explain what each disclosure is for), so a presence check over raw source is
         satisfied by the explanation of the fix instead of the fix."""
         s = p.read_text(encoding="utf-8", errors="replace")
-        s = _re577.sub(r"/\*.*?\*/", " ", s, flags=_re577.S)        # /* */ and {/* */}
+        s = _slash_star_restored(_re577.sub(r"/\*.*?\*/", " ", _slash_star_masked(s), flags=_re577.S))        # /* */ and {/* */}
         s = _re577.sub(r"(?m)^\s*//.*$", " ", s)                     # whole-line //
         s = _re577.sub(r"(?<![:\w])//[^\n\"\']*$", " ", s, flags=_re577.M)   # trailing //
         return s
@@ -39711,7 +39711,7 @@ def test_w576_p218a_an_absence_reaches_the_reader(client):
 
     def _code(p):
         t = p.read_text(encoding="utf-8")
-        t = _re576.sub(r"/\*.*?\*/", "", t, flags=_re576.S)
+        t = _slash_star_restored(_re576.sub(r"/\*.*?\*/", "", _slash_star_masked(t), flags=_re576.S))
         return "\n".join(l for l in t.splitlines() if not l.lstrip().startswith("//"))
 
     # ── FU-323 — A CRASH IS NOT AN EMPTY PORTFOLIO ─────────────────────────────────────────────
@@ -40091,7 +40091,7 @@ def test_w584_p327_selection_refuses_before_it_ranks(client, monkeypatch, tmp_pa
     _page584 = (_root584 / "apps/workstation-superapp/src/pages/support/Support.tsx").read_text(
         encoding="utf-8", errors="replace")
     _pcode584 = _re584.sub(r"(?m)^\s*//.*$", " ",
-                           _re584.sub(r"/\*(?:.|\n)*?\*/", " ", _page584))
+                           _slash_star_restored(_re584.sub(r"/\*(?:.|\n)*?\*/", " ", _slash_star_masked(_page584))))
     assert "{sat.state === 'not_measured' ? (" in _pcode584, (
         "the page does not branch on the not-measured state, so an absent signal has no rendering of its "
         "own - W503's class, so this asserts the gate with its opening brace rather than the literal")
@@ -40308,7 +40308,7 @@ def test_w584_p327_selection_refuses_before_it_ranks(client, monkeypatch, tmp_pa
     _anat584 = (_root584 / "apps/workstation-superapp/src/pages/organism/OrganismAnatomy.tsx").read_text(
         encoding="utf-8", errors="replace")
     _acode584 = _re584.sub(r"(?m)^\s*//.*$", " ",
-                           _re584.sub(r"/\*(?:.|\n)*?\*/", " ", _anat584))
+                           _slash_star_restored(_re584.sub(r"/\*(?:.|\n)*?\*/", " ", _slash_star_masked(_anat584))))
     assert "{pop.mean_fitness === null ? (" in _acode584, (
         "the page does not branch on an absent population mean, so it has no way to show that nothing "
         "evaluates fitness - W503's class, so this asserts the gate with its opening brace")
@@ -40895,7 +40895,7 @@ def test_w586_p37_the_repo_is_reachable_and_an_entity_with_none_says_so(client, 
     _cp586 = (_root586 / "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx").read_text(
         encoding="utf-8", errors="replace")
     _cpcode586 = _re586.sub(r"(?m)^\s*//.*$", " ",
-                            _re586.sub(r"/\*(?:.|\n)*?\*/", " ", _cp586))
+                            _slash_star_restored(_re586.sub(r"/\*(?:.|\n)*?\*/", " ", _slash_star_masked(_cp586))))
     #  it FETCHES the tree, a file and the zip
     for _needle586 in ("/repo`, { validateStatus", "/repo/file`", "/repo/zip`"):
         assert _needle586 in _cpcode586, (
@@ -40988,7 +40988,7 @@ def test_w586_p37_the_repo_is_reachable_and_an_entity_with_none_says_so(client, 
     _mp586 = (_root586 / "apps/workstation-superapp/src/pages/marketplace/LivingMarketplace.tsx").read_text(
         encoding="utf-8", errors="replace")
     _mpcode586 = _re586.sub(r"(?m)^\s*//.*$", " ",
-                            _re586.sub(r"/\*(?:.|\n)*?\*/", " ", _mp586))
+                            _slash_star_restored(_re586.sub(r"/\*(?:.|\n)*?\*/", " ", _slash_star_masked(_mp586))))
     assert "typeof l.priced === 'boolean' ? l.priced : l.price_wst > 0" in _mpcode586, (
         "the page does not prefer the record's own statement, or has DROPPED the price_wst fallback that "
         "is still true of every listing written before that field existed")
@@ -41179,7 +41179,7 @@ def test_w587_p34_the_chief_is_a_modelled_twin_or_says_it_is_a_role(client, monk
                   / "apps/workstation-superapp/src/pages/enterprise/BoardOfDirectors.tsx").read_text(
                       encoding="utf-8", errors="replace")
         _bpcode587 = _re587.sub(r"(?m)^\s*//.*$", " ",
-                                _re587.sub(r"/\*(?:.|\n)*?\*/", " ", _bp587))
+                                _slash_star_restored(_re587.sub(r"/\*(?:.|\n)*?\*/", " ", _slash_star_masked(_bp587))))
         assert "/api/v1/board/chief/model" in _bpcode587, (
             "no page fetches the Chief's model, so a reader cannot tell a twin from a role")
         assert "chiefModel.is_modelled_twin ? (" in _bpcode587, (
@@ -41928,7 +41928,7 @@ def test_w593_p220_bcdef_a_claim_names_what_actually_did_it():
     #  W611 (FU-469) — over the CODE, not the file: "ai_provenance" survived only in a comment here, so this
     #  leg passed on documentation (FU-468's class). The property is that the response's served_by is SET.
     import re as _re593b
-    _ltm_code = "\n".join(ln for ln in _re593b.sub(r"/\*.*?\*/", "", _ltm, flags=_re593b.S).splitlines()
+    _ltm_code = "\n".join(ln for ln in _slash_star_restored(_re593b.sub(r"/\*.*?\*/", "", _slash_star_masked(_ltm), flags=_re593b.S)).splitlines()
                           if not ln.lstrip().startswith("//"))
     assert "setReportServedBy(data.served_by" in _ltm_code, ("the response's own provenance is still never read")
     assert "qualified teacher" in _ltm, (
@@ -44139,7 +44139,7 @@ def test_w600_p32_autonomy_that_starts_and_says_so(client):
         Only whole-line `//` comments and `/* */` blocks are stripped, so a `//` inside a string or a URL
         is left alone.
         """
-        src = _re600.sub(r"/\*.*?\*/", "", src, flags=_re600.S)
+        src = _slash_star_restored(_re600.sub(r"/\*.*?\*/", "", _slash_star_masked(src), flags=_re600.S))
         return "\n".join("" if line.lstrip().startswith("//") else line
                           for line in src.splitlines())
 
@@ -45300,7 +45300,7 @@ def test_w603_p32_the_living_pillar_is_rescored_only_after_an_applied_evolution(
     # ── AND THE COCKPIT READS IT, over a comment-stripped copy so a comment cannot satisfy this ──
     _ck603 = (_pl603.Path(__file__).resolve().parents[1]
               / "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8")
-    _code603 = _re603.sub(r"\{/\*.*?\*/\}|/\*.*?\*/", "", _ck603, flags=_re603.S)
+    _code603 = _slash_star_restored(_re603.sub(r"\{/\*.*?\*/\}|/\*.*?\*/", "", _slash_star_masked(_ck603), flags=_re603.S))
     _code603 = "\n".join(ln for ln in _code603.splitlines() if not ln.lstrip().startswith("//"))
     assert 'data-testid="cockpit-living-pillar"' in _code603 and "detail.living_pillar" in _code603, (
         "the Cockpit does not render the instance's living-plan pillar, so the re-score reaches no reader")
@@ -45497,7 +45497,7 @@ def test_w604_p328_the_chain_decides_by_coverage_and_no_engine_reports_a_verdict
         "no governed cycle left its coverage on the roster record, so the limit still dies before any surface",
         _op.get("outcome"), _row.get("last_governance"))
     _ck = (_root604 / "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8")
-    _ckc = _re604.sub(r"\{/\*.*?\*/\}|/\*.*?\*/", "", _ck, flags=_re604.S)
+    _ckc = _slash_star_restored(_re604.sub(r"\{/\*.*?\*/\}|/\*.*?\*/", "", _slash_star_masked(_ck), flags=_re604.S))
     assert 'data-testid="cockpit-last-governance"' in _ckc and "coverage_limit" in _ckc, (
         "the Cockpit does not render the last cycle's governance limit")
 
@@ -45514,7 +45514,7 @@ def test_w604_p328_the_chain_decides_by_coverage_and_no_engine_reports_a_verdict
     assert len(_lv604._load()) == _roster_before and len(list(_v604._VSB_STORE.glob("*.json"))) == _store_before, (
         "a crossover established an entity - a recombined constitution reached an entity without ratification")
     _oa = (_root604 / "apps/workstation-superapp/src/pages/organism/OrganismAnatomy.tsx").read_text(encoding="utf-8")
-    _oac = _re604.sub(r"\{/\*.*?\*/\}|/\*.*?\*/", "", _oa, flags=_re604.S)
+    _oac = _slash_star_restored(_re604.sub(r"\{/\*.*?\*/\}|/\*.*?\*/", "", _slash_star_masked(_oa), flags=_re604.S))
     assert 'data-testid="genome-candidate"' in _oac and "selGenome.candidate_basis" in _oac, (
         "the page showing a crossover's result does not say the offspring is a candidate")
 
@@ -45585,7 +45585,7 @@ def test_w605_p326_dormancy_stops_the_beat_and_p323_nothing_outside_the_folder_i
     # ── the Cockpit renders the life cycle, its control, and the lineage (FU-470), comment-stripped ──
     _root = _pl605.Path(__file__).resolve().parents[1]
     _ck = (_root / "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8")
-    _ckc = _re605.sub(r"\{/\*.*?\*/\}|/\*.*?\*/", "", _ck, flags=_re605.S)
+    _ckc = _slash_star_restored(_re605.sub(r"\{/\*.*?\*/\}|/\*.*?\*/", "", _slash_star_masked(_ck), flags=_re605.S))
     for _tid in ("cockpit-lifecycle", "cockpit-lifecycle-toggle", "cockpit-lineage"):
         assert f'data-testid="{_tid}"' in _ckc, ("the Cockpit does not render", _tid)
     assert "operating.parent_vsb" in _ckc and "operating.lineage_generation" in _ckc, (
@@ -45750,7 +45750,7 @@ def test_w606_fu471_gates_two_and_three_read_records_a_person_made_and_chat_is_c
     # ── the page lets a learner record and withdraw, and shows the goals ────────────────────────
     _root = _pl606.Path(__file__).resolve().parents[1]
     _pn = (_root / "apps/workstation-superapp/src/components/AvatarClearancePanel.tsx").read_text(encoding="utf-8")
-    _pnc = _re606.sub(r"\{/\*.*?\*/\}|/\*.*?\*/", "", _pn, flags=_re606.S)
+    _pnc = _slash_star_restored(_re606.sub(r"\{/\*.*?\*/\}|/\*.*?\*/", "", _slash_star_masked(_pn), flags=_re606.S))
     for _t in ("avatar-ratification-record", "avatar-ratifications", "avatar-balance-goals"):
         assert f'data-testid="{_t}"' in _pnc, _t
     assert "/api/v1/avatar/ratifications" in _pnc and "/revoke" in _pnc and "/api/v1/avatar/balance-objectives" in _pnc
@@ -46166,7 +46166,7 @@ def test_w610_p323_the_legal_specialist_assembles_with_provenance_and_never_inve
     # ── the SURFACE: unresolved checks and the not-legal-advice statement are ON THE PAGE ────────
     _root = _pl610.Path(__file__).resolve().parents[1]
     _pn = (_root / "apps/workstation-superapp/src/components/MatterAssemblyPanel.tsx").read_text(encoding="utf-8")
-    _pnc = _re610.sub(r"\{/\*.*?\*/\}|/\*.*?\*/", "", _pn, flags=_re610.S)
+    _pnc = _slash_star_restored(_re610.sub(r"\{/\*.*?\*/\}|/\*.*?\*/", "", _slash_star_masked(_pn), flags=_re610.S))
     for _t610 in ("matter-not-legal-advice", "matter-unresolved-checks", "matter-particulars", "matter-authorities"):
         assert f'data-testid="{_t610}"' in _pnc, _t610
     assert "art.unresolved_checks" in _pnc and "art.authorities_refused" in _pnc, (
@@ -46250,7 +46250,7 @@ def test_w610_p323_every_domain_gate_refuses_and_the_qep_and_search_surfaces_are
     _root = _pl611.Path(__file__).resolve().parents[1]
     def _code(rel):
         t = (_root / rel).read_text(encoding="utf-8")
-        return _re611.sub(r"\{/\*.*?\*/\}|/\*.*?\*/", "", t, flags=_re611.S)
+        return _slash_star_restored(_re611.sub(r"\{/\*.*?\*/\}|/\*.*?\*/", "", _slash_star_masked(t), flags=_re611.S))
     _sp = _code("apps/workstation-superapp/src/components/ArchiveSearchPanel.tsx")
     for _k in ("res.passages", "res.not_citable", "res.citation_basis", "res.not_searched", "p.path", "p.line"):
         assert _k in _sp, ("the search panel does not render", _k)
@@ -53183,7 +53183,7 @@ def test_w670_an_established_entity_says_what_it_is_and_what_its_hold_refuses(cl
     _gn = _ev(_floor_events, "genome_complete")
     assert _gn["data"]["encoded"] is ("encoded in epigenetic registry" in _gn["content"]), _gn
     assert _ev(_floor_events, "swarm_complete")["data"]["swarm_is_template"] is True
-    _strip = lambda s: re.sub(r"(?m)^\s*//[^\n]*", "", re.sub(r"\{/\*.*?\*/\}", "", s, flags=re.S))
+    _strip = lambda s: re.sub(r"(?m)^\s*//[^\n]*", "", _slash_star_restored(re.sub(r"\{/\*.*?\*/\}", "", _slash_star_masked(s), flags=re.S)))
     _ss = _strip((_SRC / "pages" / "enterprise" / "VSBSpawnStudio.tsx").read_text(encoding="utf-8"))
     _ck = _strip((_SRC / "pages" / "enterprise" / "VSBCockpit.tsx").read_text(encoding="utf-8"))
     _meta = _ss[_ss.index("const STAGE_META"):_ss.index("};", _ss.index("const STAGE_META"))]
@@ -53239,7 +53239,7 @@ def test_w671_sacred_text_is_never_composed_and_a_page_shows_what_the_server_ret
     from agentic_core.api import religion as _R
 
     _SRC = pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
-    _nojsx = lambda s: re.sub(r"(?m)^\s*//[^\n]*", "", re.sub(r"\{/\*.*?\*/\}", "", s, flags=re.S))
+    _nojsx = lambda s: re.sub(r"(?m)^\s*//[^\n]*", "", _slash_star_restored(re.sub(r"\{/\*.*?\*/\}", "", _slash_star_masked(s), flags=re.S)))
 
     # -- 1. R1.3: NO PATH ASKS A MODEL FOR A TRANSLATION OR TRANSLITERATION, AND NO PATH SERVES ONE --------------
     _seen = {}
@@ -62790,7 +62790,7 @@ def test_w684_the_practice_panel_is_on_the_quran_page_and_says_only_what_the_ser
     #  nothing on the panel words a judgement of the learner (read with comments removed, so a comment that
     #  records the rule cannot satisfy or break it)
     import re as _re
-    shown = _re.sub(r"//[^\n]*|\{/\*.*?\*/\}", "", panel, flags=_re.S).lower()
+    shown = _slash_star_restored(_re.sub(r"//[^\n]*|\{/\*.*?\*/\}", "", _slash_star_masked(panel), flags=_re.S)).lower()
     for word in ("score", "streak", "mistake", "accuracy", "leaderboard", "rank", "correct", "well done", "wrong"):
         assert word not in shown, f"the practice panel says {word!r}"
     #  the three routes it calls are the three this round built
@@ -63446,7 +63446,7 @@ def test_w690_the_review_records_are_on_the_governance_page_and_every_sentence_i
     assert "fields: ['agent', 'checklist', 'sources_read', 'model', 'could_not_check']" in panel
     #  the page words no verdict of its own (read with comments removed)
     import re as _re
-    shown = _re.sub(r"//[^\n]*|\{/\*.*?\*/\}", "", panel, flags=_re.S).lower()
+    shown = _slash_star_restored(_re.sub(r"//[^\n]*|\{/\*.*?\*/\}", "", _slash_star_masked(panel), flags=_re.S)).lower()
     for word in ("approved", "verified by", "certified", "qualified reviewer says", "passed review"):
         assert word not in shown, f"the review page says {word!r}"
     #  the tiers offered are the three the server knows, by its own ids
@@ -70717,7 +70717,7 @@ def test_w797_fu980_r1_the_remaining_disclosures_hold_where_a_person_reads_them(
 
     def _code797(rel):
         #  the code, not the file: a comment naming an expression must not satisfy a leg that asks for it rendered
-        _s = _re797.sub(r"/\*.*?\*/", "", (_root797 / rel).read_text(encoding="utf-8"), flags=_re797.S)
+        _s = _slash_star_restored(_re797.sub(r"/\*.*?\*/", "", _slash_star_masked((_root797 / rel).read_text(encoding="utf-8")), flags=_re797.S))
         return "\n".join(ln for ln in _s.splitlines() if not ln.lstrip().startswith("//"))
 
     # -- R1[1] the screen's three lists account for what it screened, and the page prints all three ---------------
@@ -70903,8 +70903,8 @@ def test_w799_fu1161_the_beat_reads_the_entity_flag_its_statement_says_it_reads(
     # -- where a person reads it: the Cockpit says which flag the beat reads ------------------------------------------
     import pathlib
     import re as _re799
-    _ck799 = _re799.sub(r"/\*.*?\*/", "", pathlib.Path("apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx")
-                        .read_text(encoding="utf-8"), flags=_re799.S)
+    _ck799 = _slash_star_restored(_re799.sub(r"/\*.*?\*/", "", _slash_star_masked(pathlib.Path("apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx")
+                        .read_text(encoding="utf-8")), flags=_re799.S))
     _ck799 = " ".join(_ck799.split())
     assert "(recorded; the re-screen does not read it)" in _ck799, (
         "the Cockpit shows the entity's compliance flag as if it decided something the beat does not read")
@@ -70933,8 +70933,8 @@ def test_w800_fu981_r2_the_page_the_file_and_the_flag_say_what_happened(client):
             "a stage's verification does not say whether the floor served it", _k800, _sv800[_k800])
         if _sv800[_k800].get("floor_served") is True:
             assert _sv800[_k800]["verified"] is None, _sv800[_k800]
-    _gj800 = _re800.sub(r"/\*.*?\*/", "", (_root800 / "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx")
-                        .read_text(encoding="utf-8"), flags=_re800.S)
+    _gj800 = _slash_star_restored(_re800.sub(r"/\*.*?\*/", "", _slash_star_masked((_root800 / "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx")
+                        .read_text(encoding="utf-8")), flags=_re800.S))
     for _stage800 in ("research", "operations"):
         assert f"result.stage_verifications?.{_stage800}?.floor_served === true" in _gj800, (
             "the stage's subtitle does not follow what served it, so it promises a model's work over a floor frame",
@@ -70987,7 +70987,7 @@ def test_w801_fu982_r3_the_board_the_cascade_and_the_ceo_say_what_happened(clien
     import re as _re801
 
     def _code801(rel):
-        _s = _re801.sub(r"/\*.*?\*/", "", pathlib.Path(rel).read_text(encoding="utf-8"), flags=_re801.S)
+        _s = _slash_star_restored(_re801.sub(r"/\*.*?\*/", "", _slash_star_masked(pathlib.Path(rel).read_text(encoding="utf-8")), flags=_re801.S))
         return "\n".join(ln for ln in _s.splitlines() if not ln.lstrip().startswith("//"))
 
     # -- R3[3] and R3[6], over the code the pages render --------------------------------------------------------------
@@ -71067,14 +71067,14 @@ def test_w802_fu982_r3_1_a_medium_change_nothing_read_waits_for_an_explicit_deci
 
     # the module's own list of what the code does, and the pages
     assert "HELD for an explicit decision (W802, FU-982)" in (_cc802.__doc__ or ""), "the tier list still says the rule decides MEDIUM"
-    _ccp802 = _re802.sub(r"/\*.*?\*/", "", pathlib.Path("apps/workstation-superapp/src/pages/enterprise/ChangeControlAgency.tsx")
-                         .read_text(encoding="utf-8"), flags=_re802.S)
+    _ccp802 = _slash_star_restored(_re802.sub(r"/\*.*?\*/", "", _slash_star_masked(pathlib.Path("apps/workstation-superapp/src/pages/enterprise/ChangeControlAgency.tsx")
+                         .read_text(encoding="utf-8")), flags=_re802.S))
     assert "' — nothing read this change (no model returned a decision)" in _ccp802, (
         "the change page does not say why a MEDIUM change is held")
     assert "|| detail.hold_reason === 'nothing_read_the_change'" in _ccp802, (
         "the change page tells a held MEDIUM change that an admin's review request decides it, and it does not")
     _gh802 = pathlib.Path("apps/workstation-superapp/src/pages/governance/GovernanceHub.tsx").read_text(encoding="utf-8")
-    assert "c.hold_reason" in _re802.sub(r"/\*.*?\*/", "", _gh802, flags=_re802.S), (
+    assert "c.hold_reason" in _slash_star_restored(_re802.sub(r"/\*.*?\*/", "", _slash_star_masked(_gh802), flags=_re802.S)), (
         "the Sanctum no longer lists held changes, so a held MEDIUM change has nowhere to be decided")
 
 
@@ -71138,8 +71138,8 @@ def test_w804_fu985_r6_the_board_pack_says_charitable_giving_is_an_allocation(cl
     assert isinstance(_cg804["total_given_wst"], (int, float)), _cg804
     assert _cg804["label"] == "allocated (virtual, every grant unassessed)", _cg804
     assert "allocated, not given" in _cg804["basis"] and "cannot clear one" in _cg804["basis"], _cg804
-    _ve804 = _re804.sub(r"/\*.*?\*/", "", pathlib.Path("apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx")
-                        .read_text(encoding="utf-8"), flags=_re804.S)
+    _ve804 = _slash_star_restored(_re804.sub(r"/\*.*?\*/", "", _slash_star_masked(pathlib.Path("apps/workstation-superapp/src/pages/enterprise/VSBEconomy.tsx")
+                        .read_text(encoding="utf-8")), flags=_re804.S))
     assert "{bp.charitable_giving?.label ??" in _ve804 and "title={bp.charitable_giving?.basis" in _ve804, (
         "the pack's card does not print what the charity figure is")
     assert ">nutrient-return loop<" not in _ve804
@@ -71181,8 +71181,8 @@ def test_w805_fu823_forge_runs_what_its_record_lists_and_configures_each_stage_w
         {"position": 2, "stage": _ids805[0], "carried": True}], _rr805["config_carried_by_position"]
 
     # -- the page shows the refusal's sentence ---------------------------------------------------------------------
-    _page805 = _re805.sub(r"/\*.*?\*/", "", pathlib.Path("apps/workstation-superapp/src/pages/developers/ForgePipeline.tsx")
-                          .read_text(encoding="utf-8"), flags=_re805.S)
+    _page805 = _slash_star_restored(_re805.sub(r"/\*.*?\*/", "", _slash_star_masked(pathlib.Path("apps/workstation-superapp/src/pages/developers/ForgePipeline.tsx")
+                          .read_text(encoding="utf-8")), flags=_re805.S))
     assert "typeof _b?.detail === 'string' ? _b.detail : ''" in _page805, (
         "the Forge page still shows a refused pipeline as a bare status number")
 
@@ -71206,7 +71206,7 @@ def test_w806_fu837_fu840_fu839_a_withheld_or_refined_answer_travels_with_what_i
 
     # -- FU-837 and FU-840, over the code the pages run ---------------------------------------------------------------
     def _code806(rel):
-        _s = _re806.sub(r"/\*.*?\*/", "", pathlib.Path(rel).read_text(encoding="utf-8"), flags=_re806.S)
+        _s = _slash_star_restored(_re806.sub(r"/\*.*?\*/", "", _slash_star_masked(pathlib.Path(rel).read_text(encoding="utf-8")), flags=_re806.S))
         return "\n".join(ln for ln in _s.splitlines() if not ln.lstrip().startswith("//"))
     _dt806 = _code806("apps/workstation-superapp/src/components/DomainTool.tsx")
     assert "output_withheld: (!String(result?.[resultKey]" in _dt806, (
@@ -71407,8 +71407,8 @@ def test_w810_fu900_fu898_a_composition_holds_no_spawner_and_a_stand_in_runs_wit
     assert "_alt = await _run_real_resource(_alts[0], _alt_cfg, objective, domain)" in _src810
     assert "_run_real_resource(_alts[0], {}, objective, domain)" not in _src810
 
-    _page810 = _re810.sub(r"/\*.*?\*/", "", pathlib.Path("apps/workstation-superapp/src/pages/synthesis/ResourceFabric.tsx")
-                          .read_text(encoding="utf-8"), flags=_re810.S)
+    _page810 = _slash_star_restored(_re810.sub(r"/\*.*?\*/", "", _slash_star_masked(pathlib.Path("apps/workstation-superapp/src/pages/synthesis/ResourceFabric.tsx")
+                          .read_text(encoding="utf-8")), flags=_re810.S))
     assert "disabled={r.type === 'spawner'}" in _page810 and 'data-testid="resource-spawner"' in _page810
 
 
@@ -75009,3 +75009,40 @@ def test_w871_the_refutation_gate_reconciles_the_findings_against_the_verdicts(m
     assert rg.main() == 0
     out = capsys.readouterr().out
     assert out.startswith("COMPLETE") and "FINDINGS RECONCILED" in out, out
+
+
+def test_w872_every_block_comment_strip_in_the_suite_goes_through_the_masking_pair():
+    """FU-1147 (W872). Tests that stripped block comments with their own regex read raw text, so a one-line quoted token
+    holding a block opener (an accept list's 'text/*', a glob) cut everything to the next close from what they read:
+    the cut W749 fixed in _code_only. Every literal block-comment strip in this suite now goes through
+    _slash_star_masked and _slash_star_restored, and on a page that holds such a token the difference is shown."""
+    import ast
+    import pathlib
+    import re as _re872
+    here = pathlib.Path(__file__)
+    tree = ast.parse(here.read_text(encoding="utf-8"))
+    parents = {ch: node for node in ast.walk(tree) for ch in ast.iter_child_nodes(node)}
+    seen, bare = 0, []
+    for node in ast.walk(tree):
+        if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == "sub"
+                and node.args and isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str)
+                and "/\\*" in node.args[0].value):
+            continue
+        seen += 1
+        a3 = node.args[2] if len(node.args) > 2 else None
+        par = parents.get(node)
+        if not (isinstance(a3, ast.Call) and isinstance(a3.func, ast.Name) and a3.func.id == "_slash_star_masked"
+                and isinstance(par, ast.Call) and isinstance(par.func, ast.Name) and par.func.id == "_slash_star_restored"):
+            bare.append(node.lineno)
+    assert seen >= 40, ("the scan found fewer literal block-comment strips than the suite holds", seen)
+    assert not bare, ("these lines strip block comments from text a quoted '/*' can cut", bare)
+    #  what the pair is for, on a page that holds such a token: its accept list
+    page = (here.resolve().parents[1] / "apps/workstation-superapp/src/components/AttachDocument.tsx").read_text(encoding="utf-8")
+    pat = r"\{/\*.*?\*/\}|/\*.*?\*/"
+    naive = _re872.sub(pat, "", page, flags=_re872.S)
+    paired = _slash_star_restored(_re872.sub(pat, "", _slash_star_masked(page), flags=_re872.S))
+    #  the accept list itself: the naive strip cuts from its quoted 'text/*' onward and the pair keeps it whole (the page
+    #  also names 'application/json' in a type check above the list, which neither strip touches)
+    _list872 = "'text/*', 'application/json'"
+    assert _list872 in paired and _list872 not in naive, (
+        "the page no longer holds the token this guard shows the cut on")
