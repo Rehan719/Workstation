@@ -21663,11 +21663,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P4.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W865",
       "note": "",
       "slot_source": "authentication readiness, before P4.2 invites anyone",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "The hypothesis held when driven (every wrong password answered 401 for ever; no signup limit), so the limit landed: a failed sign-in counts against the name (5 in 15 minutes) and the address (20); past either, the next attempt is answered 429 with Retry-After before any password is checked; a success clears its name's count and every count expires with its window; signup counts the accounts an address created (5 in 15 minutes) and not refused attempts. Kept in this process's memory (a restart clears them; each worker counts its own); the address is the connection's peer, never a forwarded-for header. test_w865 drives each limit, the clearing, the expiry and the signup count."
     },
     {
       "id": "FU-1090",

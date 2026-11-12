@@ -74465,3 +74465,65 @@ def test_w864_no_account_takes_the_name_records_made_with_sign_in_off_are_owned_
     assert sign(_cfg864.SINGLE_USER_OWNER_ROLE).status_code == 409
     ok = sign(f"w864-person-{tag}")
     assert ok.status_code == 200 and ok.json()["username"] == f"w864-person-{tag}", ok.text[:200]
+
+
+def test_w865_sign_in_and_signup_have_a_limit_on_attempts(client, monkeypatch):
+    """FU-1089 (W865). The hypothesis, driven with sign-in on: every wrong password was answered 401 for ever and signup
+    had no limit. A failed sign-in now counts against the name and the address; past the limit within the window the
+    next attempt is answered 429 with when to try again, before any password is checked - the right one included. A
+    success clears its name's count; the counts expire with the window; signup counts the accounts an address
+    created. The counts here are this test's own."""
+    import uuid as _uuid865
+    import agentic_core.auth.core as _ac865
+
+    monkeypatch.setattr(_ac865, "_ATTEMPTS", {})
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    tag = _uuid865.uuid4().hex[:6]
+    names = [f"w865-{i}-{tag}" for i in range(4)]
+    users = _ac865._load_users()
+    for n in names:
+        users[n] = {"username": n, "hashed_password": _ac865._pwd_ctx.hash("pw12345678"), "role": "user"}
+    _ac865._save_users(users)
+
+    def tok(u, pw="pw12345678"):
+        return client.post("/api/v1/auth/token", data={"username": u, "password": pw})
+
+    #  1. five wrong passwords are answered 401; the next attempt, the right password included, is 429
+    for _ in range(_ac865.SIGNIN_FAILS_PER_NAME):
+        assert tok(names[0], "wrong-password").status_code == 401
+    held = tok(names[0])
+    assert held.status_code == 429 and int(held.headers["Retry-After"]) >= 1, (held.status_code, held.text[:200])
+    assert "Too many failed sign-ins" in held.json()["detail"] and "Nothing was checked" in held.json()["detail"]
+    assert tok(names[1]).status_code == 200, "another name from the same address was refused"
+
+    #  2. a successful sign-in clears its name's count
+    for _ in range(3):
+        assert tok(names[2], "wrong-password").status_code == 401
+    assert tok(names[2]).status_code == 200
+    for _ in range(_ac865.SIGNIN_FAILS_PER_NAME - 1):
+        assert tok(names[2], "wrong-password").status_code == 401, "a success did not clear the name's count"
+
+    #  3. the address is counted too: past its limit, every name from it waits
+    monkeypatch.setattr(_ac865, "SIGNIN_FAILS_PER_ADDRESS", 12)
+    for _ in range(12):                                  # bounded: a blind that stops the count must not hang here
+        if len([t for k, v in _ac865._ATTEMPTS.items() if k.startswith("signin:addr:") for t in v]) >= 12:
+            break
+        assert tok(f"w865-nobody-{tag}", "wrong-password").status_code in (401, 429)
+    assert tok(names[3]).status_code == 429, "an address past its limit was still served"
+
+    #  4. the counts expire with the window
+    monkeypatch.setattr(_ac865, "ATTEMPT_WINDOW_S", 0)
+    assert tok(names[0]).status_code == 200 and tok(names[3]).status_code == 200
+
+    #  5. signup counts the accounts an address created; a refused attempt is not one
+    monkeypatch.setattr(_ac865, "ATTEMPT_WINDOW_S", 15 * 60)
+    monkeypatch.setattr(_ac865, "SIGNUPS_PER_ADDRESS", 2)
+    monkeypatch.setenv("SELF_SERVE_SIGNUP_ENABLED", "true")
+
+    def sign(u, pw="pw12345678"):
+        return client.post("/api/v1/auth/signup", json={"username": u, "password": pw})
+    assert sign(f"w865-short-{tag}", "short").status_code == 422
+    assert sign(f"w865-new1-{tag}").status_code == 200 and sign(f"w865-new2-{tag}").status_code == 200
+    third = sign(f"w865-new3-{tag}")
+    assert third.status_code == 429 and "accounts created from this address" in third.json()["detail"], third.text[:200]
+    assert f"w865-new3-{tag}" not in _ac865._load_users()
