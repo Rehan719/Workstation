@@ -323,10 +323,20 @@ export const GenesisJourney: React.FC = () => {
     if (!result) return;
     setExporting(kind);
     try {
+      // W849 (FU-454) - the stage that chose what the design is built on travels with the document too
+      const r5 = result?.stage_5_model_simulate_rank;
+      const rankSection = !r5 ? 'This stage did not run on this journey.'
+        : r5.candidates_are_alternatives === false
+          ? String(r5.comparison_note || 'The candidates returned the same text, so no comparison was possible and no ranking is given.')
+          : [`Selected: ${r5.selected ?? 'none - every candidate was vetoed'}. ${r5.selection_basis}`,
+             ...(r5.candidates ?? []).map(c => `- ${c.framing}${c.id === r5.selected ? ' (selected)' : ''}`
+               + `${(r5.vetoed ?? []).includes(c.id) ? ' (vetoed by the section 11 screen)' : ''} - `
+               + (c.rank != null ? `rank ${c.rank}, score ${c.score}` : (c.not_ranked_basis || 'not ranked')))].join('\n');
       const content = [
         `# Genesis: ${problem.slice(0, 80)}`,
         '## Concept', String(result?.phase_1_conceptualisation?.concept ?? ''),
         '## Innovate & Research', String(result?.stage_3_innovate_research ?? ''),
+        '## Model · Simulate · Optimise · Rank', rankSection,
         '## Design & Development', String(result?.phase_2_design_development ?? ''),
         // P3.1 - the 6.4.6 Develop stage and its costed bill of materials. An export that skipped it
         // would hand a founder five stages of a six-stage journey.

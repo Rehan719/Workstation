@@ -8425,11 +8425,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W849",
       "note": "",
       "slot_source": "W603: P3.2 closed on its whole bar and no open item routes the Genesis journey. P5.1 drives ONE tenant through that journey from problem to commercial output and reads every stage back, which is where a stage no reader sees and an objective the release gate cannot pass are both measured.",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Measured first: the page no longer builds a three-entry narrative alone - Innovate & Research, Model - Simulate - Optimise - Rank and Operational Intelligence render as their own cards beside the three phase cards (W555), and a render with a journey run on the floor drew each of them (the built page with a journey run on the floor: the three stage cards and the three phase cards were all drawn and visible). What still understated the work was the document a founder keeps: the export carried six of the seven stages and left out Model - Simulate - Optimise - Rank, the stage that chose what the design is built on. The export now carries it: the selection and its basis, and each candidate with its rank and score - or the reason it was not ranked - and whether the section 11 screen vetoed it; or, when the candidates did not differ, the note that no comparison was possible. So the stages a journey counts and what its founder reads agree. Guard test_w849 (a floor journey returns all seven stage bodies; the page draws each stage card and exports each stage), 2 blinds red."
     },
     {
       "id": "FU-455",

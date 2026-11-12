@@ -73417,3 +73417,34 @@ def test_w848_with_sign_in_on_a_learners_record_is_the_callers_own_and_anothers_
     c = client.get("/api/v1/qep/hifz/progress/w848.c", headers=hc)
     assert c.status_code == 200 and c.json()["identity_verified"] is True, c.text[:300]
     assert client.get("/api/v1/qep/hifz/progress/w848a", headers=hc).status_code == 404
+
+
+def test_w849_a_genesis_journeys_seven_stages_reach_the_founder_on_the_page_and_in_the_export(client):
+    """FU-454 (W849). The row found three of a journey's seven stages reaching no reader. The page renders all
+    three as their own cards (W555; read by a render with the journey run on the floor). The document a founder
+    keeps carried six of the seven and left out Model - Simulate - Optimise - Rank, the stage that chose what the
+    design is built on; the export now carries it. Driven: the journey returns all seven stage bodies, and the page's
+    own source draws each stage card and exports each stage."""
+    import pathlib as _pl849
+    j = client.post("/api/v1/genesis/journey", json={"problem": "W849 a community tool library for shared garden kit",
+                                                     "domain": "enterprise"})
+    assert j.status_code == 200, j.text[:300]
+    body = j.json()
+    stages = ("phase_1_conceptualisation", "stage_3_innovate_research", "stage_5_model_simulate_rank",
+              "phase_2_design_development", "stage_6_develop", "stage_7_operational_intelligence",
+              "phase_3_commercialisation")
+    assert all(body.get(k) not in (None, "") for k in stages), [k for k in stages if body.get(k) in (None, "")]
+
+    page = _code_only((_pl849.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages"
+                       / "synthesis" / "GenesisJourney.tsx").read_bytes().decode("utf-8"))
+    for card in ("{result.stage_3_innovate_research && (", "{result.stage_5_model_simulate_rank && (",
+                 "{result.stage_7_operational_intelligence && ("):
+        assert card in page, ("a stage the journey computes is drawn on no card", card)
+    start = page.index("const content = [")
+    export = page[start:page.index("].join(", start)]
+    for section in ("'## Concept'", "'## Innovate & Research'", "'## Model · Simulate · Optimise · Rank', rankSection",
+                    "'## Design & Development'", "'## Develop (buildable artefact)'", "'## Operational Intelligence'",
+                    "'## Commercialisation'"):
+        assert section in export, ("a stage the journey computes is left out of the document the founder keeps",
+                                   section)
+    assert "r5.selection_basis" in page and "c.not_ranked_basis" in page, "the ranking is exported without its basis"
