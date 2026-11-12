@@ -73632,3 +73632,157 @@ def test_w852_with_sign_in_on_a_learner_exports_and_deletes_their_own_record_and
     assert "uid: UID" not in page and "${UID}" not in page, "the studio still sends a fixed id"
     assert 'data-testid="hifz-export"' in page and 'data-testid="hifz-delete"' in page, (
         "the studio does not offer the export and the delete")
+
+
+def test_w853_a_defect_leaves_the_loop_closed_as_source_retired_or_not_reproducible_and_neither_is_a_gate_pass(
+        client, monkeypatch):
+    """FU-1038 (W853). Ruled 2026-10-12 (assessment 26.5 item 3): the loop is turned once, for real - the open defects
+    are read; those of the retired door are closed with that reason, the rest corrected and re-verified or reported as
+    not reproducible. A re-verification that passed was the only way out, so on the Owner's store all nineteen
+    defects were open and fifteen belonged to a door since retired. Two ways out now exist, each its own status, each
+    keeping the person's reason, name and time, and neither moving a gate counter or the rate. A defect whose label a
+    live surface still uses is not closed as retired on the statement alone: the route it came through is named and
+    checked against the routes mounted. The list of fixed live labels is read from every call site that opens one."""
+    import asyncio as _a853
+    import pathlib as _pl853
+    import re as _re853
+    import agentic_core.auth.core as _ac853
+    from agentic_core.vbs import qms as _qm853
+    from agentic_core.vbs.registry import qms as _q853
+
+    def opened(label):
+        before = {d["id"] for d in _q853.defects}
+        _a853.run(_q853.run_quality_gates({"coverage": 0.1}, label=label))
+        return next(d["id"] for d in _q853.defects if d["id"] not in before)
+
+    def summary():
+        return client.get("/api/v1/vbs/qms/defects").json()["summary"]
+
+    retired, retired2 = opened("w853-retired-door"), opened("w853-retired-door")
+    live_default = opened("delivery")                     # a door that used the default label
+    second, third = opened("w853-second"), opened("w853-third")
+    composed = opened("tool:w853-agent")                  # a label composed at run time
+    s0 = summary()
+    rows = {d["id"]: d for d in client.get("/api/v1/vbs/qms/defects").json()["defects"]}
+    assert rows[retired]["label_live"] is False and rows[live_default]["label_live"] is True, rows[retired]
+    assert rows[composed]["label_live"] is None, rows[composed]
+    assert s0["open_from_retired_labels"] >= 4, s0
+
+    base = "/api/v1/vbs/qms/defects"
+    why = "the old forge door that opened it was retired and archived; nothing opens a defect under its label now"
+    assert client.post(f"{base}/{retired}/close-source-retired", json={"reason": "gone"}).status_code == 422
+    c = client.post(f"{base}/{retired}/close-source-retired", json={"reason": why})
+    assert c.status_code == 200, c.text[:300]
+    cj = c.json()
+    d = cj["defect"]
+    assert d["status"] == "closed_source_retired" and d["reverified"] is False, d
+    cl = d["closure"]
+    assert (cl["how"], cl["reason"], cl["by"], cl["by_verified"], cl["status_before"]) == (
+        "closed_source_retired", why, "owner", False, "open"), cl
+    assert cj["measured"] is False and cj["counted_in_rate"] is False and "not re-verified" in cj["basis"], cj
+    assert cj["source_check"].startswith("checked: 'w853-retired-door' is not among the "), cj["source_check"]
+
+    s1 = summary()
+    for k in ("gates_run", "gate_failures", "defects_total", "what_if_gates", "what_if_failures", "closed",
+              "non_conformance_rate", "attested_reverifications"):
+        assert s1[k] == s0[k], ("closing a retired door's defect moved a count", k, s0[k], s1[k])
+    assert s1["closed_source_retired"] == s0["closed_source_retired"] + 1 and s1["open"] == s0["open"] - 1, s1
+    assert s1["open_from_retired_labels"] == s0["open_from_retired_labels"] - 1, s1
+    assert "neither is a re-verification" in s1["dispositions_basis"] and "re-verified and passed" in s1["closed_basis"]
+
+    #  out of the loop: not closed again, not reported, not re-verified
+    assert client.post(f"{base}/{retired}/close-source-retired", json={"reason": why}).status_code == 404
+    assert client.post(f"{base}/{retired}/not-reproducible", json={"tried": why}).status_code == 404
+    assert client.post(f"{base}/{retired}/reverify", json={"coverage": 0.99}).status_code == 404
+
+    #  a label a live surface still uses: refused without a route, refused with a mounted one, closed with one that is not
+    assert client.post(f"{base}/{live_default}/close-source-retired",
+                       json={"reason": why, "retired_route": "forge/run"}).status_code == 422
+    r1 = client.post(f"{base}/{live_default}/close-source-retired", json={"reason": why})
+    assert r1.status_code == 409 and "a label a live surface still opens defects under" in r1.json()["detail"], r1.text
+    r2 = client.post(f"{base}/{live_default}/close-source-retired",
+                     json={"reason": why, "retired_route": "/api/v1/vbs/qms/gate"})
+    assert r2.status_code == 409 and "is mounted on this platform" in r2.json()["detail"], r2.text
+    r3 = client.post(f"{base}/{live_default}/close-source-retired",
+                     json={"reason": why, "retired_route": "/api/v1/w853-forge/run?x=1"})
+    assert r3.status_code == 200, r3.text[:300]
+    assert r3.json()["defect"]["closure"]["retired_route"] == "/api/v1/w853-forge/run"
+    assert "checked: '/api/v1/w853-forge/run' is not a route this platform mounts" in r3.json()["source_check"]
+    #  a label composed at run time cannot say whether its surface is live, so it needs the route too
+    r4 = client.post(f"{base}/{composed}/close-source-retired", json={"reason": why})
+    assert r4.status_code == 409 and "composed at run time" in r4.json()["detail"], r4.text
+
+    #  not reproducible: open, or corrected first - and then out of the loop
+    tried = "fed the same delivery through the same door twice more; both runs passed and no stub could be found"
+    assert client.post(f"{base}/{second}/not-reproducible", json={"tried": "no"}).status_code == 422
+    n = client.post(f"{base}/{second}/not-reproducible", json={"tried": tried})
+    assert n.status_code == 200, n.text[:300]
+    nd = n.json()["defect"]
+    assert nd["status"] == "not_reproducible" and nd["closure"]["reason"] == tried and nd["reverified"] is False, nd
+    assert n.json()["measured"] is False and n.json()["counted_in_rate"] is False
+    assert client.post(f"{base}/{third}/correct", json={"correction": "a correction later found not to be needed"}
+                       ).status_code == 200
+    n2 = client.post(f"{base}/{third}/not-reproducible", json={"tried": tried}).json()["defect"]
+    assert n2["closure"]["status_before"] == "corrected" and n2["status"] == "not_reproducible", n2
+    assert client.post(f"{base}/{third}/reverify", json={"coverage": 0.99}).status_code == 404
+    s2 = summary()
+    assert s2["not_reproducible"] == s1["not_reproducible"] + 2, s2
+    for k in ("gates_run", "gate_failures", "defects_total", "closed", "non_conformance_rate"):
+        assert s2[k] == s1[k], ("reporting a defect not reproducible moved a count", k, s1[k], s2[k])
+    assert retired2 in {x["id"] for x in client.get(f"{base}?status=open").json()["defects"]}
+
+    #  with sign-in on, the person is the signed-in user, whatever name is typed
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    users = _ac853._load_users()
+    users["w853a"] = {"username": "w853a", "hashed_password": _ac853._pwd_ctx.hash("pw12345678"), "role": "user"}
+    _ac853._save_users(users)
+    ha = {"Authorization": "Bearer " + client.post("/api/v1/auth/token", data={
+        "username": "w853a", "password": "pw12345678"}).json()["access_token"]}
+    before = {x["id"] for x in _q853.defects}
+    assert client.post("/api/v1/vbs/qms/gate", json={"coverage": 0.3}, headers=ha).status_code == 200
+    mine = next(x["id"] for x in _q853.defects if x["id"] not in before)
+    signed = client.post(f"{base}/{mine}/not-reproducible", json={"tried": tried, "actor": "someone else"}, headers=ha)
+    assert signed.status_code == 200, signed.text[:300]
+    assert (signed.json()["defect"]["closure"]["by"], signed.json()["defect"]["closure"]["by_verified"]) == (
+        "w853a", True), signed.json()["defect"]["closure"]
+
+    #  the fixed live labels are exactly the ones the call sites use: none missing, none dead
+    root = _pl853.Path(__file__).resolve().parents[1] / "agentic_core"
+
+    def call_text(src, i):
+        depth, j = 1, i
+        while j < len(src) and depth:
+            depth += {"(": 1, ")": -1}.get(src[j], 0)
+            j += 1
+        return src[i:j - 1]
+
+    used, unread = {"reported-nonconformance"}, []
+    for p in sorted(root.rglob("*.py")):
+        src = p.read_text(encoding="utf-8", errors="replace")
+        for m in _re853.finditer(r"\b(run_quality_gates|assure_delivery)\(", src):
+            if src[max(0, m.start() - 10):m.start()].rstrip().endswith("def"):
+                continue
+            body = call_text(src, m.end())
+            lab = _re853.search(r"\blabel=([^,\n]+?)\s*(?:,|$)", body)
+            if lab is None:
+                used.add("delivery")
+            elif _re853.fullmatch(r'"([^"]+)"', lab.group(1)):
+                used.add(lab.group(1).strip('"'))
+            elif lab.group(1).startswith('f"tool:'):
+                assert "tool:" in _qm853.COMPOSED_LABEL_PREFIXES
+            elif lab.group(1) == "label" and p.name == "quality.py":
+                continue
+            elif lab.group(1) == "agent" and p.name == "management_systems.py":
+                used.update(_re853.findall(r'_compose\(prompt, "([a-z_]+)"', src))
+            else:
+                unread.append(f"{p.relative_to(root)}: label={lab.group(1)}")
+    assert unread == [], ("a gate call site whose label this guard cannot read", unread)
+    assert used - set(_qm853.LIVE_GATE_LABELS) == set(), ("a live label is not declared", used - set(_qm853.LIVE_GATE_LABELS))
+    assert set(_qm853.LIVE_GATE_LABELS) - used == set(), ("a declared label no call site uses",
+                                                         set(_qm853.LIVE_GATE_LABELS) - used)
+
+    page = _code_only((_pl853.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+                       / "components" / "VBSSystemsPanel.tsx").read_bytes().decode("utf-8"))
+    for needle in ('data-testid="defect-close-retired"', 'data-testid="defect-not-reproducible"',
+                   "'close-source-retired'", "'not-reproducible'", "open_from_retired_labels", "selRow.closure"):
+        assert needle in page, ("the panel does not offer the two ways out, or does not show them", needle)

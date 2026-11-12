@@ -20634,8 +20634,8 @@
         "agentic_core/vbs/quality.py"
       ],
       "severity": "medium",
-      "owner_gated": false,
-      "slot": "P5.10",
+      "owner_gated": true,
+      "slot": "OWNER",
       "status": "open",
       "closed_by": null,
       "note": "",

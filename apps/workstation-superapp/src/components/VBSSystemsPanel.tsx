@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
-import { ShieldCheck, FileCheck2, Coins, Leaf, Network, Loader2, Play, Wrench, RotateCcw } from 'lucide-react';
+import { ShieldCheck, FileCheck2, Coins, Leaf, Network, Loader2, Play, Wrench, RotateCcw, Archive, HelpCircle } from 'lucide-react';
 import { apiJson, errorMessage } from '../lib/api';
 
 // W440 — the VBS management systems (QMS · DCMS · BMS · EMS · Mycelial backbone), audited then
@@ -11,14 +11,20 @@ import { apiJson, errorMessage } from '../lib/api';
 
 interface SystemRow { id: string; name: string; owned: boolean; real: string[]; simulated: string[];
   limits?: string[]; owns?: string[]; owned_by?: string }
-interface DefectRow { id: string; label: string; status: string; opened_at: string; correction?: string | null; meta?: { coverage?: number; stubs_found?: boolean }; reverify_basis?: string }
+interface DefectRow { id: string; label: string; status: string; opened_at: string; correction?: string | null; meta?: { coverage?: number; stubs_found?: boolean }; reverify_basis?: string;
+  // W853 (FU-1038) - whether a live surface still opens defects under this label (null: composed at run time), and
+  // how a defect left the loop when it was not re-verified
+  label_live?: boolean | null;
+  closure?: { how: string; reason: string; by: string; by_verified: boolean; at: string; status_before?: string; retired_route?: string; source_check?: string; basis?: string } }
 // W489 — rate_basis says WHAT the rate is over; what-if gates are counted apart from it
 // W534 (FU-298) — store_incomplete / counts_are_incomplete are present ONLY when the QMS store
 // could not be read whole. An unreadable store drops defects from the RATE'S NUMERATOR, so the
 // figure below is flattered by exactly the rows it could not read.
 interface DefectSummary { gates_run: number; defects_total: number; gate_failures: number; open?: number; corrected?: number; closed?: number; non_conformance_rate: number; rate_basis?: string; what_if_gates?: number; what_if_failures?: number; store_incomplete?: string; counts_are_incomplete?: boolean;
   // P3.30 (ledger v16 R1.12) - how many gates IN the rate were closed or failed on figures their caller typed
-  attested_reverifications?: number; defects_closed_on_attestation?: number; attested_basis?: string }
+  attested_reverifications?: number; defects_closed_on_attestation?: number; attested_basis?: string;
+  // W853 (FU-1038) - the two ways out that are not a re-verification, counted apart from `closed`
+  closed_source_retired?: number; not_reproducible?: number; open_from_retired_labels?: number; dispositions_basis?: string; closed_basis?: string }
 
 function Chip({ tone, children, title }: { tone: 'ok' | 'warn' | 'dim'; children: React.ReactNode; title?: string }) {
   const cls = tone === 'ok' ? 'bg-emerald-500/15 text-emerald-400' : tone === 'warn' ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-400';
@@ -104,6 +110,24 @@ export const VBSSystemsPanel: React.FC = () => {
                 ? ': the figures were SUPPLIED by the caller, not measured here'
                 : '')
         : 'REOPENED — the correction did not hold (the failed re-verification also raises the non-conformance rate)');
+      loadAll();
+    } catch (e) { setErr(errorMessage(e)); }
+    setBusy('');
+  };
+
+  // ── W853 (FU-1038; ruled 2026-10-12) - the two ways out of the loop that are not a re-verification ──
+  const [disposeReason, setDisposeReason] = useState('');
+  const [retiredRoute, setRetiredRoute] = useState('');
+  const disposeDefect = async (how: 'close-source-retired' | 'not-reproducible') => {
+    if (!selDefect) return;
+    setBusy(how); setErr(''); setLoopResult('');
+    try {
+      const body = how === 'close-source-retired'
+        ? { reason: disposeReason, ...(retiredRoute.trim() ? { retired_route: retiredRoute.trim() } : {}) }
+        : { tried: disposeReason };
+      const d = await apiJson<{ basis?: string; source_check?: string }>(
+        `/api/v1/vbs/qms/defects/${selDefect}/${how}`, { method: 'POST', body });
+      setLoopResult(`${how === 'close-source-retired' ? 'closed — its source was retired' : 'reported not reproducible'}: ${d.basis ?? ''}${d.source_check ? ` (${d.source_check})` : ''}`);
       loadAll();
     } catch (e) { setErr(errorMessage(e)); }
     setBusy('');
@@ -219,7 +243,17 @@ export const VBSSystemsPanel: React.FC = () => {
                 </Chip>
               )}
               <Chip tone={(defects.summary.open ?? 0) > 0 ? 'warn' : 'ok'}>{defects.summary.open ?? 0} open</Chip>
-              <Chip tone="dim">{defects.summary.closed ?? 0} closed</Chip>
+              <Chip tone="dim" title={defects.summary.closed_basis}>{defects.summary.closed ?? 0} closed</Chip>
+              {((defects.summary.closed_source_retired ?? 0) > 0 || (defects.summary.not_reproducible ?? 0) > 0) && (
+                <Chip tone="dim" title={defects.summary.dispositions_basis}>
+                  {defects.summary.closed_source_retired ?? 0} closed: source retired · {defects.summary.not_reproducible ?? 0} not reproducible (neither re-verified)
+                </Chip>
+              )}
+              {(defects.summary.open_from_retired_labels ?? 0) > 0 && (
+                <Chip tone="warn" title={defects.summary.dispositions_basis}>
+                  {defects.summary.open_from_retired_labels} open under a label no live surface uses
+                </Chip>
+              )}
             </div>
           )}
           <div className="flex items-center gap-2 flex-wrap mb-3">
@@ -242,7 +276,8 @@ export const VBSSystemsPanel: React.FC = () => {
               <button key={d.id} type="button" onClick={() => { setSelDefect(d.id); setLoopResult(''); }}
                 className={`w-full text-left p-2 rounded-lg border text-[10px] transition-colors ${selDefect === d.id ? 'border-aura/40 bg-aura/5' : 'border-slate-900 bg-slate-950 hover:border-slate-700'}`}>
                 <span className="font-mono text-slate-400">{d.id}</span> · {d.label} ·{' '}
-                <span className={d.status === 'open' ? 'text-amber-400' : d.status === 'closed' ? 'text-emerald-400' : 'text-sky-300'}>{d.status}</span>
+                <span className={d.status === 'open' ? 'text-amber-400' : d.status === 'closed' ? 'text-emerald-400' : d.status === 'corrected' ? 'text-sky-300' : 'text-slate-400'}>{d.status.replace(/_/g, ' ')}</span>
+                {(d.status === 'open' || d.status === 'corrected') && d.label_live === false && <span className="text-slate-500"> · no live surface uses this label</span>}
               </button>
             ))}
             {/* W534 — AN EMPTY LIST IS NOT THE SAME CLAIM AS AN UNREADABLE ONE. This said "no
@@ -279,6 +314,37 @@ export const VBSSystemsPanel: React.FC = () => {
                     {busy === 'reverify' ? <Loader2 size={11} className="animate-spin" /> : <RotateCcw size={11} />} Re-verify
                   </Button>
                 </div>
+              )}
+              {/* W853 (FU-1038) - out of the loop without a re-verification: the reason is kept, the rate does not move */}
+              {(selRow.status === 'open' || selRow.status === 'corrected') && (
+                <div className="pt-2 border-t border-slate-900 space-y-1.5" data-testid="defect-dispose">
+                  <p className="text-[9px] text-slate-500">Or take it out of the loop without a re-verification: your reason is kept on the defect, it is never a gate pass, and the rate does not move.</p>
+                  <input value={disposeReason} onChange={e => setDisposeReason(e.target.value)} data-testid="defect-dispose-reason"
+                    className="w-full text-[11px] bg-slate-900 border border-slate-800 rounded-lg p-2 text-slate-300"
+                    placeholder="why: the surface that was retired, or what you did to try to reproduce it…" />
+                  {selRow.label_live !== false && (
+                    <input value={retiredRoute} onChange={e => setRetiredRoute(e.target.value)} data-testid="defect-retired-route"
+                      className="w-full text-[11px] bg-slate-900 border border-slate-800 rounded-lg p-2 text-slate-300"
+                      placeholder="its label is one a live surface still uses: to close it as retired, name the route it came through (/api/…); it is checked against the routes this platform mounts" />
+                  )}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Button onClick={() => disposeDefect('close-source-retired')} disabled={!!busy || disposeReason.trim().length < 12}
+                      data-testid="defect-close-retired" className="flex items-center gap-1.5 bg-slate-900 text-slate-300 text-[10px]">
+                      {busy === 'close-source-retired' ? <Loader2 size={11} className="animate-spin" /> : <Archive size={11} />} Close — source retired
+                    </Button>
+                    <Button onClick={() => disposeDefect('not-reproducible')} disabled={!!busy || disposeReason.trim().length < 12}
+                      data-testid="defect-not-reproducible" className="flex items-center gap-1.5 bg-slate-900 text-slate-300 text-[10px]">
+                      {busy === 'not-reproducible' ? <Loader2 size={11} className="animate-spin" /> : <HelpCircle size={11} />} Not reproducible
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {selRow.closure && (
+                <p className="text-[9px] text-slate-400" data-testid="defect-closure" title={selRow.closure.basis}>
+                  {selRow.closure.how === 'closed_source_retired' ? 'closed — its source was retired' : 'reported not reproducible'} by {selRow.closure.by}{selRow.closure.by_verified ? '' : ' (typed, sign-in off)'} at {selRow.closure.at}{selRow.closure.status_before ? ` (it was ${selRow.closure.status_before})` : ''}: {selRow.closure.reason}
+                  {selRow.closure.retired_route && <> · it came through {selRow.closure.retired_route}</>}
+                  {selRow.closure.source_check && <> · {selRow.closure.source_check}</>}
+                </p>
               )}
               {loopResult && <p className="text-[10px] text-slate-300">{loopResult}</p>}
             </div>
