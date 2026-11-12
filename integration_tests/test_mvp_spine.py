@@ -62775,7 +62775,7 @@ def test_w684_the_practice_panel_is_on_the_quran_page_and_says_only_what_the_ser
     _root = __import__("pathlib").Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "components"
     page = (_root / "QEPStudio.tsx").read_text(encoding="utf-8")
     panel = (_root / "HifzPractice.tsx").read_text(encoding="utf-8")
-    assert "import { HifzPractice } from './HifzPractice';" in page and "<HifzPractice uid={UID} />" in page
+    assert "import { HifzPractice } from './HifzPractice';" in page and "<HifzPractice uid={uid} />" in page   # W852
     for field in ("{plan.defaults_basis}", "{hidden.judged_basis}", "{similar.basis}", "{similar.scholar_reviewed_basis}"):
         assert panel.count(field) == 1, field
     #  the hidden words are never held by the page before they are asked for: the text shown is what was SEEN
@@ -62906,7 +62906,12 @@ def test_w686_every_answer_that_carries_a_learners_id_says_the_id_is_not_a_verif
     #  every route of the platform whose path takes a learner's id is one of the routes driven here
     from agentic_core.app_mvp import app as _app
     with_uid = sorted(r.path for r in _app.routes if getattr(r, "path", "").startswith("/api/v1/qep/") and "{uid}" in r.path)
-    assert with_uid == ["/api/v1/qep/gamification/{uid}", "/api/v1/qep/hifz/portions/{uid}", "/api/v1/qep/hifz/progress/{uid}"], with_uid
+    assert with_uid == ["/api/v1/qep/gamification/{uid}", "/api/v1/qep/hifz/portions/{uid}", "/api/v1/qep/hifz/progress/{uid}",
+                        #  W852 (FU-1167) - the export and the delete: with sign-in off they refuse and carry no record
+                        "/api/v1/qep/learner/{uid}", "/api/v1/qep/learner/{uid}/export"], with_uid
+    for _r852 in (client.get(f"/api/v1/qep/learner/{uid}/export"), client.delete(f"/api/v1/qep/learner/{uid}")):
+        assert _r852.status_code == 409 and set(_r852.json()) == {"detail"}, ("with sign-in off a learner route "
+                                                                              "handed out or removed a record", _r852.text[:200])
     #  the one learner route that answers with no id is the refused award, and it carries nothing of a learner
     refused = client.post("/api/v1/qep/gamification/award", json={"uid": uid, "achievement": "daily_review", "xp": 5})
     assert refused.status_code == 409 and set(refused.json()) == {"detail"}
@@ -73568,3 +73573,62 @@ def test_w851_a_person_accepts_a_version_of_an_entitys_delivery_and_acceptance_a
     assert 'data-testid="cascade-run-accept"' in page and 'data-testid="cascade-run-accepted"' in page, (
         "the page neither offers acceptance nor shows it")
     assert "delivery_sha256: cr.delivery_sha256" in page, "the page accepts without naming the version"
+
+
+def test_w852_with_sign_in_on_a_learner_exports_and_deletes_their_own_record_and_the_studio_signs_in_as_them(
+        client, monkeypatch):
+    """FU-1167 (W852). Ruled 2026-10-12: the record is the learner's to export and delete once sign-in exists. With
+    sign-in on, the export returns the caller's own record whole and the delete removes it (and any copy a corrupt
+    read set aside) and says what it removed; another learner's is not found for either; with sign-in off both refuse
+    and say why. The QEP studio sent a fixed id that W848 answers as not found once sign-in is on; it now uses the
+    signed-in learner's own id and offers the export and the delete. Driven with two signed-in users."""
+    import pathlib as _pl852
+    import agentic_core.auth.core as _ac852
+    import agentic_core.religious_domain.api as _qep852
+
+    off_e = client.get("/api/v1/qep/learner/w852-anyone/export")
+    off_d = client.delete("/api/v1/qep/learner/w852-anyone")
+    assert off_e.status_code == 409 and off_d.status_code == 409, (off_e.text[:200], off_d.text[:200])
+    assert "tied to no person" in off_e.json()["detail"], off_e.json()
+
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    users = _ac852._load_users()
+    for u in ("w852a", "w852b"):
+        users[u] = {"username": u, "hashed_password": _ac852._pwd_ctx.hash("pw12345678"), "role": "user"}
+    _ac852._save_users(users)
+
+    def hdr(u):
+        t = client.post("/api/v1/auth/token", data={"username": u, "password": "pw12345678"}).json()["access_token"]
+        return {"Authorization": f"Bearer {t}"}
+    ha, hb = hdr("w852a"), hdr("w852b")
+
+    assert client.post("/api/v1/qep/hifz/schedule", json={"uid": "w852a", "surah_number": 1, "ayaat_range": [1, 2]},
+                       headers=ha).status_code == 200
+    exp = client.get("/api/v1/qep/learner/w852a/export", headers=ha)
+    assert exp.status_code == 200, exp.text[:300]
+    e = exp.json()
+    assert e["hifz"] and set(e["hifz"]["cards"]) == {"1:1", "1:2"} and e["identity_verified"] is True, e
+    assert e["gamification"] is None and "no award record" in e["basis"], e["basis"]
+
+    assert client.get("/api/v1/qep/learner/w852a/export", headers=hb).status_code == 404
+    assert client.delete("/api/v1/qep/learner/w852a", headers=hb).status_code == 404
+    assert client.get("/api/v1/qep/learner/w852a/export", headers=ha).json()["hifz"], "another's refused delete removed it"
+
+    aside = _qep852._hifz_path("w852a").with_name("w852a.corrupt-w852.json")
+    aside.write_text("{}", encoding="utf-8")                       # a copy a corrupt read set aside
+    gone = client.delete("/api/v1/qep/learner/w852a", headers=ha)
+    assert gone.status_code == 200 and gone.json()["deleted"] is True, gone.text[:300]
+    assert "memorisation record" in gone.json()["removed"] and not _qep852._hifz_path("w852a").exists()
+    assert not aside.exists(), "a copy of the learner's record set aside after a corrupt read was kept"
+    after = client.get("/api/v1/qep/learner/w852a/export", headers=ha).json()
+    assert after["hifz"] is None and after["gamification"] is None, after
+    again = client.delete("/api/v1/qep/learner/w852a", headers=ha).json()
+    assert again["deleted"] is False and "no record" in again["basis"], again
+
+    page = _code_only((_pl852.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+                       / "components" / "QEPStudio.tsx").read_bytes().decode("utf-8"))
+    assert "whoami()" in page and "setUid(mine ? String(w.username) : LOCAL_UID)" in page, (
+        "the studio does not use the signed-in learner's own id")
+    assert "uid: UID" not in page and "${UID}" not in page, "the studio still sends a fixed id"
+    assert 'data-testid="hifz-export"' in page and 'data-testid="hifz-delete"' in page, (
+        "the studio does not offer the export and the delete")

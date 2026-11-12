@@ -942,6 +942,54 @@ async def hifz_review(req: HifzReviewRequest, user: dict | None = Depends(get_cu
     }
 
 
+#  W852 (FU-1167) - THE LEARNER'S TO EXPORT AND DELETE (Owner ruling 2026-10-12), once sign-in exists.
+_EXPORT_DELETE_NEEDS_SIGN_IN = (
+    "export and delete are the learner's once sign-in is on (Owner ruling 2026-10-12). With sign-in off a record is "
+    "keyed by whatever id is sent and is tied to no person, so it is neither handed out nor removed as anyone's")
+
+
+def _signed_in_learner(user) -> None:
+    if not (_auth_on() and isinstance(user, dict) and user.get("username")):
+        raise HTTPException(status_code=409, detail=_EXPORT_DELETE_NEEDS_SIGN_IN)
+
+
+@router.get("/learner/{uid}/export", dependencies=_ASKS)
+async def learner_export(uid: str, user: dict | None = Depends(get_current_user)):
+    """W852 (FU-1167) - the signed-in learner's whole record, theirs to keep."""
+    _signed_in_learner(user)
+    key = _learner_key(uid, user)
+    has_hifz, has_gami = _hifz_path(key).exists(), _gami_path(key).exists()
+    return {"uid": uid, "exported_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "hifz": _load_hifz(key) if has_hifz else None,
+            "gamification": _load_gami(key) if has_gami else None,
+            "basis": ("the whole of the record this platform keeps for this learner: memorisation cards, review "
+                      "sessions, set portions and recorded awards"
+                      + ("" if (has_hifz and has_gami) else
+                         "; " + " and ".join(n for n, has in (("no memorisation record", has_hifz),
+                                                               ("no award record", has_gami)) if not has)
+                         + " exists, so that part is null")),
+            **_identity(uid, user)}
+
+
+@router.delete("/learner/{uid}", dependencies=_ASKS)
+async def learner_delete(uid: str, user: dict | None = Depends(get_current_user)):
+    """W852 (FU-1167) - remove the signed-in learner's record at their request, with any copy a corrupt read set
+    aside. Says what it removed."""
+    _signed_in_learner(user)
+    key = _learner_key(uid, user)
+    removed = []
+    for part, path in (("memorisation record", _hifz_path(key)), ("award record", _gami_path(key))):
+        with store_lock(path):
+            for p in [path, *sorted(path.parent.glob(f"{path.stem}.corrupt-*.json"))]:
+                if p.exists():
+                    p.unlink()
+                    removed.append(part if p == path else f"{part} (a copy set aside after a corrupt read)")
+    return {"uid": uid, "deleted": bool(removed), "removed": removed,
+            "basis": ("removed at the learner's own request; nothing of it is kept on this platform's stores"
+                      if removed else "there was no record for this learner to remove"),
+            **_identity(uid, user)}
+
+
 @router.get("/hifz/progress/{uid}", dependencies=_ASKS)
 async def hifz_progress(uid: str, user: dict | None = Depends(get_current_user)):
     """Get full memorisation progress for a user."""
