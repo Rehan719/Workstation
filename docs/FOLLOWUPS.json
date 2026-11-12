@@ -21535,10 +21535,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.20",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W874",
       "note": "",
-      "slot_source": "Owner ruling 2026-10-13: the five recommendations"
+      "slot_source": "Owner ruling 2026-10-13: the five recommendations",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Both clauses built. Clause 5: agentic_core/legal/own_case.py screens a first-person question that names a dispute or legal step and asks what to do, whether it will succeed or what is owed; the research route asks it before anything composes and, when it recognises one, answers with no model or floor - why it is not answered, where help from a person is (Acas first for work), and the provision reader - while a question it does not recognise says that clears nothing; 21 phrasings labelled for/not-for before the screen was written are driven. (A religious-ruling request is already refused at the gateway for every caller passing the person's words.) Clause 7: agentic_core/legal/expectations.py sets the platform against the Legal Services Board's five expectations as rows (met/partly/not met, how, and the code that makes each true, resolved on read; a missing symbol downgrades the row to not met); human oversight is not met; served on the help list and shown in the statute panel, with the source's reading stated as the register holds it."
     },
     {
       "id": "FU-1083",

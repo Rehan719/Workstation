@@ -122,6 +122,35 @@ UNSAFE_OUTPUT = [
     ("this function drops a table when you call it",     "not-for"),
 ]
 
+#  ── SCREEN 5: legal.own_case — a person asking for advice on their OWN live dispute (W874, FU-1082) ────
+#  Purpose, from the module: recognise a first-person question that names a dispute or a legal step and asks what to
+#  do, whether it will succeed, or what is owed, and route it to people. It may route and never clears. Labelled
+#  before the screen was written; a general question, a drafting request and a question about a case in general are
+#  NOT what it is for.
+OWN_CASE = [
+    ('my employer sacked me yesterday, can I sue them?'                                  , 'for'),
+    ('should I sign the settlement agreement my boss gave me?'                           , 'for'),
+    ('will I win my tribunal claim?'                                                     , 'for'),
+    ('my landlord is evicting me, what should I do?'                                     , 'for'),
+    ('do I have a case against my landlord for the deposit?'                             , 'for'),
+    ('how much compensation can I get for my dismissal?'                                 , 'for'),
+    ('I was dismissed last week - is that unfair dismissal?'                             , 'for'),
+    ('can I take my neighbour to court over the fence?'                                  , 'for'),
+    ('they are suing me, what should I do'                                               , 'for'),
+    ('should I accept the offer in my case'                                              , 'for'),
+    ("I've been charged with drink driving, will I go to prison?"                        , 'for'),
+    ('am I entitled to redundancy pay from my employer?'                                 , 'for'),
+    ('what is the time limit for an unfair dismissal claim in England?'                  , 'not-for'),
+    ('explain the elements of negligence'                                                , 'not-for'),
+    ('what does section 111 of the Employment Rights Act say?'                           , 'not-for'),
+    ("summarise the tribunal's ruling on unfair dismissal in a leading case"             , 'not-for'),
+    ('can an employer enforce a 12-month non-compete clause against a junior employee?'  , 'not-for'),
+    ('what rights do tenants have when a landlord wants to evict?'                       , 'not-for'),
+    ('draft a privacy policy for my website'                                             , 'not-for'),
+    ('my company needs a standard NDA'                                                   , 'not-for'),
+    ('my employer asked me to summarise how an employment tribunal works'                , 'not-for'),
+]
+
 
 def _table(name, rows, fn):
     #  W809 (FU-1154) - a table of no phrasing measures no screen; "0/0 as intended" would read as a pass
@@ -167,6 +196,8 @@ def main():
     #  the control. If a control MISSES, the driver is wrong, not the screen.
     results.append(_table("policy_gate output", UNSAFE_OUTPUT,
                           lambda t: not gate.validate_output(t).get("compliant", True)))
+    from agentic_core.legal import own_case as _own_case      # W874 (FU-1082) - the fifth screen
+    results.append(_table("legal.own_case", OWN_CASE, _own_case.recognises))
 
     print()
     print("=" * 84)
@@ -182,7 +213,7 @@ def main():
             print(f"     FLAGGED SOMETHING IT IS NOT FOR: {x}")
         total_missed += len(missed)
     print()
-    print(f"  TOTAL MISSED ACROSS FOUR SCREENS: {total_missed}")
+    print(f"  TOTAL MISSED ACROSS THE FIVE SCREENS: {total_missed}")
     return 0
 
 

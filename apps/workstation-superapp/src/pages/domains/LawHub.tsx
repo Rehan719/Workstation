@@ -146,6 +146,17 @@ export const LawHub: React.FC = () => {
                 endpoint="/api/v1/law/research"
                 resultKey="analysis"
                 submitLabel="Research question"
+                renderExtra={(r: any) => Array.isArray(r?.routed_to_people) && r.routed_to_people.length > 0 ? (
+                  /* W874 (FU-1082) - a question about the person's own case is routed to people: who they are */
+                  <div data-testid="law-routed-to-people" className="p-3 rounded-xl bg-slate-950 border border-amber-500/30 space-y-1">
+                    <p className="text-[10px] font-bold text-amber-300">Help from a person</p>
+                    <ul className="space-y-1">
+                      {r.routed_to_people.map((h: any) => (
+                        <li key={h.link} className="text-[10px] text-slate-300"><a href={h.link} target="_blank" rel="noreferrer" className="underline text-sky-400">{h.name}</a> - {h.for_what}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
                 fields={[
                   { name: 'question', label: 'Legal question', type: 'textarea', placeholder: 'e.g. Can an employer enforce a 12-month non-compete clause against a junior employee?' },
                   { name: 'area_of_law', label: 'Area of law', type: 'select', options: ['general', 'contract', 'employment', 'intellectual property', 'data protection', 'dispute resolution', 'company', 'property', 'consumer'], default: 'general' },

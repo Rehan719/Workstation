@@ -251,6 +251,29 @@ async def legal_research(req: ResearchRequest):
     """Structured legal research / issue analysis using the IRAC method (Issue → Relevant Law → Application →
     Conclusion) with practical considerations, risks, and next steps. AI-generated informational guidance —
     NOT legal advice."""
+    #  W874 (FU-1082, P5.20 clause 5) - A QUESTION ABOUT THE PERSON'S OWN LIVE DISPUTE IS ROUTED TO PEOPLE, before
+    #  anything composes: no model and no floor is asked. The screen may route; recognising nothing is not a clearance.
+    from agentic_core.legal.own_case import COVERAGE as _cov874, own_case_route as _own874
+    from agentic_core.api._ai_provenance import no_reply_evidence as _no_reply_evidence874
+    _routed874 = _own874(req.question, req.context)
+    if _routed874:
+        return {
+            "research_id": uuid.uuid4().hex[:10],
+            "question": req.question,
+            "jurisdiction": req.jurisdiction,
+            "area_of_law": req.area_of_law,
+            "analysis": _routed874["message"],
+            "method": "routed to people - not answered",
+            "routed_to_people": _routed874["people"],
+            "published_material": _routed874["published_material"],
+            "own_case_screen": {"recognised": True, "coverage": _cov874},
+            "ai_provenance": {"served_by": "none", "is_external": False, "routed_by": "own_case_screen",
+                              "composed": False, **_no_reply_evidence874(),
+                              "basis": "no model and no floor composed this: the question was routed before anything ran"},
+            "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "disclaimer": ("Not answered: a question about a person's own case is routed to people. Nothing here is "
+                           "legal advice."),
+        }
     prompt = (
         f"Set out the following {req.area_of_law} question under {req.jurisdiction} law using the IRAC "
         f"method. Claim no professional role.\n\n"
@@ -281,6 +304,9 @@ async def legal_research(req: ResearchRequest):
         "area_of_law": req.area_of_law,
         "analysis": analysis,
         "method": "IRAC",
+        #  W874 (FU-1082) - the screen did not recognise a question about the person's own case; that clears nothing
+        "own_case_screen": {"recognised": False, "coverage": _cov874,
+                            "basis": "not recognised as a question about the person's own case, which is not a clearance"},
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "disclaimer": (_FLOOR_LAW if provenance.get("floor_note") else
@@ -462,6 +488,7 @@ def law_tools():
 @router.get("/help")
 def help_from_a_person():
     """Where regulated and free legal help is, what this platform is not, and how to complain. Links only."""
+    from agentic_core.legal import expectations as _exp874     # W874 (FU-1082, P5.20 clause 7)
     return {
         "regulated_and_free_help": [dict(h) for h in HELP_FROM_A_PERSON],
         "this_platform_is_not": [
@@ -474,5 +501,8 @@ def help_from_a_person():
                         "so no ombudsman or regulator handles complaints about it."),
         "basis": ("Names and addresses only: nothing is copied from any of these sites, and none of them "
                   "endorses this platform. Each address resolved when it was opened on 2026-10-13."),
+        #  W874 (FU-1082, P5.20 clause 7) - the five things people expect of an AI legal tool, and how this platform
+        #  measures against each: a self-assessment, each row naming the code that makes it true
+        "expectations": _exp874.assessment(),
         "composed": False,
     }

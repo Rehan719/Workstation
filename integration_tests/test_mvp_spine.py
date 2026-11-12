@@ -75108,3 +75108,72 @@ def test_w873_the_quality_field_is_written_from_the_gate_and_the_ranking_says_wh
             ).read_text(encoding="utf-8")
     assert 'data-testid="rankings-basis"' in page and "{rankingsBasis}" in page and "r.basis" in page
     assert "honest per-resource rankings the platform learns from" not in page
+
+
+def test_w874_a_question_about_ones_own_case_is_routed_to_people_and_the_five_expectations_are_rows(client, monkeypatch):
+    """FU-1082 (W874, plan item P5.20 clauses 5 and 7). The research form answered "my employer sacked me, can I sue?"
+    like any other question. A question about the person's own live dispute is now recognised by a screen, routed to
+    people before anything composes, and not answered as one; a question the screen does not recognise is answered as
+    information and says that this clears nothing. And the platform's own self-assessment against the five things
+    people expect of an AI legal tool is on the help list, as rows, each naming the code that makes it true."""
+    import json as _json
+    import pathlib
+    from agentic_core.ai import gateway as _gw874
+    from agentic_core.legal import expectations as _ex874
+    from agentic_core.legal import own_case as _oc874
+
+    #  1. THE DRIVEN LIST is scripts/screen_phrasings.py, as for every other screen: each phrasing labelled for or
+    #     not-for before the screen was written, bounded so a phrasing cannot quietly leave it (W580's lesson)
+    import importlib.util as _ilu874
+    _spec874 = _ilu874.spec_from_file_location(
+        "_sp874", pathlib.Path(__file__).resolve().parents[1] / "scripts" / "screen_phrasings.py")
+    _sp874 = _ilu874.module_from_spec(_spec874)
+    _spec874.loader.exec_module(_sp874)
+    assert len(_sp874.OWN_CASE) >= 21 and sum(1 for _t, lab in _sp874.OWN_CASE if lab == "for") >= 12, len(_sp874.OWN_CASE)
+    wrong = [(lab, t) for t, lab in _sp874.OWN_CASE if _oc874.recognises(t) != (lab == "for")]
+    assert not wrong, ("the screen and its labelled list disagree", wrong)
+
+    #  2. a question about the person's own case: routed before anything composes, people first, nothing answered
+    asked = []
+    _real = _gw874.gateway.query_meta
+
+    async def _counting(*a, **k):
+        asked.append(k.get("agent"))
+        return await _real(*a, **k)
+    monkeypatch.setattr(_gw874.gateway, "query_meta", _counting)
+    r = client.post("/api/v1/law/research", json={"question": "my employer sacked me yesterday, can I sue them?"})
+    assert r.status_code == 200, r.text[:200]
+    a = r.json()
+    assert a["method"] == "routed to people - not answered" and not asked, (a.get("method"), asked)
+    assert a["own_case_screen"]["recognised"] is True and "not answered here" in a["analysis"]
+    assert a["ai_provenance"]["served_by"] == "none" and a["ai_provenance"]["composed"] is False
+    assert a["routed_to_people"][0]["name"] == "Acas", "a question about work does not name the conciliation service first"
+    assert len(a["routed_to_people"]) >= 8 and a["published_material"], a.get("published_material")
+    #  ...and one about a landlord names the same people, without putting the work service first
+    land = client.post("/api/v1/law/research", json={"question": "my landlord is evicting me, what should I do?"}).json()
+    assert land["method"] == "routed to people - not answered" and land["routed_to_people"][0]["name"] != "Acas"
+
+    #  3. a question it does not recognise is answered as information, and says that clears nothing
+    g = client.post("/api/v1/law/research", json={"question": "what is the time limit for an unfair dismissal claim in England?"})
+    assert g.status_code == 200 and g.json()["method"] == "IRAC" and asked, (g.json().get("method"), asked)
+    assert g.json()["own_case_screen"]["recognised"] is False and "not a clearance" in g.json()["own_case_screen"]["basis"]
+
+    #  4. the five expectations, as rows, on the help list; each names code that resolves
+    h = client.get("/api/v1/law/help").json()["expectations"]
+    assert [x["id"] for x in h["rows"]] == ["accuracy", "consent", "oversight", "redress", "personal_data"], h["rows"]
+    assert all(x["state"] in ("met", "partly", "not met") and x["how"] and x["made_true_by"] for x in h["rows"])
+    assert all(x["made_true_by_missing"] == [] for x in h["rows"]), [x["made_true_by_missing"] for x in h["rows"]]
+    assert {x["id"]: x["state"] for x in h["rows"]}["oversight"] == "not met", "the rows claim a review that does not happen"
+    sources = _json.loads((pathlib.Path(__file__).resolve().parents[1] / "docs" / "SOURCES.json").read_text(encoding="utf-8"))
+    assert h["source"] in _json.dumps(sources) and "summarises" in h["source_basis"]
+    #  ...and a row whose code is gone claims nothing more than not met
+    monkeypatch.setattr(_ex874, "EXPECTATIONS", ({**_ex874.EXPECTATIONS[1], "made_true_by": ["agentic_core.api.law:no_such_symbol"]},))
+    gone = _ex874.assessment()["rows"][0]
+    assert gone["state"] == "not met" and gone["made_true_by_missing"] and "NOT SHOWN TO HOLD" in gone["how"], gone
+
+    #  5. the pages: the routed people beside the answer, and the five rows in the help list, from the server
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+    law = (src / "pages" / "domains" / "LawHub.tsx").read_text(encoding="utf-8")
+    assert 'data-testid="law-routed-to-people"' in law and "r.routed_to_people.map(" in law
+    panel = (src / "components" / "StatutePanel.tsx").read_text(encoding="utf-8")
+    assert 'data-testid="law-expectations"' in panel and "{e.how}" in panel and "{help.expectations.basis}" in panel
