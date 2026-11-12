@@ -20746,11 +20746,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.14",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W867",
       "note": "",
       "slot_source": "the Owner chartered this item on 2026-10-12 and these rows are its clauses 1, 3, 4 and 5",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Both halves built. The first (an edit naming a field the record does not hold) was already refused by name (extra=forbid). The second: a project's read now carries waiting_on_person, derived on each read from the proposals pending for it (the one place this application records a decision a person owes) and never written to its file - waiting, on which decision, since when, and where it is decided; a proposal raised from a stage the project has left says that approving it is refused; an unreadable proposal record makes it 'not known', never 'nothing waiting'. The projects page shows it on the project and in the list and re-reads after a proposal is raised. Driven over HTTP: propose, edit, a stage left, approve refused, reject closes it, an unreadable record."
     },
     {
       "id": "FU-1044",

@@ -74585,3 +74585,71 @@ def test_w866_the_law_page_says_what_this_machine_does_before_a_form_and_the_no_
     #  a form's description no longer says research or analysis happens whatever is serving
     assert "AI researches it" not in page and "AI runs a structured" not in page
     assert page.count("With a model serving, Workstation") == 3
+
+
+def test_w867_a_project_says_when_it_waits_on_a_person(client, monkeypatch, tmp_path):
+    """FU-1043, second half (W867). Driven 2026-10-12: no state said a project waits on a person. The status has four
+    values, and the one place this application records a decision a person owes is a pending proposal. A project's
+    read now says, from the proposals pending for it, whether it waits on a person, on what and since when. The state
+    is derived on each read and never written to the project's file. A proposal raised from a stage the project has
+    left says that approving it is refused. An unreadable proposal record is said, never answered as nothing waiting.
+    The proposal store is this test's own."""
+    import json as _json
+    import pathlib
+    import time
+    from agentic_core.projects import api as _pa867
+    (tmp_path / "proposals").mkdir()
+    monkeypatch.setattr(_pa867, "_PROPOSALS_DIR", tmp_path / "proposals")
+
+    c = client.post("/api/v1/projects/", json={"title": "W867 waits", "description": "A project that will wait on a person."})
+    assert c.status_code == 201 and c.json()["waiting_on_person"]["waiting"] is False, c.text[:300]
+    pid = c.json()["id"]
+    p = _pa867._load(pid)
+    p.outputs.append(_pa867.ProjectOutput(output_id=f"w867-{pid[:8]}", stage=p.stage, created_at=time.time(),
+                                          download_url="/w867", preview="w867", served_by="native"))
+    _pa867._save(p)
+
+    def read():
+        return client.get(f"/api/v1/projects/{pid}").json()["waiting_on_person"]
+    assert read() == {"waiting": False, "on": [], "where": "the Governance Hub's proposals",
+                      "basis": "no proposal for this project is pending."}, read()
+
+    #  1. a pending proposal: the project waits on a person, on that decision, since it was raised
+    prop = client.post(f"/api/v1/projects/{pid}/propose-advance")
+    assert prop.status_code == 201, prop.text[:300]
+    w = read()
+    assert w["waiting"] is True and [x["proposal_id"] for x in w["on"]] == [prop.json()["id"]], w
+    assert "'concept' to 'prototype'" in w["on"][0]["what"] and w["on"][0]["since"] == prop.json()["created_at"], w
+    listed = [x for x in client.get("/api/v1/projects/").json() if x["id"] == pid]
+    assert listed and listed[0]["waiting_on_person"]["waiting"] is True, "the list does not say it"
+
+    #  2. derived, never stored: not in the file, before or after an edit that saves it
+    assert "waiting_on_person" not in _json.loads(_pa867._path(pid).read_text()), "the state was written to the file"
+    e = client.patch(f"/api/v1/projects/{pid}", json={"title": "W867 waits, renamed"})
+    assert e.status_code == 200 and e.json()["waiting_on_person"]["waiting"] is True, e.text[:300]
+    assert "waiting_on_person" not in _json.loads(_pa867._path(pid).read_text()), "an edit wrote the state to the file"
+
+    #  3. a proposal from a stage the project has left still waits, and says approving it is refused
+    p = _pa867._load(pid)
+    p.stage = "prototype"
+    _pa867._save(p)
+    assert "approving it is refused" in read()["on"][0]["what"], read()
+    assert client.post(f"/api/v1/projects/governance/proposals/{prop.json()['id']}/vote", params={"approve": True}).status_code == 409
+    #  ...and a person's rejection is what closes it
+    assert client.post(f"/api/v1/projects/governance/proposals/{prop.json()['id']}/vote", params={"approve": False}).status_code == 200
+    assert read()["waiting"] is False, read()
+
+    #  4. an unreadable record is said: not known, never answered as nothing waiting
+    (tmp_path / "proposals" / "unreadable.json").write_text("{not json", encoding="utf-8")
+    w = read()
+    assert w["waiting"] is None and "could not be read" in w["basis"], w
+
+    #  5. the page says it on the project and in the list, says a state it could not read, and re-reads after a proposal
+    page = (pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src" / "pages" / "projects"
+            / "ProjectsHub.tsx").read_text(encoding="utf-8")
+    i = page.index('data-testid="project-waiting-on-person"')
+    assert "{w.what}" in page[i:i + 400] and "{project.waiting_on_person?.where}" in page[i:i + 400]
+    assert 'data-testid="project-waiting-not-known"' in page and "{project.waiting_on_person.basis}" in page
+    assert 'data-testid="project-list-waiting"' in page
+    k = page.index("propose-advance`)")
+    assert "axios.get(`/api/v1/projects/${project.id}`)" in page[k:k + 900], "the page does not re-read after a proposal"

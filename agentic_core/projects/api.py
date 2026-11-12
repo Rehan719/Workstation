@@ -153,6 +153,10 @@ class Project(BaseModel):
     #  description: that would present an edited text as the first one.
     first_description: Optional[str] = None
     first_description_at: Optional[float] = None
+    #  W867 (FU-1043) - WHETHER THIS PROJECT WAITS ON A PERSON. Derived on each read from the proposals pending for
+    #  it - the one place this application records a decision a person owes - and never written to its file (_save
+    #  leaves it out), so it cannot outlive the proposal it was read from.
+    waiting_on_person: Optional[dict] = None
 
 
 class CreateProjectRequest(BaseModel):
@@ -200,7 +204,7 @@ def _load_scoped(project_id: str, user: dict | None) -> Project:
 
 def _save(project: Project) -> None:
     project.updated_at = time.time()
-    _path(project.id).write_text(project.model_dump_json(indent=2))
+    _path(project.id).write_text(project.model_dump_json(indent=2, exclude={"waiting_on_person"}))   # W867: derived
 
 
 def _all_projects() -> list[Project]:
@@ -281,14 +285,52 @@ def _load_proposal(proposal_id: str) -> Proposal:
     return Proposal(**json.loads(f.read_text()))
 
 
-def _all_proposals() -> list[Proposal]:
-    out = []
+def _proposals_read() -> tuple[list[Proposal], int]:
+    """Every proposal record, newest first, and how many could not be read (W867): a skipped record is counted."""
+    out, unread = [], 0
     for f in sorted(_PROPOSALS_DIR.glob("*.json"), key=lambda x: x.stat().st_mtime, reverse=True):
         try:
             out.append(Proposal(**json.loads(f.read_text())))
         except Exception:
-            pass
-    return out
+            unread += 1
+    return out, unread
+
+
+def _all_proposals() -> list[Proposal]:
+    return _proposals_read()[0]
+
+
+def _waiting_on_person(project: "Project", read: tuple[list[Proposal], int] | None = None) -> dict:
+    """W867 (FU-1043) - whether this project waits on a person's decision, from the proposals pending for it. A
+    proposal raised from a stage the project has left is still pending, and is said so: approving it is refused, so
+    a person's rejection is what closes it. When a record could not be read, a pending one may be among them, and
+    that is said rather than answered as nothing waiting."""
+    proposals, unread = read if read is not None else _proposals_read()
+    pending = [p for p in proposals
+               if p.status == "pending" and p.project_id == project.id and p.project_deleted_at is None]
+    unread_said = (f" {unread} proposal record(s) could not be read, so another pending one may not be shown."
+                   if unread else "")
+    where = "the Governance Hub's proposals"
+    if pending:
+        on = []
+        for p in pending:
+            what = f"a decision on the proposal to move it from '{p.from_stage}' to '{p.to_stage}'"
+            if p.from_stage != project.stage:
+                what += (f"; the project is now at '{project.stage}', so approving it is refused and rejecting "
+                         f"it closes it")
+            on.append({"proposal_id": p.id, "what": what, "since": p.created_at})
+        return {"waiting": True, "on": on, "where": where,
+                "basis": "read now from the proposals pending for this project; never stored." + unread_said}
+    if unread:
+        return {"waiting": None, "on": [], "where": where,
+                "basis": (f"{unread} proposal record(s) could not be read, so whether one of them is pending for "
+                          f"this project is not known.")}
+    return {"waiting": False, "on": [], "where": where, "basis": "no proposal for this project is pending."}
+
+
+def _with_waiting(project: "Project", read: tuple[list[Proposal], int] | None = None) -> "Project":
+    project.waiting_on_person = _waiting_on_person(project, read)
+    return project
 
 
 # ── Static-path routes MUST come before /{project_id} ─────────────────────────
@@ -402,18 +444,19 @@ async def create_project(req: CreateProjectRequest,
     _save(project)
     biobus.fire_signal("sensory", "projects.create",
                        f"New project: {req.title} [{req.realm}/{req.domain}]", 0.5)
-    return project
+    return _with_waiting(project)                             # W867 (FU-1043)
 
 
 @router.get("/", response_model=list[Project])
 async def list_projects(user: dict | None = Depends(get_current_user)) -> list[Project]:
     # W364 — a tenant sees only their own projects (auth-off returns everything, unchanged)
-    return [p for p in _all_projects() if user_can_access(user, p.owner_id)]
+    _read867 = _proposals_read()                      # W867 (FU-1043) - read once for the whole list
+    return [_with_waiting(p, _read867) for p in _all_projects() if user_can_access(user, p.owner_id)]
 
 
 @router.get("/{project_id}", response_model=Project)
 async def get_project(project_id: str, user: dict | None = Depends(get_current_user)) -> Project:
-    return _load_scoped(project_id, user)
+    return _with_waiting(_load_scoped(project_id, user))      # W867 (FU-1043)
 
 
 @router.patch("/{project_id}", response_model=Project)
@@ -425,7 +468,7 @@ async def update_project(project_id: str, req: UpdateProjectRequest,
     if req.description is not None:
         project.description = req.description
     _save(project)
-    return project
+    return _with_waiting(project)                             # W867 (FU-1043) - an edit says it too
 
 
 @router.delete("/{project_id}", status_code=204)

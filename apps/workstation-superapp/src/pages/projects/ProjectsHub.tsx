@@ -37,6 +37,8 @@ interface Project {
   description: string;
   first_description?: string | null;
   first_description_at?: number | null;
+  // W867 (FU-1043) - whether it waits on a person: derived by the server on each read from the pending proposals
+  waiting_on_person?: { waiting?: boolean | null; on?: { proposal_id: string; what: string; since: number }[]; where?: string; basis?: string } | null;
   realm: string;
   domain: string;
   stage: Stage;
@@ -350,6 +352,9 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
       setError('');
       // Show inline confirmation (not an error)
       setError('✓ Proposal submitted — go to Governance Hub to approve or reject.');
+      // W867 (FU-1043) - the project now waits on a person: re-read it so the page says so without a reload. A
+      // failed re-read leaves the confirmation standing, and the next read of the list says it.
+      try { const again = await axios.get(`/api/v1/projects/${project.id}`); onUpdate(again.data); } catch { /* said on the next read */ }
     } catch (err: any) {
       setError(err?.response?.data?.detail ?? 'Cannot propose advance yet.');
     } finally {
@@ -389,6 +394,17 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
             <p data-testid="project-first-words-not-kept" className="text-[10px] text-slate-500 mt-1 leading-relaxed">
               The words this project was first described in were not kept: it was made before they were recorded.
             </p>
+          )}
+          {/* W867 (FU-1043) - WHETHER THIS PROJECT WAITS ON A PERSON, as the server read it from the proposals pending
+              for it. A state it could not read is said; nothing waiting prints nothing. */}
+          {project.waiting_on_person?.waiting === true && (project.waiting_on_person.on ?? []).map(w => (
+            <p key={w.proposal_id} data-testid="project-waiting-on-person" className="text-[10px] font-bold text-amber-400 mt-1 leading-relaxed"
+               title={project.waiting_on_person?.basis}>
+              Waiting on a person: {w.what}, raised {new Date(w.since * 1000).toLocaleString()}. It is decided in {project.waiting_on_person?.where}.
+            </p>
+          ))}
+          {project.waiting_on_person?.waiting === null && (
+            <p data-testid="project-waiting-not-known" className="text-[10px] text-amber-400 mt-1 leading-relaxed">{project.waiting_on_person.basis}</p>
           )}
           <div className="flex items-center gap-2 mt-2">
             {/* W628 (FU-537) — a project's `realm` field holds the taxonomy DOMAIN and `domain` a sub-area; labelled as what they are */}
@@ -661,6 +677,9 @@ export const ProjectsHub: React.FC = () => {
               <div className="flex items-start justify-between gap-1 mb-1">
                 <span className="text-[10px] font-black text-white line-clamp-1 flex-1">{p.title}</span>
                 <StatusDot status={p.status} />
+                {p.waiting_on_person?.waiting === true && (
+                  <span data-testid="project-list-waiting" className="text-[8px] font-bold text-amber-400" title={p.waiting_on_person.basis}>waiting on a person</span>
+                )}
               </div>
               <div className="flex items-center gap-1.5">
                 <StagePill stage={p.stage} />
