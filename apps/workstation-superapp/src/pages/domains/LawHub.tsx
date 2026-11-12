@@ -6,6 +6,7 @@ import { Layers, Landmark, History } from 'lucide-react';
 import { useAdaptiveUI } from '../../components/AdaptiveUIProvider';
 import MatterAssemblyPanel from '../../components/MatterAssemblyPanel';
 import StatutePanel from '../../components/StatutePanel';
+import TimeLimitPanel from '../../components/TimeLimitPanel';   // W875 (FU-1012)
 import { DomainTool } from '../../components/DomainTool';
 import { toolsFor } from '../../lib/toolRegistry';
 import { useServingStatus, servingIsFloor } from '../../components/ServingNow';   // W866 (FU-1013)
@@ -119,6 +120,10 @@ export const LawHub: React.FC = () => {
       {/* W724 (plan item P5.20) - one provision of an Act, word for word from its publisher, and where help is */}
       <Card className="p-6">
         <StatutePanel />
+      </Card>
+      {/* W875 (FU-1012) - how long a time limit runs: arithmetic on the rule's own words, and who to ask */}
+      <Card className="p-6">
+        <TimeLimitPanel />
       </Card>
       {/* P3.23 — the matter specialist: provenance per particular, refused authorities, unresolved checks */}
       <Card className="p-6">

@@ -457,12 +457,55 @@ NO_MODEL_TOOLS = (
      "does": ("Lists regulated and free legal help by name and address, says what this platform is not, and says "
               "how to complain."),
      "does_not": "It does not choose one for you, and nothing is copied from their sites."},
+    {"id": "time_limit", "name": "How long a time limit runs",                      # W875 (FU-1012)
+     "does": ("Works out the primary limit for a tribunal claim from the date it runs from, using the words of the "
+              "provision that sets it, read from its publisher when you ask, and names who to ask."),
+     "does_not": ("It does not account for early conciliation or any extension, and it works nothing out if the "
+                  "provision no longer has the words the rule was built from.")},
     {"id": "matter", "name": "Assemble the matter's papers",
      "does": ("Fills each particular only from a located line of a document in the matter's one folder, or leaves "
               "it blank, and resolves each authority against the corpus or refuses it."),
      "does_not": ("It does not compose a particular, an argument or a conclusion, and a filing-shaped draft waits "
                   "for the Owner's approval.")},
 )
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  W875 (FU-1012) - HOW LONG A TIME LIMIT RUNS. A deadline is arithmetic on a dated rule and a route is a row in a
+#  directory; neither needs generation. The provision that sets the limit is fetched from its publisher on a
+#  person's action, and nothing is computed unless the rule's own words are in it as published now.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════════════
+class TimeLimitRequest(BaseModel):
+    rule: str
+    event_date: str
+
+
+@router.get("/time-limit")
+def time_limit_rules():
+    """The time-limit rules this platform can work out, each with the provision and the words it is built from."""
+    from agentic_core.legal import time_limits as _tl
+    return {"rules": [{"id": k, "name": r["name"], "act": r["provision"]["act"], "section": r["provision"]["section"],
+                       "words": r["words"], "event": r["event"]} for k, r in _tl.RULES.items()],
+            "arithmetic": _tl.ARITHMETIC, "composed": False}
+
+
+@router.post("/time-limit")
+async def time_limit(req: TimeLimitRequest):
+    """The primary limit a rule sets from a date, checked against the provision as its publisher returns it now, with
+    what it does not account for and who to ask. Nothing is composed, and nothing here is legal advice."""
+    from agentic_core.legal import statute as _st, time_limits as _tl
+    rule = _tl.RULES.get(req.rule)
+    if rule is None:
+        raise HTTPException(status_code=422, detail=(f"No such rule: {req.rule!r}. The rules are: {', '.join(_tl.RULES)}. "
+                                                     f"Nothing was computed."))
+    p = rule["provision"]
+    try:
+        provision = await _st.provision(p["kind"], p["year"], p["number"], p["section"])
+    except _st.PublisherRefused as exc:
+        raise HTTPException(status_code=502, detail=(
+            f"No limit is computed: the provision that sets it could not be read from its publisher ({exc}), so the "
+            f"rule cannot be checked against its words. Ask {rule['route']['name']}.")) from None
+    return _tl.limit(req.rule, req.event_date, provision)
 
 
 @router.get("/tools")

@@ -20107,11 +20107,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.11",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W875",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built as the row names: agentic_core/legal/time_limits.py holds two dated rules (unfair dismissal, ERA 1996 s.111; discrimination at work, EqA 2010 s.123), each with its provision, the words it is built from, what it does not account for (early conciliation, extensions) and who to ask (Acas). POST /api/v1/law/time-limit reads the provision from its publisher on the person's action and works out the primary limit only if the words are in it as published now (3 October runs to the end of 2 January); a missing word, a same-date-three-months-on that does not exist, or an unreadable publisher (502) computes nothing and says so. The panel stands among the Law page's no-model tools. The words were not fetched in this round (the publisher is unreachable from the build machine); every use checks them."
     },
     {
       "id": "FU-1013",

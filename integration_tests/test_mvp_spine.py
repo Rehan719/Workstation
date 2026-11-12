@@ -74541,7 +74541,7 @@ def test_w866_the_law_page_says_what_this_machine_does_before_a_form_and_the_no_
     assert listed.status_code == 200, listed.text[:200]
     tools = listed.json()
     assert tools.get("composed") is False and tools.get("basis")
-    assert [t["id"] for t in tools["needs_no_model"]] == ["statute", "help", "matter"], tools["needs_no_model"]
+    assert [t["id"] for t in tools["needs_no_model"]] == ["statute", "help", "time_limit", "matter"], tools["needs_no_model"]   # W875
     assert all(t.get("name") and t.get("does") and t.get("does_not") for t in tools["needs_no_model"])
     forms = {f["id"]: f for f in tools["needs_a_model"]}
 
@@ -75177,3 +75177,68 @@ def test_w874_a_question_about_ones_own_case_is_routed_to_people_and_the_five_ex
     assert 'data-testid="law-routed-to-people"' in law and "r.routed_to_people.map(" in law
     panel = (src / "components" / "StatutePanel.tsx").read_text(encoding="utf-8")
     assert 'data-testid="law-expectations"' in panel and "{e.how}" in panel and "{help.expectations.basis}" in panel
+
+
+def test_w875_how_long_a_time_limit_runs_is_arithmetic_on_the_rules_own_words_with_a_route(client, monkeypatch):
+    """FU-1012 (W875). A person asking how long they had was shown no deadline and no route: with no model serving the
+    research form put the question's own words under headings. A deadline is arithmetic on a dated rule and a route
+    is a row in a directory. Each rule names the provision that sets its limit and the words it was built from; the
+    provision is read from its publisher when a person asks (faked here: the suite reaches no outside host), and
+    nothing is computed unless those words are in it. What the limit does not account for, and who to ask, travel
+    with it. Nothing is composed."""
+    import pathlib
+    from agentic_core.legal import statute as _st875
+    from agentic_core.legal import time_limits as _tl875
+    asked = []
+
+    def fake(text):
+        async def _provision(kind, year, number, section):
+            asked.append((kind, int(year), int(number), str(section)))
+            return {"parts": [{"level": 1, "number": "(2)", "text": text}],
+                    "address": f"https://www.legislation.gov.uk/{kind}/{year}/{number}/section/{section}",
+                    "version_dated": "2026-01-01"}
+        return _provision
+    words = ("(a) before the end of the period of three months beginning with the effective date of termination, or")
+    monkeypatch.setattr(_st875, "provision", fake(words))
+
+    def work(rule="unfair_dismissal", date="2026-10-03"):
+        return client.post("/api/v1/law/time-limit", json={"rule": rule, "event_date": date})
+
+    #  1. the rules, each with its provision and its words
+    listed = client.get("/api/v1/law/time-limit").json()
+    assert {r["id"] for r in listed["rules"]} == set(_tl875.RULES) >= {"unfair_dismissal", "discrimination_at_work"}
+    assert all(r["words"] and r["act"] and r["section"] for r in listed["rules"])
+
+    #  2. the arithmetic: three months beginning with 3 October end at the end of 2 January
+    r = work()
+    assert r.status_code == 200, r.text[:200]
+    a = r.json()
+    assert a["computed"] is True and a["last_day"] == "2027-01-02", a
+    assert asked[-1] == ("ukpga", 1996, 18, "111"), ("the rule's own provision was not the one read", asked)
+    assert a["route"]["name"] == "Acas" and "early conciliation" in a["does_not_account_for"] and a["composed"] is False
+    assert work(date="2026-10-31").json()["last_day"] == "2027-01-30"
+    #  ...and a date whose same date three months on does not exist is not worked out, and says so
+    end = work(date="2026-11-30").json()
+    assert end["computed"] is False and end["last_day"] is None and "NOT COMPUTED" in end["basis"], end
+    assert work(date="not a date").json()["computed"] is False
+
+    #  3. a provision that no longer has the rule's words: nothing is computed
+    monkeypatch.setattr(_st875, "provision", fake("(a) before the end of the period of six months, or"))
+    gone = work().json()
+    assert gone["computed"] is False and gone["last_day"] is None and "does not contain the words" in gone["basis"], gone
+
+    #  4. a publisher that cannot be read: nothing is computed, and who to ask is said
+    async def _refused(*_a, **_k):
+        raise _st875.PublisherRefused("the publisher could not be reached (ConnectError)")
+    monkeypatch.setattr(_st875, "provision", _refused)
+    down = work()
+    assert down.status_code == 502 and "No limit is computed" in down.json()["detail"] and "Acas" in down.json()["detail"]
+    assert work(rule="no_such_rule").status_code == 422
+
+    #  5. the tool is among those that need no model, and the page shows it before the forms
+    assert "time_limit" in [t["id"] for t in client.get("/api/v1/law/tools").json()["needs_no_model"]]
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+    page = (src / "pages" / "domains" / "LawHub.tsx").read_text(encoding="utf-8")
+    assert page.index("<TimeLimitPanel />") < page.index("<MatterAssemblyPanel />") < page.index("<DomainTool")
+    panel = (src / "components" / "TimeLimitPanel.tsx").read_text(encoding="utf-8")
+    assert "{got.basis}" in panel and "{got.does_not_account_for}" in panel and "{got.route.name}" in panel
