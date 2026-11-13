@@ -3,11 +3,14 @@
 // ANSWERED with that decision and whether the decision reached the ledger (GET/POST /api/v1/support/claims, W941).
 // Every sentence about a claim's state, its owner and the rules is the server's; this component types none of them.
 // A refusal is shown in the server's own words; a failed read is said, and never drawn as "no claims".
+// W964 (FU-1190): a claim may name an answer that was never saved - the tool that gave it, what served it as the answer
+// said, and the fingerprint of its text (the text itself is never sent) - and the server's sentence on what it holds.
 import React, { useCallback, useEffect, useState } from 'react';
 import { apiJson, errorMessage } from '../lib/api';
 
 interface Claim {
   claim_id: string;
+  artefact_kind: string;
   artefact_id: string;
   what_is_wrong: string;
   raised_by: string;
@@ -18,10 +21,16 @@ interface Claim {
   answer_logged?: boolean;
   answer_logged_basis?: string;
   named_owner: { owner: string | null; basis: string };
-  artefact: { title: string; version: number };
+  artefact: { title?: string; version?: number; tool?: string; served_by_as_reported?: string | null; basis?: string };
 }
 interface Claims { claims: Claim[]; open: number; basis: string }
 interface Deliverable { id: string; title: string }
+
+//  what a claim names: a deliverable by its title and version, or an answer by its tool, what served it as the answer
+//  said, and the start of its fingerprint
+const named = (c: Claim): string => c.artefact_kind === 'answer'
+  ? `an answer from ${c.artefact.tool}${c.artefact.served_by_as_reported ? `, served by ${c.artefact.served_by_as_reported}` : ''} (sha256 ${c.artefact_id.slice(0, 12)})`
+  : `${c.artefact.title} (version ${c.artefact.version})`;
 
 export const SupportClaims: React.FC = () => {
   const [answer, setAnswer] = useState<Claims | null>(null);
@@ -93,7 +102,10 @@ export const SupportClaims: React.FC = () => {
           )}
           {answer.claims.map(c => (
             <div key={c.claim_id} data-testid={`claim-${c.claim_id}`} className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
-              <p className="text-sm font-black text-white">{c.state} — {c.artefact.title} (version {c.artefact.version})</p>
+              <p className="text-sm font-black text-white">{c.state} — {named(c)}</p>
+              {c.artefact_kind === 'answer' && c.artefact.basis && (
+                <p data-testid={`claim-answer-${c.claim_id}`} className="text-[10px] text-slate-500">{c.artefact.basis}</p>
+              )}
               <p className="text-[10px] text-slate-400">What is wrong: {c.what_is_wrong}</p>
               <p className="text-[10px] text-slate-400">{c.state_basis}.</p>
               <p className="text-[10px] text-slate-500">Answered by: {c.named_owner.owner ?? 'an administrator'} — {c.named_owner.basis}.</p>

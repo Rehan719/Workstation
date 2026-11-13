@@ -81300,3 +81300,95 @@ def test_w963_p57_no_business_document_states_a_customer_a_partner_or_a_cleared_
     assert faults(good, public=True) == ["a public-facing draft does not open with DRAFT - NOT APPROVED FOR PUBLICATION"]
     assert faults("# DRAFT - NOT APPROVED FOR PUBLICATION\n\n" + good.split("\n\n", 1)[1], public=True) == []
     assert faults(good.replace("# T", "# T\n\nDRAFT - NOT APPROVED FOR PUBLICATION"), public=True) == []
+
+
+def test_w964_fu1190_a_claim_can_name_an_answer_that_was_never_saved_by_its_fingerprint_and_never_its_text(client, monkeypatch):
+    """FU-1190 part 1 (W964, P5.20 clause 6). A claim named only a saved deliverable, so an answer a domain tool gave
+    (a Law research answer, a Care draft) had no way to reach a person. A claim may now name an answer: the sha256 of
+    its text as it was shown, the route that gave it, and what served it as the answer said. The text itself is never
+    sent and never kept (P5.12's boundary). Driven here:
+    - with sign-in off, a claim against a Care plan answer holds the tool declared at its route, what served it, and
+      its fingerprint, says the text was not kept, is answered by the Owner, is filed CRITICAL with Change Control and
+      logged to the UEG, whose chain verifies;
+    - every malformed claim is refused with nothing written: a fingerprint that is not a sha256, a route that declares
+      no tool or none at all, what served it said too long, the answer's text sent alongside, a deliverable named with
+      an answer's fields, and a kind that is neither;
+    - with sign-in on, it is answered by an administrator; its raiser and an administrator read it, and a second person
+      reads none of it;
+    - the Support page draws it from the route's own answer (SupportClaims.fixture.json, held field for field)."""
+    import hashlib
+    import json
+    import pathlib
+    import uuid as _uuid964
+    import agentic_core.auth.core as _ac964
+    from agentic_core.api import support_claims as sc
+    from agentic_core.ueg.registry import ueg_ledger
+    root = pathlib.Path(__file__).resolve().parents[1]
+
+    shown = f"w964 a care plan the person was shown {_uuid964.uuid4().hex[:8]}"
+    sha = hashlib.sha256(shown.encode("utf-8")).hexdigest()
+    good = {"artefact_kind": "answer", "artefact_id": sha, "endpoint": "/api/v1/care/care-plan", "served_by": "native",
+            "what_is_wrong": "w964 the plan leaves out the evening medication"}
+    before = len(sc._read())
+    for bad in ({**good, "artefact_id": sha[:63]}, {**good, "artefact_id": sha.upper()},
+                {**good, "endpoint": "/api/v1/support/claims"}, {k: v for k, v in good.items() if k != "endpoint"},
+                {**good, "served_by": "x" * (sc.SERVED_BY_MOST + 1)}, {**good, "answer_text": shown},
+                {**good, "artefact_kind": "board_pack"}, {**good, "what_is_wrong": " "},
+                {"artefact_kind": "deliverable", "artefact_id": "deliv-w964", "endpoint": "/api/v1/care/care-plan",
+                 "what_is_wrong": "w964"}):
+        r = client.post("/api/v1/support/claims", json=bad)
+        assert r.status_code == 422, (bad, r.status_code, r.text[:200])
+    assert len(sc._read()) == before, "a refused claim wrote something"
+    neither = client.post("/api/v1/support/claims", json={**good, "artefact_kind": "board_pack"}).json()["detail"]
+    assert neither == "Not raised: a claim is raised against a deliverable or an answer, and 'board_pack' is neither."
+
+    r = client.post("/api/v1/support/claims", json=good)
+    assert r.status_code == 200, r.text[:300]
+    c = r.json()
+    assert (c["artefact_kind"], c["artefact_id"]) == ("answer", sha)
+    assert c["artefact"] == {"endpoint": "/api/v1/care/care-plan", "tool": "care_planner", "served_by_as_reported": "native",
+                             "content_sha256": sha, "text_kept": False, "basis": sc.ANSWER_BASIS}, c["artefact"]
+    assert c["named_owner"] == {"owner": "the Owner", "basis": (
+        "sign-in is off, so the Owner answers every claim; an answer belongs to no entity")}, c["named_owner"]
+    assert (c["state"], c["change"]["impact_tier"], c["change"]["status"]) == ("OPEN", "CRITICAL", "submitted"), c.get("change")
+    ch = client.get(f"/api/v1/cca/{c['cca_id']}").json()
+    assert (ch["change_type"], ch["affected_systems"]) == ("support_claim", [f"answer:care_planner:{sha[:12]}"]), ch
+    stored = json.dumps(sc._read())
+    assert shown not in stored and shown not in json.dumps(ch), "the answer's text reached a store"
+    lines = [json.loads(x) for x in pathlib.Path(ueg_ledger.log_path).read_text(encoding="utf-8").splitlines() if x.strip()]
+    mine = [e for e in lines if e["payload"]["event_type"] == "support.claim_raised"
+            and e["payload"]["data"].get("claim_id") == c["claim_id"]]
+    assert len(mine) == 1 and mine[0]["payload"]["data"]["artefact_kind"] == "answer", mine
+    assert mine[0]["payload"]["data"]["content_sha256"] == sha and ueg_ledger.verify_chain_detail()["valid"] is True
+
+    #  the Support page draws it from the route's own answer, field for field
+    fx = json.loads((root / "apps/workstation-superapp/src/components/SupportClaims.fixture.json").read_text(encoding="utf-8"))
+    assert set(fx["answer_request"]) == set(good) and fx["answer_request"]["endpoint"] == good["endpoint"]
+    live = next(x for x in client.get("/api/v1/support/claims").json()["claims"] if x["claim_id"] == c["claim_id"])
+    drawn = fx["answer_claims"]["claims"][0]
+    assert set(drawn) == set(live) and set(drawn["artefact"]) == set(live["artefact"]), sorted(set(drawn) ^ set(live))
+    assert drawn["artefact"]["basis"] == sc.ANSWER_BASIS and drawn["artefact_kind"] == "answer"
+
+    #  with sign-in on: an administrator answers it; the raiser and an administrator read it, a second person none of it
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    users = _ac964._load_users()
+    who = {}
+    for k, role in (("one", "user"), ("two", "user"), ("admin", "admin")):
+        name = f"w964-{k}-{_uuid964.uuid4().hex[:6]}"
+        users[name] = {"username": name, "hashed_password": _ac964._pwd_ctx.hash("pw12345678"), "role": role}
+        who[k] = name
+    _ac964._save_users(users)
+    H = {}
+    for k, name in who.items():
+        tok = client.post("/api/v1/auth/token", data={"username": name, "password": "pw12345678"})
+        assert tok.status_code == 200, tok.text[:200]
+        H[k] = {"Authorization": "Bearer " + tok.json()["access_token"]}
+    r = client.post("/api/v1/support/claims", headers=H["one"], json={**good, "artefact_id": hashlib.sha256(b"w964 two").hexdigest()})
+    assert r.status_code == 200, r.text[:300]
+    on = r.json()
+    assert on["raised_by"] == who["one"] and on["named_owner"] == {"owner": None, "basis": (
+        "an answer belongs to no entity and names no owner, so an administrator answers the claim")}, on["named_owner"]
+    for k, sees in (("one", True), ("admin", True), ("two", False)):
+        listed = client.get("/api/v1/support/claims", headers=H[k])
+        assert listed.status_code == 200 and (on["claim_id"] in listed.text) is sees, (k, listed.text[:200])
+        assert client.get(f"/api/v1/support/claims/{on['claim_id']}", headers=H[k]).status_code == (200 if sees else 404), k

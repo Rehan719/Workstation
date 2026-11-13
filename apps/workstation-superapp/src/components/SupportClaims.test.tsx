@@ -69,6 +69,20 @@ describe("SupportClaims, rendered against the claim routes' own answers", () => 
     expect(text('claims-open')).toBe('0 open of 1');
   });
 
+  //  W964 (FU-1190): a claim against an answer that was never saved names its tool, what served it and its
+  //  fingerprint, with the server's sentence on what the claim holds
+  it('a claim against an answer names its tool, what served it and its fingerprint, in the server\'s words', async () => {
+    serve([ok(captured.answer_claims)], [ok(captured.deliverables)]);
+    render(<SupportClaims />);
+    const [c] = captured.answer_claims.claims;
+    const row = await screen.findByTestId(`claim-${c.claim_id}`);
+    expect(row.textContent).toContain(
+      `OPEN — an answer from ${c.artefact.tool}, served by ${c.artefact.served_by_as_reported} (sha256 ${c.artefact_id.slice(0, 12)})`);
+    expect(text(`claim-answer-${c.claim_id}`)).toBe(c.artefact.basis);
+    expect(row.textContent).not.toContain('version');
+    expect(text('claims-open')).toBe('1 open of 1');
+  });
+
   it("a claim the server refuses is shown in its own words", async () => {
     serve([ok(captured.empty)], [ok(captured.deliverables)], [{ status: 422, body: { detail: captured.refused_blank } }]);
     render(<SupportClaims />);

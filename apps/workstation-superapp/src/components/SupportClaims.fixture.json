@@ -186,5 +186,52 @@
   "basis": "A claim is OPEN until a person decides the change it was filed as, and then ANSWERED with that decision; its state is read from Change Control on every read and nothing reads the clock to change it."
  },
  "refused_blank": "Not raised: a claim says what is wrong.",
- "unreadable": "The claims could not be read (StoreUnavailable), so none is shown and none is raised."
+ "unreadable": "The claims could not be read (StoreUnavailable), so none is shown and none is raised.",
+ "answer_request": {
+  "artefact_kind": "answer",
+  "artefact_id": "f8e6bdadab7d1ff94af6e7afec11ead3d3983eaeeb3ee719793ec77aa67ecc0d",
+  "endpoint": "/api/v1/care/care-plan",
+  "served_by": "native",
+  "what_is_wrong": "the plan leaves out the evening medication"
+ },
+ "answer_claims": {
+  "claims": [
+   {
+    "claim_id": "claim-554caa33d0",
+    "artefact_kind": "answer",
+    "artefact_id": "f8e6bdadab7d1ff94af6e7afec11ead3d3983eaeeb3ee719793ec77aa67ecc0d",
+    "what_is_wrong": "the plan leaves out the evening medication",
+    "raised_by": "single-user-mode",
+    "raised_at": "2026-11-13T19:13:08Z",
+    "named_owner": {
+     "owner": "the Owner",
+     "basis": "sign-in is off, so the Owner answers every claim; an answer belongs to no entity"
+    },
+    "artefact": {
+     "endpoint": "/api/v1/care/care-plan",
+     "tool": "care_planner",
+     "served_by_as_reported": "native",
+     "content_sha256": "f8e6bdadab7d1ff94af6e7afec11ead3d3983eaeeb3ee719793ec77aa67ecc0d",
+     "text_kept": false,
+     "basis": "This platform keeps no answer it was not asked to save, so this claim holds what the page reported: the route that gave the answer and the tool declared there, what served it as the answer said, and the sha256 of its text as it was shown, computed where it was shown. The text itself was never sent and is not kept; whoever answers the claim matches it against a copy by that fingerprint."
+    },
+    "cca_id": "cca-a68ffbeb99",
+    "ueg": {
+     "recorded": true,
+     "entry": "2dffe878b21387061a6d08ce71fffa6663293d1d3d02ac6f4c6782a31139150a6480fedbec8b273813a49f8b7a940de87dbbe7a6a1ae25a00ec5bad9c5285e51",
+     "basis": "appended to the ledger as support.claim_raised; the attestation is an UNSIGNED digest (env:WORKSTATION_ATTESTATION_KEY (unset)), so an altered record is detectable but no signer is established"
+    },
+    "state": "OPEN",
+    "change": {
+     "cca_id": "cca-a68ffbeb99",
+     "status": "submitted",
+     "impact_tier": "CRITICAL",
+     "decision_source": null
+    },
+    "state_basis": "the change is submitted and no person has decided it; a claim nobody has answered stays OPEN"
+   }
+  ],
+  "open": 1,
+  "basis": "A claim is OPEN until a person decides the change it was filed as, and then ANSWERED with that decision; its state is read from Change Control on every read and nothing reads the clock to change it."
+ }
 }
