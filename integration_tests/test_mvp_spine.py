@@ -77494,3 +77494,53 @@ def test_w912_fu812_the_production_hardening_brief_scopes_each_part_by_its_evide
     assert named, "the brief rests on no register row"
     closed = [rid for rid in named if rid != "FU-812" and status.get(rid) != "open"]
     assert not closed, ("the brief calls a closed row open: read its part again", closed)
+
+
+def test_w913_fu806_three_first_offers_are_compared_on_their_evidence_and_the_interviews_that_would_test_one():
+    """FU-806 (W913, plan item P5.7). Nothing compared candidate first offers or prepared the interviews that would test
+    one. docs/business/FIRST_OFFER_CANDIDATES.md compares three workflows, Law time limits, Employment documents and
+    Education plans and feedback, on stated criteria. Each cell that cites evidence names a test this suite holds,
+    and the demand rows say NOT MEASURED, because no person has been asked. It names one leading hypothesis with
+    what would refute it, and lists who the offer is not for. Its willingness-to-pay questions offer no figure, and
+    its notes template keeps no personal detail in the repository. It is a draft until the Owner ratifies it, and it
+    carries every business document's rules."""
+    import json
+    import pathlib
+    import re
+    from agentic_core import plan_followups as _fu
+    from agentic_core.app_mvp import app as _app913
+    root = pathlib.Path(__file__).resolve().parents[1]
+    text = (root / "docs/business/FIRST_OFFER_CANDIDATES.md").read_text(encoding="utf-8")
+    plan_slots = {i["slot"] for i in _fu.plan_items((root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8"))}
+    row_ids = {r["id"] for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    routes = {(m, r.path) for r in _app913.routes for m in (getattr(r, "methods", None) or ())}
+    assert _w703_faults(text, root, plan_slots, row_ids, routes) == []
+
+    def section(title):
+        return text.split(f"\n## {title}\n", 1)[1].split("\n## ", 1)[0]
+
+    cands = re.findall(r"^- ([A-C])\. (Law|Employment and Career|Education):", section("The three candidates"), re.M)
+    assert [c for c, _ in cands] == ["A", "B", "C"], cands
+
+    #  every test a cell cites is one the suite holds; the demand rows are NOT MEASURED until a person is asked
+    suite = (root / "integration_tests/test_mvp_spine.py").read_text(encoding="utf-8")
+    table = section("The comparison")
+    for cited in set(re.findall(r"\b(test_w\d+)\b", table)):
+        assert f"def {cited}_" in suite, (cited, "is cited as evidence and the suite holds no such test")
+    rows = {ln.split("|")[1].strip(): [c.strip() for c in ln.split("|")[2:-1]]
+            for ln in table.splitlines() if ln.startswith("| ") and not ln.startswith("| Criterion") and "---" not in ln}
+    for demand in ("Would anyone pay", "How often the need recurs", "What a person uses today"):
+        assert rows.get(demand) == ["NOT MEASURED"] * 3, (demand, rows.get(demand), "no interview has measured it")
+    assert len(rows) >= 8 and all(len(cells) == 3 and all(cells) for cells in rows.values()), rows
+
+    #  one leading hypothesis, with what would refute it, and the choice left to the Owner
+    lead = section("The leading hypothesis")
+    assert lead.count("[hypothesis]") >= 2 and "It would be refuted by" in lead and "[owner decision]" in lead, lead
+    assert len(re.findall(r"^- ", section("Who the offer is not for"), re.M)) >= 4
+
+    #  the questions offer no figure, and the template keeps no personal detail here
+    wtp = section("Willingness-to-pay questions that do not lead")
+    assert not re.search(r"\d", wtp.replace("[inference]", "")), ("a figure is offered in a question", wtp)
+    assert "Never name a price" in wtp
+    notes = section("Notes template")
+    assert "no name, address or contact detail written into this repository" in notes, notes

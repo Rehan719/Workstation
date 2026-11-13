@@ -15805,11 +15805,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.7",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W913",
       "note": "",
       "slot_source": "the Owner asked on 2026-10-11 that this work be added to the plan; it is the item chartered for it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built as the row asked, after one person's journey was driven and read back (W840): docs/business/FIRST_OFFER_CANDIDATES.md compares Law time limits, Employment documents and Education plans and feedback on nine stated criteria, each cell citing the test that shows it or NOT MEASURED (the three demand rows everywhere, no person having been asked); names one leading hypothesis with what would refute it, leaving the choice to the Owner; lists who the offer is not for; and gives an interview guide, willingness-to-pay questions that offer no figure and a notes template that keeps no personal detail here. A draft until the Owner ratifies it."
     },
     {
       "id": "FU-807",
