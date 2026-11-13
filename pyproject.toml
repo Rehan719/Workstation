@@ -3,7 +3,6 @@ name = "workstation"
 version = "1.0.0"
 packages = [
     { include = "agentic_core" },
-    { include = "src" },
 ]
 description = "Workstation — AI-Mediated Workspace, Commercial MVP."
 authors = ["Rehan719"]
