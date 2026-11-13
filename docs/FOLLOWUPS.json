@@ -20712,8 +20712,8 @@
         "integration_tests/test_mvp_spine.py"
       ],
       "severity": "low",
-      "owner_gated": false,
-      "slot": "P5.10",
+      "owner_gated": true,
+      "slot": "OWNER",
       "status": "open",
       "closed_by": null,
       "note": "",

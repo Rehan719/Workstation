@@ -69399,7 +69399,9 @@ def test_w749_an_instrument_that_examined_nothing_refuses_and_reads_what_it_name
                     #  W809 (FU-1154) - the other six
                     "scripts/pass_set_diff.py", "scripts/readme_figures.py", "scripts/render_fidelity_ledger.py",
                     "scripts/screen_phrasings.py", "scripts/prune_test_entities.py",
-                    "scripts/quarantine_test_entities.py"]
+                    "scripts/quarantine_test_entities.py",
+                    #  W890 (FU-1040) - the test double's rows, moved aside under the same rule
+                    "scripts/quarantine_test_double_rows.py"]
 
     def _emitted(src):
         """The strings a module can print or return - its docstrings left out, since a docstring saying the tool
@@ -76189,3 +76191,97 @@ def test_w889_a_run_says_what_the_gateway_rate_limiter_cost_it(monkeypatch):
     assert "gw0: " in got and "gw1: " in got and "no figures came back" not in got, got
     tail = [x for x in out.splitlines() if x.strip()][-1]
     assert "4 passed" in tail, ("the run's last line is no longer its outcome", tail)
+
+
+def test_w890_a_test_doubles_rows_move_out_of_the_operations_record_and_back(monkeypatch, tmp_path):
+    """FU-1040, as ruled on 2026-10-12. 162 of the 2,000 rows of the operations record on the Owner's store were
+    served by a provider named for a test double. Find the writer, and move those rows aside reversibly, under the
+    rule already ruled for test entities.
+
+    The writer is test_orchestrator_adapts_to_model_health. It records six failed model attempts served by "flaky"
+    into whatever store the run resolves, and before W394 that was the real store. It now writes into this run's
+    own. scripts/quarantine_test_double_rows.py moves a test double's rows aside under the test-entity rule: a dry
+    run by default, nothing deleted, every row kept in a manifest with its position, and a restore that puts each
+    back. It refuses while a backend answers, on a record it cannot read whole, and on a record it did not find.
+    The move on the Owner's store is the Owner's to run."""
+    import importlib.util
+    import json
+    import os
+    import pathlib
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    spec = importlib.util.spec_from_file_location("_w890_q", root / "scripts" / "quarantine_test_double_rows.py")
+    q = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(q)
+    assert q._rule_module().__file__.endswith("quarantine_test_entities.py"), "the refusal is not the test-entity rule's"
+    monkeypatch.setattr(q, "_busy", lambda: "")             # no backend answers in this test
+
+    # 1. the writer is named, it is the one the rule's test doubles come from, and it writes into this run's store
+    spine = (root / "integration_tests" / "test_mvp_spine.py").read_text(encoding="utf-8")
+    writer = spine.split("def test_orchestrator_adapts_to_model_health(")[1].split("\ndef ")[0]
+    assert '"served_by": "flaky"' in writer and "/api/v1/operations/record" in writer, "the writer is not the one named"
+    assert "flaky" in q.TEST_DOUBLES, sorted(q.TEST_DOUBLES)
+    from agentic_core.api import operational_excellence as _oe890
+    store = pathlib.Path(str(_oe890._STORE)).resolve()
+    assert store.is_relative_to(pathlib.Path(os.environ["DATA_DIR"]).resolve()), (
+        "the operations record this run writes is not under its own store root", store)
+
+    #    and the Owner, who holds that store, has the steps in the resume prompt's list
+    prompt = (root / "docs" / "FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    owner = prompt.split("FU-1040 (W890):")[1].split("THAT IS THE WHOLE LIST.")[0] if "FU-1040 (W890):" in prompt else ""
+    assert "quarantine_test_double_rows.py" in owner and "--apply" in owner and "--restore" in owner, (
+        "the Owner's list does not give the steps for moving the rows on the Owner's store", owner[:300])
+
+    # 2. on a planted record: a dry run moves nothing, apply takes the test double's rows, restore puts each back
+    def _row(served, at, ok=True, resource=None):
+        return {"kind": "model_attempt", "resource": resource or f"model:{served}", "served_by": served,
+                "success": ok, "created_at": at}
+    rows = [_row("native", "2026-06-28T10:00:00Z"), _row("flaky", "2026-06-28T10:00:01Z", False),
+            _row("native", "2026-06-28T10:00:02Z"), _row("flaky", "2026-06-28T10:00:03Z", False),
+            _row("llama3.2", "2026-06-28T10:00:04Z"), _row("other", "2026-06-28T10:00:05Z", resource="model:flaky")]
+    rec = tmp_path / "operations_outcomes.json"
+    rec.write_text(json.dumps(rows), encoding="utf-8")
+    before = rec.read_bytes()
+    assert q.main(["--root", str(tmp_path)]) == 0
+    assert rec.read_bytes() == before, "a dry run moved something"
+    pl = json.loads((tmp_path / "_prune_ops_plan.json").read_text(encoding="utf-8"))
+    assert [e["index"] for e in pl["eligible"]] == [1, 3, 5] and pl["counts"]["left"] == 3, pl["counts"]
+    assert q.main(["--root", str(tmp_path), "--apply"]) == 0
+    assert [r["served_by"] for r in json.loads(rec.read_text(encoding="utf-8"))] == ["native", "native", "llama3.2"]
+    manifests = sorted(tmp_path.glob("_pruned_ops_*/manifest.json"))
+    assert len(manifests) == 1, manifests
+    m = json.loads(manifests[0].read_text(encoding="utf-8"))
+    assert [t["index"] for t in m["taken"]] == [1, 3, 5] and [t["row"] for t in m["taken"]] == [rows[1], rows[3], rows[5]]
+    assert q.main(["--restore", str(manifests[0])]) == 0
+    assert json.loads(rec.read_text(encoding="utf-8")) == rows, "the rows did not go back where each was"
+    snap = rec.read_bytes()
+    try:
+        q.main(["--restore", str(manifests[0])])
+        raise AssertionError("a second restore of the same rows was not refused")
+    except SystemExit as e:
+        assert "already holds" in str(e), e
+    assert rec.read_bytes() == snap, "a refused restore changed the record"
+
+    # 3. a record that changed after the move: the positions no longer hold, so every row goes back in time order
+    mp2 = q.apply(tmp_path, "w890-second")
+    cur = json.loads(rec.read_text(encoding="utf-8"))
+    cur.append(_row("native", "2026-06-29T00:00:00Z"))
+    rec.write_text(json.dumps(cur), encoding="utf-8")
+    said = q.restore(mp2)
+    assert "in time order" in said, said
+    got = json.loads(rec.read_text(encoding="utf-8"))
+    assert len(got) == 7 and [r["created_at"] for r in got] == sorted(r["created_at"] for r in rows + [cur[-1]]), got
+
+    # 4. the refusals: a record it did not find, a record it cannot read whole, a backend that answers
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    assert q.main(["--root", str(empty)]) == 1
+    torn = tmp_path / "torn"
+    torn.mkdir()
+    (torn / "operations_outcomes.json").write_bytes(b'[{"served_by": "fla')
+    assert q.main(["--root", str(torn), "--apply"]) == 1
+    assert (torn / "operations_outcomes.json").read_bytes() == b'[{"served_by": "fla', "a torn record was rewritten"
+    monkeypatch.setattr(q, "_busy", lambda: "a backend answers on :8000")
+    snap = rec.read_bytes()
+    assert q.main(["--root", str(tmp_path), "--apply"]) == 1
+    assert rec.read_bytes() == snap, "rows were moved while a backend answers"
