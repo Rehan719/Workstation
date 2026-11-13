@@ -23547,6 +23547,26 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that found it: elapsed time is never negative, so a clock read behind the last refill takes no debt. Driven in test_w898: the clock moved ahead and back as test_w658 moves it, and the next call does not wait; the limit still holds. No clock the platform runs on goes back, so nothing changes outside the suite."
+    },
+    {
+      "id": "FU-1174",
+      "title": "OWNER DECISION: may streamlit, pandas and plotly be removed? Nothing live has used them since W896 moved the dashboard aside",
+      "why": "W908 measured FU-283's three REACHED verdicts again after W896 moved the dashboard aside. Nothing live imports or probes streamlit, pandas or plotly, or any of the eleven packages only streamlit brings. In the lock nothing requires streamlit or plotly, and camel-tools and mesa require pandas. The 2026-10-07b ruling covered the rows that were REMOVABLE then, and these three were REACHED then. RECOMMENDED: remove streamlit and plotly, pandas as a direct declaration, and the devcontainer's `pip3 install --user streamlit`, with W906's two commands after a fresh-venv full suite, as W907 did: 13 pins leave requirements.txt (188 to 175). docs/DEPENDENCY_VERDICTS.md has the measurement.",
+      "source": "W908 (FU-283's verdicts measured again after W896)",
+      "found": "2026-11-13",
+      "files": [
+        "pyproject.toml",
+        "docs/DEPENDENCY_VERDICTS.md",
+        ".devcontainer/devcontainer.json"
+      ],
+      "severity": "low",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "a dependency removal is the Owner's: the 2026-10-07b ruling covered only the rows that were REMOVABLE then",
+      "tier": 3
     }
   ],
   "routes": [

@@ -77280,3 +77280,57 @@ def test_w907_fu604_the_nineteen_removable_dependencies_are_gone_and_nothing_liv
     #  the rows FU-283 held for a plan item, or found reached another way, are not part of the ruling
     for kept in ("sqlalchemy", "sqlmodel", "psycopg2-binary", "streamlit", "pandas", "plotly"):
         assert kept in declared, (kept, "was removed, and the ruling covered only the REMOVABLE rows")
+
+
+def test_w908_streamlit_pandas_and_plotly_are_reached_by_nothing_live_and_their_removal_is_asked_of_the_owner():
+    """W908. FU-283 (W628) marked streamlit, pandas and plotly REACHED without a scanned import: the devcontainer
+    launched src/dashboard/app.py, which imported them. W896 moved src/ aside and removed that launch. Measured
+    again, nothing live reaches any of the three or the eleven packages only streamlit brings, so their rows say
+    REMOVABLE, not ruled, and the removal is asked of the Owner with the recommendation. This guard holds the
+    verdict until the Owner rules: if live code starts using one, the verdict is wrong and this fails; if one is
+    removed before the ruling, that decided for the Owner and this fails."""
+    import json
+    import pathlib
+    import re
+    import tomllib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    dv = (root / "docs/DEPENDENCY_VERDICTS.md").read_text(encoding="utf-8")
+    for dist in ("streamlit", "pandas", "plotly"):
+        row = re.search(rf"^\| {dist} \| ([^|]+) \|", dv, re.M)
+        assert row and "REMOVABLE" in row.group(1) and "not ruled" in row.group(1), (dist, row and row.group(1))
+
+    #  1 - nothing live imports or probes them, or what only streamlit brings
+    mods = ["streamlit", "pandas", "plotly", "altair", "blinker", "gitdb", "git", "narwhals", "pyarrow", "pydeck",
+            "smmap", "toml", "tornado", "watchdog"]
+    alt = "|".join(sorted(mods, key=len, reverse=True))
+    imp = re.compile(r"^\s*(?:import|from)\s+(" + alt + r")(?:\.|\s|,|$)", re.M)
+    probe = re.compile(r"(?:find_spec|import_module|__import__|importorskip)\(\s*['\"](" + alt + r")['\"]")
+    hits = []
+    for base in ("agentic_core", "scripts", "integration_tests"):
+        for f in (root / base).rglob("*.py"):
+            if "_archive" in f.parts:
+                continue
+            text = f.read_text(encoding="utf-8", errors="replace")
+            hits += [(str(f.relative_to(root)), m.group(1)) for m in imp.finditer(text)]
+            hits += [(str(f.relative_to(root)), m.group(1)) for m in probe.finditer(text)]
+    assert not hits, ("live code reaches one, so the REMOVABLE verdict is wrong", hits[:10])
+
+    #  2 - the devcontainer launches no dashboard
+    dc = (root / ".devcontainer/devcontainer.json").read_text(encoding="utf-8")
+    assert "streamlit run" not in dc and "src/dashboard" not in dc, "the devcontainer launches the dashboard again"
+
+    #  3 - they stay declared until the Owner rules: a removal before the ruling decides for them
+    py = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
+    declared = {k.lower() for k in py["tool"]["poetry"]["dependencies"]}
+    reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))
+    asked = [r for r in reg["items"] if r.get("owner_gated") and "streamlit" in r["title"]
+             and "pandas" in r["title"] and "plotly" in r["title"]]
+    assert len(asked) == 1, ("the removal is asked of the Owner exactly once", [r["id"] for r in asked])
+    if asked[0]["status"] == "open":
+        for dist in ("streamlit", "pandas", "plotly"):
+            assert dist in declared, (dist, "was removed while the Owner's decision is still open")
+        #  4 - and the question is on the resume prompt's list, with the recommendation
+        prompt = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+        still = prompt.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0]
+        entry = still.split(f"{asked[0]['id']} (W908):", 1)
+        assert len(entry) == 2 and "Recommended: yes" in entry[1][:400], "the question is not asked where the Owner reads"
