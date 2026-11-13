@@ -363,6 +363,37 @@ def state() -> Dict[str, Any]:
     }
 
 
+def energy() -> Dict[str, Any]:
+    """W900 (FU-1112, S18.1) - THE ENERGY RATIO, DERIVED FROM WHAT IS SPENT: the share of this window's stated
+    capacity that is left, 1.0 when the window opens and 0.0 when the capacity is spent. `acts` says whether the
+    Owner's setting is on: only then do the energy thresholds read this figure (energy_term), which is the ruling's
+    inert setting - switching the budget on is what makes those thresholds reachable."""
+    rec, why = _load()
+    spent = float(rec.get("seconds_spent") or 0.0)
+    fraction = min(1.0, spent / CAPACITY_SECONDS) if CAPACITY_SECONDS else 0.0
+    acts = enabled()
+    return {"ratio": round(max(0.0, 1.0 - fraction), 4), "acts": acts,
+            "unit": "the share of this window's stated capacity left, in wall-clock seconds",
+            "basis": (f"1 - {spent:.1f}s spent / {CAPACITY_SECONDS:.0f}s stated capacity this window (the capacity "
+                      "is a stated assumption)"
+                      + (f"; the record could not be read whole ({why})" if why else "")
+                      + ("; the work budget is switched on, so the energy thresholds and the composite's metabolic "
+                         "term read this figure" if acts else
+                         "; the work budget is switched off (WORKSTATION_WORK_BUDGET), so nothing reads this "
+                         "figure: the energy thresholds read the ATP simulator, which cannot fall, and stay inert "
+                         "as ruled")),
+            "store_incomplete": why}
+
+
+def energy_term(simulated: Optional[float], reading: Optional[Dict[str, Any]] = None) -> tuple:
+    """W900 (FU-1112, S18.1) - the figure an energy threshold reads, and where it came from: the work budget's
+    remaining share while the budget is switched on, and the ATP simulator's figure while it is off."""
+    e = reading if reading is not None else energy()
+    if e.get("acts") and e.get("ratio") is not None:
+        return float(e["ratio"]), "work_budget"
+    return simulated, "atp_simulator"
+
+
 def _hold_reason(fraction: float, why: Optional[str]) -> Optional[str]:
     """Why the S18.1 throttle holds right now, or None. Off, it never holds."""
     if not enabled():

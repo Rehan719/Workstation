@@ -741,7 +741,11 @@ class OrganismHeartbeat:
                 _ctx = _bb.organism_context()
                 # §8 (W341) — atp_ratio lives under the 'metabolic' key: the old top-level read
                 # always defaulted to 1.0, so the W310 defensive lever could NEVER fire.
-                if float(((_ctx.get("metabolic") or {}).get("atp_ratio")) or 1.0) < 0.2:
+                #  W900 (FU-1112, S18.1) - the work budget's remaining share while it is switched on, else the
+                #  simulator's figure. A spent budget is 0.0, which `or 1.0` would have read as full
+                _m900 = _ctx.get("metabolic") or {}
+                _e900 = _m900.get("energy_ratio") if _m900.get("energy_acts") else _m900.get("atp_ratio")
+                if float(_e900 if _e900 is not None else 1.0) < 0.2:
                     _throttled = True
                     actions.append("metabolic_throttle")
         except Exception as _swallowed:   # FU-461 (W611) — recorded, never swallowed
@@ -950,8 +954,12 @@ class OrganismHeartbeat:
         out: Dict[str, Any] = {"read": False, "atp": None, "recovered": False}
         try:
             from agentic_core.organism.biobus import atp_depletion_state, biobus
-            atp = (biobus.organism_context().get("metabolic", {}) or {}).get("atp_ratio", 1.0)
+            _m900 = biobus.organism_context().get("metabolic", {}) or {}
+            #  W900 (FU-1112, S18.1) - the work budget's remaining share while it is switched on, else the simulator's
+            _acts900 = bool(_m900.get("energy_acts")) and _m900.get("energy_ratio") is not None
+            atp = _m900.get("energy_ratio") if _acts900 else _m900.get("atp_ratio", 1.0)
             out["read"], out["atp"] = True, atp
+            out["reads"] = "work_budget" if _acts900 else "atp_simulator"
             # §8 (W506, P2.7(4)) - this threshold is UNREACHABLE on the current model, and said so rather
             # than silently never firing. Measured from the arithmetic: consumption is at most 0.1 per tick
             # and production at least 0.4 at the lowest efficiency this code passes, so the ratio only rises
@@ -961,11 +969,18 @@ class OrganismHeartbeat:
             _dep = atp_depletion_state()
             out["threshold"] = self.ENERGY_THRESHOLD
             out["can_deplete"] = _dep["can_deplete"]
-            if not _dep["can_deplete"]:
+            if not _dep["can_deplete"] and not _acts900:
                 out["why_not"] = ("the energy figure cannot fall to the threshold on this model, so no "
                                   "recovery can be triggered by it: " + _dep["basis"])
                 return out
             if atp < self.ENERGY_THRESHOLD:     # energy depleted → autonomously rest & recover
+                if _acts900:
+                    #  W900 - resting runs the ATP simulator; it restores nothing that was spent. The budget is
+                    #  seconds of recorded work, and it starts again only when a new window opens
+                    out["why_not"] = ("the work budget is below the threshold, and resting does not restore it: "
+                                      "it is seconds of work already spent, and it starts again when a new window "
+                                      "opens")
+                    return out
                 from agentic_core.ai.native.homeostasis import homeostasis
                 rec = homeostasis.recover(cycles=3)
                 if rec.get("recovered"):

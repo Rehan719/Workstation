@@ -576,7 +576,11 @@ class EconomicMetabolism:
             from agentic_core.organism.biobus import _get_atp
             atp = _get_atp()
             # ATP/ADP energy state (0.5–15); normalise to 0–1.
-            return round(max(0.0, min(1.0, float(atp.ratio) / 15.0)), 3) if atp else None
+            _sim = round(max(0.0, min(1.0, float(atp.ratio) / 15.0)), 3) if atp else None
+            #  W900 (FU-1112, S18.1) - the work budget's remaining share while the budget is switched on: the
+            #  cycle's reserve raise reads this, and it stays inert until the Owner's setting turns it on
+            from agentic_core.molecular import work_budget as _wb900
+            return _wb900.energy_term(_sim)[0]
         except Exception:
             return None
 

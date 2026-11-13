@@ -617,12 +617,16 @@ async def trigger_homeostasis(req: HomeostasisRequest):
     adjustments = []
 
     # Metabolic adjustment — slow down if ATP depleted (the biobus fallback carries None — W438)
-    _atp = ctx.get("metabolic", {}).get("atp_ratio")
+    #  W900 (FU-1112, S18.1) - the work budget's remaining share while it is switched on, else the simulator's
+    _m900 = ctx.get("metabolic", {}) or {}
+    _acts900 = bool(_m900.get("energy_acts")) and _m900.get("energy_ratio") is not None
+    _atp = _m900.get("energy_ratio") if _acts900 else _m900.get("atp_ratio")
+    _what900 = "work budget left" if _acts900 else "ATP ratio (simulated)"
     if _atp is not None and _atp < 0.3:
         adjustments.append({
             "system": "gateway",
             "action": "reduce_rpm",
-            "reason": f"Low ATP ratio ({ctx['metabolic']['atp_ratio']:.0%})",
+            "reason": f"Low {_what900} ({_atp:.0%})",
             "effective": True,
             "effect": "a config-change request is filed with Change Control (below)",
         })
@@ -632,12 +636,12 @@ async def trigger_homeostasis(req: HomeostasisRequest):
             await submit_change(SubmitChangeRequest(
                 title="Auto-homeostasis: Reduce gateway RPM",
                 change_type="config_minor",
-                description=f"Reducing gateway RPM due to low ATP ratio ({ctx['metabolic']['atp_ratio']:.0%}). "
+                description=f"Reducing gateway RPM due to low {_what900} ({_atp:.0%}). "
                             f"Organism mode: {ctx['mode']}.",
                 rationale=f"Homeostatic regulation triggered: {req.reason}",
                 affected_systems=["gateway", "ai_providers"],
                 submitted_by="biobus.homeostasis",
-                rollback_plan="Restore original RPM when ATP ratio recovers above 0.5.",
+                rollback_plan=f"Restore original RPM when the {_what900} recovers above 0.5.",
             ))
         except Exception:
             pass

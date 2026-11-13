@@ -51470,7 +51470,22 @@ def test_w658_health_with_nothing_observed_is_not_a_measurement_and_the_gate_hol
     assert _f2.status()["observations_in_window"] == 1
     import time as _t
     _now = _t.monotonic()
-    monkeypatch.setattr(_im.time, "monotonic", lambda: _now + _f2.WINDOW_SECONDS + 1)
+    #  W900 - the SENSOR's clock is moved past its window, not the process's. Moving time.monotonic itself left
+    #  every reading this test caused 301 s ahead of the clock the rest of its worker reads: the gateway's limiter
+    #  (the 240 s stall W898 found) and the floor row's throttle, which then held back the row test_w741 opens it
+    #  for, in W900's first full suite. Every other module keeps the process's clock
+    import time as _time900
+    _real900 = _time900.monotonic
+
+    class _SensorClock900:
+        def __getattr__(self, name):
+            return getattr(_time900, name)
+
+        @staticmethod
+        def monotonic():
+            return _now + _f2.WINDOW_SECONDS + 1
+    monkeypatch.setattr(_im, "time", _SensorClock900())
+    assert _time900.monotonic() < _now + _f2.WINDOW_SECONDS, "the process's clock was moved with the sensor's"
     assert _f2.status()["observations_in_window"] == 0, "an observation older than the window is still counted"
 
     #  A REAL FLOOR-SERVED CALL IS SEEN (W658 blind: with the observation removed at a serving site nothing above
@@ -51493,6 +51508,12 @@ def test_w658_health_with_nothing_observed_is_not_a_measurement_and_the_gate_hol
     assert (_res.get("served_by") or "native") == "native", _res.get("served_by")
     assert _fresh.status()["observations_in_window"] > _mid, (
         "the gateway's own floor fallback served a call the immune sensor did not see")
+    #  W900 - and nothing this test caused is stamped ahead of the process's clock: the floor row's throttle is the
+    #  reading test_w741 tripped over when this guard moved the clock for the whole worker
+    import importlib as _il900
+    _floor_at900 = _il900.import_module("agentic_core.ai.native.orchestrator")._last_floor_record_at
+    assert _floor_at900 is None or _floor_at900 <= _real900(), (
+        "a reading this test caused is ahead of the process's clock", _floor_at900, _real900())
 
 
 def test_w658_every_carrier_of_the_health_figure_says_what_it_rests_on(client):
@@ -76869,3 +76890,64 @@ def test_w899_fu610_an_external_call_declares_what_it_carries_and_a_barred_class
             undeclared.append(f"{f.relative_to(root.parent)}:{c.lineno} {fn}")
     assert asks >= 6, ("the scan found fewer calls that can ask for an external model than the platform has", asks)
     assert not undeclared, ("a call that can ask for an external model declares nothing", undeclared)
+
+
+def test_w900_fu1112_with_the_work_budget_on_every_energy_threshold_reads_what_is_left_of_it(client, monkeypatch):
+    """FU-1112 part 1 (W900). S18.1 rules the energy figure measured in what is spent, any displayed ratio derived from
+    it, and the throttle inert behind a setting. The work budget was reported beside the ATP simulator, and every
+    threshold still read the simulator, which cannot fall. Now the composite's metabolic term, the homeostasis
+    conserve threshold, the heartbeat's energy recovery, the homeostasis route's low-energy suggestion and the
+    economy cycle's metabolic energy read the budget's remaining share while the budget is switched on, and the
+    simulator while it is off, and each says which. Driven both ways on a budget nine-tenths spent: off, every
+    figure is the simulator's, as before; on, each reads a tenth left."""
+    import time
+    from agentic_core.molecular import work_budget as _wb
+    from agentic_core.organism import biobus as _bbmod
+    from agentic_core.organism.immune import ImmuneSystem
+    from agentic_core.ai.native.homeostasis import homeostasis as _homeo
+    from agentic_core.organism.heartbeat import heartbeat as _hb
+    from agentic_core.economy.metabolism import EconomicMetabolism
+    spent = {"seconds_spent": _wb.CAPACITY_SECONDS * 0.9, "calls": 9, "window_started": time.time()}
+    monkeypatch.setattr(_wb, "_load", lambda: (dict(spent), None))
+    monkeypatch.setattr(_bbmod, "immune", ImmuneSystem())      # a fresh sensor: no earlier test's threat decides
+    bb = _bbmod.biobus
+
+    def composite_from(ctx, term):
+        return round(ctx["immune"]["health"] * 0.4 + ctx["self_healing"]["overall_health"] * 0.4 + term * 0.2, 3)
+
+    #  OFF (the default): the derived figure is reported, and nothing reads it
+    monkeypatch.delenv("WORKSTATION_WORK_BUDGET", raising=False)
+    e = _wb.energy()
+    assert e["ratio"] == 0.1 and e["acts"] is False and "switched off" in e["basis"], e
+    ctx = bb.organism_context(advance_atp=False)
+    m = ctx["metabolic"]
+    assert m["energy_ratio"] == 0.1 and m["energy_acts"] is False and m["thresholds_read"] == "atp_simulator", m
+    assert ctx["composite_health"] == composite_from(ctx, m["atp_ratio"]), (
+        "with the budget switched off the composite no longer reads the simulator as it did", ctx["composite_health"])
+    org = _homeo.assess(demand_nodes=3, requested_parallel=4, read_only=True)["organism"]
+    assert org["conserve_reads"] == "atp_simulator" and org["energy_acts"] is False, org
+    assert org["energy_ratio"] == 0.1 and org["conserving_posture_reachable"] is False, org
+    off_sim = EconomicMetabolism._atp_ratio()
+    assert off_sim is None or off_sim >= 0.3, ("with the budget off the economy read the budget's tenth", off_sim)
+
+    #  ON: every threshold reads what is left of the budget
+    monkeypatch.setenv("WORKSTATION_WORK_BUDGET", "true")
+    e = _wb.energy()
+    assert e["acts"] is True and "switched on" in e["basis"] and e["ratio"] == 0.1, e
+    ctx = bb.organism_context(advance_atp=False)
+    m = ctx["metabolic"]
+    assert m["thresholds_read"] == "work_budget" and m["energy_acts"] is True, m
+    assert ctx["composite_health"] == composite_from(ctx, 0.1), (
+        "the composite's metabolic term does not read the budget while it is switched on", ctx["composite_health"])
+    res = _homeo.assess(demand_nodes=3, requested_parallel=4, read_only=True)
+    assert res["organism"]["conserve_reads"] == "work_budget" and res["organism"]["conserving_posture_reachable"], res
+    assert res["max_parallel"] == 1 and res["posture"] == "protected", (
+        "a tenth of the budget left did not conserve: the threshold still reads the simulator", res["max_parallel"])
+    out = _hb.respond_to_energy()
+    assert out["reads"] == "work_budget" and out["atp"] == 0.1 and out["recovered"] is False, out
+    assert "resting does not restore it" in (out.get("why_not") or ""), out
+    assert EconomicMetabolism._atp_ratio() == 0.1, "the economy cycle's metabolic energy does not read the budget"
+    r = client.post("/api/v1/organism/homeostasis", json={"reason": "w900 guard"})
+    assert r.status_code == 200, r.text[:300]
+    rpm = [a for a in (r.json().get("adjustments_made") or []) if a.get("action") == "reduce_rpm"]
+    assert rpm and "work budget left (10%)" in rpm[0]["reason"], r.json().get("adjustments_made")
