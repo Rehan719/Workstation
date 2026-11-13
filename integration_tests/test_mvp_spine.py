@@ -66938,7 +66938,9 @@ def test_w747_the_external_prompts_review_is_recorded_and_its_gaps_are_registere
         ('An answer names its server but never the model or build that answered, or where it ran', 'P3.32'),
         ('HYPOTHESIS: the ensemble counts the deterministic floor as a second server, so one model can write a consensus of itself', 'P3.30'),
         ('The plan still names the old fidelity instrument as the measure in three places', 'P2.40'),
-        ('A failure on the first deployment reaches no person: failures are recorded and shown only on a page someone must open', 'P4.5'),
+        #  W904 - the outside uptime check is set up in the Owner's own cloud account at the first deploy, so the row
+        #  went to the Owner (gated); the steps are on the resume prompt's list and in docs/DEPLOYMENT.md
+        ('A failure on the first deployment reaches no person: failures are recorded and shown only on a page someone must open', 'OWNER'),
         ('A 14-layer specification file contradicts the seven-layer canon on a live import path, and its execution method has no caller and returns a constant', 'P3.30'),
         ('P3.31 is marked done and its text still says the page shows the proposal and not yet the verification', 'P3.30'),
         ("The history store beside the settings store is also read tolerantly as the base of a write, and a reset records a corrupt store's value as the defaults", 'P2.40'),
@@ -77100,3 +77102,35 @@ def test_w903_fu744_the_living_strategy_map_names_a_real_component_test_and_row_
         assert tests and all(f"def {t}(" in suite for t in tests), (step, "names a test the suite does not hold", tests)
         between = [ln for ln in body.split("\n- ") if ln.startswith("Between this step and being relied on")]
         assert between, (step, "says nothing about what stands between it and being relied on")
+
+
+def test_w904_fu1095_failures_are_said_to_be_recorded_not_alerted_and_the_outside_check_is_written_down(client):
+    """FU-1095 (W904). Every route failure is recorded and shown on the Operations page, and nothing sends one to
+    anyone. The README listed error monitoring as not built, which was half true; it now says failures are recorded,
+    not alerted. The deploy runbook writes down the smallest addition for the first deploy: an uptime check on /health
+    from outside the machine, in the Owner's own cloud account, driven once at the deploy with the Owner watching.
+    The runbook says /health returns a fixed body, so the check sees only a dead process, and that is driven here: a
+    failure recorded between two reads does not change the body. The steps are on the Owner's list."""
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    readme = " ".join((root / "README.md").read_text(encoding="utf-8").split())
+    assert "- Analytics / error monitoring" not in readme, "the README still lists error monitoring as simply not built"
+    assert "failures are recorded, not alerted" in readme and "docs/DEPLOYMENT.md" in readme, readme[:200]
+    dep = (root / "docs/DEPLOYMENT.md").read_text(encoding="utf-8")
+    sec = " ".join(dep.split("## Watching the first deploy: failures are recorded, not alerted", 1)[1]
+                   .split("\n## ", 1)[0].split())
+    for words in ("uptime check on `/health` from OUTSIDE the machine", "your own cloud account",
+                  "with you watching", "returns a fixed body", "this platform sends nothing"):
+        assert words in sec, ("the runbook's first-deploy section does not say", words)
+    assert dep.index("## Watching the first deploy") < dep.index("## Verify before deploy")
+    fable = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    owner_list = fable.split("THAT IS THE WHOLE LIST.", 1)[0]
+    assert "FU-1095 (W904)" in owner_list, "the uptime check is not on the Owner's list"
+
+    #  /health's body is fixed: a recorded failure between two reads does not change it
+    first = client.get("/health")
+    from agentic_core.api.operational_excellence import record_outcome
+    record_outcome("route_failure", "w904-probe", served_by="w904", is_external=False, duration_ms=1, success=False)
+    second = client.get("/health")
+    assert first.status_code == second.status_code == 200 and first.json() == second.json(), (first.json(), second.json())
+    assert set(first.json()) == {"status", "version", "app"}, first.json()

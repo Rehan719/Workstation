@@ -21842,8 +21842,8 @@
         "docs/DEPLOYMENT.md"
       ],
       "severity": "medium",
-      "owner_gated": false,
-      "slot": "P4.5",
+      "owner_gated": true,
+      "slot": "OWNER",
       "status": "open",
       "closed_by": null,
       "note": "",
