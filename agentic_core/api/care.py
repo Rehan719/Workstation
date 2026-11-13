@@ -93,8 +93,14 @@ IMMEDIATE_DANGER_FIRST = ("**If anyone is in immediate danger, call 999 now - be
 
 
 #  typed, never generated; the children's sentence was read at its publisher's page on the date it carries
-ADULT_ROUTE_ONLY = ("**This form follows the ADULT safeguarding route for England.** If the concern is about a child or young person, do not use this form: contact the children's social care team at the child's local council, or call 999 if the child is at immediate risk "
-                    "(read at https://www.gov.uk/report-child-abuse on 2026-10-12).")
+CHILDRENS_ROUTE = ("contact the children's social care team at the child's local council, or call 999 if the child is at "
+                   "immediate risk (read at https://www.gov.uk/report-child-abuse on 2026-10-12)")
+ADULT_ROUTE_ONLY = ("**This form follows the ADULT safeguarding route for England.** If the concern is about a child or "
+                    "young person, do not use this form: " + CHILDRENS_ROUTE + ".")
+#  W950 (P5.13 clause 4) - who the concern is about is asked, never assumed; a child's concern is not composed
+CONCERN_ABOUT = ("an adult", "a child or young person")
+CHILD_CONCERN = ("**A concern about a child or young person is not set out here.** In England, " + CHILDRENS_ROUTE
+                 + ". Nothing was composed: this platform holds no process for a child's safeguarding concern.")
 
 
 #  what only a clinician may write: never asked for, and cut if a composer returns it
@@ -255,8 +261,8 @@ async def risk_assessment(req: RiskAssessRequest):
         #  tools have no published arithmetic and said "computed from the published table" anyway), and what
         #  served the narrative.
         "disclaimer": (
-            ("The score is computed in-house from the published table (NEWS2 RCP 2017 · MUST BAPEN · "
-             "Waterlow) and is a decision aid, not a diagnosis; "
+            ("The score is computed in-house from the published table (NEWS2, Royal College of Physicians, "
+             "2017) and is a decision aid, not a diagnosis; "
              if isinstance(score, dict) and score.get("available") else
              "NO SCORE WAS COMPUTED: this tool has no published arithmetic here, so nothing below is a score; ")
             + ("the narrative is a structured frame from the native floor, not an interpretation by AI or by "
@@ -274,6 +280,7 @@ class SafeguardingRequest(BaseModel):
     person_context: str = ""              # relevant context (adult at risk, capacity, etc.)
     jurisdiction: str = "England (Care Act 2014)"
     realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
+    concern_about: str = ""  # W950 (P5.13 clause 4) - "an adult" or "a child or young person"; asked, never assumed
 
 
 @router.post("/safeguarding", openapi_extra={"x-review-tool": "care_safeguarding"})
@@ -290,6 +297,26 @@ async def safeguarding_triage(req: SafeguardingRequest):
             f"This form covers the adult safeguarding route for England only ('{SAFEGUARDING_JURISDICTION}'). "
             f"For another nation or framework this platform holds no route: ask the local council for the "
             f"area, or call 999 if anyone is in immediate danger."))
+    #  W950 (P5.13 clause 4) - WHO THE CONCERN IS ABOUT, asked before anything else is done with it
+    _about = " ".join(str(req.concern_about or "").split()).lower()
+    if _about not in CONCERN_ABOUT:
+        raise HTTPException(status_code=422, detail=(
+            "Say whether the concern is about an adult or a child or young person: the two have different routes. "
+            "If anyone is in immediate danger, call 999 now."))
+    if _about == "a child or young person":
+        return {
+            "triage_id": uuid.uuid4().hex[:10],
+            "setting": req.setting,
+            "jurisdiction": req.jurisdiction,
+            "concern_about": _about,
+            "guidance": IMMEDIATE_DANGER_FIRST + "\n\n" + CHILD_CONCERN,
+            "composed": False,
+            "composed_basis": ("a child's concern goes to the children's route; nothing about it was sent to a "
+                               "composer and nothing was written about it"),
+            "ai_provenance": None,
+            "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "disclaimer": "If a child is in immediate danger, call 999.",
+        }
     _mat859 = _material(concern=req.concern, context=req.person_context)
     prompt = (
         "Set out the general PROCESS a frontline worker follows for an ADULT safeguarding concern in England. "
@@ -324,6 +351,8 @@ async def safeguarding_triage(req: SafeguardingRequest):
         "triage_id": uuid.uuid4().hex[:10],
         "setting": req.setting,
         "jurisdiction": req.jurisdiction,
+        "concern_about": _about,
+        "composed": True,
         "guidance": guidance,
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),

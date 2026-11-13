@@ -82,7 +82,7 @@ export const CareHub: React.FC = () => {
             {activeTab === 'care-plan' ? (
               <DomainTool
                 title={T['care-plan'].title}
-                description={<>Describe the person and their needs — Workstation's <span className="text-vital">own</span> AI drafts a structured, person-centred care plan (goals, interventions, review schedule), in-house.</>}
+                description={<>Describe the person and their needs — Workstation's <span className="text-vital">own</span> AI drafts an organiser of what you supply (goals, interventions, review schedule), in-house. It is a draft, not a care plan.</>}
                 endpoint="/api/v1/care/care-plan"
                 resultKey="care_plan"
                 submitLabel="Build care plan"
@@ -148,8 +148,12 @@ export const CareHub: React.FC = () => {
                 description={<>Describe a safeguarding concern — Workstation's <span className="text-vital">own</span> AI structures the right response under the Care Act 2014 (immediate-safety check, category, who to notify, what to record, consent &amp; Making Safeguarding Personal), in-house. Process guidance only — if anyone is in immediate danger, call 999.</>}
                 endpoint="/api/v1/care/safeguarding"
                 resultKey="guidance"
-                submitLabel="Triage concern"
+                submitLabel="Set out the process"
                 fields={[
+                  // W950 (P5.13 clause 4) - who the concern is about is asked, never assumed: a child's concern gets
+                  // the children's route and nothing is composed
+                  { name: 'concern_about', label: 'Who is the concern about?', type: 'select', options: ['', 'an adult', 'a child or young person'],
+                    optionLabels: { '': 'Choose one', 'an adult': 'An adult', 'a child or young person': 'A child or young person' }, default: '' },
                   { name: 'concern', label: 'Safeguarding concern', type: 'textarea', placeholder: 'e.g. an elderly client has unexplained bruising and seems fearful of a relative who manages their finances' },
                   { name: 'setting', label: 'Setting', type: 'select', options: ['community', 'hospital', 'care_home', 'domiciliary'], default: 'community' },
                   { name: 'person_context', label: 'Context (optional)', type: 'textarea', placeholder: 'adult at risk, capacity, who is involved…' },

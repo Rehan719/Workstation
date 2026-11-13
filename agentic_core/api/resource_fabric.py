@@ -700,10 +700,12 @@ _FORMS: List[Dict[str, Any]] = [
             "setting": "str (default 'community')",
             "person_context": "str (default '')",
             "jurisdiction": "str (default 'England (Care Act 2014)')",
-            "realm": "str (default '')"
+            "realm": "str (default '')",
+            "concern_about": "str ('an adult' or 'a child or young person'; asked of the person, never assumed)"
         },
         "required": [
-            "concern"
+            "concern",
+            "concern_about"
         ],
         "material": [
             "concern",

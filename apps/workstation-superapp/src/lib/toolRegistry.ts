@@ -48,9 +48,9 @@ export const TOOL_REGISTRY: DomainTools[] = [
   ]},
   { name: 'Care', route: '/care', tools: [
     form('clinical', 'Clinical Handover (SBAR)', 'Compose a structured clinical handover in the SBAR/ISBAR framework.'),
-    form('care-plan', 'Care Plan Builder', 'A person-centred care plan: goals, interventions, review schedule.'),
+    form('care-plan', 'Care plan organiser', 'A draft organiser of what you supply: goals, interventions, review schedule. Not a care plan.'),
     form('risk', 'Clinical Risk Assessment', 'Score NEWS2 from its published chart, with AI interpretation; MUST and Waterlow are withheld on their owners\' terms. A decision aid.'),   // W789 (FU-1157)
-    form('safeguarding', 'Safeguarding Triage', 'Structure the response to a safeguarding concern under the Care Act 2014: immediate safety, category, who to notify, what to record.'),
+    form('safeguarding', 'Safeguarding process guidance', 'For a concern about an adult in England: the process under the Care Act 2014 (immediate safety, category, who to notify, what to record). A concern about a child gets the children\'s route.'),
   ]},
   { name: 'Employment', route: '/employment', tools: [
     { tab: 'studio', kind: 'custom', title: 'Application Studio', desc: 'One flow for a whole application: ingest your documents, target a role, and produce the tailored CV, cover letter and supporting statement together.' },

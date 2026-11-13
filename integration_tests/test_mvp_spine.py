@@ -4928,7 +4928,7 @@ def test_science_experiment_design_contract(client):
 def test_care_safeguarding_contract(client):
     r = client.post("/api/v1/care/safeguarding", json={
         "concern": "An elderly client has unexplained bruising and seems fearful of a relative.",
-        "setting": "domiciliary"})
+        "setting": "domiciliary", "concern_about": "an adult"})
     assert r.status_code == 200, r.text
     body = r.json()
     _assert_str_field(body, "guidance")
@@ -60843,7 +60843,7 @@ def test_w676_the_emergency_line_is_the_first_line_of_the_safeguarding_text(clie
     import agentic_core.api.care as _care
     _concern = "w676: a resident says her son is hitting her right now and she is locked in her room"
     # 1. as this machine serves it (the floor)
-    _j = client.post("/api/v1/care/safeguarding", json={"concern": _concern}).json()
+    _j = client.post("/api/v1/care/safeguarding", json={"concern": _concern, "concern_about": "an adult"}).json()
     _first = _j["guidance"].splitlines()[0]
     assert _j["guidance"].startswith(_care.IMMEDIATE_DANGER_FIRST), _j["guidance"][:200]
     assert "999" in _first and "immediate danger" in _first and "before" in _first, _first
@@ -60853,7 +60853,7 @@ def test_w676_the_emergency_line_is_the_first_line_of_the_safeguarding_text(clie
         async def _composer(prompt, agent, _t=_text, **kw):
             return _t, {"served_by": "w676-capture"}
         monkeypatch.setattr(_care, "ai_text", _composer)
-        _g = client.post("/api/v1/care/safeguarding", json={"concern": _concern}).json()["guidance"]
+        _g = client.post("/api/v1/care/safeguarding", json={"concern": _concern, "concern_about": "an adult"}).json()["guidance"]
         assert _g.startswith(_care.IMMEDIATE_DANGER_FIRST), (_text, _g[:120])
         if _text:
             assert _g.endswith(_text), "the composed text was dropped"
@@ -61955,7 +61955,8 @@ def test_care_the_falls_count_is_retired_and_the_safeguarding_form_is_the_adult_
     _j = client.post("/api/v1/care/safeguarding", json={"concern": "w-care probe", "jurisdiction": "Narnia"})
     assert _j.status_code == 422 and "England only" in _j.json()["detail"] and "999" in _j.json()["detail"], _j.text[:200]
     assert len(_sent) == _n
-    _ok = client.post("/api/v1/care/safeguarding", json={"concern": "w-care probe: a resident has bruises"}).json()
+    _ok = client.post("/api/v1/care/safeguarding", json={"concern": "w-care probe: a resident has bruises",
+                                                         "concern_about": "an adult"}).json()
     _lines = [l for l in _ok["guidance"].split("\n\n")]
     assert _lines[0] == _care.IMMEDIATE_DANGER_FIRST and _lines[1] == _care.ADULT_ROUTE_ONLY, _lines[:2]
     assert "ADULT" in _lines[1] and "child" in _lines[1].lower() and "__" not in _lines[1] and "read at http" in _lines[1], _lines[1]
@@ -74176,7 +74177,8 @@ def test_w859_the_care_tools_hand_what_the_person_recorded_over_as_material_and_
          "care_planner", ["W859AGE", "W859NEED"]),
         ("/api/v1/care/risk-assess", {"tool": "news2", "patient_data": {"respiration_rate": 18},
                                       "clinical_context": "W859CTX" + inj}, "care_risk_assess", ["W859CTX"]),
-        ("/api/v1/care/safeguarding", {"concern": "W859CONCERN" + inj, "person_context": "W859PCTX"},
+        ("/api/v1/care/safeguarding", {"concern": "W859CONCERN" + inj, "person_context": "W859PCTX",
+                                       "concern_about": "an adult"},
          "care_safeguarding", ["W859CONCERN", "W859PCTX"]),
         ("/api/v1/care/handover", {"patient_summary": "W859SUM" + inj, "current_situation": "W859SIT",
                                    "background": "W859BG", "assessment": "W859AS", "recommendation": "W859REC"},
@@ -74201,7 +74203,8 @@ def test_w859_the_care_tools_hand_what_the_person_recorded_over_as_material_and_
     h = client.post("/api/v1/care/handover", json={"patient_summary": "Mr A, 80", "current_situation": long_sit}).json()
     assert h["ai_provenance"]["material"]["read_whole"] is False, h["ai_provenance"].get("material")
     assert "ONLY PART OF WHAT YOU RECORDED WAS READ: the first 12,000 of" in h["handover"], h["handover"][-300:]
-    g = client.post("/api/v1/care/safeguarding", json={"concern": "bruising seen on a resident's arm"}).json()
+    g = client.post("/api/v1/care/safeguarding", json={"concern": "bruising seen on a resident's arm",
+                                                     "concern_about": "an adult"}).json()
     assert g["guidance"].startswith(_ca859.IMMEDIATE_DANGER_FIRST), "the emergency line is no longer first"
     assert "ONLY PART OF" not in g["guidance"]
 
@@ -80245,3 +80248,71 @@ def test_w949_p512_marking_says_what_the_screen_did_not_clear_a_clamped_duration
     needs = client.post("/api/v1/education/lesson-plan", json={"subject": "Biology", "topic": "w949 cells", "level": "KS3",
                                                                "special_needs": "two learners need large print"}).json()
     assert "do not name a pupil" in needs["lesson_plan"] and "exactly as typed" in needs["lesson_plan"]
+
+
+def test_w950_p513_the_safeguarding_form_asks_who_the_concern_is_about_and_a_childs_concern_is_not_composed(client, monkeypatch):
+    """P5.13 clause 4 and the Care page's own sentences (W950). Measured: nothing on the form or the API said whether a
+    concern was about a child, so a child's concern was composed as adult guidance; the front door said "Triage" and
+    "person-centred care plan"; the risk disclaimer named two withheld scores as computed. Driven with a capture in
+    the composer's place:
+    - a concern about a child or young person gets the emergency line, then the children's route for England as read
+      at its publisher, and NOTHING is sent to a composer;
+    - a concern about an adult is composed as before, under the adult-only line, and says who it was about;
+    - a concern that says neither is refused before anything is composed; another nation is still refused first;
+    - a composition cannot decide who a concern is about: the form's registration requires it;
+    - the page asks the question, and no page or card says triage, person-centred care plan or validated, or names a
+      withheld score as computed; the coverage row says what a child's concern gets today."""
+    import json
+    import pathlib
+    import agentic_core.api.care as _care
+    from agentic_core.api import resource_fabric as _fab
+    sent = []
+
+    async def _capture(prompt, agent, **kw):
+        sent.append(agent)
+        return "## Immediate Safety\nw950 composed", {"served_by": "w950-capture"}
+    monkeypatch.setattr(_care, "ai_text", _capture)
+    concern = "w950 a worker is worried about bruising"
+
+    child = client.post("/api/v1/care/safeguarding", json={"concern": concern, "concern_about": "a child or young person"})
+    assert child.status_code == 200, child.text[:200]
+    c = child.json()
+    assert not sent, ("a child's concern was sent to a composer", sent)
+    assert c["composed"] is False and c["concern_about"] == "a child or young person" and c["ai_provenance"] is None
+    assert c["guidance"].startswith(_care.IMMEDIATE_DANGER_FIRST), c["guidance"][:200]
+    assert _care.CHILDRENS_ROUTE in c["guidance"] and "999" in c["guidance"] and "report-child-abuse" in c["guidance"]
+    assert "w950" not in c["guidance"] and _care.ADULT_ROUTE_ONLY not in c["guidance"]
+
+    adult = client.post("/api/v1/care/safeguarding", json={"concern": concern, "concern_about": "an adult"}).json()
+    assert sent == ["care_safeguarding"] and adult["composed"] is True and adult["concern_about"] == "an adult"
+    assert adult["guidance"].startswith(_care.IMMEDIATE_DANGER_FIRST + "\n\n" + _care.ADULT_ROUTE_ONLY), adult["guidance"][:300]
+    assert _care.ADULT_ROUTE_ONLY.endswith(_care.CHILDRENS_ROUTE + "."), "the adult line no longer carries the children's route"
+
+    for neither in ("", "someone", "a pupil"):
+        r = client.post("/api/v1/care/safeguarding", json={"concern": concern, "concern_about": neither})
+        assert r.status_code == 422 and "an adult or a child or young person" in r.json()["detail"], (neither, r.text[:200])
+    nation = client.post("/api/v1/care/safeguarding", json={"concern": concern, "concern_about": "a child or young person",
+                                                            "jurisdiction": "Narnia"})
+    assert nation.status_code == 422 and "England only" in nation.json()["detail"], nation.text[:200]
+    assert sent == ["care_safeguarding"], sent
+
+    form = next(f for f in _fab._FORMS if f["id"] == "form_care_safeguarding")
+    assert "concern_about" in form["fields"] and "concern_about" in form["required"]
+    import asyncio
+    ran = asyncio.new_event_loop().run_until_complete(
+        _fab._run_real_resource_handler("form_care_safeguarding", {"concern": concern}, "objective", "general"))
+    assert ran["refused"] is True and "concern_about" in ran["detail"] and sent == ["care_safeguarding"], ran
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    hub = (root / "apps/workstation-superapp/src/pages/domains/CareHub.tsx").read_text(encoding="utf-8")
+    reg = (root / "apps/workstation-superapp/src/lib/toolRegistry.ts").read_text(encoding="utf-8")
+    sg = hub.split('endpoint="/api/v1/care/safeguarding"', 1)[1].split("]}", 1)[0]
+    assert "{ name: 'concern_about', label: 'Who is the concern about?', type: 'select'" in sg, sg[:400]
+    assert "options: ['', 'an adult', 'a child or young person']" in sg and "default: ''" in sg, sg[:400]
+    for said in ("Triage", "person-centred", "validated"):
+        assert said not in hub and said not in reg.split("{ name: 'Care'", 1)[1].split("]},", 1)[0], said
+    risk = _care.__dict__
+    assert "MUST BAPEN" not in pathlib.Path(_care.__file__).read_text(encoding="utf-8")
+    cov = {r["id"]: r for r in json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))["rows"]}
+    assert "nothing is composed" in cov["care-children-safeguarding"]["today"], cov["care-children-safeguarding"]["today"]
+    assert risk["CONCERN_ABOUT"] == ("an adult", "a child or young person")
