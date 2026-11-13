@@ -26837,8 +26837,9 @@ def test_w506_p27_the_atp_figure_is_labelled_and_its_dead_branch_says_so():
     # the figure must not be presentable as a live vital, and the qualifier must reach `efficiency` too —
     # a mean of a labelled figure and another is not a measurement either
     assert "not a live vital" in m["atp_basis"]
-    assert m["efficiency_basis"] and "atp_ratio" in m["efficiency_basis"], \
-        "metabolic_efficiency is derived from atp_ratio and does not say so"
+    #  W901 (FU-1112, S18.1) - the efficiency is now the mean of the work budget's figure and the stage ratio
+    assert m["efficiency_basis"] and "energy_ratio" in m["efficiency_basis"], \
+        "metabolic_efficiency is derived from the work budget's figure and does not say so"
     # the stale reason must be gone: the floor never binds, so naming it as the reason is the defect
     assert "never binds" in m["atp_basis"] or "floored at 0.5 of 15, so it never depletes" not in m["atp_basis"], \
         "the basis still gives the 0.5 floor as the reason the figure does not deplete"
@@ -76951,3 +76952,57 @@ def test_w900_fu1112_with_the_work_budget_on_every_energy_threshold_reads_what_i
     assert r.status_code == 200, r.text[:300]
     rpm = [a for a in (r.json().get("adjustments_made") or []) if a.get("action") == "reduce_rpm"]
     assert rpm and "work budget left (10%)" in rpm[0]["reason"], r.json().get("adjustments_made")
+
+
+def test_w901_fu1112_the_cycle_the_fund_and_the_self_report_read_the_derived_energy(client, monkeypatch):
+    """FU-1112 part 2 (W901). Three more readers held the simulated ATP figure after W900:
+    - the economy cycle called its energy term unmeasured by a constant, so its reserve raise could not be reached;
+    - the capital fund's caution on a large tranche read the simulator;
+    - the biometrics route drew the self-report page's metabolic bar from its own simulator.
+    Driven on a budget nine-tenths spent. With the budget off, the cycle adjusts nothing and says the term is a
+    simulator, and the fund cautions on the simulated figure only. With it on, the cycle conserves, raising its
+    reserve, and says what measured it, and the fund's caution names the work budget. The biometrics route carries
+    the budget's figure, and its efficiency is derived from it."""
+    import time
+    import uuid
+    from agentic_core.molecular import work_budget as _wb
+    from agentic_core.economy.metabolism import EconomicMetabolism
+    from agentic_core.api import capital_fund as _cf
+    spent = {"seconds_spent": _wb.CAPACITY_SECONDS * 0.9, "calls": 9, "window_started": time.time()}
+    monkeypatch.setattr(_wb, "_load", lambda: (dict(spent), None))
+
+    def cycle():
+        return EconomicMetabolism(f"w901-{uuid.uuid4().hex[:8]}").run_cycle(revenue=1000.0, costs=100.0,
+                                                                            reserve_rate=0.20)
+
+    #  OFF (the default): the cycle says its term is a simulator and adjusts nothing
+    monkeypatch.delenv("WORKSTATION_WORK_BUDGET", raising=False)
+    off = cycle()
+    assert off["energy_state"].startswith("not_adjusted_term_unmeasured"), off["energy_state"]
+    assert off["metabolic_energy_basis"] is None and off["reserve_rate_applied"] == 0.2, (
+        off.get("metabolic_energy_basis"), off["reserve_rate_applied"])
+    #  ...and the fund's caution reads the simulated figure, named as what it is
+    assert _cf._energy_caution({"atp_ratio": 0.9, "energy_ratio": 0.1, "energy_acts": False}, 3.0e6, 1.0e7) is None
+    _c = _cf._energy_caution({"atp_ratio": 0.2, "energy_ratio": 0.9, "energy_acts": False}, 3.0e6, 1.0e7)
+    assert _c and "simulated ATP 20%" in _c, _c
+
+    #  ON: the cycle conserves on what is left of the budget, and says what measured it
+    monkeypatch.setenv("WORKSTATION_WORK_BUDGET", "true")
+    on = cycle()
+    assert on["metabolic_energy"] == 0.1 and on["energy_state"] == "conserving (low organism energy)", (
+        on["metabolic_energy"], on["energy_state"])
+    assert on["reserve_rate_applied"] == 0.35 and "switched on" in (on["metabolic_energy_basis"] or ""), (
+        on["reserve_rate_applied"], on.get("metabolic_energy_basis"))
+    posture = _cf._organism_posture()
+    assert posture.get("energy_ratio") == 0.1 and posture.get("energy_acts") is True, posture
+    _c = _cf._energy_caution(posture, 3.0e6, 1.0e7)
+    assert _c and "work budget left 10%" in _c, _c
+    assert _cf._energy_caution(posture, 1.0e6, 1.0e7) is None, "a tranche a tenth of the fund was cautioned"
+
+    #  the self-report page's metabolic bar is derived from the budget's figure
+    b = client.get("/api/v1/biometrics/status").json()["metabolic"]
+    assert b["energy_ratio"] == 0.1 and b["energy_acts"] is True and "switched on" in b["energy_basis"], b
+    t, c = b["total_projects"], b["concept_projects"]
+    stage = round(1.0 - (c / t) if t > 0 else 1.0, 3)
+    assert b["efficiency"] == round((0.1 + stage) / 2, 3), ("the efficiency is not derived from the budget", b)
+    assert "energy_ratio" in b["efficiency_basis"], b["efficiency_basis"]

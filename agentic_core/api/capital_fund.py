@@ -281,7 +281,11 @@ def _organism_posture() -> dict:
                         f"a blend; {round(_unmeasured_weight * 100)}% of it is not measured "
                         f"({', '.join(sorted(_unmeasured))})" if _unmeasured else
                         "every term in this figure is measured")),
-                "atp_ratio": (ctx.get("metabolic") or {}).get("atp_ratio")}
+                "atp_ratio": (ctx.get("metabolic") or {}).get("atp_ratio"),
+                #  W901 (FU-1112, S18.1) - the figure derived from the work budget, and whether a threshold reads it
+                "energy_ratio": (ctx.get("metabolic") or {}).get("energy_ratio"),
+                "energy_acts": bool((ctx.get("metabolic") or {}).get("energy_acts")),
+                "energy_basis": (ctx.get("metabolic") or {}).get("energy_basis")}
     except Exception:
         return {}
 
@@ -556,6 +560,21 @@ async def allocate_capital(req: AllocateRequest, user: dict | None = Depends(get
     return _allocate_governed(req, fund, user if isinstance(user, dict) else None)
 
 
+def _energy_caution(posture: dict, amount: float, available: float) -> "str | None":
+    """§8 survival instinct (advisory, virtual WST): restraint is flagged when the organism is energy-depleted and the
+    tranche is a large fraction of the capital available BEFORE this draw. It decides nothing. W901 (FU-1112, S18.1):
+    the energy is the work budget's remaining share while the budget is switched on, and the simulated ATP while it
+    is off, and the caution names which."""
+    acts = bool(posture.get("energy_acts")) and posture.get("energy_ratio") is not None
+    energy = posture.get("energy_ratio") if acts else posture.get("atp_ratio")
+    frac = amount / available if available else 1.0
+    if isinstance(energy, (int, float)) and energy < 0.3 and frac > 0.25:
+        what = "work budget left" if acts else "simulated ATP"
+        return (f"§8 survival instinct: the organism is energy-depleted ({what} {energy:.0%}); this tranche is "
+                f"{frac:.0%} of available capital. Consider a smaller tranche or deferring until recovery.")
+    return None
+
+
 def _allocate_governed(req: "AllocateRequest", fund: dict, user: dict | None):
     import math
     from agentic_core.api import change_control as _cca
@@ -595,12 +614,7 @@ def _allocate_governed(req: "AllocateRequest", fund: dict, user: dict | None):
     # the organism is energy-depleted and the tranche is a large fraction of remaining capital. It decides
     # nothing; the decision is Change Control's.
     posture = _organism_posture()
-    atp = posture.get("atp_ratio")
-    frac = amount / fund["available"] if fund["available"] else 1.0   # of capital available BEFORE this draw
-    caution = None
-    if isinstance(atp, (int, float)) and atp < 0.3 and frac > 0.25:
-        caution = (f"§8 survival instinct: the organism is energy-depleted (ATP {atp:.0%}); this tranche is "
-                   f"{frac:.0%} of available capital. Consider a smaller tranche or deferring until recovery.")
+    caution = _energy_caution(posture, amount, fund["available"])     # W901 (FU-1112) - of capital BEFORE this draw
 
     #  THE GOVERNED PATH - the economy's own gate, with the fund as the actor and the recipient as the
     #  counterparty. It returns (held, consumed): held -> nothing may run; consumed -> an approval was spent

@@ -256,7 +256,12 @@ class EconomicMetabolism:
         # The §8→§12 survival instinct returns the moment the term can actually fall — see P2.7(4).
         metabolic_energy = self._atp_ratio()
         effective_reserve = float(reserve_rate)
-        _atp_measured = False      # W494 measured this; the qualifier lives on the organism context
+        #  W901 (FU-1112, S18.1) - MEASURED while the work budget is switched on: the term is then the budget's
+        #  remaining share (W900), seconds actually spent, so the reserve raise below can be reached. Off, it is
+        #  the simulator, as W494 measured, and the reserve is not adjusted for it
+        from agentic_core.molecular import work_budget as _wb901
+        _energy901 = _wb901.energy()
+        _atp_measured = bool(_energy901["acts"])
         if metabolic_energy is None:
             energy_state = "unavailable (the organism's metabolic term could not be read)"
         elif not _atp_measured:
@@ -497,6 +502,9 @@ class EconomicMetabolism:
             "venture_investment": ventures_alloc,
             "venture_store_note": venture_store_note,          # W472 — an unreadable portfolio is said, not silent
             "metabolic_energy": metabolic_energy,
+            #  W901 (FU-1112) - the basis the economy page reads (typed since W617): set only when the term is
+            #  measured, so the page's 'simulated, not measured' label stays true while the budget is off
+            "metabolic_energy_basis": _energy901["basis"] if _atp_measured else None,
             "capital_preserved": self.template["capital_preserved"],
             #  W672 (ledger v16 R6.8) - the flag is a property of the entity FORM and was read as a result
             "capital_preserved_basis": (

@@ -700,13 +700,23 @@ async def biometrics_status():
     else:
         neurotransmitter = "Oxytocin"
 
-    # Metabolic: ATP ratio + project stage ratio combined
+    #  W901 (FU-1112, S18.1) - the figure the self-report page shows is derived from the work budget: the share of
+    #  the window's stated capacity left. The simulator's figure stays in atp_ratio, with its basis, for the record
+    try:
+        from agentic_core.molecular import work_budget as _wb901
+        _energy901 = _wb901.energy()
+    except Exception as _exc901:            # said, never substituted
+        _energy901 = {"ratio": None, "acts": False,
+                      "basis": f"the work budget could not be read ({_exc901.__class__.__name__})"}
+    _e901 = _energy901["ratio"] if _energy901.get("ratio") is not None else atp_ratio
+
+    # Metabolic: the energy figure + project stage ratio combined
     total_projects = len(projects)
     concept_count = sum(1 for p in projects if p.stage == "concept")
     stage_efficiency = round(
         1.0 - (concept_count / total_projects) if total_projects > 0 else 1.0, 3
     )
-    metabolic_efficiency = round((atp_ratio + stage_efficiency) / 2, 3)
+    metabolic_efficiency = round((_e901 + stage_efficiency) / 2, 3)
 
     return {
         "circadian":      {"cycle": _circadian_cycle()},
@@ -744,8 +754,16 @@ async def biometrics_status():
         "metabolic":      {"efficiency": metabolic_efficiency, "atp_ratio": atp_ratio,
                            "atp_measured": atp_basis.startswith("measured"),
                            "atp_basis": atp_basis,
-                           "efficiency_basis": ("the mean of atp_ratio and stage_efficiency, so it "
-                                                "inherits atp_ratio's basis and is not a measured vital"),
+                           "efficiency_basis": (("the mean of energy_ratio (the work budget's remaining share, "
+                                                 "derived from the seconds spent) and stage_efficiency")
+                                                if _energy901.get("ratio") is not None else
+                                                ("the mean of atp_ratio and stage_efficiency, because the work "
+                                                 "budget could not be read, so it inherits atp_ratio's basis and "
+                                                 "is not a measured vital")),
+                           #  W901 (FU-1112, S18.1) - the figure derived from the work budget, with its basis
+                           "energy_ratio": _energy901.get("ratio"),
+                           "energy_acts": bool(_energy901.get("acts")),
+                           "energy_basis": _energy901.get("basis"),
                            "concept_projects": concept_count, "total_projects": total_projects},
         "nervous":        {"arousal_state": nervous_status["arousal_state"], "signal_rate": nervous_status["signal_rate_per_second"]},
     }

@@ -2253,7 +2253,11 @@ async def board_pack(vsb_id: str = "workstation-idbo", entity_type: str | None =
                     "composite_health_measured_only": ctx.get("composite_health_measured_only"),
                     "composite_health_measured_weight": ctx.get("composite_health_measured_weight"),
                     "composite_health_basis": ctx.get("composite_health_basis"),
-                    "atp_ratio": (ctx.get("metabolic") or {}).get("atp_ratio")}
+                    "atp_ratio": (ctx.get("metabolic") or {}).get("atp_ratio"),
+                    #  W901 (FU-1112, S18.1) - the figure derived from the work budget, for the economy page
+                    "energy_ratio": (ctx.get("metabolic") or {}).get("energy_ratio"),
+                    "energy_acts": bool((ctx.get("metabolic") or {}).get("energy_acts")),
+                    "energy_basis": (ctx.get("metabolic") or {}).get("energy_basis")}
     except Exception:
         organism = {}
 
