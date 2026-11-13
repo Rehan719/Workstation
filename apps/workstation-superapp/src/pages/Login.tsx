@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
 import { KeyRound, Loader2, LogIn, ShieldCheck, UserPlus } from 'lucide-react';
-import { clearToken, setToken, whoami, WhoAmI } from '../lib/auth';
+import { clearToken, setToken, whoami, WhoAmI } from '../lib/auth';
+import { apiJson } from '../lib/api';   // W927 - a read is used only on a 2xx
 
 // §14 (W296) — the FRONT DOOR: the multi-user journey can begin. Honest at every edge:
 //  - auth-off single-user mode says so (no fake login theatre);
@@ -24,7 +25,7 @@ export const Login: React.FC = () => {
 
   useEffect(() => {
     whoami().then(setWho);
-    fetch('/api/v1/auth/config').then(r => r.json()).then(setCfg).catch(() => setCfg(null));
+    apiJson('/api/v1/auth/config').then(setCfg).catch(() => setCfg(null));
   }, []);
 
   const signup = async () => {

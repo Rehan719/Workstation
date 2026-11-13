@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { provenanceBadge, qmsChip, provenanceMapBadge, provenanceMapFromTrace, complianceChip, immuneReading } from '../../lib/api';
+import { provenanceBadge, qmsChip, provenanceMapBadge, provenanceMapFromTrace, complianceChip, immuneReading, apiJson } from '../../lib/api';
 import { useNavigate } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
 import {
@@ -284,14 +284,14 @@ export const ResourceFabric: React.FC = () => {
     const qs = new URLSearchParams();
     if (filterClass) qs.set('resource_class', filterClass);
     if (filterArea) qs.set('usable_in', filterArea);
-    fetch(`/api/v1/resources?${qs.toString()}`).then(r => r.json()).then(d => {
+    apiJson(`/api/v1/resources?${qs.toString()}`).then(d => {
       setResources(d.resources ?? []);
       setUsageAreas(d.usage_areas ?? []);
       setClasses(d.classes ?? {});
     }).catch(() => {});
   };
   const loadCompositions = () =>
-    fetch('/api/v1/resources/compositions').then(r => r.json())
+    apiJson('/api/v1/resources/compositions')
       .then(d => setCompositions(d.compositions ?? [])).catch(() => {});
 
   useEffect(() => { load(); }, [filterArea, filterClass]);
@@ -396,7 +396,7 @@ export const ResourceFabric: React.FC = () => {
   };
 
   const loadRunsHistory = () =>
-    fetch('/api/v1/resources/compositions/runs?limit=10').then(r => r.json())
+    apiJson('/api/v1/resources/compositions/runs?limit=10')
       .then(d => {
         setHistRuns(d.runs ?? []);
         setHistBasis({ incomplete: !!d.listing_is_incomplete, basis: d.listing_basis });

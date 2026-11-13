@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Card, Badge, Button } from '@workstation/ui';
 import { useNavigate } from 'react-router-dom';
 import { Shield, Sparkles, FileText, Send, History, CheckCircle2, AlertTriangle, Search, Activity, Zap, TrendingUp, Clock, Terminal } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { apiJson } from '../../lib/api';   // W927 - a read is used only on a 2xx
 
 export const ConstitutionalUI: React.FC = () => {
   const navigate = useNavigate();
@@ -32,9 +33,8 @@ export const ConstitutionalUI: React.FC = () => {
     // archive, and the archived copy is the inherited Jules-era document, excluded as dated. The
     // endpoint now reports canon_present:false with a basis and names what governs instead; the page
     // shows that rather than presenting an invented article as the constitution.
-    fetch('/api/v1/gaas/ueg/verify').then(r => r.json()).then(setIntegrity).catch(() => setIntegrity(null));
-    fetch('/api/v154/constitution/articles')
-      .then(res => res.json())
+    apiJson('/api/v1/gaas/ueg/verify').then(setIntegrity).catch(() => setIntegrity(null));
+    apiJson('/api/v154/constitution/articles')
       .then(data => {
         // the endpoint used to return a bare array; it now returns an object carrying the basis
         if (Array.isArray(data)) { setArticles(data); setCanon(null); return; }
@@ -54,7 +54,7 @@ export const ConstitutionalUI: React.FC = () => {
     // W491 (sweep S10.14, C10) — the badge counted these 40 fetched rows and read as the trail's
     // total, freezing at 40 however large the chain grew (the same page showed 177+ elsewhere). The
     // response already carries summary.total_events and this threw it away.
-    fetch('/api/v1/gaas/ueg/events?limit=40').then(r => r.json())
+    apiJson('/api/v1/gaas/ueg/events?limit=40')
       .then(d => {
         setUeg(Array.isArray(d?.events) ? [...d.events].reverse() : []);
         setUegTotal(typeof d?.summary?.total_events === 'number' ? d.summary.total_events : null);

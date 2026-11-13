@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Boxes, Loader2, Activity, ChevronRight } from 'lucide-react';
+import { apiJson } from '../../lib/api';   // W927 - a read is used only on a 2xx
 
 // W481 (FU-122, sweep S8.1) — the transformation cascade writes a PROJECTION (arithmetic over two live
 // readings), never a simulation; records written before W481 carry the old `simulations` shape and its
@@ -51,8 +52,7 @@ export const DigitalTwins: React.FC = () => {
   const [answer, setAnswer] = useState<{ kind: 'scenario' | 'optimisation'; title: string; text: string;
                                           basis?: string } | null>(null);
 
-  const loadModels = () => fetch('/api/v1/twin/models')
-    .then(r => r.json())
+  const loadModels = () => apiJson('/api/v1/twin/models')
     .then(d => setModels(d.models ?? (Array.isArray(d) ? d : [])))
     .catch(() => {});
 

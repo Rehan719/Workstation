@@ -486,7 +486,7 @@ export const NativeAI: React.FC = () => {
   // been dropping its oldest reads as complete. This heading is where a reader meets the number.
   const [cascadeBasis, setCascadeBasis] = useState<{ truncated?: boolean; total_basis?: string } | null>(null);
   const loadCascades = () =>
-    fetch('/api/v1/resources/swarm').then(r => r.json()).then(d => {
+    apiJson('/api/v1/resources/swarm').then(d => {
       setCascades(d.cascades || []);
       setCascadeBasis({ truncated: d.truncated, total_basis: d.total_basis });
     }).catch(() => {});
@@ -571,16 +571,16 @@ export const NativeAI: React.FC = () => {
   };
 
   useEffect(() => {
-    fetch('/api/v1/native-ai/status').then(r => r.json()).then(setStatus)
+    apiJson('/api/v1/native-ai/status').then(setStatus)
       .catch(() => setError('Failed to load fabric status'))
       .finally(() => setLoading(false));
-    fetch('/api/v1/native-ai/capabilities').then(r => r.json()).then(d => setCapabilities(d.capabilities || [])).catch(() => {});
-    fetch('/api/v1/native-ai/homeostasis').then(r => r.json()).then(setHomeo).catch(() => {});
-    fetch('/api/v1/native-ai/selfcheck').then(r => r.json()).then(setSelfcheck).catch(() => {});
+    apiJson('/api/v1/native-ai/capabilities').then(d => setCapabilities(d.capabilities || [])).catch(() => {});
+    apiJson('/api/v1/native-ai/homeostasis').then(setHomeo).catch(() => {});
+    apiJson('/api/v1/native-ai/selfcheck').then(setSelfcheck).catch(() => {});
     apiJson<EvidenceLevels>('/api/v1/native-ai/evidence-levels').then(setEvLevels).catch(e => setEvErr(errorMessage(e)));
-    fetch('/api/v1/native-ai/resources').then(r => r.json()).then(setFabricRes).catch(() => {});
-    fetch('/api/v1/native-ai/inventory').then(r => r.json()).then(setInventory).catch(() => {});
-    fetch('/api/v1/native-ai/models').then(r => r.json())
+    apiJson('/api/v1/native-ai/resources').then(setFabricRes).catch(() => {});
+    apiJson('/api/v1/native-ai/inventory').then(setInventory).catch(() => {});
+    apiJson('/api/v1/native-ai/models')
       .then(d => setModelTiers(d.tiers || [])).catch(() => {});
     loadCascades();
     loadLifecycle();

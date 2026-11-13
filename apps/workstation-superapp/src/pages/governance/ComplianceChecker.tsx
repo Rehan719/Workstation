@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
-import { complianceChip } from '../../lib/api';
+import { complianceChip, apiJson } from '../../lib/api';
 import { ShieldCheck, Loader2, AlertCircle, CheckCircle2, XCircle, AlertTriangle, Scale, MinusCircle } from 'lucide-react';
 
 interface Verdict { framework: string; status: string; reason: string; coverage?: string; escalate?: string[] }
@@ -41,7 +41,7 @@ export const ComplianceChecker: React.FC = () => {
   const [error, setError] = useState('');
   const [result, setResult] = useState<Result | null>(null);
 
-  useEffect(() => { fetch('/api/v1/compliance/frameworks').then(r => r.json()).then(d => setFrameworks(d.frameworks ?? [])).catch(() => {}); }, []);
+  useEffect(() => { apiJson('/api/v1/compliance/frameworks').then(d => setFrameworks(d.frameworks ?? [])).catch(() => {}); }, []);
 
   const check = async () => {
     if (!subject.trim()) return;

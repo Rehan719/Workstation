@@ -119,8 +119,8 @@ export const TransformationDashboard: React.FC = () => {
   const [followupsAt, setFollowupsAt] = useState('');       // when the live plan was last read
   const [followupsErr, setFollowupsErr] = useState('');     // a refresh that failed keeps the last good plan on screen
 
-  const load = () => fetch('/api/v1/transformation').then(r => r.json()).then(setPic).catch(() => setError('Failed to load'));
-  const loadRuns = () => fetch('/api/v1/transformation/orchestrate/runs').then(r => r.json()).then(d => setRuns(d.runs ?? [])).catch(() => {});
+  const load = () => apiJson('/api/v1/transformation').then(setPic).catch(() => setError('Failed to load'));
+  const loadRuns = () => apiJson('/api/v1/transformation/orchestrate/runs').then(d => setRuns(d.runs ?? [])).catch(() => {});
   // apiJson, so a 500 or a 404 from an older backend is named as such — never 'backend unreachable'
   const loadFollowups = () => apiJson<Followups>('/api/v1/plan/followups')
     .then(d => {

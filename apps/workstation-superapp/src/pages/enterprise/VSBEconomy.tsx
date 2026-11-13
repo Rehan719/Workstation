@@ -8,7 +8,7 @@ import {
 import { ServiceContracts } from './ServiceContracts';
 import { CharityDirectives } from './CharityDirectives';
 import { VenturePortfolioPanel, TransferPanel } from './EconomyOperations';
-import { complianceChip, fundingLabel } from '../../lib/api';
+import { complianceChip, fundingLabel, apiJson } from '../../lib/api';
 import { domainLabel } from '../../lib/taxonomy';   // W735 (FU-831)
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -145,10 +145,10 @@ export const VSBEconomy: React.FC = () => {
   // "the request failed" is indistinguishable from one that means "there is no data".
   const [loadErr, setLoadErr] = useState('');
   const loadLiving = () =>
-    fetch('/api/v1/economy/living-vsbs').then(r => r.json()).then(setLiving).catch(() => setLoadErr('Could not load the living entities — showing nothing rather than stale figures.'));
+    apiJson('/api/v1/economy/living-vsbs').then(setLiving).catch(() => setLoadErr('Could not load the living entities — showing nothing rather than stale figures.'));
 
   useEffect(() => {
-    fetch('/api/v1/economy/entity-types').then(r => r.json()).then(d => setTypes(d.types ?? [])).catch(() => {});
+    apiJson('/api/v1/economy/entity-types').then(d => setTypes(d.types ?? [])).catch(() => {});
     loadOwnerPay();
     loadBoardPack();
     loadLiving();

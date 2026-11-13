@@ -78548,3 +78548,49 @@ def test_w926_fu399_the_board_page_is_guarded_by_a_render_and_a_refused_read_is_
     done = client.post(f"/api/v1/board/ratifications/{sub['cca_id']}", json={"decision": "refuse", "notes": "w926 guard",
                                                                               "on_owner_direction": True})
     assert done.status_code == 200 and set(fx["ratified"]) <= set(done.json()), done.text[:300]
+
+
+def test_w927_no_page_uses_an_answers_body_before_checking_its_status():
+    """W927. lib/api.ts's apiJson is the class-kill for HTTP-status blindness: it throws on any non-2xx with the
+    server's own detail, so a success path is entered only on a 2xx. Thirty-eight reads on fifteen pages still called
+    fetch(...).then(r => r.json()) and used the body whatever its status, so a refusal's {detail} was read as the
+    answer. W926 showed what that does: a failed read of the Chief's model rendered as "A role, not a modelled twin".
+    Each now goes through apiJson, and a refusal reaches the page's own error path. Two catches on the Genesis page
+    said "backend unreachable", which a refusal is not; one followed a decision already recorded and said "nothing
+    changed". Both now say what happened, with the server's reason. Held here, on every page:
+    - no read uses a body before its status is checked;
+    - every file that calls apiJson imports it;
+    - the helper still throws on a non-2xx;
+    - the calls that end in a catch saying nothing are counted, and never more than this round counted (the open row)."""
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = root / "apps/workstation-superapp/src"
+    #  an argument may be a string or a template literal holding parentheses (`?${qs.toString()}`): the first
+    #  pattern missed exactly that read, which this round converts too
+    unchecked = re.compile(r"fetch\((`[^`]*`|'[^']*'|\"[^\"]*\"|[^()]*?)\)(\s*)\.then\(\s*(\w+)\s*=>\s*\3\.json\(\)\s*\)")
+    found, silent = [], 0
+    files = [f for f in sorted(list(src.rglob("*.tsx")) + list(src.rglob("*.ts")))
+             if not f.name.endswith((".test.tsx", ".test.ts"))]
+    assert len(files) > 100, ("the scan found too few source files to be looking in the right place", len(files))
+    for f in files:
+        t = f.read_text(encoding="utf-8")
+        found += [(f.relative_to(src).as_posix(), m.group(1)) for m in unchecked.finditer(t)]
+        if f.name != "api.ts" and re.search(r"\bapiJson\s*[<(]", t):
+            assert re.search(r"import\s*\{[^}]*\bapiJson\b[^}]*\}\s*from\s*'[./]+lib/api'", t), (
+                "a file calls apiJson without importing it", f.name)
+        silent += len(re.findall(r"\.catch\(\(\)\s*=>\s*\{\s*\}\)", t))
+    assert found == [], ("a read uses an answer's body before its status is checked", found)
+
+    #  the helper this rests on still refuses a non-2xx, with the server's own detail
+    api = (src / "lib/api.ts").read_text(encoding="utf-8")
+    assert "  if (!res.ok) {" in api and "throw new ApiError(res.status, detail.slice(0, 300));" in api
+
+    #  the Genesis page says what happened when a gate read fails, never "unreachable" for a refusal
+    g = (src / "pages/synthesis/GenesisJourney.tsx").read_text(encoding="utf-8")
+    assert "setError(`Could not load review gates — ${errorMessage(e)}`)" in g
+    assert "setError(`The decision was recorded, but the gates could not be read again — ${errorMessage(e)}`)" in g
+    assert "catch { setError('Could not load review gates — backend unreachable.'); }" not in g
+
+    #  a call that ends in a catch saying nothing: counted, and never more than when this round counted them
+    assert silent <= 41, ("more calls end in a catch that says nothing than the open row counted", silent)

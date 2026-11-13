@@ -23662,6 +23662,49 @@
       "note": "",
       "slot_source": "clause 6 of P5.15 itself",
       "tier": 2
+    },
+    {
+      "id": "FU-1179",
+      "title": "Thirty-eight reads on fifteen pages use an answer's body whatever its HTTP status",
+      "why": "lib/api.ts's apiJson was written as the class-kill for HTTP-status blindness, yet 38 reads on 15 pages still called fetch(...).then(r => r.json()) and used the body whatever the status, so a refusal's {detail} was read as the answer. W926 found what that does on the Board page: a failed read of the Chief's model rendered as 'A role, not a modelled twin', and a failed status read blanked the page.",
+      "source": "W927 (measured after W926 found the class on the Board page)",
+      "found": "2026-11-13",
+      "files": [
+        "apps/workstation-superapp/src/lib/api.ts",
+        "apps/workstation-superapp/src/pages/developers/NativeAI.tsx",
+        "apps/workstation-superapp/src/pages/OperationalExcellence.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W927",
+      "note": "",
+      "slot_source": "P5.1's measured tenant journey: what a page shows is what the server said",
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it. Each of the 38 reads goes through apiJson, so a refusal reaches the page's own error path and is never read as data; apiJson is imported where it was not. Two catches on the Genesis page said 'backend unreachable', which a refusal is not. One of them followed a decision already recorded and said 'nothing changed'. Both now say what happened, with the server's reason. test_w927 holds every page free of an unchecked read, every caller importing the helper, and the helper refusing a non-2xx."
+    },
+    {
+      "id": "FU-1180",
+      "title": "Forty-one calls in twenty-four files end in a catch that says nothing",
+      "why": "Measured at W927, once every read checks its status: 41 promise chains end in .catch(() => {}). Most are reads, so a refusal or an unreachable server leaves the page showing nothing, or still loading, with no sentence. A few are a fullscreen toggle or a fire-and-forget clear, where nothing is lost. Each is to be classified: an optional read whose absence the page states, a failure said with the server's reason (errorMessage), or a call where silence is right. A count to classify, not a verdict. test_w927 keeps the count from growing.",
+      "source": "W927 (measured once every read checks its status)",
+      "found": "2026-11-13",
+      "files": [
+        "apps/workstation-superapp/src/lib/api.ts",
+        "apps/workstation-superapp/src/pages/developers/NativeAI.tsx",
+        "apps/workstation-superapp/src/pages/CognitionIntegration.tsx"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.1's measured tenant journey: what a page shows is what the server said",
+      "tier": 2
     }
   ],
   "routes": [

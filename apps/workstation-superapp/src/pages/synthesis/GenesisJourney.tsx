@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { GenerationPrice } from '../../components/GenerationPrice';
-import { qmsChip, provenanceMapBadge, complianceChip, layerTitle, immuneReading } from '../../lib/api';
+import { qmsChip, provenanceMapBadge, complianceChip, layerTitle, immuneReading, apiJson, errorMessage } from '../../lib/api';
 import { REALMS as CANON_REALMS, DOMAINS as CANON_DOMAINS, PRODUCTS, PRODUCT_LABELS } from '../../lib/taxonomy';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { saveOutput } from '../../lib/outputHistory';
@@ -259,7 +259,7 @@ export const GenesisJourney: React.FC = () => {
   const [establishOnComplete, setEstablishOnComplete] = useState(false);   // §5 — one continuous workflow → living enterprise
 
   useEffect(() => {
-    fetch('/api/v1/economy/entity-types').then(r => r.json())
+    apiJson('/api/v1/economy/entity-types')
       .then(d => { setEntityTypes(d.types ?? []); if (d.default) setEntityType(d.default); })
       .catch(() => {});
   }, []);
@@ -513,7 +513,7 @@ export const GenesisJourney: React.FC = () => {
   const openGates = async () => {
     setGatesOpen(true);
     if (!vsb) return;
-    try { setGates(await fetch(`/api/v1/vsb/${vsb.vsb_id}/review-gates`).then(r => r.json())); } catch { setError('Could not load review gates — backend unreachable.'); }
+    try { setGates(await apiJson(`/api/v1/vsb/${vsb.vsb_id}/review-gates`)); } catch (e) { setError(`Could not load review gates — ${errorMessage(e)}`); }
   };
   const toggleGate = async (stageId: string) => {
     if (!vsb || !gates) return;
@@ -535,7 +535,9 @@ export const GenesisJourney: React.FC = () => {
       if (!res.ok) { setError(`Gate ${decision} failed (HTTP ${res.status}).`); return; }
       const dj = await res.json();
       setEntityStatus({ status: dj.entity_status, basis: dj.entity_status_basis });
-      setGates(await fetch(`/api/v1/vsb/${vsb.vsb_id}/review-gates`).then(r => r.json()));
+      //  W927 - the decision is recorded by now: a failed re-read is said as that, never as "nothing changed"
+      try { setGates(await apiJson(`/api/v1/vsb/${vsb.vsb_id}/review-gates`)); }
+      catch (e) { setError(`The decision was recorded, but the gates could not be read again — ${errorMessage(e)}`); }
     } catch { setError('Action failed — backend unreachable; nothing changed.'); }   // W344
   };
 

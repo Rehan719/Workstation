@@ -76,14 +76,14 @@ export const Deliverables: React.FC = () => {
   // where a reader meets the number, so it is said here rather than only in the payload.
   const [listBasis, setListBasis] = useState<{ truncated?: boolean; total_basis?: string } | null>(null);
   const loadList = () =>
-    fetch('/api/v1/deliverables').then(r => r.json()).then(d => {
+    apiJson('/api/v1/deliverables').then(d => {
       setList(d.deliverables || []);
       setListBasis({ truncated: d.truncated, total_basis: d.total_basis });
     }).catch(() => {});
 
   useEffect(() => {
-    fetch('/api/v1/deliverables/types').then(r => r.json()).then(d => setTypes(d.types || [])).catch(() => setError('Failed to load types'));
-    fetch('/api/v1/deliverables/output-formats').then(r => r.json())
+    apiJson('/api/v1/deliverables/types').then(d => setTypes(d.types || [])).catch(() => setError('Failed to load types'));
+    apiJson('/api/v1/deliverables/output-formats')
       .then(d => { if (Array.isArray(d.live) && d.live.length) setFormats(d.live.map((f: any) => ({ id: f.id, label: f.label, basis: typeof f.basis === 'string' ? f.basis : undefined }))); })
       .catch(() => {});
     loadList().finally(() => setLoading(false));

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
-import { provenanceMapBadge } from '../../lib/api';
+import { provenanceMapBadge, apiJson } from '../../lib/api';
 import {
   Dna, Loader2, AlertCircle, Crown, Briefcase, Award, GitBranch,
   Wrench, Sparkles, Rocket, Bug, ShieldCheck, Activity,
@@ -69,12 +69,10 @@ export const SovereignEvolution: React.FC = () => {
   const [roadmap, setRoadmap] = useState<Roadmap | null>(null);
 
   useEffect(() => {
-    fetch('/api/v1/sovereign-evolution/roadmap')
-      .then(r => r.json())
+    apiJson('/api/v1/sovereign-evolution/roadmap')
       .then(d => { if (d && d.ceo_directives) setRoadmap(d); })
       .catch(() => {});
-    fetch('/api/v1/heartbeat/status')
-      .then(r => r.json())
+    apiJson('/api/v1/heartbeat/status')
       .then(h => {
         setAutoEvolve(typeof h?.auto_evolve === 'boolean' ? h.auto_evolve : null);
         setBeating(typeof h?.running === 'boolean' ? h.running : null);

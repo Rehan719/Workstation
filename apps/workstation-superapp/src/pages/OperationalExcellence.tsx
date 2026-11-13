@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { provenanceBadge } from '../lib/api';
+import { provenanceBadge, apiJson } from '../lib/api';
 import { Card } from '@workstation/ui';
 import { Gauge, TrendingUp, Cpu, CheckCircle2, Loader2 } from 'lucide-react';
 
@@ -66,11 +66,11 @@ export const OperationalExcellence: React.FC = () => {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/v1/operations/summary').then(r => r.json()),
-      fetch('/api/v1/operations/rankings').then(r => r.json()),
-      fetch('/api/v1/operations/outcomes?limit=40').then(r => r.json()),
-      fetch('/api/v1/operations/model-health').then(r => r.json()),
-      fetch('/api/v1/operations/failures?limit=20').then(r => r.json()),
+      apiJson('/api/v1/operations/summary'),
+      apiJson('/api/v1/operations/rankings'),
+      apiJson('/api/v1/operations/outcomes?limit=40'),
+      apiJson('/api/v1/operations/model-health'),
+      apiJson('/api/v1/operations/failures?limit=20'),
     ]).then(([s, r, o, m, f]) => {
       setSummary(s); setRankings(r.rankings || []); setOutcomes(o.outcomes || []); setModels(m.models || []);
       setRankingsBasis(typeof r.basis === 'string' ? r.basis : 'What this ranking ranks was not stated by the server.');

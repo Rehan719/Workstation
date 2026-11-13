@@ -32,9 +32,9 @@ export const CognitionIntegration: React.FC = () => {
   const [solveRes, setSolveRes] = useState<any>(null);
 
   useEffect(() => {
-    fetch('/api/v1/cognition/wiring').then(r => r.json()).then(setWiring).catch(() => {});
-    fetch('/api/v1/cognition/knowledge').then(r => r.json()).then(setKnowledge).catch(() => {});
-    fetch('/api/v1/intelligence/cognitive-engines').then(r => r.json()).then(d => setEngineCat(d.engines || [])).catch(() => {});
+    apiJson('/api/v1/cognition/wiring').then(setWiring).catch(() => {});
+    apiJson('/api/v1/cognition/knowledge').then(setKnowledge).catch(() => {});
+    apiJson('/api/v1/intelligence/cognitive-engines').then(d => setEngineCat(d.engines || [])).catch(() => {});
   }, []);
 
   const toggleEngine = (id: string) =>
