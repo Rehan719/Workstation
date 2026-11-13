@@ -77,6 +77,32 @@ def _bound_band(complete: bool, band: Optional[str], top: str) -> Optional[str]:
 
 # ─────────────────────────────────── NEWS2 (RCP 2017) ───────────────────────────────────
 
+#  W951 (P5.13 clause 8) - THE NAMES NEWS2 READS, ONE TABLE: each observation's accepted names in the order they are
+#  tried. A key that carried a value and is not the one read for its observation is named back in keys_not_read.
+_NEWS2_KEYS: Dict[str, Tuple[str, ...]] = {
+    "resp_rate": ("resp_rate", "rr", "respiratory_rate", "respirations", "resp"),
+    "spo2_scale": ("spo2_scale", "scale"),
+    "oxygen": ("oxygen", "on_oxygen", "supplemental_o2", "supplemental_oxygen", "o2", "air_or_oxygen"),
+    "spo2": ("spo2", "sats", "oxygen_saturation", "saturation", "sao2"),
+    "systolic_bp": ("systolic_bp", "sbp", "bp_systolic", "systolic", "blood_pressure", "bp"),
+    "pulse": ("pulse", "hr", "heart_rate", "pulse_rate"),
+    "consciousness": ("consciousness", "acvpu", "avpu", "alertness", "conscious_level"),
+    "temp": ("temp", "temperature", "temp_c", "temperature_c"),
+}
+
+
+def _news2_not_read(obs: Dict[str, Any]) -> List[str]:
+    """Each key that carried a value and that NEWS2 did not read, as the caller sent it."""
+    norm = lambda k: str(k).strip().lower().replace(" ", "_").replace("-", "_")
+    given = {norm(k): k for k, v in (obs or {}).items() if str(v).strip() != ""}
+    read = set()
+    for names in _NEWS2_KEYS.values():
+        hit = next((n for n in names if n in given), None)
+        if hit:
+            read.add(hit)
+    return sorted(str(given[k]) for k in given if k not in read)
+
+
 def score_news2(obs: Dict[str, Any]) -> Dict[str, Any]:
     """National Early Warning Score 2 (Royal College of Physicians, 2017). Scale 1 SpO2 unless
     `spo2_scale: 2` (hypercapnic respiratory failure, prescribed target 88–92%)."""
@@ -87,21 +113,21 @@ def score_news2(obs: Dict[str, Any]) -> Dict[str, Any]:
     def add(name: str, value: Any, points: Optional[int], note: str = "") -> None:
         comp[name] = {"value": value, "points": points, "note": note}
 
-    _, rr_raw = _first(obs, "resp_rate", "rr", "respiratory_rate", "respirations", "resp")
+    _, rr_raw = _first(obs, *_NEWS2_KEYS["resp_rate"])
     rr = _num(rr_raw, 0, 80, "respiratory rate", w)
     if rr is None:
         missing.append("resp_rate")
     else:
         add("respiratory_rate", rr, 3 if rr <= 8 else 1 if rr <= 11 else 0 if rr <= 20 else 2 if rr <= 24 else 3, "/min")
 
-    _, scale_raw = _first(obs, "spo2_scale", "scale")
+    _, scale_raw = _first(obs, *_NEWS2_KEYS["spo2_scale"])
     scale_s = str(scale_raw or "").strip().lower()
     scale: Optional[int] = 2 if scale_s in ("2", "scale 2", "scale2") else 1 if scale_s in ("", "1", "scale 1", "scale1") else None
     if scale is None:
         w.append(f"spo2_scale: {scale_raw!r} is not 1 or 2 — SpO2 cannot be scored")
-    _, o2_raw = _first(obs, "oxygen", "on_oxygen", "supplemental_o2", "supplemental_oxygen", "o2", "air_or_oxygen")
+    _, o2_raw = _first(obs, *_NEWS2_KEYS["oxygen"])
     on_o2 = _yes(o2_raw)
-    _, spo2_raw = _first(obs, "spo2", "sats", "oxygen_saturation", "saturation", "sao2")
+    _, spo2_raw = _first(obs, *_NEWS2_KEYS["spo2"])
     spo2 = _num(spo2_raw, 50, 100, "SpO2", w)
     if spo2 is None:
         missing.append("spo2")
@@ -127,21 +153,21 @@ def score_news2(obs: Dict[str, Any]) -> Dict[str, Any]:
     else:
         add("air_or_oxygen", "oxygen" if on_o2 else "air", 2 if on_o2 else 0)
 
-    _, sbp_raw = _first(obs, "systolic_bp", "sbp", "bp_systolic", "systolic", "blood_pressure", "bp")
+    _, sbp_raw = _first(obs, *_NEWS2_KEYS["systolic_bp"])
     sbp = _num(sbp_raw, 40, 300, "systolic BP", w)
     if sbp is None:
         missing.append("systolic_bp")
     else:
         add("systolic_bp", sbp, 3 if sbp <= 90 else 2 if sbp <= 100 else 1 if sbp <= 110 else 0 if sbp <= 219 else 3, "mmHg")
 
-    _, hr_raw = _first(obs, "pulse", "hr", "heart_rate", "pulse_rate")
+    _, hr_raw = _first(obs, *_NEWS2_KEYS["pulse"])
     hr = _num(hr_raw, 20, 250, "pulse", w)
     if hr is None:
         missing.append("pulse")
     else:
         add("pulse", hr, 3 if hr <= 40 else 1 if hr <= 50 else 0 if hr <= 90 else 1 if hr <= 110 else 2 if hr <= 130 else 3, "/min")
 
-    _, c_raw = _first(obs, "consciousness", "acvpu", "avpu", "alertness", "conscious_level")
+    _, c_raw = _first(obs, *_NEWS2_KEYS["consciousness"])
     if c_raw is None:
         missing.append("consciousness (ACVPU)")
     else:
@@ -154,7 +180,7 @@ def score_news2(obs: Dict[str, Any]) -> Dict[str, Any]:
             w.append(f"consciousness: {c_raw!r} is not an ACVPU value (alert / confusion / voice / pain / unresponsive)")
             missing.append("consciousness (ACVPU)")
 
-    _, t_raw = _first(obs, "temp", "temperature", "temp_c", "temperature_c")
+    _, t_raw = _first(obs, *_NEWS2_KEYS["temp"])
     temp = _num(t_raw, 25, 45, "temperature", w)
     if temp is None:
         missing.append("temperature")
@@ -188,6 +214,7 @@ def score_news2(obs: Dict[str, Any]) -> Dict[str, Any]:
         "tool": "news2", "table": "NEWS2 — Royal College of Physicians, 2017", "spo2_scale": scale,
         "components": comp, "total": total, "band": band, "response": response,
         "single_parameter_3": any3, "complete": complete, "missing": missing, "warnings": w,
+        "keys_not_read": _news2_not_read(obs),
         "note": (None if complete else "score computed from the observations given — INCOMPLETE: the total is a lower bound until the missing observations are recorded"),
         "basis": DISCLAIMER,
     }

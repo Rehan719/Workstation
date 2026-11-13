@@ -80316,3 +80316,78 @@ def test_w950_p513_the_safeguarding_form_asks_who_the_concern_is_about_and_a_chi
     cov = {r["id"]: r for r in json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))["rows"]}
     assert "nothing is composed" in cov["care-children-safeguarding"]["today"], cov["care-children-safeguarding"]["today"]
     assert risk["CONCERN_ABOUT"] == ("an adult", "a child or young person")
+
+
+def test_w951_p513_care_texts_say_no_professional_reviewed_them_and_news2_names_what_it_did_not_read(client, monkeypatch):
+    """P5.13 clauses 6, 8 and 11 (W951). Measured: the risk and safeguarding texts did not say, in themselves, that no
+    professional had reviewed them; NEWS2 dropped any key it did not read without a word; and nothing held that the
+    Care tools store nothing before sign-in. Driven with a capture in the composer's place:
+    - the risk text ends with the sentence that no professional has reviewed it, and the adult safeguarding text
+      carries it after its two fixed lines and before what was composed, which stays last (W676);
+    - NEWS2 names back a key it does not use and a second name for an observation it read under its first; an empty
+      key is a missing observation, not a key not read; every name NEWS2 reads is in its one table;
+    - every Care tool is driven on the native floor with text no store could otherwise hold: the observing seam holds
+      none of it, and a child's concern, which is not composed, reaches no store. What the composer path keeps - the
+      interaction log and the AI memory store hold the rest - is registered as a row on P5.13, since the guard
+      clause 11 asks for fails there for every domain tool."""
+    import inspect
+    import agentic_core.api.care as _care
+    from agentic_core.care import scoring as _sc
+    from agentic_core.config import data_path
+
+    async def _capture(prompt, agent, **kw):
+        return "## Section\nw951 composed", {"served_by": "w951-capture"}
+    monkeypatch.setattr(_care, "ai_text", _capture)
+
+    obs = {"resp_rate": "18", "RR": "30", "spo2": "97", "oxygen": "air", "systolic_bp": "120", "pulse": "70",
+           "consciousness": "alert", "temp": "37.0", "mood": "anxious", "weight_kg": "70", "pulse_rate": ""}
+    direct = _sc.compute_score("news2", obs)
+    assert direct["keys_not_read"] == ["RR", "mood", "weight_kg"], direct["keys_not_read"]
+    assert direct["total"] is not None and direct["complete"] is True
+    whole = _sc.compute_score("news2", {"resp_rate": "18", "spo2": "97", "oxygen": "air", "systolic_bp": "120",
+                                        "pulse": "70", "consciousness": "alert", "temp": "37.0"})
+    assert whole["keys_not_read"] == []
+    src = inspect.getsource(_sc.score_news2)
+    assert '_first(obs, "' not in src and src.count("_first(obs, *_NEWS2_KEYS[") == len(_sc._NEWS2_KEYS), \
+        "NEWS2 reads a name that is not in its one table"
+
+    risk = client.post("/api/v1/care/risk-assess", json={"tool": "news2", "patient_data": obs}).json()
+    assert risk["score"]["keys_not_read"] == ["RR", "mood", "weight_kg"], risk["score"].get("keys_not_read")
+    assert risk["assessment"].rstrip().endswith("_" + _care.NOT_REVIEWED + "_"), risk["assessment"][-300:]
+    adult = client.post("/api/v1/care/safeguarding", json={"concern": "w951 bruising", "concern_about": "an adult"}).json()
+    _g = adult["guidance"]
+    assert ("_" + _care.NOT_REVIEWED + "_") in _g and _g.index(_care.NOT_REVIEWED) > _g.index(_care.ADULT_ROUTE_ONLY), _g[:400]
+    assert _g.index(_care.NOT_REVIEWED) < _g.index("w951 composed") and _g.rstrip().endswith("w951 composed"), _g[-300:]
+
+    #  clause 11: nothing a person types into a Care tool is stored before sign-in. Every tool is driven with text
+    #  no store could hold otherwise, and every store is searched for it (the observing seam keeps method and path)
+    monkeypatch.undo()                                   # the real composer path: the native floor on this machine
+    probes = {f"W951PROBE{i}" for i in range(7)}
+    calls = [
+        ("/api/v1/care/risk-assess", {"tool": "news2", "patient_data": {"resp_rate": "18", "note": "W951PROBE0"},
+                                      "clinical_context": "W951PROBE1"}),
+        ("/api/v1/care/safeguarding", {"concern": "W951PROBE2", "person_context": "W951PROBE3", "concern_about": "an adult"}),
+        ("/api/v1/care/safeguarding", {"concern": "W951PROBE4", "concern_about": "a child or young person"}),
+        ("/api/v1/care/care-plan", {"care_needs": ["W951PROBE5"], "patient_profile": {"age": "80"}}),
+        ("/api/v1/care/handover", {"patient_summary": "W951PROBE6", "current_situation": "w951 stable"}),
+    ]
+    for url, body in calls:
+        r = client.post(url, json=body)
+        assert r.status_code == 200, (url, r.status_code, r.text[:200])
+    holding = {}
+    for f in data_path().rglob("*"):
+        if f.is_file():
+            text = f.read_text(encoding="utf-8", errors="replace")
+            found = sorted(x for x in probes if x in text)
+            if found:
+                holding[f.relative_to(data_path()).as_posix()] = found
+    #  the observing seam keeps method and path only, and a child's concern, which is not composed, reaches no store
+    assert not [k for k in holding if k.startswith("horizon/")], holding
+    assert not [k for k, v in holding.items() if "W951PROBE4" in v], ("a child's concern was stored", holding)
+    #  ...and what the composer path keeps (the interaction log and the AI memory store) is MEASURED and registered:
+    #  the guard clause 11 asks for fails there today, for every domain tool, so it is its own round's work
+    import json as _json951
+    import pathlib as _pl951
+    _items = _json951.loads((_pl951.Path(__file__).resolve().parents[1] / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    _row = [r for r in _items if r["title"].startswith("What a person types into a Care tool, or any domain tool, is kept")]
+    assert len(_row) == 1 and _row[0]["slot"] == "P5.13" and _row[0]["severity"] == "high", _row

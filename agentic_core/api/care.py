@@ -97,6 +97,9 @@ CHILDRENS_ROUTE = ("contact the children's social care team at the child's local
                    "immediate risk (read at https://www.gov.uk/report-child-abuse on 2026-10-12)")
 ADULT_ROUTE_ONLY = ("**This form follows the ADULT safeguarding route for England.** If the concern is about a child or "
                     "young person, do not use this form: " + CHILDRENS_ROUTE + ".")
+#  W951 (P5.13 clause 6) - said in the TEXT a person copies, downloads or saves, not only in a line beside it
+NOT_REVIEWED = ("A DRAFT that no professional has reviewed: a qualified professional must check it before anyone "
+                "relies on it.")
 #  W950 (P5.13 clause 4) - who the concern is about is asked, never assumed; a child's concern is not composed
 CONCERN_ABOUT = ("an adult", "a child or young person")
 CHILD_CONCERN = ("**A concern about a child or young person is not set out here.** In England, " + CHILDRENS_ROUTE
@@ -247,6 +250,7 @@ async def risk_assessment(req: RiskAssessRequest):
     assessment, provenance = await ai_text(prompt, "care_risk_assess", realm=req.realm,
         user_text=person_said(req.clinical_context, _observed), **_mat859)
     assessment = _with_cut(assessment, provenance)
+    assessment = ((assessment + "\n\n") if assessment else "") + "_" + NOT_REVIEWED + "_"    # W951 (clause 6)
 
     return {
         "assessment_id": uuid.uuid4().hex[:10],
@@ -345,7 +349,9 @@ async def safeguarding_triage(req: SafeguardingRequest):
     #  W676 - THE EMERGENCY LINE COMES FIRST, IN THE TEXT, AND IS NOT COMPOSED. It was only in the `disclaimer`
     #  field after the text; on the floor the text's "Immediate Safety" heading held the concern's own words
     #  and the number appeared nowhere in what a person reads, copies or saves.
-    guidance = IMMEDIATE_DANGER_FIRST + "\n\n" + ADULT_ROUTE_ONLY + "\n\n" + (guidance or "")
+    #  W951 (P5.13 clause 6) - in the text, after the two fixed lines and before what was composed
+    guidance = (IMMEDIATE_DANGER_FIRST + "\n\n" + ADULT_ROUTE_ONLY + "\n\n_" + NOT_REVIEWED + "_\n\n"
+                + (guidance or ""))
 
     return {
         "triage_id": uuid.uuid4().hex[:10],

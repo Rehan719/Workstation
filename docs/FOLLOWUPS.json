@@ -23872,6 +23872,24 @@
       "note": "",
       "slot_source": "FU-1066 says the two letters are drafted for the Owner to send",
       "tier": 2
+    },
+    {
+      "id": "FU-1189",
+      "title": "What a person types into a Care tool, or any domain tool, is kept in the interaction log and the AI memory store before sign-in",
+      "why": "Measured in W951 (P5.13 clause 11): driven on the native floor with sign-in off, the text a person typed into the risk, safeguarding, care-plan and handover tools was found afterwards in interactions.db - the gateway logs every prompt and response (agentic_core/ai/gateway.py, through agentic_core/ai/logger.py) - and in memory.json (agentic_core/ai/memory.py). The observing seam keeps only method and path, and a child's safeguarding concern, which is not composed, reaches neither. Clause 11 asks for a guard that no care record is stored before sign-in, and P5.12's boundary says nothing a person types is stored before authentication; both fail on these two stores, for every domain tool that composes through the gateway. Done when a person's material reaches neither store before sign-in, or each keeps it only under a ruling and says so where it is read, with a guard that drives every domain tool and searches every store.",
+      "source": "W951 (P5.13 clause 11, driven: the guard the clause asks for fails on two stores)",
+      "found": "2026-11-13",
+      "files": [
+        "agentic_core/ai/gateway.py"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P5.13",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.13 clause 11 (a guard that no care record is stored before sign-in)",
+      "tier": 2
     }
   ],
   "routes": [
