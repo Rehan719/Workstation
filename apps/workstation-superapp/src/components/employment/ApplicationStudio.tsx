@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { Card, Button } from '@workstation/ui';
 import { provenanceBadge, provenanceLine } from '../../lib/api';
+import { ReviewOptions } from '../ReviewOptions';   // W925 (P5.15 release)
 
 interface IngestedFile {
   file_id: string;
@@ -279,6 +280,10 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
       <div>
         <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-2">{title}</h3>
         <p className="text-slate-500 font-bold text-sm">Upload your materials, then generate tailored application outputs.</p>
+        {/* W925 (P5.15 release) - both options for each career tool, before it is used: the sorting of an upload,
+            the generation of the documents, and the search below */}
+        <ReviewOptions endpoint="/api/v1/career/uploads/auto" />
+        <ReviewOptions endpoint="/api/v1/career/generate" />
       </div>
 
       <div id="input-materials-section" className="space-y-4">
@@ -442,6 +447,7 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
           <p className="text-[10px] text-slate-500 font-bold mt-1 leading-relaxed">
             AI-synthesised example listings — <b>not a live job board</b>. They illustrate the kind of role your materials point to (or your search terms); no listing links to a real advert, and every employer, role and figure must be verified independently before you rely on it.
           </p>
+          <ReviewOptions endpoint="/api/v1/career/job-search" />
         </div>
         <div className="flex gap-2">
           <input

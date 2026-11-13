@@ -73,7 +73,7 @@ class CVRequest(BaseModel):
     realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
-@router.post("/cv")
+@router.post("/cv", openapi_extra={"x-review-tool": "employment_cv"})
 async def tailor_cv(req: CVRequest):
     _mat857 = _material(key_skills=", ".join(req.skills or []), candidate_experience=req.experience)
     prompt = (
@@ -111,7 +111,7 @@ class CoverLetterRequest(BaseModel):
     realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
-@router.post("/cover-letter")
+@router.post("/cover-letter", openapi_extra={"x-review-tool": "employment_cover_letter"})
 async def cover_letter(req: CoverLetterRequest):
     company_text = f"Company: {one_line(req.company)}\n" if req.company else ""
     _mat857 = _material(what_to_emphasise=req.highlights)
@@ -146,7 +146,7 @@ class InterviewPrepRequest(BaseModel):
     realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
-@router.post("/interview-prep")
+@router.post("/interview-prep", openapi_extra={"x-review-tool": "employment_interview"})
 async def interview_prep(req: InterviewPrepRequest):
     _mat857 = _material(focus_competencies="\n".join(f"- {c}" for c in (req.competencies or [])))
     prompt = (
@@ -183,7 +183,7 @@ class CareerPathRequest(BaseModel):
     realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
-@router.post("/career-path")
+@router.post("/career-path", openapi_extra={"x-review-tool": "employment_career_path"})
 async def career_path(req: CareerPathRequest):
     _mat857 = _material(constraints=req.constraints)
     prompt = (
@@ -224,7 +224,7 @@ class SalaryNegotiationRequest(BaseModel):
     realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
-@router.post("/salary-negotiation")
+@router.post("/salary-negotiation", openapi_extra={"x-review-tool": "employment_salary"})
 async def salary_negotiation(req: SalaryNegotiationRequest):
     """Compensation & offer-negotiation strategist: a structured plan — market positioning, a target range
     with justification, anchoring scripts, non-salary levers, BATNA and etiquette. Reasoned guidance based on
@@ -278,7 +278,7 @@ class ApplicationRequest(BaseModel):
     realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
-@router.post("/application")
+@router.post("/application", openapi_extra={"x-review-tool": "employment_application"})
 async def application_support(req: ApplicationRequest):
     """Draft a supporting statement that addresses the person specification criterion-by-criterion
     with evidence, plus tailored answers to any application-form questions."""

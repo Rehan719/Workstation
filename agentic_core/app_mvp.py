@@ -481,6 +481,10 @@ app.include_router(instrument_cell_api.router, dependencies=[_Depends(_get_curre
 #  W689 - the review cell's records: the one door that writes a review, the administrator's alone
 from agentic_core.api import review_cell as review_cell_api
 app.include_router(review_cell_api.router, dependencies=[_Depends(_require_admin)])
+#  W925 (P5.15, release) - both options where a tool is offered: the tier it has reached, and when a qualified person
+#  is warranted. Every signed-in person reads it before using a tool; the records above stay the administrator's
+from agentic_core.api import review_options as review_options_api
+app.include_router(review_options_api.router, dependencies=[_Depends(_get_current_user)])
 from agentic_core.api import board as board_api
 app.include_router(board_api.router, dependencies=[_Depends(_require_admin)])   # W505 (P2.6): the Board is the apex governance tier
 

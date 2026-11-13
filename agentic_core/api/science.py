@@ -66,7 +66,7 @@ class SynthesiseRequest(BaseModel):
     realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
-@router.post("/synthesise")
+@router.post("/synthesise", openapi_extra={"x-review-tool": "science_synthesiser"})
 async def synthesise_research(req: SynthesiseRequest):
     """
     Synthesise a research question into a structured evidence report.
@@ -125,7 +125,7 @@ class HypothesisRequest(BaseModel):
     realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
-@router.post("/hypothesis")
+@router.post("/hypothesis", openapi_extra={"x-review-tool": "science_hypothesis"})
 async def generate_hypotheses(req: HypothesisRequest):
     """
     Generate testable hypotheses for a research question with evaluation.
@@ -187,7 +187,7 @@ class ExperimentDesignRequest(BaseModel):
     realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
-@router.post("/experiment-design")
+@router.post("/experiment-design", openapi_extra={"x-review-tool": "science_experiment"})
 async def experiment_design(req: ExperimentDesignRequest):
     """Design a rigorous study/experiment to test a hypothesis — variables, design type, controls, sampling &
     power, procedure, measures, analysis plan, validity threats, and ethics — grounded in the chosen
@@ -239,7 +239,7 @@ class LiteratureRequest(BaseModel):
     realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
-@router.post("/literature")
+@router.post("/literature", openapi_extra={"x-review-tool": "science_literature"})
 async def literature_review_outline(req: LiteratureRequest):
     """
     Generate a structured literature review outline with search strategy.

@@ -23620,6 +23620,48 @@
       "note": "",
       "slot_source": "a production channel's price touches the production deploy, and a money figure in a business document stands only beside an Owner ruling",
       "tier": 3
+    },
+    {
+      "id": "FU-1177",
+      "title": "No tool shows, where it is offered, the tier of review it has reached or when a qualified person is warranted",
+      "why": "P5.15 RELEASE (the Owner's ruling of 2026-10-12): BOTH OPTIONS ARE SHOWN wherever a tool is offered - the tier it has reached, and the option of a qualified person with when one is warranted. Measured: the tier was said only under an answer (W688), so a person chose a tool, typed into it and ran it before reading what review stood behind it. No page and no route said when a person should look at what a tool gave, or what release would leave with a person.",
+      "source": "W925 (P5.15's release clause, which no row held)",
+      "found": "2026-11-13",
+      "files": [
+        "apps/workstation-superapp/src/components/DomainTool.tsx",
+        "apps/workstation-superapp/src/components/employment/ApplicationStudio.tsx",
+        "agentic_core/app_mvp.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.15",
+      "status": "done",
+      "closed_by": "W925",
+      "note": "",
+      "slot_source": "the release clause of P5.15 itself",
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it. GET /api/v1/review-options answers for the tool a route declares: each of the 29 domain routes that calls ai_text declares the name it passes (openapi_extra x-review-tool), and test_w925 holds the two equal. The answer gives the tier every answer states (the same review_statement) and the option of a qualified person: when one is warranted, and what release would leave with a person. Of the Owner's four exceptions, the three that apply here are named: a clinical score in direct care, regulated legal advice, and a named scholar for model-written religious text. Every signed-in person reads it; the records of review stay the administrator's. The shared form shows both before its fields, for the 25 tools on the six domain pages. The Application Studio shows them for its three career tools before each is used. An endpoint that declares no tool is refused by name, and the fabric page's four engines show that sentence. The interfaith route is declared and offered on no page, a stated absence. A generated entity's specialist is the open row for clause 6. Rendered by DomainTool.test.tsx against the API's own answers; driven in test_w925."
+    },
+    {
+      "id": "FU-1178",
+      "title": "An entity cannot attach its own specialists to its third tier, and a generated entity is not offered a specialist",
+      "why": "P5.15 clause 6: an entity may attach its own specialists to its third tier - a short roster per entity, not a registry of people. The release clause adds that for a generated entity, engaging a specialist is a chargeable option the platform recommends, and P5.16 clause 6 makes an entity's cost of its own specialists a declared cost. Measured at W925: no roster, route or page exists for it. The third tier is filled only through the administrator's record door, for a tool and never for an entity.",
+      "source": "W925 (P5.15 clause 6, which no row held)",
+      "found": "2026-11-13",
+      "files": [
+        "agentic_core/api/review_cell.py",
+        "agentic_core/api/vsb.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.15",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "clause 6 of P5.15 itself",
+      "tier": 2
     }
   ],
   "routes": [

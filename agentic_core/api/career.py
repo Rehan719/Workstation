@@ -37,7 +37,7 @@ _CATEGORIES = [
 ]
 
 
-@router.post("/uploads/auto")
+@router.post("/uploads/auto", openapi_extra={"x-review-tool": "career_classifier"})
 async def auto_classify_upload(file: UploadFile = File(...), user: dict | None = Depends(get_current_user)):
     """
     Classify an uploaded file into a career input category using AI.
@@ -194,7 +194,7 @@ class GenerateRequest(BaseModel):
     output_types: list[str]
 
 
-@router.post("/generate")
+@router.post("/generate", openapi_extra={"x-review-tool": "career_generator"})
 async def generate_career_docs(req: GenerateRequest):
     """
     Generate one or more career documents using uploaded file content + AI.
@@ -336,7 +336,7 @@ class JobSearchRequest(BaseModel):
     limit: int = 10
 
 
-@router.post("/job-search")
+@router.post("/job-search", openapi_extra={"x-review-tool": "career_job_search"})
 async def job_search(req: JobSearchRequest):
     """
     Synthesise ILLUSTRATIVE example listings tailored to the candidate's profile — AI synthesis, not a

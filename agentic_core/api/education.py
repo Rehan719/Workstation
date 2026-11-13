@@ -77,7 +77,7 @@ class CurriculumRequest(BaseModel):
     realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
-@router.post("/curriculum")
+@router.post("/curriculum", openapi_extra={"x-review-tool": "education_curriculum"})
 async def design_curriculum(req: CurriculumRequest):
     """
     Design a complete curriculum structure for a subject/level.
@@ -171,7 +171,7 @@ class LessonPlanRequest(BaseModel):
     realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
-@router.post("/lesson-plan")
+@router.post("/lesson-plan", openapi_extra={"x-review-tool": "education_lesson_plan"})
 async def generate_lesson_plan(req: LessonPlanRequest):
     """
     Generate a detailed, structured lesson plan ready for classroom delivery.
@@ -231,7 +231,7 @@ class FeedbackRequest(BaseModel):
     realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
-@router.post("/feedback")
+@router.post("/feedback", openapi_extra={"x-review-tool": "education_feedback"})
 async def marking_feedback(req: FeedbackRequest):
     """Mark a piece of student work against the task and any rubric, and give constructive, actionable
     feedback — strengths, areas to develop, criterion-by-criterion notes, next steps, and an INDICATIVE
@@ -325,7 +325,7 @@ class AssessmentRequest(BaseModel):
     realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
-@router.post("/assessment")
+@router.post("/assessment", openapi_extra={"x-review-tool": "education_assessment"})
 async def create_assessment(req: AssessmentRequest):
     """
     Create a complete assessment instrument (quiz, rubric, exam, etc.)

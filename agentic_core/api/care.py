@@ -115,7 +115,7 @@ class CarePlanRequest(BaseModel):
     realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
-@router.post("/care-plan")
+@router.post("/care-plan", openapi_extra={"x-review-tool": "care_planner"})
 async def generate_care_plan(req: CarePlanRequest):
     """
     Generate a personalised, evidence-based care plan.
@@ -177,7 +177,7 @@ class RiskAssessRequest(BaseModel):
     realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
-@router.post("/risk-assess")
+@router.post("/risk-assess", openapi_extra={"x-review-tool": "care_risk_assess"})
 async def risk_assessment(req: RiskAssessRequest):
     """
     AI-assisted risk assessment using a specified clinical tool.
@@ -276,7 +276,7 @@ class SafeguardingRequest(BaseModel):
     realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
-@router.post("/safeguarding")
+@router.post("/safeguarding", openapi_extra={"x-review-tool": "care_safeguarding"})
 async def safeguarding_triage(req: SafeguardingRequest):
     """Structure a safeguarding concern under the relevant statutory framework (Care Act 2014 by default):
     immediate-safety check, likely category of abuse/neglect, who to notify, what to record, consent & Making
@@ -345,7 +345,7 @@ class HandoverRequest(BaseModel):
     realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
-@router.post("/handover")
+@router.post("/handover", openapi_extra={"x-review-tool": "care_handover"})
 async def generate_handover(req: HandoverRequest):
     """
     Generate a structured clinical handover document (SBAR format).

@@ -10,6 +10,7 @@ import { DictateButton } from './DictateButton';
 import { listOutputs, saveOutput } from '../lib/outputHistory';
 import { getPrefs } from '../lib/userPrefs';
 import { ServingNow } from './ServingNow';   // W737 (FU-1020, FU-1013)
+import { ReviewOptions } from './ReviewOptions';   // W925 (P5.15 release)
 
 export interface DomainField {
   name: string;
@@ -286,6 +287,9 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
         </p>
         {/* W737 - and which of the two it is on this deployment NOW, from the server's status, before the form */}
         <ServingNow />
+        {/* W925 (P5.15 release, the Owner's ruling of 2026-10-12) - BOTH OPTIONS, before the form: the tier of review
+            this tool has reached and the option of a qualified person with when one is warranted, in the server's words */}
+        <ReviewOptions endpoint={endpoint} />
       </div>
 
       {fields.map(f => (

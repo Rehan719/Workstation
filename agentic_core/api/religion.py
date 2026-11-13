@@ -212,7 +212,7 @@ class FatwaResearchRequest(BaseModel):
     realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
-@router.post("/fatwa-research")
+@router.post("/fatwa-research", openapi_extra={"x-review-tool": "religion_fiqh"})
 async def fatwa_research(req: FatwaResearchRequest):
     """
     AI-assisted jurisprudential research on an Islamic question.
@@ -302,7 +302,7 @@ class HadithStudyRequest(BaseModel):
     realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
-@router.post("/hadith-study")
+@router.post("/hadith-study", openapi_extra={"x-review-tool": "religion_hadith"})
 async def hadith_study(req: HadithStudyRequest):
     """AI-assisted hadith study (ulum al-hadith): identify the narration, discuss its grading/authenticity
     and isnad considerations, where it appears, and its meaning/application. Scholarly research ONLY — never a
@@ -388,7 +388,7 @@ class QuranTafsirRequest(BaseModel):
     realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
-@router.post("/quran-tafsir")
+@router.post("/quran-tafsir", openapi_extra={"x-review-tool": "religion_tafsir"})
 async def quran_tafsir(req: QuranTafsirRequest):
     """
     AI-assisted Quranic exegesis (tafsir) for a specified verse range.
@@ -700,7 +700,7 @@ class HalalReviewRequest(BaseModel):
     realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
-@router.post("/halal-review")
+@router.post("/halal-review", openapi_extra={"x-review-tool": "religion_halal"})
 async def halal_pre_assessment(req: HalalReviewRequest):
     """
     AI-assisted halal certification pre-assessment.
@@ -820,7 +820,7 @@ class InterfaithRequest(BaseModel):
     realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
-@router.post("/interfaith")
+@router.post("/interfaith", openapi_extra={"x-review-tool": "religion_interfaith"})
 async def interfaith_dialogue(req: InterfaithRequest):
     """
     Generate an interfaith comparative analysis and dialogue resource.

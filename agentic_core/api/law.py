@@ -177,7 +177,7 @@ class AnalyseRequest(BaseModel):
     realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
-@router.post("/analyse")
+@router.post("/analyse", openapi_extra={"x-review-tool": "law_analyst"})
 async def analyse_document(req: AnalyseRequest):
     """
     Analyse a legal document using AI. Returns structured risk assessment,
@@ -246,7 +246,7 @@ class ResearchRequest(BaseModel):
     realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
-@router.post("/research")
+@router.post("/research", openapi_extra={"x-review-tool": "law_researcher"})
 async def legal_research(req: ResearchRequest):
     """Structured legal research / issue analysis using the IRAC method (Issue → Relevant Law → Application →
     Conclusion) with practical considerations, risks, and next steps. AI-generated informational guidance —
@@ -332,7 +332,7 @@ class GenerateRequest(BaseModel):
     realm: str = ""          # W505 (P2.5) — the taxonomy realm; empty means "unchanged"
 
 
-@router.post("/generate")
+@router.post("/generate", openapi_extra={"x-review-tool": "law_generator"})
 async def generate_document(req: GenerateRequest):
     """
     Generate a legal document from a template using AI.

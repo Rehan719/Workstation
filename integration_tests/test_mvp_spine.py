@@ -78345,3 +78345,131 @@ def test_w924_fu399_a_genesis_journeys_stage_rail_and_rank_stage_are_guarded_by_
     #  the page's two mount-time reads are the API's own answers too
     assert set(fx["entity_types"]) <= set(client.get("/api/v1/economy/entity-types").json())
     assert set(fx["price"]) <= set(client.get("/api/v1/genesis/price").json())
+
+
+def test_w925_p515_release_both_options_are_shown_where_a_tool_is_offered_before_its_form(client, monkeypatch):
+    """P5.15 RELEASE (W925; the Owner's ruling of 2026-10-12): BOTH OPTIONS ARE SHOWN wherever a tool is offered - the
+    tier of review it has reached, and the option of a qualified person with when one is warranted. Until W925 the
+    tier was said only under an answer. Held here:
+    - every domain route that calls ai_text declares the tool it is (openapi_extra x-review-tool), and the name it
+      declares is the name it passes to ai_text, so the options and the answers read the same records;
+    - every tool a page offers answers GET /api/v1/review-options with its tool, its discipline, the tier route's own
+      statement, and a person's option with when one is warranted and what release leaves with a person; the three
+      disciplines the ruling keeps with a person name the exception;
+    - an endpoint that declares no tool is refused by name, never given a default tier; the one declared tool no
+      page offers is the interfaith route, a stated absence;
+    - a recorded signature is the tier the options then show, as the tier route shows it;
+    - the form mounts the options before its fields, the studio mounts one before each career tool, and the route
+      is read by every signed-in person while the records stay the administrator's;
+    - the captured answers the rendered test reads are the live route's, the person's words exactly."""
+    import ast
+    import datetime as dt
+    import json
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+
+    #  (1) the declarations, read from each route's own source and tied to the name it passes to ai_text
+    declared = {}
+    for mod in ("care", "law", "science", "education", "employment", "career", "religion"):
+        tree = ast.parse((root / f"agentic_core/api/{mod}.py").read_text(encoding="utf-8"))
+        prefix = f"/api/v1/{mod}"
+        for fn in ast.walk(tree):
+            if not isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            for deco in fn.decorator_list:
+                if not (isinstance(deco, ast.Call) and getattr(deco.func, "attr", "") == "post"):
+                    continue
+                passed = {c.args[1].value for c in ast.walk(fn) if isinstance(c, ast.Call)
+                          and getattr(c.func, "id", "") in ("ai_text", "_ai_text") and len(c.args) > 1
+                          and isinstance(c.args[1], ast.Constant)}
+                extra = next((k.value for k in deco.keywords if k.arg == "openapi_extra"), None)
+                said = None
+                if isinstance(extra, ast.Dict):
+                    said = next((v.value for k, v in zip(extra.keys, extra.values)
+                                 if isinstance(k, ast.Constant) and k.value == "x-review-tool"), None)
+                path = prefix + deco.args[0].value
+                assert (said is None) == (not passed), ("a route that calls ai_text declares no tool, or one that does "
+                                                        "not declares one", path, said, passed)
+                if said:
+                    assert {said} == passed, ("the tool a route declares is not the name it passes to ai_text", path)
+                    declared[path] = said
+    assert len(declared) == 29, sorted(declared)
+
+    #  (2) every tool a page offers, and what it answers
+    pages = root / "apps/workstation-superapp/src"
+    offered = set()
+    for hub in ("Care", "Law", "Science", "Education", "Employment", "Religion"):
+        offered |= set(re.findall(r'endpoint="(/api/v1/[a-z-]+/[a-z-]+)"',
+                                  (pages / f"pages/domains/{hub}Hub.tsx").read_text(encoding="utf-8")))
+    studio = (pages / "components/employment/ApplicationStudio.tsx").read_text(encoding="utf-8")
+    studio_tools = {u for u in re.findall(r"axios\.post\('(/api/v1/career/[a-z/-]+)'", studio) if u in declared}
+    assert studio_tools == {"/api/v1/career/uploads/auto", "/api/v1/career/generate", "/api/v1/career/job-search"}
+    for u in studio_tools:
+        assert f'<ReviewOptions endpoint="{u}" />' in studio, ("the studio offers a tool with no options shown", u)
+    offered |= studio_tools
+    assert len(offered) == 28, sorted(offered)
+    assert set(declared) - offered == {"/api/v1/religion/interfaith"}, sorted(set(declared) - offered)
+    kept = {"care": "clinical score", "law": "regulated advice", "religion": "named scholar"}
+    for ep in sorted(offered):
+        r = client.get("/api/v1/review-options", params={"endpoint": ep})
+        assert r.status_code == 200, (ep, r.text[:200])
+        a = r.json()
+        assert a["tool"] == declared[ep] and a["endpoint"] == ep, (ep, a["tool"])
+        assert a["discipline"] == {"career": "employment"}.get(ep.split("/")[3], ep.split("/")[3]), (ep, a["discipline"])
+        tier = client.get(f"/api/v1/review/tier/{a['tool']}").json()
+        assert {k: v for k, v in tier.items() if k != "tool"} == a["review"], ("not the tier every answer states", ep)
+        p = a["person"]
+        assert p["option"].startswith("A qualified person's review is an option") and p["warranted_when"].strip(), ep
+        assert p["release"].startswith("Release is the Owner's switch.") and p["basis"].strip(), ep
+        if a["discipline"] in kept:
+            assert kept[a["discipline"]] in p["kept_by_the_ruling"] and "Even then" in p["release"], ep
+        else:
+            assert p["kept_by_the_ruling"] is None and "calibrated" in p["release"], ep
+
+    #  (3) no declaration, no tier - said by name
+    for ep in ("/api/v1/reactor/experiment", "/api/v1/law/time-limit", "/api/v1/care/no-such-tool"):
+        r = client.get("/api/v1/review-options", params={"endpoint": ep})
+        assert r.status_code == 404 and r.json()["detail"].startswith(f"No tool is declared at {ep},"), (ep, r.text[:200])
+
+    #  (4) a signature on record is the tier then shown, as the tier route shows it: the records are read through
+    #  the one reader, fixed here in this process only (the suite's store is shared, and other guards read it)
+    from agentic_core.api import _review_tier as _rt925
+    today = dt.date.today()
+    signed = {"tool": "education_feedback", "tier": "signed_by_a_qualified_person", "date": today.isoformat(),
+              "name": "W925 guard (a test record)", "credential_as_stated": "none - stated for this test",
+              "reviewed": "nothing: the record proves the options read the records",
+              "lapses_on": (today + dt.timedelta(days=30)).isoformat()}
+    monkeypatch.setattr(_rt925, "_records", lambda: [signed])
+    a = client.get("/api/v1/review-options", params={"endpoint": "/api/v1/education/feedback"}).json()
+    assert a["review"]["tier"] == "signed_by_a_qualified_person" == client.get(
+        "/api/v1/review/tier/education_feedback").json()["tier"], a["review"]
+    assert "W925 guard (a test record)" in a["review"]["basis"] and "as stated" in a["review"]["basis"]
+    #  ...and the same reader unreadable is not known, never a tier
+    monkeypatch.setattr(_rt925, "_records", lambda: None)
+    a = client.get("/api/v1/review-options", params={"endpoint": "/api/v1/education/feedback"}).json()
+    assert a["review"]["tier"] == "unreviewed" and a["review"]["known"] is False, a["review"]
+    monkeypatch.undo()
+
+    #  (5) where it is mounted, and who reads it
+    dt_src = (pages / "components/DomainTool.tsx").read_text(encoding="utf-8")
+    assert dt_src.index("<ReviewOptions endpoint={endpoint} />") < dt_src.index("{fields.map(f =>"), (
+        "the options are not mounted before the form's fields")
+    opt = (pages / "components/ReviewOptions.tsx").read_text(encoding="utf-8")
+    assert "apiJson<ReviewOptionsAnswer>(`/api/v1/review-options?endpoint=${encodeURIComponent(endpoint)}`)" in opt
+    app_src = (root / "agentic_core/app_mvp.py").read_text(encoding="utf-8")
+    assert "app.include_router(review_options_api.router, dependencies=[_Depends(_get_current_user)])" in app_src
+    assert "app.include_router(review_cell_api.router, dependencies=[_Depends(_require_admin)])" in app_src
+
+    #  (6) the answers the rendered test reads are the live route's; the person's words exactly
+    fx = json.loads((pages / "components/DomainTool.fixture.json").read_text(encoding="utf-8"))
+    for key in ("care", "religion", "signed"):
+        cap = fx[key]
+        live = client.get("/api/v1/review-options", params={"endpoint": cap["endpoint"]})
+        assert cap["status"] == live.status_code == 200, key
+        assert set(cap["body"]) == set(live.json()) and set(cap["body"]["review"]) <= set(live.json()["review"]) | {
+            "records_counted"}, key
+        assert cap["body"]["person"] == live.json()["person"], ("the captured person's option is not the server's", key)
+    none = client.get("/api/v1/review-options", params={"endpoint": fx["none"]["endpoint"]})
+    assert fx["none"]["status"] == none.status_code == 404 and fx["none"]["body"] == none.json()
+    assert set(fx["status"]) <= set(client.get("/api/v1/native-ai/status").json())
