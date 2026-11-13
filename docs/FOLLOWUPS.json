@@ -21283,11 +21283,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.17",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W948",
       "note": "",
       "slot_source": "the plan item's sixth clause",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W948. Each Quran source row that names the hosts this platform would reach now says what its terms, as read, permit (docs/SOURCES.json); the three that permit nothing - the Quranic Universal Library's data, the King Fahd Complex's recitations and fonts, everyayah.com - are not to be used, and scripts/sources_check.py fails if any backend or frontend file reaches their hosts. The memorisation-method source and a competition's marking scheme are rows that say they were never read. The two letters asking for written permission are drafted in docs/letters/ for the Owner to send, with the Owner's name and address left to fill in; sending them is the Owner's (an OWNER row). The coverage row for listening to a reciter is a journey driven by test_w717."
     },
     {
       "id": "FU-1067",
@@ -23850,6 +23853,24 @@
       "closed_by": null,
       "note": "",
       "slot_source": "P5.3's measured remaining work names the claim's Change Control tier as the Owner's to rule",
+      "tier": 2
+    },
+    {
+      "id": "FU-1188",
+      "title": "OWNER: send the two letters asking written permission for the Quranic Universal Library's data and the King Fahd Complex's recitations and fonts",
+      "why": "FU-1066 (W948) drafted both letters in docs/letters/: QUL_DATA_PERMISSION_REQUEST.md asks the Quranic Universal Library for its page layouts, similar-verse lists and word timings, whose data carries no licence on any page read; KFGQPC_PERMISSION_REQUEST.md asks the King Fahd Glorious Qur'an Printing Complex for its recitations and fonts, whose site could not be opened from this machine. Sending is outward-facing and in your name. RECOMMENDED: fill in your name and address, read each through, and send both as drafted. Nothing from either source is used until a written answer grants it, and the source check fails if any code reaches them.",
+      "source": "W948 (FU-1066: the letters are drafted by a round and sent by the Owner)",
+      "found": "2026-11-13",
+      "files": [
+        "docs/SOURCES.json"
+      ],
+      "severity": "low",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "FU-1066 says the two letters are drafted for the Owner to send",
       "tier": 2
     }
   ],

@@ -80120,3 +80120,83 @@ def test_w947_p521_a_check_in_is_the_packs_questions_the_child_answers_on_the_sc
     taking = [f"{m} {x.path}" for x in app.routes if isinstance(x, APIRoute) and x.path.startswith(prefix + "/check-in")
               for m in x.methods if m != "GET"]
     assert not taking, ("a route takes a child's answer", taking)
+
+
+def test_w948_fu1066_each_quran_source_says_what_it_permits_one_not_to_be_used_is_never_reached_and_the_letters_are_drafted(tmp_path):
+    """FU-1066 (W948, P5.17). The register's Quran rows said what each page said, but not what this platform may do
+    under it; three rows said NOT TO BE USED in prose nothing checked; the method and marking-scheme sources had no
+    row; the two letters the rows promised were not in the tree; and the coverage register said nothing plays a
+    recitation. Held here:
+    - each Quran row that names hosts says what its terms permit, and an empty list is a source not to be used;
+    - the source check passes on the tree, and fails - naming the file - when code reaches a host of a source not
+      to be used, or when a row with hosts does not say what it permits;
+    - the method and marking-scheme sources are rows that say they were never read;
+    - the two letters are drafted for the Owner to send: each names what is asked, says nothing has been sent, and
+      carries no one's name or address, only the places to fill them in;
+    - the listening row is a journey driven by the test that exists;
+    - the Owner's row to send them is open, gated and on the resume prompt's list."""
+    import json
+    import pathlib
+    import re
+    import shutil
+    import subprocess
+    import sys
+    root = pathlib.Path(__file__).resolve().parents[1]
+    sys.path.insert(0, str(root / "scripts"))
+    import sources_check as _sc
+    reg = json.loads((root / "docs/SOURCES.json").read_text(encoding="utf-8"))
+    rows = {r["id"]: r for r in reg["rows"]}
+    for rid in ("tanzil-text-licence", "alquran-cloud-terms", "quran-foundation-developer-terms", "cpfair-quran-data"):
+        assert isinstance(rows[rid].get("permits"), list) and rows[rid]["permits"], (rid, "says nothing it permits")
+    for rid, host in (("tarteel-qul-data", "qul.tarteel.ai"), ("kfgqpc-recitations-fonts", "qurancomplex.gov.sa"),
+                      ("everyayah-audio", "everyayah.com")):
+        assert rows[rid]["permits"] == [] and host in rows[rid]["hosts"] and rows[rid].get("permits_basis"), rid
+    for rid in ("hifz-method-primary-text", "quran-competition-marking-scheme"):
+        assert rows[rid]["status"] == "named_not_read" and "NOT READ" in rows[rid]["says"], rid
+
+    #  the check passes on the tree, and examined something
+    res = _sc.check(reg)
+    assert res["not_to_be_used_but_reached"] == [] and res["row_problems"] == [], (res["not_to_be_used_but_reached"],
+                                                                                res["row_problems"])
+    assert res["files_searched_for_hosts"] > 300 and res["hosts_not_to_be_reached"] >= 3, res["files_searched_for_hosts"]
+    run = subprocess.run([sys.executable, "scripts/sources_check.py"], cwd=root, capture_output=True, text=True)
+    assert run.returncode == 0 and "host(s) of sources not to be used, searched for in" in run.stdout, run.stdout[-600:]
+
+    #  ...and fails, naming the file, when code reaches one; and when a row with hosts says nothing of what it permits
+    tree = tmp_path / "tree"
+    (tree / "agentic_core").mkdir(parents=True)
+    (tree / "apps/workstation-superapp/src").mkdir(parents=True)
+    (tree / "agentic_core/ok.py").write_text("URL = 'https://api.alquran.cloud/v1'\n", encoding="utf-8")
+    (tree / "apps/workstation-superapp/src/bad.ts").write_text("const AUDIO = 'https://everyayah.com/data/';\n",
+                                                               encoding="utf-8")
+    hits, files, banned = _sc.reached_but_not_permitted(reg, root=tree)
+    assert files == 2 and hits == [("apps/workstation-superapp/src/bad.ts", "everyayah.com", "everyayah-audio")], hits
+    loose = json.loads(json.dumps(reg))
+    del next(r for r in loose["rows"] if r["id"] == "alquran-cloud-terms")["permits"]
+    assert any("alquran-cloud-terms: names hosts and does not say what its terms permit" in p
+               for p in _sc.row_problems(loose))
+
+    #  the two letters, drafted for the Owner to send
+    for name, asks in (("QUL_DATA_PERMISSION_REQUEST.md", ("page layouts", "similar-verse lists", "word timings")),
+                       ("KFGQPC_PERMISSION_REQUEST.md", ("recitations", "fonts"))):
+        letter = (root / "docs/letters" / name).read_text(encoding="utf-8")
+        assert "DRAFTED FOR THE OWNER TO SEND" in letter and "Nothing has been sent." in letter, name
+        assert all(a in letter for a in asks), (name, asks)
+        assert "[your name]" in letter and "[your address]" in letter, name
+        assert not re.search(r"[\w.+-]+@[\w-]+\.[\w.]+", letter), ("a letter carries an address", name)
+        assert "never scored" in letter and "not sold" in letter, name
+
+    #  the listening row is a journey, driven by a test that exists
+    cov = {r["id"]: r for r in json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))["rows"]}
+    listen = cov["qep-listen-follow"]
+    assert listen["state"] == "journey" and "nothing listens to the learner" in listen["today"]
+    spine = (root / "integration_tests/test_mvp_spine.py").read_text(encoding="utf-8")
+    assert f"def {listen['driven_by']}(" in spine, listen["driven_by"]
+
+    #  the letters are the Owner's to send (the round closes FU-1066 after this guard runs)
+    items = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    owner = [r for r in items.values() if r["title"].startswith("OWNER: send the two letters asking written permission")]
+    assert len(owner) == 1 and owner[0]["status"] == "open" and owner[0].get("owner_gated") and owner[0]["slot"] == "OWNER"
+    prompt = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    listed = prompt.split("THAT IS THE WHOLE LIST.", 1)[0]
+    assert f"{owner[0]['id']} (W948): send the two letters" in listed

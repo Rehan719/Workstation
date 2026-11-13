@@ -572,8 +572,9 @@
    "domain": "Quran platform",
    "nation": "any - the sourced text and its practice are the same everywhere",
    "subject": "Listening to a named reciter with each word highlighted",
-   "state": "nothing_built",
-   "today": "nothing here plays a recitation; the source's terms are read and not yet entered"
+   "state": "journey",
+   "today": "a learner listens to a named reciter's recitation of a verse, fetched for each request from the Quran Foundation and never kept, with each word lit as it plays; nothing listens to the learner",
+   "driven_by": "test_w717_a_reference_recitation_is_listened_to_and_nothing_listens_to_the_learner"
   },
   {
    "id": "qep-hear-yourself",
