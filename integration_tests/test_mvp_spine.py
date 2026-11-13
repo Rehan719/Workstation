@@ -79793,3 +79793,117 @@ def test_w943_p521_every_childrens_tool_route_is_held_and_in_the_pack_and_memori
     assert gone.status_code == 503 and "Nothing was generated" in gone.json()["detail"]
     after = {p: p.stat().st_mtime_ns for p in root.rglob("*") if p.is_file()}
     assert after == stores, ("a children's tool wrote to a store", sorted(set(after.items()) ^ set(stores.items()))[:5])
+
+
+def test_w944_p521_a_childs_challenge_is_against_their_own_past_only_and_opens_only_through_the_gate(client, monkeypatch):
+    """P5.21 clause 4, the second tool (W944): a child's challenge against their own past, built and held. Driven
+    with sign-in on in this test process, through the real gate: held while the pack is unapproved; open once a
+    scholar on the roster approves the current pack with their own account; held again when the pack changes.
+    While open, a signed-in adult notes the portions one of their numbered children practised on days in three
+    weeks. The challenge is this week's count beside the child's own earlier weeks, and the screen's sentences are
+    the pack's own templates with those counts. Another adult, or another of this adult's children, sees none of it;
+    a child is never named; nothing ranks, awards or counts a streak; what is kept is which portion and which day;
+    and the adult removes the record whole."""
+    import datetime as _dt944
+    import json
+    import uuid
+    import agentic_core.auth.core as _ac944
+    from agentic_core.api import qep_children as _qc
+    from agentic_core.api import scholar_review as _sr
+    from agentic_core.religious_domain import approval_pack as _ap
+    tag = uuid.uuid4().hex[:6]
+    prefix = _ap.CHILDREN_PREFIX
+    tool = next(t for t in _ap.CHILDREN_TOOLS if t["id"] == "own-past-challenge")
+    for key in ("name", "run_by", "what_a_child_sees", "steps", "wording", "arabic_from", "routes"):
+        assert tool.get(key), ("the challenge's entry in the pack does not say", key)
+    assert "never named" in tool["run_by"] and "{this_week}" in tool["wording"][0]
+
+    #  with sign-in off it is held, like every children's tool
+    off = client.get(f"{prefix}/challenge/1")
+    assert off.status_code == 423 and "sign-in is off" in off.json()["detail"], off.text[:200]
+
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    users = _ac944._load_users()
+    adult, other, sid = f"w944-adult-{tag}", f"w944-other-{tag}", f"w944-scholar-{tag}"
+    for u in (adult, other, sid):
+        users[u] = {"username": u, "hashed_password": _ac944._pwd_ctx.hash("pw12345678"), "role": "user"}
+    _ac944._save_users(users)
+
+    def hdr(u):
+        t = client.post("/api/v1/auth/token", data={"username": u, "password": "pw12345678"}).json()["access_token"]
+        return {"Authorization": f"Bearer {t}"}
+    ha, ho, hs = hdr(adult), hdr(other), hdr(sid)
+
+    #  sign-in on and the pack not approved: held, and the gate says why
+    _sr.submit(f"w944-lesson-{tag}", "qep-lesson", "w944 a lesson text for review")      # this test's own pack
+    held = client.get(f"{prefix}/challenge/1", headers=ha)
+    gate = _ap.children_tools_open()
+    assert gate["open"] is False and "sign-in is off" not in gate["basis"], gate
+    assert held.status_code == 423 and held.json()["detail"] == gate["basis"], held.text[:200]
+    assert client.get(f"{prefix}/challenge/1").status_code == 401, "an unsigned caller reached a children's tool"
+
+    #  a scholar on the roster approves the current pack with their own account: the gate opens
+    _sr.add_scholar(sid, "W944 Test Scholar", "stated", added_by="test_w944")
+    seen = client.get("/api/v1/scholar-review/pack", headers=hs).json()["pack_hash"]
+    ok = client.post("/api/v1/scholar-review/pack/decide", headers=hs,
+                     json={"scholar_id": sid, "decision": "approve", "seen_hash": seen})
+    assert ok.status_code == 200, ok.text[:200]
+    assert _ap.children_tools_open()["open"] is True
+
+    #  the adult notes portions practised by child 1 on days in three weeks
+    today = _qc._today()
+    for weeks_ago, times in ((2, 3), (1, 2), (0, 1)):
+        day = today - _dt944.timedelta(weeks=weeks_ago)
+        monkeypatch.setattr(_qc, "_today", lambda d=day: d)
+        for _ in range(times):
+            r = client.post(f"{prefix}/challenge/1/practised", headers=ha,
+                            json={"surah_number": 1, "from_ayah": 1, "to_ayah": 7})
+            assert r.status_code == 200, r.text[:200]
+    monkeypatch.setattr(_qc, "_today", lambda: today)
+    v = client.get(f"{prefix}/challenge/1", headers=ha).json()
+    assert v["this_week"] == 1 and [w["portions"] for w in v["earlier_weeks"][:3]] == [2, 3, 0], v["earlier_weeks"][:3]
+    assert v["screen"]["wording"] == tool["wording"]
+    assert v["screen"]["sentences"] == [w.format(this_week=1, last_week=2) for w in tool["wording"]]
+    assert len(v["practised"]) == 6 and v["judged"] is False
+    for said in ("rank", "ranking", "award", "streak", "score", "best", "child_name", "average"):
+        assert said not in v and said not in v["screen"], said
+
+    #  the record is this adult's and this child's: another adult, or child 2, sees none of it
+    o = client.get(f"{prefix}/challenge/1", headers=ho).json()
+    assert o["this_week"] == 0 and o["practised"] == [] and all(w["portions"] == 0 for w in o["earlier_weeks"])
+    assert client.get(f"{prefix}/challenge/2", headers=ha).json()["practised"] == []
+
+    #  a child is never named and is one of nine; a portion is a real one, first verse to last
+    named = client.post(f"{prefix}/challenge/1/practised", headers=ha,
+                        json={"surah_number": 1, "from_ayah": 1, "to_ayah": 2, "child_name": "w944"})
+    assert named.status_code == 422
+    assert client.get(f"{prefix}/challenge/10", headers=ha).status_code == 422
+    assert client.post(f"{prefix}/challenge/1/practised", headers=ha,
+                       json={"surah_number": 1, "from_ayah": 5, "to_ayah": 2}).status_code == 422
+    assert client.post(f"{prefix}/challenge/1/practised", headers=ha,
+                       json={"surah_number": 1, "from_ayah": 1, "to_ayah": 8}).status_code == 422
+
+    #  what is kept is which portion and which day, under a file no name is in
+    path = _qc._record_path(adult)
+    rec = json.loads(path.read_text(encoding="utf-8"))
+    assert set(rec) == {"children"} and set(rec["children"]) == {"1"}
+    assert all(set(e) == {"surah", "from_ayah", "to_ayah", "on"} for e in rec["children"]["1"])
+    assert adult not in str(path), path
+
+    #  the adult removes the child's record whole
+    rm = client.delete(f"{prefix}/challenge/1", headers=ha)
+    assert rm.status_code == 200 and rm.json()["removed"] == 6, rm.text[:200]
+    assert client.get(f"{prefix}/challenge/1", headers=ha).json()["practised"] == []
+    assert json.loads(path.read_text(encoding="utf-8"))["children"] == {}
+
+    #  a change to the pack holds the tool again
+    _sr.submit(f"w944-lesson2-{tag}", "qep-lesson", "w944 a second lesson text")
+    again = client.get(f"{prefix}/challenge/1", headers=ha)
+    assert again.status_code == 423 and "changed since approval" in again.json()["detail"], again.text[:200]
+
+    #  even were the gate opened by mistake, nobody runs a children's tool without signing in
+    monkeypatch.delenv("AUTH_ENABLED")
+    monkeypatch.setattr(_ap, "children_tools_open", lambda: {"open": True, "pack_hash": "", "pack_state": "approved",
+                                                             "basis": "open: opened in this test process only"})
+    anon = client.get(f"{prefix}/challenge/1")
+    assert anon.status_code == 401 and "signed-in parent or teacher" in anon.json()["detail"], anon.text[:200]

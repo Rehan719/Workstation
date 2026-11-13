@@ -78,6 +78,29 @@ CHILDREN_TOOLS: List[Dict[str, Any]] = [
                      "shown."),
      "routes": [f"GET {CHILDREN_PREFIX}/memorisation/{{surah_number}}/{{ayah_number}}",
                 f"GET {CHILDREN_PREFIX}/memorisation/{{surah_number}}/{{ayah_number}}/next"]},
+    #  W944 - P5.21 clause 4, the second tool
+    {"id": "own-past-challenge",
+     "name": "A challenge against the child's own past, run by a parent or teacher",
+     "run_by": ("a parent or teacher, signed in on their own account. The child is one of the adult's numbered "
+                "children, 1 to 9, and is never named"),
+     "what_a_child_sees": ("How many portions they have practised this week, beside their own earlier weeks. Never "
+                           "another child's number, and no rank, award, streak or score."),
+     "steps": ["After a practice, the adult notes the portion the child practised: a surah, and its first and last "
+               "verse.",
+               "The platform keeps which portion was practised and on which day, for this adult and this numbered "
+               "child only.",
+               "The adult opens the challenge. It shows this week's count of portions practised beside the child's "
+               "own earlier weeks.",
+               "Nothing compares the child with any other child, and nothing counts days in a row.",
+               "The adult can remove the child's record at any time, and nothing of it is kept afterwards."],
+     "wording": ["Portions practised this week: {this_week}.",
+                 "Last week: {last_week}.",
+                 "Can you practise as many this week as last week?",
+                 "This is only about you. Nobody else sees it, and you are not compared with anyone."],
+     "arabic_from": "none: this tool shows no Arabic, only the surah and verse numbers the adult noted.",
+     "routes": [f"POST {CHILDREN_PREFIX}/challenge/{{child}}/practised",
+                f"GET {CHILDREN_PREFIX}/challenge/{{child}}",
+                f"DELETE {CHILDREN_PREFIX}/challenge/{{child}}"]},
 ]
 
 PACK_STORE = "scholar_pack_decisions.json"

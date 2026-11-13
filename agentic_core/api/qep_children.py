@@ -19,8 +19,14 @@ served from the tool's entry in the pack, so the screen says what the scholar ap
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+import datetime as _dt
+import hashlib as _hashlib
 
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+
+from agentic_core.auth.core import get_current_user
+from agentic_core.config import atomic_write_json, data_path, read_json_strict, store_lock
 from agentic_core.religious_domain import api as _qep
 from agentic_core.religious_domain import approval_pack as _ap
 from agentic_core.religious_domain.memorization import practice as _practice
@@ -70,3 +76,116 @@ async def children_memorisation_next(surah_number: int, ayah_number: int, after_
             **_qep._corpus_provenance(_EDITION), "screen": _screen(MEMORISATION),
             "judged": False, "judged_basis": "a position in the verse as fetched; nothing was listened to",
             "kept": False, "kept_basis": _NOTHING_KEPT}
+
+
+# ── TOOL 2 - A CHALLENGE AGAINST THE CHILD'S OWN PAST (W944) ─────────────────────────────────────────────────────
+#  R4: a challenge is only against the child's own past - no ranking, no award, no streak. R6: the adult runs it; the
+#  child does not sign in and is never named: a child is one of the signed-in adult's numbered children, 1 to 9. R7:
+#  what is kept is which portions were practised and on which day, for the adult running the tool. The weekly counts
+#  are worked out from those days on every read, and never kept as a measure of the child.
+CHALLENGE = "own-past-challenge"
+_CHILDREN = range(1, 10)
+_EARLIER_WEEKS = 8
+
+
+def _today() -> _dt.date:
+    return _dt.datetime.now(_dt.timezone.utc).date()
+
+
+def _adult(user) -> str:
+    """The signed-in parent or teacher whose record this is. No children's tool is run without one."""
+    if not (isinstance(user, dict) and user.get("username")):
+        raise HTTPException(status_code=401, detail="A children's tool is run by a signed-in parent or teacher.")
+    return str(user["username"])
+
+
+def _child(child: int) -> str:
+    if child not in _CHILDREN:
+        raise HTTPException(status_code=422, detail=("A child is one of your numbered children, 1 to 9. A child is "
+                                                     "never named here."))
+    return str(child)
+
+
+def _record_path(adult: str):
+    #  the file is named by a digest of the adult's account, so no name of anyone is in a path
+    return data_path("children_practice", _hashlib.sha256(adult.encode("utf-8")).hexdigest()[:32] + ".json")
+
+
+def _load(path) -> dict:
+    return read_json_strict(path, {"children": {}}, expect=dict)
+
+
+class PractisedRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+    surah_number: int
+    from_ayah: int
+    to_ayah: int
+
+
+def _view(slot: str, children: dict) -> dict:
+    """This week's count of portions practised, beside the child's own earlier weeks, and the screen's sentences:
+    the pack's own templates with these counts in them."""
+    days = children.get(slot) or []
+    today = _today()
+    monday = today - _dt.timedelta(days=today.weekday())
+    per_week: dict = {}
+    for e in days:
+        d = _dt.date.fromisoformat(e["on"])
+        start = d - _dt.timedelta(days=d.weekday())
+        per_week[start] = per_week.get(start, 0) + 1
+    this_week = per_week.get(monday, 0)
+    earlier = [{"week_starting": (monday - _dt.timedelta(weeks=i)).isoformat(),
+                "portions": per_week.get(monday - _dt.timedelta(weeks=i), 0)} for i in range(1, _EARLIER_WEEKS + 1)]
+    tool = next(t for t in _ap.CHILDREN_TOOLS if t["id"] == CHALLENGE)
+    counts = {"this_week": this_week, "last_week": earlier[0]["portions"]}
+    return {"child": int(slot), "this_week": this_week, "earlier_weeks": earlier,
+            "screen": {"tool": tool["id"], "name": tool["name"], "wording": list(tool["wording"]),
+                       "sentences": [w.format(**counts) for w in tool["wording"]]},
+            "practised": days,
+            "compared_with": "this child's own earlier weeks, and nobody else",
+            "kept_basis": ("which portion was practised and on which day, for you and this numbered child only; the "
+                           "weekly counts are worked out from those days when read, and are not kept"),
+            "judged": False, "judged_basis": "the adult says a portion was practised; nothing here assesses it"}
+
+
+@router.post("/challenge/{child}/practised")
+async def children_challenge_practised(child: int, req: PractisedRequest,
+                                       user: dict | None = Depends(get_current_user)):
+    """The adult notes that the child practised a portion today: a surah, its first verse and its last."""
+    adult, slot = _adult(user), _child(child)
+    _qep._check_ref(req.surah_number, req.from_ayah)
+    _qep._check_ref(req.surah_number, req.to_ayah)
+    if req.to_ayah < req.from_ayah:
+        raise HTTPException(status_code=422, detail="A portion runs from its first verse to its last; the last is "
+                                                    "before the first here.")
+    path = _record_path(adult)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with store_lock(path):
+        rec = _load(path)
+        rec.setdefault("children", {}).setdefault(slot, []).append(
+            {"surah": req.surah_number, "from_ayah": req.from_ayah, "to_ayah": req.to_ayah, "on": _today().isoformat()})
+        atomic_write_json(path, rec)
+    return _view(slot, rec["children"])
+
+
+@router.get("/challenge/{child}")
+async def children_challenge(child: int, user: dict | None = Depends(get_current_user)):
+    """The challenge: this week beside the child's own earlier weeks."""
+    adult, slot = _adult(user), _child(child)
+    return _view(slot, _load(_record_path(adult)).get("children") or {})
+
+
+@router.delete("/challenge/{child}")
+async def children_challenge_remove(child: int, user: dict | None = Depends(get_current_user)):
+    """The adult removes this child's record. Nothing of it is kept afterwards."""
+    adult, slot = _adult(user), _child(child)
+    path = _record_path(adult)
+    removed = 0
+    if path.exists():
+        with store_lock(path):
+            rec = _load(path)
+            removed = len((rec.get("children") or {}).pop(slot, None) or [])
+            atomic_write_json(path, rec)
+    return {"child": int(slot), "removed": removed,
+            "basis": (f"removed the {removed} portion(s) noted for this child; nothing of them is kept" if removed else
+                      "there was nothing noted for this child to remove")}
