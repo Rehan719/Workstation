@@ -23793,6 +23793,25 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in W938. generate_vsb_repo writes RUN.md from what is on disk: one command (Python's own static server, run from the repository's folder, so the surfaces' links to each other resolve) and the page to open for each generated surface, or that it has not been generated; it says none of the three is a server-side app and nothing is deployed. Driving a clone found the website's links to the two apps dead when they were not generated; such an app now has a placeholder page at that link, saying so, a scaffold in the manifest's parts and never written over a generated app. test_w938 clones the repository with git into a clean folder, serves it by RUN.md's own command on a free port, and reads every page RUN.md names (the clone's own bytes) and every relative link on every page reached; again for an entity with only its website generated."
+    },
+    {
+      "id": "FU-1185",
+      "title": "OWNER DECISION: what arithmetic turns an entity's declared cost and its waterfall into a price?",
+      "why": "P5.2 asks for a price in WST derived from the waterfall and the entity's own costs, never typed. W939 built its inputs: the entity's effective waterfall, read the way the waterfall page reads it, and a cost a person declares for each deliverable, with what it is made of. Every price is recomputed on read and is null, with the reason, while an input is missing. The waterfall splits a profit; it does not set one, so the arithmetic needs a margin or a target that no ruling states. RECOMMENDED: price = the declared cost / (1 - the prudential reserve rate, 20% as a cycle applies by default - a margin you set once for the platform, 20% unless you choose otherwise). A deliverable that costs 60 WST is then priced at 100 WST: 20 WST goes to the reserve and 20 WST is distributable profit, from which the platform fee is taken first (25%, P5.16 clause 3) and the entity's own waterfall splits the rest. Virtual WST throughout; a sale is recorded as a revenue event only in a later round.",
+      "source": "W939 (P5.2's first round: the arithmetic no ruling states)",
+      "found": "2026-11-13",
+      "files": [
+        "agentic_core/api/economy.py",
+        "agentic_core/economy/metabolism.py"
+      ],
+      "severity": "medium",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.2 derives a price from the waterfall, which splits a profit and does not set one; what margin or target the derivation uses is the Owner's",
+      "tier": 2
     }
   ],
   "routes": [

@@ -489,6 +489,10 @@ app.include_router(review_options_api.router, dependencies=[_Depends(_get_curren
 #  sign-in only the entity's owner, or an administrator, reaches it
 from agentic_core.api import entity_specialists as entity_specialists_api
 app.include_router(entity_specialists_api.router, dependencies=[_Depends(_get_current_user)])
+#  W939 (P5.2) - a price in WST is recomputed on read from inputs it names, null while any is absent; the cost a
+#  deliverable carries is a person's declaration. Owner-scoped like the rest of the economy
+from agentic_core.api import pricing as pricing_api
+app.include_router(pricing_api.router, dependencies=[_Depends(_get_current_user)])
 from agentic_core.api import board as board_api
 app.include_router(board_api.router, dependencies=[_Depends(_require_admin)])   # W505 (P2.6): the Board is the apex governance tier
 

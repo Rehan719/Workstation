@@ -79397,3 +79397,83 @@ def test_w938_p54_a_clean_clone_of_the_entity_repository_serves_its_own_pages_by
         assert "has not been generated yet" in (clone2 / app / "index.html").read_text(encoding="utf-8")
     parts2 = {p["path"]: p["part"] for p in m2["parts"]}
     assert (parts2["webapp/index.html"], parts2["mobile/index.html"]) == ("scaffold", "scaffold")
+
+
+def test_w939_p52_a_price_is_recomputed_on_read_and_is_null_while_an_input_is_absent(client):
+    """P5.2 part 1 (W939). OWNER RULING 2026-09-27: a price in WST is derived from the waterfall and the entity's own
+    costs, never typed, and a deliverable whose cost inputs are missing has no price. ACCEPT (in part): each price is
+    recomputed from the waterfall on read with a basis naming its inputs; changing a VSB's waterfall changes its
+    prices; an absent input yields null and a reason, never a figure. Measured: no pricing module or route existed,
+    no cost could be declared for a deliverable, and no ruling says what arithmetic turns a cost and a waterfall into
+    a price. Driven here:
+    - a deliverable's price is null and names both absent inputs, the cost and the arithmetic; its waterfall input is
+      the one the waterfall page reads;
+    - each short or wrong declaration of a cost is refused, with nothing written; a deliverable of another entity is
+      not found;
+    - a declared cost is an input, with what it is made of, who declared it and when, and the price stays null on the
+      arithmetic alone; a later declaration supersedes an earlier one, which is kept;
+    - the waterfall changed, the next read of the price carries the new one;
+    - the arithmetic is put to the Owner: an open OWNER DECISION row with its recommendation, on the resume prompt's
+      list of what is still with the Owner."""
+    import json
+    import pathlib
+    from agentic_core.api import pricing
+    root = pathlib.Path(__file__).resolve().parents[1]
+
+    def entity(name):
+        r = client.post("/api/v1/genesis/establish", json={"problem": f"w939 {name}", "ship_output": False, "name": name})
+        assert r.status_code == 200, r.text[:300]
+        vid = r.json()["vsb_id"]
+        d = client.post("/api/v1/deliverables/produce", json={"vsb_id": vid, "type": "report", "title": f"{name} report",
+                                                              "brief": "w939 a report whose price is asked"})
+        assert d.status_code == 200, d.text[:300]
+        return vid, d.json()["id"]
+
+    vid, did = entity("W939 Priced")
+    q = {"vsb_id": vid, "deliverable_id": did}
+    a0 = client.get("/api/v1/economy/price", params=q).json()
+    assert a0["price_wst"] is None and [m["input"] for m in a0["missing"]] == ["cost", "arithmetic"], a0
+    wf = client.get("/api/v1/economy/waterfall", params={"vsb_id": vid}).json()
+    assert a0["inputs"]["waterfall"]["proportions"] == wf["waterfall"] and a0["inputs"]["waterfall"]["source"] == wf["source"]
+    assert a0["inputs"]["cost"] is None and "never a default figure" in a0["basis"] and a0["currency"] == "WST (virtual)"
+    assert "does not set one" in a0["missing"][1]["says"]
+
+    base = {**q, "cost_wst": 60, "made_of": "two days of one person's work, stated for this test"}
+    _, other_did = entity("W939 Other")
+    for bad, code in (({**base, "cost_wst": 0}, 422), ({**base, "cost_wst": -5}, 422), ({**base, "made_of": " "}, 422),
+                      ({**base, "price_wst": 100}, 422), ({**base, "deliverable_id": "no-such-deliverable"}, 404),
+                      ({**base, "deliverable_id": other_did}, 404)):
+        r = client.post("/api/v1/economy/deliverable-cost", json=bad)
+        assert r.status_code == code, (bad, r.status_code, r.text[:200])
+    assert client.get("/api/v1/economy/deliverable-cost", params=q).status_code == 404, "a refused declaration wrote something"
+
+    d1 = client.post("/api/v1/economy/deliverable-cost", json=base)
+    assert d1.status_code == 200, d1.text[:300]
+    a1 = d1.json()["price_now"]
+    assert a1["price_wst"] is None and [m["input"] for m in a1["missing"]] == ["arithmetic"], a1["missing"]
+    c = a1["inputs"]["cost"]
+    assert (c["cost_wst"], c["made_of"], c["declared_by"]) == (60, base["made_of"], "single-user-mode") and c["declared_at"]
+    assert client.post("/api/v1/economy/deliverable-cost", json={**base, "cost_wst": 75}).status_code == 200
+    g = client.get("/api/v1/economy/deliverable-cost", params=q).json()
+    assert g["cost"]["cost_wst"] == 75 and [x["cost_wst"] for x in g["superseded"]] == [60]
+    assert client.get("/api/v1/economy/price", params=q).json()["inputs"]["cost"]["cost_wst"] == 75
+
+    #  the waterfall changed: the next read of the price carries the new one
+    new = {"owner": 0.10, "self_investment": 0.25, "capital_fund": 0.20, "user_projects": 0.15, "charity": 0.30}
+    w = client.post("/api/v1/economy/waterfall", json={"vsb_id": vid, "proportions": new})
+    assert w.status_code == 200, w.text[:300]
+    a2 = client.get("/api/v1/economy/price", params=q).json()
+    assert a2["inputs"]["waterfall"]["proportions"] != a0["inputs"]["waterfall"]["proportions"]
+    assert a2["inputs"]["waterfall"]["proportions"] == client.get("/api/v1/economy/waterfall", params={"vsb_id": vid}).json()["waterfall"]
+    assert a2["inputs"]["waterfall"]["source"] == "owner_override" and a2["price_wst"] is None
+
+    #  the arithmetic is the Owner's, put with the recommendation where the Owner reads
+    assert pricing.ARITHMETIC is None, "a price arithmetic was set without the Owner's ruling"
+    reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    row = next((r for r in reg if r.get("title") == (
+        "OWNER DECISION: what arithmetic turns an entity's declared cost and its waterfall into a price?")), None)
+    assert row and (row["status"], row.get("owner_gated"), row.get("slot")) == ("open", True, "OWNER"), row
+    assert "RECOMMENDED: price = the declared cost / (1 - the prudential reserve rate" in row["why"]
+    prompt = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    still = prompt.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0]
+    assert f"{row['id']} (W939): what arithmetic turns an entity's declared cost and its waterfall into a price?" in still
