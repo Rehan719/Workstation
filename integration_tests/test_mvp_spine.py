@@ -82357,3 +82357,64 @@ def test_w977_p522_the_final_audits_workflow_is_handed_the_census_and_joined_int
     vite = (root / "apps/workstation-superapp/vite.config.js").read_text(encoding="utf-8")
     assert "src/audit/FidelityAuditFinal.test.ts drives the final audit's workflow script" in vite
     assert "include: ['src/**/*.test.{ts,tsx}']," in vite
+
+
+def test_w978_fu399_the_companion_reads_the_index_it_is_given_and_says_a_failed_read(client, monkeypatch, tmp_path):
+    """FU-399 part 11 (W978). The Horizon Companion shows each request as it was recorded, what its run consumed, and
+    what the owned knowledge index holds. Three guards read its source. HorizonCompanion.test.tsx mounts the real page
+    against the answers the three routes gave on a fresh store, and rendering it found three defects, fixed here:
+    - the index panel read counts, embedding_backend, bounds and files from the top of GET /api/v1/horizon/archive,
+      which answers {manifest, recount}; so it printed "0 file(s) indexed · 0 not read · 0 excluded" whatever the
+      index held, with none of its caps and none of the files it could not read. It reads the manifest now, and an
+      index never scanned says so instead of three zeros;
+    - archive.recount() reported a store never scanned as published counts that DISAGREE with a recount ("at least one
+      file is in a state the counts do not reflect"). With no manifest it now says no scan is recorded, agrees None;
+    - a failed read of what runs consumed made every card say "No ConsumptionRecord was joined to this run"; the card
+      now says the read failed, with its reason, and a refused read of the records says its reason too.
+    Held here: the real page is mounted and every id the test reads is rendered; the panel reads the manifest and no
+    longer types its own sentence in place of the server's; the recount of a store never scanned, and of one scanned;
+    and the captured answers are the live routes', field for field."""
+    import json
+    import os
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    page_dir = root / "apps/workstation-superapp/src/pages/governance"
+    page = (page_dir / "HorizonCompanion.tsx").read_text(encoding="utf-8")
+    t = (page_dir / "HorizonCompanion.test.tsx").read_text(encoding="utf-8")
+    assert "import { HorizonCompanion } from './HorizonCompanion';" in t and "<HorizonCompanion />" in t
+    read = set(re.findall(r"ByTestId\('([^']+)'\)", t))
+    assert {"companion-record", "companion-consumption", "consumption-unread", "horizon-archive-counts",
+            "horizon-archive-not-scanned", "horizon-archive-recount", "horizon-archive-embeddings-basis"} <= read, sorted(read)
+    for tid in read:
+        assert f'data-testid="{tid}"' in page or f"data-testid={{`{tid}" in page or tid.startswith("field-"), tid
+
+    #  the panel reads the manifest the route returns, and types no sentence in place of the server's
+    assert "archive.counts" not in page and "archive.embedding_basis" not in page and "archive.bounds" not in page
+    assert "archive.manifest.counts.INDEXED" in page and "{archive.manifest.search_basis}" in page
+    assert "Search here is this platform’s own LEXICAL index" not in page, "the page types the server's sentence itself"
+    assert "setConsumptionErr(`What each run consumed could not be read (HTTP ${r.status}${said(r.data)}).`)" in page
+
+    #  the recount: a store never scanned has nothing to check, and a scanned one agrees with itself
+    from agentic_core.horizon import archive as _ar978
+    monkeypatch.setattr(_ar978, "_store", lambda: tmp_path / "asset_index.json")
+    monkeypatch.setattr(_ar978, "_inbox", lambda: str(tmp_path / "inbox"))
+    never = _ar978.recount()
+    assert never["agrees"] is None and never["basis"].startswith("no scan of the inbox is recorded"), never
+    os.makedirs(tmp_path / "inbox")
+    (tmp_path / "inbox" / "w978-note.md").write_text("# a note\nread into the index\n", encoding="utf-8")
+    scanned = _ar978.scan()
+    assert scanned["counts"]["INDEXED"] == 1 and _ar978.recount()["agrees"] is True
+
+    #  the captured answers are the live routes', field for field
+    fx = json.loads((page_dir / "HorizonCompanion.fixture.json").read_text(encoding="utf-8"))
+    live = client.get("/api/v1/horizon/records?limit=25").json()
+    assert set(fx["records"]) <= set(live) and set(fx["records_empty"]) <= set(live)
+    assert set().union(*(set(r) for r in fx["records"]["records"])) >= {
+        "intent_id", "asked", "asked_basis", "compression", "compression_basis", "decision", "decision_terms",
+        "decision_basis", "gated", "gating_basis", "reflection_tag", "reflection_tag_basis", "fields_basis"}
+    assert set(fx["consumption"]) <= set(client.get("/api/v1/horizon/consumption?limit=100").json())
+    assert set(fx["archive_scanned"]) == set(client.get("/api/v1/horizon/archive").json()) == {"manifest", "recount"}
+    assert set(fx["archive_scanned"]["manifest"]) <= set(scanned), sorted(set(fx["archive_scanned"]["manifest"]) - set(scanned))
+    assert set(fx["archive_scanned"]["recount"]) <= set(_ar978.recount())
+    assert fx["archive_unscanned"]["manifest"] == {} and fx["archive_unscanned"]["recount"]["agrees"] is None
