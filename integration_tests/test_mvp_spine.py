@@ -76651,3 +76651,33 @@ def test_w897_config_holds_data_only_and_its_one_live_module_is_in_agentic_core(
     copies = [ln.split()[1] for ln in (root / "Dockerfile").read_text(encoding="utf-8").splitlines()
               if ln.strip().startswith("COPY ")]
     assert "config" in [c.rstrip("/").lstrip("./") for c in copies], ("the image no longer copies config/'s data", copies)
+
+
+def test_w898_the_rate_limiter_takes_no_debt_from_a_clock_read_behind_its_last_refill(monkeypatch):
+    """Found in W891's suite. Its limiter line said one call slept 240.7s at 6000 a minute, and the suite before it
+    said 240.6s. test_w658 moves the clock ahead by the immune window, five minutes and a second, to age an
+    observation. The clock it moves is the time module's own, so the calls that test makes stamp the gateway
+    limiter's last refill five minutes ahead. When monkeypatch puts the clock back, the next call read the difference
+    as negative elapsed time: about 24,000 calls of debt at 6000 a minute, and a four-minute sleep. Elapsed time is now
+    never negative. Driven: the clock is moved ahead and back as test_w658 moves it, and the next call does not wait.
+    The limit still holds: at 60 a minute, the 61st call of a burst waits about a second."""
+    import asyncio
+    import time as _t898
+    from agentic_core.ai import gateway as _gw898
+    lim = _gw898._RateLimiter(6000)
+    assert lim._reserve() == 0.0
+    real = _t898.monotonic
+    ahead = real() + 301
+    monkeypatch.setattr(_t898, "monotonic", lambda: ahead)    # as test_w658 moves it, for the immune window
+    assert lim._reserve() == 0.0                              # a call made under the moved clock
+    monkeypatch.setattr(_t898, "monotonic", real)             # put back, as monkeypatch does at that test's end
+    wait = lim._reserve()
+    assert wait == 0.0, f"a clock read behind the last refill put the limiter in debt: the next call waits {wait:.1f}s"
+    assert lim._tokens >= 5990, lim._tokens
+    t0 = real()
+    asyncio.run(lim.acquire())
+    assert real() - t0 < 1.0 and lim.waited == 0, (lim.stats(), "a call waited after the clock was put back")
+
+    lim60 = _gw898._RateLimiter(60)
+    waits = [lim60._reserve() for _ in range(61)]
+    assert waits[:60] == [0.0] * 60 and 0.9 < waits[60] < 1.1, ("the limit no longer holds", waits[58:])

@@ -23508,6 +23508,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that found it: the record's reader reads through read_json_strict, which retries a file the OS withholds for a moment, and still answers no rows for a store that cannot be read whole. Driven in test_w895. Whether this was the cause of the Windows failure cannot be shown from that job's log; it is the one step of that test's read that Windows takes differently."
+    },
+    {
+      "id": "FU-1173",
+      "title": "The gateway's rate limiter took a clock read behind its last refill as debt, and the next call slept four minutes",
+      "why": "Found in W891's suite, whose limiter line said one call slept 240.7s at 6000 a minute (the suite before it, 240.6s). test_w658 moves the time module's clock ahead by the immune window (301s) to age an observation, so the calls it makes stamp the gateway limiter's last refill five minutes ahead. When the clock is put back, the next call read the difference as negative elapsed time: about 24,000 calls of debt, and a four-minute sleep in that worker. Reproduced outside the suite: 241.0s.",
+      "source": "W898 (W891's suite limiter line)",
+      "found": "2026-11-13",
+      "files": [
+        "agentic_core/ai/gateway.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W898",
+      "note": "",
+      "slot_source": "a suite-reliability rider, beside FU-1141 (the limiter's cost) on this item",
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that found it: elapsed time is never negative, so a clock read behind the last refill takes no debt. Driven in test_w898: the clock moved ahead and back as test_w658 moves it, and the next call does not wait; the limit still holds. No clock the platform runs on goes back, so nothing changes outside the suite."
     }
   ],
   "routes": [

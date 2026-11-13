@@ -212,7 +212,10 @@ class _RateLimiter:
         holds the lock, and it never waits."""
         with self._lock:
             now = time.monotonic()
-            self._tokens = min(self._limit, self._tokens + (now - self._last) * (self._limit / 60.0))
+            #  W898 - elapsed time is never negative. A clock read behind the last refill was taken as debt:
+            #  test_w658 moves the time module's clock five minutes ahead and back, and the next call slept four
+            #  minutes at 6000 a minute
+            self._tokens = min(self._limit, self._tokens + max(0.0, now - self._last) * (self._limit / 60.0))
             self._last = now
             self._tokens -= 1
             self.calls += 1
