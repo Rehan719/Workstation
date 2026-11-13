@@ -6,7 +6,7 @@ import asyncio
 import os
 import logging
 from typing import Dict, Any, List, Optional
-from config.paths import DATA_DIR
+from agentic_core.store_paths import DATA_DIR
 from pydantic import BaseModel
 from agentic_core.ai.ceo.memory_v01 import memory_v01, meeting_log
 from agentic_core.ai.native.orchestrator import orchestrator

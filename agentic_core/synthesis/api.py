@@ -10,7 +10,7 @@ from pydantic import BaseModel
 import datetime
 import uuid
 
-from config.paths import DATA_DIR
+from agentic_core.store_paths import DATA_DIR
 from agentic_core.ai.gateway import gateway
 from agentic_core.synthesis.presentation import presentation_gen
 from agentic_core.synthesis.business_model import business_simulator

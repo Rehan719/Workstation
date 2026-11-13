@@ -30,6 +30,17 @@ This was **Stage 1** (whole-dir archival). A later, more surgical Stage 2 may ar
 **modules inside partially-wired dirs**. The real-vs-mock record of the integration sweep is in
 `docs/AGENTIC_CORE_INTEGRATION_AUDIT.md`; the canonical vision/state docs are in `docs/`.
 
+## Later moves: config/ (2026-11-13, W897)
+
+**What moved:** the Python half of the top-level `config/` folder, the last tree W877's measure found beside
+agentic_core (FU-1168). Its one live module, `config/paths.py` (where the memory store, the interaction log and the
+synthesis, ingestion, CEO and QEP stores live), moved into the live tree as `agentic_core/store_paths.py`, and its ten
+importers now import it from there. `config/loader.py` and `config/database.py`, which nothing imports, and
+`config/__init__.py` moved here as `_archive/config/`. The data files (`privacy_allow.json`, read at run time, and the
+YAML) stay in `config/`, which is configuration, not a source tree.
+
+**On whose ruling:** the same refusal (a) of 2026-09-30. Nothing was deleted.
+
 ## Later moves: src/ (2026-11-13, W896)
 
 **What moved:** the top-level `src/` package, the second tree W877's measure found beside agentic_core (FU-1168). Of

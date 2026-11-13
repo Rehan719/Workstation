@@ -17285,7 +17285,7 @@ def test_w473_canon_and_suite_hygiene_before_m1(client, tmp_path, monkeypatch):
     assert "test_w473_" in (root / "docs/compliance/MANDATES.md").read_text(encoding="utf-8")
 
     # ── FU-026: the data root is the repository; a larger legacy store is named, never switched away from silently ──
-    from config import paths
+    from agentic_core import store_paths as paths            # W897 (FU-1168) - moved from config/paths.py
     assert paths.BASE_DIR == root and paths.LOG_DIR == root / "logs" and paths.GENOME_DIR == root / "genome"
     assert paths.legacy_store_warning() is None                               # tests run under WORKSTATION_DATA_DIR
     monkeypatch.delenv("WORKSTATION_DATA_DIR", raising=False)
@@ -69001,7 +69001,7 @@ def test_w748_the_suite_refuses_to_run_against_the_real_store(tmp_path):
     assert "--noconftest" not in (_root_w748 / "docs" / "DEPLOYMENT.md").read_text(encoding="utf-8"), (
         "the deploy check still runs the suite without its conftest")
     from agentic_core.api import operational_excellence as _oe_w748
-    from config import paths as _cp_w748
+    from agentic_core import store_paths as _cp_w748         # W897 (FU-1168) - moved from config/paths.py
     assert _pl_w748.Path(_os_w748.environ["DATA_DIR"]).resolve() in _pl_w748.Path(_oe_w748._STORE).resolve().parents, (
         "the operations record is not under this run's DATA_DIR", str(_oe_w748._STORE))
     assert _pl_w748.Path(_os_w748.environ["WORKSTATION_DATA_DIR"]).resolve() in \
@@ -76443,7 +76443,7 @@ def test_w893_the_stores_config_paths_names_follow_the_data_root_a_deployment_se
 
     root = pathlib.Path(__file__).resolve().parents[1]
     names = ("DATA_DIR", "MEMORY_FILE", "INTERACTIONS_DB", "L7_REGISTRY_FILE", "MEETING_LOG_FILE", "CHROMA_DB_PATH")
-    probe = ("import json, config.paths as p; "
+    probe = ("import json, agentic_core.store_paths as p; "   # W897 - moved from config/paths.py
              f"print(json.dumps({{k: str(getattr(p, k)) for k in {names!r}}}))")
     base = {k: v for k, v in os.environ.items() if k not in ("DATA_DIR", "WORKSTATION_DATA_DIR")}
 
@@ -76470,10 +76470,10 @@ def test_w893_the_stores_config_paths_names_follow_the_data_root_a_deployment_se
     for rel in ("agentic_core/ai/memory.py", "agentic_core/ai/logger.py", "agentic_core/synthesis/api.py",
                 "agentic_core/ingestion/api.py", "agentic_core/api/v138/ceo.py",
                 "agentic_core/synthesis/content_production.py", "agentic_core/reactor/religion/qep_flagship.py"):
-        assert "from config.paths import" in (root / rel).read_text(encoding="utf-8"), rel
+        assert "from agentic_core.store_paths import" in (root / rel).read_text(encoding="utf-8"), rel
 
     # 5. never a silent switch: the memory left at the old root is said, until the new root holds as much
-    from config import paths as _p893
+    from agentic_core import store_paths as _p893            # W897 - moved from config/paths.py
     monkeypatch.delenv("WORKSTATION_DATA_DIR", raising=False)
     monkeypatch.setenv("DATA_DIR", str(tmp_path / "now"))
     monkeypatch.setattr(_p893, "BASE_DIR", tmp_path / "repo")
@@ -76605,3 +76605,49 @@ def test_w896_src_no_longer_stands_beside_agentic_core_its_live_modules_moved_in
             if not (root / "docs" / m.group(1)).resolve().exists()]
     assert not dead, ("the index links to src/ paths that are not there", dead)
     assert "src/" not in (root / "scripts" / "import_integrity_baseline.txt").read_text(encoding="utf-8").replace("_archive/src/", "")
+
+
+def test_w897_config_holds_data_only_and_its_one_live_module_is_in_agentic_core():
+    """FU-1168, part 3: config/, the last tree W877's measure found beside agentic_core, against the Owner's ratified
+    refusal (a) of 2026-09-30 (no parallel source tree). Read before moving: the live code imported one module,
+    config/paths.py, in ten places. Its two other modules were imported by nothing, and its __init__ only made the
+    folder a package. paths.py is now agentic_core/store_paths.py, and the other three are in _archive/config/. The
+    data files stay: config/ is configuration, read at run time (privacy_allow.json), and the image still copies it."""
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+
+    # 1. config/ is a folder of data: no Python file, so no package
+    py = sorted(str(p.relative_to(root)) for p in (root / "config").rglob("*.py") if "__pycache__" not in p.parts)
+    assert py == [], ("config/ still holds Python source", py)
+    for data in ("privacy_allow.json", "immutable_genome.yaml", "constraints/absolute_constraints.yaml"):
+        assert (root / "config" / data).exists(), ("a data file left config/", data)
+
+    # 2. no live code imports config as a package any more
+    offenders = []
+    for base in ("agentic_core", "scripts", "integration_tests"):
+        for p in (root / base).rglob("*.py"):
+            if "__pycache__" in p.parts:
+                continue
+            for ln in p.read_text(encoding="utf-8", errors="replace").splitlines():
+                s = ln.strip()
+                if s.startswith(("from config.", "from config import", "import config.")) or s == "import config":
+                    offenders.append(f"{p.relative_to(root)}: {s}")
+    assert not offenders, ("live code still imports the config/ package", offenders[:5])
+
+    # 3. the moved module is the one its importers read, with the same names
+    from agentic_core import store_paths as _sp897
+    from agentic_core.ai import memory as _mem897
+    for name in ("DATA_DIR", "MEMORY_FILE", "INTERACTIONS_DB", "L7_REGISTRY_FILE", "MEETING_LOG_FILE", "LOG_DIR",
+                 "GENOME_DIR", "BASE_DIR"):
+        assert hasattr(_sp897, name), name
+    assert _sp897.BASE_DIR == root, (_sp897.BASE_DIR, root)
+    assert "from agentic_core.store_paths import MEMORY_FILE" in (root / "agentic_core/ai/memory.py").read_text(encoding="utf-8")
+    assert _mem897 is not None
+
+    # 4. the rest is archived verbatim, and the image still copies the data
+    for name in ("loader.py", "database.py", "__init__.py"):
+        assert (root / "_archive" / "config" / name).exists(), name
+    assert "Later moves: config/" in (root / "_archive" / "README.md").read_text(encoding="utf-8")
+    copies = [ln.split()[1] for ln in (root / "Dockerfile").read_text(encoding="utf-8").splitlines()
+              if ln.strip().startswith("COPY ")]
+    assert "config" in [c.rstrip("/").lstrip("./") for c in copies], ("the image no longer copies config/'s data", copies)

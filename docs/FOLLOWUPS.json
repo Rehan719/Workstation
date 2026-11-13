@@ -23416,11 +23416,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W897",
       "note": "",
       "slot_source": "the same ruled refusal and the same item as FU-605, which W877 closed for core/",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built as the row asked, reading before moving. src/ (W896): of 24 tracked files the live code reached three, through the avatar tool registry; they moved into agentic_core/avatars/tools/, and the other 21 moved verbatim to _archive/src/. config/ (W897): its one live module, paths.py, moved into agentic_core as store_paths.py with its ten importers; loader.py, database.py and __init__.py, imported by nothing, moved to _archive/config/; the data files stay in config/, which is configuration read at run time, not a source tree. W893 first made paths.py follow DATA_DIR, as the deployments set it. Nothing deleted. Driven in test_w893, test_w896 and test_w897."
     },
     {
       "id": "FU-1169",

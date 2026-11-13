@@ -1,3 +1,5 @@
+#  W897 (FU-1168) - moved from config/paths.py into the live tree: config/ stands beside agentic_core only as
+#  a folder of data now (the Owner's refusal (a) of 2026-09-30, no parallel source tree).
 import logging
 import os
 from pathlib import Path
