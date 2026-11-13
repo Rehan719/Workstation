@@ -81090,7 +81090,7 @@ def test_w959_fu1181_no_call_ends_in_a_catch_that_returns_nothing_unclassified()
     assert api.count("export function bodyOrNull") == 1 and "return r.json().then((b: T) => b, notJson);" in api
     assert "Each caller of bodyOrNull checks the answer's" in api and "const notJson = (): null => null;" in api
     users = [f for f in files if "bodyOrNull(" in _code_only(f.read_text(encoding="utf-8")) and f.name != "api.ts"]
-    assert len(users) == 13, sorted(f.name for f in users)   # W960: + lib/auth.ts, ForgePipeline, SwarmIntelligence; W982: + AgentHubPanel, QEPIntelligence, VSBCockpit
+    assert len(users) == 14, sorted(f.name for f in users)   # W960: + lib/auth.ts, ForgePipeline, SwarmIntelligence; W982: + AgentHubPanel, QEPIntelligence, VSBCockpit; W989: + lib/download.ts
     for f in users:
         code = _code_only(f.read_text(encoding="utf-8"))
         for m in re.finditer(r"bodyOrNull\((\w+)\)", code):
@@ -83026,3 +83026,54 @@ def test_w988_fu399_the_business_plan_measures_no_progress_over_no_objective_and
     fx = json.loads((pdir / "BusinessPlan.fixture.json").read_text(encoding="utf-8"))
     assert fx["plan_unreadable"]["status"] == 503 and fx["plan_unreadable"]["body"]["detail"].count("nothing was written") == 1
     assert fx["plan_empty"]["objectives"] == [] and len(fx["plan_one"]["objectives"]) == 1
+
+
+def test_w989_fu399_the_deliverables_page_never_shows_an_unread_list_as_empty_and_says_each_refusals_reason(client):
+    """FU-399 part 21 (W989). The Deliverables page produces a living deliverable, lists them, opens one with its
+    versions and its gates, refines it into a new version, and exports it. Deliverables.test.tsx mounts the real page
+    against the answers its routes gave on a fresh store, and has the server refuse each read and each action. Rendering
+    it found four defects, fixed:
+    - a refused read of the deliverables left the list at none, so under the failure the page said "Deliverables (0)"
+      and "None yet — produce one above."; it now says the list was not read;
+    - a refused read of the types said "Failed to load types", with no reason, as the action error the next action
+      cleared; it is said where the page's reads are said, with the server's reason;
+    - a refused refine or version said only "refine HTTP 503" / "version HTTP 409"; both go through apiJson and the page
+      says which step stopped and the server's reason;
+    - the shared download helper said "Export failed (HTTP 404)" and dropped the server's reason on every page that
+      exports, and this page said it in an alert; the helper carries the reason and the page says it on the page.
+    Held here: the export route's refusal is a reason worth carrying; and the page's and the helper's code."""
+    import json
+    import pathlib
+    import re
+    r = client.get("/api/v1/deliverables/deliv-w989-none/export?format=md")
+    assert r.status_code == 404 and r.json()["detail"] == "Deliverable deliv-w989-none not found.", r.text
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = root / "apps/workstation-superapp/src"
+    page = (src / "pages/Deliverables.tsx").read_text(encoding="utf-8")
+    shared = (src / "components/ReadFailures.tsx").read_text(encoding="utf-8")
+    dl = _code_only((src / "lib/download.ts").read_text(encoding="utf-8"))
+    t = (src / "pages/Deliverables.test.tsx").read_text(encoding="utf-8")
+    assert "import { Deliverables } from './Deliverables';" in t and "<Deliverables />" in t
+    read = set(re.findall(r"ByTestId\('([^']+)'\)", t))
+    assert {"deliverables-unread", "deliverables-error", "read-failure"} <= read, sorted(read)
+    for tid in read:
+        assert f'data-testid="{tid}"' in page or f'data-testid="{tid}"' in shared, tid
+    code = _code_only(page)
+    #  an unread list is not an empty one
+    assert ".catch(e => { setListUnread(true); noteRead('the deliverables')(e); });" in code
+    assert "The deliverables could not be read, so this is not a list of none." in code
+    assert "Deliverables ({listUnread && list.length === 0 ? 'not read' : list.length})" in code
+    #  the types' failure, with its reason, where reads are said
+    assert ".catch(noteRead('the deliverable types'));" in code and "Failed to load types" not in code
+    #  a refused refine or version: the step and the server's reason
+    assert "await apiJson('/api/v1/refine', {" in code and "fetch('/api/v1/refine'" not in code
+    assert "refine HTTP" not in code and "version HTTP" not in code and "step = 'version';" in code
+    assert "'The refine was not done' : 'The refined text was not saved as a new version'}: ${errorMessage(e)}" in code
+    #  a refused export: the server's reason, on the page
+    assert "catch (e: any) { setError(e?.message ?? 'Export failed'); }" in code and "alert(" not in code
+    assert dl.count("if (!r.ok) throw await refused(r);") == 2 and "throw new Error(`Export failed (HTTP ${r.status})`)" not in dl
+    assert "const d = (await bodyOrNull(r))?.detail;" in dl and "Export failed (HTTP ${r.status})${d ?" in dl
+    fx = json.loads((src / "pages/Deliverables.fixture.json").read_text(encoding="utf-8"))
+    assert fx["export_missing"]["status"] == 404 and fx["export_missing"]["body"]["detail"].startswith("Deliverable ")
+    assert fx["list_empty"]["deliverables"] == [] and len(fx["version"]["versions"]) == len(fx["one"]["versions"]) + 1

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { FileText, Loader2, Sparkles, RefreshCw, Layers, Download } from 'lucide-react';
 import { downloadExport } from '../lib/download';
-import { apiJson, errorMessage, provenanceBadge, qmsChip, qmsStubFlag, complianceChip, immuneReading } from '../lib/api';
+import { apiJson, ApiError, errorMessage, provenanceBadge, qmsChip, qmsStubFlag, complianceChip, immuneReading } from '../lib/api';
 import { ReadFailures, useReadFailures } from '../components/ReadFailures';   // W928
 
 interface DType { id: string; sections: string[] }
@@ -77,15 +77,20 @@ export const Deliverables: React.FC = () => {
   // dropping its oldest reads as complete. The API now says whether it is AT its cap; this page is
   // where a reader meets the number, so it is said here rather than only in the payload.
   const [listBasis, setListBasis] = useState<{ truncated?: boolean; total_basis?: string } | null>(null);
+  //  W989 (FU-399 part 21) - AN UNREAD LIST IS NOT AN EMPTY ONE. A refused read left the list at none, so under the
+  //  failure the page said "Deliverables (0)" and "None yet — produce one above." It says the list was not read.
+  const [listUnread, setListUnread] = useState(false);
   const loadList = () =>
     apiJson('/api/v1/deliverables').then(d => {
       setList(d.deliverables || []);
       setListBasis({ truncated: d.truncated, total_basis: d.total_basis });
+      setListUnread(false);
       clearRead('the deliverables');
-    }).catch(noteRead('the deliverables'));
+    }).catch(e => { setListUnread(true); noteRead('the deliverables')(e); });
 
   useEffect(() => {
-    apiJson('/api/v1/deliverables/types').then(d => setTypes(d.types || [])).catch(() => setError('Failed to load types'));
+    //  W989 - this said "Failed to load types", with no reason, as the action error the next action cleared
+    apiJson('/api/v1/deliverables/types').then(d => setTypes(d.types || [])).catch(noteRead('the deliverable types'));
     apiJson('/api/v1/deliverables/output-formats')
       .then(d => { if (Array.isArray(d.live) && d.live.length) setFormats(d.live.map((f: any) => ({ id: f.id, label: f.label, basis: typeof f.basis === 'string' ? f.basis : undefined }))); })
       .catch(noteRead('the output formats'));
@@ -130,29 +135,33 @@ export const Deliverables: React.FC = () => {
   const refineToNextVersion = async () => {
     if (!selected || !refineInstr.trim() || refining) return;
     setRefining(true); setError('');
+    //  W989 (FU-399 part 21) - a refusal said only "refine HTTP 503" or "version HTTP 409". Both calls go through
+    //  apiJson: the page says which step stopped and the server's reason; its own messages stand as written.
+    let step: 'refine' | 'version' = 'refine';
     try {
-      const rr = await fetch('/api/v1/refine', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+      const rj = await apiJson('/api/v1/refine', {
+        method: 'POST',
         // W671 (Owner ruling 2026-10-11) - a religion-domain deliverable is named as one, so the route's scholar rule applies
-        body: JSON.stringify({ previous: selected.content, instruction: refineInstr, context: selected.title,
-                               source_endpoint: String((selected as any).domain || '').toLowerCase() === 'religion' ? '/api/v1/religion/deliverable' : '' }),
+        body: { previous: selected.content, instruction: refineInstr, context: selected.title,
+                source_endpoint: String((selected as any).domain || '').toLowerCase() === 'religion' ? '/api/v1/religion/deliverable' : '' },
       });
-      if (!rr.ok) throw new Error(`refine HTTP ${rr.status}`);
-      const rj = await rr.json();
       // a withheld rewrite is NOT a new version: the route returned the draft unchanged, so nothing is saved
       if (rj?.refine_withheld) throw new Error(`Scholar review — the rewrite is withheld and no new version was saved: ${String(rj?.review_note || 'it awaits a named scholar\'s review')}`);
       const refined = String(rj?.refined ?? '');
       if (!refined.trim()) throw new Error('refine returned empty content');
-      const vr = await fetch(`/api/v1/deliverables/${selected.id}/regenerate`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+      step = 'version';
+      setSelected(await apiJson(`/api/v1/deliverables/${selected.id}/regenerate`, {
+        method: 'POST',
         // W449 — the next version is the refiner's text verbatim: the gate is told who refined it
-        body: JSON.stringify({ content: refined, source_served_by: rj?.ai_provenance?.served_by ?? null }),
-      });
-      if (!vr.ok) throw new Error(`version HTTP ${vr.status}`);
-      setSelected(await vr.json());
+        body: { content: refined, source_served_by: rj?.ai_provenance?.served_by ?? null },
+      }));
       setRefineInstr('');
       await loadList();
-    } catch (e: any) { setError(e?.message ?? String(e)); }
+    } catch (e) {
+      setError(e instanceof ApiError || e instanceof TypeError
+        ? `${step === 'refine' ? 'The refine was not done' : 'The refined text was not saved as a new version'}: ${errorMessage(e)}`
+        : (e instanceof Error ? e.message : String(e)));
+    }
     setRefining(false);
   };
 
@@ -174,7 +183,7 @@ export const Deliverables: React.FC = () => {
         </p>
       </header>
 
-      {error && <p className="text-vital text-xs font-bold">{error}</p>}
+      {error && <p className="text-vital text-xs font-bold" data-testid="deliverables-error">{error}</p>}
 
       {/* Produce */}
       <Card className="p-6 border-aura/30">
@@ -202,7 +211,7 @@ export const Deliverables: React.FC = () => {
       <div className="grid grid-cols-1 @[900px]:grid-cols-[280px_1fr] gap-6">
         {/* List */}
         <div>
-          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2"><Layers size={14} /> Deliverables ({list.length})
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2"><Layers size={14} /> Deliverables ({listUnread && list.length === 0 ? 'not read' : list.length})
             {listBasis?.truncated && (
               <span data-testid="deliverables-truncated" title={listBasis.total_basis}
                     className="normal-case tracking-normal text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">
@@ -212,7 +221,9 @@ export const Deliverables: React.FC = () => {
           </h3>
           <div className="space-y-2">
             {loading && <p className="text-[11px] text-slate-600">Loading…</p>}
-            {!loading && list.length === 0 && <p className="text-[11px] text-slate-600">None yet — produce one above.</p>}
+            {!loading && list.length === 0 && (listUnread
+              ? <p className="text-[11px] text-amber-400/90 font-bold" data-testid="deliverables-unread">The deliverables could not be read, so this is not a list of none.</p>
+              : <p className="text-[11px] text-slate-600">None yet — produce one above.</p>)}
             {list.map(d => (
               <button key={d.id} onClick={() => open(d.id)}
                 className={`w-full text-left p-3 rounded-xl border ${selected?.id === d.id ? 'border-aura/50 bg-aura/5' : 'border-slate-900 bg-slate-950'}`}>
@@ -356,8 +367,10 @@ Document-controlled under the QMS (DCMS) · record ${selected.quality_assurance.
                 </select>
                 {/* W338 — bearer-carrying download (a raw anchor 401s under auth) */}
                 <button type="button" onClick={async () => {
+                    setError('');
                     try { await downloadExport(`/api/v1/deliverables/${selected.id}/export?format=${dlFormat}`, `${selected.title || 'deliverable'}.${dlFormat}`); }
-                    catch (e: any) { alert(e?.message ?? 'Export failed'); }
+                    //  W989 (FU-399 part 21) - a failed export is said on the page, with the server's reason, not in an alert
+                    catch (e: any) { setError(e?.message ?? 'Export failed'); }
                   }}
                   title={selected.quality_assurance?.quality?.compliance?.overall === 'fail' ? 'This export carries the COMPLIANCE FAIL verdict on page one — the artifact is not cleared for use' : undefined}
                   className={`flex items-center gap-1.5 text-[11px] font-bold px-3 py-2 rounded-xl hover:opacity-90 ${selected.quality_assurance?.quality?.compliance?.overall === 'fail' ? 'bg-vital/20 text-vital border border-vital/40' : 'bg-aura text-sovereign'}`}>
