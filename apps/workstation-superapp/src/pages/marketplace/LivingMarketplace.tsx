@@ -8,6 +8,7 @@ import { Card, Badge } from '@workstation/ui';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { apiJson, errorMessage, provenanceBadge, complianceChip } from '../../lib/api';
+import { AskPerson } from '../../components/AskPerson';   // W968 (P5.14 clause 6)
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 //
@@ -459,6 +460,7 @@ const ListingDrawer: React.FC<{ id: string; onClose: () => void }> = ({ id, onCl
   const [dErr, setDErr] = useState('');
   const [edit, setEdit] = useState<{ name: string; description: string; price_wst: number } | null>(null);
   const [busy, setBusy] = useState('');
+  const [askingRemove, setAskingRemove] = useState(false);   // W968 - the question before a listing is deleted
   const [notice, setNotice] = useState('');
   const [held, setHeld] = useState(false);
   const [valuation, setValuation] = useState<any>(null);
@@ -489,7 +491,7 @@ const ListingDrawer: React.FC<{ id: string; onClose: () => void }> = ({ id, onCl
   };
 
   const remove = async () => {
-    if (!window.confirm('Delete this listing? A listing with recorded sales is retired to draft instead (its receipts keep resolving).')) return;
+    setAskingRemove(false);
     setBusy('del'); setDErr('');
     try {
       const d = await apiJson<any>(`/api/v1/marketplace/listings/${id}`, { method: 'DELETE' });
@@ -603,12 +605,21 @@ const ListingDrawer: React.FC<{ id: string; onClose: () => void }> = ({ id, onCl
                   {busy === 'save' ? 'Saving…' : 'Save'}
                 </button>
                 {detail.origin === 'user' && (
-                  <button type="button" onClick={remove} disabled={busy === 'del'}
+                  <button type="button" onClick={() => setAskingRemove(true)} disabled={busy === 'del'}
                     className="px-3 py-2 bg-vital/20 text-vital font-black rounded-xl text-[9px] uppercase tracking-widest disabled:opacity-40">
                     Delete listing
                   </button>
                 )}
               </div>
+              {askingRemove && (
+                <AskPerson question={`Delete the listing "${detail.name}"?`} kind="confirmation"
+                  options={[
+                    { id: 'delete', label: 'Delete the listing', differs: 'a listing with no recorded sales is removed; one with recorded sales is retired to draft instead, and its receipts keep resolving', undo: 'a removed listing cannot be restored; one retired to draft can be published again' },
+                    { id: 'keep', label: 'Keep it', differs: 'nothing changes', undo: 'there is nothing to undo', recommended: true },
+                  ]}
+                  typeBack={{ optionId: 'delete', text: String(detail.name ?? ''), label: "Type the listing's name to delete it" }}
+                  onChoose={id => { if (id === 'delete') void remove(); else setAskingRemove(false); }} />
+              )}
               {detail.origin !== 'user' && (
                 <p className="text-[9px] text-slate-600 italic">catalog-derived listing — it mirrors a registered platform product and cannot be deleted here (edit or unprice it instead)</p>
               )}

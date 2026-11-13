@@ -17,6 +17,7 @@ import {
   Download, X, ChevronRight, Loader2, CheckCircle2
 } from 'lucide-react';
 import { provenanceBadge, provenanceLine, provenanceField } from '../../lib/api';
+import { AskPerson } from '../../components/AskPerson';   // W968 (P5.14 clause 6)
 import { motion, AnimatePresence } from 'framer-motion';
 import componentRegistry from '@workstation/shared/data/component_registry.json';
 
@@ -47,6 +48,7 @@ const STAGES = ['concept', 'design', 'build', 'launch', 'commercialise'];
 
 export const CreatorStudio: React.FC = () => {
   const [nodes, setNodes] = useState<Node[]>([]);
+  const [askingRegenerate, setAskingRegenerate] = useState(false);   // W968 - the question before a built graph is replaced
   const [edges, setEdges] = useState<Edge[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [intent, setIntent]       = useState('');
@@ -330,8 +332,8 @@ export const CreatorStudio: React.FC = () => {
               <button
                 type="button"
                 onClick={() => {
-                  if (nodes.length > 0 &&
-                      !window.confirm('Regenerate from the intent text? This REPLACES the nodes and edges on the canvas — the graph you built is not executed and will be discarded.')) return;
+                  //  W968 (P5.14 clause 6) - an empty canvas loses nothing; a graph a person built is asked about first
+                  if (nodes.length > 0) { setAskingRegenerate(true); return; }
                   void handleAIGenerate();
                 }}
                 disabled={isGenerating || !intent.trim()}
@@ -342,6 +344,15 @@ export const CreatorStudio: React.FC = () => {
                 <Play size={12} fill="currentColor" />
                 Regenerate blueprint
               </button>
+              {askingRegenerate && (
+                <AskPerson question="Regenerate the blueprint from the intent text?" kind="confirmation"
+                  options={[
+                    { id: 'regenerate', label: 'Regenerate and replace the canvas', differs: 'the nodes and edges on the canvas are replaced by a new blueprint from the intent text; the graph you built is not executed', undo: 'it cannot be undone: the graph on the canvas is discarded and no copy is kept' },
+                    { id: 'keep', label: 'Keep the canvas', differs: 'the graph you built stays as it is', undo: 'there is nothing to undo', recommended: true },
+                  ]}
+                  typeBack={{ optionId: 'regenerate', text: 'replace', label: 'Type "replace" to discard the graph you built' }}
+                  onChoose={id => { setAskingRegenerate(false); if (id === 'regenerate') void handleAIGenerate(); }} />
+              )}
             </div>
           </div>
         </main>

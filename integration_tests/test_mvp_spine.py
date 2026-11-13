@@ -21262,8 +21262,8 @@ def test_w493_a_present_tense_claim_needs_the_process_running(client):
     cs = (app / "pages/create/CreatorStudio.tsx").read_text(encoding="utf-8")
     assert "Run Pipeline" not in cs
     assert "Regenerate blueprint" in cs and "regenerate-blueprint" in cs
-    assert "window.confirm" in cs and "will be discarded" in cs
-    assert "if (nodes.length > 0 &&" in cs      # the confirm actually fires when there IS a graph
+    assert "<AskPerson" in cs and "the graph on the canvas is discarded" in cs   # W968: the question, not a bare confirm
+    assert "if (nodes.length > 0) { setAskingRegenerate(true); return; }" in cs   # asked only when there IS a graph
     assert "palette-caption" in cs and "none is" in cs and "executable" in cs
     assert "or drag components from the left palette" not in cs
 
@@ -81604,3 +81604,52 @@ def test_w967_the_three_answers_say_only_what_happened_and_an_unreadable_bounty_
     signed = [e for e in allow["entries"] if e["function"] == "sign_treaty"]
     assert len(signed) == 1 and "defect" not in signed[0] and "draft this process holds" in signed[0]["reason"]
     assert not [e for e in allow["entries"] if e["function"] in ("vote_enhancement", "v154_status")]
+
+
+def test_w968_p514_clause6_every_question_says_what_differs_what_undoing_costs_and_which_is_recommended():
+    """P5.14 clause 6 (W968): "Every question the platform puts to a person states what differs between the options,
+    what it costs to undo, which is recommended, and whether it is a confirmation or a decision; an act that cannot be
+    undone is not performed on a general yes." Measured: four acts that cannot be undone ran on a bare window.confirm.
+    Held here:
+    - no window.confirm or window.prompt is left in the app;
+    - components/AskPerson.tsx says the kind and, for each option, what it does and what undoing it costs, and holds
+      an act that cannot be undone until its own name is typed back (AskPerson.test.tsx drives it rendered);
+    - each of the four sites asks through it, with both statements for every option, exactly one recommended, and the
+      act held for its name: a project's title, a listing's name, "delete my record", "replace";
+    - the act runs only from the question's answer, never straight from its button."""
+    import re
+    from pathlib import Path
+
+    src = Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+    files = [f for f in src.rglob("*.ts*") if not f.name.endswith((".test.tsx", ".test.ts", ".d.ts"))]
+    asked = {f.relative_to(src).as_posix() for f in files
+             if re.search(r"\bwindow\.(confirm|prompt)\(", _code_only(f.read_text(encoding="utf-8")))}
+    assert asked == set(), ("a question is still put on a general yes", sorted(asked))
+
+    comp = " ".join(_code_only((src / "components/AskPerson.tsx").read_text(encoding="utf-8")).split())
+    for held in ("What it does: {o.differs}", "To undo it: {o.undo}", "{KIND_SAID[kind]}", "typed !== typeBack.text",
+                 "disabled={waiting(o)}", "'ask-recommended-"):
+        assert held in comp or held.replace("'", "`") in comp, held
+    t = (src / "components/AskPerson.test.tsx").read_text(encoding="utf-8")
+    assert "import { AskPerson, KIND_SAID } from './AskPerson';" in t and "expect(del.disabled).toBe(true);" in t
+
+    #  (the name typed back, the act, what opens the question, how many places run the act: the Creator Studio also
+    #  regenerates straight away when the canvas is empty, since an empty canvas loses nothing)
+    sites = {"pages/projects/ProjectsHub.tsx": ("text: project.title", "void handleDelete()", "onClick={() => setAsking(true)}", 1),
+             "components/QEPStudio.tsx": ("text: 'delete my record'", "void deleteRecord()", "onClick={() => setAskingDelete(true)}", 1),
+             "pages/marketplace/LivingMarketplace.tsx": ("text: String(detail.name ?? '')", "void remove()",
+                                                         "onClick={() => setAskingRemove(true)}", 1),
+             "pages/create/CreatorStudio.tsx": ("text: 'replace'", "void handleAIGenerate()",
+                                                "if (nodes.length > 0) { setAskingRegenerate(true); return; }", 2)}
+    for rel, (typed, runs, opens, places) in sites.items():
+        code = " ".join(_code_only((src / rel).read_text(encoding="utf-8")).split())
+        blocks = re.findall(r"<AskPerson (.*?)/>", code)
+        assert len(blocks) == 1, (rel, len(blocks))
+        b = blocks[0]
+        assert 'kind="confirmation"' in b or 'kind="decision"' in b, rel
+        opts = re.findall(r"\{ id: '[a-z]+', label: [^}]*\}", b)
+        assert len(opts) == 2 and all("differs: " in o and "undo: " in o for o in opts), (rel, opts)
+        assert sum("recommended: true" in o for o in opts) == 1, (rel, "not exactly one option is recommended")
+        assert "typeBack={{ optionId: " in b and typed in b, (rel, "the act is not held for its own name")
+        assert runs in b and opens in code, (rel, "the act does not run from the question's answer")
+        assert code.count(runs) == places, (rel, "the act runs from somewhere other than the question")

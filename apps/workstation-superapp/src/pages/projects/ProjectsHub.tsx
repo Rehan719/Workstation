@@ -9,6 +9,7 @@ import { downloadExport } from '../../lib/download';
 // W495 (FU-131, S12.6) - the shared provenance helpers, so this page labels output the same way
 // every other surface does rather than inventing its own wording
 import { provenanceBadge, provenanceLine } from '../../lib/api';
+import { AskPerson } from '../../components/AskPerson';   // W968 (P5.14 clause 6)
 import {
   Plus, Play, ChevronRight, Download, Loader2, Trash2,
   Sparkles, FolderOpen, AlertCircle, CheckCircle2, Clock
@@ -235,6 +236,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
   const [error,      setError]        = useState('');
   const [advancing,  setAdvancing]    = useState(false);
   const [deleting,   setDeleting]     = useState(false);
+  const [asking,     setAsking]       = useState(false);   // W968 - the question before a delete
   const streamRef = useRef<HTMLPreElement>(null);
   const readerRef = useRef<ReadableStreamDefaultReader | null>(null);
 
@@ -365,7 +367,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
   };
 
   const handleDelete = async () => {
-    if (!window.confirm(`Delete project "${project.title}"? This cannot be undone.`)) return;
+    setAsking(false);
     setDeleting(true);
     try {
       await axios.delete(`/api/v1/projects/${project.id}`);
@@ -417,7 +419,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
         </div>
         <button
           type="button"
-          onClick={handleDelete}
+          onClick={() => setAsking(true)}
           disabled={deleting || streaming}
           title="Delete project"
           aria-label="Delete project"
@@ -426,6 +428,16 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
           {deleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
         </button>
       </div>
+      {/* W968 (P5.14 clause 6) - a delete that cannot be undone waits for the project's title, typed back */}
+      {asking && (
+        <AskPerson question={`Delete the project "${project.title}"?`} kind="confirmation"
+          options={[
+            { id: 'delete', label: 'Delete the project', differs: "the project's record is removed from this platform, and a proposal still pending for it is marked as for a deleted project", undo: 'it cannot be undone: no copy of the record is kept' },
+            { id: 'keep', label: 'Keep it', differs: 'nothing changes', undo: 'there is nothing to undo', recommended: true },
+          ]}
+          typeBack={{ optionId: 'delete', text: project.title, label: "Type the project's title to delete it" }}
+          onChoose={id => { if (id === 'delete') void handleDelete(); else setAsking(false); }} />
+      )}
 
       {/* Stage rail */}
       <div className="shrink-0 flex items-center gap-1">

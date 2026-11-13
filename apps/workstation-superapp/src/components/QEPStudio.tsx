@@ -4,6 +4,7 @@ import { BookOpen, Brain, Loader2, Sparkles, Trophy, Languages, CheckCircle2 } f
 import { apiJson, errorMessage } from '../lib/api';
 import { whoami } from '../lib/auth';
 import { HifzPractice } from './HifzPractice';
+import { AskPerson } from './AskPerson';   // W968 (P5.14 clause 6)
 
 // W439 — the REAL Quran Education Platform surface (Owner directive: QEP lives in the Religion
 // domain). Every capability here is a wired backend route that was AUDITED before wiring:
@@ -48,6 +49,7 @@ export const QEPStudio: React.FC = () => {
   const [uid, setUid] = useState<string | null>(null);
   const [signedIn, setSignedIn] = useState(false);
   const [recordMsg, setRecordMsg] = useState('');
+  const [askingDelete, setAskingDelete] = useState(false);   // W968 - the question before the record is deleted
   const [busy, setBusy] = useState('');
 
   const getJson = (url: string, set: (d: any) => void) =>
@@ -104,7 +106,7 @@ export const QEPStudio: React.FC = () => {
     } catch (e) { setRecordMsg(errorMessage(e)); }
   };
   const deleteRecord = async () => {
-    if (!window.confirm('Delete your whole memorisation and award record? This cannot be undone.')) return;
+    setAskingDelete(false);
     setRecordMsg('');
     try {
       const out: any = await apiJson(`/api/v1/qep/learner/${encodeURIComponent(uid ?? LOCAL_UID)}`, { method: 'DELETE' });
@@ -385,9 +387,18 @@ export const QEPStudio: React.FC = () => {
                 <span className="basis-full flex flex-wrap gap-1.5 items-center">
                   <button type="button" data-testid="hifz-export" onClick={exportRecord}
                     className="text-[9px] font-black uppercase px-2 py-0.5 rounded border border-slate-700 text-slate-300 hover:text-white">download my record</button>
-                  <button type="button" data-testid="hifz-delete" onClick={deleteRecord}
+                  <button type="button" data-testid="hifz-delete" onClick={() => setAskingDelete(true)}
                     className="text-[9px] font-black uppercase px-2 py-0.5 rounded border border-vital/40 text-vital hover:bg-vital/10">delete my record</button>
                   {recordMsg && <span data-testid="hifz-record-message" className="text-[9px] text-slate-400">{recordMsg}</span>}
+                  {askingDelete && (
+                    <AskPerson question="Delete your whole memorisation and award record?" kind="confirmation"
+                      options={[
+                        { id: 'delete', label: 'Delete my record', differs: 'every session, card and award the record holds is removed from this platform', undo: 'it cannot be undone here: a record you downloaded first is the only copy' },
+                        { id: 'keep', label: 'Keep it', differs: 'nothing changes, and you can download the record first', undo: 'there is nothing to undo', recommended: true },
+                      ]}
+                      typeBack={{ optionId: 'delete', text: 'delete my record', label: 'Type "delete my record" to delete it' }}
+                      onChoose={id => { if (id === 'delete') void deleteRecord(); else setAskingDelete(false); }} />
+                  )}
                 </span>
               ) : (
                 <p data-testid="hifz-record-sign-in" className="basis-full text-[9px] text-slate-500">Exporting or deleting this record is offered once sign-in is on: with sign-in off it is tied to no person.</p>
