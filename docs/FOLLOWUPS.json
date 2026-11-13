@@ -23912,11 +23912,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.20",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W965",
       "note": "",
       "slot_source": "P5.20 clause 6 (how to complain to the Owner about an answer)",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W964 and W965. A claim can name an answer that was never saved: the sha256 of its text as it was shown, the route that gave it (the tool declared there) and what served it as the answer said; the text itself is never sent or kept (W964, support_claims.py; the Support page draws such a claim). Under the answer of each of the 25 domain tools on the Law, Care, Education, Employment, Science and Religion pages, a person says what is wrong and the claim is raised from there, fingerprinting the one composition the save, the copy and every download carry (W965, DomainTool.tsx; off only on the Resource Fabric, whose engine runs declare no tool). The one page of where help is says so. test_w964 and test_w965 drive it with sign-in off and on, and the rendered tests read the routes' own answers."
     },
     {
       "id": "FU-1191",

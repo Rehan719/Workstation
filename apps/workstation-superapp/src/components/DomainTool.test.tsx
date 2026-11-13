@@ -6,12 +6,14 @@
 // mounts the real DomainTool against answers GET /api/v1/review-options gave on a fresh store
 // (DomainTool.fixture.json, captured by w925_capture.py): an unreviewed Care tool, a Religion tool the ruling keeps
 // with a scholar, a Science tool after a person's signature was recorded, and an engine that declares no tool.
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
+import axios from 'axios';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import captured from './DomainTool.fixture.json';
+import claimed from './SupportClaims.fixture.json';   // W965 - the claim route's own answers
 import { DomainTool } from './DomainTool';
 
 type Reply = { status: number; body: unknown };
@@ -119,5 +121,82 @@ describe('DomainTool, both options before the form, rendered', () => {
     await screen.findByTestId('review-option-not-stated');
     expect(text('review-option-not-stated')).toBe(` ${body.person.basis}`);
     expect(screen.queryByTestId('review-option-warranted')).toBeNull();
+  });
+});
+
+// W965 (FU-1190) — SAY THIS ANSWER IS WRONG, under the answer, against the claim route's own answers
+// (SupportClaims.fixture.json, captured by w964_capture.py). The tool runs (its POST is axios's, answered here); the
+// claim is raised with the sha256 of the one composition the copy and every download carry, the tool's route and what
+// served it, and never the text. What was raised, what the claim holds and a refusal are the server's words.
+describe('DomainTool, a claim that an answer is wrong, rendered', () => {
+  const ENDPOINT = '/api/v1/care/care-plan';
+  const ANSWER = { plan: 'w965 the plan as it was shown', disclaimer: 'w965 a disclaimer that travels with it',
+    ai_provenance: { served_by: 'native' } };
+  //  the sha256 of `${ANSWER.plan}\n\n_${ANSWER.disclaimer}_` - the text the copy and every download carry - computed
+  //  apart from the page (Python's hashlib, when this test was written), so the page's own hashing is checked too
+  const EXPORTED_SHA256 = '1842c10de0336bfbb6b2ec30d863a929114d3bd67cfa9784f75816c54b7c903f';
+  const [claim] = claimed.answer_claims.claims;
+  const sent: { url: string; body: any }[] = [];
+
+  function claimServe(reply: { status: number; body: unknown }) {
+    sent.length = 0;
+    vi.spyOn(axios, 'post').mockResolvedValue({ data: ANSWER } as any);
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      const r = (status: number, body: unknown) => ({ ok: status < 400, status, statusText: '', json: async () => body });
+      if (init?.method === 'POST') {
+        sent.push({ url, body: JSON.parse(String(init.body ?? 'null')) });
+        return r(reply.status, reply.body);
+      }
+      if (url.startsWith('/api/v1/review-options?endpoint=')) return r(captured.care.status, captured.care.body);
+      if (url === '/api/v1/native-ai/status') return r(200, captured.status);
+      return r(200, {});
+    }));
+  }
+
+  async function runThenClaim(claimable = true) {
+    render(
+      <MemoryRouter>
+        <DomainTool title="A tool" description="what it does" endpoint={ENDPOINT} resultKey="plan" claimable={claimable}
+          fields={[{ name: 'notes', label: 'Notes', type: 'textarea' }]} />
+      </MemoryRouter>,
+    );
+    fireEvent.change(screen.getByLabelText('Notes'), { target: { value: 'w965 what the person typed' } });
+    fireEvent.click(screen.getByRole('button', { name: /Generate/ }));
+    await screen.findByText(ANSWER.plan);
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('a claim is raised with the fingerprint of the answer as it is kept, its route and what served it, never its text', async () => {
+    claimServe({ status: 200, body: { ...claim, state: 'OPEN' } });
+    await runThenClaim();
+    fireEvent.change(screen.getByLabelText('What is wrong with this answer'), { target: { value: 'w965 it leaves out the evening dose' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Raise a claim about this answer' }));
+    expect((await screen.findByTestId('domain-claim-done')).textContent).toBe(`Raised: ${claim.claim_id} — OPEN.`);
+    expect(text('domain-claim-basis')).toBe(claim.artefact.basis);
+    expect(sent).toEqual([{ url: '/api/v1/support/claims', body: {
+      artefact_kind: 'answer', artefact_id: EXPORTED_SHA256,
+      endpoint: ENDPOINT, served_by: 'native', what_is_wrong: 'w965 it leaves out the evening dose' } }]);
+    expect(JSON.stringify(sent)).not.toContain(ANSWER.plan);
+  });
+
+  it('a claim the server refuses is shown in its own words, and nothing is said to be raised', async () => {
+    const detail = 'Not raised: a claim says what is wrong.';
+    claimServe({ status: 422, body: { detail } });
+    await runThenClaim();
+    fireEvent.change(screen.getByLabelText('What is wrong with this answer'), { target: { value: 'w965 something' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Raise a claim about this answer' }));
+    expect((await screen.findByTestId('domain-claim-refused')).textContent).toBe(`Failed (HTTP 422): ${detail}`);
+    expect(screen.queryByTestId('domain-claim-done')).toBeNull();
+  });
+
+  it('where the route declares no tool, no claim is offered', async () => {
+    claimServe({ status: 200, body: {} });
+    await runThenClaim(false);
+    expect(screen.queryByTestId('domain-claim')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Raise a claim about this answer' })).toBeNull();
   });
 });

@@ -556,7 +556,7 @@ export const ResourceFabric: React.FC = () => {
             </h3>
             <button type="button" onClick={() => setRunningId(null)} className="text-slate-500 hover:text-white"><X size={16} /></button>
           </div>
-          <DomainTool {...RUN_CONFIGS[runningId]} />
+          <DomainTool {...RUN_CONFIGS[runningId]} claimable={false} />
         </Card>
       )}
 

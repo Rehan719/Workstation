@@ -80587,7 +80587,7 @@ def test_w953_the_one_page_of_where_help_is_says_how_to_find_a_scholar_and_is_of
     #  4. how to complain: the one route that reaches a person, and what it cannot yet take
     c = got["to_complain"]
     assert "raise a claim on the support page" in c and "only a person decides" in c and "open until a person answers" in c
-    assert "only against a saved deliverable" in c and "not a regulated provider" in c
+    assert "Under the answer of each of the 25 domain tools" in c and "not a regulated provider" in c   # W965: any answer
     assert "tell the Owner" not in c, "the page names a way to reach the Owner that does not exist"
 
     #  5. the support page draws it; a failed read is said; the Law page points to it
@@ -81392,3 +81392,66 @@ def test_w964_fu1190_a_claim_can_name_an_answer_that_was_never_saved_by_its_fing
         listed = client.get("/api/v1/support/claims", headers=H[k])
         assert listed.status_code == 200 and (on["claim_id"] in listed.text) is sees, (k, listed.text[:200])
         assert client.get(f"/api/v1/support/claims/{on['claim_id']}", headers=H[k]).status_code == (200 if sees else 404), k
+
+
+def test_w965_fu1190_a_claim_can_be_raised_under_the_answer_of_each_of_the_25_domain_tools(client):
+    """FU-1190 closed (W965, P5.20 clause 6). W964 let a claim name an answer by the sha256 of its text, the route that
+    gave it and what served it. The shared form every domain tool runs through now offers it under the answer. Held:
+    - the claim is sent with the fingerprint of the one composition the save, the copy and every download carry, the
+      tool's own route and what served the answer, and no field of it carries the answer's text;
+    - it is on by default and off only on the Resource Fabric, whose engine runs declare no tool; no domain page turns
+      it off, and each of the 25 forms on the six domain pages is at a route that declares a tool, so every claim
+      raised there names a real tool (driven through the claim route for each);
+    - the one page of where help is says so, and its rendered test reads the page the route now gives;
+    - DomainTool.test.tsx drives it rendered: what is sent, the server's words back, a refusal, and no claim where
+      none is offered."""
+    import hashlib
+    import json
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    A = root / "apps/workstation-superapp/src"
+    dt = " ".join(_code_only((A / "components/DomainTool.tsx").read_text(encoding="utf-8")).split())
+    assert "fingerprint = await sha256Hex(exportText);" in dt
+    assert "artefact_kind: 'answer', artefact_id: fingerprint, endpoint," in dt
+    sent = dt.split("apiJson<any>('/api/v1/support/claims'", 1)[1].split("});", 1)[0]
+    for never in ("displayText", "resultText", "exportText", "result?.", "result["):
+        assert never not in sent, ("a field of the claim carries the answer's text", never)
+    assert "claimable = true" in dt and "{claimable && (" in dt
+    fp = (A / "lib/fingerprint.ts").read_text(encoding="utf-8")
+    assert "subtle.digest('SHA-256', new TextEncoder().encode(text))" in fp and "padStart(2, '0')" in fp
+
+    #  off only where the route declares no tool
+    rf = _code_only((A / "pages/synthesis/ResourceFabric.tsx").read_text(encoding="utf-8"))
+    assert rf.count("<DomainTool ") == rf.count("claimable={false}") == 1, "a Resource Fabric run offers a claim"
+    offered = []
+    for hub in ("Law", "Care", "Education", "Employment", "Science", "Religion"):
+        src = (A / f"pages/domains/{hub}Hub.tsx").read_text(encoding="utf-8")
+        assert "claimable" not in src, (hub, "a domain page turns the claim off")
+        eps = re.findall(r'endpoint="(/api/v1/[a-z-]+/[a-z-]+)"', src)
+        assert len(eps) == src.count("<DomainTool"), (hub, "a form's route is not where it can be read")
+        offered += eps
+    assert len(offered) == 25, len(offered)
+    for ep in offered:
+        r = client.post("/api/v1/support/claims", json={
+            "artefact_kind": "answer", "artefact_id": hashlib.sha256(f"w965 {ep}".encode("utf-8")).hexdigest(),
+            "endpoint": ep, "served_by": "native", "what_is_wrong": f"w965 an answer from {ep}"})
+        assert r.status_code == 200 and r.json()["artefact"]["tool"], (ep, r.status_code, r.text[:200])
+
+    #  the one page of where help is says how to complain about any answer, and its rendered test reads it
+    from agentic_core.api import where_help as _wh
+    got = client.get("/api/v1/support/where-help-is").json()
+    assert got["to_complain"] == _wh.TO_COMPLAIN
+    for words in ("Under the answer of each of the 25 domain tools", "never the text itself",
+                  "raise a claim on the support page", "only a person decides"):
+        assert words in " ".join(_wh.TO_COMPLAIN.split()), words
+    fx = json.loads((A / "components/WhereHelpIs.fixture.json").read_text(encoding="utf-8"))
+    assert fx["page"] == got
+
+    #  the rendered test drives it
+    t = (A / "components/DomainTool.test.tsx").read_text(encoding="utf-8")
+    for held in ("'Raise a claim about this answer'", "'domain-claim-done'", "'domain-claim-basis'",
+                 "'domain-claim-refused'", "runThenClaim(false)", "expect(JSON.stringify(sent)).not.toContain(ANSWER.plan)"):
+        assert held in t, held
+    pinned = re.search(r"const EXPORTED_SHA256 = '([0-9a-f]{64})';", t).group(1)
+    assert pinned == hashlib.sha256("w965 the plan as it was shown\n\n_w965 a disclaimer that travels with it_".encode("utf-8")).hexdigest()

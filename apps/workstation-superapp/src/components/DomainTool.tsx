@@ -1,6 +1,7 @@
 import { silenceIsRight } from './ReadFailures';   // W961 (FU-1181)
 import React, { useState } from 'react';
-import { provenanceBadge, qmsChip, provenanceLine, axiosDetail} from '../lib/api';
+import { provenanceBadge, qmsChip, provenanceLine, axiosDetail, apiJson, errorMessage } from '../lib/api';
+import { sha256Hex } from '../lib/fingerprint';   // W965 (FU-1190)
 import { useT } from '../lib/i18n';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -63,6 +64,9 @@ interface DomainToolProps {
   // W456 — a tool whose response carries MORE than its text (sourced scripture, a range cap, a floor
   // note) renders it here, above the text; the Tafsir tab was dropping all of it on the floor.
   renderExtra?: (result: any) => React.ReactNode;
+  // W965 (FU-1190) - a person can say an answer is wrong (a claim, P5.3). Off only where the route declares no
+  // tool, as the Resource Fabric's engine runs do: there is no tool for a claim to name.
+  claimable?: boolean;
 }
 
 /**
@@ -119,7 +123,7 @@ const withDisclosures = (body: string, data: any): string =>
       ? `\n\n[profile: ${data.ai_provenance.profile_basis}]` : '')
   + (data?.disclaimer ? `\n\n_${data.disclaimer}_` : '');
 
-export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endpoint, fields, resultKey, submitLabel = 'Generate', renderExtra }) => {
+export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endpoint, fields, resultKey, submitLabel = 'Generate', renderExtra, claimable = true }) => {
   //  P3.6 clause (1) — this surface READS the translation; the fallback is the English it hardcoded
   const { t } = useT();
   const navigate = useNavigate();
@@ -153,9 +157,16 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
   const [refineProv, setRefineProv] = useState<Record<string, any> | null>(null);
   const [refineCount, setRefineCount] = useState(0);
   const [historyId, setHistoryId] = useState<string | null>(null);   // W337 — the My Work record refines update
+  // W965 (FU-1190) - a claim that this answer is wrong: what was raised, what the claim holds, or why not
+  const [claimWrong, setClaimWrong] = useState('');
+  const [claimBusy, setClaimBusy] = useState(false);
+  const [claimDone, setClaimDone] = useState('');
+  const [claimBasis, setClaimBasis] = useState('');
+  const [claimRefused, setClaimRefused] = useState('');
 
   const run = async () => {
     setBusy(true); setError(''); setResult(null);
+    setClaimDone(''); setClaimBasis(''); setClaimRefused('');   // W965 - a claim spoke of the answer it was raised on
     setRefinedText(null); setRefineProv(null); setRefineText(''); setRefineCount(0);
     try {
       const body: Record<string, any> = {};
@@ -213,6 +224,31 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
         ai_provenance: refineData.ai_provenance ?? result?.ai_provenance }
     : result);
   const effectiveProv = refineProv ?? prov;
+  // W965 (FU-1190, P5.20 clause 6) - say this answer is wrong. The claim names the answer by the sha256 of the one
+  // composition the save, the copy and every download carry (exportText, refined or not), the route that gave it and
+  // what served it. The text itself is never sent. What was raised and what the claim holds are the server's words.
+  const raiseClaim = async () => {
+    setClaimBusy(true); setClaimDone(''); setClaimBasis(''); setClaimRefused('');
+    let fingerprint = '';
+    try {
+      fingerprint = await sha256Hex(exportText);
+    } catch {
+      setClaimRefused('Not raised: this browser could not compute the answer\'s fingerprint here (it needs a secure connection), so nothing was sent.');
+      setClaimBusy(false);
+      return;
+    }
+    try {
+      const c = await apiJson<any>('/api/v1/support/claims', { method: 'POST', body: {
+        artefact_kind: 'answer', artefact_id: fingerprint, endpoint,
+        served_by: (effectiveProv as any)?.served_by ?? undefined, what_is_wrong: claimWrong } });
+      setClaimDone(`Raised: ${c.claim_id} — ${c.state}.`);
+      setClaimBasis(c.artefact?.basis ?? '');
+      setClaimWrong('');
+    } catch (e) {
+      setClaimRefused(errorMessage(e));
+    }
+    setClaimBusy(false);
+  };
 
   const refine = async () => {
     if (!refineText.trim() || refining) return;
@@ -453,6 +489,23 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
               </Button>
             </div>
           </div>
+
+          {/* W965 (FU-1190) - say this answer is wrong: a claim a person decides, raised on the answer as it is shown */}
+          {claimable && (
+            <div data-testid="domain-claim" className="pt-3 border-t border-slate-800/60 space-y-2">
+              <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">Say this answer is wrong</label>
+              <div className="flex items-center gap-2 flex-wrap">
+                <input aria-label="What is wrong with this answer" value={claimWrong} onChange={e => setClaimWrong(e.target.value)}
+                  className="flex-1 min-w-[220px] text-xs bg-slate-950 border border-slate-900 rounded-xl p-2.5 text-slate-300" />
+                <Button type="button" onClick={raiseClaim} disabled={claimBusy || !claimWrong.trim()} className="bg-slate-800 text-slate-300 text-xs">
+                  Raise a claim about this answer
+                </Button>
+              </div>
+              {claimDone && <p role="status" data-testid="domain-claim-done" className="text-[10px] text-emerald-400">{claimDone}</p>}
+              {claimBasis && <p data-testid="domain-claim-basis" className="text-[10px] text-slate-500 leading-relaxed">{claimBasis}</p>}
+              {claimRefused && <p role="alert" data-testid="domain-claim-refused" className="text-[10px] text-vital">{claimRefused}</p>}
+            </div>
+          )}
 
           {/* Offering 1 -> Offering 2 (§3A): take this work end-to-end into a living VSB IDBO enterprise */}
           {primary && (form[primary] || '').trim() && (

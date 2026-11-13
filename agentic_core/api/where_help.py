@@ -69,10 +69,12 @@ THIS_PLATFORM_IS_NOT = (
 
 #  How to complain, said as it is: a claim is the one route that reaches a person, and it is raised against a saved
 #  deliverable only (P5.3, W941-W942). An answer that was not saved has no route yet; that gap is a row on P5.20.
-TO_COMPLAIN = ("To complain about an answer, raise a claim on the support page. A claim is filed as a change that only "
-               "a person decides, and it stays open until a person answers it; with sign-in off, the Owner answers "
-               "every claim. For now a claim can be raised only against a saved deliverable: an answer that was not "
-               "saved as one cannot be claimed against yet. This platform is not a regulated provider, so no "
+TO_COMPLAIN = ("To complain about an answer, raise a claim. Under the answer of each of the 25 domain tools on the "
+               "Law, Care, Education, Employment, Science and Religion pages, say what is wrong and the claim is "
+               "raised from there; against a saved deliverable, raise a claim on the support page. A claim about an "
+               "answer carries the fingerprint of its text and what served it, never the text itself. A claim is "
+               "filed as a change that only a person decides, and it stays open until a person answers it; with "
+               "sign-in off, the Owner answers every claim. This platform is not a regulated provider, so no "
                "ombudsman or regulator handles complaints about it.")
 
 BASIS = ("Names and addresses only: nothing is copied from any of these sites, and none of them endorses this "
