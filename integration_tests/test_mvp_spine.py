@@ -76066,3 +76066,24 @@ def test_w887_with_sign_in_on_a_second_person_reaches_none_of_the_first_persons_
     assert client.get(f"/api/v1/synthesis/download/{oid}", headers=H["two"]).status_code == 404
     assert client.get(f"/api/v1/synthesis/download/{oid}", headers=H["one"]).status_code == 200
     assert client.get(f"/api/v1/synthesis/download/{oid}", headers=H["admin"]).status_code == 200
+
+
+def test_w888_a_beat_driven_visit_names_the_service_identity_and_the_levers_that_allowed_it(client):
+    """FU-849 (W888, the service-identity half). The Owner ruled a per-entity opt-in and a named service identity once
+    authentication is on. A visit the beat makes now names the organism's service identity and both levers that let it
+    act; an establishment's first cycle names the establishment. The opt-in default is the Owner's and stays open."""
+    import uuid as _uuid888
+    from agentic_core.economy import living_vsbs as _lv888
+    vid = f"vsb-w888-{_uuid888.uuid4().hex[:6]}"
+    _lv888.register(vid, name="W888 Entity", owner="w888-owner")
+    try:
+        visit = _lv888.operate_vsb(vid)
+        assert visit and visit.get("outcome") == "ran", visit
+        d = visit["driven_by"]
+        assert d["identity"] == _lv888.SERVICE_IDENTITY == "service:organism-heartbeat" and d["kind"] == "service", d
+        assert any("organism's auto_economy lever" in x for x in d["levers"]), d["levers"]
+        assert any("own auto_economy tending flag" in x for x in d["levers"]), d["levers"]
+        first = _lv888.operate_vsb(vid, source="establishment")
+        assert first["driven_by"]["identity"] == "establishment" and first["driven_by"]["levers"] == [], first.get("driven_by")
+    finally:
+        _lv888.deregister(vid)

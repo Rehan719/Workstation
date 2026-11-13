@@ -25,6 +25,23 @@ _HISTORY = data_path("vsb_compliance_history.json")
 HISTORY_UNREADABLE = "unreadable"          # W472 — _latest_screen's answer when the history cannot be read whole
 
 
+#  W888 (FU-849; OWNER RULING: a named service identity once authentication is on) - the name the organism's own beat
+#  acts under. It is not a person and has no account, so nobody can sign in as it.
+SERVICE_IDENTITY = "service:organism-heartbeat"
+
+
+def driven_by(source: str) -> Dict[str, Any]:
+    """W888 (FU-849) - who acted on a visit and what allowed it."""
+    if source == "establishment":
+        return {"identity": "establishment", "kind": "establishment", "levers": [],
+                "basis": "the first cycle an establishment runs for the entity it has just created, on its founder's request"}
+    return {"identity": SERVICE_IDENTITY, "kind": "service",
+            "levers": ["the organism's auto_economy lever (the heartbeat's economy setting)",
+                       "this entity's own auto_economy tending flag (not stated reads as on, W799)"],
+            "basis": ("the organism's own beat acted, under its service identity, because both levers were on: the beat "
+                      "picks no entity while its own lever is off, and none whose own flag is off")}
+
+
 def _now() -> str:
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
@@ -1121,7 +1138,8 @@ def _operate_vsb_claimed(vsb_id: str, target: Dict[str, Any], _visit: str,
                 "revenue_basis": ("recognised_events" if pend["events"]
                                   else "no_activity_maintenance_cycle"),
                 "governance": (res.get("governance") or {}).get("status"),
-                "governance_coverage": _gov_record}
+                "governance_coverage": _gov_record,
+                "driven_by": driven_by(source)}           # W888 (FU-849) - who acted, and what allowed it
     except Exception as e:
         # W468 — a visit that RAISED is still a visit: last_operated used to advance only on a cycle or a hold, so the
         # least-recently-operated pick chose the same failing entity on every beat and no other entity was tended again
