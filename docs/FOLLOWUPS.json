@@ -14467,11 +14467,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.6",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W923",
       "note": "",
       "slot_source": "the Owner asked 2026-10-10 for this work to be added to the plan",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built as the row asked, in three rounds, with the price section put to the Owner. W918: the file stores are backed up, verified and restored byte for byte (scripts/backup_stores.py), its round trip run on the Linux suite and the Windows CI job. W919: the Windows start path, which named an app, folders and files that did not exist, now names only what exists and starts the app every deployment starts; its guard starts that app and reads /health. W920: docs/business/FOUNDERS_GUIDE.md gives set-up, start, the health check, the tests, backup and restore, the launch gates in the plan's order (P4.1 to P4.6) and where it can run, with every command run on the tree by a named guard and no zero bill promised. The providers' published prices are not quoted: a money figure in a business document stands only beside an Owner ruling and a production channel's price touches the production deploy, so W923 put that question to the Owner as an OWNER DECISION row, with the recommendation, and the guide names it where it stops. None of the commands has been run on the Owner's machine, and the guide says so."
     },
     {
       "id": "FU-743",
@@ -23599,6 +23602,24 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: an agent's review counts only as a whole record - the tool version it reviewed, each source as a row of the register of sources with the page read and the date read (no later than today), and what it could not check. A source the register marks replaced makes the review not count, naming the replacement. The record route refuses a short record before anything is written. A record stored before clause 2 is not counted, with the reason. The governance page asks for the version and takes one source per line. Driven in test_w921; the four earlier review guards post whole records."
+    },
+    {
+      "id": "FU-1176",
+      "title": "OWNER DECISION: may the founder's guide state a provider's published price, cited with its page and the date it was read?",
+      "why": "FU-742 asks the founder's guide (docs/business/FOUNDERS_GUIDE.md, W920) to state what each deployment channel costs to run, citing provider facts from the provider's own pages with the date read, and promising no zero bill. Two rules stand in the way of doing it unasked. A money figure in a business document stands only beside an Owner ruling (plan item P5.6's ACCEPT, held by the business documents' guard). And a production channel's price touches the production deploy, which is the Owner's. RECOMMENDED: yes, for a provider's published price only. A statement that quotes one cites the provider's page and the date it was read, and is labelled observed. The guide still promises no zero bill, and the platform's own prices stay under the rule. The prices are read at the providers' own pages (Render and Google Cloud) in the round that writes them.",
+      "source": "W923 (FU-742's price section, put to the Owner)",
+      "found": "2026-11-13",
+      "files": [
+        "docs/business/FOUNDERS_GUIDE.md"
+      ],
+      "severity": "low",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "a production channel's price touches the production deploy, and a money figure in a business document stands only beside an Owner ruling",
+      "tier": 3
     }
   ],
   "routes": [

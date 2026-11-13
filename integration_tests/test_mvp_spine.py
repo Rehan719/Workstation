@@ -78147,7 +78147,8 @@ def test_w920_fu742_the_founders_guide_gives_only_commands_a_guard_runs_on_the_t
     #  the gates in the plan's order; no channel called free or priced; the mandates row names the guide
     assert re.findall(r"\[plan item (P4\.\d)\]", guide) == ["P4.1", "P4.2", "P4.3", "P4.4", "P4.5", "P4.6"]
     assert not re.search(r"\bfree\b", guide, re.I) and "No channel here is promised to cost nothing." in guide
-    assert "row FU-742 stays open" in guide
+    #  W923 - the price section waits on the Owner's decision row, named where the guide stops
+    assert re.search(r"waits on your decision in row FU-\d+: whether this guide may quote", guide)
     mandates = (root / "docs/compliance/MANDATES.md").read_text(encoding="utf-8")
     assert "`docs/business/FOUNDERS_GUIDE.md`" in mandates and "the setup document does not" not in mandates
 
@@ -78270,3 +78271,32 @@ def test_w922_fu399_the_review_records_and_their_form_are_guarded_by_a_render_ag
     rule_fx = next(r for r in fx["records"] if r["tier"] == "checked_by_rule")
     assert set(rule_fx) == set(live["records"][0]), sorted(set(rule_fx) ^ set(live["records"][0]))
     assert fx["credential_basis"] == live["credential_basis"] and fx["basis"] == live["basis"]
+
+
+def test_w923_fu742_the_guides_price_section_is_put_to_the_owner_with_the_recommendation():
+    """FU-742 last part (W923). The founder's guide is to state what each deployment channel costs to run, citing
+    the provider's own pages with the date read. A money figure in a business document stands only beside an Owner
+    ruling, and a production channel's price touches the production deploy, so the question goes to the Owner, with
+    the recommendation, as an OWNER DECISION row. This guard holds that the row is open, owner-gated and slotted
+    OWNER, with its recommendation; that the resume prompt's list of what is still with the Owner names it; and
+    that the guide names it where it stops, and quotes no price."""
+    import json
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    row = next((r for r in reg if r.get("title", "").startswith(
+        "OWNER DECISION: may the founder's guide state a provider's published price")), None)
+    assert row, "the price question was not put to the Owner"
+    assert (row["status"], row.get("owner_gated"), row.get("slot")) == ("open", True, "OWNER"), row
+    assert "RECOMMENDED: yes, for a provider's published price only" in row["why"]
+    assert "docs/business/FOUNDERS_GUIDE.md" in (row.get("files") or [])
+
+    prompt = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    still = prompt.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0]
+    assert f"{row['id']} (W923): may the founder's guide state a provider's published price" in still
+
+    guide = (root / "docs/business/FOUNDERS_GUIDE.md").read_text(encoding="utf-8")
+    assert f"waits on your decision in row {row['id']}: whether this guide may quote" in guide
+    assert "[owner decision]" in guide and "stays open for it" not in guide
+    assert not re.search(r"[£$€]\s*\d|\b(GBP|USD|EUR)\s*\d", guide), "the guide quotes a price before the ruling"

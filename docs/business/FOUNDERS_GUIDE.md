@@ -90,4 +90,4 @@ Each gate is your switch, and this guide turns none of them. They come in the or
 - Render, as `render.yaml` describes it. The price is on Render's own pricing page, which has not been read for this guide, so no figure is given. [deferred]
 - Google Cloud, plan item P4.5 (row FU-603). The price is on Google's own pages, which have not been read for this guide either. [deferred]
 - No channel here is promised to cost nothing. [observed]
-- Reading each provider's own price page, with the date it was read, is still to do, and row FU-742 stays open for it. [deferred]
+- Reading each provider's own price page, with the date it was read, waits on your decision in row FU-1176: whether this guide may quote a provider's published price at all. [owner decision]
