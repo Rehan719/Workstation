@@ -23982,6 +23982,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in W967. A treaty is signed only where a draft this process holds exists to sign, the node joining its signatures; any other id is refused 404 and nothing is signed. An enhancement vote is refused 404 with the sentence that no proposal register exists, so nothing is said to be recorded. The v154 status types no status; it carries the immune system's health, observations and basis. Beside them, an unreadable bounty store is refused 503 with nothing written, where it used to be replaced by the one new submission. The literal-outcome screen carries the treaty's signed with its reason and no defect; test_w967 drives each."
+    },
+    {
+      "id": "FU-1194",
+      "title": "P5.10 clause 9: no model-on checklist, and recalled interactions reached a model with no mark saying they were data",
+      "why": "P5.10 clause 9 asks for one checklist while a model is on, holding that attached or ingested text reaches a model marked as data and never as instruction. No checklist existed. Measured door by door in W969: a person's material and ingested files travel between the data marks, but the gateway's recall (the avatar and the AI-CEO chat) put earlier interactions before the prompt with no such mark, and a recalled line carrying a markdown heading was taken by the floor as a section to write.",
+      "source": "W969 (P5.10 clause 9, measured: not captured by any row)",
+      "found": "2026-11-13",
+      "files": [
+        "agentic_core/ai/gateway.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.10",
+      "status": "done",
+      "closed_by": "W969",
+      "note": "",
+      "slot_source": "P5.10 clause 9 (while a model is on, one checklist)",
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: recalled lines now reach a model between their own two marks, as data, with any imitation of either mark defused; the floor reads no section from inside them. docs/MODEL_ON_CHECKLIST.md is the one checklist: each door (a person's material, the domain callers, ingested files, recalled interactions) and each property every door keeps, with the code and the test that drives it. test_w969 drives the recall block and holds every row of the checklist to code and a test that exist."
     }
   ],
   "routes": [
