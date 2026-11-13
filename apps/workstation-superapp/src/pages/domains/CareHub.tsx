@@ -38,10 +38,13 @@ export const CareHub: React.FC = () => {
 
   //  W863 (FU-1056) - the open hazard log: each hazard with its guard, or said to be unguarded
   const [hazards, setHazards] = useState<any>(null);
+  //  W976 (FU-399 part 10) - a refused read of the log is said in its place. It was dropped in silence, so a log the
+  //  server refused to give read the same as a page that has none.
+  const [hazardsNote, setHazardsNote] = useState('');
   useEffect(() => {
     let alive = true;
-    fetch('/api/v1/care/hazards').then(r => (r.ok ? r.json() : null)).then(d => { if (alive) setHazards(d); })
-      .catch(() => { /* the log is not shown rather than shown as empty */ });
+    apiJson<any>('/api/v1/care/hazards').then(d => { if (alive) setHazards(d); })
+      .catch(e => { if (alive) setHazardsNote(`The open hazard log could not be read: ${errorMessage(e)}`); });
     return () => { alive = false; };
   }, []);
 
@@ -211,6 +214,12 @@ export const CareHub: React.FC = () => {
               </li>
             ))}
           </ul>
+        </Card>
+      )}
+      {hazardsNote && (
+        <Card className="p-6" data-testid="care-hazard-refusal">
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Hazard log - open</h3>
+          <p role="alert" className="text-[10px] text-amber-300">{hazardsNote}</p>
         </Card>
       )}
       {hazards?.hazards && (

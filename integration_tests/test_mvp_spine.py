@@ -82195,3 +82195,59 @@ def test_w975_fu399_the_horizon_guardrails_page_is_guarded_by_a_render_and_a_ref
             assert "(a test record" in r["route"] and "(a test record)" in r["reviewed_by"], r
             assert r["route"] not in supplied and r["reviewed_by"] not in supplied, ("a supplied route is in the fixture", r)
             assert not _g975._looks_dialable(r["route"]), r
+
+
+def test_w976_fu399_the_care_page_is_guarded_by_a_render_and_a_refused_hazard_log_is_said(client):
+    """FU-399 part 10 (W976). What a person reads on the Care page is about care: where each tool's standard comes
+    from, which hazards of the tools are guarded and which are not, and a risk score computed from the published chart
+    before any narrative. Six guards read the page's source. CareHub.test.tsx mounts the real page against the answers
+    the Care routes gave on a fresh store, reads each claim in the DOM, and has the server refuse the page's two own
+    reads. Rendering it found one defect, fixed here: a refused read of the open hazard log was dropped in silence (its
+    catch held only a comment), so a log the server refused to give read the same as a page with none. It now goes
+    through apiJson, and a refusal is said in the log's place with its status and the server's reason.
+    This guard holds what the render rests on:
+    - the test mounts the real page in the providers it needs, and every id it reads is one the page renders;
+    - both of the page's own reads go through the checked helper, and each says its refusal;
+    - the captured answers are the live routes', field for field, and the risk tool's captured scores are the ones
+      the scorer computes now from the same made-up observations."""
+    import json
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    page_dir = root / "apps/workstation-superapp/src/pages/domains"
+    page = (page_dir / "CareHub.tsx").read_text(encoding="utf-8")
+    t = (page_dir / "CareHub.test.tsx").read_text(encoding="utf-8")
+    assert "import { CareHub } from './CareHub';" in t and "<CareHub />" in t and "<AdaptiveUIProvider>" in t, (
+        "the rendered test does not mount the real page")
+    read = set(re.findall(r"ByTestId\('([^']+)'\)", t))
+    assert {"care-sources", "care-source-tool", "care-source-row", "care-sources-refusal", "care-hazard-log",
+            "care-hazard", "care-hazard-refusal", "care-score", "care-keys-not-read"} <= read, sorted(read)
+    for tid in read:
+        assert f'data-testid="{tid}"' in page, ("an id the test reads is not rendered by the page", tid)
+
+    #  both of the page's own reads go through the checked helper, and each says its refusal
+    assert "apiJson<any>('/api/v1/care/tools')" in page and "apiJson<any>('/api/v1/care/hazards')" in page
+    assert "fetch('/api/v1/care/hazards')" not in page, "the hazard log is read around the checked helper"
+    assert "setHazardsNote(`The open hazard log could not be read: ${errorMessage(e)}`)" in page
+    assert "/* the log is not shown rather than shown as empty */" not in page
+
+    #  the captured answers are the live routes', field for field
+    fx = json.loads((page_dir / "CareHub.fixture.json").read_text(encoding="utf-8"))
+    tools = client.get("/api/v1/care/tools").json()
+    assert set(fx["tools"]) <= set(tools)
+    assert [x["id"] for x in fx["tools"]["tools"]] == [x["id"] for x in tools["tools"]], "the tools listed differ"
+    assert set().union(*(set(x) for x in fx["tools"]["tools"])) <= set().union(*(set(x) for x in tools["tools"]))
+    hazards = client.get("/api/v1/care/hazards").json()
+    assert set(fx["hazards"]) <= set(hazards)
+    assert [h["id"] for h in fx["hazards"]["hazards"]] == [h["id"] for h in hazards["hazards"]], "the hazards differ"
+    assert set().union(*(set(h) for h in fx["hazards"]["hazards"])) <= set().union(*(set(h) for h in hazards["hazards"]))
+    for k, endpoint in (("review_handover", "/api/v1/care/handover"), ("review_risk", "/api/v1/care/risk-assess")):
+        assert set(fx[k]) <= set(client.get(f"/api/v1/review-options?endpoint={endpoint}").json()), k
+    #  the risk tool's captured scores are what the scorer computes now from the same observations
+    from agentic_core.care.scoring import compute_score
+    for k, data in (("news2", {"resp_rate": "22", "spo2": "93", "oxygen": "air", "systolic_bp": "105", "pulse": "112",
+                               "temp": "38.4", "consciousness": "alert"}),
+                    ("news2_partial", {"resp_rate": "22", "skin_colour": "pale"})):
+        now = compute_score("news2", data)
+        for field in ("total", "band", "response", "missing", "keys_not_read", "complete"):
+            assert fx[k]["score"].get(field) == now.get(field), (k, field, fx[k]["score"].get(field), now.get(field))

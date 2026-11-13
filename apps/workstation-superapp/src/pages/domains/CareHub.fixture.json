@@ -1,0 +1,657 @@
+{
+ "tools": {
+  "tools": [
+   {
+    "id": "news2",
+    "name": "NEWS2 Early Warning Score",
+    "type": "risk_score",
+    "does": "computes",
+    "standard": "Royal College of Physicians, NEWS2 (December 2017)",
+    "acknowledgement": "Reproduced from: Royal College of Physicians. National Early Warning Score (NEWS) 2: Standardising the assessment of acute-illness severity in the NHS. Updated report of a working party. London: RCP, 2017.",
+    "unmodified": true,
+    "sources": [
+     {
+      "id": "rcp-news2",
+      "names": [
+       "NEWS2"
+      ],
+      "status": "current",
+      "page": "https://www.rcp.ac.uk/resources/national-early-warning-score-news-2/",
+      "read_on": "2026-10-12",
+      "read": true,
+      "recently_checked": true,
+      "replaced_by": null,
+      "status_said": "current; its publisher's page was read on 2026-10-12, within the 90-day review period"
+     }
+    ]
+   },
+   {
+    "id": "must",
+    "name": "MUST Malnutrition Screening (withheld)",
+    "type": "withheld",
+    "does": "nothing - withheld on its owner's terms",
+    "standard": "BAPEN - free for non-commercial purposes; commercial use needs a licence (read at its owner's page, 2026-10-12)",
+    "sources": [
+     {
+      "id": "bapen-must-toolkit",
+      "names": [
+       "MUST",
+       "Malnutrition Universal Screening Tool"
+      ],
+      "status": "current",
+      "page": "https://www.bapen.org.uk/must-and-self-screening/must-toolkit/",
+      "read_on": "2026-10-12",
+      "read": true,
+      "recently_checked": true,
+      "replaced_by": null,
+      "status_said": "current; its publisher's page was read on 2026-10-12, within the 90-day review period"
+     }
+    ]
+   },
+   {
+    "id": "waterlow",
+    "name": "Waterlow Pressure Ulcer Risk (withheld)",
+    "type": "withheld",
+    "does": "nothing - withheld on its owner's terms",
+    "standard": "Waterlow (its reuse terms have not been read at their owner's page)",
+    "sources": [
+     {
+      "id": "waterlow-terms",
+      "names": [
+       "Waterlow"
+      ],
+      "status": "named_not_read",
+      "page": null,
+      "read_on": null,
+      "read": false,
+      "recently_checked": null,
+      "replaced_by": null,
+      "status_said": "named only: not read at its publisher's page"
+     }
+    ]
+   },
+   {
+    "id": "falls_risk",
+    "name": "Falls count (retired)",
+    "type": "retired",
+    "does": "nothing - retired",
+    "standard": "NICE CG161, replaced by NICE NG249 on 29 April 2025",
+    "sources": [
+     {
+      "id": "nice-cg161",
+      "names": [
+       "NICE CG161"
+      ],
+      "status": "replaced",
+      "page": "https://www.nice.org.uk/guidance/cg161",
+      "read_on": "2026-10-12",
+      "read": true,
+      "recently_checked": null,
+      "replaced_by": "nice-ng249",
+      "status_said": "replaced; its publisher's page was read on 2026-10-12; replaced by nice-ng249"
+     },
+     {
+      "id": "nice-ng249",
+      "names": [
+       "NICE NG249"
+      ],
+      "status": "current",
+      "page": "https://www.nice.org.uk/guidance/ng249/chapter/Recommendations",
+      "read_on": "2026-10-12",
+      "read": true,
+      "recently_checked": true,
+      "replaced_by": null,
+      "status_said": "current; its publisher's page was read on 2026-10-12, within the 90-day review period"
+     }
+    ]
+   },
+   {
+    "id": "dementia_care",
+    "name": "Dementia Care Planning",
+    "type": "care_plan",
+    "does": "frame",
+    "standard": "NICE NG97 (named only: not read at its publisher's page)",
+    "sources": [
+     {
+      "id": "nice-ng97",
+      "names": [
+       "NICE NG97"
+      ],
+      "status": "named_not_read",
+      "page": null,
+      "read_on": null,
+      "read": false,
+      "recently_checked": null,
+      "replaced_by": null,
+      "status_said": "named only: not read at its publisher's page"
+     }
+    ]
+   },
+   {
+    "id": "mental_health",
+    "name": "Mental Health Care Plan",
+    "type": "care_plan",
+    "does": "frame",
+    "standard": "no source has been read for this entry",
+    "sources": []
+   },
+   {
+    "id": "discharge",
+    "name": "Discharge Planning Checklist",
+    "type": "checklist",
+    "does": "frame",
+    "standard": "no single published standard is held for this entry",
+    "sources": []
+   },
+   {
+    "id": "safeguarding",
+    "name": "Safeguarding process guidance (adults, England)",
+    "type": "process_guidance",
+    "does": "frame",
+    "standard": "Care Act 2014 (named only: not read at its publisher's page)",
+    "sources": [
+     {
+      "id": "care-act-2014",
+      "names": [
+       "Care Act 2014"
+      ],
+      "status": "named_not_read",
+      "page": null,
+      "read_on": null,
+      "read": false,
+      "recently_checked": null,
+      "replaced_by": null,
+      "status_said": "named only: not read at its publisher's page"
+     }
+    ]
+   }
+  ],
+  "total": 8,
+  "review_days": 90,
+  "sources_basis": "Each tool's sources are rows of the one register of sources (GET /api/v1/registers/sources), read now: each row's status, the date its publisher's page was read and whether that was within the review period. Nothing here fetches a publisher's page."
+ },
+ "hazards": {
+  "hazards": [
+   {
+    "id": "CARE-HZ-01",
+    "tool": "care-plan",
+    "hazard": "the draft states medicines or doses, risk management, consent or capacity, or what to do in a crisis",
+    "guard": "agentic_core.api.religion:_withhold_sections",
+    "how": "any section of those kinds the composer writes is cut from the text and named in it, against agentic_core.api.care.CLINICIAN_ONLY_SECTIONS; the prompt asks for them only as questions for a professional",
+    "residual": "a clinical statement written outside such a section, under another heading, is not cut",
+    "guard_present": true,
+    "guarded": true
+   },
+   {
+    "id": "CARE-HZ-02",
+    "tool": "care-plan",
+    "hazard": "a history, a preference, a responsible person or a date is invented",
+    "guard": null,
+    "how": "UNGUARDED: the prompt says to write NOT SUPPLIED and invent nothing, and nothing checks the draft against what was supplied",
+    "residual": null,
+    "guard_present": null,
+    "guarded": false
+   },
+   {
+    "id": "CARE-HZ-03",
+    "tool": "care-plan",
+    "hazard": "the draft is read as a care plan that someone reviewed",
+    "guard": "agentic_core.api.care:CARE_PLAN_NOTE",
+    "how": "a note that it is a draft organiser reviewed by nobody is appended to the text itself, so it travels with a copy",
+    "residual": null,
+    "guard_present": true,
+    "guarded": true
+   },
+   {
+    "id": "CARE-HZ-04",
+    "tool": "risk-assess",
+    "hazard": "a score is stated that differs from the published table's",
+    "guard": "agentic_core.care.scoring:compute_score",
+    "how": "the score is computed in-house from the published table and returned first, and the narrative is told not to recompute it",
+    "residual": "the narrative's own figures are not checked against the computed score",
+    "guard_present": true,
+    "guarded": true
+   },
+   {
+    "id": "CARE-HZ-05",
+    "tool": "risk-assess",
+    "hazard": "a retired instrument (the falls count) is used",
+    "guard": "agentic_core.care.scoring:FALLS_RETIRED",
+    "how": "the request is refused, naming the replacement its publisher issued; nothing is computed or composed",
+    "residual": null,
+    "guard_present": true,
+    "guarded": true
+   },
+   {
+    "id": "CARE-HZ-06",
+    "tool": "risk-assess",
+    "hazard": "an instrument this platform does not hold is interpreted under a name nobody published",
+    "guard": "agentic_core.api.care:_TOOLS",
+    "how": "an id the catalogue does not hold is refused, listing the tools it does hold",
+    "residual": null,
+    "guard_present": true,
+    "guarded": true
+   },
+   {
+    "id": "CARE-HZ-07",
+    "tool": "risk-assess",
+    "hazard": "a score withheld on its owner's terms is computed",
+    "guard": "agentic_core.care.scoring:withheld_sentence",
+    "how": "the request is refused with the owner's terms; nothing is computed or composed",
+    "residual": null,
+    "guard_present": true,
+    "guarded": true
+   },
+   {
+    "id": "CARE-HZ-08",
+    "tool": "safeguarding",
+    "hazard": "a person in immediate danger reads process guidance before calling for help",
+    "guard": "agentic_core.api.care:IMMEDIATE_DANGER_FIRST",
+    "how": "the emergency line opens the text, fixed and never composed, whatever served the rest",
+    "residual": null,
+    "guard_present": true,
+    "guarded": true
+   },
+   {
+    "id": "CARE-HZ-09",
+    "tool": "safeguarding",
+    "hazard": "a concern about a child is handled on the adult route",
+    "guard": "agentic_core.api.care:ADULT_ROUTE_ONLY",
+    "how": "the text says, second, that this form is the adult route and where a child's concern goes instead",
+    "residual": "nothing reads the concern to detect that it is about a child",
+    "guard_present": true,
+    "guarded": true
+   },
+   {
+    "id": "CARE-HZ-10",
+    "tool": "safeguarding",
+    "hazard": "the route of another nation or framework is given as England's",
+    "guard": "agentic_core.api.care:SAFEGUARDING_JURISDICTION",
+    "how": "any other jurisdiction is refused, with where to turn instead",
+    "residual": null,
+    "guard_present": true,
+    "guarded": true
+   },
+   {
+    "id": "CARE-HZ-11",
+    "tool": "safeguarding",
+    "hazard": "a specific individual is identified or accused as a conclusion",
+    "guard": null,
+    "how": "UNGUARDED: only the prompt asks for no individual to be identified or accused; nothing checks the text",
+    "residual": null,
+    "guard_present": null,
+    "guarded": false
+   },
+   {
+    "id": "CARE-HZ-12",
+    "tool": "handover",
+    "hazard": "a detail is invented, or a part that was not supplied is filled",
+    "guard": null,
+    "how": "UNGUARDED: the prompt asks for NOT SUPPLIED and invents nothing; nothing checks the draft against what was supplied",
+    "residual": null,
+    "guard_present": null,
+    "guarded": false
+   },
+   {
+    "id": "CARE-HZ-13",
+    "tool": "handover",
+    "hazard": "the draft is taken as sent, received or a clinical record",
+    "guard": "agentic_core.api._ai_provenance:disclaimer_for",
+    "how": "every answer says it has not been reviewed, sent or received and is not a clinical record",
+    "residual": null,
+    "guard_present": true,
+    "guarded": true
+   },
+   {
+    "id": "CARE-HZ-14",
+    "tool": "all four",
+    "hazard": "a person's own text is read as an instruction, or a heading in it as a section the answer must have",
+    "guard": "agentic_core.api.care:_material",
+    "how": "what the person recorded is handed over as material, marked as data, and cut only at the helper (W859)",
+    "residual": "a model may still follow an instruction inside the material; marking it as data does not prevent that",
+    "guard_present": true,
+    "guarded": true
+   }
+  ],
+  "count": 14,
+  "unguarded": [
+   "CARE-HZ-02",
+   "CARE-HZ-11",
+   "CARE-HZ-12"
+  ],
+  "guard_missing": [],
+  "tools": [
+   "all four",
+   "care-plan",
+   "handover",
+   "risk-assess",
+   "safeguarding"
+  ],
+  "basis": "14 hazards across the Care tools: 11 linked to a guard found in the code now, 3 unguarded. An instruction written into a prompt is not counted as a guard. Open log (Owner ruling 2026-10-12): an entry is added when a hazard is found."
+ },
+ "review_handover": {
+  "endpoint": "/api/v1/care/handover",
+  "tool": "care_handover",
+  "discipline": "care",
+  "review": {
+   "tier": "unreviewed",
+   "label": "Unreviewed",
+   "known": true,
+   "records_counted": 0,
+   "records_not_counted": 0,
+   "of_tiers": [
+    "Checked by rule",
+    "Reviewed by Workstation's specialist agent",
+    "Signed by a qualified person"
+   ],
+   "basis": "no review of this tool is recorded: no rule check, no review by a calibrated agent and no qualified person's signature. Treat what it returns as unreviewed"
+  },
+  "person": {
+   "option": "A qualified person's review is an option for anything this tool gives. Workstation does not arrange one. When a person signs a review of this tool, it is recorded as the third tier, with their credential as they stated it.",
+   "warranted_when": "Before anything it gives is used in a person's direct care, a registered professional who knows that person checks it.",
+   "release": "Release is the Owner's switch. Even then, a clinical score used in someone's direct care keeps a qualified person.",
+   "kept_by_the_ruling": "a clinical score used in someone's direct care",
+   "basis": "The release sentence is the Owner's ruling of 2026-10-12 (P5.15). When a person is warranted is Workstation's own statement (W925): it claims no professional's role, and it does not say that any person has reviewed anything."
+  }
+ },
+ "review_risk": {
+  "endpoint": "/api/v1/care/risk-assess",
+  "tool": "care_risk_assess",
+  "discipline": "care",
+  "review": {
+   "tier": "unreviewed",
+   "label": "Unreviewed",
+   "known": true,
+   "records_counted": 0,
+   "records_not_counted": 0,
+   "of_tiers": [
+    "Checked by rule",
+    "Reviewed by Workstation's specialist agent",
+    "Signed by a qualified person"
+   ],
+   "basis": "no review of this tool is recorded: no rule check, no review by a calibrated agent and no qualified person's signature. Treat what it returns as unreviewed"
+  },
+  "person": {
+   "option": "A qualified person's review is an option for anything this tool gives. Workstation does not arrange one. When a person signs a review of this tool, it is recorded as the third tier, with their credential as they stated it.",
+   "warranted_when": "Before anything it gives is used in a person's direct care, a registered professional who knows that person checks it.",
+   "release": "Release is the Owner's switch. Even then, a clinical score used in someone's direct care keeps a qualified person.",
+   "kept_by_the_ruling": "a clinical score used in someone's direct care",
+   "basis": "The release sentence is the Owner's ruling of 2026-10-12 (P5.15). When a person is warranted is Workstation's own statement (W925): it claims no professional's role, and it does not say that any person has reviewed anything."
+  }
+ },
+ "status": {
+  "evidence_level": "configuration",
+  "evidence_level_number": null,
+  "evidence_basis": "which resource is listed first and which one served the last recorded completion. Configuration - what is configured, declared or reachable; below level 1 and not a statement about behaviour",
+  "posture": "in-house-first",
+  "external_allowed": false,
+  "owned_resources_available": [
+   "native"
+  ],
+  "selection_order": [
+   "native"
+  ],
+  "active_model": "native",
+  "active_model_label": "native",
+  "is_real_model": false,
+  "mode": "deterministic_floor",
+  "mode_predicted": "deterministic_floor",
+  "mode_measured": "unmeasured",
+  "measured_recent_server": null,
+  "mode_note": "mode follows the most recent completion that actually SERVED (a successful recorded row) when history exists, prediction only until then — the two disagree when a listed model keeps failing, or is disabled by configuration and skipped",
+  "floor_active": true,
+  "floor_active_basis": "no successful completion has been recorded yet; predicted from whether a real model is listed",
+  "floor_note": "The deterministic native floor is serving — honest structured reasoning, NOT an LLM. Run a local Ollama model (or enable an external accelerant) for generative prose.",
+  "guarantee": "Workstation always produces a real, structured result from its OWN resources with NO external dependency; external providers are optional accelerants (flag-gated by AI_ALLOW_EXTERNAL).",
+  "resources": [
+   {
+    "name": "native",
+    "kind": "native",
+    "available": true,
+    "is_external": false,
+    "note": "Workstation's own structured engine — always available, owned."
+   },
+   {
+    "name": "ollama",
+    "kind": "local",
+    "available": false,
+    "is_external": false,
+    "model": null,
+    "configured_model": "llama3.2",
+    "local_models": [],
+    "promoted_default": null,
+    "retired": [],
+    "note": "Self-hosted local model(s) — owned capability when running. Route to a specific one with model='ollama:<name>'."
+   },
+   {
+    "name": "anthropic",
+    "kind": "external",
+    "available": false,
+    "is_external": true,
+    "model": "claude-sonnet-4-6",
+    "note": "Optional accelerant — only with a key AND AI_ALLOW_EXTERNAL=true."
+   },
+   {
+    "name": "openai",
+    "kind": "external",
+    "available": false,
+    "is_external": true,
+    "model": "gpt-4o-mini",
+    "note": "Optional accelerant — only with a key AND AI_ALLOW_EXTERNAL=true."
+   }
+  ]
+ },
+ "news2": {
+  "assessment_id": "f33b5c600f",
+  "tool": "news2",
+  "tool_name": "NEWS2 Early Warning Score",
+  "score": {
+   "tool": "news2",
+   "table": "NEWS2 — Royal College of Physicians, 2017",
+   "spo2_scale": 1,
+   "components": {
+    "respiratory_rate": {
+     "value": 22.0,
+     "points": 2,
+     "note": "/min"
+    },
+    "spo2_scale_1": {
+     "value": 93.0,
+     "points": 2,
+     "note": "%"
+    },
+    "air_or_oxygen": {
+     "value": "air",
+     "points": 0,
+     "note": ""
+    },
+    "systolic_bp": {
+     "value": 105.0,
+     "points": 1,
+     "note": "mmHg"
+    },
+    "pulse": {
+     "value": 112.0,
+     "points": 2,
+     "note": "/min"
+    },
+    "consciousness": {
+     "value": "alert",
+     "points": 0,
+     "note": ""
+    },
+    "temperature": {
+     "value": 38.4,
+     "points": 1,
+     "note": "°C"
+    }
+   },
+   "total": 8,
+   "band": "high",
+   "response": "emergency response — urgent or emergency clinical review by a team with critical-care competencies; continuous monitoring",
+   "single_parameter_3": false,
+   "complete": true,
+   "missing": [],
+   "warnings": [],
+   "keys_not_read": [],
+   "note": null,
+   "basis": "computed in-house from the published table — a decision aid, not a diagnosis; clinical judgement by a qualified professional is required",
+   "available": true
+  },
+  "score_summary": "NEWS2 8 · high · emergency response — urgent or emergency clinical review by a team with critical-care competencies; continuous monitoring (respiratory_rate 2, spo2_scale_1 2, air_or_oxygen 0, systolic_bp 1, pulse 2, consciousness 0, temperature 1)",
+  "assessment": "_[Workstation native structured engine — owned, no external dependency]_\n\n## Clinical Interpretation\nNative structured frame for 'Clinical Interpretation' over: resp_rate: 22 spo2: 93 oxygen: air systolic_bp: 105 pulse: 112 temp: 38.4 consciousness: alert (domain: care). The list below is the request's most frequent terms, not findings about them.\n- resp rate\n- oxygen air\n- consciousness alert\n- systolic\n- pulse\n\n## Recommended Actions\nStructured option frame for: resp_rate: 22 spo2: 93 oxygen: air systolic_bp: 105 pulse: 112 temp: 38.4 consciousness: alert.\n- Generate ≥3 distinct variants of the approach.\n- Score each against value, feasibility, risk, and values-fit (halal/beneficence).\n- Recommend the highest-scoring; record why — to be enriched by a model resource.\n\n## Escalation Triggers\nNative structured frame for 'Escalation Triggers' over: resp_rate: 22 spo2: 93 oxygen: air systolic_bp: 105 pulse: 112 temp: 38.4 consciousness: alert (domain: care). The list below is the request's most frequent terms, not findings about them.\n- resp rate\n- oxygen air\n- consciousness alert\n- systolic\n- pulse\n\n## Documentation Guidance\nNative structured frame for 'Documentation Guidance' over: resp_rate: 22 spo2: 93 oxygen: air systolic_bp: 105 pulse: 112 temp: 38.4 consciousness: alert (domain: care). The list below is the request's most frequent terms, not findings about them.\n- resp rate\n- oxygen air\n- consciousness alert\n- systolic\n- pulse\n\n_A DRAFT that no professional has reviewed: a qualified professional must check it before anyone relies on it._",
+  "ai_provenance": {
+   "posture": "in-house-first",
+   "served_by": "native",
+   "is_external": false,
+   "language_requested": null,
+   "language_delivered": null,
+   "language_basis": "no language was requested, so no claim is made about the output's language",
+   "profile_applied": false,
+   "profile_state": "none_written",
+   "profile_basis": "you have not written a profile",
+   "model_tokens": null,
+   "model_tokens_basis": "NOT COUNTED - the deterministic floor served this and runs no model, so there are no tokens to count; null, never 0",
+   "evidence_level": "behaviour",
+   "evidence_level_number": 1,
+   "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+   "served_identity": {
+    "model": null,
+    "build_digest": null,
+    "processor": null,
+    "basis": "the deterministic floor answered: no model ran"
+   },
+   "material": {
+    "label": "CARE RECORD",
+    "chars": 143,
+    "read_chars": 143,
+    "read_whole": true,
+    "limit": 12000,
+    "delimiter_marks_defused": false,
+    "basis": "all 143 characters of the care record were handed over; it was marked as data and not as instruction"
+   },
+   "review": {
+    "tier": "unreviewed",
+    "label": "Unreviewed",
+    "known": true,
+    "records_counted": 0,
+    "records_not_counted": 0,
+    "of_tiers": [
+     "Checked by rule",
+     "Reviewed by Workstation's specialist agent",
+     "Signed by a qualified person"
+    ],
+    "basis": "no review of this tool is recorded: no rule check, no review by a calibrated agent and no qualified person's signature. Treat what it returns as unreviewed"
+   },
+   "floor_note": "Composed by the native floor, not by a model: the headings are a structure filled with terms taken from your input. NO research, legal or clinical analysis, guidance, marking, market data or safeguarding assessment was performed - read it as an outline to work from, not as an answer.",
+   "quality_assurance": {
+    "qms_gate_passed": null,
+    "qms_basis": "not assessable — floor-served: the deterministic floor emits the requested headings, so coverage cannot fail by construction and the stub regex never matches its vocabulary; no instrument here can say whether this content is good",
+    "delivery_coverage": 1.0,
+    "stub_found": false,
+    "compliance_overall": "review",
+    "compliance_basis": "keyword and vocabulary screens plus the ethical dimensions. A screen can refuse and can escalate; it cannot clear — so only a row with coverage 'engine' can carry a pass, and `coverage_gaps` names every area nothing here assessed. Matched only by a word list, which establishes nothing either way: sharia_halal — NOTHING here assessed this subject, so the overall is 'review' and no part of it may be reported as compliant",
+    "compliance_echo_only": false,
+    "quality_record_hash": "a284f9b042e8239545e92c97d24cf12d612d5be2ef21564505e955b67d258532182add6500ff2f743614a4d7a24739c8f6caad4d8f5223d182ecdf7828337caf"
+   }
+  },
+  "generated_at": "2026-11-13T20:20:17Z",
+  "disclaimer": "The score is computed in-house from the published table (NEWS2, Royal College of Physicians, 2017) and is a decision aid, not a diagnosis; the narrative is a structured frame from the native floor, not an interpretation by AI or by a clinician. Clinical judgement by a qualified professional is required."
+ },
+ "news2_partial": {
+  "assessment_id": "d076da053f",
+  "tool": "news2",
+  "tool_name": "NEWS2 Early Warning Score",
+  "score": {
+   "tool": "news2",
+   "table": "NEWS2 — Royal College of Physicians, 2017",
+   "spo2_scale": 1,
+   "components": {
+    "respiratory_rate": {
+     "value": 22.0,
+     "points": 2,
+     "note": "/min"
+    }
+   },
+   "total": 2,
+   "band": null,
+   "response": "no band — the total is a lower bound until the missing observations are recorded",
+   "single_parameter_3": false,
+   "complete": false,
+   "missing": [
+    "spo2",
+    "oxygen (air or supplemental oxygen)",
+    "systolic_bp",
+    "pulse",
+    "consciousness (ACVPU)",
+    "temperature"
+   ],
+   "warnings": [],
+   "keys_not_read": [
+    "skin_colour"
+   ],
+   "note": "score computed from the observations given — INCOMPLETE: the total is a lower bound until the missing observations are recorded",
+   "basis": "computed in-house from the published table — a decision aid, not a diagnosis; clinical judgement by a qualified professional is required",
+   "available": true
+  },
+  "score_summary": "NEWS2 ≥ 2 (lower bound) · no band · no band — the total is a lower bound until the missing observations are recorded (respiratory_rate 2) — INCOMPLETE, missing: spo2, oxygen (air or supplemental oxygen), systolic_bp, pulse, consciousness (ACVPU), temperature",
+  "assessment": "_[Workstation native structured engine — owned, no external dependency]_\n\n## Clinical Interpretation\nNative structured frame for 'Clinical Interpretation' over: resp_rate: 22 skin_colour: pale (domain: care). The list below is the request's most frequent terms, not findings about them.\n- resp rate\n- skin colour\n- colour pale\n\n## Recommended Actions\nStructured option frame for: resp_rate: 22 skin_colour: pale.\n- Generate ≥3 distinct variants of the approach.\n- Score each against value, feasibility, risk, and values-fit (halal/beneficence).\n- Recommend the highest-scoring; record why — to be enriched by a model resource.\n\n## Escalation Triggers\nNative structured frame for 'Escalation Triggers' over: resp_rate: 22 skin_colour: pale (domain: care). The list below is the request's most frequent terms, not findings about them.\n- resp rate\n- skin colour\n- colour pale\n\n## Documentation Guidance\nNative structured frame for 'Documentation Guidance' over: resp_rate: 22 skin_colour: pale (domain: care). The list below is the request's most frequent terms, not findings about them.\n- resp rate\n- skin colour\n- colour pale\n\n_A DRAFT that no professional has reviewed: a qualified professional must check it before anyone relies on it._",
+  "ai_provenance": {
+   "posture": "in-house-first",
+   "served_by": "native",
+   "is_external": false,
+   "language_requested": null,
+   "language_delivered": null,
+   "language_basis": "no language was requested, so no claim is made about the output's language",
+   "profile_applied": false,
+   "profile_state": "none_written",
+   "profile_basis": "you have not written a profile",
+   "model_tokens": null,
+   "model_tokens_basis": "NOT COUNTED - the deterministic floor served this and runs no model, so there are no tokens to count; null, never 0",
+   "evidence_level": "behaviour",
+   "evidence_level_number": 1,
+   "evidence_basis": "what came back for this input, and which resource gave it. Level 1 - inputs and outputs only; the highest level anything here reaches, and not a measurement of the resource beyond this answer",
+   "served_identity": {
+    "model": null,
+    "build_digest": null,
+    "processor": null,
+    "basis": "the deterministic floor answered: no model ran"
+   },
+   "material": {
+    "label": "CARE RECORD",
+    "chars": 70,
+    "read_chars": 70,
+    "read_whole": true,
+    "limit": 12000,
+    "delimiter_marks_defused": false,
+    "basis": "all 70 characters of the care record were handed over; it was marked as data and not as instruction"
+   },
+   "review": {
+    "tier": "unreviewed",
+    "label": "Unreviewed",
+    "known": true,
+    "records_counted": 0,
+    "records_not_counted": 0,
+    "of_tiers": [
+     "Checked by rule",
+     "Reviewed by Workstation's specialist agent",
+     "Signed by a qualified person"
+    ],
+    "basis": "no review of this tool is recorded: no rule check, no review by a calibrated agent and no qualified person's signature. Treat what it returns as unreviewed"
+   },
+   "floor_note": "Composed by the native floor, not by a model: the headings are a structure filled with terms taken from your input. NO research, legal or clinical analysis, guidance, marking, market data or safeguarding assessment was performed - read it as an outline to work from, not as an answer.",
+   "quality_assurance": {
+    "qms_gate_passed": null,
+    "qms_basis": "not assessable — floor-served: the deterministic floor emits the requested headings, so coverage cannot fail by construction and the stub regex never matches its vocabulary; no instrument here can say whether this content is good",
+    "delivery_coverage": 1.0,
+    "stub_found": false,
+    "compliance_overall": "review",
+    "compliance_basis": "keyword and vocabulary screens plus the ethical dimensions. A screen can refuse and can escalate; it cannot clear — so only a row with coverage 'engine' can carry a pass, and `coverage_gaps` names every area nothing here assessed. Matched only by a word list, which establishes nothing either way: sharia_halal — NOTHING here assessed this subject, so the overall is 'review' and no part of it may be reported as compliant",
+    "compliance_echo_only": false,
+    "quality_record_hash": "84d48bf02e97f6e4203db94bd95d94bbd36de6bc29f08cc35bb7def84e38bab7085b4bf7f61a058836dabf48164a151820bb4670f495efa429c6d3bb6d4ed2c6"
+   }
+  },
+  "generated_at": "2026-11-13T20:20:17Z",
+  "disclaimer": "The score is computed in-house from the published table (NEWS2, Royal College of Physicians, 2017) and is a decision aid, not a diagnosis; the narrative is a structured frame from the native floor, not an interpretation by AI or by a clinician. Clinical judgement by a qualified professional is required."
+ }
+}
