@@ -78221,3 +78221,52 @@ def test_w921_p515_clause2_an_agents_review_counts_only_as_a_whole_record(client
     assert "fields: ['agent', 'checklist', 'tool_version', 'sources_read', 'model', 'could_not_check']" in page
     assert "const [source, page, read_on] = l.split('|').map(s => s.trim());" in page
     assert "return { source, page, read_on };" in page and "<textarea" in page
+
+
+def test_w922_fu399_the_review_records_and_their_form_are_guarded_by_a_render_against_the_apis_own_answer(client, tmp_path, monkeypatch):
+    """FU-399 part 5 (W922). Every sentence the governance page says about a record of review is the server's:
+    whether it counts and why not, that a credential is as stated and not verified, and each refusal at the door.
+    ReviewRecords.test.tsx mounts the real page against GET /api/v1/review/records as the app answers it, captured
+    after four records were made (a rule check and a signature that count, an uncalibrated agent's whole review
+    that is kept and not counted, and a review stored before clause 2). It reads each record in the DOM. It also
+    drives the form: an agent's review is sent as clause 2 asks (W921), and the door's refusal is shown in its own
+    words. Page blinds turn it red, run by the round as it runs tsc. This guard holds what the render rests on:
+    - the test mounts the real page;
+    - every id it reads is one the page renders;
+    - the captured answer is one the live route still gives, field for field;
+    - the reason a record from before clause 2 does not count is the reason counts() gives it now."""
+    import datetime as _dt
+    import json
+    import pathlib
+    from agentic_core.api import _review_tier as rt
+
+    page_dir = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/pages/governance"
+    page = (page_dir / "ReviewRecords.tsx").read_text(encoding="utf-8")
+    t = (page_dir / "ReviewRecords.test.tsx").read_text(encoding="utf-8")
+    assert "import { ReviewRecords } from './ReviewRecords';" in t and "<ReviewRecords />" in t, (
+        "the rendered test does not mount the real page")
+    for tid in ("review-records-count", "review-records-basis", "review-records-credential", "review-records-none",
+                "review-records-unread", "review-record-refused", "review-record-said"):
+        assert f"'{tid}'" in t and f'data-testid="{tid}"' in page, ("an id the test reads is not rendered", tid)
+    for prefix in ("review-record-", "review-record-why-not-"):
+        assert ("`" + prefix + "${r.record_id}`") in page and ("`" + prefix + "${r.record_id}`") in t, prefix
+
+    #  the captured answer: two that count and two that do not, one of them a record from before clause 2
+    fx = json.loads((page_dir / "ReviewRecords.fixture.json").read_text(encoding="utf-8"))["records"]
+    assert (fx["total"], fx["counted"]) == (4, 2), (fx["total"], fx["counted"])
+    old = next(r for r in fx["records"] if r["record_id"] == "rev-before-clause2")
+    assert old["counts"] is False and old["why_not"] == rt.counts({k: v for k, v in old.items()
+                                                                   if k not in ("counts", "why_not")})["why_not"]
+
+    #  ...and one the live route still gives, field for field
+    store = tmp_path / "review_tier_records.json"
+    monkeypatch.setattr(rt, "_path", lambda: store)
+    today = _dt.date.today().isoformat()
+    made = client.post("/api/v1/review/record", json={"tool": "care_risk_assess", "tier": "checked_by_rule",
+                                                       "date": today, "rule": "w922 live shape", "test": "test_w922"})
+    assert made.status_code == 200, made.text[:300]
+    live = client.get("/api/v1/review/records").json()
+    assert set(fx) == set(live), ("the captured listing and the live one differ", sorted(set(fx) ^ set(live)))
+    rule_fx = next(r for r in fx["records"] if r["tier"] == "checked_by_rule")
+    assert set(rule_fx) == set(live["records"][0]), sorted(set(rule_fx) ^ set(live["records"][0]))
+    assert fx["credential_basis"] == live["credential_basis"] and fx["basis"] == live["basis"]
