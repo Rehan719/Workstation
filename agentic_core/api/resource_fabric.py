@@ -1122,6 +1122,121 @@ def _save_compositions(rows: List[Dict[str, Any]]) -> None:
     atomic_write_json(_STORE, rows)
 
 
+#  W915 (FU-609 part 2) - THE LIFECYCLE IS ON A SAVED COMPOSITION, where W914's census put it: no registered
+#  resource keeps anything between calls, and a saved composition is the one fabric object with a life of its own.
+#  Its state is DERIVED ON EACH READ and never stored. It comes from the composition's own declared expiry and
+#  from the runs of it that the history keeps. A state those cannot settle is "not known", never "provisioned".
+#  The clock is this module's own attribute, so a test moves it without moving the process's clock (W900).
+_RUN_HISTORY_KEEPS = 100        # composition_runs.json keeps the last 100 runs (the run route writes _cr[-100:])
+_lifecycle_clock = time.time
+
+
+def _utc_stamp(epoch: float) -> str:
+    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(epoch))
+
+
+def _expiry_epoch(stamp: Any) -> Optional[float]:
+    """A stored expiry as epoch seconds, or None when it cannot be read."""
+    import calendar
+    try:
+        return float(calendar.timegm(time.strptime(str(stamp), "%Y-%m-%dT%H:%M:%SZ")))
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+
+def _parse_expiry(text: str) -> str:
+    """A declared expiry as a UTC stamp in the future, or a 422 that says what to give. Nothing is saved on a 422."""
+    from datetime import datetime, timezone
+    raw = (text or "").strip()
+    try:
+        when = datetime.fromisoformat(raw[:-1] + "+00:00" if raw.endswith(("Z", "z")) else raw)
+    except ValueError:
+        raise HTTPException(status_code=422, detail=(
+            f"expires_at {raw!r} cannot be read as a time. Give an ISO-8601 time with its zone, for example "
+            f"2026-11-14T08:00:00Z. Nothing was saved.")) from None
+    if when.tzinfo is None:
+        raise HTTPException(status_code=422, detail=(
+            f"expires_at {raw!r} names no time zone, so when it falls cannot be known. Give it with its zone, "
+            f"for example {raw}Z for UTC. Nothing was saved."))
+    epoch = when.astimezone(timezone.utc).timestamp()
+    if epoch <= _lifecycle_clock():
+        raise HTTPException(status_code=422, detail=(
+            f"expires_at {raw!r} has already passed, so the composition could never run. Give a later time, or "
+            f"leave expires_at out for a composition that does not expire. Nothing was saved."))
+    return _utc_stamp(epoch)
+
+
+_LIFECYCLE_BASIS = (
+    "Derived on this read and never stored, from the composition's own declared expiry and from the runs of it "
+    "that the history keeps. expired: its declared expires_at has passed, and a run of it is refused before "
+    "anything runs (renew it with a later expires_at, or retire it). operating: the history keeps at least one run "
+    "of it. provisioned: saved, and the history, which covers its whole life, keeps no run of it. A state the "
+    "stores cannot settle is 'not known'. A simulation (POST /api/v1/resources/compose/simulate) stores nothing, "
+    "so no saved composition is ever 'requested'. Retiring (DELETE) removes the design from the store and keeps "
+    "the rows of its runs, so no saved composition reads 'retired'.")
+
+
+def _composition_lifecycle(comp: Dict[str, Any], runs: Optional[List[Any]],
+                           runs_why: Optional[str]) -> Dict[str, Any]:
+    """One saved composition's lifecycle state, derived now. `runs` is the run history as read (None when it
+    could not be read as a list), and `runs_why` is the reason it was not read whole."""
+    now = _lifecycle_clock()
+    declared = comp.get("expires_at")
+    exp = _expiry_epoch(declared) if declared else None
+    unreadable_expiry = bool(declared) and exp is None
+    expired = bool(exp is not None and now >= exp)
+    kept: Optional[List[Dict[str, Any]]] = None
+    if isinstance(runs, list) and not runs_why:
+        kept = [r for r in runs if isinstance(r, dict) and r.get("composition_id") == comp.get("id")
+                and not r.get("refused")]
+    #  the history keeps the last 100 runs: it covers this composition's whole life only while it has never
+    #  filled, or when its oldest kept run is no newer than the composition itself
+    _oldest = runs[0].get("created_at") if kept is not None and runs and isinstance(runs[0], dict) else None
+    covers_life = kept is not None and (
+        len(runs) < _RUN_HISTORY_KEEPS or str(_oldest or "~") <= str(comp.get("created_at") or ""))
+    why = None
+    if unreadable_expiry:
+        state = "not known"
+        why = (f"its declared expiry {declared!r} cannot be read, so whether it has passed is not known. A run is "
+               f"refused until it is renewed with a readable expires_at.")
+    elif expired:
+        state = "expired"
+    elif kept is None:
+        state = "not known"
+        why = f"the run history could not be read ({runs_why or 'it does not hold a list'})"
+    elif kept:                                         # the history keeps a run of it
+        state = "operating"
+    elif covers_life:
+        state = "provisioned"
+    else:
+        state = "not known"
+        why = (f"the run history keeps the last {_RUN_HISTORY_KEEPS} runs and its oldest is newer than this "
+               f"composition, so whether it ran before then cannot be read")
+    return {"state": state, "runnable": not (expired or unreadable_expiry),
+            "expires_at": declared or None, "expired": None if unreadable_expiry else expired,
+            "runs_kept": len(kept) if kept is not None else None,
+            "last_run_at": max((str(r.get("created_at") or "") for r in kept), default=None) if kept else None,
+            "not_known_because": why, "read_at": _utc_stamp(now), "basis": _LIFECYCLE_BASIS}
+
+
+def _composition_runs_read() -> tuple:
+    """The run history for lifecycle reads: (rows or None, the reason it was not read whole)."""
+    from agentic_core.config import read_json_reported
+    runs, why = read_json_reported(data_path("composition_runs.json"), [])
+    return (runs if isinstance(runs, list) else None), (why if isinstance(runs, list) else
+                                                       (why or "the run history does not hold a list"))
+
+
+def _lifecycle_counts(comps: List[Dict[str, Any]]) -> Dict[str, int]:
+    """How many saved compositions are in each lifecycle state, derived on this read."""
+    runs, why = _composition_runs_read()
+    out: Dict[str, int] = {}
+    for c in comps:
+        s = _composition_lifecycle(c, runs, why)["state"]
+        out[s] = out.get(s, 0) + 1
+    return dict(sorted(out.items()))
+
+
 async def _omnimedia_live_sentence() -> str:
     try:
         from agentic_core.api.deliverables import output_formats as _of
@@ -1210,7 +1325,11 @@ async def state_census():
         "undeclared_facility_runs": undeclared,
         "objects_that_keep_state_between_calls": [
             {"object": "saved composition", "store": "resource_compositions.json", "count": len(comps),
-             "verbs": ["define (POST /api/v1/resources/compose)", "update", "retire"]},
+             "verbs": ["define (POST /api/v1/resources/compose)", "update", "retire"],
+             #  W915 (FU-609 part 2) - each saved composition's state, derived on this read
+             "by_state": _lifecycle_counts(comps),
+             "lifecycle": ("each composition's state is derived on each read and served with it at GET "
+                           "/api/v1/resources/compositions; " + _LIFECYCLE_BASIS)},
             {"object": "composition run row", "store": "composition_runs.json", "count": run_rows,
              "unreadable": runs_why},
         ],
@@ -1237,7 +1356,9 @@ async def state_census():
 @router.get("/compositions")
 async def list_compositions(user: dict | None = Depends(get_current_user)):
     _u = user if isinstance(user, dict) else None
-    return {"compositions": [c for c in _load_compositions()
+    _runs, _runs_why = _composition_runs_read()                          # W915 (FU-609 part 2)
+    return {"compositions": [{**c, "lifecycle": _composition_lifecycle(c, _runs, _runs_why)}
+                             for c in _load_compositions()
                              if user_can_access(_u, c.get("owner_id"))]}   # §14 (W324)
 
 
@@ -1268,7 +1389,7 @@ async def get_composition(cid: str, user: dict | None = Depends(get_current_user
     for c in _load_compositions():
         if c["id"] == cid:
             _require_design_access(c, user, "Composition", cid)
-            return c
+            return {**c, "lifecycle": _composition_lifecycle(c, *_composition_runs_read())}   # W915 (FU-609)
     raise HTTPException(status_code=404, detail=f"Composition {cid} not found.")
 
 
@@ -1277,6 +1398,9 @@ class UpdateCompositionRequest(BaseModel):
     usage_area: Optional[str] = None
     resource_ids: Optional[List[str]] = None
     config: Optional[Dict[str, Dict[str, Any]]] = None
+    #  W915 (FU-609 part 2) - renew the expiry with a later time, or clear it so the composition does not expire
+    expires_at: Optional[str] = None
+    clear_expiry: bool = False
 
 
 @router.put("/compositions/{cid}")
@@ -1291,6 +1415,11 @@ async def update_composition(cid: str, req: UpdateCompositionRequest,
     if not comp:
         raise HTTPException(status_code=404, detail=f"Composition {cid} not found.")
     _require_design_access(comp, user, "Composition", cid)   # §14 (W324)
+    #  W915 (FU-609 part 2) - an expiry is read before the re-simulation, so a bad one is refused before any work
+    if req.clear_expiry and req.expires_at:
+        raise HTTPException(status_code=422, detail=(
+            "give a new expires_at or clear_expiry, not both. Nothing was saved."))
+    _expiry_new = _parse_expiry(req.expires_at) if req.expires_at is not None else None
     rids = req.resource_ids if req.resource_ids is not None else [r["id"] for r in comp.get("resources", [])]
     unknown = [rid for rid in rids if rid not in _BY_ID]
     if unknown:
@@ -1319,11 +1448,16 @@ async def update_composition(cid: str, req: UpdateCompositionRequest,
             "version": int(comp.get("version", 1)) + 1,
             "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         })
+        if _expiry_new:                                           # W915 (FU-609 part 2) - renewed
+            comp["expires_at"] = _expiry_new
+        elif req.clear_expiry:                                    # W915 - no longer expires
+            comp.pop("expires_at", None)
         _save_compositions(rows)
     try:
         from agentic_core.gaas.v5 import UEGLogger
         UEGLogger().log({"type": "resource_fabric.composition.reconfigured", "composition_id": cid,
-                         "version": comp["version"], "resources": rids, "commit_ready": commit_ready})
+                         "version": comp["version"], "resources": rids, "commit_ready": commit_ready,
+                         "expires_at": comp.get("expires_at")})                  # W915 (FU-609 part 2)
     except Exception:
         pass
     return comp
@@ -2562,6 +2696,14 @@ async def run_composition(cid: str, req: RunCompositionRequest,
     if not comp:
         raise HTTPException(status_code=404, detail=f"Composition {cid} not found.")
     _require_design_access(comp, user, "Composition", cid)   # §14 (W324)
+    #  W915 (FU-609 part 2) - A COMPOSITION'S DECLARED EXPIRY IS HONOURED BEFORE ANYTHING RUNS. Its state is read
+    #  from its own record now, so the refusal does not wait on any beat.
+    _life = _composition_lifecycle(comp, [], None)
+    if not _life["runnable"]:
+        raise HTTPException(status_code=409, detail=(
+            (f"This composition expired at {comp.get('expires_at')}, its declared expiry, so nothing was run. "
+             if _life["expired"] else f"This composition cannot run: {_life['not_known_because']} Nothing was run. ")
+            + f"Renew it with PUT /api/v1/resources/compositions/{cid} and a later expires_at, or retire it."))
     #  W640 (P3.31) — THE CEILING IS ENFORCED BEFORE ANYTHING RUNS. A run had a per-call timeout and no bound
     #  on how many resources it would attempt.
     from agentic_core.api.instrument_cell import MAX_STAGES as _max_stages, MAX_STAGES_BASIS as _max_basis
@@ -3479,6 +3621,8 @@ class ComposeRequest(BaseModel):
     resource_ids: List[str]
     usage_area: str = "synthesis"
     config: Dict[str, Dict[str, Any]] = {}   # per-resource param overrides {id: {param: value}}
+    #  W915 (FU-609 part 2) - an ephemeral composition declares when it expires (ISO-8601 with its zone)
+    expires_at: Optional[str] = None
 
 
 def _model_configuration(resource_ids: List[str], usage_area: str,
@@ -3626,6 +3770,7 @@ async def compose(req: ComposeRequest, user: dict | None = Depends(get_current_u
     if unknown:
         raise HTTPException(status_code=400, detail=f"Unknown resource ids: {unknown}")
     _refuse_spawners(req.resource_ids)          # W810 (FU-900)
+    _expires = _parse_expiry(req.expires_at) if req.expires_at is not None else None   # W915 (FU-609 part 2)
 
     resolved, model, qa, commit_ready = await _simulate_configuration(
         req.name, req.resource_ids, req.usage_area, req.config)
@@ -3642,6 +3787,7 @@ async def compose(req: ComposeRequest, user: dict | None = Depends(get_current_u
         "reusable": True,
         "rerunnable": True,
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        **({"expires_at": _expires} if _expires else {}),        # W915 (FU-609 part 2)
     }
     with _compositions_lock():                                   # W728 - whole read, inside the lock
         rows = _compositions_for_write()

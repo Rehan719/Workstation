@@ -77588,3 +77588,95 @@ def test_w914_fu609_which_fabric_resources_keep_state_between_calls_is_measured_
     assert "belongs on a saved composition; on a resource it would be a label" in after["conclusion"]
     for k in ("facility_run:nothing", "facility_run:records", "facility_run:side_effect"):
         assert f"{after['counts'].get(k, 0)} " in after["conclusion"], (k, after["conclusion"])
+
+
+def test_w915_fu609_a_saved_composition_has_a_lifecycle_and_a_run_honours_its_declared_expiry(client, monkeypatch):
+    """FU-609 part 2 (W915). W914 measured that no registered resource keeps anything between calls, and that a
+    saved composition is the one fabric object with a life of its own, so the lifecycle is on it. Its state is
+    derived on each read and never stored, from its own declared expiry and from the runs of it the history keeps:
+    provisioned, operating, expired, or not known when the stores cannot settle it. A run of an expired
+    composition is refused before anything runs. An expiry is declared at compose, renewed or cleared at update,
+    and refused when it cannot be read, names no zone or has already passed. The guard moves the module's own
+    clock, never the process's (W900)."""
+    import time as _t
+    from agentic_core.api import resource_fabric as rf
+    from agentic_core.config import data_path
+
+    def stamp(epoch):
+        return _t.strftime("%Y-%m-%dT%H:%M:%SZ", _t.gmtime(epoch))
+
+    def listed():
+        return {c["id"]: c for c in client.get("/api/v1/resources/compositions").json()["compositions"]}
+
+    def life(cid):
+        return client.get(f"/api/v1/resources/compositions/{cid}").json()["lifecycle"]
+
+    #  an expiry that cannot be read, names no zone or has passed is refused, and nothing is saved
+    n0 = len(listed())
+    for bad, said in (("next tuesday", "cannot be read"), ("2099-01-01T00:00:00", "names no time zone"),
+                      ("2000-01-01T00:00:00Z", "has already passed")):
+        r = client.post("/api/v1/resources/compose", json={"name": "W915 bad expiry", "resource_ids": ["compliance"],
+                                                           "expires_at": bad})
+        assert r.status_code == 422 and said in r.json()["detail"], (bad, r.text[:300])
+    assert len(listed()) == n0, "a refused expiry saved a composition"
+
+    #  saved with an expiry, it is provisioned until it runs, and its expiry is kept as one UTC time
+    soon = _t.time() + 3600
+    made = client.post("/api/v1/resources/compose", json={
+        "name": "W915 ephemeral", "resource_ids": ["compliance"],
+        "expires_at": _t.strftime("%Y-%m-%dT%H:%M:%S+00:00", _t.gmtime(soon))})
+    assert made.status_code == 200, made.text[:300]
+    cid = made.json()["id"]
+    assert made.json()["expires_at"] == stamp(soon)
+    try:
+        lc = life(cid)
+        assert (lc["state"], lc["runnable"], lc["runs_kept"], lc["expired"]) == ("provisioned", True, 0, False), lc
+        assert listed()[cid]["lifecycle"]["state"] == "provisioned"
+
+        #  a run moves it to operating, read from the history's own row of that run
+        ran = client.post(f"/api/v1/resources/compositions/{cid}/run", json={"objective": "W915 lifecycle probe"})
+        assert ran.status_code == 200 and not ran.json().get("refused"), ran.text[:300]
+        lc = life(cid)
+        assert (lc["state"], lc["runs_kept"]) == ("operating", 1) and lc["last_run_at"], lc
+
+        #  past its expiry (the module's own clock, moved), it is expired, and a run is refused with nothing run
+        later = soon + 60
+        monkeypatch.setattr(rf, "_lifecycle_clock", lambda: later)
+        lc = life(cid)
+        assert (lc["state"], lc["runnable"], lc["expired"]) == ("expired", False, True), lc
+        refused = client.post(f"/api/v1/resources/compositions/{cid}/run", json={"objective": "after expiry"})
+        assert refused.status_code == 409, refused.text[:300]
+        assert stamp(soon) in refused.json()["detail"] and "nothing was run" in refused.json()["detail"]
+        assert life(cid)["runs_kept"] == 1, "the refused run left a run in the history"
+
+        #  an update cannot set an expiry that has passed; it renews with a later one, or clears it
+        r = client.put(f"/api/v1/resources/compositions/{cid}", json={"expires_at": stamp(later - 30)})
+        assert r.status_code == 422 and "has already passed" in r.json()["detail"], r.text[:300]
+        r = client.put(f"/api/v1/resources/compositions/{cid}", json={"expires_at": stamp(later + 3600)})
+        assert r.status_code == 200 and r.json()["expires_at"] == stamp(later + 3600), r.text[:300]
+        assert (life(cid)["state"], life(cid)["runnable"]) == ("operating", True)
+        r = client.put(f"/api/v1/resources/compositions/{cid}", json={"clear_expiry": True})
+        assert r.status_code == 200 and "expires_at" not in r.json(), r.text[:300]
+        assert life(cid)["expires_at"] is None
+
+        #  the census counts the saved compositions by state: the same states the list serves
+        objs = {o["object"]: o for o in client.get("/api/v1/resources/state-census").json()[
+            "objects_that_keep_state_between_calls"]}
+        counted = {}
+        for c in listed().values():
+            counted[c["lifecycle"]["state"]] = counted.get(c["lifecycle"]["state"], 0) + 1
+        by_state = objs["saved composition"]["by_state"]
+        assert by_state == dict(sorted(counted.items())), (by_state, counted)
+        assert sum(by_state.values()) == objs["saved composition"]["count"]
+
+        #  a run history that cannot be read makes the state "not known", never "provisioned" or "operating"
+        store = data_path("composition_runs.json")
+        held = store.read_bytes()
+        try:
+            store.write_text('[{"run_id": ', encoding="utf-8")
+            lc = life(cid)
+            assert (lc["state"], lc["runs_kept"]) == ("not known", None) and lc["not_known_because"], lc
+        finally:
+            store.write_bytes(held)
+    finally:
+        client.delete(f"/api/v1/resources/compositions/{cid}")
