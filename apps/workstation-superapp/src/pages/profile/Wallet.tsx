@@ -36,13 +36,18 @@ interface Allocation {
 const ReverseAllocation: React.FC<{ id: string }> = ({ id }) => {
   const [reason, setReason] = useState('');
   const [said, setSaid] = useState('');
+  //  W981 (FU-399 part 14) - a request that could not be sent is said, and a refusal gives its status with its reason
   const ask = async () => {
-    const r = await axios.post(`/api/v1/fund/allocations/${encodeURIComponent(id)}/reverse`, { reason },
-      { validateStatus: () => true });
-    setSaid(r.status === 200
-      ? String(r.data?.basis ?? '') + (r.data?.request_recorded && r.data.request_recorded !== 'recorded'
-          ? ` The request's details were ${String(r.data.request_recorded)} on the hold.` : '')
-      : flat(r.data?.detail));
+    try {
+      const r = await axios.post(`/api/v1/fund/allocations/${encodeURIComponent(id)}/reverse`, { reason },
+        { validateStatus: () => true });
+      setSaid(r.status === 200
+        ? String(r.data?.basis ?? '') + (r.data?.request_recorded && r.data.request_recorded !== 'recorded'
+            ? ` The request's details were ${String(r.data.request_recorded)} on the hold.` : '')
+        : `Not requested (HTTP ${r.status}): ${flat(r.data?.detail)}`);
+    } catch {
+      setSaid('Not requested: the server could not be reached, so nothing was asked of Change Control.');
+    }
   };
   return (
     <div className="mt-2 flex flex-wrap items-center gap-2" data-testid="wallet-allocation-reverse">
@@ -82,6 +87,8 @@ export const Wallet: React.FC = () => {
   const [reversals, setReversals] = useState<any[] | null>([]);
   const [reversalsBasis, setReversalsBasis] = useState<string>('');
   const [portfolioErr, setPortfolioErr] = useState<string | null>(null);      // FU-794
+  //  W981 (FU-399 part 14) - a refused read of the fund's status is said, never shown as figures of zero
+  const [statusErr, setStatusErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [down, setDown] = useState(false);
 
@@ -91,6 +98,7 @@ export const Wallet: React.FC = () => {
       axios.get('/api/v1/fund/portfolio', { validateStatus: () => true }),
     ]).then(([statusRes, portfolioRes]) => {
       if (statusRes.status === 200) setFund(statusRes.data);
+      else setStatusErr(`The fund's status could not be read (HTTP ${statusRes.status}): ${flat(statusRes.data?.detail)}`);
       if (portfolioRes.status === 200) {
         const allocs: Allocation[] = portfolioRes.data.allocations ?? [];
         // W577 (FU-298) — the portfolio is where a missing allocation is most invisible: every
@@ -110,13 +118,18 @@ export const Wallet: React.FC = () => {
       } else {
         setPortfolioErr(`The portfolio could not be read (HTTP ${portfolioRes.status}): ${flat(portfolioRes.data?.detail)}`);
       }
-    }).catch(() => setDown(true)).finally(() => setLoading(false));
+    }).catch(() => {
+      //  W981 - an unreachable server is said where each read is shown, never as an empty portfolio
+      setDown(true);
+      setPortfolioErr('The portfolio could not be read: the server could not be reached.');
+    }).finally(() => setLoading(false));
   }, []);
 
   // W329 — honest: a dead backend shows '—', never a fabricated 10,000,000 WST / HEALTHY
+  //  W981 (FU-399 part 14) - and a status that could not be read shows a dash for each figure, never a zero
   const wst = fund?.available;
-  const allocated = fund?.allocated ?? 0;
-  const health = fund ? (fund.fund_health ?? '?') : (down ? 'BACKEND UNREACHABLE' : '…');
+  const allocated = fund ? fund.allocated : undefined;
+  const health = fund ? (fund.fund_health ?? '?') : (down ? 'BACKEND UNREACHABLE' : statusErr ? 'NOT READ' : '…');
 
   return (
     <div className="space-y-12 animate-in fade-in duration-1000">
@@ -135,16 +148,20 @@ export const Wallet: React.FC = () => {
            <div>
              <p className="text-[10px] font-black text-slate-500 uppercase">Allocated</p>
              {loading ? <div className="h-10 w-24 bg-slate-800 animate-pulse rounded" /> :
-               <p className="text-4xl font-black text-white">{allocated.toLocaleString()}</p>}
+               <p className="text-4xl font-black text-white" data-testid="wallet-allocated">{allocated !== undefined ? allocated.toLocaleString() : '—'}</p>}
            </div>
         </div>
       </header>
+      {statusErr && (
+        <p data-testid="wallet-status-unread" className="text-[11px] font-bold px-2 py-1 rounded bg-amber-500/20 text-amber-400">{statusErr}</p>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
         <BalanceCard label="Utilisation" value={fund ? `${fund.utilisation_pct}%` : '—'} icon={Activity} color="text-vital" />
         <BalanceCard label="Fund Health" value={health} icon={ShieldCheck} color={health === 'HEALTHY' ? 'text-aura' : 'text-yellow-400'} />
-        <BalanceCard label="Allocations" value={fund?.allocation_count?.toString() ?? '0'} icon={CreditCard} color="text-highlight" />
-        <BalanceCard label="Total Pool" value={fund ? `${(fund.total_capital / 1_000_000).toFixed(0)}M WST` : '—'} icon={Star} color="text-aura" />
+        <BalanceCard label="Allocations" value={fund ? String(fund.allocation_count ?? '—') : '—'} icon={CreditCard} color="text-highlight" />
+        {/* W981 (FU-399 part 14) - the pool as the fund states it: rounded to whole millions, 10,000 WST read "0M WST" */}
+        <BalanceCard label="Total Pool" value={fund ? `${fund.total_capital.toLocaleString()} WST` : '—'} icon={Star} color="text-aura" />
       </div>
 
       <div className="p-12 glass-card bg-aura/5 border-aura/20 flex items-center justify-between">
@@ -210,11 +227,15 @@ export const Wallet: React.FC = () => {
         <h3 className="text-xl font-bold mb-8">Recent Capital Allocations</h3>
         {loading ? (
           <div className="flex items-center gap-2 text-slate-500 text-sm"><Loader2 size={14} className="animate-spin" /> Loading allocations…</div>
+        ) : portfolioErr ? (
+          <p data-testid="wallet-allocations-unread" className="text-slate-500 text-sm">
+            The portfolio was not read, so whether any capital has been allocated is not known.
+          </p>
         ) : allocations.length === 0 ? (
-          <p className="text-slate-600 text-sm">
+          <p className="text-slate-600 text-sm" data-testid="wallet-allocations-none">
             {allocBasis !== null
               ? "The fund store could not be read whole, so whether any capital has been allocated is unknown — this is not an empty portfolio."
-              : "No capital allocations yet. Deploy capital to a project to see transactions here."}
+              : "No capital has been allocated."}
           </p>
         ) : (
           <div className="space-y-4">

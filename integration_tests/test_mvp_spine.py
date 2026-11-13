@@ -82590,3 +82590,70 @@ def test_w980_fu399_settings_says_an_unread_profile_approvals_and_goals_as_unrea
     #  the route's own refusal of a save says nothing stored was lost: the sentence the page now shows
     assert "your profile was NOT overwritten, so nothing stored was lost" in (
         root / "agentic_core/api/user_workspace.py").read_text(encoding="utf-8")
+
+
+def test_w981_fu399_the_wallet_says_a_fund_it_could_not_read_never_as_zeros_or_an_empty_portfolio(client, monkeypatch, tmp_path):
+    """FU-399 part 14 (W981). The Wallet is where the capital fund is read, and where the Owner's FU-1005 reversals
+    start. Four guards read its source. Wallet.test.tsx mounts the real page against the answers the fund routes gave
+    on a fresh store, and driving it found four defects, fixed here:
+    - a refused read of the fund's status was silent and showed figures nobody computed ("Allocated 0", "Allocations
+      0", the health on its loading mark); it is said with its status and reason, and each figure is a dash;
+    - an unread portfolio was said as an empty one ("No capital allocations yet", and with the server unreachable "No
+      allocation has been requested"); both cards say it was not read;
+    - a reversal request that could not be sent said nothing (no catch), and a refusal gave its reason without its
+      status; both are said;
+    - the Total Pool card rounded to whole millions, so a fund of 10,000 WST read "0M WST"; it shows the fund's figure.
+    Held here: the page's code carries what the render reads; the fund routes answer the fixture's fields on an
+    isolated fund written as the capture wrote it; and the reverse route's refusal of an unknown allocation is the
+    fixture's, word for word."""
+    import json
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    pdir = root / "apps/workstation-superapp/src/pages/profile"
+    page = (pdir / "Wallet.tsx").read_text(encoding="utf-8")
+    t = (pdir / "Wallet.test.tsx").read_text(encoding="utf-8")
+    assert "import { Wallet } from './Wallet';" in t and "<Wallet />" in t
+    read = set(re.findall(r"ByTestId\('([^']+)'\)", t))
+    assert {"wallet-status-unread", "wallet-allocated", "wallet-allocations-unread", "wallet-allocations-none",
+            "wallet-allocation-reverse-said", "wallet-reversal-request", "wallet-allocation-reversed"} <= read, sorted(read)
+    for tid in read:
+        assert f'data-testid="{tid}"' in page, tid
+
+    code = _code_only(page)
+    #  a refused status read is said, and no figure it would have given is a zero
+    assert "else setStatusErr(`The fund's status could not be read (HTTP ${statusRes.status}): ${flat(statusRes.data?.detail)}`);" in code
+    assert "const allocated = fund ? fund.allocated : undefined;" in code and "fund?.allocated ?? 0" not in code
+    assert "fund?.allocation_count?.toString() ?? '0'" not in code and "statusErr ? 'NOT READ' : '…'" in code
+    #  the pool as the fund states it
+    assert "/ 1_000_000).toFixed(0)}M WST" not in code and "`${fund.total_capital.toLocaleString()} WST`" in code
+    #  an unread portfolio is said where each list is shown
+    assert ") : portfolioErr ? (" in code and "setPortfolioErr('The portfolio could not be read: the server could not be reached.');" in code
+    assert "No capital allocations yet" not in code
+    #  a reversal request that could not be sent is said, and a refusal gives its status
+    ask = code[code.index("const ask = async () => {"):code.index('data-testid="wallet-allocation-reverse"')]
+    assert "try {" in ask and "} catch {" in ask and "`Not requested (HTTP ${r.status}): ${flat(r.data?.detail)}`" in ask
+
+    #  the fund routes answer the fixture's fields, on an isolated fund written as the capture wrote it
+    from agentic_core.api import capital_fund as _cf
+    monkeypatch.setattr(_cf, "_FUND_STORE", tmp_path / "capital_fund.json")
+    fx = json.loads((pdir / "Wallet.fixture.json").read_text(encoding="utf-8"))
+    _cf._save_fund({
+        "total_capital": 10000.0, "currency": "WST", "allocated": 1005.0, "available": 8995.0,
+        "created_at": "2026-06-01T00:00:00Z",
+        "allocations": [{k: v for k, v in a.items() if k not in ("record_state", "record_state_label")}
+                        for a in fx["portfolio"]["allocations"]]})
+    st = client.get("/api/v1/fund/status").json()
+    assert set(fx["status"]) == set(st), sorted(set(fx["status"]) ^ set(st))
+    assert (st["available"], st["allocated"], st["allocation_count"]) == (8995.0, 1005.0, 2), st
+    pf = client.get("/api/v1/fund/portfolio").json()
+    assert set(fx["portfolio"]) == set(pf), sorted(set(fx["portfolio"]) ^ set(pf))
+    assert [set(a) for a in fx["portfolio"]["allocations"]] == [set(a) for a in pf["allocations"]]
+    assert set(fx["portfolio_held"]["reversal_requests"][0]) >= {"cca_id", "status", "allocation_id", "amount", "reason",
+                                                                  "requested_by"}
+    no = client.post("/api/v1/fund/allocations/alloc-w981-no-such/reverse",
+                     json={"reason": fx["portfolio_held"]["reversal_requests"][0]["reason"]})
+    assert {"status": no.status_code, "body": no.json()} == fx["refused_unknown"], no.text[:300]
+    short = client.post(f"/api/v1/fund/allocations/{fx['portfolio']['allocations'][1]['allocation_id']}/reverse",
+                        json={"reason": "too short"})
+    assert short.status_code == fx["refused_short"]["status"] == 422, short.text[:300]
