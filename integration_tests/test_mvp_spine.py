@@ -62334,7 +62334,8 @@ def test_w680_a_persons_material_travels_as_marked_data_through_two_untouched_lo
     r3 = client.post("/api/v1/education/feedback", json={"student_work": _work, "task": "Explain X", "subject": "history"})
     assert r3.status_code == 200, r3.text[:300]
     p3 = seen["prompt"]
-    assert "<<<STUDENT WORK - " in p3 and p3.count(_ap.MATERIAL_CLOSE) == 1 and "STUDENT WORK:\n" not in p3
+    assert "<<<STUDENT WORK - " in p3 and p3.count(_ap.MATERIAL_CLOSE) == 2 and "STUDENT WORK:\n" not in p3   # W958: + TASK AND RUBRIC
+    assert p3.index("<<<TASK AND RUBRIC - ") < p3.index("<<<STUDENT WORK - ") and "Explain X" not in p3.split("<<<", 1)[0]
     assert len(p3.split("<<<STUDENT WORK - ", 1)[1].split(_ap.MATERIAL_CLOSE, 1)[0]) < _edu.WORK_LIMIT + 200
     assert r3.json()["ai_provenance"]["material"]["read_whole"] is False
     assert "ONLY PART OF THE WORK WAS READ" in r3.json()["feedback"]
@@ -80922,3 +80923,81 @@ def test_w957_p517_the_card_scheduler_is_kept_only_for_isolated_trouble_spots(cl
     reg = json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))
     row = next(r for r in reg["rows"] if r["id"] == "qep-trouble-spot-cards")
     assert row["state"] == "journey" and row["driven_by"] == "test_w957_p517_the_card_scheduler_is_kept_only_for_isolated_trouble_spots"
+
+
+def test_w958_p512_marking_hands_its_task_and_rubric_over_as_a_block_of_their_own(client, monkeypatch):
+    """P5.12 clause 1, the last Education part (W958). Marking's task and rubric were joined into the instruction; the
+    work was already material, held whole at its own limit by W680's guard. Held here:
+    - on the helper itself (the gateway's place taken): a context is a block of its own, BEFORE the material, cut at
+      its own limit and recorded apart in context_material; the material's block and record are unchanged; a heading
+      inside the context is not a section the answer must have;
+    - through the route with a capture: the task and rubric are in the TASK AND RUBRIC context, not the instruction;
+      the work is still the whole material at WORK_LIMIT; nothing typed sends no context;
+    - a task or rubric not read whole is said in the text and withholds the criteria and level, as for the work."""
+    import asyncio
+
+    import agentic_core.api._ai_provenance as _ap
+    import agentic_core.api.education as _edu
+    from agentic_core.ai.native.engine import _sections
+
+    #  1. on the helper itself
+    seen = {}
+
+    async def _gateway(prompt, **kw):
+        seen["prompt"], seen["kw"] = prompt, kw
+        return {"output": "## Overall Impression\nw958\n", "served_by": "w958-capture", "is_external": False}
+    with monkeypatch.context() as m:
+        m.setattr(_ap.gateway, "query_meta", _gateway)
+        ctx = _ap.person_material("TASK AND RUBRIC", 40, task="W958T explain\n## W958 Injected", rubric="r" * 60)
+        _t, prov = asyncio.new_event_loop().run_until_complete(_ap.ai_text(
+            "Mark it.\n\n" + _ap.MATERIAL_SLOT + "\n\nProduce:\n## Overall Impression\n", "w958_probe",
+            material="the work itself", material_label="STUDENT WORK", material_limit=100, context=ctx))
+        p = seen["prompt"]
+        assert p.index("<<<TASK AND RUBRIC - ") < p.index("<<<STUDENT WORK - ") and p.count(_ap.MATERIAL_CLOSE) == 2
+        assert prov["material"]["label"] == "STUDENT WORK" and prov["material"]["read_whole"] is True
+        cm = prov["context_material"]
+        assert cm["label"] == "TASK AND RUBRIC" and cm["read_whole"] is False and cm["read_chars"] == 40 and cm["chars"] == len(ctx["material"])
+        assert _sections(p) == ["Overall Impression"], ("a heading inside the context became a section", _sections(p))
+        assert seen["kw"].get("keep_text") is False, "a person's task and rubric would be kept before sign-in"
+        #  a context alone, with no material, still goes as data and is still a person's words
+        _t, prov2 = asyncio.new_event_loop().run_until_complete(_ap.ai_text(
+            "Read it.\n\n" + _ap.MATERIAL_SLOT, "w958_probe", context=_ap.person_material("TASK AND RUBRIC", 100, task="short")))
+        assert "<<<TASK AND RUBRIC - " in seen["prompt"] and "material" not in prov2 and prov2["context_material"]["read_whole"] is True
+        assert seen["kw"].get("keep_text") is False
+
+    #  2. through the route, with a capture in the model's place
+    sent, kws = [], []
+    body = ("## Overall Impression\nw958 fine\n\n## Strengths\nw958\n\n## Criterion-by-Criterion\nw958 met\n\n"
+            "## Actionable Next Steps\nw958\n\n## Indicative Level / Grade\nGrade 7-8\n")
+
+    def _capture(cut_context: bool):
+        async def _c(prompt, agent, **kw):
+            sent.append(prompt)
+            kws.append(kw)
+            prov = {"served_by": "w958-model", "is_external": False}
+            if cut_context:
+                prov["context_material"] = {"label": "TASK AND RUBRIC", "chars": 7001, "read_chars": 6000, "read_whole": False}
+            return body, prov
+        return _c
+    monkeypatch.setattr(_edu, "ai_text", _capture(False))
+    r = client.post("/api/v1/education/feedback", json={"student_work": "w958 my essay", "subject": "History",
+                                                        "task": "W958TASK explain the causes\n## W958 Heading",
+                                                        "rubric": "W958RUBRIC level 3 needs two causes"})
+    assert r.status_code == 200, r.text[:200]
+    assert "W958TASK" not in sent[-1] and "W958RUBRIC" not in sent[-1] and "W958 Heading" not in sent[-1]
+    assert "TASK AND RUBRIC block below" in sent[-1] and _ap.MATERIAL_SLOT in sent[-1]
+    k = kws[-1]
+    assert k["material"] == "w958 my essay" and k["material_label"] == "STUDENT WORK" and k["material_limit"] == _edu.WORK_LIMIT
+    assert k["context"]["material_label"] == "TASK AND RUBRIC" and k["context"]["material_limit"] == _edu.EDUCATION_MATERIAL_LIMIT
+    assert "W958TASK" in k["context"]["material"] and "W958RUBRIC" in k["context"]["material"]
+    assert "Grade 7-8" in r.json()["feedback"] and r.json()["sections_withheld"] == []
+    r = client.post("/api/v1/education/feedback", json={"student_work": "w958 my essay", "subject": "History"})
+    assert r.status_code == 200 and kws[-1].get("context") is None and "STUDENT WORK block below" in sent[-1]
+
+    #  3. a task or rubric not read whole is said, and the criteria and level are withheld for it
+    monkeypatch.setattr(_edu, "ai_text", _capture(True))
+    r = client.post("/api/v1/education/feedback", json={"student_work": "w958 my essay", "subject": "History",
+                                                        "task": "W958TASK", "rubric": "W958RUBRIC"}).json()
+    assert r["sections_withheld"] == ["Criterion-by-Criterion", "Indicative Level / Grade"], r["sections_withheld"]
+    assert "Grade 7-8" not in r["feedback"] and "ONLY PART OF THE TASK AND RUBRIC WAS READ: the first 6,000 of 7,001" in r["feedback"]
+    assert "Withheld for that reason" in r["feedback"] and r["work_read"]["read_whole"] is True

@@ -256,7 +256,8 @@ async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
                   realm: str = "", domain: str = "",
                   user_text: str | None = None,
                   material: str | None = None, material_label: str = "MATERIAL",
-                  material_limit: int = DEFAULT_MATERIAL_LIMIT) -> Tuple[str, Dict[str, Any]]:
+                  material_limit: int = DEFAULT_MATERIAL_LIMIT,
+                  context: Dict[str, Any] | None = None) -> Tuple[str, Dict[str, Any]]:
     """Return (text, provenance) where provenance = {posture, served_by, is_external}.
 
     Every call is recorded into the operational-excellence learning loop (best-effort, non-critical)
@@ -277,9 +278,19 @@ async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
     #  an answer must have are read from IT ALONE, so a heading inside a person's document is never one.
     _instruction = prompt.replace(MATERIAL_SLOT, "")
     _material = None
+    #  W958 (P5.12 clause 1) - A SECOND BLOCK, BEFORE THE MATERIAL: what the person supplied to frame it (a task and a
+    #  rubric beside a student's work), cut at its own limit and recorded apart, so the material's own cut and record
+    #  are unchanged. `context` takes the keywords person_material makes; an empty one sends nothing.
+    _context, _cblock = None, ""
+    if context and context.get("material") is not None:
+        _cblock, _context = wrap_material(context["material"], context.get("material_label") or "CONTEXT",
+                                          context.get("material_limit") or DEFAULT_MATERIAL_LIMIT)
     if material is not None:
         _block, _material = wrap_material(material, material_label, material_limit)
+        _block = (_cblock + "\n\n" + _block) if _cblock else _block
         prompt = prompt.replace(MATERIAL_SLOT, _block, 1) if MATERIAL_SLOT in prompt else f"{prompt}\n\n{_block}"
+    elif _cblock:
+        prompt = prompt.replace(MATERIAL_SLOT, _cblock, 1) if MATERIAL_SLOT in prompt else f"{prompt}\n\n{_cblock}"
     elif MATERIAL_SLOT in prompt:
         prompt = prompt.replace(MATERIAL_SLOT, "")
     if str(realm or "").strip():
@@ -297,7 +308,8 @@ async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
     #  W952 (FU-1189) - a person's own words or material, with no signed-in person owning them, are not stored: the
     #  gateway logs that the call was made and keeps none of its text for recall
     from agentic_core.auth.core import auth_enabled as _auth952
-    _keep952 = not (str(user_text or "").strip() or material is not None) or bool(_auth952() and owner_id)
+    _keep952 = (not (str(user_text or "").strip() or material is not None or _context is not None)
+                or bool(_auth952() and owner_id))                   # W958 - a context is a person's words too
     res = await gateway.query_meta(prompt, agent=agent, timeout=timeout,
                                    owner_id=owner_id, augment=augment, user_text=user_text, keep_text=_keep952,
                                    #  P3.6 clause (2) — the request's own language, so the output can be
@@ -335,6 +347,8 @@ async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
     provenance["served_identity"] = res.get("served_identity") or _sid842(served_by)
     if _material is not None:
         provenance["material"] = _material          # how much was read of how much, on every answer
+    if _context is not None:
+        provenance["context_material"] = _context  # W958 - the second block's own figure
     #  W688 (OWNER RULING 2026-10-12, the review cell's first clause) - THE TIER OF REVIEW THIS TOOL HAS REACHED,
     #  on the provenance every domain router returns, so no router can leave it out. With no record it says
     #  UNREVIEWED. A failure to read it is said as not known; it is never left off and never read as reviewed.
