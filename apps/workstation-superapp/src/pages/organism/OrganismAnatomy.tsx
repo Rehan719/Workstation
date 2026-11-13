@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Dna, Loader2, Settings2, ShieldCheck, Waves, Play, GitMerge, Sparkles, Send } from 'lucide-react';
-import { apiJson, errorMessage, provenanceBadge, immuneReading } from '../../lib/api';
+import { apiJson, errorMessage, provenanceBadge, immuneReading, bodyOrNull } from '../../lib/api';
 
 // W438 — the organism's ANATOMY, finally reachable: 18 routes (config · genome · nervous ·
 // self-healing · health/lifecycle) existed server-side with no page. Every sub-area was AUDITED
@@ -195,7 +195,7 @@ export const OrganismAnatomy: React.FC = () => {
         // the route's ONLY honest behaviour is the 409 — success would mean the guard vanished
         setErr('reset unexpectedly succeeded without Change Control — the governance guard is missing');
       } else {
-        const body = await r.json().catch(() => null);
+        const body = await bodyOrNull(r);
         const d = body?.detail;
         setResetRefusal(d && typeof d === 'object' ? d : { why: typeof d === 'string' ? d : `HTTP ${r.status}` });
       }

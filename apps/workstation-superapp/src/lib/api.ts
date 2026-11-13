@@ -27,6 +27,15 @@ export interface ApiOptions {
   signal?: AbortSignal;
 }
 
+//  W959 (FU-1181) - THE ONE PLACE A BODY THAT IS NOT JSON IS SILENT. Each caller of bodyOrNull checks the answer's
+//  status itself and says a refusal with it, so a body that cannot be parsed - a proxy's HTML 502, an empty 204, a
+//  cut stream - is not a second failure to report: it reads as no body.
+const notJson = (): null => null;
+/** The body of an answer, or null when it is not JSON. The caller says the status either way. */
+export function bodyOrNull<T = any>(r: Response): Promise<T | null> {
+  return r.json().then((b: T) => b, notJson);
+}
+
 /** fetch → checked JSON. Throws ApiError (with the backend's own `detail`) on any non-2xx,
  *  and TypeError on network failure — never lets an error body flow into a success path. */
 export async function apiJson<T = any>(url: string, opts: ApiOptions = {}): Promise<T> {

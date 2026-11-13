@@ -14927,7 +14927,7 @@ def test_w466_a_stranded_transfer_is_found_and_completed_once(client, monkeypatc
     #    posted ──
     ops = Path("apps/workstation-superapp/src/pages/enterprise/EconomyOperations.tsx").read_text(encoding="utf-8")
     send_handler = ops.split("const doTransfer = async")[1].split("const completeStranded = async")[0]
-    assert "const d = await r.json().catch(() => null);" in send_handler and "r.headers.get('X-Transfer-Debited')" in send_handler
+    assert "const d = await bodyOrNull(r);" in send_handler and "r.headers.get('X-Transfer-Debited')" in send_handler   # W959
     assert "r.headers.get('X-Transfer-Receiver') !== 'credited'" in ops      # never Complete for a transfer that posted
     assert 'data-testid="transfer-complete"' in ops and "/complete`" in ops
     assert "disabled={busy || completing || !openChecked || strandedIds.length > 0 || !to || amount <= 0}" in ops
@@ -24429,7 +24429,7 @@ def test_w503j_a_refusal_does_not_leave_the_last_answer_on_screen(client):
     # doClosePeriod sits AFTER runCycle in this file, so the slice runs forward from it
     _close = ec[ec.index("const doClosePeriod"):]
     _close = _close[:_close.index("const ", _close.index("setClosing(false);"))]
-    assert "await r.json().catch(() => null)" in _close, "the close still assumes the body is JSON"
+    assert "await bodyOrNull(r)" in _close, "the close still assumes the body is JSON"   # W959: the one named parse
     assert "were NOT closed" in _close, "an unreadable refusal does not say the books are untouched"
 
 
@@ -81001,3 +81001,43 @@ def test_w958_p512_marking_hands_its_task_and_rubric_over_as_a_block_of_their_ow
     assert r["sections_withheld"] == ["Criterion-by-Criterion", "Indicative Level / Grade"], r["sections_withheld"]
     assert "Grade 7-8" not in r["feedback"] and "ONLY PART OF THE TASK AND RUBRIC WAS READ: the first 6,000 of 7,001" in r["feedback"]
     assert "Withheld for that reason" in r["feedback"] and r["work_read"]["read_whole"] is True
+
+
+def test_w959_fu1181_no_call_ends_in_a_catch_that_returns_nothing_unclassified():
+    """FU-1181 part 1 (W959). 22 calls ended in .catch(() => null) or .catch(() => undefined); each was classified:
+    - a body parsed after the caller checked the status is kept silent in ONE place, lib/api.ts bodyOrNull, with its
+      reason, and every page that uses it checks the status itself;
+    - the serving status's silence is named (null is said downstream as "could not be read");
+    - the Cockpit's read of the entity is said through its read-failure list, and cleared by a later success;
+    - the projects hub's re-read says its own failure;
+    - no call in the app ends in a catch that returns nothing. FU-1181's empty try/catch blocks are its next part."""
+    import re
+    from pathlib import Path
+
+    src = Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+    files = [f for f in src.rglob("*.ts*") if not f.name.endswith((".test.tsx", ".test.ts", ".d.ts"))]
+    nothing = re.compile(r"\.catch\(\(\)\s*=>\s*(?:null|undefined)\)")
+    left = {f.relative_to(src).as_posix(): len(nothing.findall(_code_only(f.read_text(encoding="utf-8"))))
+            for f in files}
+    assert {k: v for k, v in left.items() if v} == {}, ("a call still ends in a catch that returns nothing", left)
+
+    api = (src / "lib/api.ts").read_text(encoding="utf-8")
+    assert api.count("export function bodyOrNull") == 1 and "return r.json().then((b: T) => b, notJson);" in api
+    assert "Each caller of bodyOrNull checks the answer's" in api and "const notJson = (): null => null;" in api
+    users = [f for f in files if "bodyOrNull(" in _code_only(f.read_text(encoding="utf-8")) and f.name != "api.ts"]
+    assert len(users) == 7, sorted(f.name for f in users)
+    for f in users:
+        code = _code_only(f.read_text(encoding="utf-8"))
+        for m in re.finditer(r"bodyOrNull\((\w+)\)", code):
+            near = code[max(0, m.start() - 400): m.end() + 400]
+            assert re.search(r"\b" + m.group(1) + r"\.(ok|status)\b", near), (f.name, "a body is read with no status check near it")
+
+    serving = _code_only((src / "components/ServingNow.tsx").read_text(encoding="utf-8"))
+    assert ".catch(statusNotKnown);" in serving and "const statusNotKnown = (): null => null;" in serving
+
+    cockpit = " ".join(_code_only((src / "pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8")).split())
+    assert ".catch(e => { if (issuedFor === selectedRef.current) noteRead('the entity')(e); return null; })" in cockpit
+    assert "clearRead('the entity')" in cockpit and "<ReadFailures failures={readFailures} />" in cockpit
+
+    hub = " ".join(_code_only((src / "pages/projects/ProjectsHub.tsx").read_text(encoding="utf-8")).split())
+    assert ".then(r => r, () => null);" in hub and "setError('The stream closed before completing, and the project could not be re-read.')" in hub

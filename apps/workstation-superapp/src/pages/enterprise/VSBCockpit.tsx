@@ -280,7 +280,10 @@ export const VSBCockpit: React.FC = () => {
     setCycleHold(null); setGrowthResult(null);   // W503 (FU-059) — never another entity's answer
     const issuedFor = selected;
     Promise.all([
-      axios.get(`/api/v1/vsb/${selected}`).then(r => r.data).catch(() => null),
+      //  W959 (FU-1181) - a failed read of the entity was the no-entity panel, as if nothing were selected
+      axios.get(`/api/v1/vsb/${selected}`)
+        .then(r => { if (issuedFor === selectedRef.current) clearRead('the entity'); return r.data; })
+        .catch(e => { if (issuedFor === selectedRef.current) noteRead('the entity')(e); return null; }),
       axios.get('/api/v1/business-plan', { params: { scope: selected } }).then(r => ({ data: r.data, err: '' }))
         .catch(e => ({ data: null, err: serverDetail(e, 'Could not load the business plan') })),
       axios.get(`/api/v1/economy/ledger/${selected}`).then(r => ({ data: r.data, err: '' }))

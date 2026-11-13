@@ -8,7 +8,7 @@ import {
 import { ServiceContracts } from './ServiceContracts';
 import { CharityDirectives } from './CharityDirectives';
 import { VenturePortfolioPanel, TransferPanel } from './EconomyOperations';
-import { complianceChip, fundingLabel, apiJson } from '../../lib/api';
+import { complianceChip, fundingLabel, apiJson, bodyOrNull } from '../../lib/api';
 import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W928
 import { domainLabel } from '../../lib/taxonomy';   // W735 (FU-831)
 
@@ -102,7 +102,7 @@ export const VSBEconomy: React.FC = () => {
     const issuedFor = vsbId;
     return fetch(`/api/v1/economy/owner-payments?vsb_id=${encodeURIComponent(issuedFor)}`)
       .then(async r => {
-        const d = await r.json().catch(() => null);
+        const d = await bodyOrNull(r);
         if (issuedFor !== currentVsb.current) return;   // a late answer for another entity
         // an error answer, or a body that is not an account, is never stored as one (it rendered as 0 WST)
         if (!r.ok || !d || typeof d.balance_wst !== 'number') {
@@ -126,7 +126,7 @@ export const VSBEconomy: React.FC = () => {
     if (issuedFor === currentVsb.current) setBpLoading(true);
     fetch(`/api/v1/economy/board-pack?vsb_id=${encodeURIComponent(issuedFor)}&entity_type=${entity}`)
       .then(async r => {
-        const d = await r.json().catch(() => null);
+        const d = await bodyOrNull(r);
         if (issuedFor !== currentVsb.current) return;   // a late answer for another entity
         if (!r.ok || !d) { setBp(null); setBpLoadErr(typeof d?.detail === 'string' ? d.detail : `Could not load the board pack (HTTP ${r.status}).`); return; }
         setBpLoadErr('');
@@ -177,7 +177,7 @@ export const VSBEconomy: React.FC = () => {
     setWfMsg(''); setWfErr([]);
     fetch(`/api/v1/economy/waterfall?vsb_id=${encodeURIComponent(vsbId)}&entity_type=${entity}`)
       .then(async r => {
-        const d = await r.json().catch(() => null) as WaterfallState | null;
+        const d = await bodyOrNull(r) as WaterfallState | null;
         if (!live) return;
         if (!r.ok || !d || !Array.isArray(d.stages) || !d.waterfall) {
           setWfLoadErr(`Could not load the waterfall (HTTP ${r.status}) — showing nothing rather than another entity's split.`);
@@ -227,7 +227,7 @@ export const VSBEconomy: React.FC = () => {
       });
       if (!r.ok) {
         // W468 — the server says why (e.g. a ledger that could not be read, and that nothing was posted); a bare status hid it
-        const fail = await r.json().catch(() => null);
+        const fail = await bodyOrNull(r);
         // a refused input (422) carries a list of reasons, not a string
         const reasons = Array.isArray(fail?.detail)
           ? fail.detail.map((d: any) => d?.msg && `${Array.isArray(d.loc) && d.loc.length ? `${d.loc[d.loc.length - 1]}: ` : ''}${d.msg}`)
@@ -265,7 +265,7 @@ export const VSBEconomy: React.FC = () => {
       // W503 (FU-059) — this parsed the body as JSON BEFORE testing r.ok and with no catch, so a
       // non-JSON error body (a proxy's HTML 502, say) threw and the founder was shown a JSON syntax
       // error instead of why the close was refused.
-      const d = await r.json().catch(() => null);
+      const d = await bodyOrNull(r);
       if (!r.ok) {
         setCloseErr((typeof d?.detail === 'string' && d.detail)
           || `HTTP ${r.status} — the server's reply could not be read; the books were NOT closed.`);
@@ -287,7 +287,7 @@ export const VSBEconomy: React.FC = () => {
         body: JSON.stringify({ vsb_id: vsbId, amount: payoutAmt }),
       });
       // a refusal's body may be absent or structured (a 422 carries a list): it is never rendered as a child
-      const d = await r.json().catch(() => null);
+      const d = await bodyOrNull(r);
       if (!r.ok || !d) {
         setPayErr(typeof d?.detail === 'string' ? d.detail : `HTTP ${r.status} — the payout request was refused; nothing was paid.`);
         setPayingOut(false); return;

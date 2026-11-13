@@ -322,7 +322,8 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
       // W492 (FU-216) — the reader can finish without a `done` frame ever arriving (a dropped or
       // truncated stream). The optimistic status 'running' then stood forever, so re-read the
       // project and report whatever the API actually holds rather than leaving a spinner turning.
-      const after = await axios.get<Project>(`/api/v1/projects/${project.id}`).catch(() => null);
+      //  W959 (FU-1181) - a failed re-read is said just below ("could not be re-read"), so it reads as no answer
+      const after = await axios.get<Project>(`/api/v1/projects/${project.id}`).then(r => r, () => null);
       if (after) {
         onUpdate(after.data);
         // W492 (refutation) - 'idle' is the status the backend actually writes when a run is reset or

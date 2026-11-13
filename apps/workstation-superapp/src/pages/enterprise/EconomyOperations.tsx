@@ -16,7 +16,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Sprout, Loader2, AlertCircle, ShieldCheck, ArrowRightLeft, Recycle } from 'lucide-react';
-import { fundingLabel } from '../../lib/api';
+import { fundingLabel, bodyOrNull } from '../../lib/api';
 
 // ── §6 Venture Portfolio ──────────────────────────────────────────────────────
 
@@ -183,7 +183,7 @@ export const TransferPanel: React.FC<{ fromVsb: string; entities: { vsb_id: stri
   const loadOpen = () =>
     fetch(`/api/v1/economy/transfers/open?from_vsb=${encodeURIComponent(fromVsb)}`)
       .then(async r => {
-        const d = await r.json().catch(() => null);
+        const d = await bodyOrNull(r);
         if (!r.ok || !d || !Array.isArray(d.open)) { setOpenChecked(false); setOpenErr('Could not check for debited transfers awaiting completion.'); return; }
         // an answer that could not read the ledger lists nothing it could not see: keep what is already known
         if (d.ledger_unreadable) { setOpenChecked(false); setOpenErr('The ledger could not be read to check for debited transfers awaiting completion.'); return; }
@@ -220,7 +220,7 @@ export const TransferPanel: React.FC<{ fromVsb: string; entities: { vsb_id: stri
       });
       // W466 — a failure can answer with no JSON at all (a bare 500 read as a parse error before): never guess it
       // posted nothing
-      const d = await r.json().catch(() => null);
+      const d = await bodyOrNull(r);
       if (!r.ok) {
         setErr(typeof d?.detail === 'string' ? d.detail
           : `The transfer failed (HTTP ${r.status}) and returned no details — it may have debited ${fromVsb}. Check its ledger before sending it again.`);
@@ -246,7 +246,7 @@ export const TransferPanel: React.FC<{ fromVsb: string; entities: { vsb_id: stri
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ from_vsb: fromVsb }),
       });
-      const d = await r.json().catch(() => null);
+      const d = await bodyOrNull(r);
       if (!r.ok) {
         setCompleteErr(typeof d?.detail === 'string' ? d.detail : `The completion failed (HTTP ${r.status}) — nothing was debited; try again.`);
         return;

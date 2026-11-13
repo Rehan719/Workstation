@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { GenerationPrice } from '../../components/GenerationPrice';
-import { qmsChip, provenanceMapBadge, complianceChip, layerTitle, immuneReading, apiJson, errorMessage } from '../../lib/api';
+import { qmsChip, provenanceMapBadge, complianceChip, layerTitle, immuneReading, apiJson, errorMessage, bodyOrNull } from '../../lib/api';
 import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W928
 import { REALMS as CANON_REALMS, DOMAINS as CANON_DOMAINS, PRODUCTS, PRODUCT_LABELS } from '../../lib/taxonomy';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -430,7 +430,7 @@ export const GenesisJourney: React.FC = () => {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body,
         });
         if (!res.ok) {
-          const detail = await res.json().then(d => d?.detail).catch(() => null);
+          const detail = (await bodyOrNull(res))?.detail;
           setError(`Establishment failed (HTTP ${res.status})${detail ? `: ${String(detail).slice(0, 160)}` : ''}.`);
         } else {
           setVsb(await res.json());
@@ -489,7 +489,7 @@ export const GenesisJourney: React.FC = () => {
   // W669 (ledger v16 R3.3) - a refusal's detail is a string from some routes and an object from the review
   // gates ({error, clear_by}); an object was dropped and the founder shown only the status number.
   const refusalText = async (res: Response): Promise<string> => {
-    const d = await res.json().catch(() => null);
+    const d = await bodyOrNull(res);
     const det = d?.detail;
     if (typeof det === 'string' && det) return det;
     if (det && typeof det === 'object') {

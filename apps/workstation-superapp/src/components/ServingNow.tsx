@@ -9,11 +9,13 @@ import React, { useEffect, useState } from 'react';
 export type Status = { is_real_model?: boolean; mode?: string; active_model_label?: string; floor_active?: boolean };
 
 let cached: Promise<Status | null> | null = null;
+//  W959 (FU-1181) - a status that cannot be read is null, and every reader says null as "could not be read"
+const statusNotKnown = (): null => null;
 const readStatus = (): Promise<Status | null> => {
   if (!cached) {
     cached = fetch('/api/v1/native-ai/status')
       .then(r => (r.ok ? r.json() : null))
-      .catch(() => null);
+      .catch(statusNotKnown);
   }
   return cached;
 };

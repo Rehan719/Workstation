@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
 import { Target, Loader2, Sparkles, Plus, CheckCircle2, Clock, AlertCircle, Crown, PenLine } from 'lucide-react';
-import { provenanceMapBadge, provenanceMapFromTrace } from '../../lib/api';
+import { provenanceMapBadge, provenanceMapFromTrace, bodyOrNull } from '../../lib/api';
 import { PlanOpening } from '../../components/PlanOpening';   // W505 (FU-074) — one component, both pages
 import { CadencePanel } from '../../components/CadencePanel';   // W620 (FU-492)
 
@@ -61,7 +61,7 @@ export const BusinessPlan: React.FC = () => {
   const load = async () => {
     try {
       const r = await fetch(`/api/v1/business-plan?scope=${encodeURIComponent(scope)}`);
-      const data = await r.json().catch(() => null);
+      const data = await bodyOrNull(r);
       if (!r.ok) {
         setPlan(null);
         setPlanErr(String(data?.detail || `the plan could not be read (HTTP ${r.status})`));
@@ -90,10 +90,10 @@ export const BusinessPlan: React.FC = () => {
       const context = genContext.trim();
       const r = await fetch('/api/v1/business-plan/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(context ? { scope, context } : { scope }) });
       if (!r.ok) {
-        const ed = (await r.json().catch(() => null))?.detail;
+        const ed = (await bodyOrNull(r))?.detail;
         setActErr(`Generate failed (HTTP ${r.status})${ed ? `: ${typeof ed === 'string' ? ed : JSON.stringify(ed)}` : ''}`);
       }
-      else { const d = await r.json().catch(() => null); setGenNote(d?.reason || (d?.written?.length ? `Chief wrote: ${d.written.join(', ')}` : '')); }
+      else { const d = await bodyOrNull(r); setGenNote(d?.reason || (d?.written?.length ? `Chief wrote: ${d.written.join(', ')}` : '')); }
       await load();
     } catch { setActErr('Backend unreachable — nothing changed'); }
     setBusy(false);
@@ -126,7 +126,7 @@ export const BusinessPlan: React.FC = () => {
     // been REFUSED - on a page whose own comment says "actions never fail silently".
     try {
       const r = await fetch(`/api/v1/business-plan/objective/${oid}/orchestrate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope }) });
-      const data = await r.json().catch(() => null);
+      const data = await bodyOrNull(r);
       if (!r.ok) {
         const d = data?.detail;
         const why = typeof d === 'string' ? d : (d?.error || d?.reason || data?.error);
