@@ -23484,6 +23484,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that found it: an output now records who asked for it (generate and stream), the history holds only the caller's outputs, and a download of another person's output is not found; a file with no history row (written before a restart) has no owner to match, so under sign-in only an administrator downloads it. Driven as two people and an administrator (test_w887)."
+    },
+    {
+      "id": "FU-1172",
+      "title": "The operations record's reader reads a file the OS withholds for a moment as no rows",
+      "why": "Found in W895 when the Windows job failed test_w741 once on W882's head (the floor recorded no row to watch), with no exception in the log. operational_excellence._load() read the store with read_text and answered no rows on any OSError, while read_json_strict, the writer's reader, retries a sharing violation (a Windows file just replaced, held for a moment).",
+      "source": "W895 (the Windows job's test_w741 failure on 9dd76a95)",
+      "found": "2026-11-13",
+      "files": [
+        "agentic_core/api/operational_excellence.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W895",
+      "note": "",
+      "slot_source": "a suite-reliability rider, beside the Windows rows already on this item",
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that found it: the record's reader reads through read_json_strict, which retries a file the OS withholds for a moment, and still answers no rows for a store that cannot be read whole. Driven in test_w895. Whether this was the cause of the Windows failure cannot be shown from that job's log; it is the one step of that test's read that Windows takes differently."
     }
   ],
   "routes": [

@@ -126,12 +126,15 @@ def spans_run(kind: str):
 
 
 def _load() -> List[Dict[str, Any]]:
-    if _STORE.exists():
-        try:
-            return json.loads(_STORE.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
-            return []
-    return []
+    """The record, for READING. W895 - through read_json_strict, the reader the writer uses, so a file the OS will
+    not hand over for a moment (a sharing violation on Windows, just after a replace) is retried rather than read
+    as no rows. A store that cannot be read whole is still answered as no rows: nothing that lists it goes down."""
+    from agentic_core.config import StoreUnavailable, read_json_strict
+    try:
+        rows = read_json_strict(_STORE, [], expect=list)
+    except StoreUnavailable:
+        return []
+    return rows
 
 
 def _save(rows: List[Dict[str, Any]]) -> None:

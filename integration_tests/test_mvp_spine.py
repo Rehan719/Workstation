@@ -76515,3 +76515,40 @@ def test_w894_the_register_reads_a_closing_round_the_way_the_planner_counts_it()
         assert refused == (not fu.is_round_id(by)), (
             "the register's check and the planner disagree on a closing round", by, said)
     assert fu.is_round_id("W883b") and not fu.is_round_id("round-883")
+
+
+def test_w895_a_row_just_written_is_read_even_when_the_os_withholds_the_file_for_a_moment(monkeypatch, tmp_path):
+    """Found when the Windows job failed test_w741 once ("the floor recorded no row to watch"), with no exception in
+    the log. The read that test makes is operational_excellence._load(). It read the store with read_text and
+    answered no rows on ANY OSError, while read_json_strict, the reader the writer uses, retries a file the OS
+    withholds for a moment (a sharing violation on Windows, just after a replace). _load() now reads through
+    read_json_strict. Driven: a read that is refused twice and then allowed returns the rows; a store refused for
+    good, or torn, still reads as no rows; and an absent store reads as no rows."""
+    import json
+    import pathlib
+    from agentic_core.api import operational_excellence as _oe895
+    store = tmp_path / "operations_outcomes.json"
+    monkeypatch.setattr(_oe895, "_STORE", store)
+    rows = [{"kind": "model_attempt", "resource": "model:native", "served_by": "native"}]
+    store.write_text(json.dumps(rows), encoding="utf-8")
+
+    #  every read of a path opens it, read_text and read_bytes alike, so the refusal is placed at the open
+    real = pathlib.Path.open
+    refusals = {"left": 2}
+
+    def _withheld(self, *a, **kw):
+        if self == store and refusals["left"] > 0:
+            refusals["left"] -= 1
+            raise PermissionError(13, "The process cannot access the file because it is being used by another process")
+        return real(self, *a, **kw)
+    monkeypatch.setattr(pathlib.Path, "open", _withheld)
+    assert _oe895._load() == rows, "a file withheld for a moment was read as no rows"
+    assert refusals["left"] == 0, "the read did not meet the refusal, so this proves nothing"
+
+    refusals["left"] = 10 ** 6
+    assert _oe895._load() == [], "a store withheld for good is not answered as no rows"
+    refusals["left"] = 0
+    store.write_bytes(b'[{"kind": "model_att')
+    assert _oe895._load() == [], "a torn store is not answered as no rows"
+    store.unlink()
+    assert _oe895._load() == []
