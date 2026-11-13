@@ -81088,7 +81088,7 @@ def test_w959_fu1181_no_call_ends_in_a_catch_that_returns_nothing_unclassified()
     assert api.count("export function bodyOrNull") == 1 and "return r.json().then((b: T) => b, notJson);" in api
     assert "Each caller of bodyOrNull checks the answer's" in api and "const notJson = (): null => null;" in api
     users = [f for f in files if "bodyOrNull(" in _code_only(f.read_text(encoding="utf-8")) and f.name != "api.ts"]
-    assert len(users) == 10, sorted(f.name for f in users)   # W960: + lib/auth.ts, ForgePipeline, SwarmIntelligence
+    assert len(users) == 13, sorted(f.name for f in users)   # W960: + lib/auth.ts, ForgePipeline, SwarmIntelligence; W982: + AgentHubPanel, QEPIntelligence, VSBCockpit
     for f in users:
         code = _code_only(f.read_text(encoding="utf-8"))
         for m in re.finditer(r"bodyOrNull\((\w+)\)", code):
@@ -82657,3 +82657,49 @@ def test_w981_fu399_the_wallet_says_a_fund_it_could_not_read_never_as_zeros_or_a
     short = client.post(f"/api/v1/fund/allocations/{fx['portfolio']['allocations'][1]['allocation_id']}/reverse",
                         json={"reason": "too short"})
     assert short.status_code == fx["refused_short"]["status"] == 422, short.text[:300]
+
+
+def test_w982_no_action_parses_its_reply_before_it_has_checked_the_status():
+    """W927's rule in its second form (W982). W927 moved every read that parsed `fetch(...).then(r => r.json())`
+    whatever the status through apiJson. Nine actions still parsed first and checked after - `const d = await
+    r.json(); if (!r.ok) ...` - so a refusal whose body is not JSON (a proxy's error page, a server's HTML error) was
+    said as a JSON parse error and never as its status. W979 fixed one, the Forge's rerun, on the way past; this census
+    found the rest: the agent hub's post, the QEP panel's three actions, the Native AI tree run, the venture return,
+    the Cockpit's cascade read and save, and the waterfall override's save. Each parses only an ok reply and reads a
+    refusal's detail through bodyOrNull. A parse that already tolerates a body that is not JSON (`.json().catch(...)`)
+    is not this form. Held here: the census, read as code, finds none; each of the nine reads as fixed; and
+    bodyOrNull still answers null for a body that is not JSON, which is what lets the status be said."""
+    import re
+    from pathlib import Path
+    src = Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+    files = [f for f in src.rglob("*.ts*") if not f.name.endswith((".test.tsx", ".test.ts", ".d.ts"))]
+    assert len(files) > 100, ("the scan found too few source files to be looking in the right place", len(files))
+    parse = re.compile(r"(?:const|let)\s+(\w+)\s*=\s*(?:(\w+)\.ok \? )?await\s+(\w+)\.json\(\)(?!\s*\.catch)")
+    found, parses, guarded = [], 0, 0
+    for f in files:
+        code = _code_only(f.read_text(encoding="utf-8"))
+        for m in parse.finditer(code):
+            parses += 1
+            resp = m.group(3)
+            if m.group(2) == resp:
+                guarded += 1              # `X.ok ? await X.json() : ...` - parsed only when the status is ok
+                continue
+            before = "\n".join(code[:m.start()].split("\n")[-3:])
+            after = code[m.end():m.end() + 400]
+            if re.search(rf"\b{resp}\.ok\b", after) and not re.search(rf"\b{resp}\.ok\b", before):
+                found.append((f.relative_to(src).as_posix(), code[:m.start()].count("\n") + 1))
+    assert parses >= 15 and guarded >= 9, ("the census read too few parses to be reading the right code", parses, guarded)
+    assert found == [], ("an action parses its reply before it has checked the status", found)
+
+    #  each of the nine parses only an ok reply
+    for rel, n in (("components/organism/AgentHubPanel.tsx", 1), ("components/qep/QEPIntelligence.tsx", 3),
+                   ("pages/developers/NativeAI.tsx", 1), ("pages/enterprise/EconomyOperations.tsx", 1),
+                   ("pages/enterprise/VSBCockpit.tsx", 2), ("pages/enterprise/VSBEconomy.tsx", 1)):
+        code = _code_only((src / rel).read_text(encoding="utf-8"))
+        assert len(re.findall(r"= r\.ok \? await r\.json\(\) : await bodyOrNull\(r\);", code)) == n, rel
+    native = _code_only((src / "pages/developers/NativeAI.tsx").read_text(encoding="utf-8"))
+    assert "setError(data?.detail ||" not in native, "an object detail can still reach the tree run's error text"
+
+    #  what makes the status sayable: bodyOrNull answers null for a body that is not JSON
+    api = (src / "lib/api.ts").read_text(encoding="utf-8")
+    assert "return r.json().then((b: T) => b, notJson);" in api and "const notJson = (): null => null;" in api

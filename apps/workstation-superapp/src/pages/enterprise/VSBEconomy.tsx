@@ -204,7 +204,8 @@ export const VSBEconomy: React.FC = () => {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ vsb_id: vsbId, entity_type: entity, proportions }),
       });
-      const d = await r.json();
+      //  W982 - the status before the body (W927's rule): a refusal that is not JSON says its status
+      const d = r.ok ? await r.json() : await bodyOrNull(r);
       if (!r.ok) { setWfErr((d?.detail?.violations) || (typeof d?.detail === 'string' ? [d.detail] : [`HTTP ${r.status}`])); setWfSaving(false); return; }
       setWf(prev => prev ? { ...prev, waterfall: d.waterfall, source: d.source } : prev);
       setWfDraft(Object.fromEntries(Object.entries(d.waterfall as Record<string, number>).map(([k, v]) => [k, Math.round(v * 100)])));

@@ -16,7 +16,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Brain, Loader2, AlertCircle, ShieldCheck, GitBranch, Scale } from 'lucide-react';
-import { provenanceBadge } from '../../lib/api';
+import { provenanceBadge, bodyOrNull } from '../../lib/api';
 import { DOMAINS as CANON_DOMAINS, DOMAIN_LABELS } from '../../lib/taxonomy';   // W758 (FU-969)
 
 const Chip: React.FC<{ tone: 'ok' | 'warn' | 'bad' | 'dim'; children: React.ReactNode; title?: string }> = ({ tone, children, title }) => (
@@ -52,8 +52,9 @@ const QEPIntelligence: React.FC = () => {
     try {
       const q = new URLSearchParams(Object.entries(xaiIn).map(([k, v]) => [k, String(v)]));
       const r = await fetch(`/api/v1/qep/xai/explanations?${q}`);
-      const d = await r.json();
-      if (!r.ok) { setErr(typeof d.detail === 'string' ? d.detail : JSON.stringify(d.detail).slice(0, 200)); setBusy(''); return; }
+      //  W982 - the status before the body (W927's rule): a refusal that is not JSON says its status
+      const d = r.ok ? await r.json() : await bodyOrNull(r);
+      if (!r.ok) { setErr(typeof d?.detail === 'string' ? d.detail : d?.detail != null ? JSON.stringify(d.detail).slice(0, 200) : `HTTP ${r.status}`); setBusy(''); return; }
       setXai(d);
       setWeights({ ease_weight: d.model_weights.ease_weight, interval_weight: d.model_weights.interval_weight, quality_weight: d.model_weights.quality_weight });
     } catch (e: any) { setErr(e?.message ?? String(e)); }
@@ -66,8 +67,9 @@ const QEPIntelligence: React.FC = () => {
       const r = await fetch('/api/v1/qep/recommendation/update', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(weights),
       });
-      const d = await r.json();
-      if (!r.ok) { setErr(typeof d.detail === 'string' ? d.detail : `HTTP ${r.status}`); setBusy(''); return; }
+      //  W982 - the status before the body (W927's rule): a refusal that is not JSON says its status
+      const d = r.ok ? await r.json() : await bodyOrNull(r);
+      if (!r.ok) { setErr(typeof d?.detail === 'string' ? d.detail : `HTTP ${r.status}`); setBusy(''); return; }
       //  W687 (OWNER RULING 2026-10-12) - nothing was applied: the shared weights change only through a change
       //  record. The sentence is the server's own, with the record's id and its state.
       setMsg(`${d.status} — ${d.basis} Change record ${d.cca_id ?? 'not filed'}${d.change_status ? ` (${d.change_status})` : ''}.`);
@@ -82,8 +84,9 @@ const QEPIntelligence: React.FC = () => {
       const r = await fetch('/api/v1/qep/adaptation/execute', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(adapt),
       });
-      const d = await r.json();
-      if (!r.ok) { setErr(typeof d.detail === 'string' ? d.detail : `HTTP ${r.status}`); setBusy(''); return; }
+      //  W982 - the status before the body (W927's rule): a refusal that is not JSON says its status
+      const d = r.ok ? await r.json() : await bodyOrNull(r);
+      if (!r.ok) { setErr(typeof d?.detail === 'string' ? d.detail : `HTTP ${r.status}`); setBusy(''); return; }
       setBlueprint(d);
       loadAll();
     } catch (e: any) { setErr(e?.message ?? String(e)); }

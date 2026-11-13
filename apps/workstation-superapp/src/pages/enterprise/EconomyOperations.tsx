@@ -59,8 +59,9 @@ export const VenturePortfolioPanel: React.FC<{ vsbId: string }> = ({ vsbId }) =>
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ vsb_id: vsbId, holding_id: holdingId, amount }),
       });
-      const d = await r.json();
-      if (!r.ok) { setErr(typeof d.detail === 'string' ? d.detail : `HTTP ${r.status}`); setBusy(''); return; }
+      //  W982 - the status before the body (W927's rule): a refusal that is not JSON says its status
+      const d = r.ok ? await r.json() : await bodyOrNull(r);
+      if (!r.ok) { setErr(typeof d?.detail === 'string' ? d.detail : `HTTP ${r.status}`); setBusy(''); return; }
       setMsg(`${d.returned_wst.toLocaleString()} WST recorded on ${holdingId} — ${d.recycles}. (${d.amount_source})`);
       setRetAmt({ ...retAmt, [holdingId]: 0 });
       load();

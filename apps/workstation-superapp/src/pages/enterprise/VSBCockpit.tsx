@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { provenanceBadge, provenanceMapBadge, provenanceMapFromTrace } from '../../lib/api';
+import { provenanceBadge, provenanceMapBadge, provenanceMapFromTrace, bodyOrNull } from '../../lib/api';
 import { ReadFailures, useReadFailures, silenceIsRight } from '../../components/ReadFailures';   // W928
 import { VBSSystemsPanel } from '../../components/VBSSystemsPanel';
 import { downloadExport } from '../../lib/download';
@@ -63,8 +63,9 @@ const EditCascade: React.FC<{ cascadeId: string; onSaved: () => void }> = ({ cas
     setOpen(true); setErr(null); setMsg(null);
     try {
       const r = await fetch(`/api/v1/resources/swarm/${cascadeId}`);
-      const b = await r.json();
-      if (!r.ok) throw new Error(typeof b.detail === 'string' ? b.detail : `HTTP ${r.status}`);
+      //  W982 - the status before the body (W927's rule): a refusal that is not JSON says its status
+      const b = r.ok ? await r.json() : await bodyOrNull(r);
+      if (!r.ok) throw new Error(typeof b?.detail === 'string' ? b.detail : `HTTP ${r.status}`);
       setStages((b.stages || []).map((st: any) => ({ role: st.role || '', instruction: st.instruction || '',
                                                      ...(st.model ? { model: String(st.model) } : {}) })));
     } catch (e: any) { setErr(e?.message ?? String(e)); }
@@ -80,8 +81,9 @@ const EditCascade: React.FC<{ cascadeId: string; onSaved: () => void }> = ({ cas
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ stages }),
       });
-      const b = await r.json();
-      if (!r.ok) throw new Error(typeof b.detail === 'string' ? b.detail : `HTTP ${r.status}`);
+      //  W982 - the status before the body (W927's rule): a refusal that is not JSON says its status
+      const b = r.ok ? await r.json() : await bodyOrNull(r);
+      if (!r.ok) throw new Error(typeof b?.detail === 'string' ? b.detail : `HTTP ${r.status}`);
       setMsg(`Saved ${(b.stages || []).length} stages. The next run of this cascade re-reads them — nothing further to apply.`);
       onSaved();
     } catch (e: any) { setErr(e?.message ?? String(e)); }

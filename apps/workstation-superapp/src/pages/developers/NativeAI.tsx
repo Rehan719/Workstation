@@ -638,12 +638,14 @@ export const NativeAI: React.FC = () => {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ goal }),
       });
-      const data = await r.json();
+      //  W982 - the status before the body (W927's rule): a refusal that is not JSON says its status
+      const data = r.ok ? await r.json() : await bodyOrNull(r);
       // only render a well-formed tree run; surface anything else (404/500/error) as a message
       if (r.ok && Array.isArray(data?.levels) && Array.isArray(data?.nodes)) {
         setTree(data);
       } else {
-        setError(data?.detail || `Workflow-tree run failed (HTTP ${r.status}).`);
+        //  W982 - the server's sentence when it gave one; an object detail is never put into the text
+        setError(typeof data?.detail === 'string' && data.detail ? data.detail : `Workflow-tree run failed (HTTP ${r.status}).`);
       }
     } catch (e: any) { setError(e?.message ?? String(e)); }
     setTreeRunning(false);

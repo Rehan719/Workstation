@@ -13,6 +13,7 @@
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { ReadFailures, useReadFailures, silenceIsRight } from '../../components/ReadFailures';   // W931
+import { bodyOrNull } from '../../lib/api';   // W982
 import { Card, Button } from '@workstation/ui';
 import { Radio, Loader2, AlertCircle, ShieldCheck, Send, Inbox, Users } from 'lucide-react';
 
@@ -100,8 +101,9 @@ const AgentHubPanel: React.FC = () => {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sender_id: 'owner-console', sender_role: 'USER', content: draft }),
       });
-      const d = await r.json();
-      if (!r.ok) { setErr(typeof d.detail === 'string' ? d.detail : `HTTP ${r.status}`); setBusy(false); return; }
+      //  W982 - the status before the body (W927's rule): a refusal that is not JSON says its status
+      const d = r.ok ? await r.json() : await bodyOrNull(r);
+      if (!r.ok) { setErr(typeof d?.detail === 'string' ? d.detail : `HTTP ${r.status}`); setBusy(false); return; }
       // W443 refuter catch: "(including this panel)" was claimed unconditionally — it is only
       // true when THIS panel's stream is actually connected; and without the SSE echo the
       // poster's own message never appeared until a remount, so refetch when not live.
