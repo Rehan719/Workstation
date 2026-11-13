@@ -14497,11 +14497,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.6",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W903",
       "note": "",
       "slot_source": "the Owner asked 2026-10-10 for this work to be added to the plan",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built as the row asked: docs/business/LIVING_STRATEGY_MAP.md names, for observe, propose, review, authorise, apply and record, the component that performs the step, its file and route, the test that drives it, and the open rows between it and being relied on. It is a draft until the Owner ratifies it. The business documents' guard now refuses a route the app does not serve. Driven in test_w903; 4 blinds."
     },
     {
       "id": "FU-745",
@@ -19951,11 +19954,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.3",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W903",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "already_satisfied",
+      "because_means": "measured as satisfied by an earlier round; nothing was built for it here",
+      "close_note": "Measured in W903: W851 built what this row asks, under FU-1049, a later row for the same thing, and this one stayed open. A person accepts a delivery through POST /api/v1/swarm/cascade/runs/{run_id}/accept: who, when and which version, recorded once; a run scoped to the platform itself has nothing to accept. By the recommendation the Owner's standing instruction adopts, acceptance by itself earns nothing: only an accepted contract's agreed amount is earned, through the contract's own settlement. Driven by test_w851_a_person_accepts_a_version_of_an_entitys_delivery_and_acceptance_alone_earns_nothing."
     },
     {
       "id": "FU-1004",

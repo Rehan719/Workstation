@@ -64684,7 +64684,7 @@ def test_w702_a_scholars_queue_is_capped_per_tool_and_nothing_is_dropped_to_make
 #  W703 - WORKSTATION'S OWN BUSINESS CASE, WRITTEN DOWN, EVERY STATEMENT LABELLED: the canvas and the plan.
 #  Each is a DRAFT until the Owner ratifies it; everything it names exists; nothing is stated as a market fact.
 # ══════════════════════════════════════════════════════════════════════════════════════════════════════════
-def _w703_faults(text, root, plan_slots, row_ids):
+def _w703_faults(text, root, plan_slots, row_ids, routes=None):
     """Every reason a business document cannot stand as written. Empty means none."""
     import re
     labels = ("[observed", "[owner-defined", "[inference", "[hypothesis", "[deferred", "[owner decision")
@@ -64706,6 +64706,11 @@ def _w703_faults(text, root, plan_slots, row_ids):
     for rid in re.findall(r"row (FU-\d+)", text):
         if rid not in row_ids:
             faults.append(f"it names a register row that does not exist: {rid}")
+    #  W903 (FU-744, P5.6) - a route a document names is one the app serves, with the method and path as registered
+    if routes is not None:
+        for method, path in re.findall(r"`(GET|POST|PUT|PATCH|DELETE) (/api/[A-Za-z0-9_./{}-]+)`", text):
+            if (method, path) not in routes:
+                faults.append(f"it names a route the app does not serve: {method} {path}")
     #  a statement is a bullet, with the lines that continue it; each carries a label or the plan item it rests on
     body = text.split("\n## ", 1)[1] if "\n## " in text else ""
     for block in re.split(r"\n(?=- |\d+\. )", body):
@@ -64735,10 +64740,13 @@ def test_w703_the_business_documents_are_labelled_drafts_that_name_only_what_exi
     row_ids = {r["id"] for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
     docs = sorted((root / "docs/business").glob("*.md"))
     names = [d.name for d in docs]
+    from agentic_core.app_mvp import app as _app903
+    routes = {(m, r.path) for r in _app903.routes for m in (getattr(r, "methods", None) or ())}   # W903
     assert "BUSINESS_MODEL_CANVAS.md" in names and "BUSINESS_PLAN.md" in names, names
     for d in docs:
         text = d.read_text(encoding="utf-8")
-        assert _w703_faults(text, root, plan_slots, row_ids) == [], (d.name, _w703_faults(text, root, plan_slots, row_ids))
+        assert _w703_faults(text, root, plan_slots, row_ids, routes) == [], (
+            d.name, _w703_faults(text, root, plan_slots, row_ids, routes))
         assert len([b for b in text.split("\n- ") if "[" in b]) >= 10, (d.name, "too few labelled statements to be a document")
 
     canvas = (root / "docs/business/BUSINESS_MODEL_CANVAS.md").read_text(encoding="utf-8")
@@ -64772,7 +64780,7 @@ def test_w703_the_business_documents_are_labelled_drafts_that_name_only_what_exi
 
     #  THE CHECK ITSELF, DRIVEN: each fault it exists to find is planted in a copy and found
     good = "# T\n\n**DRAFT until the Owner ratifies it.**\n\n## One\n\n- A true thing [observed: `docs/FOLLOWUPS.json`].\n"
-    assert _w703_faults(good, root, plan_slots, row_ids) == []
+    assert _w703_faults(good, root, plan_slots, row_ids, routes) == []
     planted = {
         "not a draft": good.replace("**DRAFT until the Owner ratifies it.**", "Final."),
         "both a draft and ratified": good.replace("**DRAFT until the Owner ratifies it.**",
@@ -64784,9 +64792,10 @@ def test_w703_the_business_documents_are_labelled_drafts_that_name_only_what_exi
         "no label": good + "- A statement with nothing behind it.\n",
         "a price as fact": good + "- It costs GBP 50 a month [observed].\n",
         "a count of people": good + "- It has 300 users [observed].\n",
+        "a route the app does not serve": good + "- Another [observed: `GET /api/v1/no-such-route-w903`].\n",   # W903
     }
     for what, text in planted.items():
-        assert _w703_faults(text, root, plan_slots, row_ids) != [], f"the check did not find: {what}"
+        assert _w703_faults(text, root, plan_slots, row_ids, routes) != [], f"the check did not find: {what}"
 
 
 # ══════════════════════════════════════════════════════════════════════════════════════════════════════════
@@ -77054,3 +77063,40 @@ def test_w902_fu1112_every_page_shows_the_derived_energy_and_none_prints_the_atp
     bp = client.get("/api/v1/economy/board-pack").json()
     assert {"energy_ratio", "energy_acts", "energy_basis"} <= set(bp.get("organism_posture") or {}), (
         sorted(bp.get("organism_posture") or {}))
+
+
+def test_w903_fu744_the_living_strategy_map_names_a_real_component_test_and_row_for_each_step():
+    """FU-744 (W903). Observe, propose, review, authorise, apply and record are done, mostly, by components that
+    exist; nothing said which does which, or what stands between each and being relied on. The map says so for each
+    step: the component, its file and route, the test that drives it, and the open rows between it and being relied
+    on. P5.6 accepts a document only when every route it names exists, and the business documents' guard now reads
+    routes too: driven here on the map, and on a route planted that the app does not serve."""
+    import json
+    import pathlib
+    import re
+    from agentic_core import plan_followups as _fu
+    from agentic_core.app_mvp import app as _app
+    root = pathlib.Path(__file__).resolve().parents[1]
+    text = (root / "docs/business/LIVING_STRATEGY_MAP.md").read_text(encoding="utf-8")
+    plan_slots = {i["slot"] for i in _fu.plan_items((root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8"))}
+    rows = {r["id"]: r for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    routes = {(m, r.path) for r in _app.routes for m in (getattr(r, "methods", None) or ())}
+    assert _w703_faults(text, root, plan_slots, set(rows), routes) == [], _w703_faults(text, root, plan_slots, set(rows), routes)
+    assert _w703_faults(text + "\n- Planted [observed: `GET /api/v1/w903-not-served`].\n", root, plan_slots,
+                        set(rows), routes), "a route the app does not serve was not found"
+    assert "**DRAFT until the Owner ratifies it.**" in text.split("\n## ", 1)[0]
+
+    #  the six steps, in order, each naming a route, a file, a test that exists, and the rows between it and use
+    steps = ["## 1. Observe", "## 2. Propose", "## 3. Review", "## 4. Authorise", "## 5. Apply", "## 6. Record"]
+    at = [text.index(s) for s in steps]
+    assert at == sorted(at), "the steps are not in order"
+    suite = (root / "integration_tests/test_mvp_spine.py").read_text(encoding="utf-8")
+    bounds = at + [text.index("## What this map does not do")]
+    for i, step in enumerate(steps):
+        body = text[bounds[i]:bounds[i + 1]]
+        assert re.search(r"`(GET|POST) /api/", body), (step, "names no route")
+        assert re.search(r"`agentic_core/[a-z_/]+\.py`|`docs/[A-Z_]+\.(md|json)`", body), (step, "names no file")
+        tests = re.findall(r"\b(test_[a-z0-9_]+)\b(?!\.py)", body)   # a test name, not a file
+        assert tests and all(f"def {t}(" in suite for t in tests), (step, "names a test the suite does not hold", tests)
+        between = [ln for ln in body.split("\n- ") if ln.startswith("Between this step and being relied on")]
+        assert between, (step, "says nothing about what stands between it and being relied on")
