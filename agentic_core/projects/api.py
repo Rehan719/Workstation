@@ -492,10 +492,17 @@ async def update_project(project_id: str, req: UpdateProjectRequest,
 
 
 @router.delete("/{project_id}", status_code=204)
-async def delete_project(project_id: str, user: dict | None = Depends(get_current_user)) -> None:
+async def delete_project(project_id: str, confirm_title: str | None = None,
+                         user: dict | None = Depends(get_current_user)) -> None:
     # W364 — deletion is destructive and was previously unscoped: any signed-in user could
     # permanently delete another user's project. Scoped now (404 when not the caller's).
-    _load_scoped(project_id, user)
+    project = _load_scoped(project_id, user)
+    #  W971 (P5.14 clause 6) - an act that cannot be undone is not performed on a general yes: the project's title,
+    #  typed back, is what deletes it. Asked only of the caller who may delete it, so the store cannot be probed.
+    if confirm_title != project.title:
+        raise HTTPException(status_code=409, detail=(
+            "Not deleted: deleting a project cannot be undone, so it needs the project's title typed back exactly "
+            "(confirm_title), and it was not."))
     _path(project_id).unlink()
     #  W678 - a proposal still pending for this project is told so, with the time. Nothing else about it changes:
     #  approving it already refuses (the project is gone), and now the record says why.

@@ -370,7 +370,8 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
     setAsking(false);
     setDeleting(true);
     try {
-      await axios.delete(`/api/v1/projects/${project.id}`);
+      //  W971 - the server deletes only with the title typed back, which the question above held the act for
+      await axios.delete(`/api/v1/projects/${project.id}`, { params: { confirm_title: project.title } });
       onDelete(project.id);
     } catch (err: any) {
       setError(err?.response?.data?.detail ?? 'Delete failed.');

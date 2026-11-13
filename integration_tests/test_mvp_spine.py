@@ -219,7 +219,7 @@ def project_id(client):
     assert r.status_code in (200, 201), r.text
     pid = r.json()["id"]
     yield pid
-    client.delete(f"/api/v1/projects/{pid}")
+    _delete_project(client, pid)
 
 
 def test_create_project(project_id):
@@ -6817,7 +6817,7 @@ def test_projects_are_owner_scoped(client):
         assert client.get(f"/api/v1/projects/{pid}/outputs").status_code == 200
         assert any(p["id"] == pid for p in client.get("/api/v1/projects/").json())
     finally:
-        client.delete(f"/api/v1/projects/{pid}")
+        _delete_project(client, pid)
     assert client.get(f"/api/v1/projects/{pid}").status_code == 404
 
 
@@ -6940,7 +6940,7 @@ out["bob_delete_status"] = c.delete("/api/v1/projects/" + pid, headers=tok["bob"
 out["alice_project_survives"] = c.get("/api/v1/projects/" + pid, headers=tok["alice"]).status_code == 200
 # the owner keeps full access to their own work
 out["owner_patch"] = c.patch("/api/v1/projects/" + pid, json={"title": "renamed"}, headers=tok["alice"]).status_code
-out["owner_delete"] = c.delete("/api/v1/projects/" + pid, headers=tok["alice"]).status_code
+out["owner_delete"] = c.delete("/api/v1/projects/" + pid, params={"confirm_title": "renamed"}, headers=tok["alice"]).status_code   # W971: the title, typed back
 print("RESULT" + json.dumps(out))
 """ % {"root": repo_root}
 
@@ -24871,7 +24871,7 @@ def test_w505_p25_realm_drift_retired(client):
                 assert d["realm"] == "general", d
     finally:
         for pid in made:
-            client.delete(f"/api/v1/projects/{pid}")
+            _delete_project(client, pid)
 
     # ── the CLIENT half: DomainTool sends the user's default realm, and a tool's own field still wins ──
     import pathlib as _pl
@@ -34717,6 +34717,11 @@ def test_w556_friction_becomes_a_governed_change_and_never_a_written_in_root_cau
         client.post("/api/v1/care/_w556_raises", json={})
     except RuntimeError:
         pass                                      # the middleware re-raises, as it must
+    finally:
+        #  W971 - the probe is taken off the shared app again. Left on it, every later test in this worker read a
+        #  route only a test serves: test_w970's census found it in no slice when a worker ran the two in that order
+        _app556.router.routes[:] = [r for r in _app556.router.routes
+                                    if getattr(r, "path", None) != "/api/v1/care/_w556_raises"]
     _h_rows = _m.listing(1000)
     assert len(_h_rows) == _h_before + 1, (
         "a handler that RAISED wrote no lesson, so the trigger the item names first is not attached",
@@ -56504,7 +56509,7 @@ def test_fu794_a_fund_allocation_is_held_until_a_person_approves_it(client, monk
         for _id in _created:
             _cc._cca_path(_id).unlink(missing_ok=True)
         if _project_id:
-            client.delete(f"/api/v1/projects/{_project_id}")
+            _delete_project(client, _project_id)
         if _outside is not None:
             _outside.unlink(missing_ok=True)
 
@@ -61317,7 +61322,7 @@ def test_t2_a_stage_is_not_advanced_directly_while_its_proposal_is_pending(clien
         #  ...and a proposal whose project is deleted while it is pending says so, with the time
         _pb = client.post(f"/api/v1/projects/{_b}/propose-advance")
         assert _pb.status_code == 201, _pb.text[:300]
-        assert client.delete(f"/api/v1/projects/{_b}").status_code == 204
+        assert _delete_project(client, _b).status_code == 204
         _orphan = _pa._load_proposal(_pb.json()["id"])
         assert _orphan.status == "pending" and isinstance(_orphan.project_deleted_at, float), _orphan
         _listed = [p for p in client.get("/api/v1/projects/governance/proposals").json() if p["id"] == _orphan.id]
@@ -61328,7 +61333,7 @@ def test_t2_a_stage_is_not_advanced_directly_while_its_proposal_is_pending(clien
         assert _v.status_code == 200 and _v.json()["status"] == "approved", _v.text[:300]
         assert _pa._load(_a).stage == _prop.json()["to_stage"] != _first
     finally:
-        client.delete(f"/api/v1/projects/{_a}")
+        _delete_project(client, _a)
 
 
 def test_t2_a_retired_door_is_reported_retired_beside_served(client, monkeypatch):
@@ -81780,3 +81785,56 @@ def test_w970_p522_every_census_surface_is_in_exactly_one_slice_and_the_slices_a
     f = tmp_path / "census.json"
     f.write_text(json.dumps(census), encoding="utf-8")
     assert p.main([str(f)]) == 0 and "ok - " in capsys.readouterr().out
+
+
+def _delete_project(client, pid, headers=None):
+    """W971 - delete a project as a caller must: with its title typed back. A project that cannot be read is answered
+    by the same DELETE without one, so the route's own answer (404) stands."""
+    got = client.get(f"/api/v1/projects/{pid}", headers=headers)
+    title = got.json().get("title") if got.status_code == 200 else None
+    return client.delete(f"/api/v1/projects/{pid}", params={"confirm_title": title} if title is not None else None,
+                         headers=headers)
+
+
+def test_w971_p514_clause6_a_project_is_deleted_only_with_its_title_typed_back(client, monkeypatch):
+    """P5.14 clause 6, the server's half (W971): "an act that cannot be undone is not performed on a general yes".
+    W968 made the page hold a delete until the title is typed back; the route deleted on a bare DELETE. Held here:
+    - a bare DELETE, or one with any other title, is refused 409 with the sentence, and the project is still there;
+    - the exact title deletes it (204), and it is then not found;
+    - with sign-in on, another person's project is not found (404) before any title is asked about, with or without
+      the right title, so the store cannot be probed; its owner deletes it with the title;
+    - the page sends the title, and every delete in the suite goes through the helper that sends it."""
+    import re
+    import uuid
+    from pathlib import Path
+
+    title = f"W971 project {uuid.uuid4().hex[:6]}"
+    pid = client.post("/api/v1/projects/", json={"title": title, "description": "w971"}).json()["id"]
+    for bad in (None, {"confirm_title": ""}, {"confirm_title": title.lower()}, {"confirm_title": title + " "}):
+        r = client.delete(f"/api/v1/projects/{pid}", params=bad)
+        assert r.status_code == 409 and "typed back exactly" in r.json()["detail"], (bad, r.status_code, r.text[:200])
+        assert client.get(f"/api/v1/projects/{pid}").status_code == 200, "a refused delete deleted the project"
+    assert client.delete(f"/api/v1/projects/{pid}", params={"confirm_title": title}).status_code == 204
+    assert client.get(f"/api/v1/projects/{pid}").status_code == 404
+
+    import agentic_core.auth.core as _ac971
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    users = _ac971._load_users()
+    who = {}
+    for k in ("one", "two"):
+        name = f"w971-{k}-{uuid.uuid4().hex[:6]}"
+        users[name] = {"username": name, "hashed_password": _ac971._pwd_ctx.hash("pw12345678"), "role": "user"}
+        who[k] = name
+    _ac971._save_users(users)
+    H = {k: {"Authorization": "Bearer " + client.post("/api/v1/auth/token", data={"username": n, "password": "pw12345678"}).json()["access_token"]}
+         for k, n in who.items()}
+    mine = client.post("/api/v1/projects/", json={"title": "W971 one's", "description": "w971"}, headers=H["one"]).json()["id"]
+    for params in (None, {"confirm_title": "W971 one's"}):
+        assert client.delete(f"/api/v1/projects/{mine}", params=params, headers=H["two"]).status_code == 404
+    assert _delete_project(client, mine, headers=H["one"]).status_code == 204
+
+    root = Path(__file__).resolve().parents[1]
+    page = (root / "apps/workstation-superapp/src/pages/projects/ProjectsHub.tsx").read_text(encoding="utf-8")
+    assert "axios.delete(`/api/v1/projects/${project.id}`, { params: { confirm_title: project.title } })" in page
+    spine = Path(__file__).read_text(encoding="utf-8")
+    assert not re.search(r'client\.delete\(f"/api/v1/projects/\{[A-Za-z_]+\}"\)', spine), "a delete in the suite sends no title"
