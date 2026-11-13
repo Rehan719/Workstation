@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { provenanceMapBadge, apiJson } from '../../lib/api';
+import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W931
 import {
   Dna, Loader2, AlertCircle, Crown, Briefcase, Award, GitBranch,
   Wrench, Sparkles, Rocket, Bug, ShieldCheck, Activity,
@@ -56,6 +57,7 @@ function verdictTone(v?: string) {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export const SovereignEvolution: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W931 - a read that fails is said
   const [focus, setFocus] = useState('');
   const [submitCC, setSubmitCC] = useState(false);
   const [running, setRunning] = useState(false);
@@ -71,7 +73,7 @@ export const SovereignEvolution: React.FC = () => {
   useEffect(() => {
     apiJson('/api/v1/sovereign-evolution/roadmap')
       .then(d => { if (d && d.ceo_directives) setRoadmap(d); })
-      .catch(() => {});
+      .catch(noteRead('the roadmap'));
     apiJson('/api/v1/heartbeat/status')
       .then(h => {
         setAutoEvolve(typeof h?.auto_evolve === 'boolean' ? h.auto_evolve : null);
@@ -102,6 +104,7 @@ export const SovereignEvolution: React.FC = () => {
 
   return (
     <div className="space-y-10 pb-24">
+      <ReadFailures failures={readFailures} />
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · Self-Evolution</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Sovereign Evolution Office</h1>

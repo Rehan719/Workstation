@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { complianceChip, apiJson } from '../../lib/api';
+import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W931
 import { ShieldCheck, Loader2, AlertCircle, CheckCircle2, XCircle, AlertTriangle, Scale, MinusCircle } from 'lucide-react';
 
 interface Verdict { framework: string; status: string; reason: string; coverage?: string; escalate?: string[] }
@@ -35,13 +36,14 @@ const SCREEN_CONSUMERS: { label: string; module: string }[] = [
 ];
 
 export const ComplianceChecker: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W931 - a read that fails is said
   const [frameworks, setFrameworks] = useState<any[]>([]);
   const [subject, setSubject] = useState('');
   const [running, setRunning] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<Result | null>(null);
 
-  useEffect(() => { apiJson('/api/v1/compliance/frameworks').then(d => setFrameworks(d.frameworks ?? [])).catch(() => {}); }, []);
+  useEffect(() => { apiJson('/api/v1/compliance/frameworks').then(d => setFrameworks(d.frameworks ?? [])).catch(noteRead('the frameworks')); }, []);
 
   const check = async () => {
     if (!subject.trim()) return;
@@ -56,6 +58,7 @@ export const ComplianceChecker: React.FC = () => {
 
   return (
     <div className="space-y-10 pb-24">
+      <ReadFailures failures={readFailures} />
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · Governance</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Compliance</h1>

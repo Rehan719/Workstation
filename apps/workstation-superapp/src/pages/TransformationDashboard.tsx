@@ -5,6 +5,7 @@ import {
   Sparkles, HeartPulse, AlertCircle, Eye, Map, Workflow, ShieldCheck, ListChecks,
 } from 'lucide-react';
 import { apiJson, errorMessage, provenanceBadge } from '../lib/api';
+import { ReadFailures, useReadFailures } from '../components/ReadFailures';   // W931
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -107,6 +108,7 @@ const PLAN_REFRESH_MS = 60_000;
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export const TransformationDashboard: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W931 - a read that fails is said
   const [pic, setPic] = useState<Picture | null>(null);
   const [assessing, setAssessing] = useState(false);
   const [ticking, setTicking] = useState(false);
@@ -120,7 +122,8 @@ export const TransformationDashboard: React.FC = () => {
   const [followupsErr, setFollowupsErr] = useState('');     // a refresh that failed keeps the last good plan on screen
 
   const load = () => apiJson('/api/v1/transformation').then(setPic).catch(() => setError('Failed to load'));
-  const loadRuns = () => apiJson('/api/v1/transformation/orchestrate/runs').then(d => setRuns(d.runs ?? [])).catch(() => {});
+  const loadRuns = () => apiJson('/api/v1/transformation/orchestrate/runs')
+    .then(d => { clearRead('the orchestration runs'); setRuns(d.runs ?? []); }).catch(noteRead('the orchestration runs'));
   // apiJson, so a 500 or a 404 from an older backend is named as such — never 'backend unreachable'
   const loadFollowups = () => apiJson<Followups>('/api/v1/plan/followups')
     .then(d => {
@@ -177,6 +180,7 @@ export const TransformationDashboard: React.FC = () => {
 
   return (
     <div className="space-y-10 pb-24">
+      <ReadFailures failures={readFailures} />
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · Living Alignment</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Vision · Realisation · Transformation</h1>

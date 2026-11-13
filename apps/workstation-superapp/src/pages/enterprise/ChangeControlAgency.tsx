@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W931
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -167,6 +168,7 @@ function CCACard({ entry, onReview, onImplement, refreshing, actionError }: {
 }) {
   const [expanded, setExpanded] = useState(false);
   const [detail, setDetail] = useState<CCADetail | null>(null);
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W931 - a read that fails is said
   const Icon = STATUS_ICONS[entry.status] ?? Clock;
 
   // The list row is intentionally thin — the description/review live on the detail record.
@@ -177,7 +179,8 @@ function CCACard({ entry, onReview, onImplement, refreshing, actionError }: {
       try {
         const r = await axios.get(`/api/v1/cca/${entry.cca_id}`);
         setDetail(r.data);
-      } catch { /* the row still renders; detail pane shows an honest fallback below */ }
+        clearRead("the change's details");
+      } catch (e) { noteRead("the change's details")(e); }   // W931 - said in the pane, never "Loading" for ever
     }
   };
 
@@ -185,7 +188,7 @@ function CCACard({ entry, onReview, onImplement, refreshing, actionError }: {
   // pre-validation lines stayed stale until a reload; refetch whenever the row itself moves
   useEffect(() => {
     if (!expanded) return;
-    axios.get(`/api/v1/cca/${entry.cca_id}`).then(r => setDetail(r.data)).catch(() => {});
+    axios.get(`/api/v1/cca/${entry.cca_id}`).then(r => { clearRead("the change's details"); setDetail(r.data); }).catch(noteRead("the change's details"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entry.status, entry.reviewed_at]);
 
@@ -312,9 +315,10 @@ function CCACard({ entry, onReview, onImplement, refreshing, actionError }: {
             className="overflow-hidden border-t border-white/8"
           >
             <div className="p-4 space-y-3">
+              <ReadFailures failures={readFailures} />
               {detail
                 ? <p className="text-sm text-white/60">{detail.description || 'No description recorded.'}</p>
-                : <p className="text-sm text-white/30">Loading details…</p>}
+                : !Object.keys(readFailures).length && <p className="text-sm text-white/30">Loading details…</p>}
 
               {detail?.review_result && (
                 <div className="bg-white/3 border border-white/8 rounded-lg p-3">

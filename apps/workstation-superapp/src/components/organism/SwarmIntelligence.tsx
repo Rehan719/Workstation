@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W931
 import { qmsChip, provenanceMapBadge, complianceChip, errorMessage, layerTitle, axiosDetail, immuneReading } from '../../lib/api';
 import axios from 'axios';
 import { Loader2, Send, Cpu, RefreshCw, Zap, ChevronDown, ChevronUp } from 'lucide-react';
@@ -71,6 +72,7 @@ const CSUITE_POOL = ['CSO', 'CFO', 'CTO', 'CPO', 'COO', 'CIO', 'CLO', 'Forecasti
 const CASCADE_AXIS = { domain: 'enterprise', realm: 'enterprise' } as const;
 
 const SwarmIntelligence: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W931 - a read that fails is said
   const [runs, setRuns] = useState<SwarmRun[]>([]);
   // W493 (FU-202) - a read that FAILED is not an empty store; the panel must say which it has
   const [runsErr, setRunsErr] = useState('');
@@ -130,7 +132,7 @@ const SwarmIntelligence: React.FC = () => {
     axios.get('/api/v1/vsb').then(res => {
       const rows = res.data?.entities ?? res.data?.vsbs ?? [];
       setScopes(Array.isArray(rows) ? rows.filter((v: any) => v?.vsb_id) : []);
-    }).catch(() => {});
+    }).catch(noteRead('the entities'));
   }, []);
 
   // W292 — when a VSB scope is chosen, offer its living plan's OPEN objectives for binding
@@ -221,6 +223,7 @@ const SwarmIntelligence: React.FC = () => {
 
   return (
     <div className="p-5 bg-[#050505] text-white rounded-2xl border border-[#1a1a1a]">
+      <ReadFailures failures={readFailures} />
       <div className="flex items-center justify-between mb-5">
         <h2 className="text-fuchsia-500 text-lg font-bold uppercase">Swarm Intelligence Hub</h2>
         <button onClick={loadRuns} className="p-1.5 rounded hover:bg-white/5 text-white/30 hover:text-white/60">

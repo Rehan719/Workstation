@@ -16,6 +16,10 @@ export function describeReadFailure(e: unknown): string {
   return errorMessage(e);
 }
 
+/** W931 - a call whose failure needs no sentence, with the reason: the person already sees what happened. Named, so a
+ *  silence is a decision with its reason and never an omission. `.catch(silenceIsRight('...'))` */
+export const silenceIsRight = (_why: string) => (): void => undefined;
+
 export function useReadFailures() {
   const [failures, setFailures] = useState<Record<string, string>>({});
   /** `.catch(note('the entity types'))`: records what could not be read and why */

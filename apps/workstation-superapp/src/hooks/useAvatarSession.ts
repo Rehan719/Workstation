@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { describeReadFailure } from '../components/ReadFailures';   // W931
 import { useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { getPrefs } from '../lib/userPrefs';
@@ -376,7 +377,9 @@ export function useAvatarSession() {
 
   const clearConversation = useCallback(() => {
     if (sessionId) {
-      axios.delete(`/api/v1/avatar/session/${sessionId}`).catch(() => {});
+      //  W931 - the screen is emptied at once; a delete the server refuses is said, never left as a clear that happened
+      axios.delete(`/api/v1/avatar/session/${sessionId}`)
+        .catch(e => setNotice(`The conversation was cleared here, but not on the server: ${describeReadFailure(e)}`));
     }
     setMessages([]);
     setSessionId(null);

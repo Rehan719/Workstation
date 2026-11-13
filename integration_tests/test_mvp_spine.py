@@ -78715,3 +78715,45 @@ def test_w930_auth_off_is_said_only_when_the_server_says_sign_in_is_off(client):
     silent = sum(len(re.findall(r"\.catch\(\(\)\s*=>\s*\{\s*\}\)", f.read_text(encoding="utf-8")))
                  for f in list(src.rglob("*.tsx")) + list(src.rglob("*.ts")) if not f.name.endswith((".test.tsx", ".test.ts")))
     assert silent <= 12, ("more calls end in a catch that says nothing than are left after W930", silent)
+
+
+def test_w931_no_call_ends_in_a_catch_that_says_nothing():
+    """W931 closes the row W927 registered: forty-one calls in twenty-four files ended in .catch(() => {}). W928 to W930
+    said the failures of thirty of them; this round says the last nine reads (the ledger events, the compliance
+    frameworks, the evolution roadmap, the orchestration runs, the management standards, a change's details, the swarm's
+    entities and the hub's handoffs), and the avatar's conversation clear, whose delete could fail on the server unsaid.
+    A change's details, read on open, left "Loading details..." for ever when the read failed; the pane now says why.
+    The presentation player's two fullscreen requests stay silent, because the person sees a refusal; the silence is now
+    named with its reason (silenceIsRight), so it is a decision and not an omission. Held here:
+    - no call in the app ends in .catch(() => {});
+    - every named silence is the player's two, each with a reason;
+    - each component that notes failed reads shows them, and a change's details are never shown loading after a failure;
+    - the avatar says a clear the server refused."""
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = root / "apps/workstation-superapp/src"
+    files = [f for f in sorted(list(src.rglob("*.tsx")) + list(src.rglob("*.ts"))) if not f.name.endswith((".test.tsx", ".test.ts"))]
+    assert len(files) > 100, len(files)
+    silent = [(f.relative_to(src).as_posix(), len(re.findall(r"\.catch\(\(\)\s*=>\s*\{\s*\}\)", f.read_text(encoding="utf-8"))))
+              for f in files]
+    assert [s for s in silent if s[1]] == [], ("a call still ends in a catch that says nothing", [s for s in silent if s[1]])
+    rf = (src / "components/ReadFailures.tsx").read_text(encoding="utf-8")
+    assert "export const silenceIsRight = (_why: string) => (): void => undefined;" in rf
+    #  read as code: the helper's own doc comment shows the call it names
+    named = [(f.name, m.group(1)) for f in files
+             for m in re.finditer(r"silenceIsRight\('([^']*)'\)", _code_only(f.read_text(encoding="utf-8")))]
+    assert sorted(n for n, _ in named) == ["PresentationPlayer.tsx", "PresentationPlayer.tsx"], named
+    assert all(len(why) >= 30 for _, why in named), ("a silence is named without its reason", named)
+    for rel in ("pages/governance/ConstitutionalUI.tsx", "pages/governance/ComplianceChecker.tsx",
+                "pages/evolution/SovereignEvolution.tsx", "pages/TransformationDashboard.tsx",
+                "pages/enterprise/ManagementSystemsHub.tsx", "pages/enterprise/ChangeControlAgency.tsx",
+                "components/organism/SwarmIntelligence.tsx", "components/organism/AgentHubPanel.tsx"):
+        t = (src / rel).read_text(encoding="utf-8")
+        hooks = t.count("= useReadFailures();")
+        assert hooks >= 1 and t.count("<ReadFailures failures={readFailures} />") == hooks, rel
+    cca = (src / "pages/enterprise/ChangeControlAgency.tsx").read_text(encoding="utf-8")
+    assert "} catch (e) { noteRead(\"the change's details\")(e); }" in cca
+    assert ": !Object.keys(readFailures).length && <p className=\"text-sm text-white/30\">Loading details…</p>}" in cca
+    av = (src / "hooks/useAvatarSession.ts").read_text(encoding="utf-8")
+    assert ".catch(e => setNotice(`The conversation was cleared here, but not on the server: ${describeReadFailure(e)}`));" in av

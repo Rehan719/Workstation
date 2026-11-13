@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { silenceIsRight } from '../../components/ReadFailures';   // W931 - a silence with its reason
 import { Card, Button, Badge } from '@workstation/ui';
 import { Play, Pause, SkipForward, SkipBack, Volume2, Maximize2, X, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -23,9 +24,9 @@ export const PresentationPlayer: React.FC<{ slides: Slide[]; onClose: () => void
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
-      playerRef.current?.requestFullscreen().catch(() => {});
+      playerRef.current?.requestFullscreen().catch(silenceIsRight('a refused fullscreen leaves the player as it is, which the person sees'));
     } else {
-      document.exitFullscreen().catch(() => {});
+      document.exitFullscreen().catch(silenceIsRight('a refused exit leaves the player full screen, which the person sees'));
     }
   };
 

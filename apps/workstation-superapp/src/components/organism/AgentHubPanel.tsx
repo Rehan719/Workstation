@@ -12,6 +12,7 @@
  *     means recorded: no executor is subscribed and nothing runs these automatically.
  */
 import React, { useEffect, useRef, useState } from 'react';
+import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W931
 import { Card, Button } from '@workstation/ui';
 import { Radio, Loader2, AlertCircle, ShieldCheck, Send, Inbox, Users } from 'lucide-react';
 
@@ -26,6 +27,7 @@ interface Handoff {
 }
 
 const AgentHubPanel: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W931 - a read that fails is said
   const [agents, setAgents] = useState<any>(null);
   const [msgs, setMsgs] = useState<HubMsg[]>([]);
   // W443 refuter catch: a failed message load was swallowed into msgs=[] and rendered the
@@ -120,12 +122,13 @@ const AgentHubPanel: React.FC = () => {
         body: JSON.stringify({ status }),
       });
       if (!r.ok) { const d = await r.json(); setErr(typeof d.detail === 'string' ? d.detail : `HTTP ${r.status}`); return; }
-      jget('/api/v1/hub/handoffs?limit=20').then(d => setHandoffs(d.handoffs)).catch(() => {});
+      jget('/api/v1/hub/handoffs?limit=20').then(d => { clearRead('the handoffs'); setHandoffs(d.handoffs); }).catch(noteRead('the handoffs'));
     } catch (e: any) { setErr(e?.message ?? String(e)); }
   };
 
   return (
     <div className="space-y-6">
+      <ReadFailures failures={readFailures} />
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-1">Respiratory layer · Agent Hub</p>
         <h2 className="text-2xl font-black tracking-tight text-white uppercase italic">Agent Collaboration Hub</h2>

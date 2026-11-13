@@ -23700,6 +23700,28 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W931",
+      "note": "",
+      "slot_source": "P5.1's measured tenant journey: what a page shows is what the server said",
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Closed by W928 to W931: no call in the frontend ends in .catch(() => {}). Thirty-eight reads now say what could not be read, with the server's reason, where the page's content starts (components/ReadFailures.tsx); a read that runs again clears its own failure when it succeeds. The avatar says a conversation clear the server refused. The presentation player's two fullscreen requests stay silent because the person sees a refusal, and the silence is named with its reason (silenceIsRight). W930 found the sidebar's case was worse than silent: a failed session read said auth off; it now says the session is not known. Other silent forms (empty try/catch blocks, .catch(() => undefined or null)) are a new row to classify. test_w931 holds the count at zero."
+    },
+    {
+      "id": "FU-1181",
+      "title": "Sixty-seven failures in the frontend are dropped in a form W927's count did not cover",
+      "why": "Measured at W931, once no call ends in .catch(() => {}): 45 try/catch blocks have an empty or comment-only body, and 22 calls end in .catch(() => undefined) or .catch(() => null). Many are right as they are: a best-effort write to the browser's storage, or an error body parsed as a value or nothing. Some are reads whose failure leaves a page showing nothing. Each is to be classified: a silence named with its reason (silenceIsRight), or a failure said with the server's reason. A count to classify, not a verdict.",
+      "source": "W931 (measured while closing the row W927 registered)",
+      "found": "2026-11-13",
+      "files": [
+        "apps/workstation-superapp/src/components/ReadFailures.tsx",
+        "apps/workstation-superapp/src/lib/api.ts"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.1",
       "status": "open",
       "closed_by": null,
       "note": "",

@@ -4,8 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import { Shield, Sparkles, FileText, Send, History, CheckCircle2, AlertTriangle, Search, Activity, Zap, TrendingUp, Clock, Terminal } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiJson } from '../../lib/api';   // W927 - a read is used only on a 2xx
+import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W931
 
 export const ConstitutionalUI: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W931 - a read that fails is said
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'articles' | 'timeline' | 'history'>('articles');
   const [search, setSearch] = useState('');
@@ -59,7 +61,8 @@ export const ConstitutionalUI: React.FC = () => {
         setUeg(Array.isArray(d?.events) ? [...d.events].reverse() : []);
         setUegTotal(typeof d?.summary?.total_events === 'number' ? d.summary.total_events : null);
         setUegUnreadable(d?.summary?.unreadable ? String(d.summary.unreadable) : null);
-      }).catch(() => {});
+        clearRead('the ledger events');
+      }).catch(noteRead('the ledger events'));
   };
   useEffect(() => {
     refreshGaas();
@@ -79,6 +82,7 @@ export const ConstitutionalUI: React.FC = () => {
 
   return (
     <div className="space-y-12 pb-24">
+      <ReadFailures failures={readFailures} />
       <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6">
         <div>
           <h1 className="text-3xl @[480px]:text-4xl @[680px]:text-6xl font-black mb-1 text-white tracking-tighter uppercase italic break-words">Constitutional Core</h1>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { provenanceBadge, provenanceLine, axiosDetail} from '../../lib/api';
+import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W931
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield, BarChart3, FileText, Leaf, Calendar, AlertTriangle,
@@ -331,6 +332,7 @@ function RiskPanel({ onResult }: { onResult: (r: string, prov?: any) => void }) 
 // ── Main component ────────────────────────────────────────────────────────────
 
 export const ManagementSystemsHub: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W931 - a read that fails is said
   const [activeTab, setActiveTab] = useState<Tab>('qms');
   const [standards, setStandards] = useState<Standard[]>([]);
   const [result, setResult] = useState<string | null>(null);
@@ -338,7 +340,7 @@ export const ManagementSystemsHub: React.FC = () => {
   const [expanded, setExpanded] = useState(true);
 
   useEffect(() => {
-    axios.get('/api/v1/mgmt/standards').then(r => setStandards(r.data.standards ?? [])).catch(() => {});
+    axios.get('/api/v1/mgmt/standards').then(r => setStandards(r.data.standards ?? [])).catch(noteRead('the management standards'));
   }, []);
 
   const handleResult = (r: string, prov?: any) => {
@@ -352,6 +354,7 @@ export const ManagementSystemsHub: React.FC = () => {
 
   return (
     <div className="p-6 space-y-6 max-w-5xl mx-auto">
+      <ReadFailures failures={readFailures} />
       <div>
         <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-3">
           <Shield size={22} className="text-blue-400" />

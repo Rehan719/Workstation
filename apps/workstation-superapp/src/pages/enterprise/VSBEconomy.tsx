@@ -142,7 +142,7 @@ export const VSBEconomy: React.FC = () => {
   loadBoardPackRef.current = loadBoardPack;
   // §4 — the established living VSB enterprises the organism autonomously tends
   const [living, setLiving] = useState<any>(null);
-  // W395 — these loads used to fail silently (`.catch(() => {})`), leaving the page's headline
+  // W395 — these loads used to fail silently (an empty catch), leaving the page's headline
   // figures simply absent with no indication anything had gone wrong. An empty panel that means
   // "the request failed" is indistinguishable from one that means "there is no data".
   const [loadErr, setLoadErr] = useState('');
