@@ -77134,3 +77134,26 @@ def test_w904_fu1095_failures_are_said_to_be_recorded_not_alerted_and_the_outsid
     second = client.get("/health")
     assert first.status_code == second.status_code == 200 and first.json() == second.json(), (first.json(), second.json())
     assert set(first.json()) == {"status", "version", "app"}, first.json()
+
+
+def test_w905_fu399_the_rendered_page_tests_run_on_every_push():
+    """FU-399 part 1 (W905). W579 built a renderer for the pages (vitest, jsdom, Testing Library) and one rendered page
+    guard, KnowledgeHub.test.tsx, and nothing ran it: the frontend job typechecked and built, and no job ran the app's
+    test script, so a rendered guard that broke turned nothing red. The frontend job now runs it after the install and
+    the build. The script is the one-shot run, not the watcher, which would never end in CI. Every page guard in the
+    Python suite is still a text scan, which the row keeps open."""
+    import json
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    wf = (root / ".github/workflows/spine.yml").read_text(encoding="utf-8").replace("\r\n", "\n")
+    job = re.split(r"\n  [a-z][a-z0-9_-]*:\n", wf.split("\n  frontend:\n", 1)[1], maxsplit=1)[0]
+    runs = [m.group(1).strip() for m in re.finditer(r"^\s+run: (.+)$", job, re.M)]
+    want = "npm run test --workspace=apps/workstation-superapp"
+    assert want in runs, ("the frontend job does not run the rendered page tests", runs)
+    assert runs.index("npm install") < runs.index(want), runs
+    assert runs.index("npm run build --workspace=apps/workstation-superapp") < runs.index(want), runs
+    pkg = json.loads((root / "apps/workstation-superapp/package.json").read_text(encoding="utf-8"))
+    assert pkg["scripts"]["test"] == "vitest run", ("the test script is not the one-shot run", pkg["scripts"]["test"])
+    rendered = sorted((root / "apps/workstation-superapp/src").rglob("*.test.tsx"))
+    assert rendered, "the job would run no rendered test"

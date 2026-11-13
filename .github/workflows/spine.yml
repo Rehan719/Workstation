@@ -166,3 +166,7 @@ jobs:
         run: npm install
       - name: Typecheck + build (tsc && vite build)
         run: npm run build --workspace=apps/workstation-superapp
+      #  W905 (FU-399 part 1) - the rendered page tests (vitest, jsdom) run on every push. Before this round the one
+      #  rendered test in the repository (W579) ran nowhere
+      - name: Rendered page tests (vitest, jsdom)
+        run: npm run test --workspace=apps/workstation-superapp
