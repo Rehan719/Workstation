@@ -53,6 +53,22 @@ oqs = "^0.10.2"
 psycopg2-binary = "^2.9.11"
 mesa = "3.0.1"
 firebase-admin = "^7.3.0"
+# W906 (FU-607) - imported or loaded by live code and installed by requirements.txt, but never declared here, so the
+# lock held none of them and requirements.txt carried them by hand. fpdf2 and pypdf are held at the versions CI
+# installs: their newer releases (2.9.0 and 6.21.4 when this was locked) are a change of their own
+fpdf2 = "2.8.7"
+openpyxl = "^3.1.5"
+passlib = {version = "^1.7.4", extras = ["bcrypt"]}
+pypdf = "6.19.0"
+python-docx = "^1.2.0"
+python-jose = {version = "^3.3.0", extras = ["cryptography"]}
+python-multipart = "^0.0.22"
+python-pptx = "^1.0.2"
+torchsde = "^0.2.6"
+# Payment rails are OPTIONAL and deliberately NOT declared here: a LIVE Stripe key is present in .env, so activating
+# real charges requires three deliberate steps - `pip install stripe`, plus STRIPE_LIVE_ENABLED=true, plus a live
+# key. See agentic_core/api/v310/payments.py. (Moved here from requirements.txt by W906: that file is exported from
+# poetry.lock, and an export carries no comment.)
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.1"

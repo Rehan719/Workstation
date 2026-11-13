@@ -11663,10 +11663,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P4.5",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W906",
       "note": "RULED 2026-10-09 and done W637: POT is removed from pyproject.toml (it was never in requirements.txt). STILL OPEN on this row: compare the two dependency declarations line by line - one drifted entry means they are not generated from one source.",
-      "slot_source": "dependency declarations are the deployment pre-flight this item owns, beside FU-604"
+      "slot_source": "dependency declarations are the deployment pre-flight this item owns, beside FU-604",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built as the row asked: the two declarations compared line by line, with the lock between them. They had not come from one source since at least W555: the lock did not match pyproject.toml (anthropic declared and not locked; POT locked and not declared), and requirements.txt held three unpinned lines and six pins in no lock. The nine live packages are declared, the lock is made by poetry lock and requirements.txt by poetry export; every version CI installed is unchanged (checked against its install log on W900), and this machine now runs what CI runs. test_w906 recomputes the content hash poetry records and fails on any of the drifts found."
     },
     {
       "id": "FU-608",

@@ -77157,3 +77157,71 @@ def test_w905_fu399_the_rendered_page_tests_run_on_every_push():
     assert pkg["scripts"]["test"] == "vitest run", ("the test script is not the one-shot run", pkg["scripts"]["test"])
     rendered = sorted((root / "apps/workstation-superapp/src").rglob("*.test.tsx"))
     assert rendered, "the job would run no rendered test"
+
+
+def test_w906_fu607_requirements_is_the_lock_and_the_lock_is_the_pyproject():
+    """FU-607 (W906). Measured line by line, the three dependency files had not come from one source since at least
+    W555. The lock's content hash did not match pyproject.toml: anthropic was declared and not locked, and POT was
+    locked after W637 removed it. requirements.txt, which CI and the deploy install, held three unpinned lines no
+    export writes, and six pins that were in no lock. So an install took whatever anthropic, python-jose and passlib
+    were newest, and this machine ran another anthropic than CI did. Now the nine packages live code needs are
+    declared, the lock is made by `poetry lock`, and requirements.txt is `poetry export`. This guard needs no poetry:
+    it recomputes poetry's own content hash of pyproject.toml, which is how the lock records what it was made from."""
+    import hashlib
+    import json
+    import pathlib
+    import re
+    import tomllib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    py_text = (root / "pyproject.toml").read_text(encoding="utf-8")
+    py = tomllib.loads(py_text)
+    lock = tomllib.loads((root / "poetry.lock").read_text(encoding="utf-8"))
+    relock = "run `poetry lock`, then `poetry export -f requirements.txt --without-hashes -o requirements.txt`"
+
+    #  1 - the lock was made from THIS pyproject (poetry.packages.locker's content hash, recomputed)
+    legacy = ["dependencies", "source", "extras", "dev-dependencies"]
+    project, poetry = py.get("project", {}), py.get("tool", {}).get("poetry", {})
+    rp = {k: project[k] for k in ("requires-python", "dependencies", "optional-dependencies")
+          if project.get(k) is not None}
+    rc = {}
+    for k in [*legacy, "group"]:
+        v = poetry.get(k)
+        if v is None and (k not in legacy or rp):
+            continue
+        rc[k] = v
+    content = {"project": rp, "tool": {"poetry": rc}} if rp else rc
+    made_from = hashlib.sha256(json.dumps(content, sort_keys=True).encode()).hexdigest()
+    assert made_from == lock["metadata"]["content-hash"], (
+        "pyproject.toml was changed and the lock was not made again: " + relock)
+
+    def norm(name):
+        return re.sub(r"[-_.]+", "-", name).lower()
+
+    #  2 - every declared dependency is in the lock
+    declared = [norm(k) for k in poetry["dependencies"] if k.lower() != "python"]
+    locked = {norm(p["name"]) for p in lock["package"]}
+    assert not [d for d in declared if d not in locked], ("declared and not locked", relock)
+
+    #  3 - requirements.txt is the lock's main group, every line a pin the export writes, nothing by hand
+    lines = [ln.strip() for ln in (root / "requirements.txt").read_text(encoding="utf-8").splitlines() if ln.strip()]
+    hand = [ln for ln in lines if not re.fullmatch(r"[A-Za-z0-9_.\-]+==[^ ;]+( ; .+)?", ln)]
+    assert not hand, ("requirements.txt holds lines no export writes", hand, relock)
+    pins = {(norm(ln.split("==", 1)[0]), ln.split("==", 1)[1].split(" ;", 1)[0]) for ln in lines}
+    main = {(norm(p["name"]), p["version"]) for p in lock["package"] if "main" in (p.get("groups") or [])}
+    assert pins == main, ("requirements.txt is not the lock's export",
+                          "pinned, not locked so:", sorted(pins - main), "locked, not pinned:", sorted(main - pins))
+
+    #  4 - the nine live packages are declared, so no install takes them by luck or by a hand edit
+    for pkg in ("fpdf2", "openpyxl", "passlib", "pypdf", "python-docx", "python-jose", "python-multipart",
+                "python-pptx", "torchsde", "anthropic"):
+        assert pkg in declared, (pkg, "is imported or loaded by live code and is not declared")
+
+    #  5 - the payment rail stays out, and says so where the declarations now are
+    assert "stripe" not in declared and "stripe" not in {n for n, _ in pins}
+    assert "Payment rails are OPTIONAL and deliberately NOT declared here" in py_text
+
+    #  6 - every package pyproject.toml includes exists. CI's documentation job runs `pip install -e .`, and it failed
+    #      from W896 to W902b because `src` was still included after W896 moved src/ aside
+    for inc in poetry.get("packages") or []:
+        assert (root / inc.get("from", "") / inc["include"]).exists(), (
+            "pyproject.toml includes a package the tree does not have, so the editable install fails", inc)

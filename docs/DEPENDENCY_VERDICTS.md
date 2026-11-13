@@ -80,3 +80,38 @@ register's own test. The REMOVABLE verdict therefore holds without the W628b cor
 here**: removal rides FU-283's retry plan above (in halves, on a fresh venv built only from the new
 `requirements.txt`, in its own commit), because the torch-absent boot failure W628b met is not yet bisected.
 
+## W906 (FU-607) — the three dependency files come from one source (2026-11-13)
+
+Measured line by line before this round, the three files had not come from one source since at least W555, the
+last time the lock and `requirements.txt` were written:
+
+- `poetry.lock`'s content hash did not match `pyproject.toml`. `anthropic` was declared and not locked, and `POT`
+  was locked although W637 had removed it from the declarations.
+- `requirements.txt` held three lines no export writes: `anthropic>=0.109.0`, `python-jose[cryptography]>=3.3.0`
+  and `passlib[bcrypt]>=1.7.4`. Being unpinned, they installed whatever was newest. This machine's venv had
+  anthropic 2.6.0, and an install made today resolves 2.8.0.
+- Six pins were in no lock: fpdf2, openpyxl, pypdf, python-docx, python-pptx and torchsde.
+
+No pin that was in both files disagreed.
+
+What changed: the nine packages live code needs are declared in `pyproject.toml`, with python-multipart, which
+W628b found was installed only because another package required it. fpdf2 and pypdf are held at the versions CI
+installed (2.8.7 and 6.19.0); their newer releases are a change of their own. The lock was made by `poetry lock`,
+which keeps every package already locked at its version, and `requirements.txt` was exported from it. Every
+version CI installed before this round is the version it installs after it. anthropic, python-jose and passlib,
+and the packages they and the document libraries bring, are now pinned at what an unpinned install resolved
+today. The note that Stripe is deliberately left out moved into `pyproject.toml`, because an export carries no
+comment.
+
+**How to change a dependency from now on.** Edit `pyproject.toml`, then run:
+
+```
+poetry lock
+poetry export -f requirements.txt --without-hashes -o requirements.txt
+```
+
+`poetry export` is a plugin (`poetry self add poetry-plugin-export`). `test_w906` fails when `pyproject.toml` is
+changed without re-locking, when `requirements.txt` holds a line the export does not write, or when a pin differs
+from the lock. FU-604's removal retry uses the same two commands, then a fresh venv built only from the new
+`requirements.txt`.
+
