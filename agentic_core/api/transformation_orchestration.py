@@ -691,6 +691,10 @@ def _generate_vsb_twin(req, chief, directors, action_items, organism, realisatio
 @router.get("/orchestrate/runs")
 async def orchestrate_runs():
     runs = []
+    #  W987 (FU-399 part 19) - A RUN RECORD THAT CANNOT BE READ IS SAID. One that did not parse was skipped in
+    #  silence and `total` counted only the others, so the Transformation Dashboard listed fewer runs than were
+    #  recorded and nothing said one was missing. Each is named, with what stopped it being read.
+    unreadable = []
     if _RUNS.exists():
         for p in sorted(_RUNS.glob("*.json"), key=lambda x: x.stat().st_mtime, reverse=True)[:50]:
             try:
@@ -698,6 +702,6 @@ async def orchestrate_runs():
                 runs.append({"transformation_id": r["transformation_id"], "scope": r.get("scope"),
                              "objective": r.get("objective"), "validated": r.get("validation", {}).get("validated"),
                              "created_at": r.get("created_at")})
-            except Exception:
-                pass
-    return {"runs": runs, "total": len(runs)}
+            except Exception as exc:
+                unreadable.append({"record": p.name, "error": type(exc).__name__})
+    return {"runs": runs, "total": len(runs), "unreadable": len(unreadable), "unreadable_records": unreadable}

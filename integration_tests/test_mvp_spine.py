@@ -82908,3 +82908,62 @@ def test_w986_fu399_the_learning_loop_prints_no_rate_over_no_run_and_says_each_f
     assert "(typeof n === 'number' ? `${Math.round(n * 100)}%` : 'not measured')" in code and "(n ?? 0)" not in code
     fx = json.loads((pdir / "OperationalExcellence.fixture.json").read_text(encoding="utf-8"))
     assert set(fx["summary"]) <= set(one) | {"top_resource"}, sorted(set(fx["summary"]) - set(one))
+
+
+def test_w987_fu399_the_transformation_dashboard_says_each_refusal_and_names_each_run_it_could_not_read(client, monkeypatch, tmp_path):
+    """FU-399 part 19 (W987). The Transformation Dashboard shows the vision's pillars with their presence checks, the
+    transformation plan, the orchestration cascade and its run history, and the delivery plan read live from the
+    follow-up register. TransformationDashboard.test.tsx mounts the real page against the answers its six routes gave on
+    a fresh store, has the server refuse each read and each action, and follows an action that fails and then succeeds.
+    Rendering it found four defects, fixed:
+    - a refused read of the picture said only "Failed to load", without which read or the server's reason;
+    - the run history sat inside the picture's block, so a refused picture hid the runs that had been read;
+    - a refused Tick, Assess or Orchestrate set the page's error and nothing cleared it, so a Tick that then succeeded
+      left "Failed (HTTP 503)" on the page;
+    - GET /api/v1/transformation/orchestrate/runs skipped a run record that did not parse and counted only the others,
+      so the history was shorter than the record and nothing said so. Each is named, with what stopped it being read.
+    Held here, driven on this test's own runs folder: the history with a record cut off; and the page's code."""
+    import json
+    import pathlib
+    import re
+    from agentic_core.api import transformation_orchestration as _to
+    monkeypatch.setattr(_to, "_RUNS", tmp_path / "transformation_runs")
+    none = client.get("/api/v1/transformation/orchestrate/runs").json()
+    assert none == {"runs": [], "total": 0, "unreadable": 0, "unreadable_records": []}, none
+    (tmp_path / "transformation_runs").mkdir()
+    (tmp_path / "transformation_runs" / "tx-w987-read.json").write_text(json.dumps(
+        {"transformation_id": "tx-w987-read", "scope": "workstation", "objective": "w987 probe",
+         "validation": {"validated": None}, "created_at": "2026-11-13T00:00:00Z"}), encoding="utf-8")
+    (tmp_path / "transformation_runs" / "tx-w987-cut.json").write_text('{"transformation_id": "tx-w9', encoding="utf-8")
+    (tmp_path / "transformation_runs" / "tx-w987-keyless.json").write_text('{"scope": "workstation"}', encoding="utf-8")
+    h = client.get("/api/v1/transformation/orchestrate/runs").json()
+    assert [r["transformation_id"] for r in h["runs"]] == ["tx-w987-read"] and h["total"] == 1, h
+    assert h["unreadable"] == 2 and sorted((u["record"], u["error"]) for u in h["unreadable_records"]) == [
+        ("tx-w987-cut.json", "JSONDecodeError"), ("tx-w987-keyless.json", "KeyError")], h
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    pdir = root / "apps/workstation-superapp/src/pages"
+    page = (pdir / "TransformationDashboard.tsx").read_text(encoding="utf-8")
+    shared = (root / "apps/workstation-superapp/src/components/ReadFailures.tsx").read_text(encoding="utf-8")
+    t = (pdir / "TransformationDashboard.test.tsx").read_text(encoding="utf-8")
+    assert "import { TransformationDashboard } from './TransformationDashboard';" in t and "<TransformationDashboard />" in t
+    read = set(re.findall(r"ByTestId\('([^']+)'\)", t))
+    assert {"read-failure", "orchestration-run", "runs-unreadable", "action-error", "followups-card"} <= read, sorted(read)
+    for tid in read:
+        assert f'data-testid="{tid}"' in page or f'data-testid="{tid}"' in shared, tid
+    code = _code_only(page)
+    assert ".then(d => { clearRead('the realisation picture'); setPic(d); }).catch(noteRead('the realisation picture'))" in code
+    assert "Failed to load'" not in code
+    assert "setRunsUnreadable(Array.isArray(d.unreadable_records) ? d.unreadable_records : [])" in code
+    #  each action clears the last action's message when it starts
+    for opening in ("setTicking(true); setError('');",
+                    "setAssessing(true); setAssessment(''); setAssessProv(null); setError('');",
+                    "setOrchestrating(true); setOrch(null); setError('');"):
+        assert opening in code, opening
+    #  the run history stands outside the picture's block, which ends with the plan's lists
+    runs_card = "{(runs.length > 0 || runsUnreadable.length > 0) && ("
+    assert code.count(runs_card) == 1 and code.index(runs_card) > code.index('data-testid="plan-lists-basis"')
+    assert code.index(runs_card) < code.index('data-testid="followups-card"')
+    fx = json.loads((pdir / "TransformationDashboard.fixture.json").read_text(encoding="utf-8"))
+    assert set(fx["runs"]) == set(h), sorted(set(fx["runs"]) ^ set(h))
+    assert fx["runs"]["unreadable"] == 1 and fx["runs"]["unreadable_records"][0]["error"] == "JSONDecodeError"
