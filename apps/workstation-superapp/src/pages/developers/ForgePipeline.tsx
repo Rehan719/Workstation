@@ -3,6 +3,7 @@ import { Card, Button } from '@workstation/ui';
 import { Hammer, Loader2, AlertCircle, Check, ChevronDown, ChevronUp, Rocket, FlaskConical } from 'lucide-react';
 import { FabricLink } from '../../components/FabricLink';
 import { provenanceMapBadge, apiJson } from '../../lib/api';
+import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W929
 
 interface Resource { id: string; name: string; role: string; biomimetic: string }
 // W805 (FU-823) - each stage now says what served it, and what kind of stage it is
@@ -21,6 +22,7 @@ interface RunResult { run_id: string; pipeline: string[]; ceo_framing: string; s
   ai_provenance?: { served_by?: Record<string, number>; any_external?: boolean } }
 
 export const ForgePipeline: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W929 - a read that fails is said
   const [resources, setResources] = useState<Resource[]>([]);
   const [selected, setSelected] = useState<string[]>(['petri_dish', 'laboratory', 'factory']);
   const [objective, setObjective] = useState('');
@@ -49,7 +51,7 @@ export const ForgePipeline: React.FC = () => {
   };
   const unreadableLines = selected.flatMap(id => parseConfig(stageConfig[id] || '').unreadable);
 
-  useEffect(() => { apiJson('/api/v1/forge/resources').then(d => setResources(d.resources ?? [])).catch(() => {}); }, []);
+  useEffect(() => { apiJson('/api/v1/forge/resources').then(d => setResources(d.resources ?? [])).catch(noteRead('the Forge resources')); }, []);
 
   const toggle = (id: string) => setSelected(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
 
@@ -71,6 +73,7 @@ export const ForgePipeline: React.FC = () => {
 
   return (
     <div className="space-y-10 pb-24">
+      <ReadFailures failures={readFailures} />
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · Forge</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Digital Resource Forge</h1>

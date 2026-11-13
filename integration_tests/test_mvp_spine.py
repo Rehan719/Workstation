@@ -78635,3 +78635,43 @@ def test_w928_the_pages_a_founder_uses_most_say_when_a_read_fails():
     assert silent <= 29, ("more calls end in a catch that says nothing than are left after W928", silent)
     gj = (src / "pages/synthesis/GenesisJourney.test.tsx").read_text(encoding="utf-8")
     assert "findByTestId('read-failure')" in gj and "Failed (HTTP 503): the entity type register could not be read" in gj
+
+
+def test_w929_the_developer_and_organism_pages_say_when_a_read_fails():
+    """W929 (part 2 of the open row W927 registered). Sixteen catches on six pages did nothing with a failed read: Native
+    AI's capabilities, homeostasis reading, self-check, fabric resources, model inventory, model tiers and swarm
+    cascades; the cognition wiring, knowledge sources and cognitive engines; the resource fabric's resources, saved
+    compositions and run history; the heartbeat's status; the Forge's resources; and the digital twins' models. Each
+    page now notes a failed read by what it was reading and shows it where its content starts, with the server's own
+    reason; a read that runs again and succeeds takes its failure off the list. Held here:
+    - none of the six pages ends a read in a catch that says nothing;
+    - each component that notes failures shows them;
+    - a read that is run again (a poll, a filter or a reload) clears its own failure when it succeeds;
+    - the count of catches that say nothing, app-wide, is sixteen lower than after W928;
+    - the heartbeat page's rendered test drives a refused status read and reads the server's reason on the page."""
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = root / "apps/workstation-superapp/src"
+    pages = ["pages/developers/NativeAI.tsx", "pages/CognitionIntegration.tsx", "pages/synthesis/ResourceFabric.tsx",
+             "pages/organism/HeartbeatMonitor.tsx", "pages/developers/ForgePipeline.tsx", "pages/developers/DigitalTwins.tsx"]
+    for rel in pages:
+        t = (src / rel).read_text(encoding="utf-8")
+        assert not re.search(r"\.catch\(\(\)\s*=>\s*\{\s*\}\)", _code_only(t)), ("a read on this page still fails without a word", rel)
+        hooks = t.count("= useReadFailures();")
+        assert hooks >= 1 and t.count("<ReadFailures failures={readFailures} />") == hooks, (
+            "a component that notes failed reads does not show them", rel)
+        assert "from '../components/ReadFailures'" in t or "from '../../components/ReadFailures'" in t, rel
+    #  a read run again clears its own failure when it succeeds: each name it notes, it also clears
+    for rel, again in (("pages/organism/HeartbeatMonitor.tsx", ["the heartbeat status"]),
+                       ("pages/synthesis/ResourceFabric.tsx", ["the resources", "the saved compositions", "the run history"]),
+                       ("pages/developers/NativeAI.tsx", ["the swarm cascades"]),
+                       ("pages/developers/DigitalTwins.tsx", ["the twin models"])):
+        t = (src / rel).read_text(encoding="utf-8")
+        for what in again:
+            assert f"noteRead('{what}')" in t and f"clearRead('{what}')" in t, ("a repeated read keeps a stale failure", rel, what)
+    silent = sum(len(re.findall(r"\.catch\(\(\)\s*=>\s*\{\s*\}\)", f.read_text(encoding="utf-8")))
+                 for f in list(src.rglob("*.tsx")) + list(src.rglob("*.ts")) if not f.name.endswith((".test.tsx", ".test.ts")))
+    assert silent <= 13, ("more calls end in a catch that says nothing than are left after W929", silent)
+    hb = (src / "pages/organism/HeartbeatMonitor.test.tsx").read_text(encoding="utf-8")
+    assert "findByTestId('read-failure')" in hb and "Failed (HTTP 503): the heartbeat store could not be read" in hb

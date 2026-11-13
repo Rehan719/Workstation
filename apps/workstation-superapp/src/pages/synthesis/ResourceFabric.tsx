@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { provenanceBadge, qmsChip, provenanceMapBadge, provenanceMapFromTrace, complianceChip, immuneReading, apiJson } from '../../lib/api';
+import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W929
 import { useNavigate } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
 import {
@@ -244,6 +245,7 @@ const RUN_CONFIGS: Record<string, React.ComponentProps<typeof DomainTool>> = {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export const ResourceFabric: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W929 - a read that fails is said
   const navigate = useNavigate();
   const [resources, setResources] = useState<Resource[]>([]);
   const [usageAreas, setUsageAreas] = useState<string[]>([]);
@@ -288,11 +290,12 @@ export const ResourceFabric: React.FC = () => {
       setResources(d.resources ?? []);
       setUsageAreas(d.usage_areas ?? []);
       setClasses(d.classes ?? {});
-    }).catch(() => {});
+      clearRead('the resources');
+    }).catch(noteRead('the resources'));
   };
   const loadCompositions = () =>
     apiJson('/api/v1/resources/compositions')
-      .then(d => setCompositions(d.compositions ?? [])).catch(() => {});
+      .then(d => { clearRead('the saved compositions'); setCompositions(d.compositions ?? []); }).catch(noteRead('the saved compositions'));
 
   useEffect(() => { load(); }, [filterArea, filterClass]);
   useEffect(() => { loadCompositions(); }, []);
@@ -400,7 +403,8 @@ export const ResourceFabric: React.FC = () => {
       .then(d => {
         setHistRuns(d.runs ?? []);
         setHistBasis({ incomplete: !!d.listing_is_incomplete, basis: d.listing_basis });
-      }).catch(() => {});
+        clearRead('the run history');
+      }).catch(noteRead('the run history'));
 
   const compose = async () => {
     if (!name.trim() || selected.length === 0) return;
@@ -422,6 +426,7 @@ export const ResourceFabric: React.FC = () => {
 
   return (
     <div className="space-y-10 pb-24">
+      <ReadFailures failures={readFailures} />
       {actErr && <p className="text-vital text-xs font-bold">{actErr}</p>}
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · Resource Fabric</p>

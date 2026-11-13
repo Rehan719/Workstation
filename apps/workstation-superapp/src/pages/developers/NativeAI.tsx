@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Cpu, Network, Loader2, CheckCircle2, Circle, ShieldCheck, Server, Globe, Plus, Trash2, Play, Save, Activity } from 'lucide-react';
 import { apiJson, errorMessage, provenanceBadge, provenanceMapBadge, provenanceMapFromTrace, qmsChip } from '../../lib/api';
+import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W929
 
 interface ModelResource {
   name: string; kind: string; available: boolean; is_external: boolean; model?: string; note?: string;
@@ -448,6 +449,7 @@ function PrimitiveConsole() {
 }
 
 export const NativeAI: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W929 - a read that fails is said
   const [status, setStatus] = useState<Status | null>(null);
   const [capabilities, setCapabilities] = useState<Capability[]>([]);
   const [context, setContext] = useState('a halal, zero-waste community meal service for elderly Londoners');
@@ -489,7 +491,8 @@ export const NativeAI: React.FC = () => {
     apiJson('/api/v1/resources/swarm').then(d => {
       setCascades(d.cascades || []);
       setCascadeBasis({ truncated: d.truncated, total_basis: d.total_basis });
-    }).catch(() => {});
+      clearRead('the swarm cascades');
+    }).catch(noteRead('the swarm cascades'));
 
   // W276/W284 — the owned-model estate's LIFECYCLE (evaluate · promote · retire · reinstate)
   const [lifecycle, setLifecycle] = useState<{
@@ -574,14 +577,14 @@ export const NativeAI: React.FC = () => {
     apiJson('/api/v1/native-ai/status').then(setStatus)
       .catch(() => setError('Failed to load fabric status'))
       .finally(() => setLoading(false));
-    apiJson('/api/v1/native-ai/capabilities').then(d => setCapabilities(d.capabilities || [])).catch(() => {});
-    apiJson('/api/v1/native-ai/homeostasis').then(setHomeo).catch(() => {});
-    apiJson('/api/v1/native-ai/selfcheck').then(setSelfcheck).catch(() => {});
+    apiJson('/api/v1/native-ai/capabilities').then(d => setCapabilities(d.capabilities || [])).catch(noteRead('the capabilities'));
+    apiJson('/api/v1/native-ai/homeostasis').then(setHomeo).catch(noteRead('the homeostasis reading'));
+    apiJson('/api/v1/native-ai/selfcheck').then(setSelfcheck).catch(noteRead('the self-check'));
     apiJson<EvidenceLevels>('/api/v1/native-ai/evidence-levels').then(setEvLevels).catch(e => setEvErr(errorMessage(e)));
-    apiJson('/api/v1/native-ai/resources').then(setFabricRes).catch(() => {});
-    apiJson('/api/v1/native-ai/inventory').then(setInventory).catch(() => {});
+    apiJson('/api/v1/native-ai/resources').then(setFabricRes).catch(noteRead('the fabric resources'));
+    apiJson('/api/v1/native-ai/inventory').then(setInventory).catch(noteRead('the model inventory'));
     apiJson('/api/v1/native-ai/models')
-      .then(d => setModelTiers(d.tiers || [])).catch(() => {});
+      .then(d => setModelTiers(d.tiers || [])).catch(noteRead('the model tiers'));
     loadCascades();
     loadLifecycle();
     apiJson<InstalledModels>('/api/v1/native-ai/lifecycle/installed').then(setInstalled).catch(e => setInstErr(errorMessage(e)));
@@ -720,6 +723,7 @@ export const NativeAI: React.FC = () => {
 
   return (
     <div className="space-y-8 pb-24">
+      <ReadFailures failures={readFailures} />
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · Native AI Fabric</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">In-House AI Resources</h1>

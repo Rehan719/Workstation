@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { HeartPulse, Loader2, Play, Square, Activity, Sun, Moon, ShieldCheck, Zap } from 'lucide-react';
 import { apiJson } from '../../lib/api';   // W927 - a read is used only on a 2xx
+import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W929
 
 // W617 (FU-506, M2 v8 R6.2) — steps_failed is recorded per beat since W611 and was rendered by nothing
 interface Beat { beat: number; phase: string; intensity: number; realisation: number | null; health: number | null; actions: string[]; at: string; self_recovery?: string | null; steps_failed?: Record<string, string>; steps_failed_basis?: string }
@@ -75,11 +76,12 @@ const PHASE_ICON: Record<string, React.ComponentType<any>> = {
 };
 
 export const HeartbeatMonitor: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W929 - a read that fails is said
   const [s, setS] = useState<Status | null>(null);
   const [busy, setBusy] = useState(false);
   const [actErr, setActErr] = useState('');   // W329 — actions never fail silently
 
-  const load = () => apiJson('/api/v1/heartbeat/status').then(setS).catch(() => {});
+  const load = () => apiJson('/api/v1/heartbeat/status').then(x => { clearRead('the heartbeat status'); setS(x); }).catch(noteRead('the heartbeat status'));
   useEffect(() => { load(); const t = setInterval(load, 8000); return () => clearInterval(t); }, []);
 
   const act = async (path: string, body?: object) => {
@@ -99,6 +101,7 @@ export const HeartbeatMonitor: React.FC = () => {
 
   return (
     <div className="space-y-10 pb-24">
+      <ReadFailures failures={readFailures} />
       {actErr && <p className="text-vital text-xs font-bold">{actErr}</p>}
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · Continuous Autonomy</p>

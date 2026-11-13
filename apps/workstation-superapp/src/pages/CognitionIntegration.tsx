@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Network, CheckCircle2, Circle, Loader2, Sparkles, GitBranch, Layers, Brain } from 'lucide-react';
 import { apiJson, errorMessage } from '../lib/api';
+import { ReadFailures, useReadFailures } from '../components/ReadFailures';   // W929
 import { StageBadge, StageMark, FLOOR_STAGE_NOTE, stageOutcome, type StageData } from '../components/StageOutcome';
 
 interface Tier { tier: string; endpoint: string; role: string; connected: boolean;
@@ -14,6 +15,7 @@ interface Gap { gap: string; realisation: number; routed_to: string; endpoint: s
 interface Align { overall_realisation: number; measure?: string; gaps_routed: Gap[]; executed: any[]; gaps_basis?: string }
 
 export const CognitionIntegration: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W929 - a read that fails is said
   const [wiring, setWiring] = useState<Wiring | null>(null);
   const [knowledge, setKnowledge] = useState<any>(null);
   const [align, setAlign] = useState<Align | null>(null);
@@ -32,9 +34,9 @@ export const CognitionIntegration: React.FC = () => {
   const [solveRes, setSolveRes] = useState<any>(null);
 
   useEffect(() => {
-    apiJson('/api/v1/cognition/wiring').then(setWiring).catch(() => {});
-    apiJson('/api/v1/cognition/knowledge').then(setKnowledge).catch(() => {});
-    apiJson('/api/v1/intelligence/cognitive-engines').then(d => setEngineCat(d.engines || [])).catch(() => {});
+    apiJson('/api/v1/cognition/wiring').then(setWiring).catch(noteRead('the cognition wiring'));
+    apiJson('/api/v1/cognition/knowledge').then(setKnowledge).catch(noteRead('the knowledge sources'));
+    apiJson('/api/v1/intelligence/cognitive-engines').then(d => setEngineCat(d.engines || [])).catch(noteRead('the cognitive engines'));
   }, []);
 
   const toggleEngine = (id: string) =>
@@ -69,6 +71,7 @@ export const CognitionIntegration: React.FC = () => {
 
   return (
     <div className="space-y-10 pb-24">
+      <ReadFailures failures={readFailures} />
       {alignErr && <p className="text-vital text-xs font-bold">{alignErr}</p>}
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · Integration</p>

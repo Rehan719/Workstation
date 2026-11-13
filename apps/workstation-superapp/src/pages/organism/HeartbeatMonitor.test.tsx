@@ -64,4 +64,13 @@ describe('HeartbeatMonitor, the beat rows, rendered', () => {
     expect(screen.queryByTestId('beat-steps-failed')).toBeNull();
     expect(screen.queryByTestId('heartbeat-survival-note')).toBeNull();
   });
+
+  // W929 - the page's one read, refused: said where the page starts, with the server's reason, and nothing drawn from it
+  it('a refused status read is said, with the server\'s reason', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 503, json: async () => ({ detail: 'the heartbeat store could not be read' }) })));
+    mount();
+    expect((await screen.findByTestId('read-failure')).textContent)
+      .toBe('Could not read the heartbeat status — Failed (HTTP 503): the heartbeat store could not be read');
+    expect(screen.queryByTestId('beat-steps-failed')).toBeNull();
+  });
 });

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Boxes, Loader2, Activity, ChevronRight } from 'lucide-react';
 import { apiJson } from '../../lib/api';   // W927 - a read is used only on a 2xx
+import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W929
 
 // W481 (FU-122, sweep S8.1) — the transformation cascade writes a PROJECTION (arithmetic over two live
 // readings), never a simulation; records written before W481 carry the old `simulations` shape and its
@@ -36,6 +37,7 @@ interface TwinModel {
 }
 
 export const DigitalTwins: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W929 - a read that fails is said
   const [models, setModels] = useState<TwinModel[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<TwinModel | null>(null);
@@ -53,8 +55,8 @@ export const DigitalTwins: React.FC = () => {
                                           basis?: string } | null>(null);
 
   const loadModels = () => apiJson('/api/v1/twin/models')
-    .then(d => setModels(d.models ?? (Array.isArray(d) ? d : [])))
-    .catch(() => {});
+    .then(d => { clearRead('the twin models'); setModels(d.models ?? (Array.isArray(d) ? d : [])); })
+    .catch(noteRead('the twin models'));
 
   useEffect(() => {
     loadModels().finally(() => setLoading(false));
@@ -110,6 +112,7 @@ export const DigitalTwins: React.FC = () => {
 
   return (
     <div className="space-y-8 pb-24">
+      <ReadFailures failures={readFailures} />
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · Digital Resources</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Digital Twins</h1>
