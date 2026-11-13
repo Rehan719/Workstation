@@ -56128,6 +56128,7 @@ def test_p330_r7_the_vision_says_what_is_built(client):
     _instructors = sorted(p.relative_to(_root).as_posix()
                           for d in (_core / "avatars", _root / "apps/workstation-superapp/src")
                           for p in d.rglob("*") if p.suffix in (".py", ".ts", ".tsx")
+                          and not p.name.endswith(".test.tsx")      # W926 - a rendered test stubs the route, calls nothing
                           and "chief/instruct" in p.read_text(encoding="utf-8", errors="replace"))
     assert all(("BoardOfDirectors.tsx" in p or "VSBCockpit.tsx" in p) for p in _instructors), (
         "the note says no avatar or navigation path instructs the Chief; another caller of the route exists now",
@@ -78473,3 +78474,77 @@ def test_w925_p515_release_both_options_are_shown_where_a_tool_is_offered_before
     none = client.get("/api/v1/review-options", params={"endpoint": fx["none"]["endpoint"]})
     assert fx["none"]["status"] == none.status_code == 404 and fx["none"]["body"] == none.json()
     assert set(fx["status"]) <= set(client.get("/api/v1/native-ai/status").json())
+
+
+def test_w926_fu399_the_board_page_is_guarded_by_a_render_and_a_refused_read_is_never_drawn_as_a_standing(client, monkeypatch):
+    """FU-399 part 7 (W926). What the Board page says is about the Owner's own standing and decisions: whether the
+    Chief carries their record or is a role, what the charter makes the Board ratify, whether a topic was
+    deliberated or only framed, and what became of a change a review approved. Sixteen guards read the page's
+    source. BoardOfDirectors.test.tsx mounts the real page against the answers the board routes gave on a fresh store
+    and reads each claim in the DOM, including a ratification decided on the Owner's direction and one the server
+    refuses. Rendering it found two defects, both fixed here:
+    - the page read its status, charter and Chief model with no look at the HTTP status, so a refusal was set as the
+      answer: a failed model read rendered as "A role, not a modelled twin", and a failed status read blanked the
+      page. Each read now goes through apiJson, and a refusal is said with the server's reason;
+    - "\\u2019" in JSX text printed as six characters in a ratification row, because JSX text is not a JavaScript
+      string. No page now holds an escape in JSX text.
+    This guard holds what the render rests on:
+    - the test mounts the real page, and every id it reads is one the page renders;
+    - no read is drawn without its status checked;
+    - the captured answers are the live routes', field for field, in the parts the page reads."""
+    import json
+    import pathlib
+    import re
+    import uuid
+    root = pathlib.Path(__file__).resolve().parents[1]
+    app = root / "apps/workstation-superapp"
+    page_dir = app / "src/pages/enterprise"
+    page = (page_dir / "BoardOfDirectors.tsx").read_text(encoding="utf-8")
+    t = (page_dir / "BoardOfDirectors.test.tsx").read_text(encoding="utf-8")
+    assert "import { BoardOfDirectors } from './BoardOfDirectors';" in t and "<BoardOfDirectors />" in t, (
+        "the rendered test does not mount the real page")
+    for tid in set(re.findall(r"ByTestId\('([^']+)'\)", t)):
+        assert f'data-testid="{tid}"' in page, ("an id the test reads is not rendered by the page", tid)
+
+    #  no read is drawn without its status checked: the page's reads go through the checked helper
+    assert not re.search(r"fetch\([^)]*\)\s*\.then\(\s*\w+\s*=>\s*\w+\.json\(\)\s*\)\s*\.then\(set", page), (
+        "a read sets its state from a body whose status nobody looked at")
+    for route in ("/api/v1/board/status", "/api/v1/board/charter", "/api/v1/board/chief/model"):
+        assert f"('{route}').then(set" in page and f"apiJson<" in page.split(f"('{route}')")[0][-60:], route
+    #  JSX text is not a JavaScript string: an escape there is printed as it is written, on every page
+    for f in (app / "src").rglob("*.tsx"):
+        if f.name.endswith(".test.tsx"):
+            continue
+        for m in re.finditer(r">([^<>{}\n]*\\u[0-9a-fA-F]{4}[^<>{}\n]*)<", f.read_text(encoding="utf-8")):
+            raise AssertionError(("an escape sits in JSX text and is printed as written", f.name, m.group(1)[:80]))
+
+    #  the captured answers are the live routes', field for field, in the parts the page reads
+    fx = json.loads((page_dir / "BoardOfDirectors.fixture.json").read_text(encoding="utf-8"))
+    live_status = client.get("/api/v1/board/status").json()
+    for k in ("status", "status_after_topic", "status_after_instruction"):
+        assert set(fx[k]) <= set(live_status), (k, sorted(set(fx[k]) - set(live_status)))
+        assert set(fx[k]["chief"]) <= set(live_status["chief"]) and fx[k]["directors"], k
+    assert set(fx["charter"]) <= set(client.get("/api/v1/board/charter").json())
+    model = client.get("/api/v1/board/chief/model").json()
+    for k in ("model_role", "model_twin"):
+        assert set(fx[k]) <= set(model) and set(fx[k]["instructions"]) <= set(model["instructions"]), k
+    assert set(fx["ratifications_empty"]) <= set(client.get("/api/v1/board/ratifications").json())
+    topic = client.post("/api/v1/board/directive", json={"topic": f"W926 guard {uuid.uuid4().hex[:6]}", "scope": "workstation"})
+    assert topic.status_code == 200, topic.text[:300]
+    assert set(fx["topic_answer"]) <= set(topic.json()) and topic.json()["status"] == fx["topic_answer"]["status"]
+    said = client.post("/api/v1/board/chief/instruct", json={"instruction": "W926 guard: an instruction in its own scope",
+                                                            "cascade_to_ceo": False, "scope": f"w926-guard-{uuid.uuid4().hex[:6]}"})
+    assert said.status_code == 200 and set(fx["instruct_answer"]) <= set(said.json()), said.text[:300]
+    #  a change a review approved, as the captured row was made (the review's model substituted in this process only);
+    #  refused afterwards on the Owner's direction, so the queue is left as it was found
+    from agentic_core.api import change_control as CC
+    _w464_healthy(monkeypatch, CC)
+    _w464_serving(monkeypatch, CC)
+    sub = client.post("/api/v1/cca/submit", json={"title": f"W926 guard {uuid.uuid4().hex[:6]}", "description": "w926",
+                                                  "change_type": "code_change"}).json()
+    client.post(f"/api/v1/cca/{sub['cca_id']}/review", json={"reviewer_notes": "w926"})
+    row = next(x for x in client.get("/api/v1/board/ratifications").json()["pending"] if x["cca_id"] == sub["cca_id"])
+    assert set(fx["pending"]["pending"][0]) <= set(row), sorted(set(fx["pending"]["pending"][0]) - set(row))
+    done = client.post(f"/api/v1/board/ratifications/{sub['cca_id']}", json={"decision": "refuse", "notes": "w926 guard",
+                                                                              "on_owner_direction": True})
+    assert done.status_code == 200 and set(fx["ratified"]) <= set(done.json()), done.text[:300]

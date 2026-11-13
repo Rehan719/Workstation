@@ -106,13 +106,16 @@ export const BoardOfDirectors: React.FC = () => {
   };
 
   useEffect(() => {
-    fetch('/api/v1/board/status').then(r => r.json()).then(setStatus)
-      .catch(() => setLoadErr('Could not load the board status.'));
-    fetch('/api/v1/board/charter').then(r => r.json()).then(setCharter)
-      .catch(() => setLoadErr('Could not load the board charter.'));
+    //  W926 (FU-399 part 7) - each read goes through the checked helper. A refusal's body used to be set as the answer:
+    //  a failed read of the Chief's model rendered as "A role, not a modelled twin", and a failed status read blanked
+    //  the page. A refusal is now said with the server's reason, and nothing is drawn from it.
+    apiJson<Status>('/api/v1/board/status').then(setStatus)
+      .catch(e => setLoadErr(`Could not load the board status — ${errorMessage(e)}`));
+    apiJson<Charter>('/api/v1/board/charter').then(setCharter)
+      .catch(e => setLoadErr(`Could not load the board charter — ${errorMessage(e)}`));
     //  P3.4 (W587) — whether this Chief is a modelled twin or a role, and what it was built from
-    fetch('/api/v1/board/chief/model').then(r => r.json()).then(setChiefModel)
-      .catch(() => setChiefModelErr('Could not read whether this Chief is a modelled twin or a role.'));
+    apiJson<NonNullable<typeof chiefModel>>('/api/v1/board/chief/model').then(setChiefModel)
+      .catch(e => setChiefModelErr(`Could not read whether this Chief is a modelled twin or a role — ${errorMessage(e)}`));
     loadRatifications();
   }, []);
 
@@ -175,8 +178,8 @@ export const BoardOfDirectors: React.FC = () => {
         { method: 'POST', body: d ? { topic: t, domain: d, scope: 'workstation' } : { topic: t, scope: 'workstation' } });
       setBoardResult(r);
       setTopic('');
-      fetch('/api/v1/board/status').then(x => x.json()).then(setStatus)
-        .catch(() => setLoadErr('The topic was recorded, but the list of recent deliberations could not be re-read.'));
+      apiJson<Status>('/api/v1/board/status').then(setStatus)
+        .catch(e => setLoadErr(`The topic was recorded, but the list of recent deliberations could not be re-read — ${errorMessage(e)}`));
     } catch (e) {
       setBoardErr(`Not put to the Board: ${errorMessage(e)}`);
     }
@@ -275,7 +278,7 @@ export const BoardOfDirectors: React.FC = () => {
                 : q.decision_source === 'unrecorded_decision' ? 'a decision made before W459 that recorded no source (read as a review\u2019s)'
                 : q.decision_source}
               {q.decision_source_inferred && (
-                <span data-testid="ratification-source-inferred"> (read from the record\u2019s shape; the record itself names no source)</span>
+                <span data-testid="ratification-source-inferred"> (read from the record&rsquo;s shape; the record itself names no source)</span>
               )}
               {q.approved_at ? ` · ${q.approved_at}` : ''}{q.submitted_by ? ` · submitted by ${q.submitted_by}` : ''}{q.vsb_id ? ` · VSB ${q.vsb_id}` : ''}
             </p>
