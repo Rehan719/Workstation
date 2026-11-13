@@ -1,0 +1,21 @@
+{
+ "basis": "P5.22 (W972): every edition of the vision fidelity ledger kept in this tree, by the git blob it was pinned at on 2026-11-13. Editions 3 to 16 are kept whole at docs/VISION_FIDELITY_LEDGER_v<N>.md, and edition 17, the current one, is docs/VISION_FIDELITY_LEDGER.md; no file holds an edition before 3. The round that writes a new edition keeps the current one whole in its own numbered file, pins the new one and makes it the current edition. scripts/ledger_blobs.py holds it.",
+ "current_edition": 17,
+ "editions": {
+  "3": "5c0e00ed5da4859e0620ec1453f26a34a4af23ca",
+  "4": "16d064954356c93e31768e9261631f3c177cb168",
+  "5": "f47e3489922600b942acac3d3d77fee36ae66036",
+  "6": "a4f3f962c6f86da6ef410b53ef5b0569b37ac635",
+  "7": "50ce936c4f3662ef84f0af71cdd03b59ed8d65e8",
+  "8": "ec340c21d4f2b5d23fb2d3b9b98f74e6ce74b04c",
+  "9": "a08609d26736d05f6d3e5f6307ce62ab4d570c3e",
+  "10": "fcd8a9da4e6fc3c3046561a9b2030436c5c29524",
+  "11": "389bf0810639477cde71a7d704ce55394c5d04b8",
+  "12": "02414d6f55587d4bcd3cd9411c83b7af8b82bb30",
+  "13": "771445d65100b747bffa67e9a59268bf0eca8faf",
+  "14": "b254b3f5ab1378799a141a20f5fd914892f71c61",
+  "15": "45be3686251252337ebb3f3081d5a7a89419c3fb",
+  "16": "23afae404b734ebdda53010a98c5bca5d7c35dc2",
+  "17": "c15ab90d733d4fb2b814a75b58b54113cd8aca87"
+ }
+}

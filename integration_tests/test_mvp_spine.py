@@ -69517,7 +69517,9 @@ def test_w749_an_instrument_that_examined_nothing_refuses_and_reads_what_it_name
                     #  W966 (P5.10 clause 4) - the literal-outcome screen refuses an application with no handler
                     "scripts/literal_outcomes.py",
                     #  W970 (P5.22) - the census partition refuses a census with no surface
-                    "scripts/audit_census_partition.py"]
+                    "scripts/audit_census_partition.py",
+                    #  W972 (P5.22) - the ledger pins refuse when no edition is pinned
+                    "scripts/ledger_blobs.py"]
 
     def _emitted(src):
         """The strings a module can print or return - its docstrings left out, since a docstring saying the tool
@@ -81838,3 +81840,116 @@ def test_w971_p514_clause6_a_project_is_deleted_only_with_its_title_typed_back(c
     assert "axios.delete(`/api/v1/projects/${project.id}`, { params: { confirm_title: project.title } })" in page
     spine = Path(__file__).read_text(encoding="utf-8")
     assert not re.search(r'client\.delete\(f"/api/v1/projects/\{[A-Za-z_]+\}"\)', spine), "a delete in the suite sends no title"
+
+
+def test_w972_p522_earlier_ledgers_stay_the_blob_they_were_pinned_at(capsys, tmp_path):
+    """P5.22's ACCEPT property (6) (W972): earlier ledgers stay byte-identical. Every edition of the vision fidelity
+    ledger is pinned by its git blob in docs/LEDGER_BLOBS.json: the earlier ones in their numbered files, the current
+    one at docs/VISION_FIDELITY_LEDGER.md until a new edition replaces it. Held here:
+    - on this tree the pins run without a gap from edition 3, the first kept, to the current one, which is the edition
+      the current file says it is, and every pin holds;
+    - in a scratch repository, a Windows clone's converted line endings are not a change, for an edition committed
+      with LF and for one committed with CRLF. Each of these is refused with its own sentence: an edition changed by
+      one byte, one gone, the current one written over without being kept, a kept copy that is not byte-identical, a
+      new edition left unpinned, and a numbered edition nobody pinned. An audit that keeps the current edition whole
+      and pins the new one passes before it is committed, as a round's suite reads it;
+    - nothing pinned, or pins that cannot be read, is refused, never a pass."""
+    import importlib.util
+    import json
+    import os
+    import re
+    import shutil
+    import subprocess
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    spec = importlib.util.spec_from_file_location("w972_lb", root / "scripts/ledger_blobs.py")
+    lb = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(lb)
+    doc = json.loads((root / "docs/LEDGER_BLOBS.json").read_text(encoding="utf-8"))
+    cur = doc["current_edition"]
+    assert sorted(int(n) for n in doc["editions"]) == list(range(3, cur + 1)), sorted(doc["editions"])
+    head = (root / lb.CURRENT).read_text(encoding="utf-8").splitlines()[0]
+    assert re.match(rf"# Vision Fidelity Ledger — v{cur} \(", head), head
+    assert lb.check(doc) == []
+    assert lb.main() == 0 and f"ok - {cur - 2} edition(s)" in capsys.readouterr().out
+
+    #  a scratch repository: what a checkout may do passes, and each fault is refused with its own sentence
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+
+    def git(where, *args):
+        return subprocess.run(["git", *args], cwd=where, env=env, capture_output=True, text=True, check=True).stdout
+
+    C, V = lb.CURRENT, lb.kept_at
+    repo = tmp_path / "repo"
+    (repo / "docs").mkdir(parents=True)
+    git(repo, "init", "-q")
+    git(repo, "config", "core.autocrlf", "false")
+    (repo / V(1)).write_bytes(b"# v1\r\nfinding\r\n")          # committed with CRLF, as edition 3 is in this tree
+    (repo / V(2)).write_bytes(b"# v2\nfinding\n")
+    (repo / C).write_bytes(b"# v3\nfinding\n")
+    git(repo, "add", "docs")
+    stored = {line.split("\t", 1)[1]: line.split()[1] for line in git(repo, "ls-files", "-s").splitlines()}
+    pins = {"current_edition": 3, "editions": {"1": stored[V(1)], "2": stored[V(2)], "3": stored[C]}}
+    assert lb.check(pins, repo) == []
+    assert lb.check({"current_edition": 5, "editions": pins["editions"]}, repo) == [
+        "the current edition 5 is not among the pinned editions [1, 2, 3]"]
+
+    def case(name, change, pins_after=None):
+        there = tmp_path / name
+        shutil.copytree(repo, there)
+        change(there)
+        return lb.check(pins_after(there) if pins_after else pins, there)
+
+    def windows(r):                 # a Windows clone: the conversion on, and the files written with CRLF
+        git(r, "config", "core.autocrlf", "true")
+        for rel in (V(2), C):
+            (r / rel).write_bytes((r / rel).read_bytes().replace(b"\n", b"\r\n"))
+    assert case("windows", windows) == []
+
+    def one_byte(r):
+        (r / V(2)).write_bytes(b"# v2\nfinding!\n")
+    assert case("one_byte", one_byte) == [f"edition 2 changed: {V(2)} is not the blob {stored[V(2)][:12]} it was pinned at"]
+
+    def gone(r):
+        (r / V(1)).unlink()
+    assert case("gone", gone) == [f"edition 1 is not there: {V(1)}"]
+
+    def written_over(r):
+        (r / C).write_bytes(b"# v4\nnew finding\n")
+    assert case("written_over", written_over) == [
+        f"edition 3 (the current one) was written over in {C} and is not kept whole in {V(3)}"]
+
+    def audit(r):                   # the current edition kept whole, then the new one written in its place
+        shutil.copyfile(r / C, r / V(3))
+        (r / C).write_bytes(b"# v4\nnew finding\n")
+    assert case("audit_unpinned", audit) == [
+        f"{C} holds a new edition that is not pinned: pin it as edition 4 and make it the current edition"]
+
+    def pinned_4(r):
+        return {"current_edition": 4, "editions": {**pins["editions"], "4": git(r, "hash-object", "--", C).strip()}}
+    assert case("audit_pinned", audit, pinned_4) == []
+
+    def kept_altered(r):            # kept, but not byte-identical
+        (r / V(3)).write_bytes(b"# v3\nfinding, tidied\n")
+        (r / C).write_bytes(b"# v4\nnew finding\n")
+    assert case("kept_altered", kept_altered, pinned_4) == [
+        f"edition 3 changed: {V(3)} is not the blob {stored[C][:12]} it was pinned at"]
+    assert case("kept_altered_unpinned", kept_altered) == [
+        f"edition 3 changed: {V(3)} is not the blob {stored[C][:12]} it was pinned at",
+        f"{C} holds a new edition that is not pinned: pin it as edition 4 and make it the current edition"]
+
+    def stray(r):
+        (r / V(9)).write_bytes(b"# v9\n")
+    assert case("stray", stray) == [f"{V(9)} is an edition in the tree that is not pinned"]
+
+    #  nothing pinned, or pins that cannot be read, is refused
+    real = lb.PINS
+    try:
+        lb.PINS = tmp_path / "pins.json"
+        lb.PINS.write_text(json.dumps({"current_edition": 3, "editions": {}}), encoding="utf-8")
+        assert lb.main() == 2 and "examined nothing" in capsys.readouterr().out
+        lb.PINS.write_text("{not json", encoding="utf-8")
+        assert lb.main() == 2 and "could not be read" in capsys.readouterr().out
+    finally:
+        lb.PINS = real
