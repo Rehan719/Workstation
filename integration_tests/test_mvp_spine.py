@@ -82703,3 +82703,75 @@ def test_w982_no_action_parses_its_reply_before_it_has_checked_the_status():
     #  what makes the status sayable: bodyOrNull answers null for a body that is not JSON
     api = (src / "lib/api.ts").read_text(encoding="utf-8")
     assert "return r.json().then((b: T) => b, notJson);" in api and "const notJson = (): null => null;" in api
+
+
+def test_w983_fu399_the_vbs_panel_names_each_section_it_could_not_read_and_its_chips_carry_their_ids(client):
+    """FU-399 part 15 (W983). The VBS systems panel is on the Cockpit, and it is where the Owner turns the defect loop
+    on their own store (FU-1038). VBSSystemsPanel.test.tsx mounts the real panel against the answers the VBS routes
+    gave on a fresh store and drives the Owner's loop: a defect under a label no live surface uses closed as its source
+    retired with the reason typed once, the next reported not reproducible with the same reason, and a live label's
+    closure refused in the route's words. Rendering it found two defects, fixed here:
+    - a section that could not be read lost the server's reason, and only the first two were named ("N section(s)
+      failed to load" with each URL and status); each now says its own failure through the shared read-failure list;
+    - the "no gate has run" chip's test id was never in the page: it was given to the panel's Chip, which took only
+      tone, title and children - TypeScript does not check a hyphenated attribute against a component's props - so a
+      guard reading the id in this file's source passed while no render could find it. Chip passes the id on.
+    Held here: the panel's code carries what the render reads; the catalogue is the route's own, word for word; the
+    defect listing's fields are the fixture's; and the disposal routes' refusals are the ones the fixture holds."""
+    import json
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    cdir = root / "apps/workstation-superapp/src/components"
+    panel = (cdir / "VBSSystemsPanel.tsx").read_text(encoding="utf-8")
+    shared = (cdir / "ReadFailures.tsx").read_text(encoding="utf-8")
+    t = (cdir / "VBSSystemsPanel.test.tsx").read_text(encoding="utf-8")
+    assert "import { VBSSystemsPanel } from './VBSSystemsPanel';" in t and "<VBSSystemsPanel />" in t
+    read = set(re.findall(r"ByTestId\('([^']+)'\)", t))
+    assert {"qms-no-gates", "defect-dispose", "defect-dispose-reason", "defect-close-retired", "defect-not-reproducible",
+            "defect-retired-route", "defect-closure", "read-failure"} <= read, sorted(read)
+    for tid in read:
+        assert f'data-testid="{tid}"' in panel or f'data-testid="{tid}"' in shared, tid
+
+    code = _code_only(panel)
+    #  each section's read says its own failure, with the server's reason
+    assert "apiJson(url).then(d => { set(d); clearRead(what); }).catch(noteRead(what));" in code
+    assert "<ReadFailures failures={readFailures} />" in code and "section(s) failed to load" not in code
+    #  the chip passes its test id on, so an id given to it is in the page
+    chip = code[code.index("function Chip("):code.index("export const VBSSystemsPanel")]
+    assert "'data-testid': testId" in chip and "data-testid={testId}" in chip, chip
+    #  and every component the app gives a test id passes it on. Measured here: the shared Card, Button and Badge
+    #  spread the rest of their props onto their element, react-router's Link does the same, and Chip was the one
+    #  that dropped it. A new component given an id must say how it passes it on, or this names it.
+    given = {}
+    app_src = root / "apps/workstation-superapp/src"
+    for f in app_src.rglob("*.tsx"):
+        if f.name.endswith(".test.tsx"):
+            continue
+        for m in re.finditer(r"<([A-Z]\w*)\b([^<>]*?)\bdata-testid=", f.read_text(encoding="utf-8")):
+            given.setdefault(m.group(1), f.relative_to(app_src).as_posix())
+    ui = (root / "packages/ui/src/index.tsx").read_text(encoding="utf-8")
+    shared_ok = {n for n in ("Card", "Button", "Badge")
+                 if re.search(rf"export const {n} = \(\{{[^}}]*\.\.\.(props|rest) \}}: any\)", ui)}
+    assert shared_ok == {"Card", "Button", "Badge"}, ("a shared component no longer spreads the rest of its props", shared_ok)
+    unchecked = sorted(n for n in given if n not in shared_ok | {"Link", "Chip"})
+    assert unchecked == [], ("a component is given a test id this census has not checked passes it on",
+                             {n: given[n] for n in unchecked})
+
+    #  the routes answer the fixture's fields; the catalogue is the route's own word for word
+    fx = json.loads((cdir / "VBSSystemsPanel.fixture.json").read_text(encoding="utf-8"))
+    assert client.get("/api/v1/vbs/systems").json() == fx["systems"]
+    live = client.get("/api/v1/vbs/qms/defects").json()
+    assert set(fx["defects_open"]["summary"]) <= set(live["summary"]), sorted(set(fx["defects_open"]["summary"]) - set(live["summary"]))
+    assert {"summary", "defects", "real"} <= set(live) and set(fx["defects_open"]) <= set(live) | {"store_incomplete", "listing_is_incomplete"}
+    row = fx["defects_open"]["defects"][0]
+    assert {"id", "label", "status", "label_live", "meta", "what_if"} <= set(row), sorted(row)
+    no = client.post("/api/v1/vbs/qms/defects/w983-no-such-defect/not-reproducible", json={"tried": "w983 a probe of no defect"})
+    assert {"status": no.status_code, "body": no.json()} == fx["refused_unknown"], no.text[:300]
+    #  a live label is refused without its route, in the route's words (driven in the capture; the sentence is the route's)
+    src = (root / "agentic_core/api/vbs_systems.py").read_text(encoding="utf-8")
+    refusal = fx["refused_live_label"]
+    assert refusal["status"] == 409 and "is a label a live surface still opens defects under" in refusal["body"]["detail"]
+    assert "is a label a live surface still opens defects under" in src
+    closure = fx["closed_retired"]["defect"]["closure"]
+    assert closure["how"] == "closed_source_retired" and closure["source_check"].startswith("checked:"), closure

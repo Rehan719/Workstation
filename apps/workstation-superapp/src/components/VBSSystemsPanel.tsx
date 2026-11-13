@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { ShieldCheck, FileCheck2, Coins, Leaf, Network, Loader2, Play, Wrench, RotateCcw, Archive, HelpCircle } from 'lucide-react';
 import { apiJson, errorMessage } from '../lib/api';
+import { ReadFailures, useReadFailures } from './ReadFailures';   // W983
 
 // W440 — the VBS management systems (QMS · DCMS · BMS · EMS · Mycelial backbone), audited then
 // wired. These engines were already honest (real gates, persistent defects, SHA3-512 seals with a
@@ -26,9 +27,13 @@ interface DefectSummary { gates_run: number; defects_total: number; gate_failure
   // W853 (FU-1038) - the two ways out that are not a re-verification, counted apart from `closed`
   closed_source_retired?: number; not_reproducible?: number; open_from_retired_labels?: number; dispositions_basis?: string; closed_basis?: string }
 
-function Chip({ tone, children, title }: { tone: 'ok' | 'warn' | 'dim'; children: React.ReactNode; title?: string }) {
+//  W983 (FU-399 part 15) - the test id is passed on. TypeScript does not check a hyphenated attribute against a
+//  component's props, so `data-testid` given to a Chip compiled and was dropped: the id a guard reads in this file
+//  was never in the page.
+function Chip({ tone, children, title, 'data-testid': testId }: { tone: 'ok' | 'warn' | 'dim'; children: React.ReactNode;
+                                                                  title?: string; 'data-testid'?: string }) {
   const cls = tone === 'ok' ? 'bg-emerald-500/15 text-emerald-400' : tone === 'warn' ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-400';
-  return <span title={title} className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${cls}`}>{children}</span>;
+  return <span title={title} data-testid={testId} className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${cls}`}>{children}</span>;
 }
 
 export const VBSSystemsPanel: React.FC = () => {
@@ -40,21 +45,20 @@ export const VBSSystemsPanel: React.FC = () => {
   const [docCtl, setDocCtl] = useState<any>(null);
   const [bbHealth, setBbHealth] = useState<any>(null);
   const [err, setErr] = useState('');
-  const [loadErrs, setLoadErrs] = useState<string[]>([]);
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W983
   const [busy, setBusy] = useState('');
 
-  const getJson = (url: string, set: (d: any) => void) =>
-    fetch(url)
-      .then(r => (r.ok ? r.json() : Promise.reject(new Error(`${url} → HTTP ${r.status}`))))
-      .then(set)
-      .catch(e => setLoadErrs(errs => [...errs, String(e?.message ?? e)]));
+  //  W983 (FU-399 part 15) - EACH SECTION'S READ SAYS ITS OWN FAILURE, WITH THE SERVER'S REASON. This said
+  //  "N section(s) failed to load" with each URL and status alone, and named only the first two. A read that
+  //  succeeds again clears its own failure.
+  const getJson = (what: string, url: string, set: (d: any) => void) =>
+    apiJson(url).then(d => { set(d); clearRead(what); }).catch(noteRead(what));
 
   const loadAll = () => {
-    setLoadErrs([]);
-    getJson('/api/v1/vbs/systems', d => setSystems(d.systems || []));
-    getJson('/api/v1/vbs/qms/defects', setDefects);
-    getJson('/api/v1/vbs/qms/document-control', setDocCtl);
-    getJson('/api/v1/vbs/backbone/health', setBbHealth);
+    getJson('the VBS systems', '/api/v1/vbs/systems', d => setSystems(d.systems || []));
+    getJson('the QMS defects', '/api/v1/vbs/qms/defects', setDefects);
+    getJson('the document control record', '/api/v1/vbs/qms/document-control', setDocCtl);
+    getJson('the backbone health', '/api/v1/vbs/backbone/health', setBbHealth);
   };
   useEffect(loadAll, []);
 
@@ -180,7 +184,7 @@ export const VBSSystemsPanel: React.FC = () => {
   return (
     <div className="space-y-4">
       {err && <p className="text-vital text-xs font-bold">{err}</p>}
-      {loadErrs.length > 0 && <p className="text-amber-400 text-[10px] font-bold">{loadErrs.length} section(s) failed to load — {loadErrs.slice(0, 2).join(' · ')}</p>}
+      <ReadFailures failures={readFailures} />
 
       {/* catalogue: the real-vs-simulated split IS the content */}
       {systems && (
