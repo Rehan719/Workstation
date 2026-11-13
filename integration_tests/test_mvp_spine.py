@@ -69519,7 +69519,9 @@ def test_w749_an_instrument_that_examined_nothing_refuses_and_reads_what_it_name
                     #  W970 (P5.22) - the census partition refuses a census with no surface
                     "scripts/audit_census_partition.py",
                     #  W972 (P5.22) - the ledger pins refuse when no edition is pinned
-                    "scripts/ledger_blobs.py"]
+                    "scripts/ledger_blobs.py",
+                    #  W973 (P5.22) - completeness refuses a record where no configuration ran a slice
+                    "scripts/audit_completeness.py"]
 
     def _emitted(src):
         """The strings a module can print or return - its docstrings left out, since a docstring saying the tool
@@ -81953,3 +81955,120 @@ def test_w972_p522_earlier_ledgers_stay_the_blob_they_were_pinned_at(capsys, tmp
         assert lb.main() == 2 and "could not be read" in capsys.readouterr().out
     finally:
         lb.PINS = real
+
+
+def test_w973_p522_the_final_audit_is_complete_only_uncapped_unfailed_on_one_commit_in_both_configurations(capsys, tmp_path):
+    """P5.22's ACCEPT properties (3), (4), (5) and (7) (W973). The final audit is complete only when no slice
+    stopped at a cap or left a finding unlisted; every declared slice has exactly one result, which completed and
+    exercised something; every slice measured one commit, which this repository holds and the ledger names; and both
+    configurations ran, or the one that did not says why. Held here, on a run record planted over this tree's own
+    declared slices and HEAD:
+    - a run of both configurations, and a run whose local model did not run and says why, are complete;
+    - each fault is refused with its own sentence: a slice at the cap, one silent about the cap, findings left
+      unlisted, a failed slice, a slice with no result, two results for one slice, a slice that examined nothing, a
+      result for an undeclared slice, a slice that measured another commit, a run commit this repository does not
+      hold, a run commit the ledger does not name, no commit reported, a configuration absent, one that did not run
+      without saying why, and one that is neither configuration;
+    - from the command line: COMPLETE is 0, INCOMPLETE is 1 with each reason, and a record where no configuration
+      ran a slice, or one that cannot be read, is refused, never a verdict."""
+    import copy
+    import importlib.util
+    import json
+    import os
+    import subprocess
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    spec = importlib.util.spec_from_file_location("w973_ac", root / "scripts/audit_completeness.py")
+    ac = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ac)
+    declared = ac.declared_slices(json.loads((root / "docs/AUDIT_SLICES.json").read_text(encoding="utf-8")))
+    assert len(declared) > 1 and len(set(declared)) == len(declared), declared
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=root, env=env, capture_output=True, text=True,
+                          check=True).stdout.strip()
+    a, b = declared[0], declared[1]
+
+    def result(sid):
+        return {"region": sid, "status": "ok", "measured_commit": head, "hit_the_cap": False, "unlisted_findings": 0,
+                "surfaces_exercised": {"routes": [f"GET /w973/{sid}"], "files": []}, "findings": [], "verdicts": []}
+
+    whole = {"measured_commit": head,
+             "configurations": {c: {"ran": True, "slices": [result(s) for s in declared]} for c in ac.CONFIGURATIONS}}
+    assert ac.reasons(whole, declared, head) == []
+    one = copy.deepcopy(whole)
+    one["configurations"]["local_model"] = {"ran": False, "why_not": "no local model is installed on the machine that ran it"}
+    assert ac.reasons(one, declared, head) == []
+
+    def fault(change, ledger=head):
+        run = copy.deepcopy(whole)
+        change(run)
+        return ac.reasons(run, declared, ledger)
+
+    def floor_slice(sid, **fields):
+        def change(run):
+            for r in run["configurations"]["floor"]["slices"]:
+                if r["region"] == sid:
+                    r.update(fields)
+        return change
+
+    F = "floor"
+    assert fault(floor_slice(a, hit_the_cap=True)) == [f"{F}: slice {a} stopped at a cap"]
+    assert fault(floor_slice(a, hit_the_cap=None)) == [f"{F}: slice {a} does not say whether it stopped at a cap"]
+    assert fault(floor_slice(a, unlisted_findings=3)) == [f"{F}: slice {a} left 3 finding(s) unlisted"]
+    assert fault(floor_slice(a, unlisted_findings=True)) == [
+        f"{F}: slice {a} does not say how many findings it left unlisted"]
+    assert fault(floor_slice(a, status="failed", error="the assessor timed out")) == [
+        f"{F}: slice {a} did not complete (status 'failed': the assessor timed out)"]
+    assert fault(floor_slice(a, surfaces_exercised={"routes": [], "files": []})) == [
+        f"{F}: slice {a} examined nothing: it lists no route or page it exercised"]
+    assert fault(floor_slice(a, measured_commit="0" * 40)) == [
+        f"{F}: slice {a} measured {'0' * 12}, not the run's {head[:12]}"]
+
+    def drop(run):
+        run["configurations"]["floor"]["slices"] = [r for r in run["configurations"]["floor"]["slices"] if r["region"] != b]
+    assert fault(drop) == [f"{F}: slice {b} has no result, and a slice the run did not return is a failed one"]
+
+    def twice(run):
+        run["configurations"]["floor"]["slices"].append(result(b))
+    assert fault(twice) == [f"{F}: slice {b} has 2 results, and which one counts is not said"]
+
+    def stray(run):
+        run["configurations"]["floor"]["slices"].append(result("w973-undeclared"))
+    assert fault(stray) == [f"{F}: there is a result for w973-undeclared, which is not a declared slice"]
+
+    def unknown_commit(run):
+        run["measured_commit"] = "f" * 40
+        for c in run["configurations"].values():
+            for r in c["slices"]:
+                r["measured_commit"] = "f" * 40
+    assert fault(unknown_commit, ledger="f" * 40) == [f"the run measured {'f' * 12}, which is not a commit in this repository"]
+    assert fault(lambda run: None, ledger="1" * 40) == [f"the ledger names {'1' * 12} and the run measured {head[:12]}"]
+    got = fault(lambda run: run.pop("measured_commit"))
+    assert got == ["the run does not report the commit it measured as a full commit id (it says None)"], got
+    assert fault(lambda run: run["configurations"].pop("local_model")) == [
+        "the local_model configuration is not in the run, and nothing says why"]
+    assert fault(lambda run: run["configurations"].update(local_model={"ran": False, "why_not": "  "})) == [
+        "the local_model configuration did not run, and it does not say why"]
+    assert fault(lambda run: run["configurations"].update(cloud={"ran": True, "slices": []})) == [
+        "the run names a configuration that is neither the floor nor the local model: cloud"]
+
+    #  the command line: a verdict, each reason, or a refusal
+    path = tmp_path / "run.json"
+
+    def cli(run, ledger=head):
+        path.write_text(json.dumps(run) if not isinstance(run, str) else run, encoding="utf-8")
+        return ac.main([str(path), ledger]), capsys.readouterr().out
+
+    code, said = cli(one)
+    assert code == 0 and said.startswith(f"COMPLETE - {len(declared)} slice(s) in floor, none capped, failed or empty") \
+        and "the local_model configuration did not run: no local model is installed" in said, said
+    capped = copy.deepcopy(whole)
+    capped["configurations"]["local_model"]["slices"][0]["hit_the_cap"] = True
+    code, said = cli(capped)
+    assert code == 1 and f"local_model: slice {a} stopped at a cap" in said and "INCOMPLETE - 1 reason(s)" in said, said
+    nothing = {"measured_commit": head, "configurations": {c: {"ran": False, "why_not": "w973"} for c in ac.CONFIGURATIONS}}
+    code, said = cli(nothing)
+    assert code == 2 and "examined nothing" in said and "no configuration ran a slice" in said, said
+    code, said = cli("{not json")
+    assert code == 2 and "could not be read" in said, said
