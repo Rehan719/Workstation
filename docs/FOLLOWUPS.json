@@ -23425,11 +23425,32 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P4.5",
+      "status": "done",
+      "closed_by": "W884",
+      "note": "",
+      "slot_source": "the deploy dry-run item, as FU-1156: the image is what P4.5 deploys",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W883b, the round that found it: the Dockerfile no longer copies core/, and test_w883b holds that every path the Dockerfile copies exists in the repository and is not left out of the build context by .dockerignore. The close is recorded by W884 because the register refused W883b (see the row on its two round-id patterns)."
+    },
+    {
+      "id": "FU-1170",
+      "title": "The register reads a round id two ways: its close command takes W883b, its save-time check refuses it",
+      "why": "Found in W884 recording W883b's close. agentic_core/plan_followups.py has ROUND_ID = W\\d{3,}[a-z]? (is_round_id, used by the close command and every rate and projection) and _ROUND = ^W\\d+$ (used by check() and one more reader), so a close the command accepts is refused when the register is saved. One rule, two implementations.",
+      "source": "W884 (recording W883b's close)",
+      "found": "2026-11-13",
+      "files": [
+        "agentic_core/plan_followups.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.1",
       "status": "open",
       "closed_by": null,
       "note": "",
-      "slot_source": "the deploy dry-run item, as FU-1156: the image is what P4.5 deploys",
-      "tier": 1
+      "slot_source": "the register's own tooling, which rides the suite-and-tooling item as the other instrument rows do",
+      "tier": 3
     }
   ],
   "routes": [

@@ -75851,3 +75851,63 @@ def test_w883b_every_path_the_dockerfile_copies_exists_and_ships():
     shut_out = [s for s in sources if s.rstrip("/").lstrip("./") in ignored]
     assert not shut_out, ("the Dockerfile copies paths .dockerignore leaves out of the build context", shut_out)
     assert "core" not in [s.rstrip("/").lstrip("./") for s in sources], "the image copies core/, which W877 moved out"
+
+
+def test_w884_with_sign_in_on_a_second_person_reaches_none_of_the_first_persons_economy_or_plan(client, monkeypatch):
+    """FU-1061 (W884, second group: the economy and the business plan). Measured as two people over HTTP: every
+    per-entity economy route and the plan's routes already answered the first person's entity as not found to a
+    second person, and this guard holds each one. One read did not: the unmarked-debit audit, asked without an
+    entity, read every entity's ledgers for any signed-in person. Under sign-in the list across every entity is an
+    administrator's; a person names their own entity."""
+    import uuid as _uuid884
+    import agentic_core.auth.core as _ac884
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    users = _ac884._load_users()
+    who = {}
+    for k, role in (("one", "user"), ("two", "user"), ("admin", "admin")):
+        name = f"w884-{k}-{_uuid884.uuid4().hex[:6]}"
+        users[name] = {"username": name, "hashed_password": _ac884._pwd_ctx.hash("pw12345678"), "role": role}
+        who[k] = name
+    _ac884._save_users(users)
+    H = {}
+    for k, name in who.items():
+        tok = client.post("/api/v1/auth/token", data={"username": name, "password": "pw12345678"})
+        assert tok.status_code == 200, tok.text[:200]
+        H[k] = {"Authorization": "Bearer " + tok.json()["access_token"]}
+    est = client.post("/api/v1/genesis/establish", headers=H["one"], json={
+        "problem": "w884 a venture of the first person", "ship_output": False, "name": "W884 One"})
+    assert est.status_code == 200, est.text[:300]
+    vid = est.json()["vsb_id"]
+    assert client.post("/api/v1/economy/cycle", headers=H["one"], json={"vsb_id": vid, "revenue": 50.0}).status_code == 200
+
+    #  1. every per-entity economy route, and the plan's: not found for the second person, found for the first
+    probes = [("get", f"/api/v1/economy/ledger/{vid}", {}),
+              ("get", "/api/v1/economy/owner-payments", {"params": {"vsb_id": vid}}),
+              ("get", "/api/v1/economy/waterfall", {"params": {"vsb_id": vid}}),
+              ("get", "/api/v1/economy/status", {"params": {"vsb_id": vid}}),
+              ("get", "/api/v1/economy/venture-funding-share", {"params": {"vsb_id": vid}}),
+              ("get", "/api/v1/economy/board-pack", {"params": {"vsb_id": vid}}),
+              ("get", "/api/v1/economy/ventures/portfolio", {"params": {"vsb_id": vid}}),
+              ("get", "/api/v1/economy/ventures/candidates", {"params": {"vsb_id": vid}}),
+              ("get", "/api/v1/economy/transfers/open", {"params": {"from_vsb": vid}}),
+              ("get", "/api/v1/economy/transfers/intake-sources", {"params": {"vsb_id": vid}}),
+              ("get", f"/api/v1/economy/living-vsbs/{vid}/retirement-check", {}),
+              ("get", "/api/v1/economy/transfers/unmarked-audit", {"params": {"vsb_id": vid}}),
+              ("post", "/api/v1/economy/cycle", {"json": {"vsb_id": vid, "revenue": 1.0}}),
+              ("post", f"/api/v1/economy/ledger/{vid}/repair", {}),
+              ("get", "/api/v1/business-plan", {"params": {"scope": vid}}),
+              ("get", "/api/v1/business-plan/roadmap", {"params": {"scope": vid}}),
+              ("get", "/api/v1/business-plan/progress", {"params": {"scope": vid}})]
+    for method, path, kw in probes:
+        r = getattr(client, method)(path, headers=H["two"], **kw)
+        assert r.status_code == 404, (method, path, r.status_code, r.text[:200])
+    assert client.get(f"/api/v1/economy/ledger/{vid}", headers=H["one"]).status_code == 200
+    assert vid not in str(client.get("/api/v1/economy/living-vsbs", headers=H["two"]).json())
+    assert vid not in str(client.get("/api/v1/economy/contracts", headers=H["two"]).json())
+
+    #  2. the unmarked-debit audit across every entity is an administrator's; a person names their own entity
+    r = client.get("/api/v1/economy/transfers/unmarked-audit", headers=H["two"])
+    assert r.status_code == 403 and "Name your own entity" in r.json()["detail"], r.text[:300]
+    assert client.get("/api/v1/economy/transfers/unmarked-audit", headers=H["admin"]).status_code == 200
+    own = client.get("/api/v1/economy/transfers/unmarked-audit", headers=H["one"], params={"vsb_id": vid})
+    assert own.status_code == 200, own.text[:200]

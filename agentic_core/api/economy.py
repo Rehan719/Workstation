@@ -122,6 +122,16 @@ async def unmarked_debit_audit(vsb_id: Optional[str] = None, limit: int = 200,
     """
     if vsb_id:
         _require_economy_access(vsb_id, user)
+    else:
+        #  W884 (FU-1061) - asked without an entity this read EVERY entity's ledgers for any signed-in person. The
+        #  list across all of them is the Owner's to decide from, so under sign-in it is an administrator's; a
+        #  person names their own entity.
+        from agentic_core.auth.core import auth_enabled as _auth_on884
+        _u884 = user if isinstance(user, dict) else None
+        if _auth_on884() and not (_u884 and _u884.get("role") == "admin"):
+            raise HTTPException(status_code=403, detail=(
+                "Listing the unmarked debits of every entity is an administrator's, because each one is the "
+                "Owner's to decide. Name your own entity with vsb_id."))
     from agentic_core.economy.transfers import audit_unmarked_debits
     return audit_unmarked_debits(from_vsb=vsb_id, limit=limit)
 
