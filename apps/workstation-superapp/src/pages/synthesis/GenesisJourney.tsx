@@ -915,7 +915,7 @@ export const GenesisJourney: React.FC = () => {
                   this renders it IN PLACE OF the ranked cards, which would otherwise imply three
                   distinct options were weighed. */}
               {result.stage_5_model_simulate_rank.candidates_are_alternatives === false ? (
-                <div role="status" className="p-3 rounded-xl border border-amber-500/30 bg-amber-500/5 mb-2">
+                <div role="status" data-testid="rank-not-alternatives" className="p-3 rounded-xl border border-amber-500/30 bg-amber-500/5 mb-2">
                   <p className="text-[10px] font-bold text-amber-400 leading-relaxed">
                     {result.stage_5_model_simulate_rank.comparison_note ||
                       'All candidates returned identical text — no comparison was possible, so no ranking is shown.'}
@@ -926,16 +926,16 @@ export const GenesisJourney: React.FC = () => {
                 {result.stage_5_model_simulate_rank.candidates.map(c => {
                   const isWin = c.id === result.stage_5_model_simulate_rank!.selected;
                   return (
-                    <div key={c.id} className={`p-3 rounded-xl border ${isWin ? 'border-aura/50 bg-aura/10' : 'border-slate-800 bg-slate-950'}`}>
+                    <div key={c.id} data-testid={`rank-candidate-${c.id}`} className={`p-3 rounded-xl border ${isWin ? 'border-aura/50 bg-aura/10' : 'border-slate-800 bg-slate-950'}`}>
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 min-w-0">
                           <span className={`text-[9px] font-black w-5 h-5 rounded-full flex items-center justify-center ${isWin ? 'bg-aura text-sovereign' : 'bg-slate-800 text-slate-400'}`}>{c.rank}</span>
                           <span className="text-[11px] font-black text-white uppercase tracking-wide truncate">{c.id}</span>
-                          {isWin && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-aura/20 text-aura shrink-0">selected</span>}
+                          {isWin && <span data-testid="rank-selected" className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-aura/20 text-aura shrink-0">selected</span>}
                           {/* W485 — a vetoed candidate is SHOWN as vetoed. The page used to print the veto
                               sentence while chipping the same candidate 'selected' and carrying it into Design. */}
                           {(result.stage_5_model_simulate_rank!.vetoed || []).includes(c.id) &&
-                            <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-vital/20 text-vital shrink-0"
+                            <span data-testid="rank-vetoed" className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-vital/20 text-vital shrink-0"
                               title="§11 screen FAIL — this candidate cannot be selected">vetoed</span>}
                         </div>
                         <span className="text-[9px] font-mono text-slate-500 shrink-0" title={`coverage ${c.coverage} · specificity ${c.specificity} · structure ${c.structure}`}>
@@ -953,7 +953,7 @@ export const GenesisJourney: React.FC = () => {
                 })}
               </div>
               )}
-              <p className="text-[9px] text-slate-600 mt-2">
+              <p data-testid="rank-selection-basis" className="text-[9px] text-slate-600 mt-2">
                 {result.stage_5_model_simulate_rank.selection_basis}
                 {result.stage_5_model_simulate_rank.blocked_by_screen
                   ? " — nothing is carried into Design: the journey stops here."
@@ -964,7 +964,7 @@ export const GenesisJourney: React.FC = () => {
               {/* W485 (ledger v5 R1.3) — every candidate vetoed means the journey STOPPED. Said where the
                   reader is, not only in the payload. */}
               {result.stage_5_model_simulate_rank.blocked_by_screen && (
-                <div role="status" className="mt-2 p-3 rounded-xl border border-vital/40 bg-vital/5">
+                <div role="status" data-testid="rank-blocked" className="mt-2 p-3 rounded-xl border border-vital/40 bg-vital/5">
                   <p className="text-[10px] font-black uppercase tracking-widest text-vital mb-1">Blocked by the §11 screen</p>
                   <p className="text-[10px] font-bold text-slate-300 leading-relaxed">
                     {result.stage_5_model_simulate_rank.blocked_reason

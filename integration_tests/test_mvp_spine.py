@@ -78300,3 +78300,48 @@ def test_w923_fu742_the_guides_price_section_is_put_to_the_owner_with_the_recomm
     assert f"waits on your decision in row {row['id']}: whether this guide may quote" in guide
     assert "[owner decision]" in guide and "stays open for it" not in guide
     assert not re.search(r"[£$€]\s*\d|\b(GBP|USD|EUR)\s*\d", guide), "the guide quotes a price before the ruling"
+
+
+def test_w924_fu399_a_genesis_journeys_stage_rail_and_rank_stage_are_guarded_by_a_render(client):
+    """FU-399 part 6 (W924). What each stage of a Genesis journey did is a claim about what a founder sees.
+    GenesisJourney.test.tsx mounts the real page and runs one journey against the answer the journey route gave on the
+    native floor. It reads the stage rail and the rank stage in the DOM, then the same answer changed the ways the
+    server changes it. Each stage that ran says so with the journey's own reason, and identical candidates are "not
+    ranked". A verified stage says verified, and the winner is chipped and carried into Design. A journey the section
+    11 screen stopped says its unreached stages were not run and shows every candidate vetoed. A stage with no
+    verification entry says not known. Eight page blinds turn it red, run by the round as it runs tsc. This guard
+    holds what the render rests on:
+    - the test mounts the real page;
+    - every id it reads is one the page renders;
+    - the captured journey is one the live route still gives, field for field, in the parts the rail and the rank
+      stage read;
+    - the page's own build of the rail still reads stage_verifications and the rank stage's candidates."""
+    import json
+    import pathlib
+    page_dir = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/pages/synthesis"
+    page = (page_dir / "GenesisJourney.tsx").read_text(encoding="utf-8")
+    t = (page_dir / "GenesisJourney.test.tsx").read_text(encoding="utf-8")
+    assert "import { GenesisJourney } from './GenesisJourney';" in t and "<GenesisJourney />" in t, (
+        "the rendered test does not mount the real page")
+    for tid in ("rank-not-alternatives", "rank-selected", "rank-vetoed", "rank-selection-basis", "rank-blocked"):
+        assert f"'{tid}'" in t and f'data-testid="{tid}"' in page, ("an id the test reads is not rendered", tid)
+    for tid in ("rail-state-", "rail-why-", "rank-candidate-"):
+        assert ("`" + tid + "${") in t and ("data-testid={`" + tid + "${") in page, tid
+    assert "const v = r.stage_verifications?.[key];" in page and "r.stage_5_model_simulate_rank?.candidates" in page
+
+    #  the captured journey, against one the live route gives now for the same request
+    fx = json.loads((page_dir / "GenesisJourney.fixture.json").read_text(encoding="utf-8"))
+    live = client.post("/api/v1/genesis/journey", json=fx["request"])
+    assert live.status_code == 200, live.text[:300]
+    j, cap = live.json(), fx["journey"]
+    assert set(cap) <= set(j), ("the captured journey holds a field the live one no longer has", sorted(set(cap) - set(j)))
+    assert set(cap["stage_verifications"]) == set(j["stage_verifications"]), (
+        sorted(set(cap["stage_verifications"]) ^ set(j["stage_verifications"])))
+    for k, v in cap["stage_verifications"].items():
+        assert set(v) <= set(j["stage_verifications"][k]), (k, sorted(set(v) - set(j["stage_verifications"][k])))
+    r5, r5_live = cap["stage_5_model_simulate_rank"], j["stage_5_model_simulate_rank"]
+    assert set(r5) <= set(r5_live), sorted(set(r5) - set(r5_live))
+    assert set(r5["candidates"][0]) <= set(r5_live["candidates"][0]), sorted(set(r5["candidates"][0]) - set(r5_live["candidates"][0]))
+    #  the page's two mount-time reads are the API's own answers too
+    assert set(fx["entity_types"]) <= set(client.get("/api/v1/economy/entity-types").json())
+    assert set(fx["price"]) <= set(client.get("/api/v1/genesis/price").json())
