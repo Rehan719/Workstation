@@ -22217,11 +22217,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P3.30",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W902",
       "note": "",
       "slot_source": "tier-3 finding: P3.30 owns tier-3 rows (Owner ruling 2026-10-09); the derived-ratio half of S18.1",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in three rounds, as S18.1 rules. W900: with the work budget switched on, every energy threshold and the composite's metabolic term read what is left of it; with it off, the default, nothing changes. W901: the economy cycle, the capital fund's caution and the biometrics route read the derived figure. W902: the seven pages that printed the simulated ATP show the budget's figure with its basis, and none prints atp_ratio. Driven in test_w900, test_w901 and test_w902."
     },
     {
       "id": "FU-1113",

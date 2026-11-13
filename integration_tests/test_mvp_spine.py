@@ -26996,10 +26996,11 @@ def test_w506_fu265_every_atp_reader_carries_the_qualifier_and_no_reader_claims_
     def _reads(text, field):
         return [l for l in text.splitlines()
                 if f"organism.{field}" in l and not l.lstrip().startswith(("//", "*", "{/*"))]
-    assert _reads(native, "atp_basis"), \
-        "NativeAI does not READ the server's basis for the ATP figure (a mention in a comment is not a read)"
-    assert _reads(native, "atp_measured"), \
-        "NativeAI does not READ whether the figure is measured"
+    #  W902 (FU-1112, S18.1) - the page shows the figure derived from the work budget, with its basis, and no
+    #  longer prints the simulated ATP figure
+    assert _reads(native, "energy_basis") and _reads(native, "energy_ratio"), \
+        "NativeAI does not READ the work budget's figure and its basis (a mention in a comment is not a read)"
+    assert not _reads(native, "atp_ratio"), "NativeAI still prints the simulated ATP figure"
     # the strong claims this row was registered for must be gone from the RENDERED copy
     assert "Real organism state, never fabricated" not in native, (
         "NativeAI still claims the whole homeostasis block is real organism state, over a simulated ATP term")
@@ -27007,8 +27008,8 @@ def test_w506_fu265_every_atp_reader_carries_the_qualifier_and_no_reader_claims_
         "NativeAI still asserts a metabolic mechanism that cannot operate: production exceeds consumption at "
         "every efficiency the code passes, so the figure only rises")
     # ...and the fabric tooltip says the term does not fall
-    assert "atp_ratio" in fabric and "does not fall" in fabric, \
-        "the ResourceFabric tooltip still presents the ATP figure as live capacity"
+    assert "organism?.energy_ratio" in fabric and "atp_ratio" not in fabric, \
+        "the ResourceFabric tooltip does not show the work budget's figure, or still prints the simulated ATP"   # W902
 
 
 def test_w506_p28_two_concepts_produce_different_derived_stage_sets():
@@ -38148,12 +38149,15 @@ def test_w574_a_name_a_number_and_a_placeholder_each_say_what_is_behind_them(cli
     assert "expended metabolic ATP" not in _del, (
         "the deliverable chip claims ATP was expended again — the payload says the ratio is "
         "simulated, is not measured and cannot fall")
-    assert "atp_basis" in _del, "the chip does not carry the payload's own basis for the figure"
+    assert "energy_basis" in _del and "atp_ratio" not in _del, (
+        "the chip does not carry the work budget's figure and basis, or prints the simulated ATP")   # W902
     _intro = _code(_app / "pages" / "cognitive" / "Introspection.tsx")
     assert "System Health" not in _intro, (
         "the immune subsystem's figure is published as whole-system health again")
     assert "Immune Health" in _intro and "introspection-immune-health" in _intro, _intro[:200]
-    assert "simulated ATP" in _intro, "the simulated ATP ratio is shown as a live vital again"
+    #  W902 (FU-1112, S18.1) - the bar is labelled with the work budget's figure, which is measured; ATP is not printed
+    assert "bio.metabolic.energy_ratio" in _intro and "atp_ratio" not in _intro, (
+        "the self-report page does not show the work budget's figure, or prints the simulated ATP again")
     #  the fabricated version is gone, and nothing like it has come back: no vNNN claimed as Active
     _ver = _re574.findall(r"v\d{2,}\.\d+ Active", _intro)
     assert not _ver, ("an architecture version is published as active on the self-report page", _ver)
@@ -47673,9 +47677,9 @@ def test_w633_p228_the_four_v11_tier1_statements_are_true(client):
     _od = _fe("pages/organism/OrganismDashboard.tsx")
     #  ledger v17 (FU-976) retarget - the flag is under `organism` in the API's answer; this pinned the path
     #  that is always undefined, so the sentence it guards could never print
-    assert "recovers on the circadian cycle" not in _od and "cognition.organism?.atp_can_fall === false" in _od
-    assert "cognition.atp_can_fall" not in _od and "cognition?.atp_can_fall" not in _od
-    assert "ATP ratio · simulated" in _od
+    #  W902 (FU-1112, S18.1) - the dashboard shows the figure derived from the work budget, not the simulated ATP
+    assert "recovers on the circadian cycle" not in _od and "ATP ratio" not in _od
+    assert "systems.metabolic.energy_ratio" in _od and "systems.metabolic.atp_ratio" not in _od
 
     # FU-571: an Owner-excluded priority is unfunded BECAUSE of the exclusion; defaults are not 'Owner-named'
     from agentic_core.economy.charity import CharityIntelligence as CharityEngine
@@ -55996,8 +56000,10 @@ def test_p330_r6_each_capability_gap_is_stated_where_a_person_meets_it(client, m
     if isinstance(_org, dict):          # None only on the capacity fallback path, which carries no figure at all
         assert isinstance(_org.get("atp_can_fall"), bool), ("the capacity reading does not say whether ATP can fall", sorted(_org))
     _rf = _fe("pages/synthesis/ResourceFabric.tsx")
-    _b = _within(_rf, "{sim.model.organism_capacity?.organism?.atp_can_fall === false && (", ")}", "the fabric's ATP sentence")
-    assert 'data-testid="fabric-atp-cannot-fall"' in _b and "simulated and cannot fall" in _b and "title=" not in _b, _b[:300]
+    #  W902 (FU-1112, S18.1) - the energy figure is the work budget's; the chip says in text when it limits nothing
+    _b = _within(_rf, "{sim.model.organism_capacity?.organism && !sim.model.organism_capacity.organism.energy_acts && (",
+                 ")}", "the fabric's work budget sentence")
+    assert 'data-testid="fabric-budget-off"' in _b and "limits nothing" in _b and "title=" not in _b, _b[:300]
 
     # -- F. invariant 2: the unmet check prints its own basis as text --------------------------------------
     _real = client.get("/api/v1/transformation/realisation").json()
@@ -56044,10 +56050,12 @@ def test_p330_r6_each_capability_gap_is_stated_where_a_person_meets_it(client, m
     assert "{sim.note && <p" in _rf and "{sim.note}</p>" in _rf
     # the energy figure, on the page that shows the governor
     _na = _fe("pages/developers/NativeAI.tsx")
-    _b = _within(_na, "{homeo.organism.atp_can_fall", "</span>}", "the Native AI page's ATP sentence")
-    assert "simulated and cannot fall" in " ".join(_b.split()), _b[:300]
+    #  W902 (FU-1112, S18.1) - the sentence says which figure the cap reads: the budget's when it is on
+    _b = _within(_na, "{homeo.organism.energy_acts", "</span>}", "the Native AI page's energy sentence")
+    assert "switched off" in " ".join(_b.split()) and "cannot fall" in " ".join(_b.split()), _b[:300]
     _hm = _fe("pages/organism/HeartbeatMonitor.tsx")
-    assert "ATP cannot fall, so they do not fire in practice" in _within(_hm, 'data-testid="heartbeat-survival-note"', "</p>", "the survival note")
+    _sn902 = _within(_hm, 'data-testid="heartbeat-survival-note"', "</p>", "the survival note")
+    assert "ATP cannot fall, so they do not fire in practice" in _sn902 and "work budget is switched off" in _sn902, _sn902   # W902
     # the genome is two records: printed from the route
     _an = _fe("pages/organism/OrganismAnatomy.tsx")
     assert "{entGenomes.basis}" in _within(_an, 'data-testid="entity-genomes-basis"', "</p>", "the two-records sentence")
@@ -61761,8 +61769,11 @@ def test_t2_the_overview_reads_the_cannot_fall_flag_where_the_api_puts_it(client
         "the page no longer keeps the whole answer, so the path below may be wrong")
     assert "{cognition.organism?.atp_can_fall === false\n" in _pg
     assert "? 'ATP here is a SIMULATION that cannot fall (production always exceeds consumption), so it does not limit runs.'" in _pg
-    assert "simulated{cognition?.organism?.atp_can_fall === false ? ' — cannot fall' : ''}" in _pg
-    assert _pg.count("atp_can_fall") == _pg.count("organism?.atp_can_fall") == 2, (
+    #  W902 (FU-1112) - the Metabolic card no longer prints the simulated ratio: it shows the work budget left, so
+    #  the flag is read once, in the cognition sentence above, and still under `organism`
+    assert "simulated{cognition?.organism?.atp_can_fall" not in _pg, "the Metabolic card prints the simulated ATP again"
+    assert 'data-testid="organism-work-budget-left"' in _pg
+    assert _pg.count("atp_can_fall") == _pg.count("organism?.atp_can_fall") == 1, (
         "a read of the flag is not under `organism`", _pg.count("atp_can_fall"), _pg.count("organism?.atp_can_fall"))
 
 
@@ -77006,3 +77017,40 @@ def test_w901_fu1112_the_cycle_the_fund_and_the_self_report_read_the_derived_ene
     stage = round(1.0 - (c / t) if t > 0 else 1.0, 3)
     assert b["efficiency"] == round((0.1 + stage) / 2, 3), ("the efficiency is not derived from the budget", b)
     assert "energy_ratio" in b["efficiency_basis"], b["efficiency_basis"]
+
+
+def test_w902_fu1112_every_page_shows_the_derived_energy_and_none_prints_the_atp_figure(client):
+    """FU-1112 closed (W902). S18.1: any displayed ratio is derived from the work budget, and the ATP name is retired
+    or relabelled. Six pages printed the simulated ATP figure, each labelled as simulated. Each now reads the budget's
+    figure from the payload it already receives, and none prints atp_ratio. The payloads carry the figure, driven
+    here: the homeostasis answer (NativeAI, Deliverables and the fabric's capacity), the organism status (the
+    dashboard), the biometrics route (the self-report page) and the economy board pack's organism posture."""
+    import pathlib
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/pages"
+    reads = {
+        "developers/NativeAI.tsx": ("homeo.organism.energy_ratio", "homeo.organism.energy_basis",
+                                    "homeo.organism.energy_acts"),
+        "cognitive/Introspection.tsx": ("bio.metabolic.energy_ratio",),
+        "organism/OrganismDashboard.tsx": ("systems.metabolic.energy_ratio", "systems.metabolic.energy_basis",
+                                           "systems.metabolic.energy_acts"),
+        "Deliverables.tsx": ("organism?.energy_ratio", "organism?.energy_basis"),
+        "synthesis/ResourceFabric.tsx": ("organism?.energy_ratio", "organism?.energy_acts"),
+        "enterprise/VSBEconomy.tsx": ("organism_posture?.energy_ratio",),
+    }
+    for rel, needles in reads.items():
+        code = _code_only((src / rel).read_text(encoding="utf-8"))
+        for n in needles:
+            assert n in code, (rel, "does not read", n)
+        assert "atp_ratio" not in code, (rel, "still prints the simulated ATP figure")
+
+    #  the payloads carry what the pages read
+    from agentic_core.ai.native.homeostasis import homeostasis as _h
+    org = _h.assess(demand_nodes=2, requested_parallel=2, read_only=True)["organism"]
+    assert {"energy_ratio", "energy_acts", "energy_basis"} <= set(org), sorted(org)
+    met = client.get("/api/v1/organism/status").json()["systems"]["metabolic"]
+    assert {"energy_ratio", "energy_acts", "energy_basis"} <= set(met), sorted(met)
+    bio = client.get("/api/v1/biometrics/status").json()["metabolic"]
+    assert {"energy_ratio", "energy_acts", "energy_basis"} <= set(bio), sorted(bio)
+    bp = client.get("/api/v1/economy/board-pack").json()
+    assert {"energy_ratio", "energy_acts", "energy_basis"} <= set(bp.get("organism_posture") or {}), (
+        sorted(bp.get("organism_posture") or {}))

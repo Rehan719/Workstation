@@ -838,10 +838,14 @@ export const NativeAI: React.FC = () => {
                     consumption at every efficiency the code passes, so it only rises: it cannot lower the cap,
                     and the posture it would select is unreachable. Stated from the server below rather than
                     asserted here, so it corrects itself if the model ever changes. */}
-                {homeo.organism.atp_can_fall
+                {homeo.organism.energy_acts
+                  ? <> The work budget is switched on: what is left of it is the energy term, and below 30% it
+                      lowers the cap.</>
+                  : homeo.organism.atp_can_fall
                   ? <> The metabolic (ATP) term can fall and contributes to that cap.</>
-                  : <span className="text-amber-400"> The metabolic (ATP) term is simulated and cannot fall,
-                      so it never lowers the cap{homeo.organism.conserving_posture_basis ? ' — ' : ''}
+                  : <span className="text-amber-400"> The work budget is switched off, so the energy term is the
+                      simulated one, which cannot fall and never lowers the cap
+                      {homeo.organism.conserving_posture_basis ? ' — ' : ''}
                       {homeo.organism.conserving_posture_basis}</span>}
               </p>
               {/* W742 — the work budget (Owner ruling S18.1), the energy figure that CAN run down, printed from
@@ -862,9 +866,10 @@ export const NativeAI: React.FC = () => {
                     for them would otherwise pass on the comment after the real binding below was deleted,
                     which is how a presence check comes to see nothing (W503). */}
                 <span className="text-[9px] font-bold uppercase px-2 py-1 rounded bg-slate-900 text-slate-400"
-                      title={homeo.organism.atp_basis ?? 'this response states no basis for the ATP figure'}>
-                  ATP: {Math.round((homeo.organism.atp_ratio ?? 0) * 100)}%
-                  <span className="text-amber-400">{homeo.organism.atp_measured ? '' : ' · simulated'}</span>
+                      data-testid="native-work-budget-left"
+                      title={homeo.organism.energy_basis ?? 'this response states no basis for the work budget figure'}>
+                  work budget left: {homeo.organism.energy_ratio != null ? `${Math.round(homeo.organism.energy_ratio * 100)}%` : '—'}
+                  <span className="text-amber-400">{homeo.organism.energy_acts ? '' : ' · read by nothing while the budget is off'}</span>
                 </span>
                 <span className="text-[9px] font-bold uppercase px-2 py-1 rounded bg-slate-900 text-slate-400">immune: {homeo.organism.immune_threat}</span>
                 {/* W491 (refutation) - the same part-simulated blend, named as such */}

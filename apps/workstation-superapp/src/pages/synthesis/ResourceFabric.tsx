@@ -82,7 +82,7 @@ interface Simulation {
     // §7→§8 — projected living-organism capacity for this config's cognitive load (read-only, pre-commit).
     organism_capacity?: {
       projected_posture?: string; admitted_max_parallel?: number; demand_nodes?: number;
-      fits_current_capacity?: boolean; organism?: { mode?: string; circadian?: string; atp_ratio?: number; atp_can_fall?: boolean };
+      fits_current_capacity?: boolean; organism?: { mode?: string; circadian?: string; energy_ratio?: number | null; energy_acts?: boolean };
     } | null;
   };
   simulation: {
@@ -594,7 +594,7 @@ export const ResourceFabric: React.FC = () => {
                 <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${sim.model.organism_capacity.fits_current_capacity ? 'bg-violet-500/15 text-violet-300' : 'bg-amber-500/15 text-amber-400'}`}
                   /* W506 (FU-265d) — the ATP figure is simulated and this tooltip presented it as
                      capacity 'now'. The immune and circadian terms are live; that one is not. */
-                  title={`§8 living-organism capacity now — mode ${sim.model.organism_capacity.organism?.mode}, ATP ${Math.round((sim.model.organism_capacity.organism?.atp_ratio ?? 0) * 100)}% (simulated — it does not fall, so it never limits a run), ${sim.model.organism_capacity.organism?.circadian}. The run will be homeostatically governed at execution time.`}>
+                  title={`§8 living-organism capacity now — mode ${sim.model.organism_capacity.organism?.mode}, work budget left ${sim.model.organism_capacity.organism?.energy_ratio != null ? Math.round((sim.model.organism_capacity.organism?.energy_ratio ?? 0) * 100) + '%' : 'unknown'} (${sim.model.organism_capacity.organism?.energy_acts ? 'the budget is switched on, so below 30% it holds the run to one node at a time' : 'the budget is switched off, so it limits nothing'}), ${sim.model.organism_capacity.organism?.circadian}. The run will be homeostatically governed at execution time.`}>
                   §8 capacity: {sim.model.organism_capacity.projected_posture} · admits {sim.model.organism_capacity.admitted_max_parallel} {sim.model.organism_capacity.fits_current_capacity ? '· fits' : '· over capacity'}
                   {/* W756 (FU-1114) — while the work budget holds, the reason the figure is 1 */}
                   {(sim.model.organism_capacity as any).work_budget?.holds && <span data-testid="fabric-work-budget-reason"> · held at 1 by the work budget: {(sim.model.organism_capacity as any).work_budget.basis}</span>}
@@ -602,9 +602,10 @@ export const ResourceFabric: React.FC = () => {
               )}
               {/* P3.30 r6 (ledger v16 R4.15) - the tooltip above says the energy figure is simulated; this says it
                   in text, and only while the server reports that it cannot fall */}
-              {sim.model.organism_capacity?.organism?.atp_can_fall === false && (
-                <span className="text-[8px] font-bold text-amber-400/90" data-testid="fabric-atp-cannot-fall">
-                  the energy (ATP) figure in this capacity is simulated and cannot fall, so it never limits a run
+              {/* W902 (FU-1112, S18.1) - the energy figure is the work budget's; while the budget is off, said */}
+              {sim.model.organism_capacity?.organism && !sim.model.organism_capacity.organism.energy_acts && (
+                <span className="text-[8px] font-bold text-amber-400/90" data-testid="fabric-budget-off">
+                  the work budget is switched off, so the energy figure in this capacity limits nothing
                 </span>
               )}
             </div>

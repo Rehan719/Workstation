@@ -784,10 +784,11 @@ export const VSBEconomy: React.FC = () => {
               <p className="text-sm font-black text-white capitalize">{bp.organism_posture?.mode ?? '—'}</p>
               {/* W494 (refutation) - this printed the BLENDED composite as plain "health NN%". The blend
                   is held up by a defaulted self-healing term and a simulated ATP term, so the measured
-                  figure and the basis travel with it (clause 3). ATP is a simulation in every state. */}
+                  figure and the basis travel with it (clause 3). ATP is a simulation in every state, so since W902 the
+                  energy shown is the work budget's. */}
               <p className="text-[9px] text-slate-500 mt-0.5" data-testid="vsb-organism-posture"
                  title={bp.organism_posture?.composite_health_basis}>
-                ATP {bp.organism_posture?.atp_ratio != null ? `${Math.round(bp.organism_posture.atp_ratio * 100)}% (sim)` : '—'}
+                work budget left {bp.organism_posture?.energy_ratio != null ? `${Math.round(bp.organism_posture.energy_ratio * 100)}%` : '—'}
                 {' · '}
                 {bp.organism_posture?.composite_health_measured_only != null
                   ? `measured health ${Math.round(bp.organism_posture.composite_health_measured_only * 100)}%`

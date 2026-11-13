@@ -338,7 +338,7 @@ export const HeartbeatMonitor: React.FC = () => {
             <Card className="p-6">
               <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Recent Beats</h3>
               {/* W633 (FU-572) — said where the beats are read, not only in a hover title */}
-              <p data-testid="heartbeat-survival-note" className="text-[10px] text-slate-500 mb-4">The survival instinct and energy regulation run on a simulated ATP model in which ATP cannot fall, so they do not fire in practice.</p>
+              <p data-testid="heartbeat-survival-note" className="text-[10px] text-slate-500 mb-4">The survival instinct and energy regulation read the simulated ATP model while the work budget is switched off, and ATP cannot fall, so they do not fire in practice. With the budget switched on they read what is left of it, and they fire when it runs low.</p>
               <div className="space-y-2">
                 {s.recent.slice().reverse().map(b => (
                   <div key={b.beat} className="flex items-center justify-between p-3 bg-slate-950 rounded-lg border border-slate-900 text-xs">

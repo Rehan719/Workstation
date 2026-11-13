@@ -9,7 +9,7 @@ interface Biometrics {
   cardiovascular: { resource_flow: number; peristaltic_delay: number };
   cognition:      { state: string; primary_drive: string; basis?: string };
   immune:         { health: number; observations_in_window?: number | null; observed_basis?: string | null; threat_level: string; error_rate: number };
-  metabolic:      { efficiency: number; atp_ratio: number; total_projects: number };
+  metabolic:      { efficiency: number; energy_ratio?: number | null; energy_basis?: string; total_projects: number };
   nervous:        { arousal_state: string; signal_rate: number };
   communication:  { neurotransmitter: string; is_active: boolean; basis?: string };
 }
@@ -117,7 +117,7 @@ export const Introspection: React.FC = () => {
              {/* W574 (M1 R4.0) — the ATP ratio was shown among the live vitals. The payload that
                  carries it says in its own basis that it is simulated, is not measured and cannot
                  fall, and is "not a live vital". Labelled as the simulation it is. */}
-             <LoadVisual label={`Metabolic (simulated ATP ${(bio.metabolic.atp_ratio * 100).toFixed(0)}%)`} value={Math.round(bio.metabolic.efficiency * 100)} color="bg-aura" />
+             <LoadVisual label={`Metabolic (work budget left ${bio.metabolic.energy_ratio != null ? (bio.metabolic.energy_ratio * 100).toFixed(0) + '%' : 'unknown'})`} value={Math.round(bio.metabolic.efficiency * 100)} color="bg-aura" />
              {/* W489 (sweep S11.14, C3) — this bar is 100 − host CPU%: a full bar means the HOST IS
                  IDLE, which read as a healthy platform. Labelled for what it measures. */}
              <LoadVisual label={`Host CPU headroom${(bio.cardiovascular as any).host_cpu_window_seconds != null ? ` (over ${(bio.cardiovascular as any).host_cpu_window_seconds} s)` : ''}`} value={Math.round(bio.cardiovascular.resource_flow)} color="bg-highlight" />

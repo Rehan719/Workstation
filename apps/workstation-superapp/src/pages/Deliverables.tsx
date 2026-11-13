@@ -30,8 +30,8 @@ interface Deliverable {
   // W574 (M1 R2.5) — the payload has always carried `atp_measured` and `atp_basis` saying the ratio
   // is a simulation that cannot fall; the type stopped at the number, so the only fields that could
   // have qualified it were invisible to the page that claimed ATP had been "expended".
-  homeostasis?: { posture?: string; organism?: { atp_ratio?: number; circadian?: string;
-                                                 atp_measured?: boolean; atp_basis?: string } } | null;
+  homeostasis?: { posture?: string; organism?: { circadian?: string;
+                                                 energy_ratio?: number | null; energy_basis?: string } } | null;
   // §13 (W-versions) — each version carries its full stored text (the API already returns it);
   // the UI now lets the user read any prior version, not just the count.
   versions: { created_at: string; content?: string; brief?: string }[];
@@ -308,9 +308,8 @@ Document-controlled under the QMS (DCMS) · record ${selected.quality_assurance.
                          posture is real and is still shown; the ATP figure is labelled as what it
                          is, and the payload's own basis is carried here rather than summarised. */
                       title={`§8→§13 — produced under the organism's homeostatic posture (${selected.homeostasis.organism?.circadian}). `
-                        + `Simulated ATP ratio ${Math.round((selected.homeostasis.organism?.atp_ratio ?? 0) * 100)}% — `
-                        + `${selected.homeostasis.organism?.atp_measured === false ? 'not measured, and nothing here was expended: ' : ''}`
-                        + `${selected.homeostasis.organism?.atp_basis ?? 'no basis recorded for this figure'}`}>
+                        + `Work budget left ${selected.homeostasis.organism?.energy_ratio != null ? Math.round((selected.homeostasis.organism?.energy_ratio ?? 0) * 100) + '%' : 'not recorded (this deliverable ran before W902)'} — `
+                        + `${selected.homeostasis.organism?.energy_basis ?? 'no basis recorded for this figure'}`}>
                       §8 homeostasis: {selected.homeostasis.posture}
                       {/* W756 (FU-1114) — while the work budget holds, the reason the posture is what it is */}
                       {(selected.homeostasis as any).work_budget?.holds && <span data-testid="deliverable-work-budget-reason"> · held at 1 by the work budget: {(selected.homeostasis as any).work_budget.basis}</span>}

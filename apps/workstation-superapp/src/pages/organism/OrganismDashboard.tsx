@@ -35,7 +35,7 @@ interface OrganismStatus {
     immune:        { health: number; observations_in_window?: number | null; observed_basis?: string | null; threat_level: string; errors_in_window: number; review_flags_in_window?: number; response_playbook?: string[]; hot_endpoint?: string };
     nervous:       { arousal_state: string; signal_rate_per_second: number; signals_last_60s: number; by_type: Record<string,number>; total_signals: Record<string,number>; reflex_arcs: number };
     self_healing:  { overall_health: number | null; open_circuits: number; recent_events: unknown[] };
-    metabolic:     { atp_ratio: number };
+    metabolic:     { energy_ratio?: number | null; energy_acts?: boolean; energy_basis?: string };
     // S18.1 / S18.6 (W743) - the measured budget, the busiest entities' own figures, the derived carrying capacity
     work_budget?: { seconds_spent?: number; capacity_seconds?: number; gate_basis?: string; spend_basis?: string; fraction_basis?: string;
       unavailable?: string; carrying_capacity?: { entities: number | null; basis: string };
@@ -439,11 +439,16 @@ export const OrganismDashboard: React.FC = () => {
 
           {/* Metabolic */}
           <SystemCard icon={Zap} title="Metabolic" accent="border-white/10">
+            {/* W902 (FU-1112, S18.1) - the figure is derived from the work budget, with its basis */}
             <div className="flex items-end gap-1">
-              <span className="text-2xl font-black text-white">{Math.round(systems.metabolic.atp_ratio * 100)}%</span>
+              <span className="text-2xl font-black text-white" data-testid="organism-work-budget-left">
+                {systems.metabolic.energy_ratio != null ? `${Math.round(systems.metabolic.energy_ratio * 100)}%` : '—'}
+              </span>
             </div>
-            <HealthBar value={systems.metabolic.atp_ratio} />
-            <div className="text-xs font-mono text-white/30">ATP ratio · simulated{cognition?.organism?.atp_can_fall === false ? ' — cannot fall' : ''}</div>
+            <HealthBar value={systems.metabolic.energy_ratio ?? 0} />
+            <div className="text-xs font-mono text-white/30" title={systems.metabolic.energy_basis}>
+              work budget left · {systems.metabolic.energy_acts ? 'the energy thresholds read it' : 'read by nothing while the budget is switched off'}
+            </div>
             {/* S18.1 / S18.6 (W743) - the budget that CAN run down, in seconds, each busy entity's own share of it
                 and the carrying capacity derived from them: every figure with its basis, in text */}
             {systems.work_budget && (systems.work_budget.unavailable
