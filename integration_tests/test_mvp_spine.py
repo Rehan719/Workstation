@@ -82509,3 +82509,84 @@ def test_w979_fu399_the_forge_page_says_what_served_each_call_and_offers_each_st
     assert {"status": no_stage.status_code, "body": no_stage.json()} == fx["refused_run"], no_stage.text[:300]
     no_run = client.post("/api/v1/forge/runs/w979-no-such-run/rerun")
     assert {"status": no_run.status_code, "body": no_run.json()} == fx["refused_rerun"], no_run.text[:300]
+
+
+def test_w980_fu399_settings_says_an_unread_profile_approvals_and_goals_as_unread_and_each_refusal_once(client, monkeypatch, tmp_path):
+    """FU-399 part 13 (W980). Settings holds the person's profile, the avatar's clearance records and the Owner's
+    protected-entities record. Settings.test.tsx mounts the real page against the answers its routes gave on a fresh
+    store, and driving it found four defects, fixed here:
+    - getProfile answered null for a refused read and for an unreachable server alike, and the page said "Nothing
+      saved - no profile is added to your prompts" over a profile it could not read, with Save beneath it. It throws
+      with the server's status and reason now, and the page says the read failed;
+    - a refused save or clear said "Save failed (503)" and dropped the reason, though a refused save says nothing
+      stored was lost. Both say the server's sentence;
+    - the two clearance reads sat in one try, so a failed approvals read left "No approval is recorded" over approvals
+      nothing had read, and a failed goals read was said as "none recorded - not read". Each read says its own failure;
+    - a refusal to name a protected entity said "Not recorded:" twice. It is said once.
+    Held here: the page and its panels carry what the render reads; the profile, approvals and goals routes answer the
+    fixture's fields (written to this test's own stores); the protected-entities refusal is the fixture's word for
+    word, and every state of that record carries one key set."""
+    import json
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = root / "apps/workstation-superapp/src"
+    page = (src / "pages/Settings.tsx").read_text(encoding="utf-8")
+    prof = (src / "lib/userProfile.ts").read_text(encoding="utf-8")
+    avatar = (src / "components/AvatarClearancePanel.tsx").read_text(encoding="utf-8")
+    prot = (src / "components/ProtectedEntitiesPanel.tsx").read_text(encoding="utf-8")
+    t = (src / "pages/Settings.test.tsx").read_text(encoding="utf-8")
+    assert "import { Settings } from './Settings';" in t and "<Settings />" in t
+    read = set(re.findall(r"ByTestId\('([^']+)'\)", t))
+    assert {"profile-unread", "profile-store-incomplete", "avatar-ratifications-none", "avatar-ratifications-unread",
+            "avatar-clearance-error", "avatar-balance-goals", "protected-entities-error",
+            "protected-entities-saved"} <= read, sorted(read)
+    for tid in read:
+        assert any(f'data-testid="{tid}"' in s for s in (page, avatar, prot)), tid
+
+    #  an unread profile is said as unread, and each refusal keeps the server's reason
+    pc = _code_only(prof)
+    assert "return apiJson<ProfileResponse>('/api/v1/user/profile');" in pc and "return null" not in pc
+    assert "Save failed (" not in pc and "Clear failed (" not in pc
+    sc = _code_only(page)
+    assert "}).catch(e => setProfReadErr(errorMessage(e)));" in sc and 'data-testid="profile-unread"' in sc
+    assert sc.index(": profReadErr") < sc.index(": profIncomplete !== null") < sc.index("Nothing saved — no profile")
+    assert "String((e as Error).message)" not in sc
+    #  each clearance read says its own failure, and an unread list is not an empty one
+    ac = _code_only(avatar)
+    assert "useState<Dict[] | null>(null)" in ac and "{rats === null && err && <li" in ac
+    assert "{rats !== null && active.length === 0 && <li" in ac and "'not read'" not in ac
+    assert "? (goalsErr ? `not read — ${goalsErr}` : '')" in ac
+    #  a refusal to name a protected entity is said once
+    assert "setErr(`Not recorded: ${" not in _code_only(prot) and "catch (e: any) { setErr(errorMessage(e)); }" in prot
+
+    #  the routes answer the fixture's fields, on this test's own stores
+    from agentic_core.api import user_workspace as _uw
+    from agentic_core.avatars.core import ratifications as _rat
+    monkeypatch.setattr(_uw, "_STORE_DIR", tmp_path / "user_workspace")
+    monkeypatch.setattr(_rat, "_path", lambda: tmp_path / "ratifications.json")
+    fx = json.loads((src / "pages/Settings.fixture.json").read_text(encoding="utf-8"))
+    empty = client.get("/api/v1/user/profile").json()
+    assert set(fx["profile_empty"]) == set(empty) and empty["preamble_preview"] == "", empty
+    put = client.put("/api/v1/user/profile", json=fx["profile_put"]["profile"])
+    assert put.status_code == 200 and set(fx["profile_put"]) == set(put.json()), put.text[:300]
+    assert put.json()["preamble_preview"] == fx["profile_put"]["preamble_preview"], "the page's preamble is not the route's"
+    assert set(fx["profile_saved"]) == set(client.get("/api/v1/user/profile").json())
+    #  cleared after, as every test that saves the profile leaves it (W748); it is this test's own store either way
+    assert client.delete("/api/v1/user/profile").json()["cleared"] is True
+    assert client.get("/api/v1/user/profile").json()["preamble_preview"] == ""
+    assert set(fx["ratifications_empty"]) == set(client.get("/api/v1/avatar/ratifications").json())
+    rec = client.post("/api/v1/avatar/ratifications", json={"purpose": "w980 probe", "modes": ["instructor"]})
+    assert rec.status_code == 200 and set(fx["ratification_recorded"]) == set(rec.json()), rec.text[:300]
+    assert set(fx["ratification_recorded"]["ratification"]) == set(rec.json()["ratification"])
+    #  the goals record grows two keys once the Owner sets goals (set_at, set_by): the fixture's are among the live ones
+    assert set(fx["goals"]) <= set(client.get("/api/v1/avatar/balance-objectives").json())
+    #  the protected-entities record: one key set in every state, and the refusal word for word (nothing is written)
+    live = client.get("/api/v1/economy/protected-entities").json()
+    assert set(fx["protected_unnamed"]) == set(fx["protected_named"]) == set(fx["protected_put"]) == set(live), sorted(live)
+    no = client.put("/api/v1/economy/protected-entities",
+                    json={"entities": {"w980-no-such-entity": "a made-up reason"}, "owner_confirms": True})
+    assert {"status": no.status_code, "body": no.json()} == fx["protected_refused"], no.text[:300]
+    #  the route's own refusal of a save says nothing stored was lost: the sentence the page now shows
+    assert "your profile was NOT overwritten, so nothing stored was lost" in (
+        root / "agentic_core/api/user_workspace.py").read_text(encoding="utf-8")

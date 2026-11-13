@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { apiJson } from '../lib/api';
+import { apiJson, errorMessage } from '../lib/api';
 
 type Dict = Record<string, any>;
 
@@ -11,22 +11,28 @@ type Dict = Record<string, any>;
  * withheld and says which one is missing. Scope is by MODE, not by content.
  */
 export const AvatarClearancePanel: React.FC = () => {
-  const [rats, setRats] = useState<Dict[]>([]);
+  //  W980 (FU-399 part 13) - null is NOT READ: an unread list is never said as an empty one
+  const [rats, setRats] = useState<Dict[] | null>(null);
   const [highImpact, setHighImpact] = useState<string[]>([]);
   const [purpose, setPurpose] = useState('');
   const [goals, setGoals] = useState<Dict | null>(null);
   const [err, setErr] = useState('');
+  const [goalsErr, setGoalsErr] = useState('');
 
+  //  W980 - EACH READ SAYS ITS OWN FAILURE. Both sat in one try, so a failed approvals read left the list saying
+  //  "No approval is recorded" over approvals nothing had read, and a failed goals read was said as "none recorded".
   const load = async () => {
     try {
       const r = await apiJson<Dict>('/api/v1/avatar/ratifications');
       setRats(r.ratifications || []);
       setHighImpact(r.high_impact_modes || []);
-      setGoals(await apiJson<Dict>('/api/v1/avatar/balance-objectives'));
       setErr('');
     } catch (e: any) {
-      setErr(`The avatar's clearance records could not be read: ${String(e?.message ?? e)}`);
+      setRats(null);
+      setErr(`The avatar's clearance records could not be read: ${errorMessage(e)}`);
     }
+    try { setGoals(await apiJson<Dict>('/api/v1/avatar/balance-objectives')); setGoalsErr(''); }
+    catch (e: any) { setGoals(null); setGoalsErr(errorMessage(e)); }
   };
   useEffect(() => { load(); }, []);
 
@@ -42,7 +48,7 @@ export const AvatarClearancePanel: React.FC = () => {
     catch (e: any) { setErr(`Not revoked: ${String(e?.message ?? e)}`); }
   };
 
-  const active = rats.filter(r => !r.revoked_at);
+  const active = (rats ?? []).filter(r => !r.revoked_at);
   return (
     <div className="space-y-3" data-testid="avatar-clearance-panel">
       <h3 className="text-sm font-black text-white uppercase tracking-wide">What I want the avatar for</h3>
@@ -54,7 +60,8 @@ export const AvatarClearancePanel: React.FC = () => {
       </p>
       {err && <p className="text-[10px] text-vital" data-testid="avatar-clearance-error">{err}</p>}
       <ul className="space-y-1" data-testid="avatar-ratifications">
-        {active.length === 0 && <li className="text-[10px] text-amber-400/90">No approval is recorded, so replies are not cleared by the chain.</li>}
+        {rats === null && err && <li className="text-[10px] text-amber-400/90" data-testid="avatar-ratifications-unread">The approvals were not read, so whether one is recorded is not known.</li>}
+        {rats !== null && active.length === 0 && <li className="text-[10px] text-amber-400/90" data-testid="avatar-ratifications-none">No approval is recorded, so replies are not cleared by the chain.</li>}
         {active.map(r => (
           <li key={r.id} className="text-[10px] text-slate-300 flex items-center gap-2">
             <span>{String(r.purpose)} · modes {(r.modes || []).join(', ')} · signed by {(r.signatories || []).join(', ')}</span>
@@ -81,9 +88,11 @@ export const AvatarClearancePanel: React.FC = () => {
       </div>
       <p className="text-[10px] text-slate-500 leading-relaxed" data-testid="avatar-balance-goals">
         Reply goals (set by the Owner):{' '}
-        {goals && Array.isArray(goals.objectives) && goals.objectives.length > 0
-          ? goals.objectives.map((o: Dict) => `${o.name} → ${o.direction}`).join(' · ') + ` (${String(goals.basis ?? '')})`
-          : `none recorded — ${String(goals?.basis ?? 'not read')}`}
+        {goals === null
+          ? (goalsErr ? `not read — ${goalsErr}` : '')
+          : Array.isArray(goals.objectives) && goals.objectives.length > 0
+            ? goals.objectives.map((o: Dict) => `${o.name} → ${o.direction}`).join(' · ') + ` (${String(goals.basis ?? '')})`
+            : `none recorded — ${String(goals.basis ?? 'the record gives no basis')}`}
       </p>
     </div>
   );

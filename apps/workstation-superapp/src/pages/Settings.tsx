@@ -6,6 +6,7 @@ import { interfaceLanguages, useT } from '../lib/i18n';
 import { getPrefs, setPrefs, clearPrefs, LANGUAGES, type UserPrefs } from '../lib/userPrefs';
 import { coverageFor, applyDocumentDirection } from '../lib/i18n';
 import { clearWorkspaceEverywhere } from '../lib/outputHistory';
+import { errorMessage } from '../lib/api';   // W980 (FU-399 part 13)
 import AvatarClearancePanel from '../components/AvatarClearancePanel';
 import ProtectedEntitiesPanel from '../components/ProtectedEntitiesPanel';
 import {
@@ -42,14 +43,19 @@ export const Settings: React.FC = () => {
   const [profBusy, setProfBusy] = useState(false);
   const [profSaved, setProfSaved] = useState(false);
   const [profErr, setProfErr] = useState('');
+  //  W980 (FU-399 part 13) - the profile's READ can fail, and that is not a profile never filled in
+  const [profReadErr, setProfReadErr] = useState('');
 
   useEffect(() => {
+    //  W980 (FU-399 part 13) - A READ THAT FAILED IS SAID. getProfile answered null for a refusal and for an
+    //  unreachable server alike, and the page then said "Nothing saved" over a profile it could not read, with Save
+    //  beneath it. It throws now, with the server's status and reason.
     getProfile().then(r => {
-      if (!r) return;                       // unreachable store: leave the form empty, say nothing false
       setProfile({ ...EMPTY_PROFILE, ...r.profile });
       setProfIncomplete(r.profile_is_incomplete ? (r.store_incomplete ?? '') : null);
       setPreamble(r.preamble_preview || '');
-    });
+      setProfReadErr('');
+    }).catch(e => setProfReadErr(errorMessage(e)));
   }, []);
 
   const saveProfile = async () => {
@@ -59,9 +65,10 @@ export const Settings: React.FC = () => {
       // Show the preamble the SERVER built, not one recomputed here — the server trims and
       // neutralises, so a locally-rendered preview could differ from what is actually sent.
       setPreamble(r?.preamble_preview || '');
+      setProfReadErr('');   // W980 - what is stored is now what this form saved
       setProfSaved(true); setTimeout(() => setProfSaved(false), 1800);
     } catch (e) {
-      setProfErr(String((e as Error).message));   // a failed save never renders as saved
+      setProfErr(errorMessage(e));   // a failed save never renders as saved; W980 - with the server's reason
     } finally {
       setProfBusy(false);
     }
@@ -291,6 +298,12 @@ export const Settings: React.FC = () => {
               <pre className="text-[10px] text-slate-400 bg-slate-950 border border-slate-900 rounded-xl p-3 whitespace-pre-wrap">{preamble}</pre>
             </div>
           )
+          : profReadErr
+            ? <p role="alert" data-testid="profile-unread"
+                 className="text-[10px] font-bold px-2 py-1 rounded bg-amber-500/20 text-amber-400">
+                Your stored profile could not be read — {profReadErr}. This form does not show what is saved, so
+                nothing here says whether a profile reaches your prompts, and saving now would replace it.
+              </p>
           : profIncomplete !== null
             ? <p data-testid="profile-store-incomplete" title={profIncomplete || undefined}
                  className="text-[10px] font-bold px-2 py-1 rounded bg-amber-500/20 text-amber-400">
@@ -306,7 +319,7 @@ export const Settings: React.FC = () => {
             onClick={async () => {
               setProfBusy(true); setProfErr('');
               try { await clearProfile(); setProfile(EMPTY_PROFILE); setPreamble(''); }
-              catch (e) { setProfErr(String((e as Error).message)); }
+              catch (e) { setProfErr(errorMessage(e)); }   // W980 - with the server's reason
               finally { setProfBusy(false); }
             }}
             className="text-[10px] border-slate-800 text-slate-400">

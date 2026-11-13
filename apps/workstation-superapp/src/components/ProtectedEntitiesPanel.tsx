@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { apiJson } from '../lib/api';
+import { apiJson, errorMessage } from '../lib/api';
 
 type Dict = Record<string, any>;
 
@@ -29,7 +29,9 @@ export const ProtectedEntitiesPanel: React.FC = () => {
         method: 'PUT', body: { entities, owner_confirms: confirm } });
       setMsg(String(r.basis ?? 'Recorded.'));
       await load();
-    } catch (e: any) { setErr(`Not recorded: ${String(e?.message ?? e)}`); }
+    //  W980 (FU-399 part 13) - the server's refusal already begins "Not recorded:", and the panel put its own before
+    //  it, so the Owner read it twice; the status and the server's sentence are said once
+    } catch (e: any) { setErr(errorMessage(e)); }
   };
 
   const named = Object.entries((rec?.named ?? {}) as Record<string, string>);

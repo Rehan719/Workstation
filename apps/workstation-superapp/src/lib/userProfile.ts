@@ -7,6 +7,8 @@
 // recall path, nothing here is inferred from anyone else's traffic. The user writes it, sees exactly
 // what it sends, and can delete it.
 
+import { apiJson } from '../lib/api';   // the path W927's census reads every apiJson caller's import by
+
 export interface UserProfile {
   about_you: string;
   context: string;
@@ -49,27 +51,18 @@ interface ProfileResponse {
   store_incomplete?: string | null;
 }
 
-export async function getProfile(): Promise<ProfileResponse | null> {
-  try {
-    const r = await fetch('/api/v1/user/profile');
-    if (!r.ok) return null;
-    return await r.json();
-  } catch {
-    return null;
-  }
+// W980 (FU-399 part 13) - EACH OF THESE SAYS A REFUSAL WITH THE SERVER'S REASON. getProfile answered null for a
+// refused read and for an unreachable server alike, which the page could only take for a profile never filled in;
+// a refused save or clear said its status and dropped the reason (a refused save says nothing stored was lost).
+// Each throws apiJson's ApiError now, with the status and the server's detail.
+export async function getProfile(): Promise<ProfileResponse> {
+  return apiJson<ProfileResponse>('/api/v1/user/profile');
 }
 
-export async function putProfile(p: UserProfile): Promise<ProfileResponse | null> {
-  const r = await fetch('/api/v1/user/profile', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(p),
-  });
-  if (!r.ok) throw new Error(`Save failed (${r.status})`);
-  return await r.json();
+export async function putProfile(p: UserProfile): Promise<ProfileResponse> {
+  return apiJson<ProfileResponse>('/api/v1/user/profile', { method: 'PUT', body: p });
 }
 
 export async function clearProfile(): Promise<void> {
-  const r = await fetch('/api/v1/user/profile', { method: 'DELETE' });
-  if (!r.ok) throw new Error(`Clear failed (${r.status})`);
+  await apiJson('/api/v1/user/profile', { method: 'DELETE' });
 }
