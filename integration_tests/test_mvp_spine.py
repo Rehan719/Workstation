@@ -72142,7 +72142,7 @@ def test_w825_the_law_and_care_selects_read_the_api_lists_and_the_employment_tab
     assert m, "the Care tool select is not where this guard reads it"
     offered = set(_re.findall(r"'([a-z0-9_]+)'", m.group(1)))
     assert offered == runnable, ("the Care select and the tools the API can run differ", sorted(offered ^ runnable))
-    assert "fetch('/api/v1/care/tools')" in care and "optionLabels: toolNames" in care, "the tool select shows ids"
+    assert "apiJson<any>('/api/v1/care/tools')" in care and "optionLabels: toolNames" in care, "the tool select shows ids"
 
     services = {x["id"] for x in client.get("/api/v1/employment/services").json()["services"]}
     tab_of = {"cv": "cv", "cover_letter": "cover", "interview_prep": "interview", "career_path": "path",
@@ -80676,3 +80676,120 @@ def test_w954_p512_what_a_teacher_types_is_handed_over_as_material_and_every_ans
     src = inspect.getsource(_edu.generate_lesson_plan) + inspect.getsource(_edu.create_assessment)
     for joined in ("{req.special_needs}", "{req.prior_knowledge}", "for o in req.learning_objectives) +"):
         assert joined not in src, joined
+
+
+def test_w955_p513_each_care_tool_points_at_its_rows_of_the_register_read_now(client, monkeypatch):
+    """P5.13 clause 1 (W955). Every catalogue entry that names an authority points at a row of the one register of
+    sources. Measured: entries pointed at a row only by a name pattern, the 'standard' text was not tied to row ids,
+    NG97 and the Care Act 2014 are rows named but not read while the catalogue named NG97 as a standard with no 'not
+    read', and no page said whether a row was recently checked. Held here:
+    - every entry declares its rows by id, every id is a row, and every authority the register names that appears in an
+      entry's name or standard is one of that entry's rows;
+    - an entry whose row was named but not read says so in its standard;
+    - the catalogue answer reads each row now and says it in one sentence: status, date read, whether within the
+      review period - driven on a register where a row is past it, on one with the row missing, and on one that cannot
+      be read (503, nothing in its place);
+    - the staleness rule is one rule: sources_check.check() and row_standing() agree at 90 and 91 days;
+    - the Care page shows each tool's rows in the server's sentences and says a failed read."""
+    import copy
+    import datetime as _dt
+    import re
+    from pathlib import Path
+
+    import agentic_core.api.care as _care
+    import agentic_core.api.registers as _regs
+    root = Path(__file__).resolve().parents[1]
+    sc = _regs._script("sources_check")
+    reg = sc.load()
+    rows = {r["id"]: r for r in reg["rows"]}
+
+    #  1. every entry declares its rows, every id is a row, and the text names no authority outside them
+    for t in _care._TOOLS:
+        assert t["id"] in _care._TOOL_SOURCES and isinstance(t["sources"], list), t["id"]
+        for sid in t["sources"]:
+            assert sid in rows, (t["id"], sid, "names a row the register does not hold")
+        text = f"{t['name']} {t['standard']}"
+        for r in reg["rows"]:
+            for nm in r.get("names") or []:
+                if re.search(r"(?<![A-Za-z0-9])" + re.escape(nm) + r"(?![A-Za-z0-9])", text):
+                    assert r["id"] in t["sources"], (t["id"], nm, "named in the entry and not one of its rows")
+        if any(rows[s]["status"] == "named_not_read" for s in t["sources"]):
+            assert re.search(r"not (?:been )?read", t["standard"]), (t["id"], t["standard"])
+        if not t["sources"]:
+            assert re.search(r"no source|no single published standard", t["standard"]), (t["id"], t["standard"])
+    assert rows["nice-ng97"]["status"] == "named_not_read" and rows["care-act-2014"]["status"] == "named_not_read"
+
+    #  2. the answer reads each row now and says it in one sentence
+    r = client.get("/api/v1/care/tools")
+    assert r.status_code == 200, r.text[:200]
+    body = r.json()
+    cat = {t["id"]: t for t in body["tools"]}
+    assert body["review_days"] == int(reg.get("review_days") or 90) and "Nothing here fetches" in body["sources_basis"]
+    n2 = cat["news2"]["sources"][0]
+    assert n2["id"] == "rcp-news2" and n2["read"] is True and n2["read_on"] == rows["rcp-news2"]["read_on"]
+    standing = sc.row_standing(reg)
+    assert n2["recently_checked"] is standing["rcp-news2"]["recently_checked"]
+    if n2["recently_checked"]:
+        assert f"within the {body['review_days']}-day review period" in n2["status_said"], n2
+    ng97 = cat["dementia_care"]["sources"][0]
+    assert ng97["read"] is False and ng97["status_said"] == "named only: not read at its publisher's page", ng97
+    falls = {s["id"]: s for s in cat["falls_risk"]["sources"]}
+    assert falls["nice-cg161"]["status"] == "replaced" and "replaced by nice-ng249" in falls["nice-cg161"]["status_said"]
+    assert cat["mental_health"]["sources"] == [] and cat["discharge"]["sources"] == []
+
+    #  3. driven: a row past the review period, a row missing, a register that cannot be read
+    real_script = _regs._script
+
+    def _with(edit):
+        def _s(name):
+            m = real_script(name)
+            if name == "sources_check":
+                base = m.load()
+
+                def _load(path=None):
+                    d = copy.deepcopy(base)
+                    edit(d)
+                    return d
+                m.load = _load
+            return m
+        return _s
+
+    def _old(d):
+        for x in d["rows"]:
+            if x["id"] == "rcp-news2":
+                x["read_on"] = (_dt.date.today() - _dt.timedelta(days=200)).isoformat()
+    monkeypatch.setattr(_regs, "_script", _with(_old))
+    s = {t["id"]: t for t in client.get("/api/v1/care/tools").json()["tools"]}["news2"]["sources"][0]
+    assert s["recently_checked"] is False and "200 days ago" in s["status_said"] and "not recently checked" in s["status_said"], s
+
+    def _gone(d):
+        d["rows"] = [x for x in d["rows"] if x["id"] != "rcp-news2"]
+    monkeypatch.setattr(_regs, "_script", _with(_gone))
+    s = {t["id"]: t for t in client.get("/api/v1/care/tools").json()["tools"]}["news2"]["sources"][0]
+    assert s["status"] is None and s["status_said"] == "no such row in the register of sources", s
+
+    def _broken(d):
+        raise ValueError("w955 unreadable")
+    monkeypatch.setattr(_regs, "_script", _with(_broken))
+    bad = client.get("/api/v1/care/tools")
+    assert bad.status_code == 503 and "could not be read" in bad.json()["detail"] and "Nothing is shown" in bad.json()["detail"]
+    monkeypatch.setattr(_regs, "_script", real_script)
+
+    #  4. one staleness rule: check() and row_standing() agree at the edge
+    made = {"review_days": 90, "scan": [], "patterns": [],
+            "rows": [{"id": "at90", "names": ["W955 At"], "status": "current", "page": "https://e.org/a", "read_by": "w",
+                      "read_on": (_dt.date(2026, 11, 13) - _dt.timedelta(days=90)).isoformat()},
+                     {"id": "at91", "names": ["W955 Over"], "status": "current", "page": "https://e.org/b", "read_by": "w",
+                      "read_on": (_dt.date(2026, 11, 13) - _dt.timedelta(days=91)).isoformat()}]}
+    today = _dt.date(2026, 11, 13)
+    st = sc.row_standing(made, today)
+    assert st["at90"]["recently_checked"] is True and st["at91"]["recently_checked"] is False, st
+    assert sc.check(made, root=root, today=today)["not_recently_checked"] == [("at91", 91)]
+
+    #  5. the Care page shows each tool's rows in the server's sentences, and says a failed read
+    page = _code_only((root / "apps/workstation-superapp/src/pages/domains/CareHub.tsx").read_text(encoding="utf-8"))
+    flat = " ".join(page.split())
+    assert "apiJson<any>('/api/v1/care/tools')" in flat and 'data-testid="care-sources"' in flat
+    for drawn in ("{s.status_said}", "{t.standard}", "{sourcesBasis}", "{toolsNote && <p data-testid=\"care-sources-refusal\"",
+                  "setToolsNote(`The tools and their sources could not be read: ${errorMessage(e)}`)"):
+        assert drawn in flat, drawn

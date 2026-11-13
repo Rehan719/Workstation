@@ -64,14 +64,61 @@ _TOOLS = [
      "standard": "Waterlow (its reuse terms have not been read at their owner's page)"},
     {"id": "falls_risk", "name": "Falls count (retired)", "type": "retired", "does": "nothing - retired",
      "standard": "NICE CG161, replaced by NICE NG249 on 29 April 2025"},
-    {"id": "dementia_care", "name": "Dementia Care Planning", "type": "care_plan", "does": "frame", "standard": "NICE NG97"},
+    {"id": "dementia_care", "name": "Dementia Care Planning", "type": "care_plan", "does": "frame",
+     "standard": "NICE NG97 (named only: not read at its publisher's page)"},
     {"id": "mental_health", "name": "Mental Health Care Plan", "type": "care_plan", "does": "frame",
      "standard": "no source has been read for this entry"},
     {"id": "discharge", "name": "Discharge Planning Checklist", "type": "checklist", "does": "frame",
      "standard": "no single published standard is held for this entry"},
     {"id": "safeguarding", "name": "Safeguarding process guidance (adults, England)", "type": "process_guidance",
-     "does": "frame", "standard": "Care Act 2014"},
+     "does": "frame", "standard": "Care Act 2014 (named only: not read at its publisher's page)"},
 ]
+
+#  W955 (P5.13 clause 1) - EACH ENTRY POINTS AT ITS ROWS OF THE ONE REGISTER OF SOURCES, by id (docs/SOURCES.json).
+#  An entry with no row says so in its standard. A missing mapping fails at import, so no entry is added without one.
+_TOOL_SOURCES = {"news2": ("rcp-news2",), "must": ("bapen-must-toolkit",), "waterlow": ("waterlow-terms",),
+                 "falls_risk": ("nice-cg161", "nice-ng249"), "dementia_care": ("nice-ng97",),
+                 "mental_health": (), "discharge": (), "safeguarding": ("care-act-2014",)}
+for _t in _TOOLS:
+    _t["sources"] = list(_TOOL_SOURCES[_t["id"]])
+
+
+def _sources_now(tools):
+    """Each entry's rows read from the register now, each said in one sentence: its status, the date its
+    publisher's page was read and whether that was within the review period. Nothing fetches a publisher's page."""
+    from agentic_core.api.registers import _script
+    sc = _script("sources_check")
+    d = sc.load()
+    standing = sc.row_standing(d)
+    review = int(d.get("review_days") or 90)
+    rows = {r.get("id"): r for r in d["rows"]}
+    out = []
+    for t in tools:
+        resolved = []
+        for sid in t.get("sources") or []:
+            r, s = rows.get(sid), (standing.get(sid) or {})
+            if r is None:
+                resolved.append({"id": sid, "status": None, "read": False, "recently_checked": None,
+                                 "status_said": "no such row in the register of sources"})
+                continue
+            st = r.get("status")
+            if st == "named_not_read":
+                said = "named only: not read at its publisher's page"
+            else:
+                said = f"{st}; its publisher's page was read on {r.get('read_on')}"
+                if st == "replaced" and r.get("replaced_by"):
+                    said += f"; replaced by {r['replaced_by']}"
+                if s.get("recently_checked") is True:
+                    said += f", within the {review}-day review period"
+                elif s.get("recently_checked") is False:
+                    said += (f", {s.get('age_days')} days ago: more than the {review}-day review period, so not "
+                             f"recently checked")
+            resolved.append({"id": sid, "names": r.get("names"), "status": st, "page": r.get("page"),
+                             "read_on": r.get("read_on"), "read": st != "named_not_read",
+                             "recently_checked": s.get("recently_checked"), "replaced_by": r.get("replaced_by"),
+                             "status_said": said})
+        out.append({**t, "sources": resolved})
+    return out, review
 
 
 @router.get("/hazards")
@@ -83,7 +130,18 @@ async def hazard_log_route():
 
 @router.get("/tools")
 async def list_tools():
-    return {"tools": _TOOLS, "total": len(_TOOLS)}
+    """The catalogue, each entry with its rows of the register of sources read now (W955, P5.13 clause 1)."""
+    try:
+        tools, review = _sources_now(_TOOLS)
+    except Exception as e:                      # noqa: BLE001 - said to the reader, never swallowed
+        raise HTTPException(status_code=503, detail=(
+            f"The register of sources could not be read ({type(e).__name__}), so no tool's standard is shown as "
+            f"standing. Nothing is shown in its place.")) from None
+    return {"tools": tools, "total": len(tools), "review_days": review,
+            "sources_basis": ("Each tool's sources are rows of the one register of sources (GET "
+                              "/api/v1/registers/sources), read now: each row's status, the date its publisher's "
+                              "page was read and whether that was within the review period. Nothing here fetches "
+                              "a publisher's page.")}
 
 
 #  W676 - typed, never generated: the first thing a person reporting a safeguarding concern reads.

@@ -6,6 +6,7 @@ import { Layers, HeartPulse, History } from 'lucide-react';
 import { useAdaptiveUI } from '../../components/AdaptiveUIProvider';
 import { DomainTool } from '../../components/DomainTool';
 import { toolsFor } from '../../lib/toolRegistry';
+import { apiJson, errorMessage } from '../../lib/api';     // W955 (P5.13 clause 1)
 
 export const CareHub: React.FC = () => {
   const T = toolsFor('/care');   // W470 — the one tool registry the front doors count from
@@ -15,17 +16,23 @@ export const CareHub: React.FC = () => {
   // W825 (FU-862) - the tools the API lists (GET /api/v1/care/tools had no caller): the select shows each runnable
   // tool's name and sends its id. Withheld and retired instruments stay out of the select, as its label says.
   const [toolNames, setToolNames] = useState<Record<string, string>>({});
+  //  W955 (P5.13 clause 1) - each tool with its rows of the register of sources. A failed read is said, in the
+  //  server's words, and the ids stay as the select's labels: nothing is claimed about a list that was not read
+  const [tools, setTools] = useState<any[]>([]);
+  const [sourcesBasis, setSourcesBasis] = useState('');
+  const [toolsNote, setToolsNote] = useState('');
   useEffect(() => {
     let alive = true;
-    fetch('/api/v1/care/tools')
-      .then(r => (r.ok ? r.json() : null))
+    apiJson<any>('/api/v1/care/tools')
       .then(d => {
         if (!alive || !Array.isArray(d?.tools)) return;
         const names: Record<string, string> = {};
         d.tools.forEach((t: any) => { if (t?.id && t?.name && t?.type !== 'withheld' && t?.type !== 'retired') names[String(t.id)] = String(t.name); });
         setToolNames(names);
+        setTools(d.tools);
+        setSourcesBasis(typeof d.sources_basis === 'string' ? d.sources_basis : '');
       })
-      .catch(() => { /* the ids stay as the labels: nothing is claimed about a list that could not be read */ });
+      .catch(e => { if (alive) setToolsNote(`The tools and their sources could not be read: ${errorMessage(e)}`); });
     return () => { alive = false; };
   }, []);
 
@@ -179,6 +186,33 @@ export const CareHub: React.FC = () => {
             )}
          </div>
       </Card>
+      {/* W955 (P5.13 clause 1) - WHERE EACH TOOL'S STANDARD COMES FROM: the rows of the one register of sources each
+          entry points at, in the server's sentences (status, the date read, whether within the review period) */}
+      {(toolsNote || tools.length > 0) && (
+        <Card className="p-6" data-testid="care-sources">
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Where each tool's standard comes from</h3>
+          {toolsNote && <p data-testid="care-sources-refusal" className="text-[10px] text-amber-300">{toolsNote}</p>}
+          {sourcesBasis && <p className="text-[10px] text-slate-500 mb-3">{sourcesBasis}</p>}
+          <ul className="space-y-2">
+            {tools.map((t: any) => (
+              <li key={t.id} data-testid="care-source-tool" className="text-[10px] text-slate-300">
+                <span className="font-bold text-white">{t.name}</span>: {t.standard}
+                {(t.sources ?? []).length === 0
+                  ? <span className="text-slate-500"> - no row of the register is named for this entry.</span>
+                  : (
+                    <ul className="ml-4 mt-1 space-y-0.5">
+                      {t.sources.map((s: any) => (
+                        <li key={s.id} data-testid="care-source-row" className="text-slate-400">
+                          <span className="font-mono text-slate-500">{s.id}</span> · {s.status_said}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
       {hazards?.hazards && (
         <Card className="p-6" data-testid="care-hazard-log">
           <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Hazard log - open</h3>

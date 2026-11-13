@@ -107,6 +107,23 @@ def reached_but_not_permitted(d, root=None):
     return hits, files, len(banned)
 
 
+def row_standing(d, today=None):
+    """W955 (P5.13 clause 1) - each row's standing now, by the one rule check() uses: a current row read more than
+    review_days ago is not recently checked; a row of any other status has no 'recently checked' to say."""
+    today = today or _dt.date.today()
+    review = int(d.get("review_days") or 90)
+    out = {}
+    for r in d["rows"]:
+        try:
+            age = (today - _dt.date.fromisoformat(str(r.get("read_on")))).days
+        except ValueError:
+            age = None
+        out[r.get("id")] = {"status": r.get("status"), "age_days": age,
+                            "recently_checked": (None if r.get("status") != "current" or age is None
+                                                 else age <= review)}
+    return out
+
+
 def check(d, root=None, today=None):
     today = today or _dt.date.today()
     found, files = scan(d, root)
@@ -124,15 +141,8 @@ def check(d, root=None, today=None):
         elif r.get("status") in ("replaced", "withdrawn") and rel not in (r.get("named_as_replaced_in") or []):
             replaced_readers.append((rel, n, name, r["id"]))
     review = int(d.get("review_days") or 90)
-    stale = []
-    for r in d["rows"]:
-        if r.get("status") == "current":
-            try:
-                age = (today - _dt.date.fromisoformat(str(r.get("read_on")))).days
-            except ValueError:
-                continue
-            if age > review:
-                stale.append((r["id"], age))
+    #  W955 - the one staleness rule, shared with every reader of a row's standing (row_standing)
+    stale = [(i, s["age_days"]) for i, s in row_standing(d, today).items() if s["recently_checked"] is False]
     _reached = reached_but_not_permitted(d, root)
     return {"files_examined": files, "names_found": len(found), "distinct_names": len({n.lower() for _, _, n in found}),
             "rows": len(d["rows"]), "row_problems": row_problems(d), "names_with_no_row": no_row,
