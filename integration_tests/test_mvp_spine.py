@@ -80200,3 +80200,48 @@ def test_w948_fu1066_each_quran_source_says_what_it_permits_one_not_to_be_used_i
     prompt = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
     listed = prompt.split("THAT IS THE WHOLE LIST.", 1)[0]
     assert f"{owner[0]['id']} (W948): send the two letters" in listed
+
+
+def test_w949_p512_marking_says_what_the_screen_did_not_clear_a_clamped_duration_is_said_and_the_form_says_not_to_name_a_pupil(client, monkeypatch):
+    """P5.12 clauses 3, 4 and 6 (W949). Measured: the marking answer carried no screen note, so feedback copied or
+    saved had no word that its subject was only not flagged; the lesson plan clamped its duration with nothing said;
+    and the lesson form had no needs field, so no form told a teacher not to name a pupil, while the API sent the field
+    as typed. Driven with a capture in the composer's place:
+    - the marking answer carries the screen note in a field and at the end of its text, read whole or cut;
+    - a lesson asked for 500 minutes says it was asked for and that 180 was used, in the answer and in its text; one
+      asked for 60 adjusts nothing and says nothing;
+    - the lesson form has the needs field, labelled not to name a pupil, and what is typed there is said to have been
+      sent as typed."""
+    import pathlib
+    import agentic_core.api.education as _edu
+
+    async def _capture(prompt, agent, **kw):
+        return "w949 captured body", {"served_by": "w949-capture"}
+    monkeypatch.setattr(_edu, "ai_text", _capture)
+
+    for work in ("w949 an essay on rivers", "b" * (_edu.WORK_LIMIT + 1)):
+        fb = client.post("/api/v1/education/feedback", json={"student_work": work, "task": "w949 explain",
+                                                              "subject": "Geography"}).json()
+        assert fb["screen_note"] == _edu.SCREEN_NOT_CLEARED, fb.get("screen_note")
+        assert fb["feedback"].rstrip().endswith("_" + _edu.SCREEN_NOT_CLEARED + "_"), fb["feedback"][-300:]
+
+    long = client.post("/api/v1/education/lesson-plan", json={"subject": "Biology", "topic": "w949 cells", "level": "KS3",
+                                                              "duration_minutes": 500}).json()
+    assert long["duration_minutes"] == 180
+    assert long["adjusted"] == ["duration: 500 minutes was asked for and 180 was used (the range is 20 to 180)"], long["adjusted"]
+    assert "Adjusted: duration: 500 minutes was asked for and 180 was used" in long["lesson_plan"], long["lesson_plan"][-300:]
+    short = client.post("/api/v1/education/lesson-plan", json={"subject": "Biology", "topic": "w949 cells", "level": "KS3",
+                                                               "duration_minutes": 5}).json()
+    assert short["duration_minutes"] == 20 and "5 minutes was asked for and 20 was used" in short["lesson_plan"]
+    plain = client.post("/api/v1/education/lesson-plan", json={"subject": "Biology", "topic": "w949 cells",
+                                                               "level": "KS3"}).json()
+    assert plain["adjusted"] == [] and "Adjusted:" not in plain["lesson_plan"]
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    hub = (root / "apps/workstation-superapp/src/pages/domains/EducationHub.tsx").read_text(encoding="utf-8")
+    lesson_form = hub.split('endpoint="/api/v1/education/lesson-plan"', 1)[1].split("]}", 1)[0]
+    assert "{ name: 'special_needs', label: 'Needs to plan for (do not name a pupil)'" in lesson_form, lesson_form[-500:]
+    assert "sent as typed" in lesson_form
+    needs = client.post("/api/v1/education/lesson-plan", json={"subject": "Biology", "topic": "w949 cells", "level": "KS3",
+                                                               "special_needs": "two learners need large print"}).json()
+    assert "do not name a pupil" in needs["lesson_plan"] and "exactly as typed" in needs["lesson_plan"]

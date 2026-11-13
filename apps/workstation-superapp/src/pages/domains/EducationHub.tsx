@@ -135,6 +135,9 @@ export const EducationHub: React.FC = () => {
                   { name: 'topic', label: 'Topic', type: 'textarea', placeholder: 'e.g. Photosynthesis — light-dependent reactions' },
                   { name: 'level', label: 'Level', type: 'text', placeholder: 'e.g. GCSE / KS3 / A-Level', default: 'GCSE' },
                   { name: 'duration_minutes', label: 'Duration (minutes)', type: 'text', default: '60' },
+                  // W949 (P5.12 clause 6) - a pupil is not named: the form says so where the needs are typed
+                  { name: 'special_needs', label: 'Needs to plan for (do not name a pupil)', type: 'textarea',
+                    placeholder: 'e.g. two learners need large print. Never a name: what you type is sent as typed.' },
                 ]}
               />
             )}

@@ -178,6 +178,9 @@ async def generate_lesson_plan(req: LessonPlanRequest):
     """
     _screen = refuse_if_religious_teaching("lesson plan", req.subject, req.topic, req.level)      # W659 (ledger v15 FU-689)
     duration = min(max(req.duration_minutes, 20), 180)
+    #  W949 (P5.12 clause 4) - a figure that was clamped is said to have been, in the answer and in its text
+    _adjusted = ([f"duration: {req.duration_minutes} minutes was asked for and {duration} was used (the range is "
+                  f"20 to 180)"] if duration != req.duration_minutes else [])
 
     prompt = (
         f"Claim no professional role. "
@@ -212,7 +215,9 @@ async def generate_lesson_plan(req: LessonPlanRequest):
         "topic": req.topic,
         "level": req.level,
         "duration_minutes": duration,
-        "lesson_plan": (plan or "") + "\n\n_" + _LESSON_NOTE + (_NEEDS_NOTE if req.special_needs.strip() else "") + "_",
+        "adjusted": _adjusted,
+        "lesson_plan": (plan or "") + "\n\n_" + _LESSON_NOTE + (_NEEDS_NOTE if req.special_needs.strip() else "")
+                       + ((" Adjusted: " + "; ".join(_adjusted) + ".") if _adjusted else "") + "_",
         "religious_subject_screen": _screen,
         "screen_note": SCREEN_NOT_CLEARED,
         "disclaimer": disclaimer_for(provenance, "An AI-drafted lesson plan.", _LESSON_NOTE),
@@ -299,6 +304,9 @@ async def marking_feedback(req: FeedbackRequest):
                f"or a level for work that was not read whole would be of something else. "
                if sections_withheld and not _on_floor else "")
             + "Shorten the work or mark it in parts._")
+    #  W949 (P5.12 clause 3) - what was not checked travels with the TEXT that is read, copied and saved: the
+    #  religion screen only failed to flag this subject
+    feedback = ((feedback + "\n\n") if feedback else "") + "_" + SCREEN_NOT_CLEARED + "_"
     return {
         "feedback_id": uuid.uuid4().hex[:10],
         "subject": req.subject,
@@ -307,6 +315,7 @@ async def marking_feedback(req: FeedbackRequest):
         "feedback": feedback,
         "sections_withheld": sections_withheld,
         "work_read": {"chars": len(_work), "read_chars": min(len(_work), WORK_LIMIT), "read_whole": not _cut},
+        "screen_note": SCREEN_NOT_CLEARED,
         "ai_provenance": note_withheld(provenance, sections_withheld),
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "disclaimer": disclaimer_for(
