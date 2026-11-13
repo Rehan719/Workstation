@@ -102,6 +102,11 @@ const StatutePanel: React.FC = () => {
           <ul className="text-[10px] text-slate-500 list-disc ml-4">{help.this_platform_is_not.map(s => <li key={s}>{s}</li>)}</ul>
           <p className="text-[10px] text-slate-400">{help.to_complain}</p>
           <p className="text-[9px] text-slate-600">{help.basis}</p>
+          {/* W953 (P5.20 clause 6) - the one page of where help is lives on the support page */}
+          <p data-testid="law-help-the-page" className="text-[10px] text-slate-400">
+            The same list, with how to find a qualified scholar and how to raise a claim, is on the{' '}
+            <a href="/support#where-help-is" className="underline text-sky-400">support page</a>.
+          </p>
           {/* W874 (FU-1082, P5.20 clause 7) - what people expect of an AI legal tool, and how this platform measures
               against each, in the server's words */}
           {help.expectations && Array.isArray(help.expectations.rows) && (

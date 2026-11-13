@@ -1,0 +1,66 @@
+{
+  "page": {
+    "a_qualified_scholar": {
+      "heading": "How to find a qualified scholar",
+      "steps": [
+        "Ask in person. At a mosque or a place of learning you trust, ask who answers questions like yours, and take your question to that scholar with the details of your own situation.",
+        "A ruling on your own situation comes from a scholar who has heard it. No answer on this platform is one.",
+        "If it matters to you, ask the scholar what they studied and with whom."
+      ],
+      "names_none_because": "This platform names no scholar and no body: it cannot check anyone's standing as a scholar, and which scholar to ask is for you and your community to choose.",
+      "this_platform": "This platform is not a scholar and gives no religious ruling. What its AI composes on religion is withheld until a named scholar approves that exact text, and no scholar answers questions from the public here."
+    },
+    "regulated_and_free_help": [
+      {
+        "name": "Find legal advice (GOV.UK)",
+        "link": "https://www.gov.uk/find-legal-advice",
+        "for_what": "finding a solicitor, a legal adviser or free advice in England and Wales"
+      },
+      {
+        "name": "Check if you can get legal aid (GOV.UK)",
+        "link": "https://www.gov.uk/legal-aid/check-legal-aid",
+        "for_what": "seeing whether the cost of advice or representation may be met"
+      },
+      {
+        "name": "Citizens Advice",
+        "link": "https://www.citizensadvice.org.uk/",
+        "for_what": "free, independent advice on work, money, housing and consumer problems"
+      },
+      {
+        "name": "Acas",
+        "link": "https://www.acas.org.uk/",
+        "for_what": "free advice on rights at work, and conciliation before a tribunal claim"
+      },
+      {
+        "name": "Law Centres Network",
+        "link": "https://www.lawcentres.org.uk/",
+        "for_what": "free legal help from a local law centre, where one serves the area"
+      },
+      {
+        "name": "Advicenow",
+        "link": "https://www.advicenow.org.uk/",
+        "for_what": "plain guides for a person handling a legal problem themselves"
+      },
+      {
+        "name": "Advocate",
+        "link": "https://weareadvocate.org.uk/",
+        "for_what": "free help from a volunteer barrister, for those who cannot pay and cannot get legal aid"
+      },
+      {
+        "name": "LawWorks",
+        "link": "https://www.lawworks.org.uk/legal-advice-individuals",
+        "for_what": "free legal advice clinics run by volunteer solicitors"
+      }
+    ],
+    "this_platform_is_not": [
+      "a solicitor, a barrister or any regulated legal services provider",
+      "a source of legal advice: it shows published law word for word and labels what its own AI composes",
+      "able to tell you whether a provision applies to your situation"
+    ],
+    "to_complain": "To complain about an answer, raise a claim on the support page. A claim is filed as a change that only a person decides, and it stays open until a person answers it; with sign-in off, the Owner answers every claim. For now a claim can be raised only against a saved deliverable: an answer that was not saved as one cannot be claimed against yet. This platform is not a regulated provider, so no ombudsman or regulator handles complaints about it.",
+    "basis": "Names and addresses only: nothing is copied from any of these sites, and none of them endorses this platform. Each address resolved when it was opened on 2026-10-13. No scholar and no religious body is named.",
+    "the_page": "/support#where-help-is",
+    "composed": false
+  },
+  "refusal_detail": "w953 - a refusal made for this test: the route answered 503 and said nothing more"
+}

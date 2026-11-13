@@ -417,27 +417,9 @@ async def statute_provision(kind: str, year: str, number: str, section: str):
             + ". Nothing was composed in its place.")) from None
 
 
-#  Each entry is a NAME, an ADDRESS and one line of OUR OWN saying who it is for. No sentence of any linked
-#  site is copied. Every address was opened once on 2026-10-13 and resolved; two bodies whose pages refused
-#  an automated visit are not listed until a person has opened them.
-HELP_FROM_A_PERSON = (
-    {"name": "Find legal advice (GOV.UK)", "link": "https://www.gov.uk/find-legal-advice",
-     "for_what": "finding a solicitor, a legal adviser or free advice in England and Wales"},
-    {"name": "Check if you can get legal aid (GOV.UK)", "link": "https://www.gov.uk/legal-aid/check-legal-aid",
-     "for_what": "seeing whether the cost of advice or representation may be met"},
-    {"name": "Citizens Advice", "link": "https://www.citizensadvice.org.uk/",
-     "for_what": "free, independent advice on work, money, housing and consumer problems"},
-    {"name": "Acas", "link": "https://www.acas.org.uk/",
-     "for_what": "free advice on rights at work, and conciliation before a tribunal claim"},
-    {"name": "Law Centres Network", "link": "https://www.lawcentres.org.uk/",
-     "for_what": "free legal help from a local law centre, where one serves the area"},
-    {"name": "Advicenow", "link": "https://www.advicenow.org.uk/",
-     "for_what": "plain guides for a person handling a legal problem themselves"},
-    {"name": "Advocate", "link": "https://weareadvocate.org.uk/",
-     "for_what": "free help from a volunteer barrister, for those who cannot pay and cannot get legal aid"},
-    {"name": "LawWorks", "link": "https://www.lawworks.org.uk/legal-advice-individuals",
-     "for_what": "free legal advice clinics run by volunteer solicitors"},
-)
+#  W953 (P5.20 clause 6) - the eight places of legal help moved, unchanged, to the one page's source
+#  (agentic_core/api/where_help.py); they are re-exported here because the own-case screen reads them from law.
+from agentic_core.api.where_help import HELP_FROM_A_PERSON  # noqa: E402
 
 
 # ══════════════════════════════════════════════════════════════════════════════════════════════════════════
@@ -532,18 +514,9 @@ def law_tools():
 def help_from_a_person():
     """Where regulated and free legal help is, what this platform is not, and how to complain. Links only."""
     from agentic_core.legal import expectations as _exp874     # W874 (FU-1082, P5.20 clause 7)
+    from agentic_core.api import where_help as _wh953          # W953 (P5.20 clause 6) - the one page's one source
     return {
-        "regulated_and_free_help": [dict(h) for h in HELP_FROM_A_PERSON],
-        "this_platform_is_not": [
-            "a solicitor, a barrister or any regulated legal services provider",
-            "a source of legal advice: it shows published law word for word and labels what its own AI composes",
-            "able to tell you whether a provision applies to your situation",
-        ],
-        "to_complain": ("To complain about an answer here, tell the Owner of this platform what you asked, what "
-                        "you were shown and what was wrong with it. This platform is not a regulated provider, "
-                        "so no ombudsman or regulator handles complaints about it."),
-        "basis": ("Names and addresses only: nothing is copied from any of these sites, and none of them "
-                  "endorses this platform. Each address resolved when it was opened on 2026-10-13."),
+        **_wh953.page(),
         #  W874 (FU-1082, P5.20 clause 7) - the five things people expect of an AI legal tool, and how this platform
         #  measures against each: a self-assessment, each row naming the code that makes it true
         "expectations": _exp874.assessment(),

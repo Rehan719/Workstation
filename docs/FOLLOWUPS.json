@@ -23893,6 +23893,24 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in W952. gateway.query_meta takes keep_text (true by default, so every other caller is unchanged); when false the interaction log records that the call was made - its agent, and how long each text was - and not the texts, the AI memory store records nothing of it, and the answer says why. ai_text, the one helper every domain tool composes through, passes keep_text false when the call carries a person's own words or material and no signed-in person owns it; a signed-in person's own call is kept as before, stamped with their id. Driven in test_w952 on the native floor across Care, Education and Employment tools, searching every file under both data roots."
+    },
+    {
+      "id": "FU-1190",
+      "title": "A complaint about an answer that was not saved as a deliverable has no route to a person",
+      "why": "P5.20 clause 6 asks the one page of where help is to say how to complain to the Owner about an answer. W953 measured the one route that reaches a person: a claim (P5.3, W941-W942), filed as a change only a person decides and open until a person answers it - raised only against a saved deliverable. An answer from a domain tool that was not saved as one (a Law research answer, a Care draft, a religion answer) has no way to reach the Owner, and the page said 'tell the Owner' without one. The page now says so. Done when a person can raise a claim against any answer they were shown - what served it and the fingerprint of its text, never the text itself before sign-in (P5.12's boundary) - or the page names the one route there is and the row says why no other is built.",
+      "source": "W953 (P5.20 clause 6: how to complain, measured against the routes)",
+      "found": "2026-11-13",
+      "files": [
+        "agentic_core/api/support_claims.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.20",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.20 clause 6 (how to complain to the Owner about an answer)",
+      "tier": 2
     }
   ],
   "routes": [

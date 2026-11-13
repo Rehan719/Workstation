@@ -70,8 +70,9 @@
    "domain": "Law",
    "subject": "How long a person has to bring an employment tribunal claim",
    "nation": "England, Wales, Scotland",
-   "state": "nothing_built",
-   "today": "asked this, the research form returns the question's own words; the calculator is built in a later round"
+   "state": "arithmetic",
+   "today": "the primary limit is worked out from the date it runs from, using the words of the provision that sets it, read from its publisher when asked, with who to ask; early conciliation and extensions are not accounted for (built in W875; this row was left as nothing built until W953)",
+   "driven_by": "test_w875_how_long_a_time_limit_runs_is_arithmetic_on_the_rules_own_words_with_a_route"
   },
   {
    "id": "law-urgent-routes",
@@ -86,8 +87,9 @@
    "domain": "Law",
    "subject": "Where to go for help from a person",
    "nation": "England",
-   "state": "nothing_built",
-   "today": "no directory is held"
+   "state": "journey",
+   "today": "one page, on the support page, lists regulated and free legal help by name and address with one line of this platform's own for each, says how to find a qualified scholar without naming one, and says how to complain; the Law page's help is built from the same source, and nothing is copied from any site",
+   "driven_by": "test_w953_the_one_page_of_where_help_is_says_how_to_find_a_scholar_and_is_off_the_law_route"
   },
   {
    "id": "law-research",

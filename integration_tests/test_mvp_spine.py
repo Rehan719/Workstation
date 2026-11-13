@@ -80480,3 +80480,103 @@ def test_w952_fu1189_nothing_a_person_types_into_a_domain_tool_is_stored_before_
     asyncio.new_event_loop().run_until_complete(_aip.ai_text("w952 summarise the material", "w952-material",
                                                              material=f"{mat} a person's document"))
     assert not holding({mat}), ("material a person handed over was stored before sign-in", holding({mat}))
+
+
+def test_w953_the_one_page_of_where_help_is_says_how_to_find_a_scholar_and_is_off_the_law_route(client):
+    """P5.20 clause 6 (W953). The one page of where help is says how to find a qualified scholar, where regulated and
+    free legal help is, and how to complain about an answer; advice charities are linked, never copied. Measured: the
+    page said nothing of a scholar and lived only on the Law route, and its complaint sentence named no way to reach a
+    person. Held here:
+    - the route outside Law answers the one page, read from one source, and takes nothing from the caller;
+    - how to find a qualified scholar is in the platform's own words, names no scholar or body, and says why;
+    - the Law page's help is built from the same source, so the two cannot say different things;
+    - how to complain names the one route that reaches a person (a claim) and what it cannot yet take;
+    - the support page draws it, a failed read is said, and the Law page points to it;
+    - the rendered test reads the route's own answer;
+    - the coverage register says a person can use it, and the gap the complaint sentence states is a row."""
+    import inspect
+    import json
+    import re
+    from pathlib import Path
+
+    from agentic_core.api import where_help as _wh
+    root = Path(__file__).resolve().parents[1]
+    page = _wh.page()
+
+    #  1. the route outside Law: the one page, from the one source, taking nothing from the caller
+    r = client.get("/api/v1/support/where-help-is")
+    assert r.status_code == 200, r.text[:200]
+    got = r.json()
+    assert got == page and got["composed"] is False and got["the_page"] == "/support#where-help-is"
+    route = next(x for x in client.app.routes if getattr(x, "path", "") == "/api/v1/support/where-help-is")
+    assert not inspect.signature(route.endpoint).parameters, "the page takes something from the caller"
+    assert not any(getattr(x, "path", "").startswith("/api/v1/law/") and x.endpoint is route.endpoint
+                   for x in client.app.routes)
+
+    #  2. how to find a qualified scholar: the platform's own words, no scholar or body named, and why
+    s = got["a_qualified_scholar"]
+    assert set(s) == {"heading", "steps", "names_none_because", "this_platform"}, sorted(s)
+    assert s["heading"] == "How to find a qualified scholar" and len(s["steps"]) >= 2
+    assert all(x.strip().endswith(".") and len(x) <= 240 for x in s["steps"]), s["steps"]
+    flat = json.dumps(s)
+    assert not re.search(r"https?://|www\.|\.org|\.uk|\.com", flat), ("the scholar part links or names a site", flat)
+    assert "names no scholar and no body" in s["names_none_because"]
+    assert "cannot check anyone's standing" in s["names_none_because"]
+    assert "gives no religious ruling" in s["this_platform"] and "withheld until a named scholar approves" in s["this_platform"]
+
+    #  3. the Law page's help is the same page, with the five expectations beside it
+    h = client.get("/api/v1/law/help").json()
+    assert {k: h[k] for k in page} == page and "expectations" in h, sorted(h)
+    from agentic_core.api import law as _law
+    assert _law.HELP_FROM_A_PERSON is _wh.HELP_FROM_A_PERSON
+    law_src = (root / "agentic_core/api/law.py").read_text(encoding="utf-8")
+    assert "HELP_FROM_A_PERSON = (" not in law_src and "tell the Owner of this platform" not in law_src
+
+    #  4. how to complain: the one route that reaches a person, and what it cannot yet take
+    c = got["to_complain"]
+    assert "raise a claim on the support page" in c and "only a person decides" in c and "open until a person answers" in c
+    assert "only against a saved deliverable" in c and "not a regulated provider" in c
+    assert "tell the Owner" not in c, "the page names a way to reach the Owner that does not exist"
+
+    #  5. the support page draws it; a failed read is said; the Law page points to it
+    A = root / "apps/workstation-superapp/src"
+    comp = _code_only((A / "components/WhereHelpIs.tsx").read_text(encoding="utf-8"))
+    flat_c = " ".join(comp.split())
+    assert flat_c.count("/api/v1/support/where-help-is") == 1 and 'id="where-help-is"' in flat_c
+    for drawn in ("{help.a_qualified_scholar.heading}", "{help.a_qualified_scholar.names_none_because}",
+                  "{help.a_qualified_scholar.this_platform}", "{help.to_complain}", "{help.basis}", 'href={e.link}',
+                  'rel="noreferrer"', "Where help is could not be read: {readError}"):
+        assert drawn in flat_c, drawn
+    for banned in ("you should", "this means", "in summary", "advice for you"):
+        assert banned not in flat_c.lower(), banned
+    sup = (A / "pages/support/Support.tsx").read_text(encoding="utf-8")
+    assert "<WhereHelpIs />" in sup and "from '../../components/WhereHelpIs'" in sup
+    panel = (A / "components/StatutePanel.tsx").read_text(encoding="utf-8")
+    assert 'href="/support#where-help-is"' in panel and "how to find a qualified scholar" in panel
+
+    #  6. the rendered test reads the route's own answer
+    fx = json.loads((A / "components/WhereHelpIs.fixture.json").read_text(encoding="utf-8"))
+    assert fx["page"] == got, "the rendered test reads a page the route does not answer"
+    t = (A / "components/WhereHelpIs.test.tsx").read_text(encoding="utf-8")
+    assert "where-help-refusal" in t and "names_none_because" in t and "querySelectorAll('a').length).toBe(0)" in t
+
+    #  7. the coverage register says a person can use it; the time-limit row says what W875 built
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("w953_cov", root / "scripts" / "coverage_register.py")
+    cov = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cov)
+    reg = cov.load()
+    rows = {x["id"]: x for x in reg["rows"]}
+    me = inspect.currentframe().f_code.co_name
+    assert rows["law-directory"]["state"] == "journey" and rows["law-directory"]["driven_by"] == me, rows["law-directory"]
+    assert "qualified scholar" in rows["law-directory"]["today"]
+    assert rows["law-tribunal-time-limit"]["state"] == "arithmetic"
+    assert rows["law-tribunal-time-limit"]["driven_by"].startswith("test_w875_")
+    tests = set(re.findall(r"^def (test_\w+)", Path(__file__).read_text(encoding="utf-8"), re.M))
+    assert cov.check(reg, tests)["problems"] == [], cov.check(reg, tests)["problems"]
+
+    #  8. the gap the complaint sentence states is a row on P5.20
+    fu = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))
+    gap = [x for x in fu["items"]
+           if x.get("title") == "A complaint about an answer that was not saved as a deliverable has no route to a person"]
+    assert len(gap) == 1 and gap[0].get("slot") == "P5.20", gap

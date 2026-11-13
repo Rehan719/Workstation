@@ -3,6 +3,7 @@ import axios from 'axios';
 import { LifeBuoy, CheckCircle2, XCircle, AlertTriangle, FileText } from 'lucide-react';
 import { provenanceBadge } from '../../lib/api';
 import { SupportClaims } from '../../components/SupportClaims';   // W942 (P5.3)
+import { WhereHelpIs } from '../../components/WhereHelpIs';       // W953 (P5.20 clause 6)
 
 // P3.18 — the support surface, told truthfully.
 //
@@ -288,6 +289,8 @@ export const Support: React.FC = () => {
       </section>
       {/* W942 (P5.3) - claims that an output is wrong: OPEN until a person answers them */}
       <SupportClaims />
+      {/* W953 (P5.20 clause 6) - the one page of where help is: a qualified scholar, legal help, how to complain */}
+      <WhereHelpIs />
     </div>
   );
 };

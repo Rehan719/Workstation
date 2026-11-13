@@ -501,6 +501,10 @@ app.include_router(pricing_api.router, dependencies=[_Depends(_get_current_user)
 #  only a person decides, logged to the UEG, and OPEN until a person answers it
 from agentic_core.api import support_claims as support_claims_api
 app.include_router(support_claims_api.router, dependencies=[_Depends(_get_current_user)])
+#  W953 (P5.20 clause 6) - the one page of where help is: how to find a qualified scholar, where regulated and free
+#  legal help is, and how to complain about an answer. Links and the platform's own words only
+from agentic_core.api import where_help as where_help_api
+app.include_router(where_help_api.router, dependencies=[_Depends(_get_current_user)])
 from agentic_core.api import board as board_api
 app.include_router(board_api.router, dependencies=[_Depends(_require_admin)])   # W505 (P2.6): the Board is the apex governance tier
 
