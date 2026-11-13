@@ -9,6 +9,7 @@ import { ServiceContracts } from './ServiceContracts';
 import { CharityDirectives } from './CharityDirectives';
 import { VenturePortfolioPanel, TransferPanel } from './EconomyOperations';
 import { complianceChip, fundingLabel, apiJson } from '../../lib/api';
+import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W928
 import { domainLabel } from '../../lib/taxonomy';   // W735 (FU-831)
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -55,6 +56,7 @@ const STAGE_LABEL: Record<string, string> = {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export const VSBEconomy: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W928 - a read that fails is said
   const [types, setTypes] = useState<EntityType[]>([]);
   // W298 - the economy surface is SCOPE-AWARE: manage the workstation apex OR any of YOUR
   // established VSBs (the backend was already fully per-VSB; only this UI pinned the apex).
@@ -148,7 +150,7 @@ export const VSBEconomy: React.FC = () => {
     apiJson('/api/v1/economy/living-vsbs').then(setLiving).catch(() => setLoadErr('Could not load the living entities — showing nothing rather than stale figures.'));
 
   useEffect(() => {
-    apiJson('/api/v1/economy/entity-types').then(d => setTypes(d.types ?? [])).catch(() => {});
+    apiJson('/api/v1/economy/entity-types').then(d => setTypes(d.types ?? [])).catch(noteRead('the entity types'));
     loadOwnerPay();
     loadBoardPack();
     loadLiving();
@@ -308,6 +310,7 @@ export const VSBEconomy: React.FC = () => {
 
   return (
     <div className="space-y-10 pb-24">
+      <ReadFailures failures={readFailures} />
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">VSB · Living Economy</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Economic Metabolism</h1>

@@ -114,4 +114,21 @@ describe('GenesisJourney, the stage rail and the rank stage, rendered', () => {
     expect([chip(2), why(2)]).toEqual(['not known',
       'the journey recorded no verification entry for "research", so whether this stage ran is not known']);
   });
+
+  // W928 - a read the page needs and the server refuses is said where the page starts, with the server's reason
+  it('a refused read of the entity types is said, with the server\'s reason', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      const reply = (status: number, body: unknown) => ({ ok: status < 400, status, json: async () => body });
+      if (url === '/api/v1/economy/entity-types') return reply(503, { detail: 'the entity type register could not be read' });
+      if (url === '/api/v1/genesis/price') return reply(200, captured.price);
+      return reply(200, {});
+    }));
+    render(
+      <MemoryRouter>
+        <GenesisJourney />
+      </MemoryRouter>,
+    );
+    expect((await screen.findByTestId('read-failure')).textContent)
+      .toBe('Could not read the entity types — Failed (HTTP 503): the entity type register could not be read');
+  });
 });

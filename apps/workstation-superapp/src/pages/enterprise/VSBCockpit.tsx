@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { provenanceBadge, provenanceMapBadge, provenanceMapFromTrace } from '../../lib/api';
+import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W928
 import { VBSSystemsPanel } from '../../components/VBSSystemsPanel';
 import { downloadExport } from '../../lib/download';
 import axios from 'axios';
@@ -143,6 +144,7 @@ const EditCascade: React.FC<{ cascadeId: string; onSaved: () => void }> = ({ cas
 };
 
 export const VSBCockpit: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W928 - a read that fails is said
   const [vsbs, setVsbs] = useState<VSBRow[]>([]);
   const [vsbFilter, setVsbFilter] = useState('');
   const [selected, setSelected] = useState<string>('');
@@ -237,11 +239,11 @@ export const VSBCockpit: React.FC = () => {
       const chosen = (want && ents.find(e => e.vsb_id === want)) || ents.find(e => e.has_board) || ents[0];
       if (chosen) setSelected(chosen.vsb_id);
     }).catch(() => setVsbsState('error'));
-    axios.get('/api/v1/mgmt/standards').then(r => setStandards(r.data.standards || [])).catch(() => {});
-    axios.get('/api/v1/bto/components').then(r => setBtoComponents(r.data.components || [])).catch(() => {});
+    axios.get('/api/v1/mgmt/standards').then(r => setStandards(r.data.standards || [])).catch(noteRead('the management standards'));
+    axios.get('/api/v1/bto/components').then(r => setBtoComponents(r.data.components || [])).catch(noteRead('the transformation components'));
     axios.get('/api/v1/deliverables/output-formats').then(r => {
       if (Array.isArray(r.data?.live) && r.data.live.length) setDelivFormats(r.data.live.map((f: any) => ({ id: f.id, label: f.label })));
-    }).catch(() => {});
+    }).catch(noteRead('the output formats'));
   }, []);
 
   // §13 (W338) — drift honesty reaches the USER: the shipped-body manifest (stale flag + reason)
@@ -695,6 +697,7 @@ export const VSBCockpit: React.FC = () => {
 
   return (
     <div className="space-y-8 pb-24">
+      <ReadFailures failures={readFailures} />
       {actErr && <p className="text-vital text-xs font-bold">{actErr}</p>}
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · VSB Enterprise</p>

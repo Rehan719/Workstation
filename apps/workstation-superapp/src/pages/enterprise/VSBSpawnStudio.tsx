@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { provenanceBadge, provenanceMapBadge, provenanceMapFromTrace, axiosDetail} from '../../lib/api';
+import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W928
 import { DOMAINS as CANON_DOMAINS, domainLabel } from '../../lib/taxonomy';   // W735 (FU-831): domainLabel
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -478,6 +479,7 @@ export const VSBSpawnStudio: React.FC = () => {
 const VSBDetailPanel: React.FC<{
   d?: VSBDetail; orch?: OrchRun; busy: boolean; onOrchestrate: () => void;
 }> = ({ d, orch, busy, onOrchestrate }) => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W928 - a read that fails is said
   const [swarmRun, setSwarmRun] = useState<SwarmRunResult | null>(null);
   const [swarmBusy, setSwarmBusy] = useState(false);
   const [swarmErr, setSwarmErr] = useState('');
@@ -487,9 +489,9 @@ const VSBDetailPanel: React.FC<{
   const [delivTypes, setDelivTypes] = useState<string[]>([]);
   useEffect(() => {
     if (d?.vsb_id) axios.get(`/api/v1/deliverables?vsb_id=${d.vsb_id}`)
-      .then(r => setDeliverables(r.data.deliverables || [])).catch(() => {});
+      .then(r => { clearRead("this entity's deliverables"); setDeliverables(r.data.deliverables || []); }).catch(noteRead("this entity's deliverables"));
     axios.get('/api/v1/deliverables/types')
-      .then(r => setDelivTypes((r.data.types || []).map((t: { id: string }) => t.id))).catch(() => {});
+      .then(r => setDelivTypes((r.data.types || []).map((t: { id: string }) => t.id))).catch(noteRead('the deliverable types'));
   }, [d?.vsb_id]);
   if (!d) return <div className="ml-4 px-4 py-3 text-[10px] text-slate-600 font-bold uppercase tracking-widest">Loading org…</div>;
   const directors = d.board?.directors ?? [];
@@ -521,6 +523,7 @@ const VSBDetailPanel: React.FC<{
   };
   return (
     <div className="ml-4 mb-2 p-4 rounded-xl bg-slate-950 border border-aura/15 space-y-4">
+      <ReadFailures failures={readFailures} />
       <div>
         <p className="text-[9px] font-black uppercase tracking-widest text-aura mb-1.5">Board of Directors (arms-length)</p>
         {/* W492 (refutation) - this fallback asserted a trained twin when the board sent no title */}

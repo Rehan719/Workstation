@@ -3,6 +3,7 @@ import { Card, Button } from '@workstation/ui';
 import { FileText, Loader2, Sparkles, RefreshCw, Layers, Download } from 'lucide-react';
 import { downloadExport } from '../lib/download';
 import { apiJson, errorMessage, provenanceBadge, qmsChip, qmsStubFlag, complianceChip, immuneReading } from '../lib/api';
+import { ReadFailures, useReadFailures } from '../components/ReadFailures';   // W928
 
 interface DType { id: string; sections: string[] }
 interface DeliverableSummary {
@@ -50,6 +51,7 @@ interface Deliverable {
 }
 
 export const Deliverables: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W928 - a read that fails is said
   const [types, setTypes] = useState<DType[]>([]);
   const [list, setList] = useState<DeliverableSummary[]>([]);
   const [type, setType] = useState('report');
@@ -79,13 +81,14 @@ export const Deliverables: React.FC = () => {
     apiJson('/api/v1/deliverables').then(d => {
       setList(d.deliverables || []);
       setListBasis({ truncated: d.truncated, total_basis: d.total_basis });
-    }).catch(() => {});
+      clearRead('the deliverables');
+    }).catch(noteRead('the deliverables'));
 
   useEffect(() => {
     apiJson('/api/v1/deliverables/types').then(d => setTypes(d.types || [])).catch(() => setError('Failed to load types'));
     apiJson('/api/v1/deliverables/output-formats')
       .then(d => { if (Array.isArray(d.live) && d.live.length) setFormats(d.live.map((f: any) => ({ id: f.id, label: f.label, basis: typeof f.basis === 'string' ? f.basis : undefined }))); })
-      .catch(() => {});
+      .catch(noteRead('the output formats'));
     loadList().finally(() => setLoading(false));
   }, []);
 
@@ -155,6 +158,7 @@ export const Deliverables: React.FC = () => {
 
   return (
     <div className="space-y-8 pb-24">
+      <ReadFailures failures={readFailures} />
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">IDBO · Living Deliverables</p>
         <h1 className="text-4xl @[640px]:text-5xl font-black tracking-tight text-white uppercase italic">Living Deliverables</h1>

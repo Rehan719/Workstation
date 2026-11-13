@@ -13,6 +13,7 @@ import { getPrefs } from '../lib/userPrefs';
 import { listOutputs, type OutputRecord } from '../lib/outputHistory';
 import { useT } from '../lib/i18n';
 import { ServingNow } from '../components/ServingNow';   // W737 (FU-967)
+import { ReadFailures, useReadFailures } from '../components/ReadFailures';   // W928
 
 // The unified front door (§3A + §17). It orients every user to the two ways Workstation IDBO serves
 // them — (1) work now with AI across a domain, or (2) take a challenge Concept→Commercialisation into a
@@ -66,6 +67,7 @@ const PILLARS = [
 ];
 
 export const DashboardNew: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W928 - a read that fails is said
   const { user, setCurrentTab } = useStore();
   const navigate = useNavigate();
   const { t, rtl } = useT();
@@ -115,7 +117,7 @@ export const DashboardNew: React.FC = () => {
                   cpuWindow: typeof data.cpu_window_seconds === 'number' ? data.cpu_window_seconds : null,   // W756 (FU-1136)
                   memory: typeof data.memory_percent === 'number' ? data.memory_percent : null,
                   totalProjects: data.total_projects ?? 0 });
-    }).catch(() => {});
+    }).catch(noteRead("this machine's figures"));
 
     // W493 (FU-205) - the autonomy levers the identity copy claims, read rather than assumed
     axios.get('/api/v1/heartbeat/status').then(({ data }) => {
@@ -143,7 +145,7 @@ export const DashboardNew: React.FC = () => {
         unmeasuredShare: unmeasured.reduce((a, [, t]) => a + (Number(t.weight) || 0), 0),
         unmeasuredTerms: unmeasured.map(([k]) => k.replace(/_/g, ' ')),
       });
-    }).catch(() => {});
+    }).catch(noteRead("the organism's health"));
   }, []);
 
   const displayActivity = activity.length > 0 ? activity
@@ -154,6 +156,7 @@ export const DashboardNew: React.FC = () => {
   return (
     <>
       <SearchMeshModal open={searchOpen} onClose={() => setSearchOpen(false)} />
+      <ReadFailures failures={readFailures} />
       <div dir={rtl ? 'rtl' : undefined} className="space-y-12 animate-in fade-in duration-700">
 
         {/* Header — honest, vision-framed */}

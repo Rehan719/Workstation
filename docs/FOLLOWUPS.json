@@ -23665,8 +23665,8 @@
     },
     {
       "id": "FU-1179",
-      "title": "Thirty-eight reads on fifteen pages use an answer's body whatever its HTTP status",
-      "why": "lib/api.ts's apiJson was written as the class-kill for HTTP-status blindness, yet 38 reads on 15 pages still called fetch(...).then(r => r.json()) and used the body whatever the status, so a refusal's {detail} was read as the answer. W926 found what that does on the Board page: a failed read of the Chief's model rendered as 'A role, not a modelled twin', and a failed status read blanked the page.",
+      "title": "Thirty-nine reads on fifteen pages use an answer's body whatever its HTTP status",
+      "why": "lib/api.ts's apiJson was written as the class-kill for HTTP-status blindness, yet 39 reads on 15 pages still called fetch(...).then(r => r.json()) and used the body whatever the status, so a refusal's {detail} was read as the answer. W926 found what that does on the Board page: a failed read of the Chief's model rendered as 'A role, not a modelled twin', and a failed status read blanked the page.",
       "source": "W927 (measured after W926 found the class on the Board page)",
       "found": "2026-11-13",
       "files": [
@@ -23684,7 +23684,7 @@
       "tier": 2,
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
-      "close_note": "Built in the round that registered it. Each of the 38 reads goes through apiJson, so a refusal reaches the page's own error path and is never read as data; apiJson is imported where it was not. Two catches on the Genesis page said 'backend unreachable', which a refusal is not. One of them followed a decision already recorded and said 'nothing changed'. Both now say what happened, with the server's reason. test_w927 holds every page free of an unchecked read, every caller importing the helper, and the helper refusing a non-2xx."
+      "close_note": "Built in the round that registered it. Each of the 39 reads goes through apiJson, so a refusal reaches the page's own error path and is never read as data; apiJson is imported where it was not. Two catches on the Genesis page said 'backend unreachable', which a refusal is not. One of them followed a decision already recorded and said 'nothing changed'. Both now say what happened, with the server's reason. test_w927 holds every page free of an unchecked read, every caller importing the helper, and the helper refusing a non-2xx. The first pattern missed one read whose URL template calls a function (the resource fabric's listing); it was converted by hand in the same round, and W928 corrected this row's count."
     },
     {
       "id": "FU-1180",

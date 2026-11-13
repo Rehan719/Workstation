@@ -78594,3 +78594,44 @@ def test_w927_no_page_uses_an_answers_body_before_checking_its_status():
 
     #  a call that ends in a catch saying nothing: counted, and never more than when this round counted them
     assert silent <= 41, ("more calls end in a catch that says nothing than the open row counted", silent)
+
+
+def test_w928_the_pages_a_founder_uses_most_say_when_a_read_fails():
+    """W928 (part 1 of the open row W927 registered). Since W927 every read checks its status, so a refusal reaches the
+    read's catch; twelve catches on seven pages did nothing, leaving the page empty or loading with no sentence. The
+    economy, journey, cockpit, entity, deliverables, dashboard and capital pages now note a failed read by what it was
+    reading and show it where their content starts (components/ReadFailures.tsx), with the server's own reason. The
+    capital page's portfolio summary dropped a non-200 answer without a word; it says it now. Held here:
+    - none of the seven pages ends a read in a catch that says nothing;
+    - each page that notes a failure shows the list, once per component that keeps one;
+    - the sentence carries the status and the server's detail, for a fetch read and an axios read alike;
+    - the count of catches that say nothing, app-wide, is twelve lower than W927 measured;
+    - the journey page's rendered test drives a refused read and reads the server's reason on the page."""
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = root / "apps/workstation-superapp/src"
+    rf = (src / "components/ReadFailures.tsx").read_text(encoding="utf-8")
+    assert 'data-testid="read-failure"' in rf and "Could not read {what} — {why}" in rf
+    assert "return `Failed (HTTP ${ax.response.status}): ${axiosDetail(e, 'no reason given')}`;" in rf
+    assert "return errorMessage(e);" in rf
+    pages = ["pages/enterprise/VSBEconomy.tsx", "pages/enterprise/VSBCockpit.tsx", "pages/enterprise/VSBSpawnStudio.tsx",
+             "pages/synthesis/GenesisJourney.tsx", "pages/Deliverables.tsx", "pages/DashboardNew.tsx",
+             "pages/enterprise/CapitalDashboard.tsx"]
+    for rel in pages:
+        t = (src / rel).read_text(encoding="utf-8")
+        #  read as code: a comment that names the old pattern is not a read
+        assert not re.search(r"\.catch\(\(\)\s*=>\s*\{\s*\}\)", _code_only(t)), (
+            "a read on this page still fails without a word", rel)
+        hooks = t.count("= useReadFailures();")
+        assert hooks >= 1 and t.count("<ReadFailures failures={readFailures} />") == hooks, (
+            "a component that notes failed reads does not show them", rel)
+        assert "from '../components/ReadFailures'" in t or "from '../../components/ReadFailures'" in t, rel
+        assert "noteRead(" in t, rel
+    cap = (src / "pages/enterprise/CapitalDashboard.tsx").read_text(encoding="utf-8")
+    assert "noteRead('the portfolio summary')(new ApiError(res.status," in cap, "a non-200 summary is dropped again"
+    silent = sum(len(re.findall(r"\.catch\(\(\)\s*=>\s*\{\s*\}\)", f.read_text(encoding="utf-8")))
+                 for f in list(src.rglob("*.tsx")) + list(src.rglob("*.ts")) if not f.name.endswith((".test.tsx", ".test.ts")))
+    assert silent <= 29, ("more calls end in a catch that says nothing than are left after W928", silent)
+    gj = (src / "pages/synthesis/GenesisJourney.test.tsx").read_text(encoding="utf-8")
+    assert "findByTestId('read-failure')" in gj and "Failed (HTTP 503): the entity type register could not be read" in gj

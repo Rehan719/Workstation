@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { GenerationPrice } from '../../components/GenerationPrice';
 import { qmsChip, provenanceMapBadge, complianceChip, layerTitle, immuneReading, apiJson, errorMessage } from '../../lib/api';
+import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W928
 import { REALMS as CANON_REALMS, DOMAINS as CANON_DOMAINS, PRODUCTS, PRODUCT_LABELS } from '../../lib/taxonomy';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { saveOutput } from '../../lib/outputHistory';
@@ -195,6 +196,7 @@ const DOMAINS: string[] = [...CANON_DOMAINS];
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export const GenesisJourney: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W928 - a read that fails is said
   const navigate = useNavigate();
   const [sp] = useSearchParams();   // seedable from a domain tool (offering 1 -> offering 2, §3A)
   // W303 - the bridge carries the user's actual WORK PRODUCT (not a truncated input slice):
@@ -261,7 +263,7 @@ export const GenesisJourney: React.FC = () => {
   useEffect(() => {
     apiJson('/api/v1/economy/entity-types')
       .then(d => { setEntityTypes(d.types ?? []); if (d.default) setEntityType(d.default); })
-      .catch(() => {});
+      .catch(noteRead('the entity types'));
   }, []);
   // §13 — the VSB IDBO Entity Repository (integrated Website · Web app · Phone app scaffold)
   const [repo, setRepo] = useState<RepoManifest | null>(null);
@@ -587,6 +589,7 @@ export const GenesisJourney: React.FC = () => {
 
   return (
     <div className="space-y-10 pb-24">
+      <ReadFailures failures={readFailures} />
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-highlight mb-2">
           Workstation IDBO · Offering 2 · Build an Enterprise

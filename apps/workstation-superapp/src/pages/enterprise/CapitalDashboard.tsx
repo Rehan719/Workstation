@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { apiJson, errorMessage } from '../../lib/api';
+import { apiJson, errorMessage, ApiError } from '../../lib/api';
+import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W928
 import { Card, Button, Badge, notImplemented } from '@workstation/ui';
 import {
   TrendingUp, ShieldAlert, PieChart, Activity,
@@ -70,6 +71,7 @@ interface CcaChange {
 }
 
 export const CapitalDashboard: React.FC = () => {
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();   // W928 - a read that fails is said
   const [portfolio, setPortfolio] = useState<PortfolioStats | null>(null);
   const [fund, setFund] = useState<FundStatus | null>(null);
   const [fundError, setFundError] = useState('');
@@ -109,8 +111,13 @@ export const CapitalDashboard: React.FC = () => {
       .catch(() => { setAutoEconomy(null); setHeartbeatRunning(null); });
 
     axios.get<PortfolioStats>("/api/v1/projects/stats/summary", { validateStatus: () => true })
-      .then(res => { if (res.status === 200) setPortfolio(res.data); })
-      .catch(() => {});
+      .then(res => {
+        if (res.status === 200) { setPortfolio(res.data); return; }
+        //  W928 - a refusal was dropped here without a word: it is said, with the server's reason
+        const detail = (res.data as unknown as { detail?: unknown })?.detail;
+        noteRead('the portfolio summary')(new ApiError(res.status, typeof detail === 'string' ? detail : 'no reason given'));
+      })
+      .catch(noteRead('the portfolio summary'));
 
     // W415 — the Evolution tab used to render two hardcoded "constitutional articles" (see below).
     // The real record of governance change is the Change Control Agency store, so read that.
@@ -121,6 +128,7 @@ export const CapitalDashboard: React.FC = () => {
 
   return (
     <div className="space-y-10">
+      <ReadFailures failures={readFailures} />
       <header className="flex flex-col @[480px]:flex-row @[480px]:justify-between @[480px]:items-end gap-6">
         <div>
           <h1 className="text-2xl @[480px]:text-3xl @[680px]:text-5xl font-black text-white uppercase italic break-words">Sovereign Capital</h1>
