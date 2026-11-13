@@ -21141,11 +21141,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P4.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W885",
       "note": "",
       "slot_source": "the readiness round's own measure names this as what it cannot see",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built group by group as the row asks, each driven over HTTP as two people with sign-in on: projects (W883 - the portfolio figures, the proposal list and the vote did not look at the caller; any signed-in person could approve another's proposal), the business plan and the economy (W884 - all already refused; the unmarked-debit audit across every entity is now an administrator's), and the uploads (W885 - an upload recorded no owner, so the list showed every person's files and text, anyone could delete another's, and the text entered the shared memory under no owner; each now belongs to its sender). Unowned legacy rows are an administrator's under sign-in."
     },
     {
       "id": "FU-1062",

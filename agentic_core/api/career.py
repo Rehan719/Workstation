@@ -14,7 +14,8 @@ import time
 import uuid
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
+from agentic_core.auth.core import get_current_user, request_owner_id   # W885 (FU-1061)
 from pydantic import BaseModel
 
 from agentic_core.api._ai_provenance import (ai_text, person_said, MATERIAL_SLOT, material_cut_said,
@@ -37,7 +38,7 @@ _CATEGORIES = [
 
 
 @router.post("/uploads/auto")
-async def auto_classify_upload(file: UploadFile = File(...)):
+async def auto_classify_upload(file: UploadFile = File(...), user: dict | None = Depends(get_current_user)):
     """
     Classify an uploaded file into a career input category using AI.
     Returns: {filename, classification: {category, confidence, reasoning}}
@@ -62,7 +63,8 @@ async def auto_classify_upload(file: UploadFile = File(...)):
     )
 
     result, provenance = await ai_text(prompt, "career_classifier", material=text_whole,
-                                       material_label="DOCUMENT", material_limit=CLASSIFY_PREVIEW_LIMIT)
+                                       material_label="DOCUMENT", material_limit=CLASSIFY_PREVIEW_LIMIT,
+                                       owner_id=request_owner_id(user if isinstance(user, dict) else None))   # W885
 
     # W489 (sweep S12.1, C3) — A DOCUMENT NOBODY CLASSIFIED IS NOT FILED AS IF SOMEBODY HAD.
     # This block invented three readings. On the native floor the reply is not JSON, so the `except`
@@ -101,7 +103,8 @@ async def auto_classify_upload(file: UploadFile = File(...)):
     import io
     file.file = io.BytesIO(content)
     file.filename = file.filename
-    stored = await ingestion_manager.ingest_file(file, category=category)
+    stored = await ingestion_manager.ingest_file(          # W885 (FU-1061) - the upload records who sent it
+        file, category=category, owner_id=request_owner_id(user if isinstance(user, dict) else None))
 
     return {
         "filename": file.filename,

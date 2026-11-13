@@ -75911,3 +75911,62 @@ def test_w884_with_sign_in_on_a_second_person_reaches_none_of_the_first_persons_
     assert client.get("/api/v1/economy/transfers/unmarked-audit", headers=H["admin"]).status_code == 200
     own = client.get("/api/v1/economy/transfers/unmarked-audit", headers=H["one"], params={"vsb_id": vid})
     assert own.status_code == 200, own.text[:200]
+
+
+def test_w885_with_sign_in_on_a_second_person_reaches_none_of_the_first_persons_uploads(client, monkeypatch):
+    """FU-1061 (W885, third group: the uploads - the last group the row names, so it closes). Measured as two people
+    over HTTP: an upload recorded no owner, so the list returned every person's files - with the first thousand
+    characters of each one's text - to anyone signed in, and anyone signed in could delete another person's upload.
+    An upload now records who sent it, the list holds only what the caller may see, and another person's delete is
+    not found; a row written before owners were recorded is an administrator's under sign-in."""
+    import uuid as _uuid885
+    import agentic_core.auth.core as _ac885
+    from agentic_core.ingestion import api as _ing885
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    users = _ac885._load_users()
+    who = {}
+    for k, role in (("one", "user"), ("two", "user"), ("admin", "admin")):
+        name = f"w885-{k}-{_uuid885.uuid4().hex[:6]}"
+        users[name] = {"username": name, "hashed_password": _ac885._pwd_ctx.hash("pw12345678"), "role": role}
+        who[k] = name
+    _ac885._save_users(users)
+    H = {}
+    for k, name in who.items():
+        tok = client.post("/api/v1/auth/token", data={"username": name, "password": "pw12345678"})
+        assert tok.status_code == 200, tok.text[:200]
+        H[k] = {"Authorization": "Bearer " + tok.json()["access_token"]}
+    secret = f"w885 the first person's private note {_uuid885.uuid4().hex[:8]}"
+    up = client.post("/api/v1/ingest/", headers=H["one"], files={"file": ("w885-note.txt", secret.encode(), "text/plain")})
+    assert up.status_code == 200 and up.json()["owner_id"] == who["one"], up.text[:300]
+    fid = up.json()["file_id"]
+
+    def listed(k):
+        r = client.get("/api/v1/ingest/list", headers=H[k])
+        assert r.status_code == 200, r.text[:200]
+        return r
+
+    #  1. the second person's list holds none of it - not the row, not its text
+    two = listed("two")
+    assert fid not in [x["file_id"] for x in two.json()] and secret not in two.text, "another person's upload is listed"
+    assert fid in [x["file_id"] for x in listed("one").json()]
+    #  2. the second person's delete is not found, and the upload stays
+    d = client.delete(f"/api/v1/ingest/{fid}", headers=H["two"])
+    assert d.status_code == 404, d.text[:200]
+    assert fid in [x["file_id"] for x in listed("one").json()]
+    #  3. a row written before owners were recorded is an administrator's under sign-in
+    legacy = {"file_id": f"w885-legacy-{_uuid885.uuid4().hex[:6]}", "filename": "w885-legacy.txt",
+              "content_type": "text/plain", "size": 1, "timestamp": "2026-01-01T00:00:00", "extracted_text": "",
+              "status": "INGESTED", "category": None}
+    _ing885.ingestion_manager.registry.append(legacy)
+    try:
+        assert legacy["file_id"] not in [x["file_id"] for x in listed("one").json()]
+        assert legacy["file_id"] in [x["file_id"] for x in listed("admin").json()]
+    finally:
+        _ing885.ingestion_manager.registry.remove(legacy)
+    #  4. what the upload put into the shared memory is its sender's to recall, not every person's
+    from agentic_core.ai.ceo.memory_v01 import memory_v01 as _mem885
+    assert any(secret in m for m in _mem885.query(secret, owner_id=who["one"])), "the sender cannot recall it"
+    assert not any(secret in m for m in _mem885.query(secret, owner_id=who["two"])), "another person can recall it"
+    #  5. its owner deletes it
+    assert client.delete(f"/api/v1/ingest/{fid}", headers=H["one"]).status_code == 200
+    assert fid not in [x["file_id"] for x in listed("one").json()]
