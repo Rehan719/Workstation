@@ -101,6 +101,26 @@ CHILDREN_TOOLS: List[Dict[str, Any]] = [
      "routes": [f"POST {CHILDREN_PREFIX}/challenge/{{child}}/practised",
                 f"GET {CHILDREN_PREFIX}/challenge/{{child}}",
                 f"DELETE {CHILDREN_PREFIX}/challenge/{{child}}"]},
+    #  W945 - P5.21 clause 4, the third tool
+    {"id": "teaching-aids",
+     "name": "Teaching aids for a teacher",
+     "run_by": "a teacher, or a parent teaching, signed in on their own account and preparing a lesson",
+     "what_a_child_sees": ("A sheet of one portion, shown or printed: each verse as fetched from the named edition, "
+                           "with the edition named, or for recall practice only each verse's first word. No mark, "
+                           "score or name is on it."),
+     "steps": ["The teacher chooses a surah, and the first and last verse of a portion of at most 40 verses.",
+               "The sheet lists each verse of the portion as fetched from the named edition, and names the edition.",
+               "For recall practice, the teacher may choose the sheet that shows only each verse's first word.",
+               "A verse that cannot be fetched is named as missing, and nothing is put in its place.",
+               "Nothing is recorded about the teacher's class or any child."],
+     "wording": ["Portion: surah {surah}, verses {from_ayah} to {to_ayah}.",
+                 "Each verse is shown as it was fetched from:",
+                 "Say the rest of each verse from memory.",
+                 "Not available, so not shown:"],
+     "arabic_from": ("each verse as fetched from alquran.cloud, edition quran-uthmani, with the edition named on "
+                     "the sheet. Nothing is generated, and a verse that cannot be fetched is named as missing and "
+                     "not shown."),
+     "routes": [f"GET {CHILDREN_PREFIX}/teaching/sheet/{{surah_number}}"]},
 ]
 
 PACK_STORE = "scholar_pack_decisions.json"

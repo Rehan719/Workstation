@@ -79907,3 +79907,90 @@ def test_w944_p521_a_childs_challenge_is_against_their_own_past_only_and_opens_o
                                                              "basis": "open: opened in this test process only"})
     anon = client.get(f"{prefix}/challenge/1")
     assert anon.status_code == 401 and "signed-in parent or teacher" in anon.json()["detail"], anon.text[:200]
+
+
+def _w945_signed_in_and_open(client, monkeypatch, tag):
+    """Sign-in on in this test process, an adult and a scholar signed in, and the current pack approved with the
+    scholar's own account: the real gate opens. Returns the adult's headers."""
+    import agentic_core.auth.core as _ac945
+    from agentic_core.api import scholar_review as _sr945
+    from agentic_core.religious_domain import approval_pack as _ap945
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    users = _ac945._load_users()
+    adult, sid = f"w945-adult-{tag}", f"w945-scholar-{tag}"
+    for u in (adult, sid):
+        users[u] = {"username": u, "hashed_password": _ac945._pwd_ctx.hash("pw12345678"), "role": "user"}
+    _ac945._save_users(users)
+
+    def hdr(u):
+        t = client.post("/api/v1/auth/token", data={"username": u, "password": "pw12345678"}).json()["access_token"]
+        return {"Authorization": f"Bearer {t}"}
+    ha, hs = hdr(adult), hdr(sid)
+    _sr945.submit(f"w945-lesson-{tag}", "qep-lesson", "w945 a lesson text for review")    # this test's own pack
+    _sr945.add_scholar(sid, "W945 Test Scholar", "stated", added_by="test_w945")
+    seen = client.get("/api/v1/scholar-review/pack", headers=hs).json()["pack_hash"]
+    ok = client.post("/api/v1/scholar-review/pack/decide", headers=hs,
+                     json={"scholar_id": sid, "decision": "approve", "seen_hash": seen})
+    assert ok.status_code == 200, ok.text[:200]
+    assert _ap945.children_tools_open()["open"] is True
+    return ha
+
+
+def test_w945_p521_a_teachers_sheet_is_the_fetched_text_with_its_edition_and_records_nothing(client, monkeypatch):
+    """P5.21 clause 4, the third tool (W945): teaching aids for a teacher, built and held. Held with sign-in off. With
+    sign-in on in this test process and the current pack approved by a scholar's own account, a signed-in teacher's
+    sheet of a portion lists each verse as fetched, names the edition the pack names, names a verse that could not be
+    fetched as missing with nothing in its place, and shows the pack's own sentences. The recall sheet sends only each
+    verse's first word. A reversed, overlong or non-existent portion is refused, and nothing is written to any store.
+    The verse text here is PLACEHOLDER TOKENS in the fetch's place (W684's rule)."""
+    import json
+    import uuid
+    import agentic_core.religious_domain.api as _q945
+    from agentic_core.config import data_path
+    from agentic_core.religious_domain import approval_pack as _ap
+    tag = uuid.uuid4().hex[:6]
+    prefix = _ap.CHILDREN_PREFIX
+    tool = next(t for t in _ap.CHILDREN_TOOLS if t["id"] == "teaching-aids")
+    for key in ("name", "run_by", "what_a_child_sees", "steps", "wording", "arabic_from", "routes"):
+        assert tool.get(key), ("the teaching aids' entry in the pack does not say", key)
+
+    off = client.get(f"{prefix}/teaching/sheet/1?from_ayah=1&to_ayah=3")
+    assert off.status_code == 423 and "sign-in is off" in off.json()["detail"], off.text[:200]
+
+    async def _fetch(surah, ayah):
+        return {(1, 1): "aa1 aa2 aa3", (1, 2): "bb1 bb2", (1, 3): None, (1, 4): "dd1 dd2 dd3 dd4"}.get((surah, ayah))
+    monkeypatch.setattr(_q945, "fetch_ayah_arabic", _fetch)
+    ha = _w945_signed_in_and_open(client, monkeypatch, tag)
+    assert client.get(f"{prefix}/teaching/sheet/1?from_ayah=1&to_ayah=2").status_code == 401
+
+    root = data_path()
+    stores = {p: p.stat().st_mtime_ns for p in root.rglob("*") if p.is_file()}
+    whole = client.get(f"{prefix}/teaching/sheet/1?from_ayah=1&to_ayah=4", headers=ha)
+    assert whole.status_code == 200, whole.text[:200]
+    w = whole.json()
+    assert [v["ref"] for v in w["verses"]] == ["1:1", "1:2", "1:4"] and w["missing"] == ["1:3"] and w["complete"] is False
+    assert [v["text"] for v in w["verses"]] == ["aa1 aa2 aa3", "bb1 bb2", "dd1 dd2 dd3 dd4"]
+    assert w["source"] in tool["arabic_from"] and w["edition"] in tool["arabic_from"], (w["source"], w["edition"])
+    assert w["screen"]["wording"] == tool["wording"]
+    assert w["screen"]["sentences"] == [s.format(surah=1, from_ayah=1, to_ayah=4) for s in tool["wording"]]
+    assert w["kept"] is False
+    for said in ("score", "mark", "rank", "student", "class_name", "child_name"):
+        assert said not in w, said
+
+    recall = client.get(f"{prefix}/teaching/sheet/1?from_ayah=1&to_ayah=2&first_words=true", headers=ha).json()
+    assert [(v["shown"], v["hidden_words"]) for v in recall["verses"]] == [("aa1", 2), ("bb1", 1)], recall["verses"]
+    assert "aa2" not in json.dumps(recall) and all("text" not in v for v in recall["verses"])
+
+    assert client.get(f"{prefix}/teaching/sheet/1?from_ayah=3&to_ayah=2", headers=ha).status_code == 422
+    assert client.get(f"{prefix}/teaching/sheet/2?from_ayah=1&to_ayah=41", headers=ha).status_code == 422
+    assert client.get(f"{prefix}/teaching/sheet/1?from_ayah=1&to_ayah=8", headers=ha).status_code == 422
+    assert client.get(f"{prefix}/teaching/sheet/115?from_ayah=1&to_ayah=1", headers=ha).status_code == 400
+    after = {p: p.stat().st_mtime_ns for p in root.rglob("*") if p.is_file()}
+    assert after == stores, ("a teaching sheet wrote to a store", sorted(set(after.items()) ^ set(stores.items()))[:5])
+
+    #  even were the gate opened by mistake, nobody prints a sheet without signing in
+    monkeypatch.delenv("AUTH_ENABLED")
+    monkeypatch.setattr(_ap, "children_tools_open", lambda: {"open": True, "pack_hash": "", "pack_state": "approved",
+                                                             "basis": "open: opened in this test process only"})
+    anon = client.get(f"{prefix}/teaching/sheet/1?from_ayah=1&to_ayah=2")
+    assert anon.status_code == 401 and "signed-in parent or teacher" in anon.json()["detail"], anon.text[:200]

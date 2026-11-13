@@ -189,3 +189,45 @@ async def children_challenge_remove(child: int, user: dict | None = Depends(get_
     return {"child": int(slot), "removed": removed,
             "basis": (f"removed the {removed} portion(s) noted for this child; nothing of them is kept" if removed else
                       "there was nothing noted for this child to remove")}
+
+
+# ── TOOL 3 - TEACHING AIDS FOR A TEACHER (W945) ──────────────────────────────────────────────────────────────────
+#  A sheet of one portion for a lesson: each verse as fetched from the named edition, or, for recall practice, only
+#  each verse's first word. R1: every verse is fetched, never written, with the edition named; a verse that cannot be
+#  fetched is named as missing and nothing is put in its place. Nothing about the teacher's class or any child is
+#  recorded.
+TEACHING = "teaching-aids"
+_SHEET_MOST_VERSES = 40
+
+
+@router.get("/teaching/sheet/{surah_number}")
+async def children_teaching_sheet(surah_number: int, from_ayah: int, to_ayah: int, first_words: bool = False,
+                                  user: dict | None = Depends(get_current_user)):
+    """A teacher's sheet of verses from_ayah..to_ayah of one surah, whole or first words only."""
+    _adult(user)
+    _qep._check_ref(surah_number, from_ayah)
+    _qep._check_ref(surah_number, to_ayah)
+    if to_ayah < from_ayah:
+        raise HTTPException(status_code=422, detail="A portion runs from its first verse to its last; the last is "
+                                                    "before the first here.")
+    if to_ayah - from_ayah + 1 > _SHEET_MOST_VERSES:
+        raise HTTPException(status_code=422, detail=(f"A sheet holds at most {_SHEET_MOST_VERSES} verses, each "
+                                                     "fetched from the named edition; choose a shorter portion."))
+    verses, missing = [], []
+    for ayah in range(from_ayah, to_ayah + 1):
+        fetched = await _qep.fetch_ayah_arabic(surah_number, ayah)
+        ref = f"{surah_number}:{ayah}"
+        if not fetched:
+            missing.append(ref)
+        elif first_words:
+            view = _practice.hidden_view(fetched, 1)
+            verses.append({"ref": ref, "shown": view["shown"], "hidden_words": view["hidden_words"]})
+        else:
+            verses.append({"ref": ref, "text": fetched})
+    tool = next(t for t in _ap.CHILDREN_TOOLS if t["id"] == TEACHING)
+    fill = {"surah": surah_number, "from_ayah": from_ayah, "to_ayah": to_ayah}
+    return {"surah": surah_number, "from_ayah": from_ayah, "to_ayah": to_ayah, "first_words": bool(first_words),
+            "verses": verses, "missing": missing, "complete": not missing, **_qep._corpus_provenance(_EDITION),
+            "screen": {"tool": tool["id"], "name": tool["name"], "wording": list(tool["wording"]),
+                       "sentences": [w.format(**fill) for w in tool["wording"]]},
+            "kept": False, "kept_basis": "nothing about the teacher's class or any child is recorded"}
