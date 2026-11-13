@@ -64697,7 +64697,8 @@ def _w703_faults(text, root, plan_slots, row_ids, routes=None):
     if is_draft == is_ratified:
         faults.append("it does not open by saying it is a draft until the Owner ratifies it"
                       if not is_draft else "it opens by saying it is both a draft and ratified")
-    for path in re.findall(r"`([A-Za-z0-9_./-]+\.(?:py|json|md|yml|tsx))`", text):
+    #  W920 (FU-742, P5.6) - and the scripts a document cites (the ACCEPT names .ps1, .bat, .mjs and .js)
+    for path in re.findall(r"`([A-Za-z0-9_./-]+\.(?:py|json|md|yml|yaml|tsx|ps1|bat|sh|js|mjs))`", text):
         if not (root / path).exists():
             faults.append(f"it names a file that is not in the tree: {path}")
     for slot in re.findall(r"plan item (P\d+\.\d+)", text):
@@ -78036,3 +78037,113 @@ def test_w919_fu742_the_windows_start_path_names_only_what_exists_and_starts_the
             _, err = proc.communicate()
     assert health is not None and health[0] == 200, (
         "the app the backend script names did not answer /health", (err or b"")[-1500:].decode("utf-8", "replace"))
+
+
+def test_w920_fu742_the_founders_guide_gives_only_commands_a_guard_runs_on_the_tree_it_ships_with(tmp_path):
+    """FU-742 part 3 (W920). P5.6's ACCEPT: every command in the founder's guide was run on the tree it is
+    committed with. docs/business/FOUNDERS_GUIDE.md gives, for a Windows machine, set-up, start, the health check,
+    the tests, and backup and restore, then the launch gates in the plan's order and where it can run. This guard
+    holds each command it gives to the guard that runs it on this tree:
+    - set-up and the start scripts to test_w919;
+    - the tests to the Windows CI job's own step;
+    - backup, verify and restore to the subcommands and options test_w918 runs.
+    It runs the health check itself, as the guide writes it, against the app started as start_backend.bat names it.
+    A command no guard runs fails it.
+
+    It also carries the business documents' rules, which now check the script names a document cites. A planted
+    fault proves that check. The gates must come in the plan's order (P4.1 to P4.6), and no channel may be called
+    free or given a price, since no provider's page has been read. The mandates row names the guide."""
+    import json
+    import os
+    import pathlib
+    import re
+    import shutil
+    import socket
+    import subprocess
+    import sys
+    import time
+    from agentic_core import plan_followups as _fu
+    from agentic_core.app_mvp import app as _app920
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    guide = (root / "docs/business/FOUNDERS_GUIDE.md").read_text(encoding="utf-8")
+    tests = pathlib.Path(__file__).read_text(encoding="utf-8")
+    spine = (root / ".github/workflows/spine.yml").read_text(encoding="utf-8")
+    setup = (root / "setup.ps1").read_text(encoding="utf-8")
+    back = (root / "start_backend.bat").read_text(encoding="utf-8")
+
+    #  the business documents' rules, the script names among them, proved on a planted fault first
+    plan_slots = {i["slot"] for i in _fu.plan_items((root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8"))}
+    rows = {r["id"] for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    routes = {(m, r.path) for r in _app920.routes for m in (getattr(r, "methods", None) or ())}
+    planted = ("# x\n\nDRAFT until the Owner ratifies it.\n\n## Start\n\n- Run `start_workstation.ps1`, then "
+               "`scripts/serve.js`. [observed]\n")
+    assert _w703_faults(planted, root, plan_slots, rows, routes) == [
+        "it names a file that is not in the tree: start_workstation.ps1",
+        "it names a file that is not in the tree: scripts/serve.js"], "the guard does not check the scripts a document names"
+    assert _w703_faults(guide, root, plan_slots, rows, routes) == []
+
+    #  every command the guide gives, and the guard that runs it on this tree
+    commands = [ln.strip() for block in re.findall(r"```\n(.*?)```", guide, re.S) for ln in block.splitlines() if ln.strip()]
+    w918 = tests.split("def test_w918_", 1)[1].split("\ndef test_", 1)[0]
+    assert "def test_w919_" in tests and "def test_w918_" in tests
+    health = None
+    for c in commands:
+        if c == r"powershell -ExecutionPolicy Bypass -File .\setup.ps1":
+            assert c in setup, "the guide runs set-up in a way the script does not give"
+        elif c in (r".\start_backend.bat", r".\start_frontend.bat"):
+            assert (root / c[2:]).is_file(), c
+        elif c == "curl.exe http://127.0.0.1:8000/health":
+            health = c
+        elif c == r".\venv\Scripts\python.exe -m pytest integration_tests -q -n 4":
+            assert "run: python -m pytest integration_tests -q -n 4" in spine, "the Windows CI job no longer runs the tests so"
+        elif c.startswith(".\\venv\\Scripts\\python.exe scripts\\backup_stores.py "):
+            sub = c.split()[2]
+            assert sub in ("backup", "verify", "restore") and f'run("{sub}"' in w918, (c, "test_w918 does not run it")
+            for opt in re.findall(r"--[a-z]+", c):
+                assert f'"{opt}"' in w918, (c, opt, "test_w918 does not run it")
+        else:
+            raise AssertionError(f"the guide gives a command no guard runs on this tree: {c}")
+    assert len(commands) == 8 and health, commands
+
+    #  the health check, as the guide writes it, against the app started as start_backend.bat names it
+    (module, attr), = re.findall(r"-m uvicorn ([\w.]+):(\w+)", back)
+    with socket.socket() as so:
+        so.bind(("127.0.0.1", 0))
+        port = so.getsockname()[1]
+    data = tmp_path / "data"
+    no_proxy = {k: v for k, v in os.environ.items() if k.lower() not in ("http_proxy", "https_proxy", "all_proxy")}
+    env = {**no_proxy, "DATA_DIR": str(data), "WORKSTATION_DATA_DIR": str(data), "PYTHONPATH": str(root),
+           "WORKSTATION_UEG_PATH": str(data / "ueg.json"), "PROJECTS_DIR": str(data / "projects"), "AI_DISABLE_LOCAL": "1"}
+    exe, url = health.split()
+    exe = exe if sys.platform == "win32" else "curl"
+    assert shutil.which(exe), f"{exe} is not on this machine, so the guide's health check cannot be run here"
+    url = url.replace(":8000/", f":{port}/")
+    proc = subprocess.Popen([sys.executable, "-m", "uvicorn", f"{module}:{attr}", "--host", "127.0.0.1", "--port",
+                             str(port)], cwd=str(root), env=env, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+    answer = None
+    try:
+        deadline = time.time() + 180
+        while time.time() < deadline and proc.poll() is None:
+            r = subprocess.run([exe, url], env=no_proxy, capture_output=True, text=True, timeout=30)
+            if r.returncode == 0 and r.stdout.strip():
+                answer = json.loads(r.stdout)
+                break
+            time.sleep(1)
+    finally:
+        proc.terminate()
+        try:
+            _, err = proc.communicate(timeout=60)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            _, err = proc.communicate()
+    assert answer and answer.get("status") == "healthy", ("the guide's health check got no healthy answer",
+                                                          (err or b"")[-1500:].decode("utf-8", "replace"))
+    assert '"status": "healthy"' in guide
+
+    #  the gates in the plan's order; no channel called free or priced; the mandates row names the guide
+    assert re.findall(r"\[plan item (P4\.\d)\]", guide) == ["P4.1", "P4.2", "P4.3", "P4.4", "P4.5", "P4.6"]
+    assert not re.search(r"\bfree\b", guide, re.I) and "No channel here is promised to cost nothing." in guide
+    assert "row FU-742 stays open" in guide
+    mandates = (root / "docs/compliance/MANDATES.md").read_text(encoding="utf-8")
+    assert "`docs/business/FOUNDERS_GUIDE.md`" in mandates and "the setup document does not" not in mandates
