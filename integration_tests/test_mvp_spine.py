@@ -75825,3 +75825,29 @@ def test_w883_with_sign_in_on_a_second_person_reaches_none_of_the_first_persons_
     assert _pa883._load(pid).stage == before and _pa883._load_proposal(prop_id).status == "pending"
     v1 = client.post(f"/api/v1/projects/governance/proposals/{prop_id}/vote", headers=H["one"], params={"approve": True})
     assert v1.status_code == 200 and _pa883._load(pid).stage != before, v1.text[:300]
+
+
+def test_w883b_every_path_the_dockerfile_copies_exists_and_ships():
+    """Found while reading config/ for FU-1168. W877 moved the top-level core/ package out of the tree, and the
+    Dockerfile still copied it. A COPY with no source fails the build, so the image no longer built, and nothing
+    noticed: no CI job builds the image, and its guard checked only that every boot-path package is copied. This
+    holds the other direction. Every source the Dockerfile copies exists in the repository, and none is a path
+    .dockerignore leaves out of the build context."""
+    import pathlib
+    import re
+    repo = pathlib.Path(__file__).resolve().parents[1]
+    dockerfile = (repo / "Dockerfile").read_text(encoding="utf-8")
+    sources = []
+    for line in dockerfile.splitlines():
+        m = re.match(r"^COPY\s+(?!--from)(.+)$", line.strip())
+        if m:
+            parts = m.group(1).split()
+            sources += [p for p in parts[:-1] if not p.startswith("--")]
+    assert sources, "no COPY line was read, so nothing was examined"
+    missing = [s for s in sources if not (repo / s).exists()]
+    assert not missing, ("the Dockerfile copies paths that do not exist, so the image does not build", missing)
+    ignored = {ln.split("#")[0].strip().rstrip("/") for ln in (repo / ".dockerignore").read_text(encoding="utf-8").splitlines()}
+    ignored.discard("")
+    shut_out = [s for s in sources if s.rstrip("/").lstrip("./") in ignored]
+    assert not shut_out, ("the Dockerfile copies paths .dockerignore leaves out of the build context", shut_out)
+    assert "core" not in [s.rstrip("/").lstrip("./") for s in sources], "the image copies core/, which W877 moved out"

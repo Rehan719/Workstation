@@ -23412,6 +23412,24 @@
       "note": "",
       "slot_source": "the same ruled refusal and the same item as FU-605, which W877 closed for core/",
       "tier": 3
+    },
+    {
+      "id": "FU-1169",
+      "title": "The Dockerfile copies core/, which W877 moved out of the tree, so the image no longer builds",
+      "why": "Found in W883b while reading config/ for FU-1168. W877 moved the top-level core/ package (its live module into agentic_core, core/identity.py to _archive/), and the Dockerfile kept COPY core ./core. A COPY with no source fails the build. No CI job builds the image, and test_dockerfile_copies_every_boot_path_package checked only that every boot-path package is copied.",
+      "source": "W883b (found while reading config/ for FU-1168)",
+      "found": "2026-11-12",
+      "files": [
+        "Dockerfile"
+      ],
+      "severity": "high",
+      "owner_gated": false,
+      "slot": "P4.5",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the deploy dry-run item, as FU-1156: the image is what P4.5 deploys",
+      "tier": 1
     }
   ],
   "routes": [
