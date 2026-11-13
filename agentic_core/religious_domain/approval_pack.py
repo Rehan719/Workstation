@@ -45,9 +45,40 @@ RULES: List[Dict[str, str]] = [
                          "portions were practised and when, for the adult running the tool."},
 ]
 
-#  each children's tool AS A CHILD WOULD MEET IT. A tool is listed here in the same change that builds it; the
-#  guard fails if a children's tool route exists that this list does not describe.
-CHILDREN_TOOLS: List[Dict[str, Any]] = []
+#  every children's tool route is under this one prefix, on agentic_core/api/qep_children.py's router, which asks
+#  the gate before any handler runs (W943)
+CHILDREN_PREFIX = "/api/v1/qep/children"
+
+#  each children's tool AS A CHILD WOULD MEET IT. A tool is listed here in the same change that builds it, with the
+#  routes it serves: test_w943's census fails on a route under CHILDREN_PREFIX that this list does not describe,
+#  and on a route it describes that is not mounted.
+CHILDREN_TOOLS: List[Dict[str, Any]] = [
+    #  W943 - P5.21 clause 4, the first tool
+    {"id": "memorisation-practice",
+     "name": "Memorisation practice, run by a parent or teacher",
+     "run_by": ("a parent or teacher, on their own screen, sitting with the child. The adult chooses the verse; "
+                "the child does not sign in and is not named"),
+     "what_a_child_sees": ("The first word of one verse, fetched from the named edition, with the edition named "
+                           "(more of its first words if the adult chooses). The next word, or the whole verse, "
+                           "only when the adult shows it. No mark, no score, no count, and no record of how it "
+                           "went."),
+     "steps": ["The adult chooses a surah and a verse the child is learning.",
+               "The screen shows the verse's first word, as fetched from the named edition, and names the edition.",
+               "The child says the rest of the verse from memory to the adult. Nothing listens, and nothing marks it.",
+               "If the child pauses, the adult may show the next word.",
+               "The adult may show the whole verse, for the child to look at with them.",
+               "Nothing is recorded: not the child, not the verse, and not how it went."],
+     "wording": ["Say the rest of this verse from memory, to the grown-up with you.",
+                 "Nothing here listens to you or marks you.",
+                 "Show the next word",
+                 "Show the whole verse",
+                 "This verse is shown as it was fetched from:"],
+     "arabic_from": ("the verse as fetched from alquran.cloud, edition quran-uthmani, with the edition and its "
+                     "provenance named beside it. Nothing is generated, and a verse that cannot be fetched is not "
+                     "shown."),
+     "routes": [f"GET {CHILDREN_PREFIX}/memorisation/{{surah_number}}/{{ayah_number}}",
+                f"GET {CHILDREN_PREFIX}/memorisation/{{surah_number}}/{{ayah_number}}/next"]},
+]
 
 PACK_STORE = "scholar_pack_decisions.json"
 _RESEARCH_PREFIX = "religion-research:"

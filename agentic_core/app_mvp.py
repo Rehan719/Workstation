@@ -408,6 +408,10 @@ app.include_router(auth_api.router)
 # 44. QEP — Quran Education Platform (Hifz SM-2 + Tajweed + Gamification)
 from agentic_core.religious_domain import api as qep_api
 app.include_router(qep_api.router)
+#  W943 (P5.21) - the children's tools: every route under one prefix, held by the gate until sign-in is on and a
+#  scholar on the roster has approved the current pack
+from agentic_core.api import qep_children as qep_children_api
+app.include_router(qep_children_api.router, dependencies=[_Depends(_get_current_user)])
 
 # 45. IDBO Nervous System (signal routing, reflex arcs, arousal state)
 from agentic_core.organism import nervous as nervous_api

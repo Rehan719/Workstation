@@ -79681,3 +79681,115 @@ def test_w942_p53_claims_are_on_the_support_page_and_an_answer_says_whether_it_r
     assert any(e.get("event") == "ueg_written" and e.get("event_type") == "cca.change_rejected"
                for e in change.get("audit_trail") or []), "the ledger mark the claim reads is not on the change"
     assert set(fx["deliverables"]["deliverables"][0]) >= {"id", "title"}
+
+
+def test_w943_p521_every_childrens_tool_route_is_held_and_in_the_pack_and_memorisation_practice_is_built(client, monkeypatch):
+    """P5.21 clause 4, the first tool, and the census its ACCEPT asks for (W943). Measured first: CHILDREN_TOOLS was
+    empty, no children's tool route existed, and the guard approval_pack.py promised (one that fails on a children's
+    tool route the pack does not describe) did not exist. Held here, each driven red:
+    - THE CENSUS: every route mounted under the one prefix is described in the pack, every route the pack describes
+      is mounted, and no route outside the prefix names children;
+    - HELD: with sign-in off each of them answers 423 with the gate's own sentence, before anything is fetched, even
+      once the current pack is approved;
+    - THE PACK: tool 1 says who runs it, what a child sees, the steps, the exact wording and where the Arabic comes
+      from, in the pack and in its one document; adding it moved the pack's fingerprint, so a pack approved without
+      it now reads changed since approval;
+    - THE TOOL, with the gate opened in this test process only: it sends the verse's first word as fetched and the
+      rest only when the adult asks, names the edition the pack names, serves the pack's own wording, judges
+      nothing and records nothing. The verse text here is PLACEHOLDER TOKENS in the fetch's place (W684's rule)."""
+    import json
+    import re
+    import uuid
+    from fastapi.routing import APIRoute
+    from agentic_core.app_mvp import app
+    from agentic_core.api import scholar_review as _sr
+    from agentic_core.config import data_path
+    from agentic_core.religious_domain import approval_pack as _ap
+    import agentic_core.religious_domain.api as _q
+    tag = uuid.uuid4().hex[:6]
+    prefix = _ap.CHILDREN_PREFIX
+
+    #  1. THE CENSUS
+    mounted = {f"{m} {r.path}" for r in app.routes if isinstance(r, APIRoute) and r.path.startswith(prefix + "/")
+               for m in r.methods}
+    described = [s for t in _ap.CHILDREN_TOOLS for s in t["routes"]]
+    assert mounted, "no children's tool route is mounted under the prefix, so the census examined nothing"
+    assert len(described) == len(set(described)), "a route is described by two tools"
+    assert mounted == set(described), ("a children's tool route is not described in the pack, or a described one is "
+                                       "not mounted", sorted(mounted ^ set(described)))
+    outside = [r.path for r in app.routes if isinstance(r, APIRoute) and "child" in r.path.lower()
+               and not r.path.startswith(prefix + "/")]
+    assert not outside, ("a route names children outside the one prefix the gate holds", outside)
+
+    #  2. HELD, with the gate's own sentence, before anything is fetched
+    fetched = []
+
+    async def _fetch(surah, ayah):
+        fetched.append((surah, ayah))
+        return {(1, 2): "tok1 tok2 tok3 tok4"}.get((surah, ayah))
+    monkeypatch.setattr(_q, "fetch_ayah_arabic", _fetch)
+    gate = _ap.children_tools_open()
+    assert gate["open"] is False and "sign-in is off" in gate["basis"], gate
+    for spec in sorted(mounted):
+        method, path = spec.split(" ", 1)
+        r = client.request(method, re.sub(r"\{[^}]+\}", "2", path))
+        assert r.status_code == 423 and r.json()["detail"] == gate["basis"], (spec, r.status_code, r.text[:200])
+    assert not fetched, ("a held tool fetched a verse before it asked the gate", fetched)
+
+    #  3. THE PACK: tool 1 as a child would meet it, in the pack and in its one document
+    tool = next(t for t in _ap.CHILDREN_TOOLS if t["id"] == "memorisation-practice")
+    for key in ("name", "run_by", "what_a_child_sees", "steps", "wording", "arabic_from", "routes"):
+        assert tool.get(key), ("tool 1 does not say", key)
+    pack = client.get("/api/v1/scholar-review/pack").json()
+    assert tool in pack["sections"]["tools"] and pack["counts"]["tools"] == len(_ap.CHILDREN_TOOLS)
+    doc = client.get("/api/v1/scholar-review/pack.md").text
+    assert tool["name"] in doc and tool["arabic_from"] in doc and all(w in doc for w in tool["wording"] + tool["steps"])
+
+    #     adding the tool moved the fingerprint: a pack approved without it reads changed since approval
+    _sr.submit(f"w943-lesson-{tag}", "qep-lesson", "w943 a lesson text for review")      # this test's own pack
+    sid = f"w943-scholar-{tag}"
+    assert client.post("/api/v1/scholar-review/roster",
+                       json={"scholar_id": sid, "name": "W943 Test Scholar", "credential": "stated"}).status_code == 200
+    with monkeypatch.context() as m:
+        m.setattr(_ap, "CHILDREN_TOOLS", [t for t in _ap.CHILDREN_TOOLS if t["id"] != tool["id"]])
+        without = client.get("/api/v1/scholar-review/pack").json()
+        ok = client.post("/api/v1/scholar-review/pack/decide",
+                         json={"scholar_id": sid, "decision": "approve", "seen_hash": without["pack_hash"]})
+        assert ok.status_code == 200 and client.get("/api/v1/scholar-review/pack").json()["state"] == "approved"
+    now = client.get("/api/v1/scholar-review/pack").json()
+    assert now["pack_hash"] != without["pack_hash"] and now["state"] == "changed_since_approval", now["state"]
+    assert tool not in without["sections"]["tools"] and tool in now["sections"]["tools"]
+
+    #     ...and with the current pack approved, sign-in off still holds every tool
+    assert client.post("/api/v1/scholar-review/pack/decide",
+                       json={"scholar_id": sid, "decision": "approve", "seen_hash": now["pack_hash"]}).status_code == 200
+    gate = _ap.children_tools_open()
+    assert gate["open"] is False and gate["pack_state"] == "approved" and "sign-in is off" in gate["basis"], gate
+    held = client.get(f"{prefix}/memorisation/1/2")
+    assert held.status_code == 423 and held.json()["detail"] == gate["basis"] and not fetched
+
+    #  4. THE TOOL, with the gate opened in this test process only
+    monkeypatch.setattr(_ap, "children_tools_open",
+                        lambda: {"open": True, "pack_hash": now["pack_hash"], "pack_state": "approved",
+                                 "basis": "open: opened in this test process only"})
+    root = data_path()
+    stores = {p: p.stat().st_mtime_ns for p in root.rglob("*") if p.is_file()}
+    first = client.get(f"{prefix}/memorisation/1/2")
+    assert first.status_code == 200, first.text[:200]
+    r = first.json()
+    assert (r["shown"], r["hidden_words"], r["revealed"]) == ("tok1", 3, False) and "text" not in r
+    assert "tok2" not in json.dumps(r), "the hidden part of the verse was sent before the adult asked for it"
+    assert r["screen"]["wording"] == tool["wording"] and r["screen"]["name"] == tool["name"]
+    assert r["source"] in tool["arabic_from"] and r["edition"] in tool["arabic_from"], (r["source"], r["edition"])
+    assert r["judged"] is False and r["kept"] is False
+    for said in ("score", "accuracy", "mistakes", "rank", "correct", "streak", "award", "child_name"):
+        assert said not in r, said
+    whole = client.get(f"{prefix}/memorisation/1/2?reveal=true").json()
+    assert whole["text"] == "tok1 tok2 tok3 tok4" and whole["revealed"] is True
+    nxt = client.get(f"{prefix}/memorisation/1/2/next?after_words=1").json()
+    assert (nxt["word"], nxt["position"]) == ("tok2", 2) and nxt["screen"]["wording"] == tool["wording"]
+    assert nxt["edition"] == r["edition"] and nxt["judged"] is False and nxt["kept"] is False
+    gone = client.get(f"{prefix}/memorisation/1/3")
+    assert gone.status_code == 503 and "Nothing was generated" in gone.json()["detail"]
+    after = {p: p.stat().st_mtime_ns for p in root.rglob("*") if p.is_file()}
+    assert after == stores, ("a children's tool wrote to a store", sorted(set(after.items()) ^ set(stores.items()))[:5])
