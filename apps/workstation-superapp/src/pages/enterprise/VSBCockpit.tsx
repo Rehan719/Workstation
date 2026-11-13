@@ -12,6 +12,7 @@ import { DictateButton } from '../../components/DictateButton';   // P3.30 (ledg
 import { getPrefs } from '../../lib/userPrefs';
 import { domainLabel } from '../../lib/taxonomy';                 // P3.30 (ledger v16 R5.7)
 import { EntitySpecialists } from '../../components/EntitySpecialists';   // W933 (P5.15 clause 6, FU-1178)
+import { EntityWorkReview } from '../../components/EntityWorkReview';     // W935 (P5.15 clauses 5-6, FU-1178)
 
 // The VSB Enterprise Cockpit — interact with a generated living VSB IDBO Enterprise: its
 // organisational structure, the Chief's digital twin + Board, the living business plan
@@ -1217,6 +1218,8 @@ export const VSBCockpit: React.FC = () => {
             <div className="space-y-4">
               {/* W933 (P5.15 clause 6) - the entity's own specialists, beside the work they review */}
               {selected && <Card className="p-6"><EntitySpecialists vsbId={selected} /></Card>}
+              {/* W935 (P5.15 clauses 5 and 6) - the review each of its deliverables has reached, and the signing */}
+              {selected && <Card className="p-6"><EntityWorkReview vsbId={selected} /></Card>}
               <Card className="p-6">
                 <h4 className="text-[10px] font-black uppercase tracking-widest text-highlight mb-3 flex items-center gap-2"><ScrollText size={14} /> Produce a living deliverable for this VSB</h4>
                 <div className="grid grid-cols-1 @[560px]:grid-cols-4 gap-2 mb-2">

@@ -79068,3 +79068,83 @@ def test_w934_p515_clauses5_6_a_specialist_on_the_roster_signs_one_version_of_th
     assert client.post(f"{mine}/{msid}/sign", headers=H["two"], json={**good, "deliverable_id": mdid}).status_code == 404
     signed = client.post(f"{mine}/{msid}/sign", headers=H["one"], json={**good, "deliverable_id": mdid})
     assert signed.status_code == 200 and signed.json()["signature"]["entered_by"] == who["one"], signed.text[:200]
+
+
+def test_w935_p515_clauses5_6_the_review_an_entitys_work_reached_is_on_its_page_with_the_signing(client, tmp_path, monkeypatch):
+    """P5.15 clauses 5 and 6 (W935, row FU-1178's last part). W934 built a specialist's signature on one version of an
+    entity's deliverable, and the read of the tier each deliverable reached; no page showed either. Measured after
+    W934: the entity's page listed its deliverables with no review on any of them. components/EntityWorkReview.tsx,
+    on the Cockpit's deliverables tab, now shows each deliverable with the tier its current text has reached, every
+    signature with whether it counts and why not, and the form a specialist holding a place signs by.
+    EntityWorkReview.test.tsx mounts it against the routes' own answers (captured by w935_capture.py). Held here:
+    - the deliverables tab shows the selected entity's review, below its roster;
+    - the rendered test mounts the real component, and every id it reads is one the component renders;
+    - the component types no sentence about the rules, and sends only the person's record to the sign route;
+    - the signatures answer names each deliverable's title and current version beside its tier;
+    - the captured answers are ones the live routes still give, field for field, with their refusals."""
+    import datetime as dt
+    import json
+    import pathlib
+    from agentic_core.api import entity_specialists as es
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = root / "apps/workstation-superapp/src"
+    comp = (src / "components/EntityWorkReview.tsx").read_text(encoding="utf-8")
+    t = (src / "components/EntityWorkReview.test.tsx").read_text(encoding="utf-8")
+    cockpit = (src / "pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8").replace("\r\n", "\n")
+    tab = _code_only(cockpit.split("{tab === 'deliverables' && (", 1)[1].split("{tab === 'systems' && (", 1)[0])
+    assert "<EntityWorkReview vsbId={selected} />" in tab, "the deliverables tab does not show the review of the entity's work"
+    assert tab.index("<EntitySpecialists vsbId={selected} />") < tab.index("<EntityWorkReview vsbId={selected} />")
+    assert "import { EntityWorkReview } from './EntityWorkReview';" in t and "<EntityWorkReview vsbId=" in t, (
+        "the rendered test does not mount the real component")
+    for tid in ("work-review-basis", "work-review-credential", "work-review-none", "work-review-no-specialist",
+                "work-review-refused", "work-review-done", "work-review-unread"):
+        assert f"'{tid}'" in t and f'data-testid="{tid}"' in comp, ("an id the test reads is not rendered", tid)
+    assert "`work-review-${did}`" in t and "data-testid={`work-review-${id}`}" in comp
+    assert "`signature-${s.signature_id}`" in t and "data-testid={`signature-${s.signature_id}`}" in comp
+    code = _code_only(comp + "\n")
+    for owned in ("does not verify", "as stated;", "qualified person", "has signed its current text", "Workstation composes",
+                  "outlive"):
+        assert owned not in code, ("the component types a sentence the server owns", owned)
+    assert "const { specialist_id, ...body } = form;" in code and "{ method: 'POST', body }" in code
+    assert "const BLANK = { specialist_id: '', deliverable_id: '', reviewed: '', date: '', lapses_on: '' };" in code
+
+    #  the live routes, on stores of this test's own
+    monkeypatch.setattr(es, "_path", lambda: tmp_path / "entity_specialists.json")
+    monkeypatch.setattr(es, "_signed_path", lambda: tmp_path / "entity_signatures.json")
+    fx = json.loads((src / "components/EntityWorkReview.fixture.json").read_text(encoding="utf-8"))
+    today = dt.date.today()
+    vid = client.post("/api/v1/genesis/establish", json={"problem": "w935 an entity whose work is signed",
+                                                          "ship_output": False, "name": "W935 Page"}).json()["vsb_id"]
+    base = f"/api/v1/entity-specialists/{vid}"
+    bare = client.get(f"{base}/signatures").json()
+    assert set(bare) == set(fx["bare"]) and bare["deliverables"] == {} and bare["signatures"] == []
+    assert (bare["basis"], bare["credential_basis"]) == (fx["bare"]["basis"], fx["bare"]["credential_basis"])
+    held = fx["roster"]["active"][0]
+    sid = client.post(base, json={k: held[k] for k in ("name", "discipline", "credential_as_stated", "reviews")}
+                      | {"lapses_on": (today + dt.timedelta(days=200)).isoformat()}).json()["specialist"]["specialist_id"]
+    did = client.post("/api/v1/deliverables/produce", json={"vsb_id": vid, "type": "report", "title": "W935 care report",
+                                                            "brief": "w935 a report a specialist signs"}).json()["id"]
+    before = client.get(f"{base}/signatures").json()
+    fd = fx["deliverable_id"]
+    assert set(before["deliverables"][did]) == set(fx["before"]["deliverables"][fd]) >= {"title", "version", "label", "basis", "tier"}
+    assert before["deliverables"][did]["title"] == "W935 care report" and before["deliverables"][did]["version"] == 1
+    assert before["deliverables"][did]["basis"] == fx["before"]["deliverables"][fd]["basis"]
+    assert set(fx["sign_request"]) == {"deliverable_id", "reviewed", "date", "lapses_on"}
+    req = {**fx["sign_request"], "deliverable_id": did, "date": today.isoformat(),
+           "lapses_on": (today + dt.timedelta(days=100)).isoformat()}
+    blank = client.post(f"{base}/{sid}/sign", json={**req, "reviewed": " "})
+    assert blank.status_code == 422 and blank.json()["detail"] == fx["refused_empty"], blank.text[:200]
+    signed = client.post(f"{base}/{sid}/sign", json=req)
+    assert signed.status_code == 200 and set(signed.json()) == set(fx["signed"]), signed.text[:300]
+    assert set(signed.json()["signature"]) == set(fx["signed"]["signature"])
+    after = client.get(f"{base}/signatures").json()
+    assert after["deliverables"][did]["label"] == fx["after"]["deliverables"][fd]["label"] == "Signed by a qualified person"
+    assert set(after["signatures"][0]) == set(fx["after"]["signatures"][0]) and after["signatures"][0]["counts"] is True
+    again = client.post(f"/api/v1/deliverables/{did}/regenerate", json={"content": "W935 a later version, written by the person."})
+    assert again.status_code == 200, again.text[:200]
+    rerun = client.get(f"{base}/signatures").json()
+    assert rerun["deliverables"][did]["version"] == 2 and rerun["deliverables"][did]["basis"] == fx["rerun"]["deliverables"][fd]["basis"]
+    assert rerun["signatures"][0]["why_not"] == fx["rerun"]["signatures"][0]["why_not"], rerun["signatures"][0]["why_not"]
+    (tmp_path / "entity_signatures.json").write_text("{not json", encoding="utf-8")
+    unread = client.get(f"{base}/signatures")
+    assert unread.status_code == 503 and unread.json()["detail"] == fx["unreadable"], unread.text[:200]

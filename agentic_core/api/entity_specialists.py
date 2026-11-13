@@ -42,6 +42,10 @@ W934 (part 3) - THE SIGNATURE, the third tier for the entity's work (clauses 5 a
   unreviewed until it is signed. A lapsed signature does not count. Nothing is deleted.
 - It is the person's statement, entered by the entity's owner or an administrator with who entered it. Workstation
   composes no part of it and charges nothing for it.
+
+W935 (the last part) - the entity's page shows each deliverable with the tier its current text has reached, every
+signature with whether it counts, and the form a specialist signs by (components/EntityWorkReview.tsx). The
+signatures answer names each deliverable's title and current version beside its tier.
 """
 from __future__ import annotations
 
@@ -400,5 +404,6 @@ async def signatures(vsb_id: str, user: dict | None = Depends(get_current_user))
         why = judge_signature(s, held.get(str(s.get("deliverable_id"))), today)
         rows.append({**s, "counts": why is None, "why_not": why})
     return {"vsb_id": vsb_id, "signatures": rows,
-            "deliverables": {i: deliverable_review(sigs, d, today) for i, d in held.items()},
+            "deliverables": {i: {**deliverable_review(sigs, d, today), "title": d.get("title"),
+                               "version": len(d.get("versions") or []) or 1} for i, d in held.items()},
             "basis": SIGN_BASIS, "credential_basis": NOT_VERIFIED}

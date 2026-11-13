@@ -1,0 +1,195 @@
+{
+ "vsb_id": "vsb-844ad57444",
+ "deliverable_id": "deliv-bf4b524c",
+ "roster": {
+  "vsb_id": "vsb-844ad57444",
+  "limit": 5,
+  "active": [
+   {
+    "specialist_id": "spec-5e576f65a5",
+    "name": "A. Example (a made-up specialist)",
+    "discipline": "care",
+    "credential_as_stated": "a registered nurse, as stated for this test",
+    "reviews": "the entity's reports",
+    "lapses_on": "2027-06-01",
+    "added_by": "single-user-mode",
+    "added_at": "2026-11-13T13:08:50Z",
+    "state": "active"
+   }
+  ],
+  "lapsed": [],
+  "retired": [],
+  "places_left": 4,
+  "disciplines": [
+   "care",
+   "law",
+   "education",
+   "money_readiness"
+  ],
+  "basis": "A short roster per entity, not a registry of people (P5.15 clause 6): a name, the discipline, the credential as the person states it, what they review for this entity, and when their place lapses. No contact detail is kept. Five at a time is Workstation's own number; the ruling says a short roster. A lapsed place does not count against the five. A specialist leaves by a recorded retirement and is never deleted. A specialist holding a place signs one version of this entity's work, and that signature is its third tier (the signatures are read at .../signatures).",
+  "credential_basis": "this platform does not verify a person's credential; it records what the person stated",
+  "recommendation": {
+   "recommended": true,
+   "chargeable": true,
+   "established_through": "genesis_journey",
+   "said": "Workstation generated this entity, through the Genesis journey, so it recommends engaging a specialist to review the entity's work before anyone relies on it.",
+   "charge": "Engaging a specialist is a chargeable option. Their fee is this entity's own cost: declare it among the entity's costs for a cycle, and it comes off before profit (P5.16 clause 6). Workstation sets no price for it and charges nothing for it.",
+   "when_warranted": "A specialist is warranted before this entity's work is relied on in care, law, education or money readiness (P5.15 clause 7), and they review in that discipline. This is Workstation's own statement; it claims no professional's role."
+  }
+ },
+ "before": {
+  "vsb_id": "vsb-844ad57444",
+  "signatures": [],
+  "deliverables": {
+   "deliv-bf4b524c": {
+    "tier": "unreviewed",
+    "label": "Unreviewed",
+    "basis": "no specialist on this entity's roster has signed its current text",
+    "signatures_counted": 0,
+    "signatures_not_counted": 0,
+    "title": "W935 care report",
+    "version": 1
+   }
+  },
+  "basis": "A signature is the third tier for this entity's work (P5.15 clause 5): a named person's record - their name and credential as stated, what they reviewed (one version of one of this entity's deliverables, and what in it), the date they reviewed it, and when the signature lapses. Only a specialist holding a place on this entity's roster signs, and a signature does not outlive that place. A signature is of the exact text it signed: once the deliverable is run again, the new version is unreviewed until it is signed. A signature is the person's statement; Workstation composes no part of it.",
+  "credential_basis": "this platform does not verify a person's credential; it records what the person stated"
+ },
+ "sign_request": {
+  "deliverable_id": "deliv-bf4b524c",
+  "reviewed": "the report's recommendations",
+  "date": "2026-11-13",
+  "lapses_on": "2027-02-21"
+ },
+ "signed": {
+  "signed": true,
+  "signature": {
+   "signature_id": "sig-e735d8e5da",
+   "specialist_id": "spec-5e576f65a5",
+   "name": "A. Example (a made-up specialist)",
+   "credential_as_stated": "a registered nurse, as stated for this test",
+   "discipline": "care",
+   "deliverable_id": "deliv-bf4b524c",
+   "deliverable_title": "W935 care report",
+   "version": 1,
+   "content_sha256": "be656183a923f83f3d661ec9afded353a05697a72b5afb5f7244df5f661a903c",
+   "reviewed": "the report's recommendations",
+   "date": "2026-11-13",
+   "lapses_on": "2027-02-21",
+   "entered_by": "single-user-mode",
+   "entered_at": "2026-11-13T13:08:50Z"
+  },
+  "credential_basis": "this platform does not verify a person's credential; it records what the person stated",
+  "deliverable_now_says": {
+   "tier": "signed_by_a_qualified_person",
+   "label": "Signed by a qualified person",
+   "basis": "signed by A. Example (a made-up specialist) (a registered nurse, as stated for this test - as stated; this platform does not verify a person's credential; it records what the person stated) on 2026-11-13, for version 1, until 2027-02-21",
+   "signatures_counted": 1,
+   "signatures_not_counted": 0
+  }
+ },
+ "after": {
+  "vsb_id": "vsb-844ad57444",
+  "signatures": [
+   {
+    "signature_id": "sig-e735d8e5da",
+    "specialist_id": "spec-5e576f65a5",
+    "name": "A. Example (a made-up specialist)",
+    "credential_as_stated": "a registered nurse, as stated for this test",
+    "discipline": "care",
+    "deliverable_id": "deliv-bf4b524c",
+    "deliverable_title": "W935 care report",
+    "version": 1,
+    "content_sha256": "be656183a923f83f3d661ec9afded353a05697a72b5afb5f7244df5f661a903c",
+    "reviewed": "the report's recommendations",
+    "date": "2026-11-13",
+    "lapses_on": "2027-02-21",
+    "entered_by": "single-user-mode",
+    "entered_at": "2026-11-13T13:08:50Z",
+    "counts": true,
+    "why_not": null
+   }
+  ],
+  "deliverables": {
+   "deliv-bf4b524c": {
+    "tier": "signed_by_a_qualified_person",
+    "label": "Signed by a qualified person",
+    "basis": "signed by A. Example (a made-up specialist) (a registered nurse, as stated for this test - as stated; this platform does not verify a person's credential; it records what the person stated) on 2026-11-13, for version 1, until 2027-02-21",
+    "signatures_counted": 1,
+    "signatures_not_counted": 0,
+    "title": "W935 care report",
+    "version": 1
+   }
+  },
+  "basis": "A signature is the third tier for this entity's work (P5.15 clause 5): a named person's record - their name and credential as stated, what they reviewed (one version of one of this entity's deliverables, and what in it), the date they reviewed it, and when the signature lapses. Only a specialist holding a place on this entity's roster signs, and a signature does not outlive that place. A signature is of the exact text it signed: once the deliverable is run again, the new version is unreviewed until it is signed. A signature is the person's statement; Workstation composes no part of it.",
+  "credential_basis": "this platform does not verify a person's credential; it records what the person stated"
+ },
+ "rerun": {
+  "vsb_id": "vsb-844ad57444",
+  "signatures": [
+   {
+    "signature_id": "sig-e735d8e5da",
+    "specialist_id": "spec-5e576f65a5",
+    "name": "A. Example (a made-up specialist)",
+    "credential_as_stated": "a registered nurse, as stated for this test",
+    "discipline": "care",
+    "deliverable_id": "deliv-bf4b524c",
+    "deliverable_title": "W935 care report",
+    "version": 1,
+    "content_sha256": "be656183a923f83f3d661ec9afded353a05697a72b5afb5f7244df5f661a903c",
+    "reviewed": "the report's recommendations",
+    "date": "2026-11-13",
+    "lapses_on": "2027-02-21",
+    "entered_by": "single-user-mode",
+    "entered_at": "2026-11-13T13:08:50Z",
+    "counts": false,
+    "why_not": "it signed version 1; the deliverable has been run again since, and its version 2 is not signed"
+   }
+  ],
+  "deliverables": {
+   "deliv-bf4b524c": {
+    "tier": "unreviewed",
+    "label": "Unreviewed",
+    "basis": "no specialist on this entity's roster has signed its current text; 1 signature(s) of it do not count",
+    "signatures_counted": 0,
+    "signatures_not_counted": 1,
+    "title": "W935 care report",
+    "version": 2
+   }
+  },
+  "basis": "A signature is the third tier for this entity's work (P5.15 clause 5): a named person's record - their name and credential as stated, what they reviewed (one version of one of this entity's deliverables, and what in it), the date they reviewed it, and when the signature lapses. Only a specialist holding a place on this entity's roster signs, and a signature does not outlive that place. A signature is of the exact text it signed: once the deliverable is run again, the new version is unreviewed until it is signed. A signature is the person's statement; Workstation composes no part of it.",
+  "credential_basis": "this platform does not verify a person's credential; it records what the person stated"
+ },
+ "refused_empty": "Not signed: a signature names reviewed.",
+ "unreadable": "The signatures could not be read (StoreUnavailable), so no signature is shown and none is added.",
+ "bare_roster": {
+  "vsb_id": "vsb-9d08b10cfa",
+  "limit": 5,
+  "active": [],
+  "lapsed": [],
+  "retired": [],
+  "places_left": 5,
+  "disciplines": [
+   "care",
+   "law",
+   "education",
+   "money_readiness"
+  ],
+  "basis": "A short roster per entity, not a registry of people (P5.15 clause 6): a name, the discipline, the credential as the person states it, what they review for this entity, and when their place lapses. No contact detail is kept. Five at a time is Workstation's own number; the ruling says a short roster. A lapsed place does not count against the five. A specialist leaves by a recorded retirement and is never deleted. A specialist holding a place signs one version of this entity's work, and that signature is its third tier (the signatures are read at .../signatures).",
+  "credential_basis": "this platform does not verify a person's credential; it records what the person stated",
+  "recommendation": {
+   "recommended": true,
+   "chargeable": true,
+   "established_through": "genesis_journey",
+   "said": "Workstation generated this entity, through the Genesis journey, so it recommends engaging a specialist to review the entity's work before anyone relies on it.",
+   "charge": "Engaging a specialist is a chargeable option. Their fee is this entity's own cost: declare it among the entity's costs for a cycle, and it comes off before profit (P5.16 clause 6). Workstation sets no price for it and charges nothing for it.",
+   "when_warranted": "A specialist is warranted before this entity's work is relied on in care, law, education or money readiness (P5.15 clause 7), and they review in that discipline. This is Workstation's own statement; it claims no professional's role."
+  }
+ },
+ "bare": {
+  "vsb_id": "vsb-9d08b10cfa",
+  "signatures": [],
+  "deliverables": {},
+  "basis": "A signature is the third tier for this entity's work (P5.15 clause 5): a named person's record - their name and credential as stated, what they reviewed (one version of one of this entity's deliverables, and what in it), the date they reviewed it, and when the signature lapses. Only a specialist holding a place on this entity's roster signs, and a signature does not outlive that place. A signature is of the exact text it signed: once the deliverable is run again, the new version is unreviewed until it is signed. A signature is the person's statement; Workstation composes no part of it.",
+  "credential_basis": "this platform does not verify a person's credential; it records what the person stated"
+ }
+}

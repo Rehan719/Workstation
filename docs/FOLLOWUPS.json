@@ -23657,11 +23657,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.15",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W935",
       "note": "",
       "slot_source": "clause 6 of P5.15 itself",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Closed by W932 to W935. An entity keeps its own short roster of specialists, not a registry of people (GET/POST /api/v1/entity-specialists/{vsb_id}, and .../{id}/retire): a name, the discipline (clause 7's four), the credential as stated, what they review and when the place lapses; five places at a time, a lapsed place frees itself, a retirement keeps its reason, nothing is deleted, and under sign-in only the entity's owner or an administrator reaches it. An entity the Genesis journey or the spawn route generated is recommended a specialist, as a chargeable option whose fee is the entity's own cost, declared so it comes off before profit (P5.16 clause 6); Workstation sets no price for it and charges nothing; any other entity is told no recommendation is made. A specialist holding a place signs one version of one of the entity's deliverables (.../{id}/sign): the third tier for that exact text, bound by its sha256, lapsing, and said not to count once the deliverable is run again; credentials are as stated and never verified. The Cockpit's deliverables tab shows the roster with the recommendation (components/EntitySpecialists.tsx) and the review each deliverable has reached with the signing (components/EntityWorkReview.tsx), both rendered against the routes' own answers. Driven in test_w932 to test_w935."
     },
     {
       "id": "FU-1179",
