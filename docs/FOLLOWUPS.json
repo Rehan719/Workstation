@@ -19779,11 +19779,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.10",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W886",
       "note": "",
       "slot_source": "measured in this round and not done in it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Driven, the hypothesis held on the synthesis path: every selected file's text was pasted into the instruction as a bare 'Knowledge base' block. It is now handed over through the shared material boundary (marked as data, any delimiter defused), and the output records how much was handed over and which files reached the upload registry's 1,000-character preview - all a synthesis ever had of a file, which nothing had said - so their text may be longer. Measured beside it: the file ids were looked up in the whole registry, so under sign-in a person could compose another person's file into their own output; such a file is now not found. Generate and stream both."
     },
     {
       "id": "FU-996",

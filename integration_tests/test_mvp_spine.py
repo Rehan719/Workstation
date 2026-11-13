@@ -75970,3 +75970,57 @@ def test_w885_with_sign_in_on_a_second_person_reaches_none_of_the_first_persons_
     #  5. its owner deletes it
     assert client.delete(f"/api/v1/ingest/{fid}", headers=H["one"]).status_code == 200
     assert fid not in [x["file_id"] for x in listed("one").json()]
+
+
+def test_w886_ingested_text_reaches_a_model_marked_as_data_and_only_the_callers_files_reach_it(client, monkeypatch):
+    """FU-995 (W886). The hypothesis was that attached or ingested text reaches a model with nothing marking it as
+    data. Driven, it held on the synthesis path: every selected file's text was pasted into the instruction as a bare
+    "Knowledge base" block, cut at 4,000 characters with nothing said. Measured beside it: the file ids were looked
+    up in the whole registry, so under sign-in a person could have another person's file composed into their output.
+    The knowledge base now travels marked as data with the cut recorded, and another person's file is not found."""
+    import uuid as _uuid886
+    import agentic_core.auth.core as _ac886
+    from agentic_core.api._ai_provenance import MATERIAL_CLOSE, MATERIAL_OPEN
+    from agentic_core.synthesis import api as _syn886
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    users = _ac886._load_users()
+    who = {}
+    for k in ("one", "two"):
+        name = f"w886-{k}-{_uuid886.uuid4().hex[:6]}"
+        users[name] = {"username": name, "hashed_password": _ac886._pwd_ctx.hash("pw12345678"), "role": "user"}
+        who[k] = name
+    _ac886._save_users(users)
+    H = {}
+    for k, name in who.items():
+        tok = client.post("/api/v1/auth/token", data={"username": name, "password": "pw12345678"})
+        assert tok.status_code == 200, tok.text[:200]
+        H[k] = {"Authorization": "Bearer " + tok.json()["access_token"]}
+    secret = f"w886 the first person's research note {_uuid886.uuid4().hex[:8]} " + "x" * 5000
+    up = client.post("/api/v1/ingest/", headers=H["one"], files={"file": ("w886-note.txt", secret.encode(), "text/plain")})
+    assert up.status_code == 200, up.text[:300]
+    fid = up.json()["file_id"]
+    sent = []
+
+    async def _capture(prompt, *a, **k):
+        sent.append(prompt)
+        return {"output": "w886 composed", "served_by": "native", "is_external": False}
+    monkeypatch.setattr(_syn886.gateway, "query_meta", _capture)
+
+    #  1. the owner's file reaches the model marked as data, and the cut at 4,000 characters is recorded
+    r = client.post("/api/v1/synthesis/generate", headers=H["one"],
+                    json={"content_ids": [fid], "output_type": "report", "instructions": "w886 summarise"})
+    assert r.status_code == 200, r.text[:300]
+    first = sent[0]
+    assert MATERIAL_OPEN.format(label="KNOWLEDGE BASE") in first and MATERIAL_CLOSE in first, first[:400]
+    assert secret[:40] in first and "Knowledge base:\n" not in first, "the knowledge base is pasted bare"
+    kb = (r.json().get("metadata") or {}).get("knowledge_base_handed_over") or {}
+    #     the registry keeps the first 1,000 characters of each file, so this one may be longer, and that is said
+    assert kb.get("files_at_the_registry_preview_limit") == ["w886-note.txt"] and "may be longer" in kb.get("basis", ""), kb
+
+    #  2. another person's file is not found: nothing of it reaches the model
+    sent.clear()
+    r2 = client.post("/api/v1/synthesis/generate", headers=H["two"],
+                     json={"content_ids": [fid], "output_type": "report", "instructions": "w886 summarise"})
+    assert r2.status_code == 200, r2.text[:300]
+    assert sent and not any(secret[:40] in p for p in sent), "another person's file was composed into this output"
+    assert fid in _syn886.synthesis_manager._last_context_not_found

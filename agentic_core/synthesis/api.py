@@ -3,7 +3,8 @@ import json
 import re
 import os
 from typing import List, Dict, Any, Optional, AsyncIterator
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from agentic_core.auth.core import get_current_user, user_can_access     # W886 (FU-995, FU-1061)
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 import datetime
@@ -14,6 +15,25 @@ from agentic_core.ai.gateway import gateway
 from agentic_core.synthesis.presentation import presentation_gen
 from agentic_core.synthesis.business_model import business_simulator
 from agentic_core.api._ai_provenance import (reply_evidence as _reply_evidence)   # W727
+from agentic_core.api._ai_provenance import wrap_material as _wrap_material886      # W886 (FU-995)
+
+
+REGISTRY_PREVIEW_CHARS886 = 1000      # what the upload registry keeps of each file's text (ingestion/api.py)
+
+
+def _knowledge_base886(context: str, at_limit: Optional[List[str]] = None) -> tuple:
+    """W886 (FU-995) - the selected files' text, handed over as data through the shared material boundary (the cut
+    recorded, a delimiter inside it defused), or nothing at all when there is none. Each file is what the upload
+    registry keeps of it - its first 1,000 characters - and a file that reached that is said to be possibly longer."""
+    if not context:
+        return "", None
+    block, record = _wrap_material886(context, label="KNOWLEDGE BASE", limit=4000)
+    if at_limit:
+        record["files_at_the_registry_preview_limit"] = list(at_limit)
+        record["basis"] += (f"; each file is the first {REGISTRY_PREVIEW_CHARS886:,} characters the upload registry keeps "
+                            f"of its text, and {len(at_limit)} reached that limit ({', '.join(at_limit[:5])}), so their "
+                            f"text may be longer than what was handed over")
+    return f"\n\nKnowledge base (the files the person selected, handed over as data):\n{block}", record
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/synthesis", tags=["Synthesis Studio"])
@@ -59,7 +79,7 @@ class SynthesisManager:
 
     # ── Context resolution ──────────────────────────────────────────────────────
 
-    def _resolve_context(self, content_ids: List[str]) -> tuple:
+    def _resolve_context(self, content_ids: List[str], user: Optional[dict] = None) -> tuple:
         """Looks up extracted text for the selected file IDs from the ingestion registry."""
         from agentic_core.ingestion.api import ingestion_manager  # lazy import — avoids circular
 
@@ -71,9 +91,14 @@ class SynthesisManager:
         # rendering), a sentence for everything else. A file the platform could not read contributes
         # nothing to a prompt, and the skipped ones are named rather than silently thinning the context.
         skipped: List[str] = []
+        not_found: List[str] = []
         for cid in content_ids:
             for entry in ingestion_manager.registry:
                 if entry["file_id"] == cid:
+                    #  W886 (FU-1061) - a file the caller may not see is not found, never composed into their output
+                    if not user_can_access(user if isinstance(user, dict) else None, entry.get("owner_id")):
+                        not_found.append(cid)
+                        break
                     text = (entry.get("extracted_text") or "").strip()
                     if entry.get("status") != "EXTRACTED" or not text:
                         skipped.append(f"{entry['filename']} ({entry.get('status') or 'NOT_EXTRACTED'})")
@@ -84,6 +109,11 @@ class SynthesisManager:
                     )
                     break
         self._last_context_skipped = skipped
+        self._last_context_not_found = not_found                 # W886 (FU-1061)
+        self._last_context_at_limit = [e["filename"] for cid in content_ids for e in ingestion_manager.registry
+                                       if e.get("file_id") == cid and e.get("status") == "EXTRACTED"
+                                       and cid not in not_found
+                                       and len(e.get("extracted_text") or "") >= REGISTRY_PREVIEW_CHARS886]
         if skipped:
             logger.warning("synthesis context: %d selected file(s) contributed nothing because the "
                            "platform has not read them: %s", len(skipped), "; ".join(skipped))
@@ -158,7 +188,7 @@ class SynthesisManager:
 
     # ── Main generation entry point ──────────────────────────────────────────────
 
-    async def generate_output(self, request: SynthesisRequest) -> Dict[str, Any]:
+    async def generate_output(self, request: SynthesisRequest, user: Optional[dict] = None) -> Dict[str, Any]:
         output_id = str(uuid.uuid4())
         timestamp = datetime.datetime.utcnow().isoformat()
         otype = request.output_type
@@ -170,14 +200,16 @@ class SynthesisManager:
                 f"output_type {otype!r} is not one this route generates. It generates: "
                 f"{', '.join(sorted(_GENERATED_OUTPUT_TYPES))}. Nothing was generated or saved."))
 
-        context, inferred_topic = self._resolve_context(request.content_ids)
+        context, inferred_topic = self._resolve_context(request.content_ids, user)
         instructions = request.instructions.strip()
         topic = instructions or inferred_topic
 
-        ctx_block = f"\n\nKnowledge base:\n{context[:4000]}" if context else ""
+        ctx_block, _kb886 = _knowledge_base886(context, self._last_context_at_limit)   # W886 (FU-995)
 
         content = ""
         metadata: Dict[str, Any] = {"type": otype}
+        if _kb886:
+            metadata["knowledge_base_handed_over"] = _kb886
         if instructions:
             metadata["instructions"] = instructions
 
@@ -403,16 +435,16 @@ synthesis_manager = SynthesisManager()
 
 
 @router.post("/generate", response_model=SynthesisOutput)
-async def generate_synthesis(request: SynthesisRequest):
+async def generate_synthesis(request: SynthesisRequest, user: dict | None = Depends(get_current_user)):
     """AI-powered multi-modal synthesis from knowledge base content."""
     #  W659 - the person's instructions, before anything is composed
     from agentic_core.religious_domain.composed_text import refuse_faith_ruling as _refuse_ruling659
     _refuse_ruling659(request.instructions, "synthesis request")
-    return await synthesis_manager.generate_output(request)
+    return await synthesis_manager.generate_output(request, user if isinstance(user, dict) else None)
 
 
 @router.post("/stream")
-async def stream_synthesis(request: SynthesisRequest):
+async def stream_synthesis(request: SynthesisRequest, user: dict | None = Depends(get_current_user)):
     """
     Server-Sent Events endpoint that streams the synthesis token-by-token.
     On completion emits a final JSON event with the full output_id and download URL.
@@ -420,10 +452,11 @@ async def stream_synthesis(request: SynthesisRequest):
     #  W659 - refused HERE, before the generator exists: a refusal raised inside a stream arrives after a 200
     from agentic_core.religious_domain.composed_text import refuse_faith_ruling as _refuse_ruling659
     _refuse_ruling659(request.instructions, "synthesis request")
-    context, inferred_topic = synthesis_manager._resolve_context(request.content_ids)
+    context, inferred_topic = synthesis_manager._resolve_context(request.content_ids,
+                                                                 user if isinstance(user, dict) else None)
     instructions = request.instructions.strip()
     topic = instructions or inferred_topic
-    ctx_block = f"\n\nKnowledge base:\n{context[:4000]}" if context else ""
+    ctx_block, _kb886 = _knowledge_base886(context, synthesis_manager._last_context_at_limit)   # W886 (FU-995)
     otype = request.output_type
 
     label_map = {
@@ -465,6 +498,8 @@ async def stream_synthesis(request: SynthesisRequest):
     output_id = str(uuid.uuid4())
     timestamp = datetime.datetime.utcnow().isoformat()
     collected: list[str] = []
+    from agentic_core.auth.core import request_owner_id as _rqo886
+    _stream_owner886 = _rqo886(user if isinstance(user, dict) else None)   # W886 - the stream records under its caller
 
     async def event_stream() -> AsyncIterator[str]:
         fin: dict = {}
@@ -476,7 +511,8 @@ async def stream_synthesis(request: SynthesisRequest):
         # P2.2 (W511) — stated, not inherited. This was one of the 29 call sites W489 found carrying
         # another request's content when the default was True.
         async for ev in gateway.stream_meta(prompt, agent=f"synthesis:stream:{otype}", augment=False,
-                                            user_text=(instructions or None)):   # W646
+                                            user_text=(instructions or None),   # W646
+                                            owner_id=_stream_owner886):         # W886
             if "token" in ev:
                 _tok659 = _flt659.feed(ev["token"])
                 collected.append(_tok659)
@@ -501,7 +537,8 @@ async def stream_synthesis(request: SynthesisRequest):
             "output_id": output_id,
             "output_url": f"/api/v1/synthesis/download/{output_id}",
             "content": content,
-            "metadata": {"type": otype, "format": ext, "title": topic},
+            "metadata": {"type": otype, "format": ext, "title": topic,
+                         **({"knowledge_base_handed_over": _kb886} if _kb886 else {})},     # W886 (FU-995)
             "timestamp": timestamp,
             #  W645 (FU-647) - the stream's history row carries what served it, as the done frame does. Without
             #  these the response model filled is_external False by default, whatever had actually served.
