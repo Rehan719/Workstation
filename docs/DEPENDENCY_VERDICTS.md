@@ -115,3 +115,28 @@ changed without re-locking, when `requirements.txt` holds a line the export does
 from the lock. FU-604's removal retry uses the same two commands, then a fresh venv built only from the new
 `requirements.txt`.
 
+## W907 (FU-604) — the nineteen REMOVABLE dependencies are removed (2026-11-13)
+
+The Owner's ruling of 2026-10-07b allowed the REMOVABLE rows above to be removed. W628b did it once and was
+reverted (above). This round carries out the retry plan:
+
+- **firebase-admin.** What reached it was the capital-fund package, archived in W673. W783 found no live importer
+  since, and this round's scan of `agentic_core`, `scripts` and `integration_tests` (outside `_archive/`) finds no
+  import or availability probe of any of the nineteen.
+- **A fresh venv.** It is built only from the new `requirements.txt`, plus pytest and pytest-xdist, which CI
+  installs beside it. Each pinned distribution is hard-linked from an installed venv at its pinned version, so
+  nothing else is present and nothing is downloaded (`pin_venv.py`, kept with the session's round tools). Both
+  tests W628b failed pass in it: the firebase-admin import and the torch-absent boot. Then the full suite ran in
+  it before this round's own suite.
+- **Halves.** The plan said to remove the nineteen in two halves so that a failure would point at a half. A
+  fresh-venv run of the whole suite now reproduces CI's install locally, so they were removed in one commit.
+
+`pyproject.toml` no longer declares them. The lock was made again and `requirements.txt` exported from it: 306 pins
+became 188. Three of the nineteen stay pinned because packages kept here require them: sympy (torch, onnxruntime),
+scikit-learn and transformers. They are no longer declared, and nothing live imports them. `test_w907` fails if any
+of the nineteen is declared again or imported by live code, or if one of them stays pinned with nothing that
+requires it.
+
+Not decided here, and not part of the ruling: the rows marked REACHED without a scanned import named
+`src/dashboard/app.py`. W896 moved `src/` aside, so those three (streamlit, pandas, plotly) need a fresh verdict.
+

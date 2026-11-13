@@ -70414,8 +70414,11 @@ def test_w783_fu890_what_the_archived_fund_left_unimported_is_archived_or_record
     assert 'enforcement: "ConsultationOrchestrator pre-execution gate"' not in y and "NOT ENFORCED" in y
     dv = pathlib.Path("docs/DEPENDENCY_VERDICTS.md").read_text(encoding="utf-8")
     assert "## W783 (FU-890)" in dv and "It was not removed" in dv
-    assert "firebase-admin" in pathlib.Path("requirements.txt").read_text(encoding="utf-8").lower(), (
-        "a dependency was removed outside FU-283's retry plan")
+    #  W907 (FU-604) - removed by FU-283's retry plan, after a fresh venv built only from the new requirements.txt
+    #  ran the suite. It does not come back by a hand edit: requirements.txt is the lock's export (W906)
+    assert "firebase-admin" not in pathlib.Path("requirements.txt").read_text(encoding="utf-8").lower(), (
+        "firebase-admin is pinned again after the retry plan removed it")
+    assert "## W907 (FU-604)" in dv
 
 
 def test_w784_fu865_each_forge_stage_is_one_persona_prompt_through_the_gateway(client, monkeypatch):
@@ -77225,3 +77228,55 @@ def test_w906_fu607_requirements_is_the_lock_and_the_lock_is_the_pyproject():
     for inc in poetry.get("packages") or []:
         assert (root / inc.get("from", "") / inc["include"]).exists(), (
             "pyproject.toml includes a package the tree does not have, so the editable install fails", inc)
+
+
+def test_w907_fu604_the_nineteen_removable_dependencies_are_gone_and_nothing_live_reaches_them():
+    """FU-604 (W907). The Owner allowed the 19 dependencies FU-283 found removable to be removed (2026-10-07b).
+    W628b removed them and CI's fresh install failed two tests, so it was reverted, and the retry existed only as
+    prose. They are removed now, after the full suite ran in a fresh venv built only from the new requirements.txt.
+    Three stay in the lock because packages kept here require them. This guard holds the removal: none of the
+    nineteen is declared, none is imported or probed by live code, and none stays pinned without something that
+    requires it. The rows held for a plan item or reached another way are still declared."""
+    import pathlib
+    import re
+    import tomllib
+    root = pathlib.Path(__file__).resolve().parents[1]
+
+    def norm(name):
+        return re.sub(r"[-_.]+", "-", name).lower()
+
+    removed = {"langchain": "langchain", "langchain-community": "langchain_community", "redis": "redis",
+               "prefect": "prefect", "transformers": "transformers", "shap": "shap", "pyjwt": "jwt",
+               "seaborn": "seaborn", "scikit-learn": "sklearn", "pyro-ppl": "pyro", "ray": "ray",
+               "celery": "celery", "web3": "web3", "z3-solver": "z3", "sympy": "sympy", "qiskit": "qiskit",
+               "pennylane": "pennylane", "oqs": "oqs", "firebase-admin": "firebase_admin"}
+    assert len(removed) == 19
+    py = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
+    declared = {norm(k) for k in py["tool"]["poetry"]["dependencies"]}
+    assert not sorted(set(removed) & declared), ("declared again", sorted(set(removed) & declared))
+
+    #  one that stays pinned is there because a package kept here requires it, not because it is ours
+    lock = tomllib.loads((root / "poetry.lock").read_text(encoding="utf-8"))
+    pinned = {norm(ln.split("==", 1)[0]) for ln in (root / "requirements.txt").read_text(encoding="utf-8").splitlines()
+              if "==" in ln}
+    for dist in sorted(set(removed) & pinned):
+        need = [p["name"] for p in lock["package"] if dist in {norm(k) for k in (p.get("dependencies") or {})}]
+        assert need, (dist, "is pinned and nothing in the lock requires it")
+
+    #  nothing live imports or probes any of them (the verdict table's basis, measured again on every run)
+    mods = "|".join(sorted(set(removed.values()), key=len, reverse=True))
+    imp = re.compile(r"^\s*(?:import|from)\s+(" + mods + r")(?:\.|\s|,|$)", re.M)
+    probe = re.compile(r"(?:find_spec|import_module|__import__|importorskip)\(\s*['\"](" + mods + r")['\"]")
+    hits = []
+    for base in ("agentic_core", "scripts", "integration_tests"):
+        for f in (root / base).rglob("*.py"):
+            if "_archive" in f.parts:
+                continue
+            text = f.read_text(encoding="utf-8", errors="replace")
+            hits += [(str(f.relative_to(root)), m.group(1)) for m in imp.finditer(text)]
+            hits += [(str(f.relative_to(root)), m.group(1)) for m in probe.finditer(text)]
+    assert not hits, ("live code reaches a removed dependency", hits[:10])
+
+    #  the rows FU-283 held for a plan item, or found reached another way, are not part of the ruling
+    for kept in ("sqlalchemy", "sqlmodel", "psycopg2-binary", "streamlit", "pandas", "plotly"):
+        assert kept in declared, (kept, "was removed, and the ruling covered only the REMOVABLE rows")

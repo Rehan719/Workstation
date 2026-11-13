@@ -11603,11 +11603,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P4.5",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W907",
       "note": "",
       "slot_source": "a reproducible fresh install is a precondition of the production deploy P4.5 gates",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built as the row asked: the 19 removable dependencies are removed by the Owner ruling of 2026-10-07b, through W906s two commands (pyproject.toml, poetry lock, poetry export), after the full suite ran in a fresh venv built only from the new requirements.txt plus CIs two test tools. firebase-admin is no longer reached (the capital-fund package was archived in W673), and both tests W628b failed pass in that venv. 306 pins became 188; sympy, scikit-learn and transformers stay pinned only because kept packages require them. test_w907 holds the removal."
     },
     {
       "id": "FU-605",
