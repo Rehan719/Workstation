@@ -470,3 +470,42 @@ def scholar_pack_decide(req: PackDecisionRequest, user: dict | None = Depends(ge
     if not out["ok"]:
         raise HTTPException(status_code=409, detail=out["detail"])
     return out
+
+
+# -- W946 (P5.21) - A REFLECTION PROMPT IS A PERSON'S WORDS, SHOWN ONLY ONCE A SCHOLAR APPROVES THEM ---------------
+#  The children's reflection tool (agentic_core/api/qep_children.py) shows only prompts a scholar on the roster has
+#  approved in their exact text. A person proposes each one here; this platform composes none. Proposing never
+#  approves: the prompt waits IN REVIEW and is in the scholar's pack. A prompt holding Arabic is refused, because
+#  every verse a child sees is fetched from a named edition (R1), never typed into a prompt.
+import re as _re946                                              # noqa: E402
+
+REFLECTION_PREFIX = "children-reflection:"
+REFLECTION_SURFACE = "children-reflection-prompt"
+_REFLECTION_MOST_CHARS = 400
+_ARABIC = _re946.compile("[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]")
+
+
+class ReflectionPromptRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+    text: str
+
+
+@router.post("/reflection-prompts")
+def scholar_review_reflection_prompt(req: ReflectionPromptRequest, user: dict | None = Depends(get_current_user)):
+    text = " ".join(str(req.text).split())
+    if not text:
+        raise HTTPException(status_code=422, detail="A reflection prompt is written by a person; it may not be blank.")
+    if len(text) > _REFLECTION_MOST_CHARS:
+        raise HTTPException(status_code=422, detail=f"A reflection prompt is at most {_REFLECTION_MOST_CHARS} "
+                                                    f"characters.")
+    if _ARABIC.search(text):
+        raise HTTPException(status_code=422, detail=(
+            "A reflection prompt holds no Arabic. Every verse a child sees is fetched from a named edition, "
+            "never typed into a prompt."))
+    if auth_enabled() and not (isinstance(user, dict) and user.get("role") == "admin"):
+        raise HTTPException(status_code=403, detail="Only an administrator proposes a reflection prompt.")
+    rec = submit_if_new(REFLECTION_PREFIX + body_hash(text)[:16], REFLECTION_SURFACE, text, served_by="person")
+    if rec.get("state") == NOT_QUEUED:
+        raise HTTPException(status_code=409, detail=rec["why"])
+    return {**rec, "basis": ("proposed for the children's reflection tool; it is shown to no one until a scholar "
+                             "on the roster approves this exact text")}

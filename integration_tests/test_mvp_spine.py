@@ -79994,3 +79994,80 @@ def test_w945_p521_a_teachers_sheet_is_the_fetched_text_with_its_edition_and_rec
                                                              "basis": "open: opened in this test process only"})
     anon = client.get(f"{prefix}/teaching/sheet/1?from_ayah=1&to_ayah=2")
     assert anon.status_code == 401 and "signed-in parent or teacher" in anon.json()["detail"], anon.text[:200]
+
+
+def test_w946_p521_a_reflection_prompt_is_a_persons_words_a_scholar_approved_and_no_reflection_is_received(client, monkeypatch):
+    """P5.21 clause 4, the fourth tool (W946): private written reflection on scholar-approved prompts, built and held.
+    A person proposes each prompt (with sign-in off, the Owner); proposing never approves, the prompt waits IN REVIEW
+    and is in the scholar's pack, and a blank, overlong or Arabic-holding prompt is refused. A scholar on the roster
+    approves one prompt's exact text. With sign-in on in this test process and the current pack approved by the
+    scholar's own account, the real gate opens: a signed-in adult is shown exactly the approved prompt, in its approved
+    words, and not the one still in review. No route under the children's prefix takes a reflection, and once sign-in
+    is on only an administrator proposes a prompt."""
+    import uuid
+    from fastapi.routing import APIRoute
+    from agentic_core.app_mvp import app
+    from agentic_core.religious_domain import approval_pack as _ap
+    tag = uuid.uuid4().hex[:6]
+    prefix = _ap.CHILDREN_PREFIX
+    tool = next(t for t in _ap.CHILDREN_TOOLS if t["id"] == "private-reflection")
+    for key in ("name", "run_by", "what_a_child_sees", "steps", "wording", "arabic_from", "routes"):
+        assert tool.get(key), ("the reflection tool's entry in the pack does not say", key)
+    off = client.get(f"{prefix}/reflection/prompts")
+    assert off.status_code == 423 and "sign-in is off" in off.json()["detail"], off.text[:200]
+
+    #  a person proposes prompts; proposing approves nothing, and the same words proposed again are one prompt
+    first, second = f"w946 What are you thankful for today? {tag}", f"w946 What would you like to ask about? {tag}"
+    one = client.post("/api/v1/scholar-review/reflection-prompts", json={"text": first})
+    assert one.status_code == 200 and one.json()["state"] == "in_review", one.text[:200]
+    assert one.json()["served_by_basis"] == "written by a person and submitted for review"
+    two = client.post("/api/v1/scholar-review/reflection-prompts", json={"text": second}).json()
+    again = client.post("/api/v1/scholar-review/reflection-prompts", json={"text": "  " + first + " "}).json()
+    assert again["content_key"] == one.json()["content_key"] and again["state"] == "in_review"
+    for bad in (" ", "w946 " + "x" * 400, f"w946 {chr(0x0627)}{chr(0x0644)} {tag}"):
+        r = client.post("/api/v1/scholar-review/reflection-prompts", json={"text": bad})
+        assert r.status_code == 422, (bad[:20], r.status_code, r.text[:200])
+    keys = {i["content_key"] for i in client.get("/api/v1/scholar-review/pack").json()["sections"]["learner_content"]}
+    assert {one.json()["content_key"], two["content_key"]} <= keys, "a proposed prompt is not in the scholar's pack"
+
+    #  a scholar on the roster approves the first prompt's exact text; the second stays in review
+    sid = f"w946-scholar-{tag}"
+    assert client.post("/api/v1/scholar-review/roster",
+                       json={"scholar_id": sid, "name": "W946 Test Scholar", "credential": "stated"}).status_code == 200
+    ok = client.post("/api/v1/scholar-review/decide",
+                     json={"content_key": one.json()["content_key"], "scholar_id": sid, "approve": True})
+    assert ok.status_code == 200 and ok.json()["record"]["state"] == "approved", ok.text[:200]
+
+    #  sign-in on, the current pack approved with the scholar's own account: the real gate opens
+    import agentic_core.auth.core as _ac946
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    users = _ac946._load_users()
+    adult = f"w946-adult-{tag}"
+    for u in (adult, sid):
+        users[u] = {"username": u, "hashed_password": _ac946._pwd_ctx.hash("pw12345678"), "role": "user"}
+    _ac946._save_users(users)
+
+    def hdr(u):
+        t = client.post("/api/v1/auth/token", data={"username": u, "password": "pw12345678"}).json()["access_token"]
+        return {"Authorization": f"Bearer {t}"}
+    ha, hs = hdr(adult), hdr(sid)
+    seen = client.get("/api/v1/scholar-review/pack", headers=hs).json()["pack_hash"]
+    assert client.post("/api/v1/scholar-review/pack/decide", headers=hs,
+                       json={"scholar_id": sid, "decision": "approve", "seen_hash": seen}).status_code == 200
+    assert _ap.children_tools_open()["open"] is True
+
+    shown = client.get(f"{prefix}/reflection/prompts", headers=ha)
+    assert shown.status_code == 200, shown.text[:200]
+    s = shown.json()
+    mine = [p for p in s["prompts"] if tag in p["text"]]
+    assert [p["text"] for p in mine] == [first] and mine[0]["approved_by"] == sid, s["prompts"]
+    assert s["not_shown"] >= 1 and s["received"] is False and s["screen"]["wording"] == tool["wording"]
+
+    #  no route under the prefix takes a reflection: the tool's routes are reads
+    taking = [f"{m} {r.path}" for r in app.routes if isinstance(r, APIRoute) and r.path.startswith(prefix + "/reflection")
+              for m in r.methods if m != "GET"]
+    assert not taking, ("a route takes what a child wrote", taking)
+
+    #  with sign-in on, only an administrator proposes a prompt
+    late = client.post("/api/v1/scholar-review/reflection-prompts", headers=ha, json={"text": f"w946 later {tag}"})
+    assert late.status_code == 403, late.text[:200]

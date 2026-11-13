@@ -121,6 +121,23 @@ CHILDREN_TOOLS: List[Dict[str, Any]] = [
                      "the sheet. Nothing is generated, and a verse that cannot be fetched is named as missing and "
                      "not shown."),
      "routes": [f"GET {CHILDREN_PREFIX}/teaching/sheet/{{surah_number}}"]},
+    #  W946 - P5.21 clause 4, the fourth tool
+    {"id": "private-reflection",
+     "name": "Private written reflection, on prompts a scholar has approved",
+     "run_by": "a parent or teacher, signed in on their own account, sitting with the child",
+     "what_a_child_sees": ("One reflection prompt at a time, in the exact words a scholar approved, and a space to "
+                           "write in. What they write stays on the device; nobody sees it unless the child shows "
+                           "them."),
+     "steps": ["A person proposes each prompt, which goes to the scholar's review. This platform composes none.",
+               "Only a prompt a scholar on the roster has approved, in its exact words, is shown.",
+               "The child writes in the space on the device. Nothing they write is sent anywhere.",
+               "Nothing reads, judges or keeps what the child wrote, and nothing says anything about the child's "
+               "faith."],
+     "wording": ["Write what you think. There is no right or wrong answer.",
+                 "What you write stays on this device. Nobody sees it unless you show them."],
+     "arabic_from": ("none: a prompt holds no Arabic. One that does is refused when it is proposed, because every "
+                     "verse a child sees is fetched from a named edition."),
+     "routes": [f"GET {CHILDREN_PREFIX}/reflection/prompts"]},
 ]
 
 PACK_STORE = "scholar_pack_decisions.json"

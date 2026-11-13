@@ -231,3 +231,35 @@ async def children_teaching_sheet(surah_number: int, from_ayah: int, to_ayah: in
             "screen": {"tool": tool["id"], "name": tool["name"], "wording": list(tool["wording"]),
                        "sentences": [w.format(**fill) for w in tool["wording"]]},
             "kept": False, "kept_basis": "nothing about the teacher's class or any child is recorded"}
+
+
+# ── TOOL 4 - PRIVATE WRITTEN REFLECTION ON SCHOLAR-APPROVED PROMPTS (W946) ───────────────────────────────────────
+#  A prompt is shown only when a scholar on the roster approved its exact text in the review store (R5); a scholar
+#  retired since keeps the decisions they recorded (W796). A person
+#  proposes each prompt (POST /api/v1/scholar-review/reflection-prompts); this platform composes none. What the child
+#  writes stays on the device: no route takes a reflection, so none is received, read, judged or kept, and nothing
+#  gives a verdict on anyone's spiritual state.
+REFLECTION = "private-reflection"
+
+
+@router.get("/reflection/prompts")
+async def children_reflection_prompts(user: dict | None = Depends(get_current_user)):
+    """The reflection prompts a scholar has approved, each in its exact approved text, with who approved it."""
+    _adult(user)
+    from agentic_core.api import scholar_review as _sr
+    recs = _sr._load(_sr._review_path())
+    approved = sorted((r for k, r in recs.items() if str(k).startswith(_sr.REFLECTION_PREFIX)
+                       and r.get("state") == _sr.APPROVED and r.get("reviewer_id")
+                       and r.get("body_hash") == _sr.body_hash(r.get("body") or "")),
+                      key=lambda r: str(r.get("reviewed_at") or ""))
+    tool = next(t for t in _ap.CHILDREN_TOOLS if t["id"] == REFLECTION)
+    waiting = sum(1 for k, r in recs.items() if str(k).startswith(_sr.REFLECTION_PREFIX)
+                  and r.get("state") != _sr.APPROVED)
+    return {"prompts": [{"content_key": r["content_key"], "text": r["body"], "approved_by": r["reviewer_id"],
+                         "approved_at": r["reviewed_at"]} for r in approved],
+            "not_shown": waiting,
+            "not_shown_basis": "prompts no scholar has approved are not shown, and nothing is put in their place",
+            "screen": {"tool": tool["id"], "name": tool["name"], "wording": list(tool["wording"])},
+            "received": False,
+            "received_basis": ("what the child writes stays on this device: no route here takes a reflection, so "
+                               "none is sent, read, judged or kept")}
