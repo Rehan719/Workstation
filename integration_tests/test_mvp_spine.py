@@ -77334,3 +77334,48 @@ def test_w908_streamlit_pandas_and_plotly_are_reached_by_nothing_live_and_their_
         still = prompt.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0]
         entry = still.split(f"{asked[0]['id']} (W908):", 1)
         assert len(entry) == 2 and "Recommended: yes" in entry[1][:400], "the question is not asked where the Owner reads"
+
+
+def test_w909_fu399_the_metabolic_card_is_guarded_by_a_render_against_the_apis_own_answers(client):
+    """FU-399 part 2 (W909). A figure with its basis is a claim about what a person SEES, the kind FU-399 converts
+    from a text scan to a render. OrganismDashboard.test.tsx mounts the real page against the API's own answers,
+    captured from the app's routes, and reads W902's Metabolic card in the DOM. The figure, its basis and whether
+    anything reads it are each driven, and four page blinds each turn it red. The round runs it the way it runs
+    tsc, because nothing in this suite shells out to node. So this guard holds what the render rests on. The
+    rendered test mounts the real page. Every data-testid a rendered test queries exists in the app's source, so a
+    renamed id fails here as well as in the runner. The fixture still has the shape the live API answers, for every
+    field the card reads, so a renamed field is not hidden behind a frozen answer."""
+    import json
+    import pathlib
+    import re
+    app = pathlib.Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp"
+    page_dir = app / "src" / "pages" / "organism"
+    t = (page_dir / "OrganismDashboard.test.tsx").read_text(encoding="utf-8")
+    assert "import { OrganismDashboard } from './OrganismDashboard';" in t and "<OrganismDashboard />" in t, (
+        "the rendered test does not mount the real page")
+    assert "render(" in t and "screen.findByTestId('organism-work-budget-left')" in t
+
+    #  every testid a rendered test queries is one the app's source declares
+    src_text = "\n".join(p.read_text(encoding="utf-8", errors="replace")
+                         for p in (app / "src").rglob("*.tsx") if not p.name.endswith(".test.tsx"))
+    declared = set(re.findall(r'data-testid="([^"]+)"', src_text))
+    queried = set()
+    for tf in (app / "src").rglob("*.test.tsx"):
+        queried |= set(re.findall(r"(?:get|find|query)(?:All)?ByTestId\('([^']+)'\)", tf.read_text(encoding="utf-8")))
+    assert "organism-work-budget-left" in queried
+    assert queried <= declared, ("a rendered test queries a data-testid the app does not declare",
+                                 sorted(queried - declared))
+
+    #  the fixture is the API's own answer: every field the card reads is where the live route puts it
+    fx = json.loads((page_dir / "OrganismDashboard.fixture.json").read_text(encoding="utf-8"))
+    live = client.get("/api/v1/organism/status")
+    assert live.status_code == 200, live.text[:200]
+    live_m, fx_m = live.json()["systems"]["metabolic"], fx["status"]["systems"]["metabolic"]
+    for key in ("energy_ratio", "energy_acts", "energy_basis"):
+        assert key in live_m and key in fx_m, ("the card reads a field the API or the fixture no longer has", key)
+    #  a field the route ADDS later is not drift; a field the fixture holds and the route no longer answers is
+    assert set(fx["status"]) <= set(live.json()), (
+        "the fixture answers a field the route no longer does", sorted(set(fx["status"]) - set(live.json())))
+    assert set(fx["status"]["systems"]) <= set(live.json()["systems"])
+    cog = client.get("/api/v1/native-ai/homeostasis").json()
+    assert "organism" in fx["homeostasis"] and "organism" in cog, "the page keeps the cognition answer only with organism"
