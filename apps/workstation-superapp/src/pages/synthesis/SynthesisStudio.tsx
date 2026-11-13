@@ -1,3 +1,4 @@
+import { silenceIsRight } from '../../components/ReadFailures';   // W961 (FU-1181)
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { FabricLink } from '../../components/FabricLink';
@@ -278,7 +279,7 @@ export const SynthesisStudio: React.FC = () => {
                   served_by: ev.served_by, is_external: ev.is_external, profile_applied: ev.profile_applied,
                 };
               }
-            } catch { /* malformed line */ }
+            } catch { silenceIsRight('a stream frame that is not JSON, a heartbeat or a cut line, carries nothing to show')(); }
           }
         }
 

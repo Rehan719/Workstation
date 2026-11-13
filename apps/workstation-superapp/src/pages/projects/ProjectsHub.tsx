@@ -1,3 +1,4 @@
+import { silenceIsRight } from '../../components/ReadFailures';   // W961 (FU-1181)
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { REALMS as CANON_REALMS, REALM_LABELS, DOMAIN_LABELS } from '../../lib/taxonomy';
 import { useSearchParams } from 'react-router-dom';
@@ -355,7 +356,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
       setError('✓ Proposal submitted — go to Governance Hub to approve or reject.');
       // W867 (FU-1043) - the project now waits on a person: re-read it so the page says so without a reload. A
       // failed re-read leaves the confirmation standing, and the next read of the list says it.
-      try { const again = await axios.get(`/api/v1/projects/${project.id}`); onUpdate(again.data); } catch { /* said on the next read */ }
+      try { const again = await axios.get(`/api/v1/projects/${project.id}`); onUpdate(again.data); } catch { silenceIsRight('a failed re-read leaves the confirmation standing, and the next read of the list says it')(); }
     } catch (err: any) {
       setError(err?.response?.data?.detail ?? 'Cannot propose advance yet.');
     } finally {

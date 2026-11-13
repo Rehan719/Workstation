@@ -1,3 +1,4 @@
+import { silenceIsRight } from '../../components/ReadFailures';   // W961 (FU-1181)
 import React, { useState, useRef, useCallback } from 'react';
 import { WORKSPACE_DOMAINS } from '../../lib/taxonomy';
 import { useSearchParams } from 'react-router-dom';
@@ -127,7 +128,7 @@ export const DigitalReactor: React.FC = () => {
             } else if (ev.error) {
               appendLog(`[ERROR] ${ev.error}`);
             }
-          } catch { /* malformed */ }
+          } catch { silenceIsRight('a stream frame that is not JSON, a heartbeat or a cut line, carries nothing to show')(); }
         }
         requestAnimationFrame(() => logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: 'smooth' }));
       }

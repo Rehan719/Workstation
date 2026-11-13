@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { provenanceBadge, provenanceMapBadge, provenanceMapFromTrace } from '../../lib/api';
-import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W928
+import { ReadFailures, useReadFailures, silenceIsRight } from '../../components/ReadFailures';   // W928
 import { VBSSystemsPanel } from '../../components/VBSSystemsPanel';
 import { downloadExport } from '../../lib/download';
 import axios from 'axios';
@@ -600,7 +600,7 @@ export const VSBCockpit: React.FC = () => {
 
   const speak = (text: string) => {
     if (!speakReplies || !canSpeak || !text) return;
-    try { window.speechSynthesis.cancel(); window.speechSynthesis.speak(new SpeechSynthesisUtterance(text.slice(0, 600))); } catch { /* ignore */ }
+    try { window.speechSynthesis.cancel(); window.speechSynthesis.speak(new SpeechSynthesisUtterance(text.slice(0, 600))); } catch { silenceIsRight('reading a reply aloud is an optional browser feature; the reply is on the page')(); }
   };
 
   const sendChat = async (override?: string) => {
@@ -639,7 +639,7 @@ export const VSBCockpit: React.FC = () => {
 
   const listenVoice = () => {
     if (!SpeechRec) return;
-    if (listening) { try { recognitionRef.current?.stop(); } catch { /* ignore */ } return; }
+    if (listening) { try { recognitionRef.current?.stop(); } catch { silenceIsRight('the browser speech recognition may already have stopped')(); } return; }
     const rec = new SpeechRec();
     recognitionRef.current = rec;
     rec.lang = 'en-GB'; rec.interimResults = false; rec.maxAlternatives = 1;

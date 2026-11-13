@@ -78748,7 +78748,7 @@ def test_w931_no_call_ends_in_a_catch_that_says_nothing():
     #  read as code: the helper's own doc comment shows the call it names
     named = [(f.name, m.group(1)) for f in files
              for m in re.finditer(r"silenceIsRight\('([^']*)'\)", _code_only(f.read_text(encoding="utf-8")))]
-    assert sorted(n for n, _ in named) == ["PresentationPlayer.tsx", "PresentationPlayer.tsx"], named
+    assert sorted(n for n, _ in named).count("PresentationPlayer.tsx") == 2, named   # W961: every silence is named now
     assert all(len(why) >= 30 for _, why in named), ("a silence is named without its reason", named)
     for rel in ("pages/governance/ConstitutionalUI.tsx", "pages/governance/ComplianceChecker.tsx",
                 "pages/evolution/SovereignEvolution.tsx", "pages/TransformationDashboard.tsx",
@@ -81078,7 +81078,43 @@ def test_w960_fu1181_three_reads_that_failed_silently_are_said_and_four_body_par
     files = [f for f in src.rglob("*.ts*") if not f.name.endswith((".test.tsx", ".test.ts", ".d.ts"))]
     counts = {f.relative_to(src).as_posix(): len(empty.findall(f.read_text(encoding="utf-8"))) for f in files}
     total = sum(counts.values())
-    assert total == 42, ("the empty catch blocks are not the 42 W961 names", total, {k: v for k, v in counts.items() if v})
+    assert total == 0, ("an empty catch block is back", total, {k: v for k, v in counts.items() if v})   # W961 named the 42
     for gone in ("components/employment/ApplicationStudio.tsx", "lib/api.ts", "pages/developers/ForgePipeline.tsx",
                  "components/organism/SwarmIntelligence.tsx"):
         assert counts.get(gone, 0) == 0, gone
+
+
+def test_w961_fu1181_every_silence_in_the_frontend_is_named_with_its_reason():
+    """FU-1181 closed (W961). The row counted 45 empty or comment-only catch blocks and 22 catches returning nothing,
+    "each to be classified: a silence named with its reason, or a failure said with the server's reason". W959 and W960
+    said the four that hid a read and moved the body parses into bodyOrNull; this round names the 42 left. Held here:
+    - no catch block in the app is empty or holds only a comment;
+    - every catch that stays silent calls silenceIsRight with its reason - at least thirty characters, no two reasons
+      in one file left vague - and the count is the 42 named here plus the player's two (W931);
+    - the reasons are of the kinds read: browser storage, in-page events, the clipboard, optional speech and audio,
+      stream frames, and three single cases."""
+    import re
+    from pathlib import Path
+
+    src = Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+    files = [f for f in src.rglob("*.ts*") if not f.name.endswith((".test.tsx", ".test.ts", ".d.ts"))]
+    empty = re.compile(r"catch\s*(\([^)]*\))?\s*\{\s*(/\*[^*]*\*+(?:[^/*][^*]*\*+)*/\s*|//[^\n]*\n\s*)*\}")
+    left = {f.relative_to(src).as_posix(): len(empty.findall(f.read_text(encoding="utf-8"))) for f in files}
+    assert {k: v for k, v in left.items() if v} == {}, ("a catch block is empty or only a comment", left)
+
+    named = [(f.relative_to(src).as_posix(), m.group(1)) for f in files
+             for m in re.finditer(r"silenceIsRight\('([^']*)'\)", _code_only(f.read_text(encoding="utf-8")))]
+    in_catch = [(f.relative_to(src).as_posix(), m.group(1)) for f in files
+                for m in re.finditer(r"catch(?:\s*\([^)]*\))?\s*\{\s*silenceIsRight\('([^']*)'\)\(\);\s*\}",
+                                     f.read_text(encoding="utf-8"))]
+    assert len(in_catch) == 42, (len(in_catch), sorted({f for f, _ in in_catch}))
+    assert len(named) == 44 and sum(1 for f, _ in named if f.endswith("PresentationPlayer.tsx")) == 2, len(named)
+    assert all(len(why) >= 30 for _, why in named), [w for _, w in named if len(w) < 30]
+    kinds = {"storage": "browser storage is a per-browser convenience", "event": "an in-page event",
+             "clipboard": "shows Copied only when the copy succeeded", "frame": "a stream frame that is not JSON"}
+    seen = {k: sum(1 for _, w in in_catch if v in w) for k, v in kinds.items()}
+    assert seen == {"storage": 9, "event": 5, "clipboard": 3, "frame": 10}, seen
+    #  each file that names a silence imports the helper from the one place it is defined
+    for rel in {f for f, _ in in_catch}:
+        t = (src / rel).read_text(encoding="utf-8")
+        assert re.search(r"import \{[^}]*\bsilenceIsRight\b[^}]*\} from '[./]*(?:components/)?ReadFailures';", t), rel

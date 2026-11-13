@@ -39,7 +39,7 @@ function read(): OutputRecord[] {
 }
 
 function write(records: OutputRecord[]) {
-  try { localStorage.setItem(KEY, JSON.stringify(records.slice(0, MAX_ENTRIES))); } catch { /* quota/full — ignore */ }
+  try { localStorage.setItem(KEY, JSON.stringify(records.slice(0, MAX_ENTRIES))); } catch { silenceIsRight('the local history of outputs is browser storage is a per-browser convenience that nothing else depends on; a full store keeps the older list')(); }
   // §9 — mirror every local change up to the user's server workspace (no-op when signed out)
   scheduleWorkspacePush();
 }
@@ -67,24 +67,25 @@ export function saveOutput(rec: Omit<OutputRecord, 'id' | 'ts'> & { id?: string;
   };
   const next = [record, ...read().filter(r => r.id !== record.id)].slice(0, MAX_ENTRIES);
   write(next);
-  try { window.dispatchEvent(new CustomEvent('ws:output-history')); } catch { /* ignore */ }
+  try { window.dispatchEvent(new CustomEvent('ws:output-history')); } catch { silenceIsRight('an in-page event asking other panels to re-read the local history; the next read shows the same')(); }
   return record;
 }
 
 export function removeOutput(id: string) {
   write(read().filter(r => r.id !== id));
-  try { window.dispatchEvent(new CustomEvent('ws:output-history')); } catch { /* ignore */ }
+  try { window.dispatchEvent(new CustomEvent('ws:output-history')); } catch { silenceIsRight('an in-page event asking other panels to re-read the local history; the next read shows the same')(); }
 }
 
 export function clearOutputs() {
   write([]);
-  try { window.dispatchEvent(new CustomEvent('ws:output-history')); } catch { /* ignore */ }
+  try { window.dispatchEvent(new CustomEvent('ws:output-history')); } catch { silenceIsRight('an in-page event asking other panels to re-read the local history; the next read shows the same')(); }
 }
 
 // ── Server sync (§9) ─────────────────────────────────────────────────────────────────────────
 // Only active when the user is signed in (a bearer token exists). Auth-off keeps the pure-local
 // behaviour, so single-user mode is untouched.
 
+import { silenceIsRight } from '../components/ReadFailures';   // W961 (FU-1181)
 import { getToken } from './auth';
 import { getPrefs, setPrefs } from './userPrefs';
 
@@ -114,7 +115,7 @@ export function scheduleWorkspacePush(): void {
     } catch {
       _lastSyncError = 'Sync failed — offline. Your work is still saved in this browser.';
     }
-    try { window.dispatchEvent(new CustomEvent('ws:output-history')); } catch { /* ignore */ }
+    try { window.dispatchEvent(new CustomEvent('ws:output-history')); } catch { silenceIsRight('an in-page event asking other panels to re-read the local history; the next read shows the same')(); }
   }, 1200);
 }
 
@@ -148,7 +149,7 @@ export async function syncWorkspaceFromServer(): Promise<number | null> {
       ? (doc.count_basis ?? 'Your saved work could not be read in full on the server, so some records '
          + 'may be missing from this list. Nothing in this browser has been lost.')
       : '';
-    try { window.dispatchEvent(new CustomEvent('ws:output-history')); } catch { /* ignore */ }
+    try { window.dispatchEvent(new CustomEvent('ws:output-history')); } catch { silenceIsRight('an in-page event asking other panels to re-read the local history; the next read shows the same')(); }
     if (merged.length !== serverHistory.length && !doc.count_is_incomplete) scheduleWorkspacePush();   // push what the server lacked
     return merged.length;
   } catch {

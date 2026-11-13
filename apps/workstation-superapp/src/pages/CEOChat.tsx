@@ -1,3 +1,4 @@
+import { silenceIsRight } from '../components/ReadFailures';   // W961 (FU-1181)
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Bot, User, ThumbsUp, ThumbsDown, MoreHorizontal, X, WifiOff, RefreshCw, ChevronLeft, FolderPlus } from 'lucide-react';
@@ -106,9 +107,7 @@ export const CEOChat: React.FC = () => {
                 updated[updated.length - 1] = { ...assistantMessage };
                 return updated;
               });
-            } catch {
-              // malformed SSE line — skip
-            }
+            } catch { silenceIsRight('a stream frame that is not JSON, a heartbeat or a cut line, carries nothing to show')(); }
           }
         }
       }

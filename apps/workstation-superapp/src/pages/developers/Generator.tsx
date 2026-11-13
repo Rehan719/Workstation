@@ -1,3 +1,4 @@
+import { silenceIsRight } from '../../components/ReadFailures';   // W961 (FU-1181)
 import React, { useState } from 'react';
 import { WORKSPACE_DOMAINS } from '../../lib/taxonomy';
 import { useSearchParams } from 'react-router-dom';
@@ -99,9 +100,7 @@ export const Generator: React.FC = () => {
         if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
           exported = JSON.stringify({ ...parsed, ...provenanceField(result.served_by) }, null, 2);
         }
-      } catch {
-        // not parseable as an object - leave the payload untouched rather than damage the download
-      }
+      } catch { silenceIsRight('a payload that is not a JSON object is downloaded as it came, unchanged')(); }
     } else {
       exported = provenanceComment(result.format, result.served_by) + result.output;
     }

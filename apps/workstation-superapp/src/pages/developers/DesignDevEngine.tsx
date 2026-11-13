@@ -1,3 +1,4 @@
+import { silenceIsRight } from '../../components/ReadFailures';   // W961 (FU-1181)
 import React, { useState, useRef, useEffect } from 'react';
 import { DOMAINS as CANON_DOMAINS } from '../../lib/taxonomy';
 import { Card, Button } from '@workstation/ui';
@@ -46,7 +47,7 @@ async function streamPost(
         if (line.startsWith('data: ')) {
           const raw = line.slice(6).trim();
           if (raw === '[DONE]') continue;
-          try { onChunk(JSON.parse(raw)); } catch {}
+          try { onChunk(JSON.parse(raw)); } catch { silenceIsRight('a stream frame that is not JSON, a heartbeat or a cut line, carries nothing to show')(); }
         }
       }
     }

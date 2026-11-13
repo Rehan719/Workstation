@@ -12,7 +12,7 @@
  *     means recorded: no executor is subscribed and nothing runs these automatically.
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W931
+import { ReadFailures, useReadFailures, silenceIsRight } from '../../components/ReadFailures';   // W931
 import { Card, Button } from '@workstation/ui';
 import { Radio, Loader2, AlertCircle, ShieldCheck, Send, Inbox, Users } from 'lucide-react';
 
@@ -88,7 +88,7 @@ const AgentHubPanel: React.FC = () => {
         if (payload.event === 'message' && payload.data) {
           setMsgs(prev => [payload.data, ...prev].slice(0, 50));
         }
-      } catch { /* heartbeats/gaps are not renderable messages */ }
+      } catch { silenceIsRight('a hub stream frame that is not a message (a heartbeat or a gap) has nothing to render')(); }
     };
     return () => { es.close(); if (pollRef.current) clearInterval(pollRef.current); };
   }, []);

@@ -4,6 +4,7 @@
 //    the dozens of existing call sites; 401s surface as a redirect to /login.
 // Registration stays Owner-curated (the backend's /register is admin-only by design) — the login
 // page never pretends self-serve signup exists.
+import { silenceIsRight } from '../components/ReadFailures';   // W961 (FU-1181)
 import axios from 'axios';
 import { bodyOrNull } from './api';   // W960 (FU-1181)
 
@@ -20,7 +21,7 @@ function _clearLocalUserData(): void {
     localStorage.removeItem('ws_user_prefs_v1');
     window.dispatchEvent(new CustomEvent('ws:output-history'));
     window.dispatchEvent(new CustomEvent('ws:user-prefs'));
-  } catch { /* storage unavailable — nothing to clear */ }
+  } catch { silenceIsRight('with no browser storage there is nothing to clear at sign-out')(); }
 }
 
 export const getToken = (): string | null => localStorage.getItem(KEY);

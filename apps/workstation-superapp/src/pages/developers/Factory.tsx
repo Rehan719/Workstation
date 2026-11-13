@@ -1,3 +1,4 @@
+import { silenceIsRight } from '../../components/ReadFailures';   // W961 (FU-1181)
 import React, { useState, useRef, useCallback } from 'react';
 import { WORKSPACE_DOMAINS } from '../../lib/taxonomy';
 import { provenanceLine } from '../../lib/api';
@@ -113,7 +114,7 @@ export const Factory: React.FC = () => {
             } else if (ev.error) {
               updateLine(id, { status: 'error', output: accumulated + `\n\n[ERROR] ${ev.error}` });
             }
-          } catch { /* skip */ }
+          } catch { silenceIsRight('a stream frame that is not JSON, a heartbeat or a cut line, carries nothing to show')(); }
         }
       }
     } catch (err: any) {

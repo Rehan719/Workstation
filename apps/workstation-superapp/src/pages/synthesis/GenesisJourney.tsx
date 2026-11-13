@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { GenerationPrice } from '../../components/GenerationPrice';
 import { qmsChip, provenanceMapBadge, complianceChip, layerTitle, immuneReading, apiJson, errorMessage, bodyOrNull } from '../../lib/api';
-import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W928
+import { ReadFailures, useReadFailures, silenceIsRight } from '../../components/ReadFailures';   // W928
 import { REALMS as CANON_REALMS, DOMAINS as CANON_DOMAINS, PRODUCTS, PRODUCT_LABELS } from '../../lib/taxonomy';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { saveOutput } from '../../lib/outputHistory';
@@ -311,7 +311,7 @@ export const GenesisJourney: React.FC = () => {
           output: (stages || JSON.stringify(data).slice(0, 4000)),
           provenance: data?.ai_provenance ?? null,
           vsb_id: data?.established_vsb?.vsb_id });
-      } catch { /* history is best-effort */ }
+      } catch { silenceIsRight('the local history of outputs is browser storage is a per-browser convenience that nothing else depends on')(); }
     } catch (e: any) {
       setError(e?.message ?? String(e));
     }
@@ -417,7 +417,7 @@ export const GenesisJourney: React.FC = () => {
             const ev = JSON.parse(raw.slice(6));
             setBirthStages(s => [...s, { stage: ev.stage, label: ev.label, content: ev.content }]);
             if (ev.stage === 'complete' && ev.data) complete = ev.data;
-          } catch { /* skip malformed frame */ }
+          } catch { silenceIsRight('a stream frame that is not JSON, a heartbeat or a cut line, carries nothing to show')(); }
         }
       }
       if (!complete) throw new Error('stream ended without completion');

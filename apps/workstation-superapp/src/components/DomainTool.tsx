@@ -1,3 +1,4 @@
+import { silenceIsRight } from './ReadFailures';   // W961 (FU-1181)
 import React, { useState } from 'react';
 import { provenanceBadge, qmsChip, provenanceLine, axiosDetail} from '../lib/api';
 import { useT } from '../lib/i18n';
@@ -192,7 +193,7 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
         const rec = saveOutput({ kind: 'domain-tool', title, domain: domainSeed, endpoint,
           input: primary ? form[primary] : undefined, output: text, provenance: r.data?.ai_provenance ?? null });
         setHistoryId(rec.id);   // W337 — refines update THIS record in place
-      } catch { /* history is best-effort */ }
+      } catch { silenceIsRight('the local history of outputs is browser storage is a per-browser convenience that nothing else depends on')(); }
     } catch (e: any) {
       setError(axiosDetail(e, 'Request failed — the backend may be unavailable.'));
     }
@@ -237,7 +238,7 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
             versions: [...(prior?.versions ?? []), { output: displayText, refinedAt: Date.now() }],
             refineCount: (prior?.refineCount ?? 0) + 1 });
         }
-      } catch { /* history is best-effort */ }
+      } catch { silenceIsRight('the local history of a refined output is browser storage is a per-browser convenience that nothing else depends on')(); }
     } catch (e: any) {
       setError(axiosDetail(e, 'Refine failed — the backend may be unavailable. Your current output is unchanged.'));   // W337 — never a silent click
     }
@@ -252,7 +253,7 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
   const provHeader = () => provenanceLine((effectiveProv as any)?.served_by, provExternal);
 
   const copyResult = async () => {
-    try { await navigator.clipboard.writeText(provHeader() + exportText); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* ignore */ }
+    try { await navigator.clipboard.writeText(provHeader() + exportText); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { silenceIsRight('the button shows Copied only when the copy succeeded, so a failed copy is seen as no confirmation')(); }
   };
   // E4 — output-format selection (§4.9): export the result in any real, in-house-producible text format.
   const downloadAs = (fmt: 'md' | 'txt' | 'html' | 'json') => {
@@ -460,7 +461,7 @@ export const DomainTool: React.FC<DomainToolProps> = ({ title, description, endp
                 Want to take this further? Commercialise it end-to-end into your own <span className="text-highlight font-bold">VSB IDBO enterprise</span>, run by the heartbeat levers you turn on.
               </p>
               <Button type="button"
-                onClick={() => { const sid = `seed_${Date.now().toString(36)}`; try { sessionStorage.setItem(`ws_genesis_${sid}`, JSON.stringify({ title, domain: domainSeed, input: primary ? form[primary] : '', output: String(result?.[resultKey] ?? result?.deliverable ?? ''), output_withheld: (!String(result?.[resultKey] ?? result?.deliverable ?? '').trim() && typeof result?.review_note === 'string' && result.review_note ? result.review_note : '') })); } catch { /* seed best-effort */ } navigate(`/genesis?seed=${sid}${domainSeed ? `&domain=${encodeURIComponent(domainSeed)}` : ''}`); }}
+                onClick={() => { const sid = `seed_${Date.now().toString(36)}`; try { sessionStorage.setItem(`ws_genesis_${sid}`, JSON.stringify({ title, domain: domainSeed, input: primary ? form[primary] : '', output: String(result?.[resultKey] ?? result?.deliverable ?? ''), output_withheld: (!String(result?.[resultKey] ?? result?.deliverable ?? '').trim() && typeof result?.review_note === 'string' && result.review_note ? result.review_note : '') })); } catch { silenceIsRight('the seed handed to the Genesis journey is browser storage is a per-browser convenience that nothing else depends on')(); } navigate(`/genesis?seed=${sid}${domainSeed ? `&domain=${encodeURIComponent(domainSeed)}` : ''}`); }}
                 className="bg-highlight text-sovereign flex items-center gap-2 text-xs shrink-0">
                 <Rocket size={14} /> Commercialise via Genesis
               </Button>

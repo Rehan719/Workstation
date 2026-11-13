@@ -23728,11 +23728,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W961",
       "note": "",
       "slot_source": "P5.1's measured tenant journey: what a page shows is what the server said",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Every one of the 67 silences the row counted is classified. W959 named one place for a body that is not JSON (bodyOrNull) and moved 18 parses into it, named the serving status's silence, and made the Cockpit's entity read say its failure. W960 said three reads that failed silently (uploads, entities, a deliverable's produce-and-reread) and moved four more parses into bodyOrNull. W961 named the 42 left with silenceIsRight and the reason each silence is right: browser storage 12, in-page events 5, the clipboard 3, optional speech and audio 8, stream frames 11, and three single cases. test_w961 holds that no catch block is empty or only a comment and that every named silence has its reason."
     },
     {
       "id": "FU-1182",

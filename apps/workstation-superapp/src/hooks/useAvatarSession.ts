@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { describeReadFailure } from '../components/ReadFailures';   // W931
+import { describeReadFailure, silenceIsRight } from '../components/ReadFailures';   // W931
 import { useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { getPrefs } from '../lib/userPrefs';
@@ -218,9 +218,7 @@ export function useAvatarSession() {
         source.connect(analyser);
         analyser.connect(ctx.destination);
         analyserRef.current = analyser;
-      } catch {
-        // Web Audio graph is best-effort visual flair; playback still works without it.
-      }
+      } catch { silenceIsRight('the Web Audio level graph is optional visual flair; playback works without it')(); }
 
       audio.onended = () => { setSpeaking(false); setAmplitude(0); };
       await audio.play();
@@ -315,7 +313,7 @@ export function useAvatarSession() {
         rec.start();
         setRecording(true);
         return;
-      } catch { /* fall through to the recorder path */ }
+      } catch { silenceIsRight('browser speech recognition could not start, so the recorder path below is used instead')(); }
     }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -327,9 +325,7 @@ export function useAvatarSession() {
         micAnalyser.fftSize = 64;
         micSource.connect(micAnalyser);
         micAnalyserRef.current = micAnalyser;
-      } catch {
-        // best-effort; recording still works without the live level visual
-      }
+      } catch { silenceIsRight('the live microphone level is optional visual flair; recording works without it')(); }
 
       const recorder = new MediaRecorder(stream);
       audioChunksRef.current = [];
@@ -360,7 +356,7 @@ export function useAvatarSession() {
   }, [sendMessage]);
 
   const stopRecording = useCallback(() => {
-    try { speechRecRef.current?.stop?.(); } catch { /* browser STT may already be stopped */ }
+    try { speechRecRef.current?.stop?.(); } catch { silenceIsRight('the browser speech recognition may already have stopped')(); }
     mediaRecorderRef.current?.stop();
     setRecording(false);
   }, []);

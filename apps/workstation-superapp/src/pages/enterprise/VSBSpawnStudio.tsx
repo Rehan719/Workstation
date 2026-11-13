@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { provenanceBadge, provenanceMapBadge, provenanceMapFromTrace, axiosDetail} from '../../lib/api';
-import { ReadFailures, useReadFailures, describeReadFailure } from '../../components/ReadFailures';   // W928, W960
+import { ReadFailures, useReadFailures, describeReadFailure, silenceIsRight } from '../../components/ReadFailures';   // W928, W960
 import { DOMAINS as CANON_DOMAINS, domainLabel } from '../../lib/taxonomy';   // W735 (FU-831): domainLabel
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -43,7 +43,7 @@ async function streamPost(
         if (line.startsWith('data: ')) {
           const raw = line.slice(6).trim();
           if (raw === '[DONE]') continue;
-          try { onChunk(JSON.parse(raw)); } catch {}
+          try { onChunk(JSON.parse(raw)); } catch { silenceIsRight('a stream frame that is not JSON, a heartbeat or a cut line, carries nothing to show')(); }
         }
       }
     }
@@ -201,7 +201,7 @@ export const VSBSpawnStudio: React.FC = () => {
   const continueInGenesis = () => {
     if (!challenge.trim()) return;
     const sid = `seed_${Date.now().toString(36)}`;
-    try { sessionStorage.setItem(`ws_genesis_${sid}`, JSON.stringify({ title: '', domain, input: challenge, output: '' })); } catch { /* seed best-effort */ }
+    try { sessionStorage.setItem(`ws_genesis_${sid}`, JSON.stringify({ title: '', domain, input: challenge, output: '' })); } catch { silenceIsRight('the seed handed to the Genesis journey is browser storage is a per-browser convenience that nothing else depends on')(); }
     const d = (CANON_DOMAINS as readonly string[]).includes(domain) ? `&domain=${encodeURIComponent(domain)}` : '';
     navigate(`/genesis?seed=${sid}${d}`);
   };

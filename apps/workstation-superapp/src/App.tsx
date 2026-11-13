@@ -1,3 +1,4 @@
+import { silenceIsRight } from './components/ReadFailures';   // W961 (FU-1181)
 import { useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -125,7 +126,7 @@ function App() {
     window.addEventListener('ws:user-prefs', onIdentity);
     try {
       if (!localStorage.getItem('ws_tour_seen_v1')) setRunTutorial(true);
-    } catch { /* storage unavailable — skip the tour, never block the app */ }
+    } catch { silenceIsRight('with no browser storage the tour is skipped rather than shown on every load')(); }
     const start = () => setRunTutorial(true);
     window.addEventListener('ws:start-tour', start);
     return () => {
@@ -137,7 +138,7 @@ function App() {
   const onTour = (data: { status?: string }) => {
     if (data.status === 'finished' || data.status === 'skipped') {
       setRunTutorial(false);
-      try { localStorage.setItem('ws_tour_seen_v1', '1'); } catch { /* best-effort */ }
+      try { localStorage.setItem('ws_tour_seen_v1', '1'); } catch { silenceIsRight('with no browser storage the tour may show again on a later load, and nothing else is affected')(); }
     }
   };
 

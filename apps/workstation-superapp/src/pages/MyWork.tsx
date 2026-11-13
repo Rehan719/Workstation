@@ -1,3 +1,4 @@
+import { silenceIsRight } from '../components/ReadFailures';   // W961 (FU-1181)
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
@@ -66,7 +67,7 @@ export const MyWork: React.FC = () => {
   );
 
   const copy = async (rec: OutputRecord) => {
-    try { await navigator.clipboard.writeText(provenanceHeader(rec) + rec.output); setCopiedId(rec.id); setTimeout(() => setCopiedId(null), 1500); } catch { /* ignore */ }
+    try { await navigator.clipboard.writeText(provenanceHeader(rec) + rec.output); setCopiedId(rec.id); setTimeout(() => setCopiedId(null), 1500); } catch { silenceIsRight('the button shows Copied only when the copy succeeded, so a failed copy is seen as no confirmation')(); }
   };
   const download = (rec: OutputRecord) => {
     const slug = rec.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'output';
@@ -152,7 +153,7 @@ export const MyWork: React.FC = () => {
                     </button>
                     <button type="button" onClick={() => download(rec)} aria-label="Download" className="text-[8px] font-black uppercase px-2 py-1 rounded bg-slate-800 text-slate-300 hover:text-white flex items-center gap-1"><Download size={11} /></button>
                     {/* W303 - any saved work can become a venture: the bridge carries the OUTPUT */}
-                    <button type="button" aria-label="Commercialise via Genesis" onClick={() => { const sid = `seed_${Date.now().toString(36)}`; try { sessionStorage.setItem(`ws_genesis_${sid}`, JSON.stringify({ title: rec.title, domain: rec.domain, input: rec.input || rec.title, output: rec.output })); } catch { /* best-effort */ } navigate(`/genesis?seed=${sid}${rec.domain ? `&domain=${encodeURIComponent(rec.domain)}` : ""}`); }} className="text-[8px] font-black uppercase px-2 py-1 rounded bg-highlight/15 text-highlight hover:bg-highlight/25 flex items-center gap-1"><Sparkles size={11} /> Venture</button>
+                    <button type="button" aria-label="Commercialise via Genesis" onClick={() => { const sid = `seed_${Date.now().toString(36)}`; try { sessionStorage.setItem(`ws_genesis_${sid}`, JSON.stringify({ title: rec.title, domain: rec.domain, input: rec.input || rec.title, output: rec.output })); } catch { silenceIsRight('the seed handed to the Genesis journey is browser storage is a per-browser convenience that nothing else depends on')(); } navigate(`/genesis?seed=${sid}${rec.domain ? `&domain=${encodeURIComponent(rec.domain)}` : ""}`); }} className="text-[8px] font-black uppercase px-2 py-1 rounded bg-highlight/15 text-highlight hover:bg-highlight/25 flex items-center gap-1"><Sparkles size={11} /> Venture</button>
                     <button type="button" onClick={() => { removeOutput(rec.id); refresh(); }} aria-label="Remove" className="text-[8px] font-black uppercase px-2 py-1 rounded bg-slate-800 text-slate-400 hover:text-vital flex items-center gap-1"><Trash2 size={11} /></button>
                   </div>
                 </div>
@@ -182,7 +183,7 @@ export const MyWork: React.FC = () => {
                                 {/* W485 (refutation) — the THIRD copy path: a prior version leaves the
                                     platform exactly as the latest one does, so it carries the same label. */}
                                 <button type="button" aria-label="Copy this version"
-                                  onClick={() => { try { navigator.clipboard.writeText(provenanceHeader(rec) + v.output); } catch { /* clipboard unavailable */ } }}
+                                  onClick={() => { try { navigator.clipboard.writeText(provenanceHeader(rec) + v.output); } catch { silenceIsRight('the button shows Copied only when the copy succeeded, so a failed copy is seen as no confirmation')(); } }}
                                   className="text-[8px] font-black uppercase text-slate-500 hover:text-aura">Copy</button>
                               </div>
                               {vopen && (
