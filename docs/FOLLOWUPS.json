@@ -23455,11 +23455,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W894",
       "note": "",
       "slot_source": "the register's own tooling, which rides the suite-and-tooling item as the other instrument rows do",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built: the register's save-time check reads a done row's closing round with is_round_id, the rule the close command and every rate, projection and batch figure already used (W### or W###a), instead of a second pattern that read W### only. No closed row changed. Driven in test_w894 on the register itself: for each form, the check and is_round_id agree."
     },
     {
       "id": "FU-1171",

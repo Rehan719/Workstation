@@ -1636,8 +1636,10 @@ def check(register: Any, prompt_text: str, living_text: Optional[str] = None,
             problems.append(f"{rid}: id must look like FU-001")
         slot = r["slot"]
         if r["status"] == "done":
-            if not _ROUND.match(r.get("closed_by") or ""):
-                problems.append(f"{rid}: done without closed_by naming the round (W###)")
+            #  W894 (FU-1170) - read the way the planner counts it (is_round_id: W### or W###a). This used _ROUND
+            #  (W### only), so a close the command had accepted, W883b, was refused when the register was saved
+            if not is_round_id(r.get("closed_by")):
+                problems.append(f"{rid}: done without closed_by naming the round (W### or W###a)")
             continue
         if r["status"] == "dropped":
             if not (r.get("note") or "").strip():

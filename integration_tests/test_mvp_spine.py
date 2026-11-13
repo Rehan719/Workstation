@@ -76488,3 +76488,30 @@ def test_w893_the_stores_config_paths_names_follow_the_data_root_a_deployment_se
     monkeypatch.setenv("WORKSTATION_DATA_DIR", str(tmp_path / "now"))
     (tmp_path / "now" / "memory.json").write_text("[]", encoding="utf-8")
     assert _p893.previous_root_warning() is None, "WORKSTATION_DATA_DIR was always followed, so nothing switched"
+
+
+def test_w894_the_register_reads_a_closing_round_the_way_the_planner_counts_it():
+    """FU-1170. The register read a round id two ways. Its close command and every rate and projection used
+    is_round_id (W### or W###a), and its save-time check used W### only. So W883b's close was accepted by the
+    command, then refused when the register was saved, and the row stayed open. check() now reads a done row's
+    round the way the planner counts it. Driven on the register itself: a sub-round passes, a malformed id is still
+    refused, and for every form the check and is_round_id agree."""
+    import copy
+    import json
+    import pathlib
+    from agentic_core import plan_followups as fu
+    root = pathlib.Path(__file__).resolve().parents[1]
+    reg = json.loads((root / "docs" / "FOLLOWUPS.json").read_text(encoding="utf-8"))
+    prompt = fu.read_doc(fu.PROMPT)
+    living = fu.read_doc(fu.LIVING)
+    base = fu.check(reg, prompt, living)
+    done = next(r for r in reg["items"] if r.get("status") == "done")
+    for by in ("W883b", "W884", "W1000", "W88", "round-883", "W883bb", "883", ""):
+        r2 = copy.deepcopy(reg)
+        row = next(r for r in r2["items"] if r["id"] == done["id"])
+        row["closed_by"] = by
+        said = [p for p in fu.check(r2, prompt, living) if p not in base and p.startswith(done["id"] + ":")]
+        refused = any("done without closed_by naming the round" in p for p in said)
+        assert refused == (not fu.is_round_id(by)), (
+            "the register's check and the planner disagree on a closing round", by, said)
+    assert fu.is_round_id("W883b") and not fu.is_round_id("round-883")
