@@ -78757,3 +78757,95 @@ def test_w931_no_call_ends_in_a_catch_that_says_nothing():
     assert ": !Object.keys(readFailures).length && <p className=\"text-sm text-white/30\">Loading details…</p>}" in cca
     av = (src / "hooks/useAvatarSession.ts").read_text(encoding="utf-8")
     assert ".catch(e => setNotice(`The conversation was cleared here, but not on the server: ${describeReadFailure(e)}`));" in av
+
+
+def test_w932_p515_clause6_an_entity_keeps_a_short_roster_of_its_own_specialists(client, monkeypatch):
+    """P5.15 clause 6 (W932, row FU-1178 part 1). An entity may attach its own specialists to its third tier: a short
+    roster per entity, not a registry of people. Clause 5 says what the third tier records (name, credential as
+    stated, what is reviewed, when it lapses) and that the platform verifies no credential. Measured: no roster, route
+    or page existed. GET/POST /api/v1/entity-specialists/{vsb_id} and .../{id}/retire now hold one. Driven here:
+    - an entity's roster starts empty, says five at a time is Workstation's number, and that no credential is
+      verified;
+    - a specialist is attached with exactly the five things the clause names; each short or wrong request is refused
+      with nothing written, a contact detail among them;
+    - five places are held at once; a sixth is refused until one is retired, with its reason, and kept as history;
+    - a place whose date has passed is said lapsed and frees its place; nothing is ever deleted;
+    - under sign-in, another person's entity is not found; its owner and an administrator reach it."""
+    import datetime as dt
+    import uuid
+    import agentic_core.auth.core as ac
+    from agentic_core.api import entity_specialists as es
+    ahead = (dt.date.today() + dt.timedelta(days=200)).isoformat()
+    est = client.post("/api/v1/genesis/establish", json={"problem": "w932 an entity with its own specialists",
+                                                          "ship_output": False, "name": "W932 Roster"})
+    assert est.status_code == 200, est.text[:300]
+    vid = est.json()["vsb_id"]
+    base = f"/api/v1/entity-specialists/{vid}"
+    r = client.get(base).json()
+    assert (r["active"], r["retired"], r["lapsed"], r["limit"], r["places_left"]) == ([], [], [], 5, 5), r
+    assert "Five at a time is Workstation's own number" in r["basis"] and "not a registry of people" in r["basis"]
+    assert "does not verify" in r["credential_basis"] and r["disciplines"] == ["care", "law", "education", "money_readiness"]
+
+    one = {"name": "A. Example (a test record)", "discipline": "care", "credential_as_stated": "stated for this test",
+           "reviews": "the entity's care plans", "lapses_on": ahead}
+    a = client.post(base, json=one)
+    assert a.status_code == 200 and a.json()["specialist"]["state"] == "active" and a.json()["places_left"] == 4, a.text[:300]
+    first = a.json()["specialist"]["specialist_id"]
+    #  each short or wrong request is refused, and nothing is written
+    for bad, code, word in (({**one, "name": " "}, 422, "names name"),
+                            ({**one, "discipline": "religion"}, 422, "clause 7"),
+                            ({**one, "lapses_on": "soon"}, 422, "not a date"),
+                            ({**one, "lapses_on": dt.date.today().isoformat()}, 422, "not after today"),
+                            ({**one, "email": "a@example.org"}, 422, None)):
+        res = client.post(base, json=bad)
+        assert res.status_code == code and (word is None or word in res.json()["detail"]), (bad, res.status_code, res.text[:200])
+    assert client.post("/api/v1/entity-specialists/no-such-entity", json=one).status_code == 404
+    assert len(client.get(base).json()["active"]) == 1, "a refused request wrote something"
+
+    #  five at a time; a sixth waits for a retirement, which is kept
+    for i in range(4):
+        assert client.post(base, json={**one, "name": f"Person {i} (a test record)", "discipline": "law"}).status_code == 200
+    six = client.post(base, json={**one, "name": "Sixth (a test record)"})
+    assert six.status_code == 409 and "a roster holds 5 at a time" in six.json()["detail"] and "Retire one" in six.json()["detail"], six.text[:300]
+    assert client.post(f"{base}/{first}/retire", json={"reason": " "}).status_code == 422
+    ret = client.post(f"{base}/{first}/retire", json={"reason": "the engagement ended"})
+    assert ret.status_code == 200 and ret.json()["specialist"]["retired_reason"] == "the engagement ended", ret.text[:300]
+    assert client.post(f"{base}/{first}/retire", json={"reason": "again"}).status_code == 409
+    assert client.post(f"{base}/spec-missing/retire", json={"reason": "x"}).status_code == 404
+    assert client.post(base, json={**one, "name": "Sixth (a test record)"}).status_code == 200
+    r = client.get(base).json()
+    assert len(r["active"]) == 5 and [x["specialist_id"] for x in r["retired"]] == [first], r
+    assert r["retired"][0]["retired_by"] == "single-user-mode" and r["retired"][0]["retired_at"]
+
+    #  a passed date is said lapsed and frees its place; nothing is deleted
+    monkeypatch.setattr(es, "_today", lambda: dt.date.fromisoformat(ahead) + dt.timedelta(days=1))
+    r = client.get(base).json()
+    assert r["active"] == [] and len(r["lapsed"]) == 5 and r["places_left"] == 5, r
+    monkeypatch.undo()
+    stored = es._read()[vid]
+    assert len(stored) == 6, "an entry left the store"
+
+    #  under sign-in: another person's entity is not found; its owner and an administrator reach it
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    users = ac._load_users()
+    who = {}
+    for k, role in (("one", "user"), ("two", "user"), ("admin", "admin")):
+        name = f"w932-{k}-{uuid.uuid4().hex[:6]}"
+        users[name] = {"username": name, "hashed_password": ac._pwd_ctx.hash("pw12345678"), "role": role}
+        who[k] = name
+    ac._save_users(users)
+    H = {}
+    for k, name in who.items():
+        tok = client.post("/api/v1/auth/token", data={"username": name, "password": "pw12345678"})
+        assert tok.status_code == 200, tok.text[:200]
+        H[k] = {"Authorization": "Bearer " + tok.json()["access_token"]}
+    mine = client.post("/api/v1/genesis/establish", headers=H["one"], json={
+        "problem": "w932 the first person's entity", "ship_output": False, "name": "W932 One"})
+    assert mine.status_code == 200, mine.text[:300]
+    mid = mine.json()["vsb_id"]
+    assert client.get(f"/api/v1/entity-specialists/{mid}", headers=H["two"]).status_code == 404
+    assert client.post(f"/api/v1/entity-specialists/{mid}", headers=H["two"], json=one).status_code == 404
+    assert client.get(f"/api/v1/entity-specialists/{mid}", headers=H["one"]).status_code == 200
+    got = client.post(f"/api/v1/entity-specialists/{mid}", headers=H["one"], json=one)
+    assert got.status_code == 200 and got.json()["specialist"]["added_by"] == who["one"], got.text[:200]
+    assert len(client.get(f"/api/v1/entity-specialists/{mid}", headers=H["admin"]).json()["active"]) == 1
