@@ -23812,6 +23812,27 @@
       "note": "",
       "slot_source": "P5.2 derives a price from the waterfall, which splits a profit and does not set one; what margin or target the derivation uses is the Owner's",
       "tier": 2
+    },
+    {
+      "id": "FU-1186",
+      "title": "Nothing stated what is not for sale, and the pricing surface could price faith content, the Fitrah Spectrum or a real-money rail",
+      "why": "P5.5 (OWNER RULING 2026-09-27): not for sale, and not offered as a paid tier - the faith content (section 11), the Fitrah Spectrum (ruling A.9.5), and anything that would require a real-money rail while section 18 stands; the exclusions are served from one place the pricing surface reads. Measured at W940: no register, route or refusal existed, and W939's pricing surface read no exclusion.",
+      "source": "W940 (P5.5's measured work, which no row held)",
+      "found": "2026-11-13",
+      "files": [
+        "agentic_core/api/economy.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.5",
+      "status": "done",
+      "closed_by": "W940",
+      "note": "",
+      "slot_source": "P5.5's own ACCEPT clause",
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it. agentic_core/economy/not_for_sale.py holds the three exclusions, each with its ruling and what names it (a domain, or a term in the deliverable's type, title or brief): the faith content (section 11), the Fitrah Spectrum (ruling A.9.5) and anything needing a real-money rail (section 18). GET /api/v1/economy/not-for-sale serves it; the price route and the cost declaration (W939) read it and refuse a deliverable that names an exclusion (409), saying which, by what, and the ruling. Driven in test_w940, one refusal per exclusion."
     }
   ],
   "routes": [

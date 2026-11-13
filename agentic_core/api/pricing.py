@@ -18,6 +18,11 @@ THE INPUTS, each named in every answer:
   so a margin or a target is needed that no ruling states. The question is the Owner's (an OWNER DECISION row, with
   its recommendation). Until it is ruled every price is null, and the answer says so.
 
+WHAT IS NOT FOR SALE (P5.5, W940) is read here from its one register (agentic_core/economy/not_for_sale.py): a
+deliverable that names an excluded capability - the faith content, the Fitrah Spectrum, or anything needing a
+real-money rail - is refused a price and a cost declaration, with the ruling in the reason.
+GET /api/v1/economy/not-for-sale serves the register.
+
 Virtual WST throughout. Nothing here sells, charges, posts or records a sale.
 """
 from __future__ import annotations
@@ -83,6 +88,19 @@ def _deliverable_of(vsb_id: str, deliverable_id: str, user: Any) -> Dict[str, An
     raise HTTPException(status_code=404, detail=f"Deliverable {deliverable_id} is not one of entity {vsb_id}'s.")
 
 
+def _refuse_if_not_for_sale(deliverable: Dict[str, Any]) -> None:
+    """P5.5: a deliverable that names an excluded capability has no price, and the refusal names the ruling."""
+    from agentic_core.economy.not_for_sale import named_exclusion
+    ex = named_exclusion(deliverable)
+    if ex:
+        by = ex["named_by"]
+        how = (f"its domain is '{by['value']}'" if by["field"] == "domain" else
+               f"its {by['field']} names '{by['term']}'")
+        raise HTTPException(status_code=409, detail=(
+            f"Not priced: this deliverable names {ex['what']} ({how}), which is not for sale and is not a paid "
+            f"tier. The ruling: {ex['ruling']}."))
+
+
 def price_of(vsb_id: str, deliverable_id: str) -> Dict[str, Any]:
     """The price of one deliverable, recomputed now from its inputs, or null with each absent input named."""
     from agentic_core.api.economy import _resolve_entity_type
@@ -111,7 +129,7 @@ def price_of(vsb_id: str, deliverable_id: str) -> Dict[str, Any]:
 async def get_price(vsb_id: str, deliverable_id: str, user: dict | None = Depends(get_current_user)):
     from agentic_core.api.economy import _require_economy_access
     _require_economy_access(vsb_id, user)
-    _deliverable_of(vsb_id, deliverable_id, user)
+    _refuse_if_not_for_sale(_deliverable_of(vsb_id, deliverable_id, user))
     return price_of(vsb_id, deliverable_id)
 
 
@@ -127,7 +145,7 @@ async def declare_cost(req: DeclaredCost, user: dict | None = Depends(get_curren
         raise HTTPException(status_code=422, detail="Not declared: a cost says what it is made of.")
     if not math.isfinite(req.cost_wst):
         raise HTTPException(status_code=422, detail="Not declared: the cost is not a finite amount.")
-    _deliverable_of(req.vsb_id, req.deliverable_id, user)
+    _refuse_if_not_for_sale(_deliverable_of(req.vsb_id, req.deliverable_id, user))
     entry = {"vsb_id": req.vsb_id, "deliverable_id": req.deliverable_id, "cost_wst": round(float(req.cost_wst), 2),
              "made_of": made_of,
              "declared_by": (user.get("username") if isinstance(user, dict) else None) or "single-user-mode",
@@ -154,3 +172,10 @@ async def get_declared_cost(vsb_id: str, deliverable_id: str, user: dict | None 
             f"No cost has been declared for deliverable {deliverable_id}, so it has no price."))
     return {"cost": history[-1], "superseded": history[:-1][::-1], "basis": (
         "the latest declaration is the cost a price reads; earlier ones are kept, newest first")}
+
+
+@router.get("/not-for-sale")
+async def not_for_sale(user: dict | None = Depends(get_current_user)):
+    """P5.5: what is not for sale, and not offered as a paid tier, each with its ruling - the register the price reads."""
+    from agentic_core.economy.not_for_sale import register
+    return register()

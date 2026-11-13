@@ -79477,3 +79477,61 @@ def test_w939_p52_a_price_is_recomputed_on_read_and_is_null_while_an_input_is_ab
     prompt = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
     still = prompt.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0]
     assert f"{row['id']} (W939): what arithmetic turns an entity's declared cost and its waterfall into a price?" in still
+
+
+def test_w940_p55_what_is_not_for_sale_is_one_register_and_pricing_one_is_refused_with_its_ruling(client):
+    """P5.5 (W940). OWNER RULING 2026-09-27: not for sale, and not offered as a paid tier - the faith content (section
+    11), the Fitrah Spectrum (ruling A.9.5), and anything that would require a real-money rail while section 18 stands.
+    ACCEPT: the exclusions are served from one place the pricing surface reads, so a priced deliverable cannot name an
+    excluded capability; a guard proves an attempt to price one is refused with a reason; and the refusal names the
+    ruling it rests on. Measured: no register, route or refusal existed. Driven here:
+    - GET /api/v1/economy/not-for-sale serves the three exclusions, each with its ruling and what names it;
+    - for each, a deliverable that names it - by its domain, its title, its brief - is refused a price and a cost
+      declaration (409), saying which exclusion, by what, and the ruling; nothing is written;
+    - a deliverable that names none is priced as before (null, with its absent inputs);
+    - the register is the one place: the pricing module reads it and no other module states the exclusions."""
+    import pathlib
+    from agentic_core.economy import not_for_sale as nfs
+    root = pathlib.Path(__file__).resolve().parents[1]
+    reg = client.get("/api/v1/economy/not-for-sale").json()
+    assert [e["id"] for e in reg["exclusions"]] == ["faith_content", "fitrah_spectrum", "real_money_rail"], reg
+    assert all(e["ruling"] and e["what"] for e in reg["exclusions"]) and reg["read_by"] == ["domain", "type", "title", "brief"]
+    assert "section 11" in reg["exclusions"][0]["ruling"] and "A.9.5" in reg["exclusions"][1]["ruling"]
+    assert "section 18" in reg["exclusions"][2]["ruling"]
+
+    vid = client.post("/api/v1/genesis/establish", json={"problem": "w940 an entity some of whose work is not for sale",
+                                                          "ship_output": False, "name": "W940 Excluded"}).json()["vsb_id"]
+
+    def deliverable(**body):
+        r = client.post("/api/v1/deliverables/produce", json={"vsb_id": vid, "type": "report", **body})
+        assert r.status_code == 200, r.text[:300]
+        return r.json()["id"]
+
+    cases = (("faith_content", "domain", deliverable(domain="religion", title="A study guide", brief="for a reading circle")),
+             ("fitrah_spectrum", "title", deliverable(title="A Fitrah Spectrum overview", brief="an overview")),
+             ("real_money_rail", "brief", deliverable(title="Shop plan", brief="a shop that will take card payments at checkout")))
+    for ex_id, field, did in cases:
+        ex = next(e for e in reg["exclusions"] if e["id"] == ex_id)
+        q = {"vsb_id": vid, "deliverable_id": did}
+        p = client.get("/api/v1/economy/price", params=q)
+        assert p.status_code == 409, (ex_id, p.status_code, p.text[:200])
+        detail = p.json()["detail"]
+        assert detail.startswith(f"Not priced: this deliverable names {ex['what']}") and f"The ruling: {ex['ruling']}." in detail, detail
+        assert (f"its domain is" if field == "domain" else f"its {field} names") in detail, detail
+        c = client.post("/api/v1/economy/deliverable-cost", json={**q, "cost_wst": 10, "made_of": "stated for this test"})
+        assert c.status_code == 409 and c.json()["detail"] == detail, c.text[:200]
+        assert client.get("/api/v1/economy/deliverable-cost", params=q).status_code == 404, "a refused declaration wrote something"
+
+    plain = deliverable(title="A community repair plan", brief="how the repair cafe runs on Saturdays")
+    ok = client.get("/api/v1/economy/price", params={"vsb_id": vid, "deliverable_id": plain})
+    assert ok.status_code == 200 and ok.json()["price_wst"] is None, ok.text[:200]
+    assert nfs.named_exclusion({"title": "A community repair plan", "brief": "Saturdays"}) is None
+
+    #  one place: the pricing module reads the register, and nothing else states the exclusions
+    pricing_src = (root / "agentic_core/api/pricing.py").read_text(encoding="utf-8")
+    assert "from agentic_core.economy.not_for_sale import named_exclusion" in pricing_src
+    stated = [p for p in (root / "agentic_core").rglob("*.py")
+              #  the two ids only the register uses ("faith_content" is also a deliverable's own field, W659)
+              if any(f'"{i}"' in p.read_text(encoding="utf-8", errors="replace")
+                     for i in ("fitrah_spectrum", "real_money_rail")) and p.name != "not_for_sale.py"]
+    assert stated == [], ("the exclusions are stated outside their register", [str(p.relative_to(root)) for p in stated])
