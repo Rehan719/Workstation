@@ -461,6 +461,90 @@ def _version_control_commit(root, vsb_id: str, surface: str, qa: Dict[str, Any] 
                 "message": msg, "note": f"git unavailable ({str(exc)[:60]})"}
 
 
+#  W936 (P5.4) - THE REPOSITORY'S VERSION, FROM WHAT ACTUALLY CHANGED. These files are records of one generation (the
+#  manifest, the version and the changelog describe the tree; the quality record is sealed per generation), so they
+#  are not compared: the version moves only when a file of the entity's own changes.
+_GENERATION_RECORDS = ("manifest.json", "VERSION", "CHANGELOG.md", "compliance/QUALITY.md")
+_VERSION_BASIS = ("the version is 1 on the first generation and moves by one only when a file of the entity's own "
+                  "changed since the last version, compared by sha256 (digests); manifest.json, VERSION, CHANGELOG.md "
+                  "and compliance/QUALITY.md are records of a generation and are not compared. CHANGELOG.md names "
+                  "every file added, changed or removed in each version")
+
+
+def _repo_digests(root) -> Dict[str, str]:
+    """sha256 of every file of the entity's own under the repository root: not .git, not a generation's records."""
+    import hashlib
+    out: Dict[str, str] = {}
+    for p in sorted(root.rglob("*")):
+        if p.is_file() and ".git" not in p.parts:
+            rel = p.relative_to(root).as_posix()
+            if rel not in _GENERATION_RECORDS:
+                out[rel] = hashlib.sha256(p.read_bytes()).hexdigest()
+    return out
+
+
+def _prior_repo_manifest(vsb_id: str, root) -> Dict[str, Any] | None:
+    """The last manifest: the platform's copy, else the one the repository carries; None when neither exists. When
+    one exists and neither can be read, only the version the repository's VERSION file holds is known."""
+    found = False
+    for p in (_REPO_STORE / f"{vsb_id}.manifest.json", root / "manifest.json"):
+        if p.exists():
+            found = True
+            try:
+                m = json.loads(p.read_text(encoding="utf-8"))
+            except Exception:                       # noqa: BLE001 - the other copy is tried
+                continue
+            if isinstance(m, dict):
+                return m
+    if not found:
+        return None
+    try:
+        return {"version": int((root / "VERSION").read_text(encoding="utf-8").strip())}
+    except Exception:                               # noqa: BLE001 - no version is known: said in the changelog
+        return {}
+
+
+def _repo_version(prior: Dict[str, Any] | None, digests: Dict[str, str]) -> Dict[str, Any]:
+    """The version this generation carries, whether it moved, and the files added, changed and removed."""
+    before = dict((prior or {}).get("digests") or {})
+    try:
+        last = int((prior or {}).get("version") or 0)
+    except (TypeError, ValueError):
+        last = 0
+    added = sorted(set(digests) - set(before))
+    removed = sorted(set(before) - set(digests))
+    changed = sorted(k for k in set(digests) & set(before) if digests[k] != before[k])
+    moved = prior is None or not last or bool(added or removed or changed)
+    if prior is None:
+        note = "The first version: every file is new."
+    elif "digests" not in prior:
+        note = ("The generation before this one recorded no digests, so every file is listed as added"
+                + (" and the version is counted again from 1." if not last else "."))
+    else:
+        note = None
+    return {"version": last + 1 if moved else last, "moved": moved, "added": added, "changed": changed,
+            "removed": removed, "note": note}
+
+
+def _write_changelog(root, name: str, ver: Dict[str, Any]) -> None:
+    """Prepend this version's entry to CHANGELOG.md: every file added, changed or removed, by name."""
+    p = root / "CHANGELOG.md"
+    try:
+        old = p.read_text(encoding="utf-8") if p.exists() else ""
+    except OSError:
+        old = ""
+    earlier = old[old.index("## Version "):] if "## Version " in old else ""
+    head = (f"# Changelog - {name}\n\n"
+            "Each version is a generation of this repository in which a file of the entity's own changed, compared by "
+            "sha256. manifest.json, VERSION, CHANGELOG.md and compliance/QUALITY.md are records of a generation and are "
+            "not compared.\n\n")
+    lines = [f"## Version {ver['version']} - {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}"]
+    if ver.get("note"):
+        lines.append(ver["note"])
+    lines += [f"- {k}: {f}" for k in ("added", "changed", "removed") for f in ver[k]]
+    p.write_bytes((head + "\n".join(lines) + "\n\n" + earlier).encode("utf-8"))
+
+
 def _manifest_history(vsb_id: str, kind: str = "manifest") -> list:
     """§13 (W289) — the prior manifest is APPENDED to history instead of silently overwritten."""
     p = _REPO_STORE / f"{vsb_id}.{kind}.json"
@@ -555,6 +639,15 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
         _data = content.encode("utf-8")
         fp.write_bytes(_data)
         written.append({"path": path, "bytes": len(_data)})
+    #  W936 (P5.4) - A VERSION AND A CHANGELOG FROM WHAT ACTUALLY CHANGED, written before the tree is counted and
+    #  before the commit, so the repository and any clone of it carry them
+    _prior936 = _prior_repo_manifest(vsb_id, root)
+    _digests = _repo_digests(root)
+    _ver = _repo_version(_prior936, _digests)
+    (root / "VERSION").write_bytes(f"{_ver['version']}\n".encode("utf-8"))
+    if _ver["moved"] or not (root / "CHANGELOG.md").exists():
+        _write_changelog(root, vsb.get("name") or vsb_id, _ver if _ver["moved"] else {**_ver, "note": (
+            "CHANGELOG.md was not on disk and is written again; the entries before this version are not held.")})
     #  §13 (W574, M1 R2.2) — THE REPOSITORY IS WHAT IS ON DISK, not what this call wrote. The count,
     #  the byte total and the tree were all built from `written` — the files THIS generator produced
     #  — while the website, web-app and phone-app generators write their own and never update the
@@ -576,7 +669,6 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
             _on_disk.append({"path": _p.relative_to(root).as_posix(),
                              "bytes": _p.stat().st_size})
     _history = _manifest_history(vsb_id)                       # W289 — never silently overwritten
-    _vc = _version_control_commit(root, vsb_id, "repo", qa)    # W289 — a real commit per generation
     manifest = {
         "vsb_id": vsb_id, "name": vsb.get("name"), "slug": _repo_slug(vsb.get("name") or vsb_id),
         "domain": vsb.get("domain"), "realm": vsb.get("realm"),
@@ -597,7 +689,9 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
             "mobile": "mobile/ (generated PWA)" if _generated["mobile"] else "mobile/ (scaffold)"},
         "quality_assurance": qa, "posture": "in-house-first",
         # §13 (W289) — genuine version control + manifest lineage
-        "version_control": _vc,
+        #  W936 (P5.4) - the version, what it compared, and what changed since the last one
+        "version": _ver["version"], "version_moved": _ver["moved"], "version_basis": _VERSION_BASIS,
+        "changes": {k: _ver[k] for k in ("added", "changed", "removed")}, "digests": _digests,
         "manifest_history": _history,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         # §13 (W574, M1 R2.1/R2.4) — THE SURFACE CLAUSE IS COMPUTED, from the same `_generated` map
@@ -618,7 +712,13 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
                      + ". ") if not all(_generated.values()) else "")
                  + "None of the three is a built, compiled or running app — they are source."),
     }
-    (root / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    #  W936 (P5.4) - THE COMMIT CARRIES THE MANIFEST THAT DESCRIBES IT: written first, then committed. A commit's id
+    #  cannot be written inside the commit it names, so the platform's copy records it and this copy says so.
+    manifest["version_control_basis"] = ("the commit that carries this manifest is the repository's HEAD; a commit's "
+                                         "id cannot be written inside that commit, so the platform's copy of this "
+                                         "manifest records it (version_control)")
+    (root / "manifest.json").write_bytes(json.dumps(manifest, indent=2).encode("utf-8"))
+    manifest["version_control"] = _version_control_commit(root, vsb_id, "repo", qa)   # W289 — a real commit per generation
     _REPO_STORE.mkdir(parents=True, exist_ok=True)
     (_REPO_STORE / f"{vsb_id}.manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     try:

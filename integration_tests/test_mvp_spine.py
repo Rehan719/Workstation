@@ -79148,3 +79148,67 @@ def test_w935_p515_clauses5_6_the_review_an_entitys_work_reached_is_on_its_page_
     (tmp_path / "entity_signatures.json").write_text("{not json", encoding="utf-8")
     unread = client.get(f"{base}/signatures")
     assert unread.status_code == 503 and unread.json()["detail"] == fx["unreadable"], unread.text[:200]
+
+
+def test_w936_p54_the_entity_repository_carries_a_version_a_changelog_and_the_manifest_that_describes_it(client, tmp_path):
+    """P5.4 part 1 (W936). ACCEPT: 'the repo carries a version and a changelog generated from what actually changed'.
+    Measured: generate_vsb_repo wrote manifest.json after its commit, so a clone held the manifest of the generation
+    before or none, and nothing carried a version or a changelog. Driven here:
+    - the first generation is version 1, VERSION says so, and CHANGELOG.md lists every file as added;
+    - the generation's own records (manifest.json, VERSION, CHANGELOG.md, compliance/QUALITY.md) are not compared;
+    - a generation in which nothing of the entity's own changed keeps the version and adds no changelog entry;
+    - the founder's concept is recorded again: the next generation is version 2, and CHANGELOG.md names exactly the
+      files whose digests changed;
+    - a clone of the repository carries the manifest that describes it - the platform's copy, less the commit's own
+      id, which a commit cannot hold - with its VERSION and CHANGELOG."""
+    import json
+    import pathlib
+    import shutil
+    import subprocess
+    est = client.post("/api/v1/genesis/establish", json={
+        "problem": "w936 a community repair cafe that lends tools", "name": "W936 Versioned",
+        "concept": "c", "design": "d", "commercialisation": "m", "ship_output": False})
+    assert est.status_code == 200, est.text[:300]
+    vid = est.json()["vsb_id"]
+    m1 = client.post(f"/api/v1/vsb/{vid}/repo").json()
+    root = pathlib.Path(m1["repo_root"])
+    records = {"manifest.json", "VERSION", "CHANGELOG.md", "compliance/QUALITY.md"}
+    assert (m1["version"], m1["version_moved"]) == (1, True), (m1.get("version"), m1.get("version_moved"))
+    assert (root / "VERSION").read_text(encoding="utf-8") == "1\n"
+    cl1 = (root / "CHANGELOG.md").read_text(encoding="utf-8")
+    assert "## Version 1 - " in cl1 and "The first version: every file is new." in cl1
+    assert not set(m1["digests"]) & records and "README.md" in m1["digests"]
+    assert all(f"- added: {f}" in cl1 for f in m1["digests"]), "a file of the entity's own is missing from version 1"
+    assert set(m1["tree"]) == set(m1["digests"]) | (records - {"manifest.json"}), sorted(set(m1["tree"]) ^ set(m1["digests"]))
+    assert "moves by one only when a file of the entity's own" in m1["version_basis"]
+
+    #  nothing of the entity's own changed: the version stays, and the changelog gains nothing
+    m2 = client.post(f"/api/v1/vsb/{vid}/repo").json()
+    assert (m2["version"], m2["version_moved"]) == (1, False) and m2["changes"] == {"added": [], "changed": [], "removed": []}
+    assert (root / "CHANGELOG.md").read_text(encoding="utf-8") == cl1
+
+    #  the founder records the concept: the files that carry it change, and only they are named
+    c = client.post(f"/api/v1/vsb/{vid}/concept", json={"concept": "W936 a repair cafe that lends tools and teaches repair"})
+    assert c.status_code == 200, c.text[:300]
+    m3 = client.post(f"/api/v1/vsb/{vid}/repo").json()
+    changed = sorted(k for k in m3["digests"] if m2["digests"].get(k) != m3["digests"][k] and k in m2["digests"])
+    assert changed and (m3["version"], m3["version_moved"]) == (2, True), (m3["version"], changed)
+    assert m3["changes"]["changed"] == changed, (m3["changes"], changed)
+    cl3 = (root / "CHANGELOG.md").read_text(encoding="utf-8")
+    assert cl3.index("## Version 2 - ") < cl3.index("## Version 1 - "), "the newest version is not first"
+    v2 = cl3.split("## Version 2 - ", 1)[1].split("## Version 1 - ", 1)[0]
+    assert [ln[len("- changed: "):] for ln in v2.splitlines() if ln.startswith("- changed: ")] == changed, v2
+    assert (root / "VERSION").read_text(encoding="utf-8") == "2\n"
+
+    #  the clone carries the manifest that describes it, its VERSION and its CHANGELOG
+    if m3["version_control"]["mechanism"] == "git" and shutil.which("git"):
+        clone = tmp_path / "clone"
+        r = subprocess.run(["git", "clone", "-q", str(root), str(clone)], capture_output=True, text=True, timeout=120)
+        assert r.returncode == 0, r.stderr[:300]
+        carried = json.loads((clone / "manifest.json").read_text(encoding="utf-8"))
+        assert carried == {k: v for k, v in m3.items() if k != "version_control"}, (
+            "the clone's manifest is not the one the platform holds for this generation",
+            sorted(k for k in set(carried) | set(m3) if carried.get(k) != m3.get(k)))
+        assert "version_control" not in carried and "cannot be written inside that commit" in carried["version_control_basis"]
+        assert (clone / "VERSION").read_text(encoding="utf-8") == "2\n"
+        assert (clone / "CHANGELOG.md").read_text(encoding="utf-8") == cl3

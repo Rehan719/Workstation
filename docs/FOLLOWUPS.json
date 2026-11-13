@@ -23730,6 +23730,63 @@
       "note": "",
       "slot_source": "P5.1's measured tenant journey: what a page shows is what the server said",
       "tier": 2
+    },
+    {
+      "id": "FU-1182",
+      "title": "The entity repository carries no version and no changelog, and its commit holds the manifest of the generation before",
+      "why": "P5.4 ACCEPT: the repo carries a version and a changelog generated from what actually changed. Measured: generate_vsb_repo wrote manifest.json after its commit, so the repository's HEAD and any clone held the manifest of the generation before, or none; nothing carried a version or a changelog.",
+      "source": "W936 (P5.4's measured remaining work, which no row held)",
+      "found": "2026-11-13",
+      "files": [
+        "agentic_core/api/vsb.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.4",
+      "status": "done",
+      "closed_by": "W936",
+      "note": "",
+      "slot_source": "P5.4's own ACCEPT clause",
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it. Each file of the entity's own is digested by sha256 (manifest.json, VERSION, CHANGELOG.md and compliance/QUALITY.md are records of a generation and are not compared); the version is 1 on the first generation and moves by one only when a digest differs from the last manifest's; VERSION holds it and CHANGELOG.md gains an entry naming every file added, changed or removed. manifest.json is written before the commit, so the commit and any clone carry the manifest that describes them; the commit's own id, which a commit cannot hold, is recorded in the platform's copy. Driven in test_w936: generate, regenerate unchanged, record the concept, regenerate, then git clone the repository and compare."
+    },
+    {
+      "id": "FU-1183",
+      "title": "The entity repository's board pack is stored outside it, and its manifest labels only three surfaces as scaffold or the entity's own",
+      "why": "P5.4 ACCEPT: the manifest states plainly which parts are scaffold and which are the entity's own, so a reader is not handed a template as a business. Measured: the board pack is written under data/vsb_board_packs, outside the repository it is said to be part of, and the manifest labels only web, webapp and mobile; every other file carries no statement of whether it is the entity's own or the platform's layout.",
+      "source": "W936 (P5.4's measured remaining work, which no row held)",
+      "found": "2026-11-13",
+      "files": [
+        "agentic_core/api/vsb.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.4's own ACCEPT clause",
+      "tier": 2
+    },
+    {
+      "id": "FU-1184",
+      "title": "No guard clones the entity repository and serves its own pages, and the repository has no run instruction of its own",
+      "why": "P5.4 ACCEPT: a clean clone is booted BY A GUARD and serves its own pages. Measured: nothing clones the repository and serves it; the repository carries no instruction a person could follow to run it without this platform.",
+      "source": "W936 (P5.4's measured remaining work, which no row held)",
+      "found": "2026-11-13",
+      "files": [
+        "agentic_core/api/vsb.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.4",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.4's own ACCEPT clause",
+      "tier": 2
     }
   ],
   "routes": [
