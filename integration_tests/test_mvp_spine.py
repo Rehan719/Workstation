@@ -82072,3 +82072,69 @@ def test_w973_p522_the_final_audit_is_complete_only_uncapped_unfailed_on_one_com
     assert code == 2 and "examined nothing" in said and "no configuration ran a slice" in said, said
     code, said = cli("{not json")
     assert code == 2 and "could not be read" in said, said
+
+
+def test_w974_fu399_the_delivery_method_page_is_guarded_by_a_render_and_a_refusal_keeps_its_status(client, monkeypatch):
+    """FU-399 part 8 (W974). The Delivery Method page says how this platform holds its own discipline: how much of it
+    a tool enforces, the defect behind every rule, which rules have been recorded broken, what the pace figure cannot
+    know, and which defect classes no screen can find. Seven guards read the page's source. DeliveryMethod.test.tsx
+    mounts the real page against the answers the four method routes gave on a fresh store, reads each claim in the
+    DOM, and has the server refuse each read in turn. Rendering it found one defect, fixed here: each read parsed the
+    body before it looked at the status, so a refusal whose body is not JSON (a proxy's 502) was said as a parse
+    error and its status was lost. Each read now goes through apiJson, and a refusal is said with errorMessage.
+    This guard holds what the render rests on:
+    - the test mounts the real page, and every id it reads is one the page renders;
+    - every read goes through the checked helper, and none parses a body itself;
+    - the captured answers are the live routes', field for field, in the parts the page reads, and a breach the
+      learning route lists carries the fields the captured ones carry."""
+    import json
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    page_dir = root / "apps/workstation-superapp/src/pages/governance"
+    page = (page_dir / "DeliveryMethod.tsx").read_text(encoding="utf-8")
+    t = (page_dir / "DeliveryMethod.test.tsx").read_text(encoding="utf-8")
+    assert "import { DeliveryMethod } from './DeliveryMethod';" in t and "<DeliveryMethod />" in t, (
+        "the rendered test does not mount the real page")
+    read = set(re.findall(r"ByTestId\('([^']+)'\)", t)) | set(re.findall(r"text\('([^']+)'\)", t))
+    assert len(read) >= 15, sorted(read)
+    for tid in read:
+        assert f'data-testid="{tid}"' in page, ("an id the test reads is not rendered by the page", tid)
+
+    #  every read goes through the checked helper, and none parses a body itself
+    for route in ("/api/v1/method", "/api/v1/method/defect-classes", "/api/v1/method/forecast",
+                  "/api/v1/method/learning"):
+        assert f"apiJson('{route}').then(" in page, ("a read does not go through the checked helper", route)
+    assert "fetch(" not in page and ".json()" not in page, "the page parses an answer's body itself"
+    assert page.count("errorMessage(e)") == 4, "a refusal is said without its status"
+
+    #  the captured answers are the live routes', field for field, in the parts the page reads
+    fx = json.loads((page_dir / "DeliveryMethod.fixture.json").read_text(encoding="utf-8"))
+    method = client.get("/api/v1/method").json()
+    assert set(fx["method"]) <= set(method) and set(fx["method"]["enforcement"]) <= set(method["enforcement"])
+    live_lesson_keys = set().union(*(set(l) for l in method["lessons"]))
+    assert set().union(*(set(l) for l in fx["method"]["lessons"])) <= live_lesson_keys
+    assert set().union(*(set(m) for m in fx["method"]["mechanisms"])) <= set().union(*(set(m) for m in method["mechanisms"]))
+    assert set(fx["method"]["groups"]) == set(method["groups"]), "the page's group buttons would differ from the live ones"
+    classes = client.get("/api/v1/method/defect-classes").json()
+    assert set(fx["classes"]) <= set(classes)
+    assert set().union(*(set(c) for c in fx["classes"]["defect_classes"])) <= set().union(
+        *(set(c) for c in classes["defect_classes"]))
+    assert set().union(*(set(n) for n in fx["classes"]["not_screenable"])) <= set().union(
+        *(set(n) for n in classes["not_screenable"]))
+    forecast = client.get("/api/v1/method/forecast").json()
+    assert set(fx["forecast"]) <= set(forecast)
+    for k in ("which_rate_measures_completion", "the_count_overstates", "cost_of_a_round", "blocked_by_ruling"):
+        assert set(fx["forecast"][k]) <= set(forecast[k]), k
+    learning = client.get("/api/v1/method/learning").json()
+    assert set(fx["learning_none"]) <= set(learning) and set(fx["learning_none"]["currency"]) <= set(
+        learning["currency"]) | {"latest_round_a_lesson_cites", "latest_round_the_history_declares",
+                                 "rounds_since_the_method_last_learned"}
+    #  a breach the route lists, planted in this process only, carries the fields the captured ones carry
+    from agentic_core.api import method as _m974
+    unenforced = next(l["id"] for l in method["lessons"] if not (l.get("enforced_by") or "").strip())
+    monkeypatch.setattr(_m974, "breach_counts", lambda: {unenforced: _m974.ESCALATE_AT})
+    planted = client.get("/api/v1/method/learning").json()["breached"]
+    assert planted and planted[0]["at_or_over_threshold"] is True, planted
+    assert set().union(*(set(b) for b in fx["learning_breached"]["breached"])) <= set(planted[0])
+    assert {fx["breached_once"], fx["breached_at_threshold"]} <= {l["id"] for l in method["lessons"]}
