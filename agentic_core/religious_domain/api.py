@@ -767,12 +767,22 @@ async def get_ayah_translation(surah_number: int, ayah_number: int, edition: str
 class HifzScheduleRequest(BaseModel):
     uid: str
     surah_number: int
-    ayaat_range: list[int]  # [start, end] — ayah numbers to memorise
+    ayaat_range: list[int]  # [start, end] — the ayaat of ONE trouble spot (W957: at most TROUBLE_SPOT_MOST)
+
+
+#  W957 (P5.17 clause 1) - THE CARD SCHEDULER IS KEPT ONLY FOR ISOLATED TROUBLE SPOTS. A card is made for each
+#  ayah of a spot the learner marks, at most TROUBLE_SPOT_MOST ayaat at a time; a portion is practised on the
+#  plan's three tracks, not as cards. The bound is this platform's own, not a memorisation method's.
+TROUBLE_SPOT_MOST = 5
+TROUBLE_SPOTS_ONLY = ("The card scheduler is kept only for isolated trouble spots: mark the few ayaat you keep "
+                      f"stumbling on, at most {TROUBLE_SPOT_MOST} at a time (this platform's own bound, not a "
+                      "method's). A portion is practised on the plan's three tracks - new lesson, recent "
+                      "revision, old revision - not as cards.")
 
 
 @router.post("/hifz/schedule", dependencies=_ASKS)
 async def hifz_schedule(req: HifzScheduleRequest, user: dict | None = Depends(get_current_user)):
-    """Generate SM-2 memorisation schedule for a range of ayaat."""
+    """SM-2 cards for ONE isolated trouble spot of at most TROUBLE_SPOT_MOST ayaat (W957, P5.17 clause 1)."""
     req.uid = _learner_key(req.uid, user)          # W848 (FU-1064) - the caller's own record
     if not 1 <= req.surah_number <= 114:
         raise HTTPException(status_code=400, detail="Invalid surah number.")
@@ -787,6 +797,10 @@ async def hifz_schedule(req: HifzScheduleRequest, user: dict | None = Depends(ge
         raise HTTPException(status_code=422,
                             detail=f"surah {req.surah_number} has {max_ayah} ayaat — "
                                    f"range must lie within [1, {max_ayah}]")
+    _asked = req.ayaat_range[1] - req.ayaat_range[0] + 1
+    if _asked > TROUBLE_SPOT_MOST:                  # W957 (P5.17 clause 1) - a spot, never a portion
+        raise HTTPException(status_code=422, detail=(f"{_asked} ayaat were asked for. " + TROUBLE_SPOTS_ONLY
+                                                     + " Nothing was scheduled."))
 
     with store_lock(_hifz_path(req.uid)):
         hifz = _load_hifz(req.uid)
@@ -818,6 +832,7 @@ async def hifz_schedule(req: HifzScheduleRequest, user: dict | None = Depends(ge
         "surah_number": req.surah_number,
         "ayaat_scheduled": len(schedule),
         "schedule": schedule,
+        "kept_for": TROUBLE_SPOTS_ONLY,             # W957 (P5.17 clause 1)
     }
 
 

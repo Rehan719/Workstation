@@ -2487,15 +2487,15 @@ def test_qep_status(client):
 
 
 def test_qep_hifz_schedule(client):
-    r = client.post("/api/v1/qep/hifz/schedule", json={
+    r = client.post("/api/v1/qep/hifz/schedule", json={       # W957: one trouble spot, at most five ayaat
         "uid": "test_user_001",
         "surah_number": 1,
-        "ayaat_range": [1, 7],
+        "ayaat_range": [1, 5],
     })
     assert r.status_code == 200
     body = r.json()
-    assert body["ayaat_scheduled"] == 7
-    assert len(body["schedule"]) == 7
+    assert body["ayaat_scheduled"] == 5
+    assert len(body["schedule"]) == 5
 
 
 def test_qep_hifz_review(client):
@@ -9038,7 +9038,8 @@ def test_w439_refuter_pass_findings_stay_fixed(client):
 
     # 5. due_refs truncation is disclosed alongside the full count
     uid = f"w439r_{_uuid.uuid4().hex[:8]}"
-    client.post("/api/v1/qep/hifz/schedule", json={"uid": uid, "surah_number": 2, "ayaat_range": [1, 30]})
+    for _s in range(1, 31, 5):                     # W957: thirty cards from six trouble spots of five ayaat
+        client.post("/api/v1/qep/hifz/schedule", json={"uid": uid, "surah_number": 2, "ayaat_range": [_s, _s + 4]})
     pr = client.get(f"/api/v1/qep/hifz/progress/{uid}").json()
     assert pr["due_refs_capped_at"] == 20 and pr["due_today"] == 30 and len(pr["due_refs"]) == 20
 
@@ -80864,3 +80865,60 @@ def test_w956_p512_the_education_page_says_what_each_form_does_on_this_machine_f
     assert "{f.does} {now}" in flat
     assert "setEduToolsNote(`What each form does could not be read (${errorMessage(e)})" in flat
     assert "{frameworksNote && <span" in flat, "the curriculum's framework note was lost"
+
+
+def test_w957_p517_the_card_scheduler_is_kept_only_for_isolated_trouble_spots(client):
+    """P5.17 clause 1 (W957): "the card scheduler kept only for isolated trouble spots". Measured: the scheduler made a
+    card for every ayah of any range inside a surah - 286 cards for al-Baqarah in one request. Held here:
+    - one trouble spot of at most TROUBLE_SPOT_MOST ayaat gets a card for each ayah, and the answer says what cards
+      are kept for;
+    - one ayah more is refused with the clause's sentence, and nothing is scheduled - not even the first ayaat;
+    - spots accumulate as separate spots; a whole short surah is a portion, refused like any other;
+    - the studio asks for a trouble spot and shows a refusal; the journey is a row of the coverage register."""
+    import json
+    import uuid
+    from pathlib import Path
+
+    import agentic_core.religious_domain.api as _qep
+    root = Path(__file__).resolve().parents[1]
+    most = _qep.TROUBLE_SPOT_MOST
+    assert most == 5 and "this platform's own bound, not a method's" in _qep.TROUBLE_SPOTS_ONLY
+    uid = f"w957{uuid.uuid4().hex[:8]}"
+
+    def _sched(a, b, surah=2):
+        return client.post("/api/v1/qep/hifz/schedule", json={"uid": uid, "surah_number": surah, "ayaat_range": [a, b]})
+
+    def _held():
+        return client.get(f"/api/v1/qep/hifz/progress/{uid}").json()["total_ayaat_in_schedule"]
+
+    #  one ayah over the bound: refused with the clause's sentence, and nothing at all is scheduled
+    over = _sched(1, most + 1)
+    assert over.status_code == 422, over.text[:200]
+    d = over.json()["detail"]
+    assert d.startswith(f"{most + 1} ayaat were asked for.") and _qep.TROUBLE_SPOTS_ONLY in d and d.endswith("Nothing was scheduled.")
+    assert _held() == 0, "a refused request scheduled some ayaat"
+    #  the bound itself: a card for each ayah, and the answer says what the cards are for
+    ok = _sched(10, 10 + most - 1)
+    assert ok.status_code == 200 and ok.json()["ayaat_scheduled"] == most and ok.json()["kept_for"] == _qep.TROUBLE_SPOTS_ONLY
+    assert [s["ref"] for s in ok.json()["schedule"]] == [f"2:{n}" for n in range(10, 10 + most)]
+    #  a second, separate spot adds its own cards
+    one = _sched(255, 255)
+    assert one.status_code == 200 and one.json()["ayaat_scheduled"] == 1
+    assert _held() == most + 1
+    #  a whole surah of seven ayaat is a portion, not a spot
+    fat = _sched(1, 7, surah=1)
+    assert fat.status_code == 422 and "trouble spots" in fat.json()["detail"]
+    #  the scripture bound still speaks first
+    assert _sched(1, 300, surah=1).status_code == 422 and "has 7 ayaat" in _sched(1, 300, surah=1).json()["detail"]
+
+    #  the studio asks for a trouble spot, and a refusal still reaches the person
+    studio = _code_only((root / "apps/workstation-superapp/src/components/QEPStudio.tsx").read_text(encoding="utf-8"))
+    flat = " ".join(studio.split())
+    assert "mark a trouble spot: ayaat" in flat and "Make cards for this spot (SM-2)" in flat and "memorise ayaat" not in flat
+    sched_fn = flat.split("const schedule = async () => {", 1)[1].split("};", 1)[0]
+    assert "setErr(errorMessage(e))" in sched_fn
+
+    #  the journey is a row of the coverage register, driven by this test
+    reg = json.loads((root / "docs/COVERAGE_REGISTER.json").read_text(encoding="utf-8"))
+    row = next(r for r in reg["rows"] if r["id"] == "qep-trouble-spot-cards")
+    assert row["state"] == "journey" and row["driven_by"] == "test_w957_p517_the_card_scheduler_is_kept_only_for_isolated_trouble_spots"

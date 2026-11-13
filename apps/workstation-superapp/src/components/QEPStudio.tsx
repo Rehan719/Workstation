@@ -353,14 +353,16 @@ export const QEPStudio: React.FC = () => {
             </>
           )}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[9px] font-black uppercase text-slate-500">memorise ayaat</span>
+            {/* W957 (P5.17 clause 1) - cards are for a trouble spot the learner marks; a portion goes on the plan */}
+            <span className="text-[9px] font-black uppercase text-slate-500"
+                  title="Cards are for the few ayaat you keep stumbling on. A portion goes on the plan's three tracks.">mark a trouble spot: ayaat</span>
             <input type="number" min={1} max={selSurah?.ayah_count ?? 286} value={rangeStart} onChange={e => setRangeStart(Number(e.target.value))}
               className="w-16 text-[11px] bg-slate-950 border border-slate-900 rounded-lg p-1.5 text-slate-300" />
             <span className="text-slate-600 text-[10px]">to</span>
             <input type="number" min={1} max={selSurah?.ayah_count ?? 286} value={rangeEnd} onChange={e => setRangeEnd(Number(e.target.value))}
               className="w-16 text-[11px] bg-slate-950 border border-slate-900 rounded-lg p-1.5 text-slate-300" />
             <Button onClick={schedule} disabled={busy === 'schedule'} className="flex items-center gap-1.5 bg-slate-900 text-aura text-[10px]">
-              {busy === 'schedule' ? <Loader2 size={11} className="animate-spin" /> : <Brain size={11} />} Schedule (SM-2)
+              {busy === 'schedule' ? <Loader2 size={11} className="animate-spin" /> : <Brain size={11} />} Make cards for this spot (SM-2)
             </Button>
           </div>
         </Card>

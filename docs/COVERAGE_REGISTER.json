@@ -570,6 +570,15 @@
    "driven_by": "test_w684_similar_verses_are_counted_from_the_fetched_text_and_say_what_they_cover"
   },
   {
+   "id": "qep-trouble-spot-cards",
+   "domain": "Quran platform",
+   "subject": "Spaced-review cards for an isolated trouble spot",
+   "nation": "any - the sourced text and its practice are the same everywhere",
+   "state": "journey",
+   "today": "a learner marks a trouble spot of at most five ayaat and each ayah gets a spaced-review card; a wider range is refused and sent to the plan's three tracks, and nothing is scheduled",
+   "driven_by": "test_w957_p517_the_card_scheduler_is_kept_only_for_isolated_trouble_spots"
+  },
+  {
    "id": "qep-listen-follow",
    "domain": "Quran platform",
    "nation": "any - the sourced text and its practice are the same everywhere",
