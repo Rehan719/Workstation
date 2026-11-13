@@ -103,8 +103,8 @@ def backup(to: Path) -> int:
         return 2
     files = sorted(p for p in root.rglob("*") if p.is_file()) if root.is_dir() else []
     if not files:
-        _say(f"REFUSED: the data root {root} holds no file, so there is nothing to back up. A backup of nothing is "
-             f"not a backup. No archive was written.")
+        _say(f"REFUSED: examined nothing - the data root {root} holds no file, so there is nothing to back up. A "
+             f"backup of nothing is not a backup. No archive was written.")
         return 2
     to.mkdir(parents=True, exist_ok=True)
     stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
@@ -148,6 +148,8 @@ def _check(z: zipfile.ZipFile):
     except (KeyError, ValueError, TypeError) as exc:
         return None, [f"the archive's manifest cannot be read ({exc.__class__.__name__})"]
     held = {n for n in z.namelist() if n != MANIFEST}
+    if not listed:                    # W919 - a check of an archive that lists no file examined nothing
+        return manifest, ["examined nothing - the archive's manifest lists no file, so there is nothing to check"]
     faults = [f"missing from the archive: {n[len(PREFIX):]}" for n in sorted(set(listed) - held)]
     faults += [f"in the archive and not in its manifest: {n}" for n in sorted(held - set(listed))]
     for name, e in sorted(listed.items()):

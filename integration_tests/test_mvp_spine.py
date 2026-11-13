@@ -69448,7 +69448,9 @@ def test_w749_an_instrument_that_examined_nothing_refuses_and_reads_what_it_name
                     "scripts/screen_phrasings.py", "scripts/prune_test_entities.py",
                     "scripts/quarantine_test_entities.py",
                     #  W890 (FU-1040) - the test double's rows, moved aside under the same rule
-                    "scripts/quarantine_test_double_rows.py"]
+                    "scripts/quarantine_test_double_rows.py",
+                    #  W918 (FU-742) - the stores' backup: it refuses an empty data root and an archive listing nothing
+                    "scripts/backup_stores.py"]
 
     def _emitted(src):
         """The strings a module can print or return - its docstrings left out, since a docstring saying the tool
@@ -77906,11 +77908,19 @@ def test_w918_fu742_the_file_stores_are_backed_up_verified_and_restored_byte_for
     r = run("restore", str(bad), "--into", str(tmp_path / "from-changed"))
     assert r.returncode == 1 and not (tmp_path / "from-changed").exists(), r.stdout + r.stderr
 
+    #  W919 - an archive whose manifest lists no file examined nothing, and is refused, never "verified 0 files"
+    hollow = tmp_path / "hollow.zip"
+    with zipfile.ZipFile(hollow, "w") as w:
+        w.writestr("MANIFEST.json", json.dumps({**manifest, "files": [], "file_count": 0, "total_bytes": 0}))
+    r = run("verify", str(hollow))
+    assert r.returncode == 1 and "examined nothing" in r.stdout, r.stdout + r.stderr
+
     #  refusals, each writing no archive
     empty = tmp_path / "empty-root"
     empty.mkdir()
     r = run("backup", "--to", str(tmp_path / "b-empty"), e={**env, "DATA_DIR": str(empty), "WORKSTATION_DATA_DIR": str(empty)})
     assert r.returncode == 2 and "holds no file" in r.stdout and not (tmp_path / "b-empty").exists(), r.stdout
+    assert "REFUSED: examined nothing - the data root" in r.stdout, r.stdout      # W919 - the census's own words
     inside = root / "w918-a-backup-must-not-land-here"
     assert not inside.exists(), "the folder this guard names is already there; it removes only its own"
     try:
@@ -77930,3 +77940,99 @@ def test_w918_fu742_the_file_stores_are_backed_up_verified_and_restored_byte_for
     brief = (root / "docs/business/PRODUCTION_HARDENING_BRIEF.md").read_text(encoding="utf-8")
     assert "No backup script exists" not in brief and "`scripts/backup_stores.py`" in brief
     assert "No backup is taken on a schedule, no copy leaves the machine" in brief
+
+
+def test_w919_fu742_the_windows_start_path_names_only_what_exists_and_starts_the_app_every_deployment_starts(tmp_path):
+    """FU-742 part 2 (W919). The founder's guide rests on the Windows set-up and start scripts, so they were
+    measured first. None of the three could have worked:
+    - start_backend.bat started agentic_core.main:app, which does not exist;
+    - setup.ps1 installed with poetry inside agentic_core/, installed the frontend in apps/web, copied
+      .env.template, and never made the venv the start script looks for;
+    - start_frontend.bat opened apps/web, and the root package.json named apps/web and apps/mobile.
+    None of those folders or files exists.
+
+    This guard holds the replacements to what exists:
+    - the backend script starts the app the Dockerfile and render.yaml start, with the venv set-up makes;
+    - set-up installs requirements.txt, as the Windows CI job does, and runs npm install, as the frontend job does;
+    - the .env it copies exists, and every switch in it is off;
+    - no script or package script names a folder that does not exist.
+    Then it starts the app exactly as the backend script names it, in a subprocess on a free port, and reads
+    /health from it. That happens here and on the Windows CI job."""
+    import json
+    import os
+    import pathlib
+    import re
+    import socket
+    import subprocess
+    import sys
+    import time
+    import urllib.request
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    setup = (root / "setup.ps1").read_text(encoding="utf-8")
+    back = (root / "start_backend.bat").read_text(encoding="utf-8")
+    front = (root / "start_frontend.bat").read_text(encoding="utf-8")
+    scripts = json.loads((root / "package.json").read_text(encoding="utf-8"))["scripts"]
+    spine = (root / ".github/workflows/spine.yml").read_text(encoding="utf-8")
+
+    #  the backend script starts the app every deployment starts, with the environment set-up makes
+    apps = re.findall(r"-m uvicorn ([\w.]+):(\w+)", back)
+    assert apps == [("agentic_core.app_mvp", "app")], apps
+    for deployed in ("Dockerfile", "render.yaml"):
+        assert "agentic_core.app_mvp:app" in (root / deployed).read_text(encoding="utf-8"), deployed
+    assert r'set "VENV_PYTHON=%~dp0venv\Scripts\python.exe"' in back
+    assert "python -m venv venv" in setup and r".\venv\Scripts\python.exe -m pip install -r requirements.txt" in setup
+
+    #  set-up installs what CI installs, from files that exist, and copies an .env whose switches are all off
+    assert "pip install -r requirements.txt" in spine and "run: npm install" in spine
+    assert "{ npm install }" in setup and (root / "requirements.txt").is_file() and (root / "package-lock.json").is_file()
+    assert 'Copy-Item ".env.example" ".env"' in setup and (root / ".env.example").is_file()
+    env_example = (root / ".env.example").read_text(encoding="utf-8")
+    for switch in ("AUTH_ENABLED", "AI_ALLOW_EXTERNAL", "SELF_SERVE_SIGNUP", "REAL_MONEY_ENABLED"):
+        set_to = re.findall(rf"^{switch}\s*=\s*(\S+)", env_example, re.M)
+        assert all(v.lower() in ("false", "0", "off", "no") for v in set_to), (switch, set_to)
+    for gone in ("poetry install", "apps/web", ".env.template", "agentic_core.main"):
+        assert gone not in setup + back + front, gone
+
+    #  no script or package script names a folder that does not exist
+    assert re.findall(r'cd /d "%~dp0([^"]+)"', front) == [r"apps\workstation-superapp"]
+    for text in (setup, back, front, json.dumps(scripts)):
+        for app_dir in re.findall(r"apps[/\\]+([\w-]+)", text):
+            assert (root / "apps" / app_dir / "package.json").is_file(), (app_dir, "names an app that does not exist")
+    for cmd in scripts.values():
+        for ws in re.findall(r"-w ([\w/.-]+)", cmd):
+            assert (root / ws / "package.json").is_file(), (cmd, "names a workspace that does not exist")
+    assert '"dev": "vite"' in (root / "apps/workstation-superapp/package.json").read_text(encoding="utf-8")
+
+    #  the app the backend script names really serves: started as the script starts it, on a free port
+    with socket.socket() as so:
+        so.bind(("127.0.0.1", 0))
+        port = so.getsockname()[1]
+    data = tmp_path / "data"
+    env = {**os.environ, "DATA_DIR": str(data), "WORKSTATION_DATA_DIR": str(data),
+           "WORKSTATION_UEG_PATH": str(data / "ueg.json"), "PROJECTS_DIR": str(data / "projects"),
+           "PYTHONPATH": str(root), "AI_DISABLE_LOCAL": "1"}
+    (module, attr), = apps
+    proc = subprocess.Popen([sys.executable, "-m", "uvicorn", f"{module}:{attr}", "--host", "127.0.0.1",
+                             "--port", str(port)], cwd=str(root), env=env,
+                            stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+    direct = urllib.request.build_opener(urllib.request.ProxyHandler({}))     # never through a proxy
+    health = None
+    try:
+        deadline = time.time() + 180
+        while time.time() < deadline and proc.poll() is None:
+            try:
+                with direct.open(f"http://127.0.0.1:{port}/health", timeout=5) as resp:
+                    health = (resp.status, json.loads(resp.read().decode("utf-8")))
+                    break
+            except OSError:
+                time.sleep(1)
+    finally:
+        proc.terminate()
+        try:
+            _, err = proc.communicate(timeout=60)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            _, err = proc.communicate()
+    assert health is not None and health[0] == 200, (
+        "the app the backend script names did not answer /health", (err or b"")[-1500:].decode("utf-8", "replace"))
