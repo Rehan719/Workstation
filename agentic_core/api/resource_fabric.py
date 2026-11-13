@@ -1181,6 +1181,59 @@ async def list_resources(resource_class: Optional[str] = None, usable_in: Option
     }
 
 
+#  W914 (FU-609 part 1) - MEASURED FIRST, as the row asks: which fabric resources keep any state between calls,
+#  because a lifecycle on a handler that keeps nothing would be a label. Read on each request from the module's own
+#  classifications (what each handler does when read, and what each facility run persists), never typed. It is
+#  declared before GET /{resource_id}, which would otherwise take "state-census" for a resource id.
+@router.get("/state-census")
+async def state_census():
+    """Which fabric resources keep anything between calls, counted from each one's own declaration."""
+    from agentic_core.config import read_json_reported
+    by_class: Dict[str, List[str]] = {}
+    for _r in _REGISTRY:
+        _rid = _r["id"]
+        _kind = _resource_kind(_rid)
+        _cls = (f"facility_run:{_FACILITY_PERSISTS.get(_rid, ('not_declared',))[0]}" if _kind == "facility_run"
+                else _kind)
+        by_class.setdefault(_cls, []).append(_rid)
+    counts = {k: len(v) for k, v in sorted(by_class.items())}
+    comps = _load_compositions()
+    runs, runs_why = read_json_reported(data_path("composition_runs.json"), [])
+    run_rows = len(runs) if isinstance(runs, list) else None
+    reads_only = sum(counts.get(k, 0) for k in ("status_read", "query", "blueprint", "narrative"))
+    undeclared = sorted(by_class.get("facility_run:not_declared", []))
+    return {
+        "resources": len(_REGISTRY),
+        "by_class": {k: sorted(v) for k, v in sorted(by_class.items())},
+        "counts": counts,
+        "reads_that_change_live_state": dict(sorted(_READ_SIDE_EFFECTS.items())),
+        "undeclared_facility_runs": undeclared,
+        "objects_that_keep_state_between_calls": [
+            {"object": "saved composition", "store": "resource_compositions.json", "count": len(comps),
+             "verbs": ["define (POST /api/v1/resources/compose)", "update", "retire"]},
+            {"object": "composition run row", "store": "composition_runs.json", "count": run_rows,
+             "unreadable": runs_why},
+        ],
+        "conclusion": (
+            f"Of {len(_REGISTRY)} registered resources, {reads_only} only read, assess, specify or narrate what is "
+            f"already there and persist nothing; {counts.get('facility_run:nothing', 0)} facility runs persist "
+            f"nothing; {counts.get('facility_run:records', 0)} write a record of each run into a store their engine "
+            f"owns; and {counts.get('facility_run:side_effect', 0)} changes live state and writes no store. "
+            + (f"{len(undeclared)} facility run(s) declare nothing and are not counted: {', '.join(undeclared)}. "
+               if undeclared else "")
+            + "None is provisioned: each is called once per composition run, and nothing of it remains between "
+              f"calls but the records its runs wrote. The only fabric objects with a life of their own are saved "
+              f"compositions ({len(comps)} saved) and the rows of their runs. A lifecycle with provisioned, "
+              "operating, expired and retired states belongs on a saved composition; on a resource it would be a "
+              "label."),
+        "basis": ("each resource's class is _resource_kind (what its handler does when read: a status read, a query, "
+                  "a blueprint, a narrative or a facility run), and a facility run's is what it declares it persists "
+                  "(_FACILITY_PERSISTS, W835). The handlers are dispatched per run by _run_real_resource_handler, "
+                  "which keeps no instance between calls. Reads that advance the ATP simulator are listed under "
+                  "reads_that_change_live_state."),
+    }
+
+
 @router.get("/compositions")
 async def list_compositions(user: dict | None = Depends(get_current_user)):
     _u = user if isinstance(user, dict) else None

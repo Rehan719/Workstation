@@ -77544,3 +77544,47 @@ def test_w913_fu806_three_first_offers_are_compared_on_their_evidence_and_the_in
     assert "Never name a price" in wtp
     notes = section("Notes template")
     assert "no name, address or contact detail written into this repository" in notes, notes
+
+
+def test_w914_fu609_which_fabric_resources_keep_state_between_calls_is_measured_from_their_own_declarations(client):
+    """FU-609 part 1 (W914). The row's first step is to measure, before any lifecycle is built, which fabric
+    resources hold any state between calls at all, because a lifecycle on a handler that keeps nothing would be a
+    label. GET /api/v1/resources/state-census counts every registered resource into one class, read from what its
+    handler does when read and, for a facility run, from what it declares it persists. It lists the reads that
+    change live state. It names the only fabric objects that keep anything of their own: saved compositions and the
+    rows of their runs. This guard recounts from the module itself and requires every facility run to declare what
+    it persists. It drives a saved composition and watches the census count it, so no figure in the answer is
+    typed."""
+    import collections
+    from agentic_core.api import resource_fabric as rf
+    r = client.get("/api/v1/resources/state-census")
+    assert r.status_code == 200, r.text[:300]
+    c = r.json()
+
+    #  every registered resource is in exactly one class, and the classes are the module's own
+    ids = [x["id"] for x in rf._REGISTRY]
+    placed = [rid for members in c["by_class"].values() for rid in members]
+    assert sorted(placed) == sorted(ids) and len(placed) == len(set(placed)) == c["resources"], (
+        "a resource is missing from the census or counted twice")
+    recount = collections.Counter(
+        (f"facility_run:{rf._FACILITY_PERSISTS.get(i, ('not_declared',))[0]}" if rf._resource_kind(i) == "facility_run"
+         else rf._resource_kind(i)) for i in ids)
+    assert c["counts"] == dict(sorted(recount.items())), (c["counts"], recount)
+
+    #  no facility run is left without saying what it persists: an undeclared one would be counted as nothing
+    assert c["undeclared_facility_runs"] == [] and "facility_run:not_declared" not in c["counts"], (
+        "a facility run declares nothing about what it persists", c["undeclared_facility_runs"])
+    assert c["reads_that_change_live_state"] == dict(sorted(rf._READ_SIDE_EFFECTS.items()))
+
+    #  the only objects with a life of their own are saved compositions and their runs, counted from the store
+    objs = {o["object"]: o for o in c["objects_that_keep_state_between_calls"]}
+    before = objs["saved composition"]["count"]
+    made = client.post("/api/v1/resources/compose", json={"name": "W914 census probe", "resource_ids": ["compliance"]})
+    assert made.status_code == 200, made.text[:300]
+    after = client.get("/api/v1/resources/state-census").json()
+    assert {o["object"]: o for o in after["objects_that_keep_state_between_calls"]}["saved composition"]["count"] == before + 1, (
+        "the census did not count the composition just saved")
+    assert f"compositions ({before + 1} saved)" in after["conclusion"], after["conclusion"]
+    assert "belongs on a saved composition; on a resource it would be a label" in after["conclusion"]
+    for k in ("facility_run:nothing", "facility_run:records", "facility_run:side_effect"):
+        assert f"{after['counts'].get(k, 0)} " in after["conclusion"], (k, after["conclusion"])
