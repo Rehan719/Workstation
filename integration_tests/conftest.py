@@ -165,6 +165,18 @@ def _assert_store_is_isolated():
     yield
 
 
+@pytest.fixture(autouse=True)
+def _w899_a_legal_matter_mark_ends_with_its_test():
+    """W899 (FU-610) - reading a document from the legal folder marks the context that read it, and nothing that
+    context sends leaves the platform. A request runs in its own context, so in the product the mark ends with the
+    request. A test that calls the folder's reader directly marks the worker's own context, which every later test
+    in that worker shares, so the mark is cleared around each test."""
+    from agentic_core.ai import data_class as _dc899
+    _dc899._LEGAL_READ.set(None)
+    yield
+    _dc899._LEGAL_READ.set(None)
+
+
 # ── W537 (FU-301, P2.17 bar (b)2b) — A STALLED RUN MUST NOT READ AS A PASS ──────────────────────
 # Three of six parallel runs stalled at 74%, 89% and 57% with every worker in flight, and NOTHING
 # reported it: on a stall the session never finishes, so pytest_sessionfinish never fires and no summary

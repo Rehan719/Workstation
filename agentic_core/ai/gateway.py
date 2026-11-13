@@ -9,6 +9,7 @@ from typing import AsyncIterator
 from agentic_core.ai.guardrails import validate_response, screen_reason
 from agentic_core.ai.logger import interaction_logger
 from agentic_core.ai.memory import memory
+from agentic_core.ai import data_class as _dc899        # W899 (FU-610) - the class of what an external call carries
 
 _RECONFIG_PATH = data_path("organism_config.json")
 
@@ -280,6 +281,10 @@ class ModelGateway:
     With AI_ALLOW_EXTERNAL off (the default) neither path reaches an external provider. With it on, NEITHER
     path puts an external first unless its caller asks (prefer_external) - one order for both (W755, FU-1124,
     Owner ruling 2026-11-06). The switch is the Owner's (P4.3).
+
+    W899 (FU-610): on both paths an external provider is sent a call only when the call declares the class of what
+    it carries and that class is not barred. The check runs before the provider's client is built
+    (ai/data_class.py).
 
     Rate limit: GATEWAY_RPM env var (default 20 calls/min) prevents runaway spend.
     """
@@ -639,7 +644,7 @@ class ModelGateway:
     async def stream_meta(self, prompt: str, agent: str = "assistant",
                           owner_id: str | None = None, augment: bool = _RECALL_OFF,
                           user_text: str | None = None, language: str | None = None,
-                          prefer_external: bool = False) -> AsyncIterator[dict]:
+                          prefer_external: bool = False, data_class: str | None = None) -> AsyncIterator[dict]:
         """W738 - the stream with the Arabic rule: each token passes ArabicStreamFilter (unless the person asked
         for an Arabic-script language), and the terminal frame's text is ruled inside _final."""
         from agentic_core.religious_domain.composed_text import ArabicStreamFilter, arabic_script_requested
@@ -647,7 +652,7 @@ class ModelGateway:
         _flt = ArabicStreamFilter()
         async for ev in self._stream_meta_inner(prompt, agent=agent, owner_id=owner_id, augment=augment,
                                                 user_text=user_text, language=language,
-                                                prefer_external=prefer_external):
+                                                prefer_external=prefer_external, data_class=data_class):
             if "token" in ev and not _keep:
                 _t = _flt.feed(ev["token"])
                 if _t:
@@ -658,7 +663,7 @@ class ModelGateway:
     async def _stream_meta_inner(self, prompt: str, agent: str = "assistant",
                                  owner_id: str | None = None, augment: bool = _RECALL_OFF,
                                  user_text: str | None = None, language: str | None = None,
-                                 prefer_external: bool = False) -> AsyncIterator[dict]:
+                                 prefer_external: bool = False, data_class: str | None = None) -> AsyncIterator[dict]:
         """Yield {"token": …} events then ONE terminal {"done": True, "served_by", "is_external",
         "output", "guardrail_passed", "profile_applied"} — IN-HOUSE FIRST (§6), in the same order as
         query_meta since W755 (FU-1124, Owner ruling 2026-11-06; see the class docstring):
@@ -750,6 +755,15 @@ class ModelGateway:
 
         _NOTICE = "\n[POLICY VIOLATION] The generated response was blocked by safety guardrails."
 
+        #  W899 (FU-610) - what each external check decided, for the terminal frame. A refused provider is skipped
+        #  before its client is built, so nothing is sent
+        _dc_checks899: list = []
+
+        def _may_send899(provider: str) -> bool:
+            _pf = _dc899.preflight(provider, data_class)
+            _dc_checks899.append({"provider": provider, "send": _pf["send"], "why": _pf["why"]})
+            return _pf["send"]
+
         def _final(full: str, served_by: str, is_external: bool, model_tokens: int | None = None,
                    model_tokens_basis: str | None = None) -> dict:
             """The terminal frame — and the guardrail is applied BEFORE anything is persisted (refuter
@@ -772,7 +786,9 @@ class ModelGateway:
                         f"NOT COUNTED - {served_by} served this and this platform reads no token count from it; "
                         "null, never 0"),
                     #  W842 (FU-1092) - which model and which build answered, beside the server's name
-                    "served_identity": served_identity_of(served_by)}
+                    "served_identity": served_identity_of(served_by),
+                    #  W899 (FU-610) - the class declared for what the stream carried, and what each check decided
+                    "data_class": _dc899.provenance(data_class, _dc_checks899, is_external)}
 
         # 1 — the OWNED local model: genuine token-by-token streaming
         if (os.getenv("AI_DISABLE_LOCAL", "").lower() not in ("1", "true", "yes")
@@ -812,7 +828,8 @@ class ModelGateway:
         #     before the floor; a caller must also ask (prefer_external), as an orchestrator caller does. With no
         #     ask, the floor answers, exactly as a gateway query does.
         if os.getenv("AI_ALLOW_EXTERNAL", "false").lower() == "true" and prefer_external:
-            if self.anthropic_key and not self_healer.is_open("claude") and _external_budget_allows("anthropic"):
+            if (self.anthropic_key and not self_healer.is_open("claude") and _may_send899("anthropic")
+                    and _external_budget_allows("anthropic")):      # W899 (FU-610) - the class first
                 _t0 = time.time()
                 try:
                     import anthropic
@@ -843,7 +860,8 @@ class ModelGateway:
                 except Exception:
                     self_healer.record_failure("claude")
                     _record("claude", True, _t0, False)
-            if self.openai_key and not self_healer.is_open("openai") and _external_budget_allows("openai"):
+            if (self.openai_key and not self_healer.is_open("openai") and _may_send899("openai")
+                    and _external_budget_allows("openai")):         # W899 (FU-610) - the class first
                 _t0 = time.time()
                 try:
                     from openai import AsyncOpenAI

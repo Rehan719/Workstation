@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Optional
 from agentic_core.ai.native.engine import native_engine
 from agentic_core.ai.native.model_resource import registry
 from agentic_core.ai.native.homeostasis import homeostasis
+from agentic_core.ai import data_class as _dc899      # W899 (FU-610) - the class of what an external call carries
 
 
 def _fire(signal_type: str, source: str, msg: str, intensity: float = 0.5) -> None:
@@ -39,6 +40,19 @@ class ResourceSkipped(RuntimeError):
         super().__init__(f"{name}: {reason}")
         self.name = name
         self.reason = reason
+
+
+class DataClassRefused(ResourceSkipped):
+    """W899 (FU-610) - an external call refused BEFORE TRANSMISSION for the class of what it carries: it declared
+    none, or a class this platform does not name, or a barred one, or it read the legal matter. A skip, like the
+    hourly cap's: nothing was sent, so nothing is recorded against the provider."""
+
+
+def _dc_send899(provider: str) -> None:
+    """W899 (FU-610) - refuse before the provider's client is built when the call's material may not leave."""
+    _pf = _dc899.preflight(provider)
+    if not _pf["send"]:
+        raise DataClassRefused(provider, _pf["why"])
 
 
 def _record_model(name: str, success: bool, t0: float, tokens: Optional[int] = None) -> None:
@@ -344,9 +358,15 @@ class NativeOrchestrator:
     async def complete(self, prompt: str, agent: str = "assistant",
                        timeout: float = 30.0, prefer_external: bool = False,
                        prefer: str = "auto", user_text: Optional[str] = None,
-                       language: Optional[str] = None) -> Dict[str, Any]:
-        res = await self._complete(prompt, agent=agent, timeout=timeout, prefer_external=prefer_external,
-                                   prefer=prefer, user_text=user_text)
+                       language: Optional[str] = None, data_class: Optional[str] = None) -> Dict[str, Any]:
+        #  W899 (FU-610) - `data_class` declares what the prompt carries (None keeps a declaration the caller is
+        #  inside). An external resource is sent it only for a declared class that is not barred, and the reply
+        #  says what was declared and what each check decided
+        _checks899: List[Dict[str, Any]] = []
+        with _dc899.declared(data_class):
+            res = await self._complete(prompt, agent=agent, timeout=timeout, prefer_external=prefer_external,
+                                       prefer=prefer, user_text=user_text, _dc_checks=_checks899)
+            res["data_class"] = _dc899.provenance(data_class, _checks899, bool(res.get("is_external")))
         #  W738 - the Arabic rule, once, on whatever served (refusals carry no composed text)
         if not res.get("refused"):
             from agentic_core.religious_domain.composed_text import apply_arabic_rule
@@ -355,7 +375,8 @@ class NativeOrchestrator:
 
     async def _complete(self, prompt: str, agent: str = "assistant",
                         timeout: float = 30.0, prefer_external: bool = False,
-                        prefer: str = "auto", user_text: Optional[str] = None) -> Dict[str, Any]:
+                        prefer: str = "auto", user_text: Optional[str] = None,
+                        _dc_checks: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
         #  W640 - `user_text` is the caller's statement of which words the PERSON wrote. Only the floor
         #  reads it (a served model is given the whole prompt and nothing is duplicated into it); without
         #  it the floor attributes nothing to the person.
@@ -413,6 +434,9 @@ class NativeOrchestrator:
                              or f"NOT COUNTED - {name} served this and this platform reads no token count from "
                                 "it; null, never 0")
                 if out and out.strip():
+                    if name in ("anthropic", "openai") and _dc_checks is not None:   # W899 (FU-610) - what was sent
+                        _pf899 = _dc899.preflight(name)
+                        _dc_checks.append({"provider": name, "send": _pf899["send"], "why": _pf899["why"]})
                     _record_model(name, True, _t, tokens=_mt)    # learned: this model performed
                     _organism_report(name, True)         # §6×§8 (W278) — breaker heals on success
                     _fire("motor", f"native.{agent}", f"served by {name}", 0.5)
@@ -424,6 +448,8 @@ class NativeOrchestrator:
             except ResourceSkipped as sk:
                 # W458 — not attempted ≠ failed: annotate like the circuit-open skip, record NOTHING
                 tried[-1] = f"{name} ({sk.reason}, skipped)"
+                if isinstance(sk, DataClassRefused) and _dc_checks is not None:      # W899 (FU-610)
+                    _dc_checks.append({"provider": name, "send": False, "why": sk.reason})
                 continue
             except Exception:
                 _record_model(name, False, _t)           # error/timeout = failure
@@ -576,6 +602,7 @@ class NativeOrchestrator:
 
             return await asyncio.wait_for(_stream_generate(), timeout=budget)
         if name == "anthropic":
+            _dc_send899("anthropic")                   # W899 (FU-610) - the class of what it carries, first
             self._external_budget_check("anthropic")   # §6 (W335) — spend guard on the REAL spend path
             import anthropic
             client = anthropic.AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
@@ -584,6 +611,7 @@ class NativeOrchestrator:
                                                messages=[{"role": "user", "content": prompt}])
             return external_counted(msg.content[0].text, getattr(msg, "usage", None), "anthropic")   # W870
         if name == "openai":
+            _dc_send899("openai")                      # W899 (FU-610) - the class of what it carries, first
             self._external_budget_check("openai")      # §6 (W335) — spend guard on the REAL spend path
             from openai import AsyncOpenAI
             client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -1038,6 +1066,7 @@ class NativeOrchestrator:
             "planner": planner,
             "nodes": [{"id": nid, "role": by_id[nid]["role"], "depends_on": by_id[nid]["depends_on"],
                        "served_by": results[nid]["served_by"], "is_external": results[nid]["is_external"],
+                       "data_class": results[nid].get("data_class"),     # W899 (FU-610) - declared, and decided
                        "fabric": results[nid].get("fabric"),
                        "output": results[nid]["output"]} for nid in order if nid in results],
             "final": final,
@@ -1081,6 +1110,7 @@ class NativeOrchestrator:
             carry = res["output"]
             trace.append({"step": i + 1, "role": role, "served_by": res["served_by"],
                           **({"requested_model": requested} if requested != "auto" else {}),
+                          "data_class": res.get("data_class"),     # W899 (FU-610) - declared, and decided
                           "output": res["output"]})
         return {"agent": agent, "stages": len(stages), "trace": trace,
                 "final": carry, "any_external": external_used, "homeostasis": homeo}

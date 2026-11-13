@@ -11719,10 +11719,13 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P4.3",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W899",
       "note": "",
-      "slot_source": "P4.3 is the external-accelerant switch; its pre-flight is built by us and this is part of it"
+      "slot_source": "P4.3 is the external-accelerant switch; its pre-flight is built by us and this is part of it",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built as the row asked: agentic_core/ai/data_class.py names the classes a caller may declare (person_entered, legal_matter) and bars legal_matter, by the Owner's ruling of 2026-10-03c that the folder is never sent to any external service. The orchestrator's Anthropic and OpenAI calls and the stream's check the class before the provider's client is built. A call that declares nothing, a class the platform does not name, a barred class, or any call that read a document from the legal folder is not sent, and the floor answers. Every caller that can ask for an external model declares what it carries, and every reply says what was declared and decided. Driven over HTTP in test_w899 with the switch on in the test process only, a placeholder key and a fake client; 7 blinds. Which other classes are barred is the Owner's."
     },
     {
       "id": "FU-611",

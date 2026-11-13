@@ -135,6 +135,10 @@ def open_document(path: str) -> Dict[str, Any]:
                 "basis": f"REFUSED: {raw!r} is not a regular file inside the folder"}
     with open(real, "rb") as fh:        # read-only: nothing here writes, renames or deletes
         data = fh.read()
+    #  W899 (FU-610) - nothing the call that read it sends leaves the platform: the folder is never sent to any
+    #  external service. The mark is on this call's context, so it ends with the request that read the document
+    from agentic_core.ai.data_class import mark_legal_matter_read
+    mark_legal_matter_read(os.path.relpath(real, root))
     return {"opened": True, "refused": None, "document": os.path.relpath(real, root),
             "text": data.decode("utf-8", errors="replace"),
             "basis": "read-only, from inside the one named folder"}

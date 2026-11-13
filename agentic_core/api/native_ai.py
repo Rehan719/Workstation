@@ -1476,6 +1476,9 @@ class CompleteRequest(BaseModel):
     prefer_external: bool = False
     timeout: float = 30.0
     model: str = "auto"   # §6 model-tier preference: auto | native (force floor) | local (require Ollama)
+    #  W899 (FU-610) - what the prompt carries. Unset, it is what the person typed (person_entered). A caller that
+    #  declares legal_matter is never sent to an external service
+    data_class: str | None = None
 
 
 class EnsembleRequest(BaseModel):
@@ -1531,9 +1534,11 @@ async def native_complete(req: CompleteRequest):
                 "governance_checkpoint": _halt,
                 #  shape-complete with the orchestrator's reply: a refusal ran no model, so nothing counted
                 "model_tokens": None, "model_tokens_basis": REFUSED_TOKENS_BASIS}
-    res = await orchestrator.complete(req.prompt, agent=req.agent, timeout=req.timeout,
-                                      prefer_external=req.prefer_external, prefer=req.model,
-                                      user_text=(req.prompt or None))   # W651 (FU-675) - the console's own text
+    from agentic_core.ai import data_class as _dc899
+    with _dc899.declared(req.data_class or "person_entered"):          # W899 (FU-610) - what the prompt carries
+        res = await orchestrator.complete(req.prompt, agent=req.agent, timeout=req.timeout,
+                                          prefer_external=req.prefer_external, prefer=req.model,
+                                          user_text=(req.prompt or None))   # W651 (FU-675) - the console's own text
     res["governance_checkpoint"] = console_post_gate(req.agent, res.get("output", ""))
     return res
 
@@ -1576,8 +1581,10 @@ async def native_swarm(req: SwarmRequest):
                 "final": f"[CONSTITUTIONAL REFUSAL] {_halt.get('refused_reason')}", "governance_checkpoint": _halt}
     #  P3.30 (ledger v16 R4.17) - the context field is what the person typed on this console; the stage
     #  instructions may be the page's defaults and are not passed as theirs
-    res = await orchestrator.swarm(req.agent, stages, context=req.context, prefer_external=req.prefer_external,
-                                   user_text=((req.context or "").strip() or None))
+    from agentic_core.ai import data_class as _dc899
+    with _dc899.declared("person_entered"):                            # W899 (FU-610) - what the stages carry
+        res = await orchestrator.swarm(req.agent, stages, context=req.context, prefer_external=req.prefer_external,
+                                       user_text=((req.context or "").strip() or None))
     res["governance_checkpoint"] = console_post_gate(req.agent, str(res.get("final") or ""))
     return res
 
@@ -1923,9 +1930,11 @@ async def native_tree(req: TreeRequest):
     if _halt:
         return {"goal": req.goal, "nodes": [], "refused": True,
                 "final": f"[CONSTITUTIONAL REFUSAL] {_halt.get('refused_reason')}", "governance_checkpoint": _halt}
-    res = await orchestrator.orchestrate_tree(
-        req.goal, context=req.context, max_parallel=req.max_parallel,
-        prefer_external=req.prefer_external, timeout=req.timeout,
-        user_text=(req.goal or None))   # W803 (FU-983 R4[7]) - the goal the person typed
+    from agentic_core.ai import data_class as _dc899
+    with _dc899.declared("person_entered"):                            # W899 (FU-610) - what the nodes carry
+        res = await orchestrator.orchestrate_tree(
+            req.goal, context=req.context, max_parallel=req.max_parallel,
+            prefer_external=req.prefer_external, timeout=req.timeout,
+            user_text=(req.goal or None))   # W803 (FU-983 R4[7]) - the goal the person typed
     res["governance_checkpoint"] = console_post_gate("tree", str(res.get("final") or ""))
     return res

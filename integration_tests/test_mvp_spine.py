@@ -69716,7 +69716,7 @@ def test_w755_fu1124_a_stream_reaches_an_external_only_when_asked(monkeypatch):
     _plain = _run()
     assert _plain[-1].get("is_external") is False and not _calls, (
         "with the switch on, a stream that did not ask was served externally before the floor", _plain[-1], _calls)
-    _asked = _run(prefer_external=True)
+    _asked = _run(prefer_external=True, data_class="person_entered")     # W899 (FU-610) - what it carries
     assert _calls and _asked[-1].get("is_external") is True, (
         "a caller that asked for an external with the switch on was not served by one", _asked[-1], _calls)
 
@@ -69797,7 +69797,8 @@ def test_w757_fu1123_the_immune_sensor_hears_a_streamed_model_serve(monkeypatch)
     monkeypatch.setattr(_an, "AsyncAnthropic", _C)
 
     async def _go():
-        return [e async for e in _gw.stream_meta("w757: name one risk", agent="w757", prefer_external=True)]
+        return [e async for e in _gw.stream_meta("w757: name one risk", agent="w757", prefer_external=True,
+                                                 data_class="person_entered")]   # W899 (FU-610)
     _ev = asyncio.run(_go())
     assert _ev[-1].get("is_external") is True and "model:claude" in _seen, (
         "an external stream serve was not observed by the immune sensor", _seen, _ev[-1].get("served_by"))
@@ -74804,7 +74805,8 @@ def test_w869_a_stream_served_externally_counts_against_the_hourly_external_cap(
 
     def stream():
         async def _go():
-            return [ev async for ev in _g869.gateway.stream_meta("w869: name one risk", agent="w869", prefer_external=True)]
+            return [ev async for ev in _g869.gateway.stream_meta("w869: name one risk", agent="w869", prefer_external=True,
+                                                                 data_class="person_entered")]   # W899 (FU-610)
         return _aio869.run(_go())[-1]
 
     def circuit(p):
@@ -74927,8 +74929,10 @@ def test_w870_an_external_answer_is_counted_from_the_usage_its_server_reports(cl
             _sh870.record_success(p)
 
     #  2. the orchestrator's two external branches return the count their answers carry
-    a = _aio870.run(_o870.orchestrator._run_model("anthropic", "w870 prompt"))
-    o = _aio870.run(_o870.orchestrator._run_model("openai", "w870 prompt"))
+    from agentic_core.ai import data_class as _dc870
+    with _dc870.declared("person_entered"):          # W899 (FU-610) - an external call says what it carries
+        a = _aio870.run(_o870.orchestrator._run_model("anthropic", "w870 prompt"))
+        o = _aio870.run(_o870.orchestrator._run_model("openai", "w870 prompt"))
     assert (a, a.model_tokens) == ("w870 anthropic reply", 42) and (o, o.model_tokens) == ("w870 openai reply", 21)
 
     #  3. the stream's two external branches: the count is on the done frame and is the one the outcome row spends
@@ -74943,7 +74947,8 @@ def test_w870_an_external_answer_is_counted_from_the_usage_its_server_reports(cl
 
     def stream():
         async def _go():
-            return [ev async for ev in _g870.gateway.stream_meta("w870: name one risk", agent="w870", prefer_external=True)]
+            return [ev async for ev in _g870.gateway.stream_meta("w870: name one risk", agent="w870", prefer_external=True,
+                                                                 data_class="person_entered")]   # W899 (FU-610)
         return _aio870.run(_go())[-1]
     monkeypatch.setattr(_g870.gateway, "anthropic_key", "w870-placeholder-not-a-key")
     monkeypatch.setattr(_g870.gateway, "openai_key", None)
@@ -76681,3 +76686,186 @@ def test_w898_the_rate_limiter_takes_no_debt_from_a_clock_read_behind_its_last_r
     lim60 = _gw898._RateLimiter(60)
     waits = [lim60._reserve() for _ in range(61)]
     assert waits[:60] == [0.0] * 60 and 0.9 < waits[60] < 1.1, ("the limit no longer holds", waits[58:])
+
+
+def test_w899_fu610_an_external_call_declares_what_it_carries_and_a_barred_class_never_leaves(client, monkeypatch,
+                                                                                               tmp_path):
+    """FU-610 (W899). Every reply said THAT it was external, and never WHAT CLASS of data it carried, so no class could
+    be barred from leaving. A caller that can ask for an external model now declares the class of what it sends. The
+    check runs before the provider's client is built, and the reply says what was declared and what was decided. The
+    first barred class is the Owner's ruling that the legal-matter folder is never sent to any external service.
+    Driven with the switch on IN THIS PROCESS ONLY, a placeholder key and a fake client that records every call, so
+    no network call is made. The switch itself stays the Owner's."""
+    import ast
+    import asyncio
+    import importlib
+    import pathlib
+    import sys
+    import types
+    from agentic_core.ai import data_class as _dc
+    from agentic_core.ai import gateway as _g
+    from agentic_core.legal import bundle as _bundle
+    from agentic_core.organism.self_healing import self_healer as _sh
+    _o = importlib.import_module("agentic_core.ai.native.orchestrator")   # the MODULE (W734's note)
+    sent = []
+
+    class _Stream:
+        def __init__(self, **kw):
+            sent.append(("anthropic stream", kw["messages"][0]["content"]))
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *exc):
+            return False
+
+        @property
+        def text_stream(self):
+            async def _gen():
+                for t in ("w899 ", "external ", "reply."):
+                    yield t
+            return _gen()
+
+        async def get_final_message(self):
+            return types.SimpleNamespace(usage=None)
+
+    class _Messages:
+        async def create(self, **kw):
+            sent.append(("anthropic", kw["messages"][0]["content"]))
+            return types.SimpleNamespace(content=[types.SimpleNamespace(text="w899 external reply.")], usage=None)
+
+        def stream(self, **kw):
+            return _Stream(**kw)
+
+    class _Anthropic:
+        def __init__(self, api_key=None, **_k):
+            self.messages = _Messages()
+    fa = types.ModuleType("anthropic")
+    fa.AsyncAnthropic = _Anthropic
+    monkeypatch.setitem(sys.modules, "anthropic", fa)
+    monkeypatch.setenv("AI_ALLOW_EXTERNAL", "true")
+    monkeypatch.setenv("AI_DISABLE_LOCAL", "1")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "w899-placeholder-not-a-key")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.setattr(_o.NativeOrchestrator, "_external_calls", [])
+    #  the worker's own record of earlier calls decides nothing here: the order the registry gives stands
+    monkeypatch.setattr(_o, "_reorder_by_health", lambda order: order)
+    monkeypatch.setattr(_o, "_breaker_open", lambda name: False)
+    monkeypatch.setattr(_g.gateway, "anthropic_key", "w899-placeholder-not-a-key")
+    monkeypatch.setattr(_g.gateway, "openai_key", None)
+    if _sh.is_open("claude"):
+        _sh.record_success("claude")
+
+    def complete_http(**body):
+        r = client.post("/api/v1/native-ai/complete", json={"prompt": "w899: name one risk of a late delivery",
+                                                             "agent": "assistant", "prefer_external": True, **body})
+        assert r.status_code == 200, r.text[:300]
+        return r.json()
+
+    #  1. over HTTP: the console says what its prompt carries, so the call is sent, and the reply says what it declared
+    sent.clear()
+    r1 = complete_http()
+    assert [s[0] for s in sent] == ["anthropic"], ("the console's declared call was not sent", sent, r1.get("served_by"))
+    assert r1["served_by"] == "anthropic" and r1["is_external"] is True, r1.get("served_by")
+    d1 = r1["data_class"]
+    assert d1["declared"] == "person_entered" and d1["external"] == "sent", d1
+    assert d1["checks"] and d1["checks"][-1]["send"] is True and d1["barred"] == ["legal_matter"], d1
+
+    #  2. over HTTP: a call that declares the legal matter is not sent; the floor answers, and the reply says why
+    sent.clear()
+    r2 = complete_http(data_class="legal_matter")
+    assert sent == [], ("a call declaring the legal matter reached the external client", sent)
+    assert r2["is_external"] is False and r2["served_by"] == "native", r2.get("served_by")
+    d2 = r2["data_class"]
+    assert d2["declared"] == "legal_matter" and d2["external"] == "refused before transmission", d2
+    assert "2026-10-03c" in d2["checks"][0]["why"] and "never sent to any external service" in d2["checks"][0]["why"], d2
+    assert any(t.startswith("anthropic (not sent:") for t in r2["resources_tried"]), r2["resources_tried"]
+
+    #  3. a call that declares nothing is not sent: an external call must say what it carries
+    sent.clear()
+    r3 = asyncio.run(_o.orchestrator.complete("w899: name one risk", agent="w899", prefer_external=True))
+    assert sent == [] and r3["is_external"] is False, ("an undeclared call reached the external client", sent)
+    assert r3["data_class"]["declared"] is None, r3["data_class"]
+    assert "declared no data class" in r3["data_class"]["checks"][0]["why"], r3["data_class"]
+
+    #  4. nor is a call that declares a class this platform does not name
+    r4 = asyncio.run(_o.orchestrator.complete("w899: name one risk", agent="w899", prefer_external=True,
+                                              data_class="w899-not-a-class"))
+    assert sent == [] and "not a data class this platform names" in r4["data_class"]["checks"][0]["why"], r4["data_class"]
+
+    #  5. a call that read a document from the legal folder sends nothing, whatever it declared, and the mark ends
+    #     with that call: the next one, in its own context, is sent
+    folder = tmp_path / "w899-legal-matter"
+    folder.mkdir()
+    (folder / "letter.txt").write_text("w899: the meeting was moved to 3 May.\n", encoding="utf-8")
+    monkeypatch.setenv(_bundle.ENV_VAR, str(folder))
+
+    async def _read_then_ask():
+        o = _bundle.open_document("letter.txt")
+        assert o["opened"] is True, o
+        return await _o.orchestrator.complete(f"w899: summarise this: {o['text']}", agent="w899",
+                                              prefer_external=True, data_class="person_entered")
+    r5 = asyncio.run(_read_then_ask())
+    assert sent == [], ("a call that read the legal matter's folder reached the external client", sent)
+    assert r5["data_class"]["legal_matter_read"] is True and "letter.txt" in r5["data_class"]["checks"][0]["why"], (
+        r5["data_class"])
+    assert _dc.current() is None and _dc._LEGAL_READ.get() is None, "the mark outlived the call that read the document"
+    r5b = asyncio.run(_o.orchestrator.complete("w899: name one risk", agent="w899", prefer_external=True,
+                                               data_class="person_entered"))
+    assert [s[0] for s in sent] == ["anthropic"] and r5b["data_class"]["external"] == "sent", (sent, r5b["data_class"])
+
+    #  6. the stream checks the same way, and its terminal frame says what was declared and decided
+    def stream(**kw):
+        async def _go():
+            return [ev async for ev in _g.gateway.stream_meta("w899: name one risk", agent="w899",
+                                                              prefer_external=True, **kw)]
+        return asyncio.run(_go())[-1]
+    sent.clear()
+    s1 = stream(data_class="legal_matter")
+    assert sent == [] and s1["is_external"] is False, ("a stream declaring the legal matter was sent", sent, s1.get("served_by"))
+    assert s1["data_class"]["external"] == "refused before transmission", s1["data_class"]
+    assert "2026-10-03c" in s1["data_class"]["checks"][0]["why"], s1["data_class"]
+    s0 = stream()
+    assert sent == [] and s0["data_class"]["declared"] is None, (sent, s0["data_class"])
+    assert "declared no data class" in s0["data_class"]["checks"][0]["why"], s0["data_class"]
+    s2 = stream(data_class="person_entered")
+    assert [x[0] for x in sent] == ["anthropic stream"] and s2["is_external"] is True, (sent, s2.get("served_by"))
+    assert s2["data_class"]["declared"] == "person_entered" and s2["data_class"]["external"] == "sent", s2["data_class"]
+
+    #  7. every call in the platform that can ask for an external model declares what it carries: it passes
+    #     data_class, or it runs inside a declared(...) block. A pass-through (prefer_external handed on from the
+    #     enclosing function's own parameter) carries its caller's declaration, and the registry's ordering sends
+    #     nothing
+    root = pathlib.Path(__file__).resolve().parents[1] / "agentic_core"
+    undeclared, asks = [], 0
+    for f in sorted(root.rglob("*.py")):
+        src = f.read_text(encoding="utf-8")
+        if "prefer_external" not in src:
+            continue
+        tree = ast.parse(src)
+        covered, passed_on = set(), set()
+        for w in ast.walk(tree):
+            if isinstance(w, (ast.With, ast.AsyncWith)) and any(
+                    isinstance(it.context_expr, ast.Call)
+                    and getattr(it.context_expr.func, "attr", getattr(it.context_expr.func, "id", "")) == "declared"
+                    for it in w.items):
+                covered |= {id(n) for n in ast.walk(w)}
+            if isinstance(w, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                params = {a.arg for a in w.args.args + w.args.kwonlyargs}
+                for c in ast.walk(w):
+                    if isinstance(c, ast.Call) and any(
+                            k.arg == "prefer_external" and isinstance(k.value, ast.Name) and k.value.id in params
+                            for k in c.keywords):
+                        passed_on.add(id(c))
+        for c in ast.walk(tree):
+            if not isinstance(c, ast.Call) or "prefer_external" not in {k.arg for k in c.keywords}:
+                continue
+            fn = getattr(c.func, "attr", getattr(c.func, "id", ""))
+            if fn == "select" or id(c) in passed_on:
+                continue
+            asks += 1
+            if "data_class" in {k.arg for k in c.keywords} or id(c) in covered:
+                continue
+            undeclared.append(f"{f.relative_to(root.parent)}:{c.lineno} {fn}")
+    assert asks >= 6, ("the scan found fewer calls that can ask for an external model than the platform has", asks)
+    assert not undeclared, ("a call that can ask for an external model declares nothing", undeclared)

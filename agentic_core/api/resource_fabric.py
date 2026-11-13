@@ -1770,13 +1770,15 @@ async def _run_real_resource_handler(rid: str, config: dict, objective: str, dom
             _halt651 = _stage_pre_gate("native_orchestrator", _agent651)      # W651 (FU-683)
             if _halt651:
                 return _halt651
-            res = await orchestrator.complete(str(cfg.get("prompt") or objective),
-                                              agent=str(cfg.get("agent") or "fabric-composition"),
-                                              prefer_external=bool(cfg.get("prefer_external", False)),
-                                              prefer=str(cfg.get("model") or "auto"),
-                                              #  W641 - the run's objective is the person's; a saved
-                                              #  design prompt is not passed off as theirs
-                                              user_text=(objective or None))
+            from agentic_core.ai import data_class as _dc899
+            with _dc899.declared("person_entered"):    # W899 (FU-610) - what a person typed or saved in a design
+                res = await orchestrator.complete(str(cfg.get("prompt") or objective),
+                                                  agent=str(cfg.get("agent") or "fabric-composition"),
+                                                  prefer_external=bool(cfg.get("prefer_external", False)),
+                                                  prefer=str(cfg.get("model") or "auto"),
+                                                  #  W641 - the run's objective is the person's; a saved
+                                                  #  design prompt is not passed off as theirs
+                                                  user_text=(objective or None))
             return {**_reply_evidence(res.get('served_by')), "resource": "native_orchestrator", "ran": "/api/v1/native-ai/complete",
                     "governance_checkpoint": _stage_checkpoint(_agent651, res.get("output")),
                     "served_by": res.get("served_by"), "is_external": res.get("is_external"),
@@ -2615,9 +2617,11 @@ async def run_composition(cid: str, req: RunCompositionRequest,
                 #  P3.31 - a refused run from a specification says that NOTHING proposed was attempted
                 **({"specification": _refused_spec} if _spec is not None else {}),
                 "final": f"[CONSTITUTIONAL REFUSAL] {_halt.get('refused_reason')}", "governance_checkpoint": _halt}
-    res = await orchestrator.swarm("composition-run", stages, context=objective,
-                                   prefer_external=req.prefer_external, timeout=req.timeout,
-                                   user_text=(req.objective or None))   # W640 - the objective the person typed
+    from agentic_core.ai import data_class as _dc899
+    with _dc899.declared("person_entered"):            # W899 (FU-610) - what the composition's stages carry
+        res = await orchestrator.swarm("composition-run", stages, context=objective,
+                                       prefer_external=req.prefer_external, timeout=req.timeout,
+                                       user_text=(req.objective or None))   # W640 - the objective the person typed
     _gov_checkpoint = console_post_gate("composition-run", str(res.get("final") or ""))
     # §10/§8 — the combined run is gated by the living QMS + document-controlled under the QMS
     qa = await assure_delivery(res.get("final", ""), [r["name"] for r in comp["resources"]],
@@ -3339,9 +3343,11 @@ async def run_swarm(req: RunSwarmRequest, user: dict | None = Depends(get_curren
     #  living entity's grounding, which the person did not type, so it is not passed as theirs (the engine's
     #  own rule, W640). What they typed for THIS run is `req.context`, and that is what the floor is told is
     #  theirs; with none typed it is told nothing was said.
-    res = await orchestrator.swarm(req.agent, stages, context=context,
-                                   prefer_external=req.prefer_external, timeout=req.timeout,
-                                   user_text=((req.context or "").strip() or None))
+    from agentic_core.ai import data_class as _dc899
+    with _dc899.declared("person_entered"):            # W899 (FU-610) - what the saved swarm's stages carry
+        res = await orchestrator.swarm(req.agent, stages, context=context,
+                                       prefer_external=req.prefer_external, timeout=req.timeout,
+                                       user_text=((req.context or "").strip() or None))
     res["governance_checkpoint"] = console_post_gate(req.agent, str(res.get("final") or ""))
     _ms = int((time.time() - _t0) * 1000)
     # W509 (FU-009) — what genuinely served each stage, and what each stage ASKED for. A stage whose
