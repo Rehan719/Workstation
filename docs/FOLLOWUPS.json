@@ -15917,11 +15917,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.7",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W912",
       "note": "",
       "slot_source": "the Owner asked on 2026-10-11 that this work be added to the plan; it is the item chartered for it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built as the row asked: docs/business/PRODUCTION_HARDENING_BRIEF.md scopes the outside help a production deployment would need in ten separable parts (review, reproducible deployment, secrets and access, dependencies, backup and restore demonstrated, monitoring and incident response, limits, privacy and retention, rollback and shutdown, handover), each with what the tree has now, the evidence that would show the part done, and the criteria for choosing who does it. No supplier is named; it is a draft until the Owner ratifies it. test_w912 holds the parts, the business documents rules, and that every row it calls open is open."
     },
     {
       "id": "FU-813",

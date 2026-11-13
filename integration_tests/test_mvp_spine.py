@@ -77447,3 +77447,50 @@ def test_w911_fu399_a_beats_failed_steps_are_guarded_by_a_render_against_the_hea
     for key in ("beat", "phase", "actions", "steps_failed", "self_recovery", "realisation"):
         assert key in rec and key in fx_rec, ("the row reads a field the beat or the fixture does not have", key)
     assert isinstance(rec["steps_failed"], dict), rec["steps_failed"]
+
+
+def test_w912_fu812_the_production_hardening_brief_scopes_each_part_by_its_evidence():
+    """FU-812 (W912, plan item P5.7). No brief scoped the outside help a production deployment would need.
+    docs/business/PRODUCTION_HARDENING_BRIEF.md does, in ten separable parts. Each says what this tree has now, with
+    the file, route or row that shows it, and what evidence would show the part done. A last section gives the
+    criteria for choosing who does each part. It names no supplier, and it is a draft until the Owner ratifies it.
+    This guard holds the brief to that. It also holds it to what is true. Every row it calls open is open, so a row
+    closed later makes this fail until the part is read again. And it carries every business document's rules
+    (_w703_faults): labelled statements, named files, routes, rows and plan items that exist, and no figure or count
+    with no ruling behind it."""
+    import json
+    import pathlib
+    import re
+    from agentic_core import plan_followups as _fu
+    from agentic_core.app_mvp import app as _app912
+    root = pathlib.Path(__file__).resolve().parents[1]
+    text = (root / "docs/business/PRODUCTION_HARDENING_BRIEF.md").read_text(encoding="utf-8")
+    plan_slots = {i["slot"] for i in _fu.plan_items((root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8"))}
+    reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    routes = {(m, r.path) for r in _app912.routes for m in (getattr(r, "methods", None) or ())}
+    assert _w703_faults(text, root, plan_slots, {r["id"] for r in reg}, routes) == []
+
+    #  the ten parts, in order, each saying what would show it done
+    parts = ["Review", "Reproducible deployment", "Secrets and access", "Dependencies", "Backup and restore",
+             "Monitoring and incident response", "Limits", "Privacy and retention", "Rollback and shutdown", "Handover"]
+    heads = re.findall(r"^## (\d+)\. (.+)$", text, re.M)
+    assert [int(n) for n, _ in heads] == list(range(1, 11)), heads
+    for (n, title), want in zip(heads, parts):
+        assert title.startswith(want), (n, title, want)
+    sections = re.split(r"^## ", text, flags=re.M)
+    for sec in sections:
+        if re.match(r"\d+\. ", sec):
+            assert "- Done looks like this:" in sec, (sec.split("\n", 1)[0], "says nothing about what would show it done")
+    assert "\n## Choosing who does each part\n" in text
+
+    #  it names no supplier of the help: the vendors a hardening brief is usually written around are absent
+    for vendor in ("Sentry", "Datadog", "PagerDuty", "Snyk", "Cloudflare", "New Relic", "Pingdom", "UptimeRobot",
+                   "Grafana", "Splunk", "Dependabot", "Opsgenie", "Statuspage", "Vanta", "Drata"):
+        assert vendor.lower() not in text.lower(), (vendor, "a supplier is named before it has been checked")
+
+    #  what it says is open is open: a row closed since makes the part it rests on wrong until it is read again
+    status = {r["id"]: r["status"] for r in reg}
+    named = sorted(set(re.findall(r"row (FU-\d+)", text)))
+    assert named, "the brief rests on no register row"
+    closed = [rid for rid in named if rid != "FU-812" and status.get(rid) != "open"]
+    assert not closed, ("the brief calls a closed row open: read its part again", closed)
