@@ -77821,3 +77821,112 @@ def test_w917_fu609_the_fabric_page_shows_each_compositions_lifecycle_against_th
         assert live["lifecycle"]["expiry_recorded"]["recorded_by"] == SERVICE_IDENTITY
     finally:
         client.delete(f"/api/v1/resources/compositions/{cid}")
+
+
+def test_w918_fu742_the_file_stores_are_backed_up_verified_and_restored_byte_for_byte(tmp_path):
+    """FU-742 part 1 (W918). The founder's guide asks for backup and restore of the file stores. W912's brief
+    recorded that no backup script existed and no restore had ever been carried out. scripts/backup_stores.py
+    writes one archive of the data root, as the stores resolve it, with a manifest of each file's SHA-256. It checks
+    an archive against that manifest, and restores into an empty folder, checking every file before and after.
+
+    This guard runs the commands as a person would, in a subprocess, on whatever machine runs the suite (the Linux
+    suite and the Windows CI job). It uses a data root of stores that a round trip could get wrong: nested folders,
+    binary bytes, CRLF text and non-ASCII names. It proves:
+    - the round trip is byte for byte;
+    - a second restore into the same folder is refused and changes nothing;
+    - a changed archive fails its check and is not restored;
+    - a data root with no file, a destination inside the repository, and a store configured outside the data root
+      are each refused, with no archive written."""
+    import hashlib
+    import json
+    import os
+    import pathlib
+    import subprocess
+    import sys
+    import zipfile
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    tool = root / "scripts" / "backup_stores.py"
+    data, out, back = tmp_path / "data", tmp_path / "backups", tmp_path / "restored"
+    stores = {
+        "vsb_entities.json": b'{"vsb-918": {"name": "W918 round trip"}}',
+        "meta/gaas_v5_ueg.json": b'[{"seq": 1, "hash": "a"}]',
+        "projects/p-918/record.json": '{"note": "café, مرحبا"}'.encode("utf-8"),
+        "interactions.db": bytes(range(256)) * 64,
+        "uploads/résumé 918.txt": b"two\r\nlines\r\n",
+    }
+    for rel, body in stores.items():
+        p = data.joinpath(*rel.split("/"))
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_bytes(body)
+    env = {**os.environ, "DATA_DIR": str(data), "WORKSTATION_DATA_DIR": str(data), "PYTHONIOENCODING": "utf-8"}
+    for k in ("WORKSTATION_UEG_PATH", "PROJECTS_DIR"):
+        env.pop(k, None)
+
+    def run(*args, e=None):
+        return subprocess.run([sys.executable, str(tool), *args], cwd=str(root), env=e or env, capture_output=True,
+                              text=True, encoding="utf-8", errors="replace", timeout=300)
+
+    def files(folder):
+        return {p.relative_to(folder).as_posix(): p.read_bytes() for p in folder.rglob("*") if p.is_file()}
+
+    #  backup: one archive, its manifest hashing exactly the stores' bytes
+    r = run("backup", "--to", str(out))
+    assert r.returncode == 0, r.stdout + r.stderr
+    archives = sorted(out.glob("workstation-stores-*.zip"))
+    assert len(archives) == 1 and not list(out.glob("*.partial")), sorted(out.iterdir())
+    with zipfile.ZipFile(archives[0]) as z:
+        manifest = json.loads(z.read("MANIFEST.json").decode("utf-8"))
+    assert sorted(e["path"] for e in manifest["files"]) == sorted(stores)
+    for e in manifest["files"]:
+        assert (e["sha256"], e["bytes"]) == (hashlib.sha256(stores[e["path"]]).hexdigest(), len(stores[e["path"]]))
+    assert manifest["file_count"] == len(stores) and pathlib.Path(manifest["data_root"]) == data.resolve()
+
+    #  verify, then restore into an empty folder: byte for byte
+    r = run("verify", str(archives[0]))
+    assert r.returncode == 0 and f"verified {len(stores)} files" in r.stdout, r.stdout + r.stderr
+    r = run("restore", str(archives[0]), "--into", str(back))
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert files(back) == stores
+
+    #  a second restore into the same folder is refused, and nothing in it changes
+    back.joinpath("vsb_entities.json").write_bytes(b"changed after the restore")
+    held = files(back)
+    r = run("restore", str(archives[0]), "--into", str(back))
+    assert r.returncode == 2 and "is not empty" in r.stdout, r.stdout + r.stderr
+    assert files(back) == held
+
+    #  an archive changed since the backup fails its check, names the file, and is not restored
+    bad = tmp_path / "changed.zip"
+    with zipfile.ZipFile(archives[0]) as z, zipfile.ZipFile(bad, "w") as w:
+        for info in z.infolist():
+            w.writestr(info.filename, b"[]" if info.filename == "data/meta/gaas_v5_ueg.json" else z.read(info.filename))
+    r = run("verify", str(bad))
+    assert r.returncode == 1 and "changed since the backup: meta/gaas_v5_ueg.json" in r.stdout, r.stdout + r.stderr
+    r = run("restore", str(bad), "--into", str(tmp_path / "from-changed"))
+    assert r.returncode == 1 and not (tmp_path / "from-changed").exists(), r.stdout + r.stderr
+
+    #  refusals, each writing no archive
+    empty = tmp_path / "empty-root"
+    empty.mkdir()
+    r = run("backup", "--to", str(tmp_path / "b-empty"), e={**env, "DATA_DIR": str(empty), "WORKSTATION_DATA_DIR": str(empty)})
+    assert r.returncode == 2 and "holds no file" in r.stdout and not (tmp_path / "b-empty").exists(), r.stdout
+    inside = root / "w918-a-backup-must-not-land-here"
+    assert not inside.exists(), "the folder this guard names is already there; it removes only its own"
+    try:
+        r = run("backup", "--to", str(inside))
+        landed = inside.exists()
+    finally:
+        if inside.exists():                     # what a broken refusal wrote is not left in the working tree
+            import shutil
+            shutil.rmtree(inside)
+    assert r.returncode == 2 and "inside the repository" in r.stdout and not landed, r.stdout
+    r = run("backup", "--to", str(tmp_path / "b-trail"), e={**env, "WORKSTATION_UEG_PATH": str(tmp_path / "elsewhere" / "ueg.json")})
+    assert r.returncode == 2 and "WORKSTATION_UEG_PATH" in r.stdout and not (tmp_path / "b-trail").exists(), r.stdout
+    r = run("backup", "--to", str(data / "backups"))
+    assert r.returncode == 2 and "inside the data root" in r.stdout and not (data / "backups").exists(), r.stdout
+
+    #  the brief says what exists now, and what still does not
+    brief = (root / "docs/business/PRODUCTION_HARDENING_BRIEF.md").read_text(encoding="utf-8")
+    assert "No backup script exists" not in brief and "`scripts/backup_stores.py`" in brief
+    assert "No backup is taken on a schedule, no copy leaves the machine" in brief

@@ -38,7 +38,8 @@ anything. The deploy itself is plan item P4.5, and the switch is the Owner's.
 
 ## 5. Backup and restore, demonstrated
 
-- Every store is a file under one data root (`agentic_core/store_paths.py`). No backup script exists, and no restore has ever been carried out. [observed]
+- Every store is a file under one data root (`agentic_core/store_paths.py`). `scripts/backup_stores.py` writes one archive of the data root with a SHA-256 manifest, checks an archive against it, and restores into an empty folder, checking every file it wrote. Its guard runs that round trip in the suite on Linux and on the Windows CI job. [observed]
+- No backup is taken on a schedule, no copy leaves the machine, and no restore onto a clean machine has been timed. [observed]
 - A database is plan item P4.4, and its migration dry-run and rollback have not been started: row FU-284. [observed]
 - Done looks like this: a backup taken on a schedule, a restore onto a clean machine timed and recorded, and the suite run against the restored data. A backup that has never been restored is not counted. [inference]
 
