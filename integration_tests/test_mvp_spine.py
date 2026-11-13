@@ -16781,7 +16781,8 @@ def test_w471_board_pack_and_chiefs_opening_are_honest_both_ways(client, monkeyp
     # is what the row asked for: the Cockpit had no form at all because W471 wired it into this page only.
     # These assertions follow it, and add the thing that matters now — that BOTH pages render it.
     comp = (root.parent / "components/PlanOpening.tsx").read_text(encoding="utf-8")
-    assert "fetch('/api/v1/business-plan/set'" in comp and 'data-testid="plan-owner-edit"' in comp
+    #  W988 (FU-399 part 20) - the save goes through apiJson, so a refused edit says the server's reason
+    assert "apiJson('/api/v1/business-plan/set'" in comp and 'data-testid="plan-owner-edit"' in comp
     assert "provenanceMapBadge(sb)" in comp and 'data-testid="plan-pending"' in comp
     assert "plan-owner-edited-${k}" in comp, "the per-field owner-edited marker is gone"
     assert "clear = OPENING.map(([k]) => k).filter(k => !edit[k].trim()" in comp
@@ -16789,7 +16790,7 @@ def test_w471_board_pack_and_chiefs_opening_are_honest_both_ways(client, monkeyp
     ck = (root / "enterprise/VSBCockpit.tsx").read_text(encoding="utf-8")
     for _pg, _src in (("BusinessPlan.tsx", bp), ("VSBCockpit.tsx", ck)):
         assert "<PlanOpening" in _src, f"{_pg} does not render the shared owner-edit surface"
-        assert "fetch('/api/v1/business-plan/set'" not in _src, \
+        assert "'/api/v1/business-plan/set'" not in _src, \
             f"{_pg} kept its own copy of the save — that drift is what FU-074 is about"
     gj = (root / "synthesis/GenesisJourney.tsx").read_text(encoding="utf-8")
     assert "provenanceMapBadge(pack.ai_provenance.served_by" in gj and 'data-testid="pack-version"' in gj
@@ -82967,3 +82968,61 @@ def test_w987_fu399_the_transformation_dashboard_says_each_refusal_and_names_eac
     fx = json.loads((pdir / "TransformationDashboard.fixture.json").read_text(encoding="utf-8"))
     assert set(fx["runs"]) == set(h), sorted(set(fx["runs"]) ^ set(h))
     assert fx["runs"]["unreadable"] == 1 and fx["runs"]["unreadable_records"][0]["error"] == "JSONDecodeError"
+
+
+def test_w988_fu399_the_business_plan_measures_no_progress_over_no_objective_and_says_each_refusals_reason(client, monkeypatch, tmp_path):
+    """FU-399 part 20 (W988). The Business Plan page shows a scope's living plan: its opening with the Owner's edits,
+    the strategic layer and the action plan, the living cadence, the roadmap, and the objectives with their reviews.
+    BusinessPlan.test.tsx mounts the real page against the answers its routes gave on a fresh store, and has the server
+    refuse each action and the plan's own read. Rendering it found three defects, fixed:
+    - a plan with no objective showed "0% overall objective progress · 0 objectives", a mean over nothing printed as a
+      measurement; it now says there is no progress to measure;
+    - a refused objective, review or Owner edit said only its status and dropped the server's reason (the plan file it
+      could not read, the objective it did not hold, the field whose text was the floor's pending marker); each goes
+      through apiJson and says the reason. The opening's edit form is shared with the Cockpit's plan tab;
+    - a plan that cannot be read whole was refused with the store's sentence, which already ends "nothing was written",
+      and the plan route and the cadence refresh route each appended "and nothing was written" again.
+    Held here, driven on this test's own plan folder: both refusals of a plan cut off mid-write; and the page's code."""
+    import json
+    import pathlib
+    import re
+    from agentic_core.api import business_plan as _bp
+    monkeypatch.setattr(_bp, "_STORE", tmp_path / "business_plans")
+    _bp._path("workstation").write_text('{"scope": "workstation", "objectives": [{"id": "obj-', encoding="utf-8")
+    g = client.get("/api/v1/business-plan?scope=workstation")
+    assert g.status_code == 503, g.text
+    d = g.json()["detail"]
+    assert d.startswith("workstation.json could not be read whole (") and d.count("nothing was written") == 1, d
+    assert "— the business plan was NOT read. Fix or restore the file; it is never replaced with an empty plan." in d, d
+    c = client.post("/api/v1/organism/cadence/refresh?scope=workstation&layer=strategic&force=true")
+    assert c.status_code == 503, c.text
+    cd = c.json()["detail"]
+    assert cd.count("nothing was written") == 1 and " - the plan was NOT read. A tolerant read here" in cd, cd
+    assert _bp._path("workstation").read_text(encoding="utf-8").endswith('"obj-'), "the cut-off plan was rewritten"
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = root / "apps/workstation-superapp/src"
+    pdir = src / "pages/enterprise"
+    page = (pdir / "BusinessPlan.tsx").read_text(encoding="utf-8")
+    opening = (src / "components/PlanOpening.tsx").read_text(encoding="utf-8")
+    t = (pdir / "BusinessPlan.test.tsx").read_text(encoding="utf-8")
+    assert "import { BusinessPlan } from './BusinessPlan';" in t and "<BusinessPlan />" in t
+    read = set(re.findall(r"ByTestId\('([^']+)'\)", t))
+    assert {"plan-overall", "plan-action-error", "plan-owner-edit-open", "plan-owner-edit-save",
+            "plan-unreadable"} <= read, sorted(read)
+    assert "getByLabelText('Mission')" in t and "['mission', 'Mission']," in opening   # the field, by its own label
+    for tid in read:
+        assert f'data-testid="{tid}"' in page or f'data-testid="{tid}"' in opening, tid
+    code, ocode = _code_only(page), _code_only(opening)
+    assert "/ objectives.length) : null;" in code and "{overall !== null ? (" in code
+    assert "No objective is recorded on this plan yet, so there is no progress to measure." in code
+    assert "objective{objectives.length === 1 ? '' : 's'}" in code and "{plan.objectives.length} objectives" not in code
+    assert "await apiJson('/api/v1/business-plan/objective', { method: 'POST', body: { scope, ...newObj } });" in code
+    assert "setActErr(`The objective was NOT saved: ${errorMessage(e)}`)" in code
+    assert "setActErr(`The review was NOT recorded: ${errorMessage(e)}`)" in code
+    assert "Objective not saved (HTTP" not in code and "Review not recorded (HTTP" not in code
+    assert "await apiJson('/api/v1/business-plan/set', { method: 'POST', body });" in ocode
+    assert "onError?.(`The owner edit was NOT saved: ${errorMessage(e)}`);" in ocode and "Owner edit not saved (HTTP" not in ocode
+    fx = json.loads((pdir / "BusinessPlan.fixture.json").read_text(encoding="utf-8"))
+    assert fx["plan_unreadable"]["status"] == 503 and fx["plan_unreadable"]["body"]["detail"].count("nothing was written") == 1
+    assert fx["plan_empty"]["objectives"] == [] and len(fx["plan_one"]["objectives"]) == 1

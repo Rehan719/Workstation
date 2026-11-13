@@ -20,7 +20,7 @@
 import React, { useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Crown, PenLine, CheckCircle2, Loader2 } from 'lucide-react';
-import { provenanceMapBadge } from '../lib/api';
+import { provenanceMapBadge, apiJson, errorMessage } from '../lib/api';
 import { RatifiedPlanEntry } from './RatifiedPlanEntry';
 
 export interface PlanProvenanceShape {
@@ -97,14 +97,13 @@ export const PlanOpening: React.FC<Props> = ({ plan, scope, onSaved, fields = AB
       const v = edit[k].trim();
       if (v && v !== (((plan as any)[k] as string) || '')) body[k] = v;
     });
+    //  W988 (FU-399 part 20) - a refused edit said "Owner edit not saved (HTTP 422)" and dropped the server's
+    //  reason, which names the field to change ("mission: the floor's pending marker is not an owner's edit")
     try {
-      const r = await fetch('/api/v1/business-plan/set', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
-      });
-      if (!r.ok) onError?.(`Owner edit not saved (HTTP ${r.status})`);
-      else setEdit(null);
-    } catch {
-      onError?.('Backend unreachable — the owner edit was NOT saved');
+      await apiJson('/api/v1/business-plan/set', { method: 'POST', body });
+      setEdit(null);
+    } catch (e) {
+      onError?.(`The owner edit was NOT saved: ${errorMessage(e)}`);
     }
     setSaving(false);
     onSaved();

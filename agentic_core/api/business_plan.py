@@ -76,8 +76,9 @@ def _load_or_503(scope: str) -> Dict[str, Any]:
     try:
         return _load(scope)
     except StoreUnavailable as e:
+        #  W988 (FU-399 part 20) - the store's own sentence already ends "nothing was written"; the page showed it twice
         raise HTTPException(status_code=503, detail=(
-            f"{e} — the business plan was NOT read and nothing was written. Fix or restore the file; "
+            f"{e} — the business plan was NOT read. Fix or restore the file; "
             f"it is never replaced with an empty plan."))
 
 

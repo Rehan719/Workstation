@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
 import { Target, Loader2, Sparkles, Plus, CheckCircle2, Clock, AlertCircle, Crown, PenLine } from 'lucide-react';
-import { provenanceMapBadge, provenanceMapFromTrace, bodyOrNull } from '../../lib/api';
+import { provenanceMapBadge, provenanceMapFromTrace, bodyOrNull, apiJson, errorMessage } from '../../lib/api';
 import { PlanOpening } from '../../components/PlanOpening';   // W505 (FU-074) — one component, both pages
 import { CadencePanel } from '../../components/CadencePanel';   // W620 (FU-492)
 
@@ -98,24 +98,25 @@ export const BusinessPlan: React.FC = () => {
     } catch { setActErr('Backend unreachable — nothing changed'); }
     setBusy(false);
   };
+  //  W988 (FU-399 part 20) - A REFUSAL SAYS THE SERVER'S REASON. These said only the status ("Objective not saved
+  //  (HTTP 503)", "Review not recorded (HTTP 404)") and dropped what the server said: the plan file it could not
+  //  read, the objective it did not hold. apiJson carries the reason; an unreachable server is said as that.
   const addObjective = async () => {
     if (!newObj.title.trim()) return;
     setBusy(true);
     setActErr('');
     try {
-      const r = await fetch('/api/v1/business-plan/objective', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope, ...newObj }) });
-      if (r.ok) setNewObj({ title: '', kpi: '', timeline: '', owner_role: 'AI CEO' });   // the typed objective survives an error
-      else setActErr(`Objective not saved (HTTP ${r.status})`);
-      await load();
-    } catch { setActErr('Backend unreachable — the objective was NOT saved'); }
+      await apiJson('/api/v1/business-plan/objective', { method: 'POST', body: { scope, ...newObj } });
+      setNewObj({ title: '', kpi: '', timeline: '', owner_role: 'AI CEO' });   // the typed objective survives an error
+    } catch (e) { setActErr(`The objective was NOT saved: ${errorMessage(e)}`); }
+    await load();
     setBusy(false);
   };
   const review = async (oid: string, progress_pct: number, status: string) => {
     setActErr('');
     try {
-      const r = await fetch(`/api/v1/business-plan/objective/${oid}/review`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope, progress_pct, status }) });
-      if (!r.ok) setActErr(`Review not recorded (HTTP ${r.status})`);
-    } catch { setActErr('Backend unreachable — the review was NOT recorded'); }
+      await apiJson(`/api/v1/business-plan/objective/${oid}/review`, { method: 'POST', body: { scope, progress_pct, status } });
+    } catch (e) { setActErr(`The review was NOT recorded: ${errorMessage(e)}`); }
     load();
   };
   const orchestrate = async (oid: string) => {
@@ -144,11 +145,12 @@ export const BusinessPlan: React.FC = () => {
   };
 
   const objectives = plan?.objectives || [];      // W488 — never index into a body the API refused to give
-  const overall = objectives.length ? Math.round(objectives.reduce((s, o) => s + o.progress_pct, 0) / objectives.length) : 0;
+  //  W988 - a mean over no objective is not a measurement: null, and the page says there is nothing to measure
+  const overall = objectives.length ? Math.round(objectives.reduce((s, o) => s + o.progress_pct, 0) / objectives.length) : null;
 
   return (
     <div className="space-y-10 pb-24">
-      {actErr && <p className="text-vital text-xs font-bold">{actErr}</p>}
+      {actErr && <p className="text-vital text-xs font-bold" data-testid="plan-action-error">{actErr}</p>}
       {/* W488 — the plan could not be read: say which file and that nothing was written, never a blank page */}
       {planErr && (
         <Card className="p-6 border-vital/50 bg-vital/5" data-testid="plan-unreadable">
@@ -256,9 +258,16 @@ export const BusinessPlan: React.FC = () => {
                 <div className="flex flex-wrap gap-2">{plan.aims.map((a, i) => <span key={i} className="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 text-[10px] font-bold">{a}</span>)}</div>
               </div>
             )}
-            <div className="flex items-end gap-3 mt-5 pt-4 border-t border-highlight/20">
-              <span className="text-3xl font-black text-emerald-400">{overall}%</span>
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">overall objective progress · {plan.objectives.length} objectives</span>
+            {/* W988 (FU-399 part 20) - with no objective this printed "0% overall objective progress · 0 objectives" */}
+            <div className="flex items-end gap-3 mt-5 pt-4 border-t border-highlight/20" data-testid="plan-overall">
+              {overall !== null ? (
+                <>
+                  <span className="text-3xl font-black text-emerald-400">{overall}%</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">overall objective progress · {objectives.length} objective{objectives.length === 1 ? '' : 's'}</span>
+                </>
+              ) : (
+                <span className="text-[11px] font-bold text-slate-500">No objective is recorded on this plan yet, so there is no progress to measure.</span>
+              )}
             </div>
           </Card>
 

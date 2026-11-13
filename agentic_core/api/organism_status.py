@@ -867,6 +867,7 @@ async def organism_cadence_refresh(layer: str, scope: str = "workstation",
     try:
         return _cad.refresh(scope, layer, signal=signal, force=force)
     except StoreUnavailable as e:
+        #  W988 - the store's own sentence already ends "nothing was written"; it is not said twice
         raise HTTPException(status_code=503, detail=(
-            f"{e} - the plan was NOT read and nothing was written. A tolerant read here would hand this "
+            f"{e} - the plan was NOT read. A tolerant read here would hand this "
             f"route a fresh empty plan and the write would replace the real one."))
