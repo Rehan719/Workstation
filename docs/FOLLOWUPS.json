@@ -23785,11 +23785,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W938",
       "note": "",
       "slot_source": "P5.4's own ACCEPT clause",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W938. generate_vsb_repo writes RUN.md from what is on disk: one command (Python's own static server, run from the repository's folder, so the surfaces' links to each other resolve) and the page to open for each generated surface, or that it has not been generated; it says none of the three is a server-side app and nothing is deployed. Driving a clone found the website's links to the two apps dead when they were not generated; such an app now has a placeholder page at that link, saying so, a scaffold in the manifest's parts and never written over a generated app. test_w938 clones the repository with git into a clean folder, serves it by RUN.md's own command on a free port, and reads every page RUN.md names (the clone's own bytes) and every relative link on every page reached; again for an entity with only its website generated."
     }
   ],
   "routes": [

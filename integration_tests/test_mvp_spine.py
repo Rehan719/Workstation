@@ -79283,3 +79283,117 @@ def test_w937_p54_the_board_pack_is_in_the_repository_and_the_manifest_says_whic
     assert mb.status_code == 200, mb.text[:300]
     pb = {p["path"]: p for p in mb.json()["parts"]}
     assert pb["BUSINESS_PLAN.md"]["part"] == "template" and "not a business plan" in pb["BUSINESS_PLAN.md"]["part_says"]
+
+
+def test_w938_p54_a_clean_clone_of_the_entity_repository_serves_its_own_pages_by_its_own_instruction(client, tmp_path):
+    """P5.4 part 3 (W938, row FU-1184). ACCEPT: 'a clean clone is booted BY A GUARD and serves its own pages'.
+    Measured: nothing cloned the repository and served it, and the repository carried no instruction a person could
+    follow to run it without this platform. Driving a clone found that the website's links to the two apps (sibling
+    folders, W627) were dead when the apps had not been generated. Driven here:
+    - an entity's website, web app and phone app are generated, then its repository; RUN.md gives one command and
+      the page to open for each surface, and says none of them is a server-side app;
+    - the repository is cloned with git into a clean folder and served there by that command (on a free port, with
+      this Python): each page RUN.md names answers with the clone's own bytes, every relative link on every page
+      answers, and each app's data names the entity;
+    - an entity with only its website generated: every link on its pages still answers, the apps' links landing on
+      placeholder pages that say the app has not been generated, and RUN.md says so too;
+    - RUN.md is the platform's layout, and a placeholder page a scaffold, in the manifest's parts."""
+    import json
+    import pathlib
+    import posixpath
+    import re
+    import shutil
+    import socket
+    import subprocess
+    import sys
+    import time
+    import urllib.request
+
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))    # a local server is never reached by proxy
+
+    def entity(name):
+        r = client.post("/api/v1/genesis/establish", json={"problem": f"w938 {name}", "name": name, "ship_output": False,
+                                                            "concept": f"{name}: a repair co-op for one estate",
+                                                            "design": "d", "commercialisation": "m"})
+        assert r.status_code == 200, r.text[:300]
+        return r.json()["vsb_id"]
+
+    def serve_clone(vid, surfaces):
+        for s in surfaces:
+            g = client.post(f"/api/v1/vsb/{vid}/{s}")
+            assert g.status_code == 200, (s, g.text[:300])
+        m = client.post(f"/api/v1/vsb/{vid}/repo").json()
+        assert m["version_control"]["mechanism"] == "git" and shutil.which("git"), (
+            "the repository was not committed with git here, so the clean clone this guard exists for cannot be made")
+        clone = tmp_path / vid
+        r = subprocess.run(["git", "clone", "-q", m["repo_root"], str(clone)], capture_output=True, text=True, timeout=120)
+        assert r.returncode == 0, r.stderr[:300]
+        return m, clone
+
+    def crawl(clone, run):
+        """Serve the clone by RUN.md's own command, from its folder; read every page it names and every link."""
+        cmd = re.findall(r"(?m)^    python3 -m http\.server (\d+)$", run)
+        assert len(cmd) == 1, run
+        named = re.findall(r"http://localhost:" + cmd[0] + r"/(\S+?)\.?(?:\s|$)", run)
+        with socket.socket() as s:
+            s.bind(("127.0.0.1", 0))
+            port = s.getsockname()[1]
+        server = subprocess.Popen([sys.executable, "-m", "http.server", str(port), "--bind", "127.0.0.1"], cwd=str(clone),
+                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+        def get(path):
+            with opener.open(f"http://127.0.0.1:{port}/{path}", timeout=10) as resp:
+                return resp.status, resp.read()
+        try:
+            deadline = time.time() + 20
+            while True:
+                try:
+                    get("")
+                    break
+                except Exception:                                        # noqa: BLE001 - not listening yet
+                    assert time.time() < deadline, "the clone's server never answered"
+                    time.sleep(0.2)
+            seen, todo = set(), [p for p in named if p.endswith(".html")] + ["web/index.html"]
+            for page in named:
+                status, body = get(page)
+                assert status == 200 and body == (clone / page).read_bytes(), (page, status)
+            while todo:
+                page = todo.pop()
+                if page in seen:
+                    continue
+                seen.add(page)
+                status, body = get(page)
+                assert status == 200, (page, status)
+                for link in re.findall(r'(?:href|src)="([^"#:?]+)"', body.decode("utf-8", "replace")):
+                    target = posixpath.normpath(posixpath.join(posixpath.dirname(page), link))
+                    assert get(target)[0] == 200, (page, link)
+                    if target.endswith(".html"):
+                        todo.append(target)
+            return named, seen, get
+        finally:
+            server.terminate()
+            server.wait(timeout=10)
+
+    vid = entity("W938 Served")
+    m, clone = serve_clone(vid, ("website", "webapp", "mobile"))
+    run = (clone / "RUN.md").read_text(encoding="utf-8")
+    assert "none of them is a server-side app, and nothing here is deployed" in run
+    assert {p["path"]: p["part"] for p in m["parts"]}["RUN.md"] == "layout"
+    named, seen, _ = crawl(clone, run)
+    assert named == ["web/index.html", "webapp/index.html", "mobile/index.html"], named
+    assert {"web/about.html", "web/solution.html", "webapp/index.html", "mobile/index.html"} <= seen, sorted(seen)
+    for app in ("webapp", "mobile"):
+        assert "W938 Served" in (clone / app / "data.json").read_text(encoding="utf-8"), app
+    assert "has not been generated" not in (clone / "webapp" / "index.html").read_text(encoding="utf-8")
+
+    #  only the website generated: the apps' links land on pages that say so, and RUN.md says so too
+    only = entity("W938 Website Only")
+    m2, clone2 = serve_clone(only, ("website",))
+    run2 = (clone2 / "RUN.md").read_text(encoding="utf-8")
+    assert run2.count("has not been generated yet") == 2 and "http://localhost:8000/web/index.html" in run2, run2
+    named2, seen2, _ = crawl(clone2, run2)
+    assert named2 == ["web/index.html"] and {"webapp/index.html", "mobile/index.html"} <= seen2, (named2, sorted(seen2))
+    for app in ("webapp", "mobile"):
+        assert "has not been generated yet" in (clone2 / app / "index.html").read_text(encoding="utf-8")
+    parts2 = {p["path"]: p["part"] for p in m2["parts"]}
+    assert (parts2["webapp/index.html"], parts2["mobile/index.html"]) == ("scaffold", "scaffold")

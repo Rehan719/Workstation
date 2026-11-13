@@ -351,6 +351,15 @@ def _build_repo_files(vsb: dict) -> dict:
                              "entity. Spec → scaffold; built in a later increment (not a compiled app).\n")
     f["mobile/manifest.webmanifest"] = json.dumps({"name": name, "short_name": str(name or "VSB")[:12],
                                                     "start_url": "/", "display": "standalone"}, indent=2)
+    #  W938 (P5.4) - the website links to the web app and the phone app as its siblings (W627); until one is
+    #  generated, its link lands on a page that says so instead of on a file that is not there
+    for _folder, _label in (("webapp", "Web app"), ("mobile", "Phone app")):
+        f[f"{_folder}/index.html"] = (
+            f"<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
+            f"<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
+            f"<title>{_esc(name)} - {_label}</title></head><body><h1>{_esc(name)} - {_label}</h1>"
+            f"<p>The {_label.lower()} has not been generated yet. This page is a placeholder in the entity's "
+            f"repository.</p><p><a href=\"../web/index.html\">Website</a></p></body></html>")
     return f
 
 
@@ -557,11 +566,35 @@ _PART_SAYS = {
     "record": "a record of this generation of the repository, not part of the entity",
     "unknown": "not written by Workstation's generators, so what it is is not known",
 }
-_LAYOUT_FILES = ("README.md", "ORGANISATION.md", "OPERATIONS.md", "EVIDENCE.md", "resources/cascades.json")
+_LAYOUT_FILES = ("README.md", "ORGANISATION.md", "OPERATIONS.md", "EVIDENCE.md", "resources/cascades.json",
+                 "RUN.md")   # W938 (P5.4)
+#  W938 (P5.4) - WHAT EACH SURFACE IS, WHERE IT OPENS, AND A WORD ON HOW. One static server from the repository's
+#  folder serves all three, so the links between them resolve.
+_RUN_PORT = 8000
+_RUN_SURFACES = (("website", "web/index.html", "Its pages link to each other and to the two apps."),
+                 ("webapp", "webapp/index.html", "It reads data.json, so it is served rather than opened as a file."),
+                 ("mobile", "mobile/index.html", "Open it in a phone's browser to install it as an app."))
+
+
+def _run_instruction(name: str, generated: Dict[str, bool]) -> str:
+    """RUN.md: how this repository runs on its own, said from what is on disk."""
+    out = [f"# Running {name} on its own\n",
+           "This repository needs nothing from Workstation to be read or run. Its website is static pages, and its web "
+           "app and phone app run in a browser: none of them is a server-side app, and nothing here is deployed.\n",
+           "From this repository's folder, serve it with Python's own static server:\n",
+           f"    python3 -m http.server {_RUN_PORT}\n"]
+    for surface, page, note in _RUN_SURFACES:
+        label = _SURFACE_NAMES[surface]
+        if generated.get(surface):
+            out.append(f"- The {label}: open http://localhost:{_RUN_PORT}/{page}. {note}")
+        else:
+            out.append(f"- The {label} has not been generated yet: {page} is a placeholder page that says so.")
+    return "\n".join(out) + "\n"
 _OWN_FILES = ("IDENTITY.md", "genome.json")
 _SURFACES = {"web": "website", "webapp": "webapp", "mobile": "mobile"}
 _SURFACE_NAMES = {"website": "website", "webapp": "web app", "mobile": "phone app"}
-_SCAFFOLD_FILES = ("web/index.html", "webapp/README.md", "mobile/README.md", "mobile/manifest.webmanifest")
+_SCAFFOLD_FILES = ("web/index.html", "webapp/README.md", "mobile/README.md", "mobile/manifest.webmanifest",
+                   "webapp/index.html", "mobile/index.html")   # W938 - the placeholder pages the website links to
 #  a pack's per-assembly fields: its quality record is sealed per assembly, and when it was assembled is not its content
 _PACK_PER_ASSEMBLY = ("generated_at", "unchanged", "quality_assurance", "narrative_record_hash", "owner_id")
 
@@ -624,7 +657,8 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
                   "webapp": (root / "webapp" / "app.json").exists(),
                   "mobile": (root / "mobile" / "app.json").exists()}
     for _scaffold, _surface in (("web/index.html", "website"), ("webapp/README.md", "webapp"),
-                                ("mobile/README.md", "mobile"), ("mobile/manifest.webmanifest", "mobile")):
+                                ("mobile/README.md", "mobile"), ("mobile/manifest.webmanifest", "mobile"),
+                                ("webapp/index.html", "webapp"), ("mobile/index.html", "mobile")):   # W938
         if _generated[_surface]:
             files.pop(_scaffold, None)
             #  W667 (ledger v16 R2.4) - dropping the placeholder from THIS write left the one an earlier write
@@ -682,6 +716,8 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
         _data = content.encode("utf-8")
         fp.write_bytes(_data)
         written.append({"path": path, "bytes": len(_data)})
+    #  W938 (P5.4) - THE REPOSITORY SAYS HOW IT RUNS ON ITS OWN, from what is on disk now
+    (root / "RUN.md").write_bytes(_run_instruction(vsb.get("name") or vsb_id, _generated).encode("utf-8"))
     #  W937 (P5.4) - THE BOARD PACK IS IN THE REPOSITORY IT IS PART OF: the latest assembled pack, in the fields that
     #  describe its content and version. Its per-assembly quality record and timestamps stay on the platform, so an
     #  unchanged pack assembled again leaves the repository's version where it was.
