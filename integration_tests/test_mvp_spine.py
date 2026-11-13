@@ -77379,3 +77379,39 @@ def test_w909_fu399_the_metabolic_card_is_guarded_by_a_render_against_the_apis_o
     assert set(fx["status"]["systems"]) <= set(live.json()["systems"])
     cog = client.get("/api/v1/native-ai/homeostasis").json()
     assert "organism" in fx["homeostasis"] and "organism" in cog, "the page keeps the cognition answer only with organism"
+
+
+def test_w910_fu399_the_capital_funds_figures_are_guarded_by_a_render_against_the_apis_own_answers(client):
+    """FU-399 part 3 (W910). Ledger v17 FU-977's fix, that the Capital Fund page prints the pool's seed split and the
+    health basis, was held by a scan of the page's source. What a person sees on the page is a claim about what is
+    RENDERED. CapitalDashboard.test.tsx mounts the real page against the four answers it reads, captured from the
+    app's routes, and reads the figures in the DOM: each basis beside its figure, the two chips that say the store
+    could not be read whole, and no contributed line when the API states no figure. Five page blinds each turn it
+    red, run by the round as it runs tsc. This guard holds what the render rests on. The test mounts the real page.
+    The fixture's fund answer holds only fields the live route still answers. Every field the page reads is in it,
+    so a renamed field is not hidden behind a frozen answer."""
+    import json
+    import pathlib
+    page_dir = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/pages/enterprise"
+    t = (page_dir / "CapitalDashboard.test.tsx").read_text(encoding="utf-8")
+    assert "import { CapitalDashboard } from './CapitalDashboard';" in t and "<CapitalDashboard />" in t, (
+        "the rendered test does not mount the real page")
+    for tid in ("fund-capital-basis", "fund-health-basis", "fund-balances-incomplete", "fund-health-incomplete",
+                "fund-contributed", "fund-set-aside"):
+        assert f"ByTestId('{tid}')" in t, (tid, "is not read in the DOM")
+
+    fx = json.loads((page_dir / "CapitalDashboard.fixture.json").read_text(encoding="utf-8"))
+    live = client.get("/api/v1/fund/status")
+    assert live.status_code == 200, live.text[:200]
+    lj = live.json()
+    assert set(fx["fund"]) <= set(lj), ("the fixture answers a fund field the route no longer does",
+                                        sorted(set(fx["fund"]) - set(lj)))
+    for key in ("capital_basis", "fund_health", "fund_health_basis", "contributed_wst", "balances_are_incomplete",
+                "balances_basis", "fund_health_is_incomplete", "fund_health_incomplete_basis",
+                "set_aside_reconciliation"):
+        assert key in lj and key in fx["fund"], ("the page reads a field the route or the fixture does not have", key)
+    assert "basis" in lj["set_aside_reconciliation"] and "basis" in fx["fund"]["set_aside_reconciliation"]
+    for route, key in (("/api/v1/heartbeat/status", "heartbeat"), ("/api/v1/cca", "cca"),
+                       ("/api/v1/projects/stats/summary", "portfolio")):
+        r = client.get(route)
+        assert r.status_code == 200 and set(fx[key]) <= set(r.json()), (route, sorted(set(fx[key]) - set(r.json())))
