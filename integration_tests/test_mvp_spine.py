@@ -82418,3 +82418,94 @@ def test_w978_fu399_the_companion_reads_the_index_it_is_given_and_says_a_failed_
     assert set(fx["archive_scanned"]["manifest"]) <= set(scanned), sorted(set(fx["archive_scanned"]["manifest"]) - set(scanned))
     assert set(fx["archive_scanned"]["recount"]) <= set(_ar978.recount())
     assert fx["archive_unscanned"]["manifest"] == {} and fx["archive_unscanned"]["recount"]["agrees"] is None
+
+
+def test_w979_fu399_the_forge_page_says_what_served_each_call_and_offers_each_stage_its_own_keys(client, monkeypatch):
+    """FU-399 part 12 (W979). Six guards read the Forge page's source. ForgePipeline.test.tsx mounts the real page
+    against the answers its routes gave on a fresh store, and driving it found four defects, fixed here:
+    - the rerun parsed the answer before its status, so a refusal whose body is not JSON said a parse error and never
+      its status (W927's rule, in the one form its census did not match); it checks the status first, as the run does;
+    - the whole run's badge said in its title that no stage's provenance is recorded, untrue since W805;
+    - the AI CEO's framing was returned and never shown, and the framing and the integration went through _q, which
+      returned the text alone, so of a run's calls only the stages said what served them. Both are kept now
+      (ceo_served_by, integration_served_by: None when the call failed) and shown where the text is;
+    - every stage's placeholder offered the Laboratory's key, and the keys GET /forge/resources gives for each stage
+      were not shown. Each stage names the keys it declares and offers its own, and a key its stage does not declare
+      is said to be sent as typed.
+    Held here: driven through the route with the gateway made to fail one call at a time, the run records what served
+    the framing and the integration, a failed call as None, and both calls say whose words the objective is; the
+    page's code carries what the render reads; and the captured answers are the live routes', field for field."""
+    import json
+    import pathlib
+    import re
+    from agentic_core.api import forge as _fg
+    root = pathlib.Path(__file__).resolve().parents[1]
+    page_dir = root / "apps/workstation-superapp/src/pages/developers"
+    page = (page_dir / "ForgePipeline.tsx").read_text(encoding="utf-8")
+    code = _code_only(page)
+    t = (page_dir / "ForgePipeline.test.tsx").read_text(encoding="utf-8")
+    assert "import { ForgePipeline } from './ForgePipeline';" in t and "<ForgePipeline />" in t
+    read = set(re.findall(r"ByTestId\('([^']+)'\)", t))
+    assert {"forge-ceo-framing", "forge-ceo-served-by", "forge-integration-served-by", "forge-stage-kind",
+            "forge-stage-declared", "forge-config-undeclared", "forge-stage-toggle", "forge-rerun-basis",
+            "forge-deliverable-provenance", "read-failure"} <= read, sorted(read)
+    shared = (root / "apps/workstation-superapp/src/components/ReadFailures.tsx").read_text(encoding="utf-8")
+    for tid in read:
+        assert f'data-testid="{tid}"' in page or f'data-testid="{tid}"' in shared, tid
+
+    #  the rerun checks its status before it reads the body, as the run does
+    rerun = code[code.index("/rerun`, { method: 'POST' });"):]
+    rerun = rerun[:rerun.index("setRerunning(false);")]
+    assert rerun.index("if (!r.ok) {") < rerun.index("bodyOrNull(r)") < rerun.index("setResult(await r.json());"), rerun
+    assert "const b = await r.json();" not in code
+    #  the whole run's badge says what it counts; the framing and what served each call are shown
+    assert "records no per-stage provenance" not in code
+    assert "this counts every call in the run: the framing, each stage and the integration." in code
+    assert 'data-testid="forge-ceo-framing">{result.ceo_framing}</p>' in code
+    assert "servedBy(result.ceo_served_by)" in code and "servedBy(result.integration_served_by)" in code
+    assert "v === undefined ? 'not recorded' : (v ?? 'nothing — the call failed');" in code
+    assert "{s.kind_basis ?? 'not stated by the server'}" in code
+    #  each stage offers its own key, names the keys it declares, and a key it does not declare is said
+    assert 'placeholder="depth=deep"' not in code and "placeholder={first ? `${first}=…` : 'key=value'}" in code
+    assert "resources.find(r => r.id === id)?.params ?? null" in code and "{undeclaredKeys.length > 0 && (" in code
+
+    #  what served each call: the framing and the integration as each stage, None for a call that failed, driven
+    calls = []
+
+    def gw(fail):
+        async def _q(prompt, agent="", **k):
+            calls.append((agent, k.get("user_text")))
+            if agent == fail:
+                raise RuntimeError(f"w979: {agent} made to fail")
+            return {"output": f"[{agent}] composed", "served_by": f"w979-{agent}", "is_external": False}
+        return _q
+
+    body = {"objective": "w979 probe", "stages": [{"type": "petri_dish", "config": {}}]}
+    monkeypatch.setattr(_fg.gateway, "query_meta", gw(None))
+    r = client.post("/api/v1/forge/run", json=body)
+    assert r.status_code == 200, r.text[:300]
+    run = r.json()
+    assert run["ceo_served_by"] == "w979-forge_ceo" and run["integration_served_by"] == "w979-forge_coe", run
+    assert [s["served_by"] for s in run["stage_outputs"]] == ["w979-forge_petri_dish"], run["stage_outputs"]
+    #  both calls say whose words the objective is, as every stage does (W651, FU-675)
+    said = dict(calls)
+    assert said.get("forge_ceo") == "w979 probe" and said.get("forge_coe") == "w979 probe", calls
+    for fail, key, other in (("forge_ceo", "ceo_served_by", "integration_served_by"),
+                             ("forge_coe", "integration_served_by", "ceo_served_by")):
+        monkeypatch.setattr(_fg.gateway, "query_meta", gw(fail))
+        bad = client.post("/api/v1/forge/run", json=body).json()
+        assert bad[key] is None and bad[other] == f"w979-{'forge_coe' if fail == 'forge_ceo' else 'forge_ceo'}", (fail, bad)
+
+    #  the captured answers are the live routes', field for field
+    monkeypatch.setattr(_fg.gateway, "query_meta", gw(None))
+    fx = json.loads((page_dir / "ForgePipeline.fixture.json").read_text(encoding="utf-8"))
+    assert fx["resources"] == client.get("/api/v1/forge/resources").json()
+    assert set(fx["run"]) == set(run), sorted(set(fx["run"]) ^ set(run))
+    assert all(set(s) == set(run["stage_outputs"][0]) for s in fx["run"]["stage_outputs"]), fx["run"]["stage_outputs"]
+    rr = client.post(f"/api/v1/forge/runs/{run['run_id']}/rerun")
+    assert rr.status_code == 200 and set(fx["rerun"]) == set(rr.json()), sorted(set(fx["rerun"]) ^ set(rr.json()))
+    no_stage = client.post("/api/v1/forge/run", json={"objective": fx["run"]["objective"],
+                                                      "stages": [{"type": "w979-no-such-stage", "config": {}}]})
+    assert {"status": no_stage.status_code, "body": no_stage.json()} == fx["refused_run"], no_stage.text[:300]
+    no_run = client.post("/api/v1/forge/runs/w979-no-such-run/rerun")
+    assert {"status": no_run.status_code, "body": no_run.json()} == fx["refused_rerun"], no_run.text[:300]

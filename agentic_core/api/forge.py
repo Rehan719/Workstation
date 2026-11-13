@@ -178,16 +178,16 @@ async def _execute(req: ForgeRunRequest) -> Dict[str, Any]:
         except Exception as e:
             return f"[{agent} unavailable: {e}]", None
 
-    async def _q(prompt: str, agent: str) -> str:
-        return (await _q_meta(prompt, agent, user_text=(req.objective or None)))[0]   # W651 (FU-675)
-
     # 1. AI CEO frames the objective (swarm hierarchy entry)
-    ceo = await _q(
+    #  W979 (FU-399 part 12) - WHAT SERVED THE FRAMING is kept with it, as each stage's has been since W805, so every
+    #  call a run makes names what served it: the framing, each stage and the integration (None when the call failed).
+    #  The framing and the integration went through _q, which returned the text alone; it had no other caller.
+    ceo, ceo_served_by = await _q_meta(
         f"You are the AI CEO of a VSB. Frame this objective for a Forge pipeline that will run these "
         f"digital resources in cascade: {', '.join(_STAGES[s]['name'] for s in stage_ids)}.\n\n"
         f"Objective: {req.objective}\nDomain: {req.domain} | Realm: {req.realm}\n\n"
         "## Framing (what success looks like)\n## Directive to the resource pipeline",
-        "forge_ceo")
+        "forge_ceo", user_text=(req.objective or None))   # W651 (FU-675)
 
     # 2. Each resource processes in cascade, carrying accumulated context
     context = f"CEO framing: {ceo[:500]}"
@@ -211,13 +211,13 @@ async def _execute(req: ForgeRunRequest) -> Dict[str, Any]:
                                        f"{stage['name']} facility's own engine was not called")})
 
     # 3. CoE integrates the multi-type outputs (swarm synthesis)
-    integration = await _q(
+    integration, integration_served_by = await _q_meta(
         "You are the Centre of Excellence integrating a Forge pipeline's outputs into one coherent, "
         f"high-quality deliverable for Concept → Commercialisation.\n\nObjective: {req.objective}\n"
         f"Pipeline: {' → '.join(_STAGES[s]['name'] for s in stage_ids)}\n"
         f"Stage outputs:\n{context[-1500:]}\n\n"
         "## Integrated Deliverable\n## Multi-Type Outputs Produced\n## Path to Commercialisation (next: establish a VSB)",
-        "forge_coe")
+        "forge_coe", user_text=(req.objective or None))   # W651 (FU-675); W979 - what served it is kept
 
     # Governance attestation + audit
     governance = "ungated"
@@ -251,8 +251,11 @@ async def _execute(req: ForgeRunRequest) -> Dict[str, Any]:
                            "the request named no stage, so the default pipeline ran: "
                            + " -> ".join(_DEFAULT_PIPELINE)),
         "ceo_framing": ceo,
+        #  W979 - what served the framing and the integration (None when the call failed); each stage's is on it
+        "ceo_served_by": ceo_served_by,
         "stage_outputs": outputs,
         "integrated_deliverable": integration,
+        "integration_served_by": integration_served_by,
         "governance": governance,
         "ai_provenance": provenance,
         "reusable": True, "rerunnable": True,
