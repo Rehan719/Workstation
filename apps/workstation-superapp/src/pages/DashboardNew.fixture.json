@@ -1,0 +1,376 @@
+{
+ "projects_empty": [],
+ "projects": [
+  {
+   "id": "a1c2baf7f2334a6dbdd20d166bc03ca2",
+   "owner_id": "default",
+   "title": "W984 a made-up street garden, for the capture",
+   "description": "made up for the capture",
+   "realm": "general",
+   "domain": "product",
+   "taxonomy_realm": "enterprise",
+   "realm_source": "unrecognised (community) — fell back to 'general'",
+   "stage": "concept",
+   "status": "idle",
+   "created_at": 1794607791.7985363,
+   "updated_at": 1794607791.798544,
+   "outputs": [],
+   "first_description": "made up for the capture",
+   "first_description_at": 1794607791.7985103,
+   "waiting_on_person": {
+    "waiting": false,
+    "on": [],
+    "where": "the Governance Hub's proposals",
+    "basis": "no proposal for this project is pending."
+   }
+  }
+ ],
+ "stats": {
+  "total_projects": 1,
+  "by_stage": {
+   "concept": 1,
+   "prototype": 0,
+   "commercialise": 0
+  },
+  "by_realm": {
+   "general": 1
+  },
+  "total_outputs": 0,
+  "active": 0,
+  "complete": 0,
+  "cpu_percent": 25.1,
+  "memory_percent": 9.9,
+  "cpu_window_seconds": 0.828,
+  "host_basis": "psutil.cpu_percent over a 0.828 s window that ended 0.0 s ago, sampled on this module's own thread so no other reader can shorten it; the whole machine - every program running on it, not this platform alone | psutil.virtual_memory(), read now; the whole machine - every program running on it, not this platform alone",
+  "swarm_health": null,
+  "swarm_health_basis": "not measured: no instrument here observes the swarm's health"
+ },
+ "heartbeat": {
+  "running": false,
+  "beats": 1,
+  "circadian_phase": "MAINTENANCE_FOCUS",
+  "phase_intensity": 0.5,
+  "last_beat": "2026-11-13T22:09:50Z",
+  "last_realisation": 0.849,
+  "last_realisation_measure": "API surface coverage — pillar routers mounted and stores non-empty; not delivery (the delivery measure is /api/v1/plan/state)",
+  "last_self_healing": null,
+  "last_recovery": null,
+  "last_heal": null,
+  "last_genome": {
+   "total": 0,
+   "mean_fitness": null,
+   "mean_fitness_basis": "no genomes stored yet",
+   "mean_declared_fitness": null,
+   "fitness_composition": {},
+   "max_generation": 0
+  },
+  "last_cadence": {
+   "beat": 1,
+   "refreshed": [
+    {
+     "scope": "workstation",
+     "layer": "strategic",
+     "trigger": "never_refreshed",
+     "reason": "this layer has NEVER been refreshed, which is not the same as refreshed long ago - there is no previous quarterly refresh to measure from",
+     "at": "2026-11-13T22:09:50Z",
+     "served_by": "deterministic-floor"
+    },
+    {
+     "scope": "workstation",
+     "layer": "action_plan",
+     "trigger": "never_refreshed",
+     "reason": "this layer has NEVER been refreshed, which is not the same as refreshed long ago - there is no previous weekly refresh to measure from",
+     "at": "2026-11-13T22:09:50Z",
+     "served_by": "deterministic-floor"
+    }
+   ],
+   "could_not_run": null,
+   "nothing_was_due": false,
+   "at": "2026-11-13T22:09:50Z",
+   "scopes": [
+    "workstation"
+   ],
+   "scope_basis": "the apex only",
+   "basis": "2 layer(s) refreshed on beat 1 across 1 scope(s) (the apex only) and 0 could not run. A layer that could not run is still DUE - this is not 'nothing was due'"
+  },
+  "last_twin_directive": null,
+  "last_evolution": null,
+  "last_vsb_operated": null,
+  "last_vsb_failed": null,
+  "last_vsb_not_operated": null,
+  "last_transfer_reconcile": null,
+  "last_intake_reconcile": null,
+  "last_vsb_evolved": null,
+  "last_reshipped": null,
+  "auto_ship": false,
+  "auto_metabolic": false,
+  "circadian_to_atp": false,
+  "circadian_to_atp_basis": "runtime only, default OFF (Owner ruling 2026-10-07): when on, the phase's intensity (1.0/0.7/0.5/0.3) is the ATP production efficiency; a restart returns it to off",
+  "metabolic_every": 10,
+  "auto_metabolic_basis": "runtime only: set through /heartbeat/configure and NOT persisted, so a restart returns it to off",
+  "interval_seconds": 60,
+  "effective_interval_seconds": 120.0,
+  "interval_basis": "interval_seconds is the BASE; the loop waits base / phase intensity, which is effective_interval_seconds for the current phase and changes when the phase does",
+  "auto_evolve": false,
+  "evolve_every": 30,
+  "beats_since_evolve": 1,
+  "evolve_pacing": "Self-improve is attempted once every 30 beats, and only in a maintenance phase; 1 beat(s) have passed since the last attempt",
+  "auto_economy": false,
+  "auto_align": false,
+  "auto_compliance": false,
+  "autonomy_persisted": true,
+  "autonomy_restored_at": null,
+  "evolution_auto_apply": {
+   "enabled": false,
+   "readable": true,
+   "governed_by": "Change Control Agency",
+   "consumer": "organism.heartbeat applies CCA-APPROVED evolution proposals each beat",
+   "how_to_change": "submit a change request to the CCA at /change-control",
+   "why_not_a_toggle": "the arms-length approval it sits behind is the point",
+   "effect_when_off": "approved evolution proposals are never applied; they wait"
+  },
+  "last_compliance": null,
+  "reflex_arcs_registered": 2,
+  "reflex_arcs": [
+   "organism.reflex.health",
+   "organism.reflex.circuits"
+  ],
+  "reflex_reactions": 0,
+  "last_reflex": null,
+  "last_immune_defence": null,
+  "immune_quarantine": {
+   "engaged": false,
+   "open_circuits_at_engagement": null,
+   "engaged_by": null,
+   "revert_with": null,
+   "basis": "not engaged - self-healing probes open circuits"
+  },
+  "defends_at": "HIGH",
+  "recent": [
+   {
+    "beat": 1,
+    "phase": "MAINTENANCE_FOCUS",
+    "intensity": 0.5,
+    "realisation": 0.849,
+    "health": 1.0,
+    "health_observations": 0,
+    "health_measured": false,
+    "health_basis": "NOT A MEASUREMENT - no call was observed in the immune window, so 1.0 is the absence of failures and not a reading of anything",
+    "self_recovery": null,
+    "actions": [
+     "pulse",
+     "homeostasis",
+     "cadence_refresh",
+     "transformation_tick"
+    ],
+    "at": "2026-11-13T22:09:50Z",
+    "steps_failed": {},
+    "steps_failed_basis": "steps attempted on this beat that raised, by name, cleared at the start of every beat so a failure never outlives the beat that had it. They are deliberately NOT in `actions`: an action is something the beat performed. Since W611 (FU-461) EVERY beat step's failure is recorded here, so an EMPTY steps_failed means no step raised. That includes a step that CAUGHT its own error and reports it in a field of its own (the four homeostatic responders, the cadence, the two reconciliations and the metabolic cycle): each is recorded here as well. One thing is not a step failure and is not here: a single unreadable ship record skipped while looking for stale bodies."
+   }
+  ],
+  "integrations": [
+   "circadian",
+   "central_nervous_system",
+   "immune",
+   "self_healing",
+   "metabolic_atp",
+   "genome",
+   "UEG_audit",
+   "constitutional_arms_length"
+  ],
+  "last_metabolic": null,
+  "metabolic_basis": "the metabolic cycle has not run on this process, so there is no outcome to report — the loop is paced and OFF by default, and this is not a withheld emission",
+  "note": "Continuous circadian autonomy — cheap pulse every beat; expensive cognition opt-in + paced."
+ },
+ "organism": {
+  "organism": "Workstation IDBO",
+  "version": "1.0.0",
+  "timestamp": "2026-11-13T22:09:51Z",
+  "composite_health": 0.872,
+  "composite_health_measured_only": null,
+  "composite_health_terms": {
+   "immune_health": {
+    "weight": 0.4,
+    "value": 1.0,
+    "measured": false,
+    "observations": 0,
+    "basis": "no call was observed in the sensor's window - this value is the absence of failures, not a measurement"
+   },
+   "self_healing_health": {
+    "weight": 0.4,
+    "value": 1.0,
+    "measured": false,
+    "basis": "no circuits tracked yet — defaulted to 1.0, not a measurement"
+   },
+   "metabolic": {
+    "weight": 0.2,
+    "value": 0.358,
+    "measured": false,
+    "basis": "ATPSimulator on a constant metabolic_load — simulated, not a measurement of this platform"
+   }
+  },
+  "composite_health_basis": "0% of this figure's weight is measured (nothing); the rest is an immune term with NO call observed in its window (the absence of failures, not a reading), a self-healing term defaulted to 1.0 and a simulated metabolic term. The measured-only score is None, and that is what decides the mode and every gate.",
+  "composite_health_measured_weight": 0.0,
+  "mode": "NOMINAL",
+  "mode_basis": "THE DEFAULT - nothing was measured in the last 5 minutes (no call observed, no circuit tracked), so this mode is not an assessment (0% of the blend's weight is measured). The blended figure 0.872 also carries a self-healing term defaulted to 1.0 and a simulated metabolic term, so it cannot be read as a measurement.",
+  "mode_decided_on": "composite_health_measured_only",
+  "mode_decidable": false,
+  "mode_decidable_basis": "NOTHING is measured: no call was observed in the immune sensor's window and no circuit is tracked. The measured-only score is None, so every gate that tests it HOLDS for an explicit decision; the mode shown is the default.",
+  "measured_weight_below_half": true,
+  "measured_weight_basis": "0% of the blend's weight is measured; no circuit is tracked yet, so self-healing is a default rather than a reading, and the metabolic term is a simulation. This is the confidence behind the figure, not a rule about who may decide.",
+  "health_summary": "Nothing was measured in the last 5 minutes: no call was observed and no circuit is tracked. The mode shown (NOMINAL) is the default, not an assessment; health-gated changes are held for an explicit decision.",
+  "systems": {
+   "immune": {
+    "health": 1.0,
+    "threat_level": "NOMINAL",
+    "errors_in_window": 0,
+    "observations_in_window": 0,
+    "observed_basis": "NO call was observed in the last 5 minutes, so the health figure is the absence of failures and not a reading of anything",
+    "review_flags_in_window": 0,
+    "events_in_window": 0,
+    "health_basis": "health and threat are computed from 0 failure(s) in the window; 0 compliance review flag(s) are reported beside them and are NOT counted — a flag asks a human to look, it is not a finding of harm",
+    "response_playbook": [
+     "recommended: passive surveillance"
+    ],
+    "hot_endpoint": null,
+    "hot_endpoint_errors": 0,
+    "hot_endpoint_tied": []
+   },
+   "nervous": {
+    "arousal_state": "DORMANT",
+    "signal_rate_per_second": 0.033,
+    "signals_last_60s": 2,
+    "by_type": {
+     "reflex": 1,
+     "sensory": 1
+    },
+    "total_signals": {
+     "reflex": 1,
+     "sensory": 1
+    },
+    "reflex_arcs": 2
+   },
+   "self_healing": {
+    "overall_health": null,
+    "open_circuits": 0,
+    "recent_events": []
+   },
+   "metabolic": {
+    "atp_ratio": 0.358,
+    "measured": false,
+    "can_fall": false,
+    "basis": "the metabolic term is an ATPSimulator on a load clamped to its declared 0-1 domain, where production (0.5 x efficiency, efficiency 0.8 or 1.0) always exceeds consumption (0.1 x load), so within that domain it only rises — from 0.333 at boot to 1.0 — and the thresholds written against it cannot fire. It is a simulation, not a reading of this platform's energy.",
+    "energy_ratio": 1.0,
+    "energy_acts": false,
+    "energy_basis": "1 - 0.0s spent / 3600s stated capacity this window (the capacity is a stated assumption); the work budget is switched off (WORKSTATION_WORK_BUDGET), so nothing reads this figure: the energy thresholds read the ATP simulator, which cannot fall, and stay inert as ruled",
+    "thresholds_read": "atp_simulator"
+   },
+   "work_budget": {
+    "unit": "wall-clock seconds of recorded run time",
+    "enabled": false,
+    "capacity_seconds": 3600.0,
+    "seconds_spent": 0.0,
+    "fraction_spent": 0.0,
+    "capacity_tokens": null,
+    "fraction_basis": "seconds_spent / capacity_seconds, SECONDS ALONE: tokens are recorded beside it but no token capacity is stated, so tokens do not enter the fraction and cannot hold anything",
+    "calls_recorded": 0,
+    "window_seconds": 21600.0,
+    "window_started": 1794607791.8081048,
+    "tokens_spent": null,
+    "tokens_counted_calls": 0,
+    "tokens_basis": "NOT RECORDED — no run this window reported a token count (a count comes only from a model's own answer; the deterministic floor runs no model), so this is null rather than 0; zero would read as 'no tokens were used' when nobody counted",
+    "capacity_basis": "3600 seconds per 6-hour window is a STATED ASSUMPTION, not a measurement — nothing here has yet measured what this platform's sustainable rate is",
+    "gates_anything": false,
+    "consumers": {
+     "native homeostasis admission": "while the gate holds, the native tree and the org cascade run their nodes one at a time; single model calls, deliverables and every other AI door are not held, and no run is refused or deferred"
+    },
+    "holding_reason": null,
+    "gate_basis": "it GATES NOTHING: the budget ships inert until WORKSTATION_WORK_BUDGET=true, per the Owner's ruling",
+    "spend_basis": "the sum of the run durations the platform recorded, each nest counted once (W847): a run recorded inside a marked run (a model attempt inside the AI call that made it; an AI call inside a deliverable, a composition, a swarm, a cascade tier, the board or a transformation) is held by the outermost run, which spends its own duration with the tokens its inner runs counted. A run made where the mark does not reach (a worker thread started without it) can still be counted at two levels. Durations a caller reported through /api/v1/operations/record are not counted",
+    "basis": "0.0s of a stated 3600s capacity is recorded spent this window, from 0 run(s) whose duration was measured — and it GATES NOTHING: the budget ships inert until WORKSTATION_WORK_BUDGET=true, per the Owner's ruling",
+    "entities": {
+     "owners_measured": 0,
+     "entities_measured": 0,
+     "attributed_seconds": 0,
+     "unattributed_seconds": 0.0,
+     "basis": "0.0s of the 0.0s recorded this window came from runs that named the owner they ran for; the rest named none, so it counts in the platform total and is apportioned to no one. These figures are reported, not enforced: the S18.1 gate (gate()) reads the platform total, not an entity's own figure"
+    },
+    "carrying_capacity": {
+     "entities": null,
+     "entities_measured": 0,
+     "mean_seconds_per_entity": null,
+     "over_capacity": null,
+     "basis": "UNMEASURED - no run this window was attributed to an entity, so no per-entity demand is measured and no carrying capacity is derived; it is never set by hand"
+    },
+    "store_incomplete": null,
+    "by_entity": []
+   },
+   "circadian": {
+    "cycle": "MAINTENANCE_FOCUS",
+    "is_peak_focus": false
+   },
+   "genome": {
+    "total_genomes": 0,
+    "encoded_genomes": 0,
+    "mean_fitness": null,
+    "max_generation": 0,
+    "dominant_trait": null,
+    "dominant_trait_tied": [],
+    "dominant_trait_basis": "no genomes stored yet",
+    "mean_fitness_basis": "no genomes stored yet",
+    "mean_declared_fitness": null,
+    "fitness_composition": {},
+    "encoded_basis": "no genomes stored yet"
+   },
+   "reconfiguration": {
+    "features_active": 9,
+    "domains_enabled": 6,
+    "rpm_limit": 20,
+    "preferred_provider": "auto",
+    "features_wired": 0,
+    "features_total": 9,
+    "domains_wired": 0,
+    "domains_total": 6,
+    "preferred_provider_wired": false,
+    "rpm_limit_wired": true,
+    "wiring_basis": "These are stored switches. 0 of 9 feature flag(s) and 0 of 6 domain flag(s) are read by anything, so switching any other one changes nothing. The provider preference is stored only - nothing reads it; the RPM limit is read by: ai.gateway rate limiter (re-synced ~30s via _sync_reconfig). The per-key table is on the Anatomy tab."
+   }
+  },
+  "operations": {
+   "lifecycle": {
+    "total_projects": 1,
+    "by_stage": {
+     "concept": 1,
+     "prototype": 0,
+     "commercialise": 0
+    },
+    "running": 0,
+    "commercialisation_rate": 0.0,
+    "pipeline_health": "GROWING",
+    "pipeline_health_basis": "FLOURISHING: >30% commercialised · GROWING: any project touched in 30 days (1 were) · STATIC: projects exist but idle · DORMANT: none"
+   },
+   "vsb": {
+    "total": 0,
+    "operational": 0,
+    "operating": 0,
+    "legacy_operating": 0,
+    "operational_basis": "counts status == 'operating', which is what _derived_status returns today (0 entit(ies)), plus 0 written by pre-W496 paths that still carry ['operational', 'active'] on disk. Statuses NOT counted as operating: none",
+    "by_status": {},
+    "domains": [],
+    "domains_total": 0
+   },
+   "change_control": {
+    "pending": 0,
+    "approved": 0,
+    "awaiting_board_ratification": 0,
+    "implemented": 0
+   }
+  },
+  "recommended": {
+   "temperature": "neutral",
+   "should_throttle": false,
+   "max_parallel_agents": 3,
+   "priority": "normal"
+  }
+ }
+}

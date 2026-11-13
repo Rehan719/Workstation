@@ -82775,3 +82775,51 @@ def test_w983_fu399_the_vbs_panel_names_each_section_it_could_not_read_and_its_c
     assert "is a label a live surface still opens defects under" in src
     closure = fx["closed_retired"]["defect"]["closure"]
     assert closure["how"] == "closed_source_retired" and closure["source_check"].startswith("checked:"), closure
+
+
+def test_w984_fu399_the_home_says_a_refusal_as_a_refusal_never_as_an_unreachable_server(client):
+    """FU-399 part 16 (W984). The Command Center is the first page a person sees: what they are working on, this
+    machine's figures, whether the organism runs itself, and its health. DashboardNew.test.tsx mounts the real page
+    against the answers its four routes gave on a fresh store, and has the server refuse each read or not answer.
+    Rendering it found two defects, fixed here:
+    - any failed read of the projects - a 500, a 403 - set the page's "backend down" state, so the home said "Backend
+      unreachable - start the backend server to see live status" about a server that had answered. A refusal now says
+      it could not read the projects, with the server's status and reason, and that this is not a list of none; only a
+      request that reached no server says it is unreachable;
+    - the levers' state started at null, which the page says as "their state could not be read", so every load said
+      so until the heartbeat answered. Not yet read and could not be read are two states now.
+    The measured-only health and the figures' read failures were already right, and are now held by the render.
+    Held here: the page's code carries what the render reads, and the routes answer the fields the fixture holds."""
+    import json
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    pdir = root / "apps/workstation-superapp/src/pages"
+    page = (pdir / "DashboardNew.tsx").read_text(encoding="utf-8")
+    shared = (root / "apps/workstation-superapp/src/components/ReadFailures.tsx").read_text(encoding="utf-8")
+    t = (pdir / "DashboardNew.test.tsx").read_text(encoding="utf-8")
+    assert "import { DashboardNew } from './DashboardNew';" in t and "<DashboardNew />" in t
+    read = set(re.findall(r"ByTestId\('([^']+)'\)", t))
+    assert {"autonomy-levers", "home-composite-health-basis", "read-failure"} <= read, sorted(read)
+    for tid in read:
+        assert f'data-testid="{tid}"' in page or f'data-testid="{tid}"' in shared, tid
+
+    code = _code_only(page)
+    #  a refusal is not an unreachable server
+    assert "if (e?.response) { setProjectsErr(describeReadFailure(e)); setBackendDown(false); }" in code
+    assert ".catch(() => setBackendDown(true));" not in code
+    assert "projectsErr ? `Your projects could not be read (${projectsErr}), so this is not a list of none.`" in code
+    #  not yet read and could not be read are two states of the levers
+    assert "| null | undefined>(undefined);" in code and "levers === undefined\n              ? 'Reading the heartbeat levers…'" in code
+
+    #  the routes answer the fields the fixture holds and the page reads
+    fx = json.loads((pdir / "DashboardNew.fixture.json").read_text(encoding="utf-8"))
+    assert {"id", "title", "realm", "stage", "updated_at"} <= set(fx["projects"][0]), sorted(fx["projects"][0])
+    assert isinstance(client.get("/api/v1/projects/").json(), list)
+    st = client.get("/api/v1/projects/stats/summary").json()
+    assert {"cpu_percent", "memory_percent", "total_projects"} <= set(st) and set(fx["stats"]) <= set(st) | {"cpu_window_seconds"}
+    hb = client.get("/api/v1/heartbeat/status").json()
+    assert {k for k in fx["heartbeat"] if k.startswith("auto_")} == {k for k in hb if k.startswith("auto_")}, sorted(hb)
+    assert "running" in hb and "running" in fx["heartbeat"]
+    org = client.get("/api/v1/organism/status").json()
+    assert {"composite_health", "composite_health_measured_only", "composite_health_terms", "mode"} <= set(org) & set(fx["organism"])

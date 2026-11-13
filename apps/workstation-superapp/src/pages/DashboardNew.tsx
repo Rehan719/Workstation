@@ -13,7 +13,7 @@ import { getPrefs } from '../lib/userPrefs';
 import { listOutputs, type OutputRecord } from '../lib/outputHistory';
 import { useT } from '../lib/i18n';
 import { ServingNow } from '../components/ServingNow';   // W737 (FU-967)
-import { ReadFailures, useReadFailures } from '../components/ReadFailures';   // W928
+import { ReadFailures, useReadFailures, describeReadFailure } from '../components/ReadFailures';   // W928; W984
 
 // The unified front door (§3A + §17). It orients every user to the two ways Workstation IDBO serves
 // them — (1) work now with AI across a domain, or (2) take a challenge Concept→Commercialisation into a
@@ -74,7 +74,9 @@ export const DashboardNew: React.FC = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [vitals, setVitals] = useState<Vitals | null>(null);
-  const [levers, setLevers] = useState<{ on: string[]; total: number; beating: boolean | null } | null>(null);
+  //  W984 - undefined: not read yet; null: could not be read. It started at null, so every load said the levers'
+  //  state "could not be read" while it was being read.
+  const [levers, setLevers] = useState<{ on: string[]; total: number; beating: boolean | null } | null | undefined>(undefined);
   const [health, setHealth] = useState<{
     composite: number; mode: string;
     measuredOnly: number | null; unmeasuredShare: number; unmeasuredTerms: string[];
@@ -98,6 +100,10 @@ export const DashboardNew: React.FC = () => {
   // is unreachable (or the session expired → the auth layer redirects to /login) instead of
   // rendering eternal empty skeletons.
   const [backendDown, setBackendDown] = useState(false);
+  //  W984 (FU-399 part 16) - a REFUSAL IS NOT AN UNREACHABLE SERVER. Any failed read of the projects set backendDown,
+  //  so a 500 or a 403 was said as "Backend unreachable - start the backend server". A refusal says its status and the
+  //  server's reason; only a request that reached no server is said to be unreachable.
+  const [projectsErr, setProjectsErr] = useState('');
   useEffect(() => {
     axios.get('/api/v1/projects/').then(({ data }) => {
       const projects: any[] = data ?? [];
@@ -108,8 +114,11 @@ export const DashboardNew: React.FC = () => {
         time: p.updated_at ? new Date(p.updated_at * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'recently',
       }));
       if (items.length > 0) setActivity(items);
-      setBackendDown(false);
-    }).catch(() => setBackendDown(true));
+      setBackendDown(false); setProjectsErr('');
+    }).catch(e => {
+      if (e?.response) { setProjectsErr(describeReadFailure(e)); setBackendDown(false); }
+      else setBackendDown(true);
+    });
 
     axios.get('/api/v1/projects/stats/summary').then(({ data }) => {
       // W746 - an unread host figure arrives as null and stays null; coalescing it to zero printed an idle machine
@@ -151,7 +160,8 @@ export const DashboardNew: React.FC = () => {
   const displayActivity = activity.length > 0 ? activity
     : [{ id: 'placeholder', type: 'System',
          msg: backendDown ? 'Backend unreachable — start the backend server to see live status'
-                          : 'No projects yet — start a Genesis or open a Domain tool', time: '' }];
+            : projectsErr ? `Your projects could not be read (${projectsErr}), so this is not a list of none.`
+            : 'No projects yet — start a Genesis or open a Domain tool', time: '' }];
 
   return (
     <>
@@ -216,7 +226,9 @@ export const DashboardNew: React.FC = () => {
               read none of them. It reads them now and says which are on. */}
           <p className="text-[11px] text-slate-500 mb-4 max-w-2xl">One living, biomimetic organism that is <span className="text-aura">simultaneously</span> all five — generated end-to-end, in-house.</p>
           <p className="text-[10px] text-slate-600 mb-4 max-w-2xl" data-testid="autonomy-levers">
-            {levers === null
+            {levers === undefined
+              ? 'Reading the heartbeat levers…'
+              : levers === null
               ? 'Self-running is a set of heartbeat levers; their state could not be read.'
               : levers.on.length === 0
               ? `Self-running is a set of ${levers.total} heartbeat levers and none is on: the organism runs
