@@ -80793,3 +80793,74 @@ def test_w955_p513_each_care_tool_points_at_its_rows_of_the_register_read_now(cl
     for drawn in ("{s.status_said}", "{t.standard}", "{sourcesBasis}", "{toolsNote && <p data-testid=\"care-sources-refusal\"",
                   "setToolsNote(`The tools and their sources could not be read: ${errorMessage(e)}`)"):
         assert drawn in flat, drawn
+
+
+def test_w956_p512_the_education_page_says_what_each_form_does_on_this_machine_from_the_servers_sentences(client, monkeypatch):
+    """P5.12 clause 5 (W956). The page says, before each form, what this machine does with it today. Measured: the four
+    sentences were typed and promised marking "with an indicative level", a "ready-to-use" assessment and a
+    "classroom-ready plan" whatever the machine did. ACCEPT: the check fails when the page's sentence is shown on a
+    machine that does something else. Held here:
+    - GET /api/v1/education/tools lists the four forms, each with what it does and the sentence its answer carries with
+      a model and on the native floor, built from the constants the answers are built from;
+    - driven on the native floor, each answer's disclaimer is the route's floor sentence for its form; with a model's
+      place taken, it is the route's model sentence - so the page, which picks by the serving status, shows the
+      sentence the answer will carry on this machine;
+    - nothing a form is said to do is a promise: no "ready-to-use", "classroom-ready", "aligned" or the like;
+    - the page draws each form's sentence from the server, picks it by the serving status, says a failed read, and
+      types none of the old promises."""
+    import re
+    from pathlib import Path
+
+    import agentic_core.api.education as _edu
+    from agentic_core.api._ai_provenance import FLOOR_DISCLAIMER, disclaimer_for
+    root = Path(__file__).resolve().parents[1]
+
+    #  1. the route: four forms, each sentence built from the answer's own constants
+    r = client.get("/api/v1/education/tools")
+    assert r.status_code == 200, r.text[:200]
+    forms = {f["id"]: f for f in r.json()["forms"]}
+    assert set(forms) == {"lesson_plan", "curriculum", "assessment", "feedback"} and r.json()["composed"] is False
+    consts = {"lesson_plan": (_edu._LESSON_CLAIM, _edu._LESSON_NOTE), "curriculum": (_edu._CURRICULUM_CLAIM, _edu._CURRICULUM_NOTE),
+              "assessment": (_edu._ASSESSMENT_CLAIM, _edu._ASSESSMENT_NOTE), "feedback": (_edu._FEEDBACK_CLAIM, _edu._FEEDBACK_NOTE)}
+    for fid, (claim, note) in consts.items():
+        f = forms[fid]
+        assert f["when_no_model_serves"] == disclaimer_for({"floor_note": "x"}, claim, note) and FLOOR_DISCLAIMER in f["when_no_model_serves"]
+        assert f["with_a_model"] == disclaimer_for({}, claim, note) and claim in f["with_a_model"]
+        assert not re.search(r"ready-to-use|ready to use|classroom-ready|aligned|accredited|evidence-based|compliant",
+                             f["does"], re.I), (fid, f["does"])
+    assert "indicative level" in forms["feedback"]["does"] and "withheld" in forms["feedback"]["does"]
+
+    #  2. driven on the native floor: each answer carries the route's floor sentence for its form
+    calls = {"lesson_plan": ("/api/v1/education/lesson-plan", {"subject": "Maths", "topic": "Fractions", "level": "KS2"}),
+             "curriculum": ("/api/v1/education/curriculum", {"subject": "Maths", "level": "GCSE"}),
+             "assessment": ("/api/v1/education/assessment", {"subject": "Maths", "topic": "Fractions", "level": "KS2"}),
+             "feedback": ("/api/v1/education/feedback", {"student_work": "w956 a short answer about fractions",
+                                                         "task": "w956 explain", "subject": "Maths"})}
+    for fid, (url, body) in calls.items():
+        a = client.post(url, json=body)
+        assert a.status_code == 200, (fid, a.text[:200])
+        assert a.json()["ai_provenance"].get("floor_note"), (fid, "this drive expects the native floor")
+        assert a.json()["disclaimer"] == forms[fid]["when_no_model_serves"], (fid, a.json()["disclaimer"])
+
+    #  3. with a model's place taken: each answer carries the route's model sentence
+    async def _model(prompt, agent, **kw):
+        return "w956 a model's draft", {"served_by": "w956-model", "is_external": False}
+    monkeypatch.setattr(_edu, "ai_text", _model)
+    for fid, (url, body) in calls.items():
+        a = client.post(url, json=body)
+        assert a.status_code == 200 and a.json()["disclaimer"] == forms[fid]["with_a_model"], (fid, a.json().get("disclaimer"))
+
+    #  4. the page: each form's sentence is the server's, picked by the serving status; a failed read is said
+    hub = _code_only((root / "apps/workstation-superapp/src/pages/domains/EducationHub.tsx").read_text(encoding="utf-8"))
+    flat = " ".join(hub.split())
+    for gone in ("ready-to-use", "classroom-ready", "with an indicative level", "Workstation's <span"):
+        assert gone not in flat, (gone, "the page still types it")
+    for fid in consts:
+        assert flat.count("{formSays('" + fid + "')}") == 1, fid
+    assert flat.count("description={<>{formSays(") == 4, "a form's description is still typed"
+    assert "apiJson<any>('/api/v1/education/tools')" in flat and "servingIsFloor(serving)" in flat
+    assert ": floorNow ? `No model is serving on this deployment now, so its answer says: ${f.when_no_model_serves}`" in flat
+    assert ": `A model is serving now (${serving.active_model_label || 'a local model'}), so its answer says: ${f.with_a_model}`" in flat
+    assert "{f.does} {now}" in flat
+    assert "setEduToolsNote(`What each form does could not be read (${errorMessage(e)})" in flat
+    assert "{frameworksNote && <span" in flat, "the curriculum's framework note was lost"

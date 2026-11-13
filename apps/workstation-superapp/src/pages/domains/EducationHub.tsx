@@ -6,6 +6,8 @@ import { Layers, GraduationCap, History } from 'lucide-react';
 import { useAdaptiveUI } from '../../components/AdaptiveUIProvider';
 import { DomainTool } from '../../components/DomainTool';
 import { toolsFor } from '../../lib/toolRegistry';
+import { useServingStatus, servingIsFloor } from '../../components/ServingNow';   // W956 (P5.12 clause 5)
+import { apiJson, errorMessage } from '../../lib/api';
 
 export const EducationHub: React.FC = () => {
   const T = toolsFor('/education');   // W470 — the one tool registry the front doors count from
@@ -35,6 +37,35 @@ export const EducationHub: React.FC = () => {
       .catch(e => { if (alive) { setFrameworks(null); setFrameworksNote(`The framework list could not be read (${String(e?.message ?? e)}), so only the default framework is offered below.`); } });
     return () => { alive = false; };
   }, []);
+
+  // W956 (P5.12 clause 5) - WHAT EACH FORM DOES ON THIS MACHINE NOW, said before it is filled: the server's sentence
+  // for the form, with the sentence its answer carries with a model or without one, chosen by the serving status.
+  // Nothing here is typed about a form; a failed read is said, and nothing is claimed in its place.
+  const serving = useServingStatus();
+  const [eduTools, setEduTools] = useState<Record<string, any> | null>(null);
+  const [eduToolsNote, setEduToolsNote] = useState('');
+  useEffect(() => {
+    let alive = true;
+    apiJson<any>('/api/v1/education/tools')
+      .then(d => {
+        if (!alive) return;
+        const byId: Record<string, any> = {};
+        (Array.isArray(d?.forms) ? d.forms : []).forEach((f: any) => { if (f?.id) byId[String(f.id)] = f; });
+        setEduTools(byId); setEduToolsNote('');
+      })
+      .catch(e => { if (alive) { setEduTools(null); setEduToolsNote(`What each form does could not be read (${errorMessage(e)}), so nothing is said about it here. Each answer still says what composed it.`); } });
+    return () => { alive = false; };
+  }, []);
+  const floorNow = serving ? servingIsFloor(serving) : null;
+  const formSays = (id: string) => {
+    const f = eduTools?.[id];
+    if (!f) return <span data-testid="education-form-not-read" className="text-amber-400">{eduToolsNote}</span>;
+    const now = serving === undefined ? ''
+      : serving === null ? `Whether a model is serving could not be read just now; without one, its answer says: ${f.when_no_model_serves}`
+      : floorNow ? `No model is serving on this deployment now, so its answer says: ${f.when_no_model_serves}`
+      : `A model is serving now (${serving.active_model_label || 'a local model'}), so its answer says: ${f.with_a_model}`;
+    return <span data-testid="education-form-says">{f.does} {now}</span>;
+  };
 
   return (
     <div className="space-y-12 pb-24">
@@ -80,7 +111,7 @@ export const EducationHub: React.FC = () => {
             {activeTab === 'curriculum' ? (
               <DomainTool
                 title={T['curriculum'].title}
-                description={<>Design a full course — Workstation's <span className="text-highlight">own</span> AI drafts a structured curriculum outline (week-by-week plan, objectives, assessment), in-house. Only a framework's NAME is held, so nothing is checked against one. For a teacher or an adult learner.{frameworksNote && <span className="block mt-1 text-amber-400" data-testid="education-frameworks-note">{frameworksNote}</span>}</>}
+                description={<>{formSays('curriculum')}{frameworksNote && <span className="block mt-1 text-amber-400" data-testid="education-frameworks-note">{frameworksNote}</span>}</>}
                 endpoint="/api/v1/education/curriculum"
                 resultKey="curriculum"
                 submitLabel="Design curriculum"
@@ -95,7 +126,7 @@ export const EducationHub: React.FC = () => {
             ) : activeTab === 'assessment' ? (
               <DomainTool
                 title={T['assessment'].title}
-                description={<>Generate a ready-to-use assessment — Workstation's <span className="text-highlight">own</span> AI builds quizzes, rubrics, exams, project briefs or formative checks with mark schemes, in-house.</>}
+                description={<>{formSays('assessment')}</>}
                 endpoint="/api/v1/education/assessment"
                 resultKey="assessment"
                 submitLabel="Build assessment"
@@ -110,7 +141,7 @@ export const EducationHub: React.FC = () => {
             ) : activeTab === 'feedback' ? (
               <DomainTool
                 title={T['feedback'].title}
-                description={<>Paste a student's work — Workstation's <span className="text-highlight">own</span> AI marks it against the task and any rubric and returns constructive, actionable feedback with an indicative level, in-house. An aid for your judgement — indicative only, never a final grade.</>}
+                description={<>{formSays('feedback')}</>}
                 endpoint="/api/v1/education/feedback"
                 resultKey="feedback"
                 submitLabel="Mark & give feedback"
@@ -126,7 +157,7 @@ export const EducationHub: React.FC = () => {
             ) : (
               <DomainTool
                 title={T['lessons'].title}
-                description={<>Describe a lesson — Workstation's <span className="text-highlight">own</span> AI produces a classroom-ready plan (objectives, sequence, differentiation, assessment), in-house.</>}
+                description={<>{formSays('lesson_plan')}</>}
                 endpoint="/api/v1/education/lesson-plan"
                 resultKey="lesson_plan"
                 submitLabel="Generate lesson plan"

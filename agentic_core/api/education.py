@@ -169,6 +169,7 @@ async def design_curriculum(req: CurriculumRequest):
                         "Flagged as religious teaching content - a named human scholar must approve it "
                         "before a learner sees it (R7 / §A.12.3)."),
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "disclaimer": disclaimer_for(provenance, _CURRICULUM_CLAIM, _CURRICULUM_NOTE),     # W956 (P5.12 clause 5)
     }
 
 
@@ -178,6 +179,54 @@ _NEEDS_NOTE = (" The needs you typed were sent to the composer exactly as typed 
                "that field.")
 _ASSESSMENT_NOTE = (FOR_WHOM + " A draft: the answer key and mark scheme were checked by nobody - check every "
                     "answer before use. Not an official paper of any awarding body. " + SCREEN_NOT_CLEARED)
+
+#  W956 (P5.12 clause 5) - each form's two sentences, typed once: what its answer says it is when a model composed it
+#  (the claim) and what travels with it either way (the note). The answers and GET /tools read these same constants.
+_LESSON_CLAIM = "An AI-drafted lesson plan."
+_ASSESSMENT_CLAIM = "An AI-drafted assessment."
+_CURRICULUM_CLAIM = "An AI-drafted curriculum outline."
+_CURRICULUM_NOTE = FOR_WHOM + " Framework: " + FRAMEWORK_HELD + "."
+_FEEDBACK_CLAIM = "AI-assisted marking and feedback."
+_FEEDBACK_NOTE = ("An aid for the teacher's professional judgement — indicative only, NOT a final or official grade. "
+                  "The teacher remains responsible for the mark awarded.")
+
+#  what each form does, in this platform's words, with no promise the machine may not keep: nothing is called
+#  ready to use, classroom-ready, aligned, accredited, evidence-based or compliant (P5.12's boundary)
+EDUCATION_FORMS = (
+    {"id": "lesson_plan", "route": "/api/v1/education/lesson-plan",
+     "does": ("Drafts a lesson plan for the subject, topic and level you give. The needs and prior knowledge you "
+              "type are handed over as material, never as instruction."),
+     "claim": _LESSON_CLAIM, "note": _LESSON_NOTE},
+    {"id": "curriculum", "route": "/api/v1/education/curriculum",
+     "does": ("Drafts a curriculum outline for the subject, level and number of weeks you give. Only a framework's "
+              "name is held, so nothing is checked against one."),
+     "claim": _CURRICULUM_CLAIM, "note": _CURRICULUM_NOTE},
+    {"id": "assessment", "route": "/api/v1/education/assessment",
+     "does": ("Drafts an assessment of the type you choose, with an answer key and mark scheme that nobody has "
+              "checked."),
+     "claim": _ASSESSMENT_CLAIM, "note": _ASSESSMENT_NOTE},
+    {"id": "feedback", "route": "/api/v1/education/feedback",
+     "does": ("Reads pasted work against the task and any rubric. With a model serving and the work read whole, it "
+              "gives an indicative level; on the native floor, or when the work was not read whole, the criteria "
+              "and level sections are withheld. Blank work is refused."),
+     "claim": _FEEDBACK_CLAIM, "note": _FEEDBACK_NOTE},
+)
+
+
+@router.get("/tools")
+def education_tools():
+    """W956 (P5.12 clause 5) - the Education forms, what each does, and the sentence each answer carries with a model
+    and on the native floor - built from the constants the answers are built from. Nothing is composed here."""
+    return {
+        "forms": [{"id": f["id"], "route": f["route"], "does": f["does"],
+                   "with_a_model": disclaimer_for({}, f["claim"], f["note"]),
+                   "when_no_model_serves": disclaimer_for({"floor_note": "the native floor"}, f["claim"], f["note"])}
+                  for f in EDUCATION_FORMS],
+        "basis": ("Read from this router's constants: each sentence is the disclaimer the form's answer carries, "
+                  "with a model and on the native floor. Whether a model is serving now is the native status's "
+                  "reading, not this list's."),
+        "composed": False,
+    }
 
 
 class LessonPlanRequest(BaseModel):
@@ -244,7 +293,7 @@ async def generate_lesson_plan(req: LessonPlanRequest):
                        + ((" Adjusted: " + "; ".join(_adjusted) + ".") if _adjusted else "") + "_",
         "religious_subject_screen": _screen,
         "screen_note": SCREEN_NOT_CLEARED,
-        "disclaimer": disclaimer_for(provenance, "An AI-drafted lesson plan.", _LESSON_NOTE),
+        "disclaimer": disclaimer_for(provenance, _LESSON_CLAIM, _LESSON_NOTE),
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
@@ -342,10 +391,7 @@ async def marking_feedback(req: FeedbackRequest):
         "screen_note": SCREEN_NOT_CLEARED,
         "ai_provenance": note_withheld(provenance, sections_withheld),
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "disclaimer": disclaimer_for(
-            provenance, "AI-assisted marking and feedback.",
-            "An aid for the teacher's professional judgement — indicative only, NOT a final or official grade. "
-            "The teacher remains responsible for the mark awarded."),
+        "disclaimer": disclaimer_for(provenance, _FEEDBACK_CLAIM, _FEEDBACK_NOTE),     # W956 (P5.12 clause 5)
     }
 
 
@@ -403,7 +449,7 @@ async def create_assessment(req: AssessmentRequest):
         "assessment": (assessment or "") + "\n\n_" + _ASSESSMENT_NOTE + "_",
         "religious_subject_screen": _screen,
         "screen_note": SCREEN_NOT_CLEARED,
-        "disclaimer": disclaimer_for(provenance, "An AI-drafted assessment.", _ASSESSMENT_NOTE),
+        "disclaimer": disclaimer_for(provenance, _ASSESSMENT_CLAIM, _ASSESSMENT_NOTE),
         "ai_provenance": provenance,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
