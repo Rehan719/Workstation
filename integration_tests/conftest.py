@@ -18,6 +18,11 @@ import pytest
 #  The principle is already stated thirty lines below, against the subdivision: "An explicit value defeating
 #  the isolation is W394's original defect one layer over."
 os.environ.setdefault("PROJECTS_DIR", "data/test_projects")
+#  W891 (FU-1141) - THE SUITE'S RATE LIMIT. Every model call goes through the gateway's limiter, and the suite never
+#  calls out of the platform, so the limit guards no spend here. At the default 20 a minute the limiter slept for a
+#  measured share of every run (W889). setdefault, so a run that sets GATEWAY_RPM itself is limited as it asks.
+SUITE_GATEWAY_RPM = "6000"
+os.environ.setdefault("GATEWAY_RPM", SUITE_GATEWAY_RPM)
 os.environ.setdefault("SYNTHESIS_OUTPUT_DIR", "data/test_synthesis")
 os.environ.setdefault("PROPOSALS_DIR", "data/test_proposals")
 

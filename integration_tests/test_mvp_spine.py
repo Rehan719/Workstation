@@ -8763,7 +8763,7 @@ def test_w438_organism_cluster_audited_fixes_hold(client):
             client.post(f"/api/v1/cca/{rst['cca_id']}/review", json={"override_decision": "approved", "owner_decision_acknowledged": True})
         assert client.post(f"/api/v1/cca/{rst['cca_id']}/implement").status_code == 200
     cfg2 = client.get("/api/v1/organism/config").json()["config"]
-    assert cfg2["gateway"]["max_tokens"] == 4096 and cfg2["gateway"]["rpm_limit"] == 20, (
+    assert cfg2["gateway"]["max_tokens"] == 4096 and cfg2["gateway"]["rpm_limit"] == int(os.environ.get("GATEWAY_RPM") or 20), (
         "reset restored mutated values while labelling them defaults (the aliasing bug is back)")
 
     # ── self-healing: raw-state counting + single half-open probe (unit-level arrangement) ─────
@@ -26451,10 +26451,14 @@ def test_w506_p27_the_organism_engages_its_own_defence_and_the_reversal_is_drive
         assert reached, \
             "the immune system never reached the defence threshold, so this cannot drive the case"
 
-        # driven here too, for the same reason
-        _apply("organism", "metabolic_throttle", False, reason="w506 guard precondition",
+        # driven here too, for the same reason. W891 - on the lever the reached threat moves: HIGH moves the
+        # metabolic throttle and CRITICAL the quarantine. A worker whose earlier tests recorded failures recently
+        # enough enters at CRITICAL, where this compared the quarantine with the throttle's prior value
+        from agentic_core.api.change_control import _IMMUNE_DEFENCE as _plans891
+        _moved891 = _plans891[reached]
+        _apply(_moved891["section"], _moved891["key"], False, reason="w506 guard precondition",
                updated_by="guard.w506")
-        before2 = lever("organism", "metabolic_throttle")
+        before2 = lever(_moved891["section"], _moved891["key"])
         assert before2 is False, f"the precondition did not take: {before2}"
         out = heartbeat.respond_to_threat()
         assert out["engaged"] is True, \
@@ -76285,3 +76289,65 @@ def test_w890_a_test_doubles_rows_move_out_of_the_operations_record_and_back(mon
     snap = rec.read_bytes()
     assert q.main(["--root", str(tmp_path), "--apply"]) == 1
     assert rec.read_bytes() == snap, "rows were moved while a backend answers"
+
+
+def test_w891_gateway_rpm_is_read_once_and_the_governed_lever_starts_from_it(client, monkeypatch):
+    """FU-1141, part 2: the default, and where it is set, chosen on the figure W889's suite measured.
+
+    GATEWAY_RPM was read by the gateway when it was built and by the settings the app reports, and not by the governed
+    rpm_limit lever, whose default was a typed 20. The gateway re-reads the lever at its first call, so GATEWAY_RPM held
+    only until then: a deployment that set another value was served at 20 while the app reported its own. The lever's
+    default is now GATEWAY_RPM, read once, and a governed change still replaces it at run time. The suite never calls
+    out of the platform, so conftest sets its own GATEWAY_RPM (an explicit value still wins)."""
+    import json
+    import os
+    import pathlib
+    import agentic_core.organism.reconfiguration as _rc891
+    from agentic_core.config import settings as _settings891
+    from agentic_core.ai.gateway import gateway as _g891
+
+    # 1. one reading: the settings, the lever's default and the gateway's start are the same figure
+    configured = int(os.environ["GATEWAY_RPM"])
+    assert _settings891.gateway_rpm == configured, (_settings891.gateway_rpm, configured)
+    assert _rc891._DEFAULT_CONFIG["gateway"]["rpm_limit"] == configured, (
+        "the governed lever's default is not GATEWAY_RPM, so the gateway's first re-read replaces the configured limit",
+        _rc891._DEFAULT_CONFIG["gateway"]["rpm_limit"], configured)
+
+    # 2. the suite sets its own before anything reads it, and a run that sets one keeps it
+    root = pathlib.Path(__file__).resolve().parents[1]
+    cf = (root / "integration_tests" / "conftest.py").read_text(encoding="utf-8")
+    assert 'os.environ.setdefault("GATEWAY_RPM", SUITE_GATEWAY_RPM)' in cf, "the suite does not set its own limit"
+    assert cf.index('os.environ.setdefault("GATEWAY_RPM"') < cf.index("from agentic_core"), (
+        "the suite's limit is set after something reads it")
+
+    # 3. the lever still governs at run time, and with nothing stored the gateway holds the configured default
+    S = pathlib.Path(_rc891._CONFIG_STORE)
+    held = S.read_bytes() if S.exists() else None
+    lim0, tok0 = _g891._rate_limiter._limit, _g891._rate_limiter._tokens
+    try:
+        cfg = _rc891._load_config()
+        cfg["gateway"]["rpm_limit"] = 37
+        S.write_text(json.dumps(cfg), encoding="utf-8")
+        _g891._reconfig_last_sync = 0.0
+        _g891._sync_reconfig()
+        assert _g891._rate_limiter._limit == 37, "a governed change to the lever no longer reaches the gateway"
+        S.unlink()
+        _g891._reconfig_last_sync = 0.0
+        _g891._sync_reconfig()
+        assert _g891._rate_limiter._limit == configured, (
+            "with no governed value stored, the gateway is not at the configured default", _g891._rate_limiter._limit)
+    finally:
+        if held is None:
+            S.unlink(missing_ok=True)
+        else:
+            S.write_bytes(held)
+        _g891._rate_limiter._limit, _g891._rate_limiter._tokens = lim0, tok0
+        _g891._reconfig_last_sync = 0.0
+
+    # 4. the app reports the figure with what it is
+    monkeypatch.setenv("AUTH_ENABLED", "false")
+    info = client.get("/api/v1/system/info")
+    assert info.status_code == 200, info.text[:200]
+    body = info.json()
+    assert body["gateway_rpm"] == configured, body.get("gateway_rpm")
+    assert "governed rpm_limit lever starts from" in body.get("gateway_rpm_basis", ""), body.get("gateway_rpm_basis")

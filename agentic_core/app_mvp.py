@@ -771,6 +771,10 @@ async def system_info():
                                   "(see external_use_permitted) and not a working key"),
         "external_use_permitted": os.getenv("AI_ALLOW_EXTERNAL", "false").lower() == "true",
         "gateway_rpm": settings.gateway_rpm,
+        #  W891 (FU-1141) - what the figure is, beside it
+        "gateway_rpm_basis": ("GATEWAY_RPM: the default the governed rpm_limit lever starts from. A governed change "
+                              "to the lever replaces it at run time; the lever's value is at "
+                              "/api/v1/organism/config"),
         "default_model": settings.default_model,
         "default_model_basis": ("the configured DEFAULT_MODEL name, echoed. It is NOT what serves a request: "
                                 "an owned local model serves when one is reachable, an external model only "

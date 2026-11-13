@@ -273,7 +273,8 @@ class ModelGateway:
         self.ollama_model = os.getenv("OLLAMA_MODEL", "llama3.2")
         self.claude_model = os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6")
         self.max_tokens = int(os.getenv("GATEWAY_MAX_TOKENS", "4096"))
-        rpm = int(os.getenv("GATEWAY_RPM", "20"))
+        from agentic_core.config import settings as _settings891
+        rpm = _settings891.gateway_rpm         # W891 - the one reading of GATEWAY_RPM, which the lever's default also is
         self._rate_limiter = _RateLimiter(rpm)
         self._reconfig_last_sync = 0.0
         self._reconfig_cache: dict = {}

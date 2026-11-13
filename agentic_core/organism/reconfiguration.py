@@ -39,6 +39,7 @@ import time
 import uuid
 from pathlib import Path
 from agentic_core.config import data_path, atomic_write_json, store_lock, StoreUnavailable, read_json_strict
+from agentic_core.config import settings as _settings891     # W891 - GATEWAY_RPM, read once
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -57,7 +58,9 @@ _CONFIG_HISTORY = data_path("organism_config_history.json")
 _DEFAULT_CONFIG: dict[str, Any] = {
     "version": "1.0.0",
     "gateway": {
-        "rpm_limit": 20,
+        #  W891 (FU-1141) - the lever starts from GATEWAY_RPM. It was a typed 20, which the gateway's first re-read
+        #  put in place of whatever the deployment set
+        "rpm_limit": _settings891.gateway_rpm,
         "preferred_provider": "auto",   # auto | claude | openai | ollama
         "max_tokens": 4096,
         "temperature_bias": "neutral",  # creative | neutral | precise
