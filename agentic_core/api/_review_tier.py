@@ -12,6 +12,8 @@ answer passes through, and the rules by which a stored record does or does not c
   - a record names the tool it is for, the tier it claims, and the date;
   - an agent's review counts only when it names its checklist and the sources it read, and the agent is marked
     CALIBRATED - an uncalibrated agent's review is reported, labelled, and does not raise the tier;
+  - W921 (clause 2): and only when it is a whole record - the tool version it reviewed, each source read as a row of
+    the register of sources with its page and the date it was read, and what it could not check;
   - a person's signature counts only when it carries a name, a credential AS STATED (this platform verifies no
     credential, and says so), what was reviewed, and a date on which it lapses that has not passed;
   - a record that does not meet its tier's rule is counted as not meeting it, never read down to a lower tier.
@@ -58,6 +60,46 @@ def _records() -> Optional[List[Dict[str, Any]]]:
     return [r for r in (data or []) if isinstance(r, dict)]
 
 
+def _source_register() -> Optional[Dict[str, Dict[str, Any]]]:
+    """The register of sources (docs/SOURCES.json) by id, or None when it cannot be read."""
+    import json
+    from pathlib import Path
+    try:
+        rows = json.loads((Path(__file__).resolve().parents[2] / "docs" / "SOURCES.json").read_text(encoding="utf-8"))["rows"]
+        return {str(r["id"]): r for r in rows if isinstance(r, dict) and r.get("id")}
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+
+
+def _clause2_missing(record: Dict[str, Any], today: _dt.date) -> Optional[str]:
+    """W921 (P5.15 clause 2) - what an agent's review lacks of a whole record, or None when it lacks nothing."""
+    if not str(record.get("tool_version") or "").strip():
+        return "it does not say which version of the tool it reviewed"
+    if not str(record.get("could_not_check") or "").strip():
+        return "it does not say what it could not check (it says 'nothing' when that is so)"
+    register = _source_register()
+    if register is None:
+        return "the register of sources (docs/SOURCES.json) could not be read, so no source it names can be checked"
+    for s in record.get("sources_read") or []:
+        if not isinstance(s, dict):
+            return (f"the source {str(s)[:60]!r} is not recorded with the page read and the date it was read "
+                    f"(a record from before clause 2 is not counted)")
+        sid = str(s.get("source") or "").strip()
+        if sid not in register:
+            return f"the source {sid!r} is not a row of the register of sources (docs/SOURCES.json)"
+        if not str(s.get("page") or "").strip():
+            return f"the source {sid!r} does not say which page or section was read"
+        read_on = _date(s.get("read_on"))
+        if not read_on:
+            return f"the source {sid!r} does not say on what date it was read"
+        if read_on > today:
+            return f"the source {sid!r} is dated {read_on.isoformat()}, after today"
+        if register[sid].get("status") == "replaced":
+            return (f"the source {sid!r} is marked replaced in the register (by {register[sid].get('replaced_by')}), "
+                    f"so the review was made against a superseded text")
+    return None
+
+
 def _date(value) -> Optional[_dt.date]:
     try:
         return _dt.date.fromisoformat(str(value)[:10])
@@ -79,6 +121,9 @@ def counts(record: Dict[str, Any], today: Optional[_dt.date] = None) -> Dict[str
     elif tier == REVIEWED_BY_AGENT:
         if not str(record.get("checklist") or "").strip() or not (record.get("sources_read") or []):
             return {"counts": False, "why_not": "it names no checklist or no source it read"}
+        _short = _clause2_missing(record, today)                 # W921 (P5.15 clause 2) - a whole record, or none
+        if _short:
+            return {"counts": False, "why_not": _short}
         #  W691 - CALIBRATION IS MEASURED, NEVER TICKED. This used to read a flag on the record, which was
         #  whatever the person recording it set. It is now read from the agent's own recorded run on the
         #  discipline's calibration set, re-scored from that run's flags. A flag left on an older record is

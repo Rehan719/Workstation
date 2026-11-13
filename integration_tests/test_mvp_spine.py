@@ -63290,7 +63290,8 @@ def test_w688_a_tool_states_the_highest_tier_its_records_support_and_unreviewed_
     assert say([rule])["tier"] == "checked_by_rule"
     assert say([{**rule, "test": ""}])["tier"] == "unreviewed"
     agent = {"tool": T, "tier": "reviewed_by_workstation_agent", "date": "2026-10-05", "checklist": "care checklist v1",
-             "sources_read": ["nice-ng249"], "agent": "reviewer-cal"}
+             "sources_read": [{"source": "nice-ng249", "page": "recommendations 1.1", "read_on": "2026-10-05"}],
+             "agent": "reviewer-cal", "tool_version": "the tree at W921", "could_not_check": "nothing beyond the guideline's own text"}
     assert say([rule, agent])["tier"] == "reviewed_by_workstation_agent"
     uncal = say([rule, {**agent, "agent": "reviewer-new"}])
     assert uncal["tier"] == "checked_by_rule", "an uncalibrated agent's review raised the tier"
@@ -63399,7 +63400,8 @@ def test_w689_a_review_is_recorded_through_one_door_and_a_short_record_is_refuse
     assert not store.exists(), "a refused record wrote the store"
     #  an agent's review that names no model is refused too; an unknown field is refused, never dropped
     agent = {"tool": tool, "tier": "reviewed_by_workstation_agent", "date": today, "checklist": "care checklist v1",
-             "sources_read": ["nice-ng249"], "agent": "reviewer-cal", "model": "local-model"}
+             "sources_read": [{"source": "nice-ng249", "page": "recommendations 1.1", "read_on": today}],
+             "agent": "reviewer-cal", "model": "local-model", "tool_version": "the tree at W921", "could_not_check": "nothing beyond the guideline's own text"}
     assert client.post("/api/v1/review/record", json={k: v for k, v in agent.items() if k != "model"}).status_code == 422
     assert client.post("/api/v1/review/record", json={**agent, "score": 9}).status_code == 422
     assert not store.exists()
@@ -63482,7 +63484,7 @@ def test_w690_the_review_records_are_on_the_governance_page_and_every_sentence_i
     #  W691 - whether the reviewing agent is calibrated is no longer the page's to say at all: the tick is gone,
     #  the agent is named, and the server reads its calibration from its recorded run
     assert "agent_calibrated" not in panel and "checkbox" not in panel, "the page still lets a person tick an agent as calibrated"
-    assert "fields: ['agent', 'checklist', 'sources_read', 'model', 'could_not_check']" in panel
+    assert "fields: ['agent', 'checklist', 'tool_version', 'sources_read', 'model', 'could_not_check']" in panel
     #  the page words no verdict of its own (read with comments removed)
     import re as _re
     shown = _slash_star_restored(_re.sub(r"//[^\n]*|\{/\*.*?\*/\}", "", _slash_star_masked(panel), flags=_re.S)).lower()
@@ -63570,7 +63572,8 @@ def test_w691_a_reviewer_agent_is_calibrated_by_its_recorded_run_and_never_by_a_
     store = tmp_path / "review_tier_records.json"
     monkeypatch.setattr(rt, "_path", lambda: store)
     rec = {"tool": "care_risk_assess", "tier": "reviewed_by_workstation_agent", "date": today, "checklist": "care checklist v1",
-           "sources_read": ["nice-ng249"], "model": "m"}
+           "sources_read": [{"source": "nice-ng249", "page": "recommendations 1.1", "read_on": today}], "model": "m",
+           "tool_version": "the tree at W921", "could_not_check": "nothing beyond the guideline's own text"}
     assert client.post("/api/v1/review/record", json={**rec, "agent": "care-reviewer"}).json()["tool_now_says"]["tier"] == "reviewed_by_workstation_agent"
     said = client.get("/api/v1/review/tier/care_risk_assess").json()
     assert said["agent_rates"]["agent"] == "care-reviewer" and said["agent_rates"]["caught"] == 3 and said["agent_rates"]["clean_cases"] == 6
@@ -78147,3 +78150,74 @@ def test_w920_fu742_the_founders_guide_gives_only_commands_a_guard_runs_on_the_t
     assert "row FU-742 stays open" in guide
     mandates = (root / "docs/compliance/MANDATES.md").read_text(encoding="utf-8")
     assert "`docs/business/FOUNDERS_GUIDE.md`" in mandates and "the setup document does not" not in mandates
+
+
+def test_w921_p515_clause2_an_agents_review_counts_only_as_a_whole_record(client, tmp_path, monkeypatch):
+    """P5.15 clause 2 (W921). An agent's review is a RECORD: the tool and version reviewed, the checklist used, each
+    source read with its page and date, the model that reviewed, and what it could not check. The plan's
+    measurement found the record had no tool version, free-string sources with no page, no date and no register row,
+    and an optional could-not-check. A source the register marks replaced counted like any other.
+
+    This guard drives the door: each short record is refused in its own words and nothing is written. A whole record
+    from a calibrated agent counts and is kept with every part. A source the register marks replaced is refused,
+    naming its replacement. A record stored before clause 2 is not counted, and the tool's own statement says so.
+    The page's form asks for the version and sends one source per line as register id, page and date read."""
+    import datetime as _dt
+    import json
+    import pathlib
+    from agentic_core.api import _review_tier as rt
+    from agentic_core.api import _review_calibration as cal
+    store = tmp_path / "review_tier_records.json"
+    monkeypatch.setattr(rt, "_path", lambda: store)
+    monkeypatch.setattr(cal, "calibration_of", lambda agent, discipline="care": (
+        {"calibrated": True, "known": True, "why_not": None} if agent == "w921-reviewer" else
+        {"calibrated": False, "known": True, "why_not": "never run on the calibration set"}))
+    today = _dt.date.today().isoformat()
+    later = (_dt.date.today() + _dt.timedelta(days=3)).isoformat()
+    register = {r["id"]: r for r in json.loads((pathlib.Path(__file__).resolve().parents[1] / "docs/SOURCES.json")
+                                               .read_text(encoding="utf-8"))["rows"]}
+    replaced = next(i for i, r in register.items() if r.get("status") == "replaced")
+    current = next(i for i, r in register.items() if r.get("status") != "replaced")
+    read = {"source": current, "page": "the recommendations section", "read_on": today}
+    whole = {"tool": "care_risk_assess", "tier": "reviewed_by_workstation_agent", "date": today,
+             "checklist": "care checklist v2", "tool_version": "care_risk_assess as at W921", "sources_read": [read],
+             "model": "local-model", "agent": "w921-reviewer", "could_not_check": "nothing beyond the source's own text"}
+
+    #  every short record is refused in its own words, and nothing is written
+    for short, said in (
+        ({k: v for k, v in whole.items() if k != "tool_version"}, "which version of the tool"),
+        ({k: v for k, v in whole.items() if k != "could_not_check"}, "what it could not check"),
+        ({**whole, "sources_read": [current]}, "page read and the date it was read"),
+        ({**whole, "sources_read": [{**read, "source": "no-such-source"}]}, "not a row of the register of sources"),
+        ({**whole, "sources_read": [{**read, "page": " "}]}, "which page or section was read"),
+        ({**whole, "sources_read": [{**read, "read_on": "lately"}]}, "on what date it was read"),
+        ({**whole, "sources_read": [{**read, "read_on": later}]}, "after today"),
+        ({**whole, "sources_read": [read, {**read, "source": replaced}]}, f"marked replaced in the register (by {register[replaced].get('replaced_by')})"),
+    ):
+        r = client.post("/api/v1/review/record", json=short)
+        assert r.status_code == 422 and said in r.json()["detail"], (said, r.status_code, r.text[:300])
+    assert not store.exists(), "a refused record was written"
+
+    #  a whole record from a calibrated agent counts, and is kept with every part clause 2 names
+    ok = client.post("/api/v1/review/record", json=whole)
+    assert ok.status_code == 200 and ok.json()["counts"] is True, ok.text[:300]
+    assert ok.json()["tool_now_says"]["tier"] == "reviewed_by_workstation_agent"
+    kept = json.loads(store.read_text(encoding="utf-8"))[-1]
+    for part in ("tool_version", "checklist", "model", "could_not_check"):
+        assert kept[part] == whole[part], part
+    assert kept["sources_read"] == [read]
+
+    #  a record stored before clause 2 (a bare source id, no version) is not counted, and the tool says why
+    store.write_text(json.dumps([{"tool": "care_handover", "tier": "reviewed_by_workstation_agent", "date": today,
+                                  "checklist": "care checklist v1", "sources_read": [current], "model": "m",
+                                  "agent": "w921-reviewer", "record_id": "rev-before-clause-2"}]), encoding="utf-8")
+    assert rt.review_statement("care_handover")["tier"] == "unreviewed"
+    why = rt.counts(json.loads(store.read_text(encoding="utf-8"))[0])["why_not"]
+    assert "which version of the tool" in why, why
+
+    #  the page asks for the version and sends one source per line, as register id, page and date read
+    page = (pathlib.Path(__file__).resolve().parents[1]
+            / "apps/workstation-superapp/src/pages/governance/ReviewRecords.tsx").read_text(encoding="utf-8")
+    assert "fields: ['agent', 'checklist', 'tool_version', 'sources_read', 'model', 'could_not_check']" in page
+    assert "const [source, page, read_on] = l.split('|').map(s => s.trim());" in page
+    assert "return { source, page, read_on };" in page and "<textarea" in page

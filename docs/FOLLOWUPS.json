@@ -23576,6 +23576,29 @@
       "note": "",
       "slot_source": "a dependency removal is the Owner's: the 2026-10-07b ruling covered only the rows that were REMOVABLE then",
       "tier": 3
+    },
+    {
+      "id": "FU-1175",
+      "title": "An agent's review record carries no tool version, no page or date for its sources, and need not say what it could not check",
+      "why": "P5.15 clause 2: an agent's review is a RECORD - the tool and version reviewed, the checklist used, each source read with its page and date, the model that reviewed, and what it could not check. Measured (docs/REMAINING_WORK_MEASURED.md, P5.15): the record had no tool-version field, its sources were free strings with no page, no date and no register row, and what it could not check was optional. A source the register marks replaced counted like any other.",
+      "source": "W921 (the plan's measurement of P5.15, which named it with no row)",
+      "found": "2026-11-13",
+      "files": [
+        "agentic_core/api/_review_tier.py",
+        "agentic_core/api/review_cell.py",
+        "apps/workstation-superapp/src/pages/governance/ReviewRecords.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.15",
+      "status": "done",
+      "closed_by": "W921",
+      "note": "",
+      "slot_source": "clause 2 of P5.15 itself",
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: an agent's review counts only as a whole record - the tool version it reviewed, each source as a row of the register of sources with the page read and the date read (no later than today), and what it could not check. A source the register marks replaced makes the review not count, naming the replacement. The record route refuses a short record before anything is written. A record stored before clause 2 is not counted, with the reason. The governance page asks for the version and takes one source per line. Driven in test_w921; the four earlier review guards post whole records."
     }
   ],
   "routes": [
