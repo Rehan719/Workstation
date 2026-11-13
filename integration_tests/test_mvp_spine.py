@@ -77415,3 +77415,35 @@ def test_w910_fu399_the_capital_funds_figures_are_guarded_by_a_render_against_th
                        ("/api/v1/projects/stats/summary", "portfolio")):
         r = client.get(route)
         assert r.status_code == 200 and set(fx[key]) <= set(r.json()), (route, sorted(set(fx[key]) - set(r.json())))
+
+
+def test_w911_fu399_a_beats_failed_steps_are_guarded_by_a_render_against_the_heartbeats_own_answers(client):
+    """FU-399 part 4 (W911). FU-417's beat failed with its reason swallowed. Since W611 (FU-461) every beat records
+    the steps that raised, by name, with their reasons, and the Heartbeat page shows them as a chip on the beat's
+    row. A chip is a claim about what a person SEES. HeartbeatMonitor.test.tsx mounts the real page against the
+    heartbeat's own answers, captured before and after one real beat. It reads the rows in the DOM: no chip on a
+    beat that raised nothing, and on one that did, how many steps failed, which, and each reason in the chip. Four
+    page blinds each turn it red, run by the round as it runs tsc. This guard holds what the render rests on. The
+    test mounts the real page. The captured beat is a record the live heartbeat still writes, with every field the
+    row reads, so a renamed field is not hidden behind a frozen answer."""
+    import json
+    import pathlib
+    page_dir = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/pages/organism"
+    t = (page_dir / "HeartbeatMonitor.test.tsx").read_text(encoding="utf-8")
+    assert "import { HeartbeatMonitor } from './HeartbeatMonitor';" in t and "<HeartbeatMonitor />" in t, (
+        "the rendered test does not mount the real page")
+    assert "findByTestId('beat-steps-failed')" in t and "getAttribute('title')" in t
+
+    fx = json.loads((page_dir / "HeartbeatMonitor.fixture.json").read_text(encoding="utf-8"))
+    assert fx["before"]["recent"] == [] and len(fx["after"]["recent"]) == 1, "the fixture is not before and after one beat"
+    beat = client.post("/api/v1/heartbeat/beat")
+    assert beat.status_code == 200, beat.text[:200]
+    live = client.get("/api/v1/heartbeat/status").json()
+    assert set(fx["after"]) <= set(live), ("the fixture answers a status field the route no longer does",
+                                           sorted(set(fx["after"]) - set(live)))
+    rec, fx_rec = live["recent"][-1], fx["after"]["recent"][-1]
+    assert set(fx_rec) <= set(rec), ("the captured beat holds a field a live beat no longer records",
+                                     sorted(set(fx_rec) - set(rec)))
+    for key in ("beat", "phase", "actions", "steps_failed", "self_recovery", "realisation"):
+        assert key in rec and key in fx_rec, ("the row reads a field the beat or the fixture does not have", key)
+    assert isinstance(rec["steps_failed"], dict), rec["steps_failed"]
