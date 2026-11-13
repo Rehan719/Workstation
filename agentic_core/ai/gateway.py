@@ -177,26 +177,52 @@ def _external_budget_allows(provider: str) -> bool:
 
 
 class _RateLimiter:
-    """Token-bucket rate limiter — prevents runaway API spend."""
+    """Token-bucket rate limiter — prevents runaway API spend.
+
+    W889 (FU-1141) - IT COUNTS WHAT IT COSTS. Every model call goes through it, the suite's included, at the default
+    20 a minute, and nothing said how long the calls waited in it. It now counts:
+    - the calls it let through;
+    - how many of them waited;
+    - the seconds it slept;
+    - the seconds callers spent inside it. A caller queued behind a sleeping one waits on the lock, which the
+      sleep alone does not show.
+    Counting changes nothing about when a call goes."""
 
     def __init__(self, calls_per_minute: int):
         self._limit = calls_per_minute
         self._tokens = float(calls_per_minute)
         self._last = time.monotonic()
         self._lock = asyncio.Lock()
+        self.calls = 0                    # W889 - let through
+        self.waited = 0                   # W889 - of those, how many slept first
+        self.slept_s = 0.0                # W889 - seconds slept
+        self.in_limiter_s = 0.0           # W889 - seconds callers spent inside acquire, the lock wait included
 
     async def acquire(self):
-        async with self._lock:
-            now = time.monotonic()
-            elapsed = now - self._last
-            self._last = now
-            self._tokens = min(self._limit, self._tokens + elapsed * (self._limit / 60.0))
-            if self._tokens < 1:
-                wait = (1 - self._tokens) * 60.0 / self._limit
-                await asyncio.sleep(wait)
-                self._tokens = 0
-            else:
-                self._tokens -= 1
+        _entered889 = time.monotonic()
+        try:
+            async with self._lock:
+                now = time.monotonic()
+                elapsed = now - self._last
+                self._last = now
+                self._tokens = min(self._limit, self._tokens + elapsed * (self._limit / 60.0))
+                if self._tokens < 1:
+                    wait = (1 - self._tokens) * 60.0 / self._limit
+                    self.waited += 1
+                    _slept889 = time.monotonic()
+                    await asyncio.sleep(wait)
+                    self.slept_s += time.monotonic() - _slept889
+                    self._tokens = 0
+                else:
+                    self._tokens -= 1
+                self.calls += 1
+        finally:
+            self.in_limiter_s += time.monotonic() - _entered889
+
+    def stats(self) -> dict:
+        """W889 (FU-1141) - what this limiter has cost its process so far, and the limit it holds now."""
+        return {"rpm": self._limit, "calls": self.calls, "waited": self.waited,
+                "slept_s": round(self.slept_s, 3), "in_limiter_s": round(self.in_limiter_s, 3)}
 
 
 # W489 (sweep S4.6, C3) — RECALL IS OPTED INTO, NEVER INHERITED.
@@ -857,3 +883,9 @@ class ModelGateway:
                 yield ev["token"]
 
 gateway = ModelGateway()
+
+
+def limiter_stats() -> dict:
+    """W889 (FU-1141) - what the gateway's rate limiter has cost this process. It gives the limit it holds now, the
+    calls it let through, how many waited, the seconds it slept and the seconds callers spent inside it."""
+    return gateway._rate_limiter.stats()

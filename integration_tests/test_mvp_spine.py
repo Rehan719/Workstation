@@ -76087,3 +76087,105 @@ def test_w888_a_beat_driven_visit_names_the_service_identity_and_the_levers_that
         assert first["driven_by"]["identity"] == "establishment" and first["driven_by"]["levers"] == [], first.get("driven_by")
     finally:
         _lv888.deregister(vid)
+
+
+def test_w889_a_run_says_what_the_gateway_rate_limiter_cost_it(monkeypatch):
+    """FU-1141, part 1: measure first. Every model call the suite makes goes through the gateway's rate limiter, at
+    the default 20 calls a minute per process. The limiter sleeps while holding its lock, so every other caller in
+    the process waits behind it. Nothing said what that cost a run, and the row asks for the limiter's share of
+    suite time to be measured before a default is chosen.
+
+    The limiter now counts the calls it let through, how many waited, the seconds it slept and the seconds callers
+    spent inside it (the lock wait included). Each xdist worker hands its figures to the controller, and every run
+    says them in one line before its summary. Driven here on the limiter, on a query through the gateway, on the
+    line, and on a real parallel run of two workers. Nothing about when a call goes is changed."""
+    import asyncio
+    import os
+    import pathlib
+    import subprocess
+    import sys
+    import tempfile
+    import textwrap
+    from agentic_core.ai import gateway as _gw889
+    import integration_tests.conftest as _cf889
+
+    # 1. the limiter counts: a drained bucket waits and says how long, a full one does not wait
+    import time as _t889
+    lim = _gw889._RateLimiter(600)                      # ten a second, so a wait is a tenth of a second
+    lim._tokens, lim._last = 0.0, _t889.monotonic()     # drained just now: the bucket has had no time to refill
+    asyncio.run(lim.acquire())
+    s1 = lim.stats()
+    assert s1["calls"] == 1 and s1["waited"] == 1, s1
+    assert 0.05 <= s1["slept_s"] <= 1.5, ("the limiter slept and did not say how long", s1)
+    assert s1["in_limiter_s"] >= s1["slept_s"] - 0.005, ("the time inside the limiter is less than its sleep", s1)
+    lim._tokens = 5.0
+    asyncio.run(lim.acquire())
+    s2 = lim.stats()
+    assert s2["calls"] == 2 and s2["waited"] == 1 and s2["slept_s"] == s1["slept_s"] and s2["rpm"] == 600, (s1, s2)
+
+    # 2. a query through the gateway is counted on the gateway's own limiter, once
+    monkeypatch.setattr(_gw889.gateway._rate_limiter, "_lock", asyncio.Lock())   # a fresh loop, a fresh lock
+    before = _gw889.limiter_stats()
+    asyncio.run(_gw889.gateway.query_meta("w889 one call through the limiter", agent="assistant"))
+    after = _gw889.limiter_stats()
+    assert after["calls"] == before["calls"] + 1, ("a query through the gateway was not counted once", before, after)
+    assert set(after) == {"rpm", "calls", "waited", "slept_s", "in_limiter_s"}, after
+
+    # 3. the line sums the processes that used the gateway and says each one's own, and what could not be read
+    line = _cf889.limiter_line({
+        "gw0": {"imported": True, "rpm": 20, "calls": 30, "waited": 10, "slept_s": 25.0, "in_limiter_s": 26.0,
+                "process_s": 100.0},
+        "gw1": {"imported": False, "process_s": 50.0},
+        "gw2": None,
+        "gw3": {"imported": True, "problem": "KeyError", "process_s": 10.0}})
+    assert line.startswith("gateway rate limiter (FU-1141): 30 calls in 1 process(es), 10 waited; it slept 25.0s, "
+                           "25.0% of 100 process-seconds,"), line
+    assert "and callers spent 26.0s inside it, counted per caller; at 20 a minute" in line, line
+    assert "gw0: 30 calls, 10 waited, 25.0s slept" in line, line
+    assert "gw1: the gateway was not imported" in line and "gw2: no figures came back" in line, line
+    assert "gw3: not read (KeyError)" in line, line
+    assert "no process used it" in _cf889.limiter_line({"gw0": {"imported": False, "process_s": 1.0}})
+    #  a line about the limiter must never read as a test outcome to a reader of the run's tail
+    import re as _re889
+    assert not _re889.search(r"[0-9]+ (passed|failed|error)", line), line
+
+    # 4. DRIVEN: a parallel run of two workers ends with the line, both workers' figures in it
+    _MARK889 = "WORKSTATION_W889_CHILD_RUN"
+    if os.environ.get(_MARK889):
+        return                                          # the child run does not spawn another
+    root = pathlib.Path(__file__).resolve().parents[1]
+    tmp = pathlib.Path(tempfile.mkdtemp(prefix="w889_", dir=os.environ["DATA_DIR"]))
+    (tmp / "test_w889_child.py").write_text(textwrap.dedent('''
+        import asyncio
+        import pytest
+
+
+        @pytest.mark.parametrize("i", range(4))
+        def test_one_call_that_waits(i):
+            import time
+            from agentic_core.ai.gateway import gateway
+            lim = gateway._rate_limiter
+            lim._tokens, lim._last = 0.0, time.monotonic()   # drained just now, so this call waits a tenth of a second
+            asyncio.run(lim.acquire())
+    '''), encoding="utf-8")
+    store = tmp / "store"
+    env = {k: v for k, v in os.environ.items() if not k.startswith("PYTEST_")}
+    env.update({_MARK889: "1", "GATEWAY_RPM": "600", "PYTHONIOENCODING": "utf-8",
+                "DATA_DIR": str(store), "WORKSTATION_DATA_DIR": str(store),
+                "WORKSTATION_UEG_PATH": str(store / "ueg.jsonl"), "PROJECTS_DIR": str(store / "projects"),
+                "LISTINGS_DIR": str(store / "marketplace"), "SYNTHESIS_OUTPUT_DIR": str(store / "synthesis"),
+                "PROPOSALS_DIR": str(store / "proposals")})
+    r = subprocess.run([sys.executable, "-m", "pytest", str(tmp / "test_w889_child.py"), "-q", "--no-header",
+                        "-p", "no:cacheprovider", "-p", "integration_tests.conftest", "-n", "2",
+                        "--rootdir", str(tmp)],
+                       capture_output=True, text=True, encoding="utf-8", errors="replace", env=env, cwd=str(root),
+                       timeout=600)
+    out = (r.stdout or "") + (r.stderr or "")
+    assert r.returncode == 0, ("the child run of two workers did not pass", r.returncode, out[-2000:])
+    lines = [x for x in out.splitlines() if x.startswith("gateway rate limiter (FU-1141):")]
+    assert len(lines) == 1, ("a parallel run did not end with exactly one limiter line", out[-2000:])
+    got = lines[0]
+    assert "4 calls in " in got and ", 4 waited; it slept " in got and "at 600 a minute" in got, got
+    assert "gw0: " in got and "gw1: " in got and "no figures came back" not in got, got
+    tail = [x for x in out.splitlines() if x.strip()][-1]
+    assert "4 passed" in tail, ("the run's last line is no longer its outcome", tail)

@@ -5,6 +5,7 @@ that the MVP spine requires.
 """
 import json
 import os
+import time as _time889
 import pytest
 
 # Use isolated test data directories so tests don't pollute real data.
@@ -330,6 +331,9 @@ def pytest_runtest_logreport(report):
 
 
 def pytest_sessionfinish(session, exitstatus):
+    #  W889 (FU-1141) - a worker hands what the gateway's rate limiter cost it to the controller, which says it
+    if hasattr(session.config, "workerinput") and isinstance(getattr(session.config, "workeroutput", None), dict):
+        session.config.workeroutput["w889_limiter"] = _limiter_figures()
     # Writes the final count when the run DOES finish. Its ABSENCE is what the verdict reader detects.
     _write_progress()
     #  AND DISARM THE WATCHDOG, in every process. A run that finished must leave no pending timer: with
@@ -344,3 +348,88 @@ def pytest_sessionfinish(session, exitstatus):
             _STALL_FH["f"].flush()
         except Exception:      # noqa: BLE001
             pass
+
+
+# ── W889 (FU-1141) — WHAT THE GATEWAY'S RATE LIMITER COST THIS RUN ─────────────────────────────────────────────
+#  Every model call the suite makes goes through the gateway's rate limiter, at the default 20 calls a minute per
+#  process, and nothing said how long the calls waited in it. The row asks for that share to be measured before a
+#  default is chosen. So each process reads the limiter's own counters at the end of its session. It never imports
+#  the gateway to do it: a process that never imported it never used it. An xdist worker hands its figures to the
+#  controller, and the controller says them in one line before the summary. A serial run says its own.
+_LIMITER_T0 = {"t": None}
+_LIMITER_BY_WORKER: dict = {}
+
+
+def pytest_sessionstart(session):
+    _LIMITER_T0["t"] = _time889.monotonic()
+
+
+def _limiter_figures() -> dict:
+    """This process's figures, read from the limiter's counters. Never raises."""
+    t0 = _LIMITER_T0["t"]
+    process_s = round(_time889.monotonic() - t0, 1) if t0 is not None else None
+    gw = _sys.modules.get("agentic_core.ai.gateway")
+    if gw is None:
+        return {"imported": False, "process_s": process_s}
+    try:
+        figures = dict(gw.limiter_stats())
+    except Exception as e:     # noqa: BLE001 - said in the line; an instrument never breaks the run it reports on
+        return {"imported": True, "problem": type(e).__name__, "process_s": process_s}
+    figures.update(imported=True, process_s=process_s)
+    return figures
+
+
+def limiter_line(figures: dict) -> str:
+    """The one line a run ends with. `figures` maps a process to what _limiter_figures read there (None when nothing
+    came back). The line sums the processes that used the gateway, then gives each process's own figures."""
+    used = {k: v for k, v in figures.items() if isinstance(v, dict) and v.get("imported") and "calls" in v}
+    parts = []
+    for k in sorted(figures):
+        v = figures[k]
+        if not isinstance(v, dict):
+            parts.append(f"{k}: no figures came back")
+        elif not v.get("imported"):
+            parts.append(f"{k}: the gateway was not imported")
+        elif "calls" not in v:
+            parts.append(f"{k}: not read ({v.get('problem')})")
+        else:
+            parts.append(f"{k}: {v['calls']} calls, {v['waited']} waited, {v['slept_s']:.1f}s slept")
+    head = "gateway rate limiter (FU-1141):"
+    if not used:
+        return f"{head} no process used it [{'; '.join(parts)}]"
+    calls = sum(v["calls"] for v in used.values())
+    waited = sum(v["waited"] for v in used.values())
+    slept = sum(v["slept_s"] for v in used.values())
+    inside = sum(v["in_limiter_s"] for v in used.values())
+    process_s = sum(v.get("process_s") or 0 for v in used.values())
+    #  the share is of the sleep: callers' time inside the limiter overlaps when they wait together, so it is said
+    #  per caller and never as a share of the process's time
+    share = f"{slept / process_s:.1%} of {process_s:.0f} process-seconds" if process_s else "a share not known"
+    limits = "/".join(str(r) for r in sorted({v["rpm"] for v in used.values()}))
+    return (f"{head} {calls} calls in {len(used)} process(es), {waited} waited; it slept {slept:.1f}s, {share}, "
+            f"and callers spent {inside:.1f}s inside it, counted per caller; at {limits} a minute "
+            f"[{'; '.join(parts)}]")
+
+
+@pytest.hookimpl(optionalhook=True)
+def pytest_testnodedown(node, error):
+    #  W889 - the controller keeps what each worker handed over. A worker that went down handed nothing, and says so.
+    try:
+        _LIMITER_BY_WORKER[str(node.gateway.id)] = (getattr(node, "workeroutput", None) or {}).get("w889_limiter")
+    except Exception:          # noqa: BLE001 - an instrument never breaks the run it reports on
+        pass
+
+
+def pytest_terminal_summary(terminalreporter, exitstatus, config):
+    if hasattr(config, "workerinput"):
+        return
+    if _LIMITER_BY_WORKER:
+        figures = dict(_LIMITER_BY_WORKER)
+    elif config.pluginmanager.has_plugin("dsession"):
+        figures = {"the workers": None}          # a parallel run whose workers handed nothing back
+    else:
+        figures = {"this process": _limiter_figures()}
+    try:
+        terminalreporter.write_line(limiter_line(figures))
+    except Exception:          # noqa: BLE001 - an instrument never breaks the run it reports on
+        pass
