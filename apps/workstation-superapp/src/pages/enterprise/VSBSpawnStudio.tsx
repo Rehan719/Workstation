@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { provenanceBadge, provenanceMapBadge, provenanceMapFromTrace, axiosDetail} from '../../lib/api';
-import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W928
+import { ReadFailures, useReadFailures, describeReadFailure } from '../../components/ReadFailures';   // W928, W960
 import { DOMAINS as CANON_DOMAINS, domainLabel } from '../../lib/taxonomy';   // W735 (FU-831): domainLabel
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -145,7 +145,10 @@ export const VSBSpawnStudio: React.FC = () => {
     try {
       const r = await axios.get('/api/v1/vsb');
       setEntities(r.data.entities ?? []);
-    } catch {}
+    } catch (e) {
+      //  W960 (FU-1181) - an empty list read as "no entities yet" when the read had failed
+      setError(`The entities could not be read, so the list is not what is there: ${describeReadFailure(e)}`);
+    }
     setLoadingEntities(false);
   };
 
@@ -485,6 +488,7 @@ const VSBDetailPanel: React.FC<{
   const [swarmErr, setSwarmErr] = useState('');
   const [deliverables, setDeliverables] = useState<VSBDeliverable[]>([]);
   const [delivBusy, setDelivBusy] = useState(false);
+  const [delivErr, setDelivErr] = useState('');     // W960 (FU-1181)
   const [delivType, setDelivType] = useState('brief');
   const [delivTypes, setDelivTypes] = useState<string[]>([]);
   useEffect(() => {
@@ -498,7 +502,7 @@ const VSBDetailPanel: React.FC<{
   const ns = d.native_swarm;
 
   const produceDeliverable = async () => {
-    setDelivBusy(true);
+    setDelivBusy(true); setDelivErr('');
     try {
       await axios.post('/api/v1/deliverables/produce', {
         type: delivType, vsb_id: d.vsb_id, domain: d.domain,
@@ -506,7 +510,10 @@ const VSBDetailPanel: React.FC<{
       });
       const r = await axios.get(`/api/v1/deliverables?vsb_id=${d.vsb_id}`);
       setDeliverables(r.data.deliverables || []);
-    } catch { /* surfaced by empty state */ }
+    } catch (e) {
+      //  W960 (FU-1181) - "None yet" is not that the deliverable was refused or the list could not be read
+      setDelivErr(`Not produced, or the list could not be read again: ${describeReadFailure(e)}`);
+    }
     setDelivBusy(false);
   };
 
@@ -616,7 +623,8 @@ const VSBDetailPanel: React.FC<{
             </button>
           </div>
         </div>
-        {deliverables.length === 0 && <p className="text-[9px] text-slate-600">None yet — produce one, or use the Deliverables page.</p>}
+        {delivErr && <p role="alert" data-testid="deliverable-produce-failed" className="text-[9px] text-vital font-bold">{delivErr}</p>}
+        {deliverables.length === 0 && !delivErr && <p className="text-[9px] text-slate-600">None yet — produce one, or use the Deliverables page.</p>}
         <div className="space-y-1">
           {deliverables.map(dv => (
             <a key={dv.id} href="/deliverables" className="flex items-center gap-2 text-[10px] p-1.5 rounded-lg bg-slate-950 border border-slate-900 hover:border-aura/30">

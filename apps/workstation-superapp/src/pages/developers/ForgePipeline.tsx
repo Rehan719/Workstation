@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Hammer, Loader2, AlertCircle, Check, ChevronDown, ChevronUp, Rocket, FlaskConical } from 'lucide-react';
 import { FabricLink } from '../../components/FabricLink';
-import { provenanceMapBadge, apiJson } from '../../lib/api';
+import { provenanceMapBadge, apiJson, bodyOrNull } from '../../lib/api';
 import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W929
 
 interface Resource { id: string; name: string; role: string; biomimetic: string }
@@ -63,7 +63,7 @@ export const ForgePipeline: React.FC = () => {
       // W805 (FU-823) - a refused pipeline says WHY: the route's sentence, not a bare status number
       if (!r.ok) {
         let _why = '';
-        try { const _b = await r.json(); _why = typeof _b?.detail === 'string' ? _b.detail : ''; } catch { /* not JSON */ }
+        const _b = await bodyOrNull(r); _why = typeof _b?.detail === 'string' ? _b.detail : '';   // W960 (FU-1181)
         setError(_why ? `HTTP ${r.status} — ${_why}` : `HTTP ${r.status}`); setRunning(false); return;
       }
       setResult(await r.json());

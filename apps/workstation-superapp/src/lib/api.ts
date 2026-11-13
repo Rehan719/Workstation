@@ -48,12 +48,10 @@ export async function apiJson<T = any>(url: string, opts: ApiOptions = {}): Prom
   });
   if (!res.ok) {
     let detail = res.statusText || 'request failed';
-    try {
-      const j = await res.json();
-      if (j && typeof j === 'object' && 'detail' in j) {
-        detail = typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail);
-      }
-    } catch { /* non-JSON error body — keep the status text */ }
+    const j = await bodyOrNull(res);              // W960 (FU-1181) - a body that is not JSON keeps the status text
+    if (j && typeof j === 'object' && 'detail' in j) {
+      detail = typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail);
+    }
     throw new ApiError(res.status, detail.slice(0, 300));
   }
   return res.json() as Promise<T>;

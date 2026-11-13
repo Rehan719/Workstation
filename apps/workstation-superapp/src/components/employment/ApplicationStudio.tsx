@@ -9,6 +9,7 @@ import {
 import { Card, Button } from '@workstation/ui';
 import { provenanceBadge, provenanceLine } from '../../lib/api';
 import { ReviewOptions } from '../ReviewOptions';   // W925 (P5.15 release)
+import { describeReadFailure } from '../ReadFailures';   // W960 (FU-1181)
 
 interface IngestedFile {
   file_id: string;
@@ -77,6 +78,8 @@ const OUTPUT_TYPES = [
 // W470 — the title is the registry's (the Employment hub passes toolsFor('/employment')['studio'].title)
 export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
   const [uploads, setUploads] = useState<IngestedFile[]>([]);
+  //  W960 (FU-1181) - a failed read of the uploads is said: the list below is then not the uploads there are
+  const [uploadsErr, setUploadsErr] = useState('');
   const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
   const [classifying, setClassifying] = useState(false);
   const [classificationNotices, setClassificationNotices] = useState<ClassificationNotice[]>([]);
@@ -109,8 +112,9 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
     try {
       const resp = await axios.get('/api/v1/ingest/list');
       setUploads(resp.data);
+      setUploadsErr('');
     } catch (e) {
-      // Non-fatal: leave existing uploads list as-is.
+      setUploadsErr(`Your uploads could not be read, so the list below may not be what is there: ${describeReadFailure(e)}`);
     }
   };
 
@@ -288,6 +292,7 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
 
       <div id="input-materials-section" className="space-y-4">
         <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Input Materials</label>
+        {uploadsErr && <p role="alert" data-testid="uploads-read-failed" className="text-[10px] text-vital font-bold">{uploadsErr}</p>}
         <div className="grid grid-cols-1 @lg:grid-cols-2 @3xl:grid-cols-3 gap-4">
           {INPUT_SLOTS.map(slot => {
             const slotFiles = uploads.filter(u => u.category === slot.id);

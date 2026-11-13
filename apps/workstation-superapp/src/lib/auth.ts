@@ -5,6 +5,7 @@
 // Registration stays Owner-curated (the backend's /register is admin-only by design) — the login
 // page never pretends self-serve signup exists.
 import axios from 'axios';
+import { bodyOrNull } from './api';   // W960 (FU-1181)
 
 const KEY = 'workstation_token';
 
@@ -90,7 +91,7 @@ export async function whoami(): Promise<WhoAmI> {
   }
   if (r.status === 401) return { mode: 'anonymous' };
   let d: any = null;
-  try { d = await r.json(); } catch { /* no body: said below */ }
+  d = await bodyOrNull(r);              // W960 (FU-1181) - no body is said just below
   if (!r.ok) {
     return { mode: 'unknown', basis: `Failed (HTTP ${r.status}): ${typeof d?.detail === 'string' ? d.detail : 'no reason given'}` };
   }

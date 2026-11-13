@@ -81025,7 +81025,7 @@ def test_w959_fu1181_no_call_ends_in_a_catch_that_returns_nothing_unclassified()
     assert api.count("export function bodyOrNull") == 1 and "return r.json().then((b: T) => b, notJson);" in api
     assert "Each caller of bodyOrNull checks the answer's" in api and "const notJson = (): null => null;" in api
     users = [f for f in files if "bodyOrNull(" in _code_only(f.read_text(encoding="utf-8")) and f.name != "api.ts"]
-    assert len(users) == 7, sorted(f.name for f in users)
+    assert len(users) == 10, sorted(f.name for f in users)   # W960: + lib/auth.ts, ForgePipeline, SwarmIntelligence
     for f in users:
         code = _code_only(f.read_text(encoding="utf-8"))
         for m in re.finditer(r"bodyOrNull\((\w+)\)", code):
@@ -81041,3 +81041,44 @@ def test_w959_fu1181_no_call_ends_in_a_catch_that_returns_nothing_unclassified()
 
     hub = " ".join(_code_only((src / "pages/projects/ProjectsHub.tsx").read_text(encoding="utf-8")).split())
     assert ".then(r => r, () => null);" in hub and "setError('The stream closed before completing, and the project could not be re-read.')" in hub
+
+
+def test_w960_fu1181_three_reads_that_failed_silently_are_said_and_four_body_parses_need_no_catch():
+    """FU-1181 part 2 (W960). Of the 49 empty or comment-only catch blocks, three hid a failed read: the person's
+    uploads, the entities list and a deliverable's produce-and-reread. Each now says the failure in the server's words
+    where the list is shown. Four only parsed an error body (apiJson, whoami, the Forge's refusal, the swarm's refusal);
+    each now reads it through bodyOrNull, so no catch block is needed. The 42 left are W961's to name. Held here, read as
+    code: the three sentences and where they are drawn, the four parses, and the census of empty catch blocks."""
+    import re
+    from pathlib import Path
+
+    src = Path(__file__).resolve().parents[1] / "apps" / "workstation-superapp" / "src"
+
+    def code(rel):
+        return " ".join(_code_only((src / rel).read_text(encoding="utf-8")).split())
+
+    #  the three reads, said where the list is drawn
+    st = code("components/employment/ApplicationStudio.tsx")
+    assert "setUploadsErr(`Your uploads could not be read, so the list below may not be what is there: ${describeReadFailure(e)}`);" in st
+    assert "{uploadsErr && <p role=\"alert\" data-testid=\"uploads-read-failed\"" in st and "setUploadsErr('');" in st
+    sp = code("pages/enterprise/VSBSpawnStudio.tsx")
+    assert "setError(`The entities could not be read, so the list is not what is there: ${describeReadFailure(e)}`);" in sp
+    assert "setDelivErr(`Not produced, or the list could not be read again: ${describeReadFailure(e)}`);" in sp
+    assert "{delivErr && <p role=\"alert\" data-testid=\"deliverable-produce-failed\"" in sp
+    assert "{deliverables.length === 0 && !delivErr && <p" in sp, "'None yet' is still shown over a failure"
+
+    #  the four parses: through bodyOrNull, with no catch block of their own
+    assert "const j = await bodyOrNull(res);" in code("lib/api.ts")
+    assert "d = await bodyOrNull(r);" in code("lib/auth.ts") and "import { bodyOrNull } from './api';" in code("lib/auth.ts")
+    assert "const _b = await bodyOrNull(r);" in code("pages/developers/ForgePipeline.tsx")
+    assert "const body = await bodyOrNull(response);" in code("components/organism/SwarmIntelligence.tsx")
+
+    #  the census: empty or comment-only catch blocks, 49 measured, 42 left for W961 to name
+    empty = re.compile(r"catch\s*(\([^)]*\))?\s*\{\s*(/\*[^*]*\*+(?:[^/*][^*]*\*+)*/\s*|//[^\n]*\n\s*)*\}")
+    files = [f for f in src.rglob("*.ts*") if not f.name.endswith((".test.tsx", ".test.ts", ".d.ts"))]
+    counts = {f.relative_to(src).as_posix(): len(empty.findall(f.read_text(encoding="utf-8"))) for f in files}
+    total = sum(counts.values())
+    assert total == 42, ("the empty catch blocks are not the 42 W961 names", total, {k: v for k, v in counts.items() if v})
+    for gone in ("components/employment/ApplicationStudio.tsx", "lib/api.ts", "pages/developers/ForgePipeline.tsx",
+                 "components/organism/SwarmIntelligence.tsx"):
+        assert counts.get(gone, 0) == 0, gone

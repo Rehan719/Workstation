@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W931
-import { qmsChip, provenanceMapBadge, complianceChip, errorMessage, layerTitle, axiosDetail, immuneReading } from '../../lib/api';
+import { qmsChip, provenanceMapBadge, complianceChip, errorMessage, layerTitle, axiosDetail, immuneReading, bodyOrNull } from '../../lib/api';
 import axios from 'axios';
 import { Loader2, Send, Cpu, RefreshCw, Zap, ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -184,12 +184,11 @@ const SwarmIntelligence: React.FC = () => {
         // the UNGATED delegate route, so a Mode 3 review gate that refused the cascade (409) was hidden and
         // the mission ran anyway by another door. The server's own reason is shown and nothing else is run.
         let reason = `the cascade was refused (HTTP ${response.status})`;
-        try {
-          const body = await response.json();
-          const d = body?.detail ?? body;
-          reason = typeof d === 'string' ? d
-            : [d?.error, d?.message, d?.note, d?.clear_by && `clear by: ${d.clear_by}`].filter(Boolean).join(' — ') || reason;
-        } catch { /* the body was not JSON; the status line above stands */ }
+        //  W960 (FU-1181) - a body that is not JSON leaves the status line above standing
+        const body = await bodyOrNull(response);
+        const d = body?.detail ?? body;
+        reason = typeof d === 'string' ? d
+          : [d?.error, d?.message, d?.note, d?.clear_by && `clear by: ${d.clear_by}`].filter(Boolean).join(' — ') || reason;
         setStreamOutput(`NOT RUN — ${reason}\n\nNothing was delegated by another route.`);
       }
       setStreaming(false);
