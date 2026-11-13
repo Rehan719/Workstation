@@ -78675,3 +78675,43 @@ def test_w929_the_developer_and_organism_pages_say_when_a_read_fails():
     assert silent <= 13, ("more calls end in a catch that says nothing than are left after W929", silent)
     hb = (src / "pages/organism/HeartbeatMonitor.test.tsx").read_text(encoding="utf-8")
     assert "findByTestId('read-failure')" in hb and "Failed (HTTP 503): the heartbeat store could not be read" in hb
+
+
+def test_w930_auth_off_is_said_only_when_the_server_says_sign_in_is_off(client):
+    """W930. whoami() returned { mode: 'auth-off' } for anything that was not a 401 or a named user: a refusal, an
+    unreachable server, an answer it could not parse. The sidebar then said "Single-user · auth off" and the sign-in
+    page said authentication is OFF, a claim about the deployment's own security drawn from a failure; the sidebar
+    said it before the read came back at all. Now "auth off" is the server's own word: GET /api/v1/auth/me answers
+    { auth_enabled: false } when sign-in is off, and anything that does not settle the session is 'unknown' with its
+    reason. lib/auth.test.ts drives whoami against each answer. Held here:
+    - the live route says auth_enabled false with sign-in off, which is the answer the rendered test stubs;
+    - whoami takes "auth off" from that word alone, and no failure path returns it;
+    - the sidebar says "auth off" only for that mode, and "Session not known" or "Reading the session" otherwise;
+    - the sign-in page says an unknown session with its reason."""
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = root / "apps/workstation-superapp/src"
+    me = client.get("/api/v1/auth/me")
+    assert me.status_code == 200 and me.json().get("auth_enabled") is False, me.text[:200]
+    t = (src / "lib/auth.test.ts").read_text(encoding="utf-8")
+    assert "{ auth_enabled: false, message: " in t and "import { whoami } from './auth';" in t
+    auth = _code_only((src / "lib/auth.ts").read_text(encoding="utf-8")) + "\n"     # the function may end the file
+    fn = auth[auth.index("export async function whoami()"):]
+    fn = fn[:fn.index("\n}\n") + 3]
+    assert fn.count("mode: 'auth-off'") == 1 and "if (d?.auth_enabled === false) return { mode: 'auth-off' };" in fn, (
+        "whoami says auth off on some other path")
+    assert "return { mode: 'unknown', basis: 'the server could not be reached' };" in fn
+    assert "if (!r.ok) {" in fn
+    side = (src / "components/layout/Sidebar.tsx").read_text(encoding="utf-8")
+    block = side[side.index(") : identity?.mode === 'auth-off' ? ("):]
+    assert block.index("Single-user · auth off") < block.index("data-testid=\"session-not-known\""), (
+        "the sidebar says auth off outside the server's word")
+    assert side.count("Single-user · auth off") == 1 and "{identity ? 'Session not known' : 'Reading the session…'}" in side
+    assert ".catch(() => {})" not in _code_only(side), "the sidebar drops a failed session read"
+    login = (src / "pages/Login.tsx").read_text(encoding="utf-8")
+    assert "{who?.mode === 'unknown' && (" in login and "Whether you are signed in is not known: {who.basis}" in login
+    #  the silent catches: one fewer (the sidebar's), and never more
+    silent = sum(len(re.findall(r"\.catch\(\(\)\s*=>\s*\{\s*\}\)", f.read_text(encoding="utf-8")))
+                 for f in list(src.rglob("*.tsx")) + list(src.rglob("*.ts")) if not f.name.endswith((".test.tsx", ".test.ts")))
+    assert silent <= 12, ("more calls end in a catch that says nothing than are left after W930", silent)

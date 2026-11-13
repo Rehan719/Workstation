@@ -88,6 +88,13 @@ export const Login: React.FC = () => {
         </Card>
       )}
 
+      {/* W930 - a session the server's answer did not settle is said, never shown as auth off */}
+      {who?.mode === 'unknown' && (
+        <p role="status" data-testid="session-not-known" className="text-[11px] text-amber-300 font-bold">
+          Whether you are signed in is not known: {who.basis}
+        </p>
+      )}
+
       {who?.mode === 'authenticated' ? (
         <Card className="p-6 space-y-3">
           <p className="text-sm text-white font-black">Signed in as {who.username} <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-highlight/15 text-highlight ml-1">{who.role}</span></p>
