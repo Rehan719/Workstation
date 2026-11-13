@@ -30,6 +30,17 @@ This was **Stage 1** (whole-dir archival). A later, more surgical Stage 2 may ar
 **modules inside partially-wired dirs**. The real-vs-mock record of the integration sweep is in
 `docs/AGENTIC_CORE_INTEGRATION_AUDIT.md`; the canonical vision/state docs are in `docs/`.
 
+## Later moves: src/ (2026-11-13, W896)
+
+**What moved:** the top-level `src/` package, the second tree W877's measure found beside agentic_core (FU-1168). Of
+its 24 tracked files the live code reached three, and only through `agentic_core/avatars/tools/tool_registry.py`:
+`organs/openclaw_adapter.py`, `neural/event_bus.py` and `neural/event_types.py` moved into the live tree as
+`agentic_core/avatars/tools/`, beside that importer. The other 21 moved here verbatim as `_archive/src/`: the bridges,
+the evidence and ai_gateway modules, `core/audit.py`, the Streamlit dashboard, `ueg/`, two documents and a YAML. Three
+of them import modules that no longer exist (the dashboard, `legacy_adapter.py`, `nematron_adapter.py`).
+
+**On whose ruling:** the same refusal (a) of 2026-09-30 as below. Nothing was deleted.
+
 ## Later moves: core/ (2026-11-12, W877)
 
 **What moved:** the rest of the top-level `core/` package. Its one live module,

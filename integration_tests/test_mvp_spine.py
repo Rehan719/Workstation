@@ -5377,8 +5377,9 @@ def test_dockerfile_copies_every_boot_path_package():
     copied.add("agentic_core")
     missing = {p for p in boot_local if p not in copied}
     assert not missing, f"Dockerfile omits boot-path packages (image would die at import): {missing}"
-    # and the two the old image specifically dropped are present
-    assert "config" in copied and "src" in copied
+    # and the one the old image specifically dropped is present. W896 (FU-1168) - src/ was the other; its three live
+    # modules moved into agentic_core, so the image copies no src/
+    assert "config" in copied and "src" not in copied
 
 
 def test_store_concurrency_and_session_scoping(client, monkeypatch):
@@ -76552,3 +76553,55 @@ def test_w895_a_row_just_written_is_read_even_when_the_os_withholds_the_file_for
     assert _oe895._load() == [], "a torn store is not answered as no rows"
     store.unlink()
     assert _oe895._load() == []
+
+
+def test_w896_src_no_longer_stands_beside_agentic_core_its_live_modules_moved_in_the_rest_archived():
+    """FU-1168, part 2: src/, the second tree W877's measure found beside agentic_core, against the Owner's ratified
+    refusal (a) of 2026-09-30 (no parallel source tree). Read before moving: of its 24 tracked files the live code
+    reached three, and only through the avatar tool registry. Those moved into agentic_core/avatars/tools/ beside it.
+    The other 21 moved verbatim to _archive/src/, and nothing was deleted. What named src/ no longer does: the
+    Dockerfile, the image guard, the import-integrity baseline, the historical index, and the devcontainer, which
+    started a dashboard whose first import does not exist."""
+    import json
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    assert not (root / "src").exists(), "a top-level src/ stands beside agentic_core again"
+
+    # 1. no live code imports the old tree
+    offenders = []
+    for base in ("agentic_core", "scripts", "integration_tests"):
+        for p in (root / base).rglob("*.py"):
+            if "__pycache__" in p.parts:
+                continue
+            for ln in p.read_text(encoding="utf-8", errors="replace").splitlines():
+                s = ln.strip()
+                if s.startswith(("from src.", "import src.")) or s == "import src":
+                    offenders.append(f"{p.relative_to(root)}: {s}")
+    assert not offenders, ("live code still imports the src/ tree", offenders[:5])
+
+    # 2. the registry's three modules are the moved ones, and they load
+    from agentic_core.avatars.tools import tool_registry as _tr896
+    from agentic_core.avatars.tools.event_bus import AsyncEventBus
+    from agentic_core.avatars.tools.event_types import ActionExecuted
+    from agentic_core.avatars.tools.openclaw_adapter import OpenClawAdapter
+    assert _tr896.OpenClawAdapter is OpenClawAdapter and _tr896.AsyncEventBus is AsyncEventBus and ActionExecuted
+
+    # 3. the rest is in the archive, verbatim
+    for rel in ("src/dashboard/app.py", "src/ueg/ledger.py", "src/organism/AI_INTEGRATION.md",
+                "src/organism/bridge/ai_bridge.py", "src/organism/config/sovereign_config.yaml"):
+        assert (root / "_archive" / rel).exists(), ("the archive does not hold", rel)
+    assert "Later moves: src/" in (root / "_archive" / "README.md").read_text(encoding="utf-8")
+
+    # 4. what named src/ no longer does
+    copies = [ln.split()[1:-1] for ln in (root / "Dockerfile").read_text(encoding="utf-8").splitlines()
+              if ln.strip().startswith("COPY ")]
+    assert not [c for c in copies if any(s.rstrip("/").lstrip("./") == "src" for s in c)], ("the image copies src/", copies)
+    dc = (root / ".devcontainer" / "devcontainer.json").read_text(encoding="utf-8")
+    assert "src/dashboard" not in dc, "the devcontainer still opens or starts the archived dashboard"
+    json.loads(re.sub(r"^\s*//.*$", "", dc, flags=re.M))
+    readme = (root / "docs" / "README.md").read_text(encoding="utf-8")
+    dead = [m.group(1) for m in re.finditer(r"\]\((\.\./(?:_archive/)?src/[^)]+)\)", readme)
+            if not (root / "docs" / m.group(1)).resolve().exists()]
+    assert not dead, ("the index links to src/ paths that are not there", dead)
+    assert "src/" not in (root / "scripts" / "import_integrity_baseline.txt").read_text(encoding="utf-8").replace("_archive/src/", "")

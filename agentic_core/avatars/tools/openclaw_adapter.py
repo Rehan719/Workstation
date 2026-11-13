@@ -1,9 +1,10 @@
+#  W896 (FU-1168) - moved from src/organism/python/organs/openclaw_adapter.py into the live tree, beside its one importer (tool_registry.py).
 import asyncio
 import logging
 from typing import Dict, Any, List
 from agentic_core.tools.registry import ToolRegistry
-from src.organism.python.neural.event_bus import AsyncEventBus
-from src.organism.python.neural.event_types import (
+from agentic_core.avatars.tools.event_bus import AsyncEventBus
+from agentic_core.avatars.tools.event_types import (
     ActionExecuted, ExecutionResult, ResourceUsage
 )
 

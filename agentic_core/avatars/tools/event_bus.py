@@ -1,3 +1,4 @@
+#  W896 (FU-1168) - moved from src/organism/python/neural/event_bus.py into the live tree, beside its one importer (tool_registry.py).
 import asyncio
 import logging
 import collections

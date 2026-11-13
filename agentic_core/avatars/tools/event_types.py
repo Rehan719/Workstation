@@ -1,3 +1,4 @@
+#  W896 (FU-1168) - moved from src/organism/python/neural/event_types.py into the live tree, beside its one importer (tool_registry.py).
 from dataclasses import dataclass, field
 from typing import Dict, Any, Optional
 from datetime import datetime

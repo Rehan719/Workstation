@@ -9,6 +9,3 @@ products/enterprise-file-hub/cli/main.py  # missing: agentic_core.tools.file_ope
 products/mjm-intelligence-engine/tests/verification/test_mjm_biomimetic.py  # missing: core.verification_harness
 products/scraping_suite/sdk/dual_mode_scraper.py  # missing: agentic_core.biochemical.molecular_comm
 products/uviap/sdk/uviap.py  # missing: agentic_core.biochemical.rectification_engine
-src/dashboard/app.py  # missing: agentic_core.orchestrator.conscious_organism_v99
-src/organism/python/neural/legacy_adapter.py  # missing: agentic_core.nervous_system.nervous_system
-src/organism/python/organs/nematron_adapter.py  # missing: agentic_core.ai_ceo.c_suite
