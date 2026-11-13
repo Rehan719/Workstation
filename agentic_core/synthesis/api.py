@@ -18,6 +18,12 @@ from agentic_core.api._ai_provenance import (reply_evidence as _reply_evidence) 
 from agentic_core.api._ai_provenance import wrap_material as _wrap_material886      # W886 (FU-995)
 
 
+def _owner887(user) -> Optional[str]:
+    """W887 - the name an output is kept under: the signed-in person, or the single-user owner label."""
+    from agentic_core.auth.core import request_owner_id
+    return request_owner_id(user if isinstance(user, dict) else None)
+
+
 REGISTRY_PREVIEW_CHARS886 = 1000      # what the upload registry keeps of each file's text (ingestion/api.py)
 
 
@@ -60,6 +66,7 @@ class SynthesisOutput(BaseModel):
     is_external: bool = False
     #  W659 - what was withheld from the composed text, and why (declared, or the model strips it)
     faith_content: Optional[Dict[str, Any]] = None
+    owner_id: Optional[str] = None          # W887 - who asked for it; None on rows written before
 
 
 #  the output types generate_output has a branch for; a guard keeps this set and the branches in step
@@ -425,6 +432,7 @@ class SynthesisManager:
             # W490 — None when no call served this output; the page renders that as "not recorded"
             "served_by": getattr(self, "_last_served_by", None),
             "is_external": bool(getattr(self, "_last_is_external", False)),
+            "owner_id": _owner887(user),           # W887 - who asked for it
         }
         self.history.append(result)
         logger.info("Synthesis complete: type=%s id=%s", otype, output_id)
@@ -537,6 +545,7 @@ async def stream_synthesis(request: SynthesisRequest, user: dict | None = Depend
             "output_id": output_id,
             "output_url": f"/api/v1/synthesis/download/{output_id}",
             "content": content,
+            "owner_id": _owner887(user),           # W887 - who asked for it
             "metadata": {"type": otype, "format": ext, "title": topic,
                          **({"knowledge_base_handed_over": _kb886} if _kb886 else {})},     # W886 (FU-995)
             "timestamp": timestamp,
@@ -577,15 +586,21 @@ async def stream_synthesis(request: SynthesisRequest, user: dict | None = Depend
 
 
 @router.get("/history", response_model=List[SynthesisOutput])
-async def get_synthesis_history():
-    """Returns all synthesis outputs generated in this server session."""
-    return list(reversed(synthesis_manager.history))
+async def get_synthesis_history(user: dict | None = Depends(get_current_user)):
+    """Returns the synthesis outputs generated in this server session that the caller may see. W887 - with sign-in
+    on this listed every person's outputs, whole."""
+    u = user if isinstance(user, dict) else None
+    return [r for r in reversed(synthesis_manager.history) if user_can_access(u, r.get("owner_id"))]
 
 
 @router.get("/download/{output_id}")
-async def download_output(output_id: str):
-    """Downloads a synthesized output file. Protected against path traversal."""
+async def download_output(output_id: str, user: dict | None = Depends(get_current_user)):
+    """Downloads a synthesized output file. Protected against path traversal. W887 - another person's output is not
+    found; a file with no history row has no owner to match, so under sign-in it is an administrator's."""
     clean_id = os.path.basename(output_id)
+    _row887 = next((r for r in synthesis_manager.history if r.get("output_id") == clean_id), None)
+    if not user_can_access(user if isinstance(user, dict) else None, (_row887 or {}).get("owner_id")):
+        raise HTTPException(status_code=404, detail="Output file not found")
     files = list(synthesis_manager.output_dir.glob(f"{clean_id}.*"))
     if not files:
         raise HTTPException(status_code=404, detail="Output file not found")

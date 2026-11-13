@@ -76024,3 +76024,45 @@ def test_w886_ingested_text_reaches_a_model_marked_as_data_and_only_the_callers_
     assert r2.status_code == 200, r2.text[:300]
     assert sent and not any(secret[:40] in p for p in sent), "another person's file was composed into this output"
     assert fid in _syn886.synthesis_manager._last_context_not_found
+
+
+def test_w887_with_sign_in_on_a_second_person_reaches_none_of_the_first_persons_synthesis_outputs(client, monkeypatch):
+    """W887 (registered and closed in this round). Measured while closing FU-995: the synthesis history listed every
+    person's outputs, whole, to anyone signed in, and any output could be downloaded by its id. An output now records
+    who asked for it, the history holds only the caller's, and another person's download is not found."""
+    import uuid as _uuid887
+    import agentic_core.auth.core as _ac887
+    from agentic_core.synthesis import api as _syn887
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    users = _ac887._load_users()
+    who = {}
+    for k, role in (("one", "user"), ("two", "user"), ("admin", "admin")):
+        name = f"w887-{k}-{_uuid887.uuid4().hex[:6]}"
+        users[name] = {"username": name, "hashed_password": _ac887._pwd_ctx.hash("pw12345678"), "role": role}
+        who[k] = name
+    _ac887._save_users(users)
+    H = {}
+    for k, name in who.items():
+        tok = client.post("/api/v1/auth/token", data={"username": name, "password": "pw12345678"})
+        assert tok.status_code == 200, tok.text[:200]
+        H[k] = {"Authorization": "Bearer " + tok.json()["access_token"]}
+    marker = f"w887 the first person's output {_uuid887.uuid4().hex[:8]}"
+
+    async def _compose(prompt, *a, **k):
+        return {"output": marker, "served_by": "native", "is_external": False}
+    monkeypatch.setattr(_syn887.gateway, "query_meta", _compose)
+    r = client.post("/api/v1/synthesis/generate", headers=H["one"],
+                    json={"content_ids": [], "output_type": "report", "instructions": "w887 write it"})
+    assert r.status_code == 200 and r.json()["owner_id"] == who["one"], r.text[:300]
+    oid = r.json()["output_id"]
+
+    def history(k):
+        h = client.get("/api/v1/synthesis/history", headers=H[k])
+        assert h.status_code == 200, h.text[:200]
+        return h
+    assert oid in [x["output_id"] for x in history("one").json()]
+    two = history("two")
+    assert oid not in [x["output_id"] for x in two.json()] and marker not in two.text, "another person's output is listed"
+    assert client.get(f"/api/v1/synthesis/download/{oid}", headers=H["two"]).status_code == 404
+    assert client.get(f"/api/v1/synthesis/download/{oid}", headers=H["one"]).status_code == 200
+    assert client.get(f"/api/v1/synthesis/download/{oid}", headers=H["admin"]).status_code == 200

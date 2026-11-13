@@ -23457,6 +23457,27 @@
       "note": "",
       "slot_source": "the register's own tooling, which rides the suite-and-tooling item as the other instrument rows do",
       "tier": 3
+    },
+    {
+      "id": "FU-1171",
+      "title": "With sign-in on, the synthesis history and downloads reach every person's outputs",
+      "why": "Measured in W887 while closing FU-995: GET /api/v1/synthesis/history listed every person's synthesis outputs, whole, to anyone signed in, and GET /api/v1/synthesis/download/{id} served any output by its id. Outputs recorded no owner.",
+      "source": "W887 (measured while closing FU-995)",
+      "found": "2026-11-13",
+      "files": [
+        "agentic_core/synthesis/api.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P4.1",
+      "status": "done",
+      "closed_by": "W887",
+      "note": "",
+      "slot_source": "the same item as FU-1061 (a route that asks who is calling checks the record is the caller's)",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that found it: an output now records who asked for it (generate and stream), the history holds only the caller's outputs, and a download of another person's output is not found; a file with no history row (written before a restart) has no owner to match, so under sign-in only an administrator downloads it. Driven as two people and an administrator (test_w887)."
     }
   ],
   "routes": [
