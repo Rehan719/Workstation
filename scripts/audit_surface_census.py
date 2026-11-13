@@ -40,6 +40,37 @@ def api_routes():
     return routes_of(app)
 
 
+def route_modules(app):
+    """W970 (P5.22) - the module each census route's handler is written in (unwrapped), keyed as the census keys its
+    routes, so the final audit can slice routes by the router module that serves them."""
+    import inspect
+    out = {}
+    for r in app.routes:
+        path, methods = getattr(r, "path", None), getattr(r, "methods", None) or set()
+        if not path or path in EXCLUDE_PATHS or not methods or getattr(r, "endpoint", None) is None:
+            continue
+        module = getattr(inspect.unwrap(r.endpoint), "__module__", None)
+        for m in sorted(methods):
+            if m not in EXCLUDE_METHODS:
+                out[f"{m} {path}"] = module
+    return out
+
+
+_IMPORT_RE = re.compile(r"import\s+\{([^}]+)\}\s+from\s+'(\./[^']+)'")
+
+
+def page_files(src: str):
+    """W970 (P5.22) - each component App.tsx imports, with the file it imports it from, so the final audit can slice
+    pages by folder. A page App.tsx writes inline has no file here."""
+    out = {}
+    for names, path in _IMPORT_RE.findall(src):
+        for n in names.split(","):
+            n = n.strip()
+            if n:
+                out[n.split(" as ")[-1].strip()] = path
+    return out
+
+
 def routes_of(app):
     """(routes, excluded) for an app object — separate from the import above so a guard can hand it the app
     the test client already holds, and compare the census with the app's own route table."""
@@ -105,8 +136,12 @@ def main() -> int:
         return 1
     #  the census must account for every <Route> it saw, or it under-reports its own denominator
     assert len(pgs) + len(redirects) + len(unparsed) == declared, (len(pgs), len(redirects), len(unparsed), declared)
+    #  W970 (P5.22) - what the partition needs: each route's module and each page's file (the app was imported above)
+    from agentic_core.app_mvp import app as _app970
+    files = page_files((ROOT / "apps/workstation-superapp/src/App.tsx").read_text(encoding="utf-8"))
     json.dump({"head": head, "routes": routes, "pages": pgs, "redirects": redirects, "unparsed_pages": unparsed,
-               "route_tags_declared": declared, "excluded": excluded}, sys.stdout, indent=1)
+               "route_tags_declared": declared, "excluded": excluded, "route_modules": route_modules(_app970),
+               "page_files": {p["component"]: files.get(p["component"]) for p in pgs}}, sys.stdout, indent=1)
     return 0
 
 

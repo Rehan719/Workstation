@@ -69510,7 +69510,9 @@ def test_w749_an_instrument_that_examined_nothing_refuses_and_reads_what_it_name
                     #  W918 (FU-742) - the stores' backup: it refuses an empty data root and an archive listing nothing
                     "scripts/backup_stores.py",
                     #  W966 (P5.10 clause 4) - the literal-outcome screen refuses an application with no handler
-                    "scripts/literal_outcomes.py"]
+                    "scripts/literal_outcomes.py",
+                    #  W970 (P5.22) - the census partition refuses a census with no surface
+                    "scripts/audit_census_partition.py"]
 
     def _emitted(src):
         """The strings a module can print or return - its docstrings left out, since a docstring saying the tool
@@ -81706,3 +81708,75 @@ def test_w969_p510_clause9_recalled_lines_reach_a_model_marked_as_data_and_the_c
             assert re.search(rf"^def {t}\(", spine, re.M), ("the checklist names a test that does not exist", t)
         for f in files:
             assert (root / f).exists(), ("the checklist names code that does not exist", f)
+
+
+def test_w970_p522_every_census_surface_is_in_exactly_one_slice_and_the_slices_are_the_census(capsys, tmp_path):
+    """P5.22's first instrument (W970): the final audit is uncapped and census-partitioned, so the slices it assesses
+    one by one must together be the census. ACCEPT (1): every census surface is in exactly one slice, or the overlap is
+    stated; (2): the union of the slices equals the census; the empty half of (4): an empty slice blocks completeness.
+    Held here:
+    - the census of this tree, built from the app and App.tsx as audit_surface_census.py builds it, now says which
+      module serves each route and which file each page is imported from;
+    - docs/AUDIT_SLICES.json partitions it: every route and page in exactly one slice, none empty;
+    - each failure is refused with its own sentence on a small planted census: a surface in no slice, a surface in two
+      slices with no stated overlap (and none once it is stated), an empty slice, a slice naming what the census does
+      not hold;
+    - a census with no surface, and one that does not say which module serves each route, are refused."""
+    import importlib.util
+    import json
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+
+    def load(rel, name):
+        spec = importlib.util.spec_from_file_location(name, root / rel)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+    c = load("scripts/audit_surface_census.py", "w970_census")
+    p = load("scripts/audit_census_partition.py", "w970_partition")
+    from agentic_core.app_mvp import app
+
+    routes, _excluded = c.routes_of(app)
+    modules = c.route_modules(app)
+    src = (root / "apps/workstation-superapp/src/App.tsx").read_text(encoding="utf-8")
+    pages, _r, _u, _d = c.parse_pages(src)
+    files = c.page_files(src)
+    assert set(routes) <= set(modules) and all(modules[r] for r in routes), "a census route has no module"
+    census = {"head": "w970", "routes": routes, "pages": pages, "route_modules": modules,
+              "page_files": {pg["component"]: files.get(pg["component"]) for pg in pages}}
+    declared = json.loads((root / "docs/AUDIT_SLICES.json").read_text(encoding="utf-8"))
+    out = p.partition(census, declared)
+    assert out["problems"] == [], out["problems"][:10]
+    assert len(out["slices"]) >= 25 and out["routes"] == len(routes) and out["pages"] == len(pages)
+    held_routes = sorted(r for s in out["slices"].values() for r in s["routes"])
+    held_pages = sorted(x for s in out["slices"].values() for x in s["pages"])
+    assert held_routes == sorted(routes) and held_pages == sorted(pg["path"] for pg in pages), "the slices are not the census"
+    assert declared["overlap"] == [] and all(s["holds"] for s in declared["slices"])
+
+    #  each failure, planted on a small census
+    small = {"routes": ["GET /a", "GET /b"], "pages": [{"path": "/p", "component": "P"}],
+             "route_modules": {"GET /a": "m.a", "GET /b": "m.b"}, "page_files": {"P": "./pages/x/P"}}
+    ok = {"slices": [{"id": "s1", "modules": ["m.a"], "pages": ["./pages/x"]}, {"id": "s2", "modules": ["m.b"], "pages": []}],
+          "overlap": []}
+    assert p.partition(small, ok)["problems"] == []
+    dropped = dict(small, routes=small["routes"] + ["GET /c"], route_modules={**small["route_modules"], "GET /c": "m.c"})
+    assert p.partition(dropped, ok)["problems"] == ["a surface is in no slice: GET /c (m.c)"]
+    twice = {"slices": [ok["slices"][0], {"id": "s2", "modules": ["m.b", "m.a"], "pages": []}], "overlap": []}
+    assert p.partition(small, twice)["problems"] == ["GET /a is in 2 slices (s1, s2) and no overlap is stated"]
+    stated = dict(twice, overlap=[{"key": "m.a", "slices": ["s1", "s2"], "why": "w970 both assess the shared module"}])
+    assert p.partition(small, stated)["problems"] == []
+    empty = {"slices": ok["slices"] + [{"id": "s3", "modules": [], "pages": []}], "overlap": []}
+    assert p.partition(small, empty)["problems"] == ["slice s3 holds no surface"]
+    stale = {"slices": [ok["slices"][0], {"id": "s2", "modules": ["m.b", "m.z"], "pages": []}], "overlap": []}
+    assert p.partition(small, stale)["problems"] == ["slice s2 names m.z, which the census does not hold"]
+
+    #  a census with no surface, or with routes and no modules, is refused
+    for bad, words in (({"routes": [], "pages": []}, "examined nothing"),
+                       ({"routes": ["GET /a"], "pages": []}, "does not say which module serves each route")):
+        f = tmp_path / "census.json"
+        f.write_text(json.dumps(bad), encoding="utf-8")
+        assert p.main([str(f)]) == 2 and words in capsys.readouterr().out
+    f = tmp_path / "census.json"
+    f.write_text(json.dumps(census), encoding="utf-8")
+    assert p.main([str(f)]) == 0 and "ok - " in capsys.readouterr().out
