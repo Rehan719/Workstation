@@ -23974,11 +23974,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.10",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W967",
       "note": "",
       "slot_source": "P5.10 clause 4 (the literal-outcome screen) found them",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W967. A treaty is signed only where a draft this process holds exists to sign, the node joining its signatures; any other id is refused 404 and nothing is signed. An enhancement vote is refused 404 with the sentence that no proposal register exists, so nothing is said to be recorded. The v154 status types no status; it carries the immune system's health, observations and basis. Beside them, an unreadable bounty store is refused 503 with nothing written, where it used to be replaced by the one new submission. The literal-outcome screen carries the treaty's signed with its reason and no defect; test_w967 drives each."
     }
   ],
   "routes": [

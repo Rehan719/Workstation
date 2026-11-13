@@ -274,15 +274,6 @@
    "reason": "said after the twin reference is written to the federation registry, with a note saying it is a reference"
   },
   {
-   "file": "agentic_core/api/integration_surface.py",
-   "function": "v154_status",
-   "key": "status",
-   "literal": "operational",
-   "occurrences": 1,
-   "reason": "typed whatever the immune system's health beside it reads, so it says operational when the health says otherwise",
-   "defect": "FU-1193"
-  },
-  {
    "file": "agentic_core/api/marketplace.py",
    "function": "purchase_listing",
    "key": "status",
@@ -443,15 +434,6 @@
    "reason": "said after the submission is appended to the process's list, which received beside it counts"
   },
   {
-   "file": "agentic_core/api/v200/contribute.py",
-   "function": "vote_enhancement",
-   "key": "status",
-   "literal": "recorded",
-   "occurrences": 1,
-   "reason": "nothing is recorded: the handler answers this for any proposal id and keeps nothing",
-   "defect": "FU-1193"
-  },
-  {
    "file": "agentic_core/api/v250/treaties.py",
    "function": "draft_treaty",
    "key": "status",
@@ -465,8 +447,7 @@
    "key": "status",
    "literal": "signed",
    "occurrences": 1,
-   "reason": "nothing is signed: no treaty is read or written, and the route beside it says no treaty register exists",
-   "defect": "FU-1193"
+   "reason": "said after the node is added to the signatures of a draft this process holds, which are returned with it; any other id is refused 404 and nothing is signed"
   },
   {
    "file": "agentic_core/api/v290/realms.py",

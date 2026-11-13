@@ -133,7 +133,9 @@ async def ai_query(req: AIQuery, user: dict | None = Depends(get_current_user)):
 @router.get("/api/v154/status")
 async def v154_status():
     imm = _immune()
-    return {"status": "operational", "health": imm.get("health"), "threat_level": imm.get("threat_level"),
+    #  W967 (P5.10 clause 4) - a typed "status": "operational" stood here whatever the health beside it read. What this
+    #  answer says of the organism is the immune system's own reading, with its observations and basis.
+    return {"health": imm.get("health"), "threat_level": imm.get("threat_level"),
             "health_observations": imm.get("observations_in_window"),                # W658
             "health_observed_basis": imm.get("observed_basis"),
             "version": "v3.0-sovereign", "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
@@ -717,12 +719,15 @@ class BountySubmission(BaseModel):
 @router.post("/api/security/bounty/submit")
 async def bounty_submit(req: BountySubmission):
     p = _store("bounty.json")
-    subs = []
-    if p.exists():
-        try:
-            subs = json.loads(p.read_text(encoding="utf-8"))
-        except Exception:
-            pass
+    #  W967 - an unreadable store was replaced by this one submission, so every earlier one was lost without a word.
+    #  It is read whole or refused, with nothing written.
+    from agentic_core.config import read_json_strict
+    try:
+        subs = read_json_strict(p, list, expect=list)
+    except Exception as e:                                # noqa: BLE001 - said, and nothing is written
+        raise HTTPException(status_code=503, detail=(
+            f"The bounty submissions could not be read ({type(e).__name__}), so this one was not stored and "
+            "nothing was overwritten.")) from None
     entry = {"id": f"bb-{len(subs)+1:04d}", "title": req.title, "severity": req.severity,
              "description": req.description, "reporter": req.reporter, "status": "received",
              "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}

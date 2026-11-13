@@ -81540,10 +81540,67 @@ def test_w966_p510_clause4_every_typed_outcome_in_a_mounted_answer_is_on_the_all
     monkeypatch.setattr(lo, "_app", lambda: FastAPI())
     assert lo.main() == 2 and "examined nothing" in capsys.readouterr().out
 
-    #  the three that are not true where they are said: registered defects naming one open row on P5.10
-    defects = [e for e in allow["entries"] if e.get("defect")]
-    assert sorted((e["file"].rsplit("/", 1)[1], e["function"], e["literal"]) for e in defects) == [
-        ("contribute.py", "vote_enhancement", "recorded"), ("integration_surface.py", "v154_status", "operational"),
-        ("treaties.py", "sign_treaty", "signed")], defects
-    row = next(r for r in rows if r["id"] == defects[0]["defect"])
-    assert {e["defect"] for e in defects} == {row["id"]} and row["status"] == "open" and row["slot"] == "P5.10", row
+    #  the three W966 found not true where they were said were defects naming one open row; W967 fixed them, so no
+    #  place is a defect now (test_w967 drives each)
+    assert [e for e in allow["entries"] if e.get("defect")] == []
+
+
+def test_w967_the_three_answers_say_only_what_happened_and_an_unreadable_bounty_store_is_refused(client):
+    """W967 (P5.10 clause 4). The literal-outcome screen (W966) found three answers typing an outcome nothing made true,
+    registered as one row on P5.10. Driven here:
+    - a treaty is signed only where a draft this process holds exists: the node joins its signatures, which are
+      returned and said to be kept in memory only; an id no draft has is refused 404 and nothing is signed;
+    - an enhancement vote is refused 404 with the sentence that nothing records one;
+    - the v154 status types no status: it carries the immune system's health, its observations and its basis;
+    - an unreadable bounty store is refused 503 and left byte for byte as it was, where it used to be replaced by
+      the one new submission; a readable one takes a submission as before;
+    - the screen passes with no place left a defect."""
+    import importlib.util
+    import pathlib
+
+    #  a draft exists first, so an id that is not it cannot be answered by signing it
+    d = client.post("/api/v250/treaties/draft", params={"node_a": "w967-a", "node_b": "w967-b", "terms": "w967"}).json()
+    no = client.post("/api/v250/treaties/tr-w967none/sign", params={"node_id": "w967-node"})
+    assert no.status_code == 404 and "nothing was signed" in no.json()["detail"], no.text[:200]
+    s = client.post(f"/api/v250/treaties/{d['id']}/sign", params={"node_id": "w967-a"})
+    assert s.status_code == 200, s.text[:200]
+    assert (s.json()["status"], s.json()["signatures"]) == ("signed", ["w967-a"]) and "memory only" in s.json()["kept"]
+    again = client.post(f"/api/v250/treaties/{d['id']}/sign", params={"node_id": "w967-a"}).json()
+    assert again["signatures"] == ["w967-a"], "a node signed twice"
+
+    from agentic_core.api.v200 import contribute as _c
+    v = client.post("/api/v200/contribute/vote", params={"proposal_id": "w967-proposal"})
+    assert v.status_code == 404 and v.json()["detail"].startswith(_c.VOTE_REFUSED), v.text[:200]
+
+    st = client.get("/api/v154/status").json()
+    assert "status" not in st and "health" in st and "health_observations" in st, sorted(st)
+
+    from agentic_core.api import integration_surface as _is
+    store = _is._store("bounty.json")
+    before = store.read_bytes() if store.exists() else None
+    try:
+        store.write_bytes(b"{ this is not json w967")
+        r = client.post("/api/security/bounty/submit", json={"title": "w967", "severity": "low", "description": "w967"})
+        assert r.status_code == 503 and "nothing was overwritten" in r.json()["detail"], r.text[:200]
+        assert store.read_bytes() == b"{ this is not json w967", "an unreadable bounty store was overwritten"
+    finally:
+        if before is None:
+            store.unlink(missing_ok=True)
+        else:
+            store.write_bytes(before)
+    ok = client.post("/api/security/bounty/submit", json={"title": "w967", "severity": "low", "description": "w967"})
+    assert ok.status_code == 200 and ok.json()["status"] == "received", ok.text[:200]
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    spec = importlib.util.spec_from_file_location("w967_lo", root / "scripts/literal_outcomes.py")
+    lo = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(lo)
+    import json
+    allow = json.loads((root / "docs/LITERAL_OUTCOMES.json").read_text(encoding="utf-8"))
+    rows = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    from agentic_core.app_mvp import app
+    _, found, _ = lo.census(app)
+    assert lo.check(found, allow, {r["id"] for r in rows if r.get("status") == "open"}) == []
+    signed = [e for e in allow["entries"] if e["function"] == "sign_treaty"]
+    assert len(signed) == 1 and "defect" not in signed[0] and "draft this process holds" in signed[0]["reason"]
+    assert not [e for e in allow["entries"] if e["function"] in ("vote_enhancement", "v154_status")]
