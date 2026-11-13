@@ -22859,11 +22859,14 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W892",
       "note": "",
       "slot_source": "a suite-reliability rider, beside the parallel-stall rows already on this item",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Measured first (W889): every run now says what the gateway's rate limiter cost it; W889's commit carries what its suite measured at the default 20 calls a minute. Then the default and where it is set (W891): the governed rpm_limit lever starts from GATEWAY_RPM, read once in agentic_core.config, instead of a typed 20 that replaced the configured value at the gateway's first re-read, and the suite sets its own GATEWAY_RPM (6000 a minute, setdefault). Then the lock (W892): a caller reserves its slot under a thread lock held only while the bucket is read and written and sleeps after releasing it, so no caller waits behind a sleeping one and the lock belongs to no event loop; callers that arrive together are spaced at the limit; the six tests that swapped in a fresh lock no longer need to. Driven in test_w889, test_w891 and test_w892."
     },
     {
       "id": "FU-1142",

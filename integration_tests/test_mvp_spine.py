@@ -67573,9 +67573,7 @@ def test_w743_each_entity_has_its_own_work_budget_and_the_platform_derives_its_c
     from agentic_core.ai import gateway as _gw743
 
     def _run743(coro):
-        #  asyncio.run starts a NEW loop; the gateway's limiter lock is bound to whichever loop used it first
-        #  (the test client's), so each direct call gets a fresh one
-        monkeypatch.setattr(_gw743.gateway._rate_limiter, "_lock", asyncio.Lock())
+        #  W892 - the limiter's lock belongs to no event loop, so a direct call on a new loop needs no fresh one
         return asyncio.run(coro)
     with monkeypatch.context() as _m743:
         _m743.setenv("AUTH_ENABLED", "true")
@@ -72301,7 +72299,6 @@ def test_w829_a_composition_run_and_a_vsb_scoped_cascade_book_their_work_to_the_
     seen.clear()
     with monkeypatch.context() as _m829:
         _m829.setenv("AUTH_ENABLED", "true")
-        _m829.setattr(_gw829.gateway._rate_limiter, "_lock", _aio829.Lock())
         _int = _aio829.run(_swm829.cascade_orchestration(_swm829.CascadeRequest(
             mission="w829 internal call under sign-in", scope="vsb-w829")))
     _itiers = [s for s in seen if s[0] == "ai_call" and s[3] == _int.get("run_id")]
@@ -72649,7 +72646,6 @@ def test_w836_the_fabric_ensemble_is_gated_and_the_mega_project_row_keeps_its_te
         return {"members": [{"output": "w836 member", "served_by": "native"}], "models_run": 1,
                 "synthesis": {"output": "w836 synthesis"}}
     monkeypatch.setattr(_orc836, "ensemble", _ens)
-    monkeypatch.setattr(_gw836.gateway._rate_limiter, "_lock", _aio836.Lock())
     out = _aio836.run(_fab836._run_real_resource_handler("native_ensemble", {}, "w836 the person's objective", "general"))
     assert seen.get("user_text") == "w836 the person's objective", ("the ensemble was not given the person's words", seen)
     assert out.get("governance_checkpoint"), ("the ensemble stage carried no governance checkpoint", sorted(out))
@@ -74800,7 +74796,6 @@ def test_w869_a_stream_served_externally_counts_against_the_hourly_external_cap(
     monkeypatch.setenv("AI_ALLOW_EXTERNAL", "true")
     monkeypatch.setenv("AI_DISABLE_LOCAL", "1")
     monkeypatch.setenv("EXTERNAL_MAX_CALLS_PER_HOUR", "2")
-    monkeypatch.setattr(_g869.gateway._rate_limiter, "_lock", _aio869.Lock())
     monkeypatch.setattr(_o869.NativeOrchestrator, "_external_calls", [])
     for p in ("claude", "openai"):
         if _sh869.is_open(p):
@@ -74926,7 +74921,6 @@ def test_w870_an_external_answer_is_counted_from_the_usage_its_server_reports(cl
     monkeypatch.setenv("ANTHROPIC_API_KEY", "w870-placeholder-not-a-key")
     monkeypatch.setenv("OPENAI_API_KEY", "w870-placeholder-not-a-key")
     monkeypatch.setattr(_o870.NativeOrchestrator, "_external_calls", [])
-    monkeypatch.setattr(_g870.gateway._rate_limiter, "_lock", _aio870.Lock())
     for p in ("claude", "openai"):
         if _sh870.is_open(p):
             _sh870.record_success(p)
@@ -76130,7 +76124,6 @@ def test_w889_a_run_says_what_the_gateway_rate_limiter_cost_it(monkeypatch):
     assert s2["calls"] == 2 and s2["waited"] == 1 and s2["slept_s"] == s1["slept_s"] and s2["rpm"] == 600, (s1, s2)
 
     # 2. a query through the gateway is counted on the gateway's own limiter, once
-    monkeypatch.setattr(_gw889.gateway._rate_limiter, "_lock", asyncio.Lock())   # a fresh loop, a fresh lock
     before = _gw889.limiter_stats()
     asyncio.run(_gw889.gateway.query_meta("w889 one call through the limiter", agent="assistant"))
     after = _gw889.limiter_stats()
@@ -76351,3 +76344,82 @@ def test_w891_gateway_rpm_is_read_once_and_the_governed_lever_starts_from_it(cli
     body = info.json()
     assert body["gateway_rpm"] == configured, body.get("gateway_rpm")
     assert "governed rpm_limit lever starts from" in body.get("gateway_rpm_basis", ""), body.get("gateway_rpm_basis")
+
+
+def test_w892_no_caller_sleeps_holding_the_limiters_lock_and_the_lock_belongs_to_no_event_loop():
+    """FU-1141, part 2: the lock. The gateway's rate limiter held one asyncio.Lock across its sleep, so every other
+    caller in the process waited behind a sleeping one. The lock was bound to the first event loop that contended for
+    it, so a caller on another loop (each asyncio.run, a thread's own loop) was refused or woken from the wrong loop,
+    and six tests swapped in a fresh lock before each direct call. A caller now reserves its slot under a thread lock,
+    held only while the bucket is read and written, and sleeps after releasing it. The bucket may go into debt, so
+    concurrent callers are spaced at the limit. Before, two could be let through in one slot. Driven on each property,
+    and on the suite's own source: no test swaps the lock any more."""
+    import asyncio
+    import pathlib
+    import threading
+    import time
+    from agentic_core.ai import gateway as _gw892
+
+    # 1. while a caller sleeps for its slot, nobody holds the lock and the event loop goes on
+    lim = _gw892._RateLimiter(60)                       # one a second
+    lim._tokens, lim._last = 0.0, time.monotonic()      # drained just now
+    seen = {}
+
+    async def _one_sleeping_caller():
+        t = asyncio.ensure_future(lim.acquire())
+        t1 = time.monotonic()
+        await asyncio.sleep(0.2)                        # the caller is now asleep, waiting for its slot
+        seen["loop_blocked_s"] = time.monotonic() - t1
+        seen["held"] = lim._lock.locked()
+        t.cancel()
+        try:
+            await t
+        except asyncio.CancelledError:
+            pass
+    asyncio.run(_one_sleeping_caller())
+    assert seen["held"] is False, "a caller sleeps holding the limiter's lock, so every other caller waits behind it"
+    assert seen["loop_blocked_s"] < 0.6, ("the caller's wait blocked the event loop", seen)
+
+    # 2. three callers at once are spaced a slot apart: none is let through in another's slot
+    lim = _gw892._RateLimiter(600)                      # a slot every tenth of a second
+    lim._tokens, lim._last = 0.0, time.monotonic()
+    done = []
+
+    async def _three_at_once():
+        t0 = time.monotonic()
+
+        async def _call():
+            await lim.acquire()
+            done.append(time.monotonic() - t0)
+        await asyncio.gather(_call(), _call(), _call())
+    asyncio.run(_three_at_once())
+    done.sort()
+    assert lim.stats()["waited"] == 3 and lim.stats()["calls"] == 3, lim.stats()
+    assert done[1] - done[0] >= 0.07 and done[2] - done[1] >= 0.07, ("two callers were let through in one slot", done)
+
+    # 3. the lock belongs to no event loop: two threads, each with its own loop, contend for one limiter
+    lim = _gw892._RateLimiter(600)
+    lim._tokens, lim._last = 0.0, time.monotonic()
+    errors = []
+
+    def _a_loop_of_its_own():
+        async def _go():
+            await asyncio.wait_for(asyncio.gather(*(lim.acquire() for _ in range(3))), 30)
+        try:
+            asyncio.run(_go())
+        except Exception as e:                          # noqa: BLE001 - collected and asserted below
+            errors.append(repr(e))
+    threads = [threading.Thread(target=_a_loop_of_its_own) for _ in range(2)]
+    for th in threads:
+        th.start()
+    for th in threads:
+        th.join(60)
+    assert not errors and not any(th.is_alive() for th in threads), (
+        "a caller on another event loop was refused, or never woken", errors)
+    assert lim.stats()["calls"] == 6 and lim.stats()["waited"] == 6, lim.stats()
+
+    # 4. the gateway's own limiter has that lock, and no test in the suite swaps it any more
+    assert isinstance(_gw892.gateway._rate_limiter._lock, type(threading.Lock())), type(_gw892.gateway._rate_limiter._lock)
+    _swap892 = "_rate_limiter, " + '"_lock"'
+    src = (pathlib.Path(__file__).resolve().parent / "test_mvp_spine.py").read_text(encoding="utf-8")
+    assert src.count(_swap892) == 0, ("a test still swaps the limiter's lock for a fresh one", src.count(_swap892))

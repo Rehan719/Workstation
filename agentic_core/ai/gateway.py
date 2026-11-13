@@ -1,6 +1,7 @@
 import os
 import time
 import asyncio
+import threading
 import httpx
 from pathlib import Path
 from agentic_core.config import data_path
@@ -186,38 +187,52 @@ class _RateLimiter:
     - the seconds it slept;
     - the seconds callers spent inside it. A caller queued behind a sleeping one waits on the lock, which the
       sleep alone does not show.
-    Counting changes nothing about when a call goes."""
+    Counting changes nothing about when a call goes.
+
+    W892 (FU-1141) - NO CALLER SLEEPS HOLDING THE LOCK, AND THE LOCK BELONGS TO NO EVENT LOOP. It was one
+    asyncio.Lock held across the sleep, so every other caller in the process waited behind a sleeping one. It was
+    also bound to the first event loop that contended for it, so a caller on another loop (each asyncio.run, a
+    thread's own loop) was refused or woken from the wrong loop. Now a caller reserves its slot under a thread
+    lock, held only while the bucket is read and written, and sleeps after releasing it. The bucket may go into
+    debt, so concurrent callers are spaced at the limit. Before, the sleep set the bucket to zero and the next
+    caller took the tokens that had refilled during it, which let two through in one slot."""
 
     def __init__(self, calls_per_minute: int):
         self._limit = calls_per_minute
         self._tokens = float(calls_per_minute)
         self._last = time.monotonic()
-        self._lock = asyncio.Lock()
-        self.calls = 0                    # W889 - let through
+        self._lock = threading.Lock()     # W892 - held only while the bucket is read and written, never across a wait
+        self.calls = 0                    # W889 - let through (W892: a slot reserved)
         self.waited = 0                   # W889 - of those, how many slept first
         self.slept_s = 0.0                # W889 - seconds slept
         self.in_limiter_s = 0.0           # W889 - seconds callers spent inside acquire, the lock wait included
 
+    def _reserve(self) -> float:
+        """W892 - take the next slot, and say how long to wait for it (0 when a token is there). The only code that
+        holds the lock, and it never waits."""
+        with self._lock:
+            now = time.monotonic()
+            self._tokens = min(self._limit, self._tokens + (now - self._last) * (self._limit / 60.0))
+            self._last = now
+            self._tokens -= 1
+            self.calls += 1
+            if self._tokens >= 0:
+                return 0.0
+            self.waited += 1
+            return -self._tokens * 60.0 / self._limit
+
     async def acquire(self):
         _entered889 = time.monotonic()
         try:
-            async with self._lock:
-                now = time.monotonic()
-                elapsed = now - self._last
-                self._last = now
-                self._tokens = min(self._limit, self._tokens + elapsed * (self._limit / 60.0))
-                if self._tokens < 1:
-                    wait = (1 - self._tokens) * 60.0 / self._limit
-                    self.waited += 1
-                    _slept889 = time.monotonic()
-                    await asyncio.sleep(wait)
+            wait = self._reserve()
+            if wait > 0:
+                _slept889 = time.monotonic()
+                await asyncio.sleep(wait)          # W892 - after the lock is released, on whatever loop the caller is on
+                with self._lock:
                     self.slept_s += time.monotonic() - _slept889
-                    self._tokens = 0
-                else:
-                    self._tokens -= 1
-                self.calls += 1
         finally:
-            self.in_limiter_s += time.monotonic() - _entered889
+            with self._lock:
+                self.in_limiter_s += time.monotonic() - _entered889
 
     def stats(self) -> dict:
         """W889 (FU-1141) - what this limiter has cost its process so far, and the limit it holds now."""
