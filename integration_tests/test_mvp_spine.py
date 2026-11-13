@@ -76423,3 +76423,68 @@ def test_w892_no_caller_sleeps_holding_the_limiters_lock_and_the_lock_belongs_to
     _swap892 = "_rate_limiter, " + '"_lock"'
     src = (pathlib.Path(__file__).resolve().parent / "test_mvp_spine.py").read_text(encoding="utf-8")
     assert src.count(_swap892) == 0, ("a test still swaps the limiter's lock for a fresh one", src.count(_swap892))
+
+
+def test_w893_the_stores_config_paths_names_follow_the_data_root_a_deployment_sets(tmp_path, monkeypatch):
+    """FU-1168, part 1: read before moving, as the row asks. The deployments set DATA_DIR (render.yaml, the
+    Dockerfile, both compose files), which every store resolved through agentic_core.config.data_path follows.
+    config/paths.py read only WORKSTATION_DATA_DIR. So on a durable disk the memory store, the interactions database,
+    the L7 registry, the meeting log and the synthesis, ingestion, CEO and QEP stores stayed in <repo>/data. Now
+    config/paths.py follows DATA_DIR when WORKSTATION_DATA_DIR is not set. WORKSTATION_DATA_DIR still wins where it is
+    set, and with neither the root is <repo>/data, as before. Driven in a fresh process for each case. The switch is
+    never silent (W473's rule): while <repo>/data still holds a richer memory store than the one DATA_DIR names, the
+    backend says so when it starts."""
+    import json
+    import os
+    import pathlib
+    import subprocess
+    import sys
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    names = ("DATA_DIR", "MEMORY_FILE", "INTERACTIONS_DB", "L7_REGISTRY_FILE", "MEETING_LOG_FILE", "CHROMA_DB_PATH")
+    probe = ("import json, config.paths as p; "
+             f"print(json.dumps({{k: str(getattr(p, k)) for k in {names!r}}}))")
+    base = {k: v for k, v in os.environ.items() if k not in ("DATA_DIR", "WORKSTATION_DATA_DIR")}
+
+    def _paths(**roots):
+        r = subprocess.run([sys.executable, "-c", probe], cwd=str(root), env={**base, **roots},
+                           capture_output=True, text=True, timeout=120)
+        assert r.returncode == 0, (r.returncode, (r.stderr or "")[-600:])
+        return {k: pathlib.Path(v).resolve() for k, v in json.loads(r.stdout.strip().splitlines()[-1]).items()}
+
+    def _under(paths, where):
+        where = pathlib.Path(where).resolve()
+        return [k for k, v in paths.items() if not (v == where or v.is_relative_to(where))]
+
+    # 1. a deployment that sets DATA_DIR alone, as every deployment file does: every store is under it
+    durable = tmp_path / "durable"
+    off = _under(_paths(DATA_DIR=str(durable)), durable)
+    assert off == [], ("with only DATA_DIR set, these stores are not under it, so a durable disk does not hold them", off)
+    # 2. WORKSTATION_DATA_DIR still wins where it is set
+    mine = tmp_path / "mine"
+    assert _under(_paths(DATA_DIR=str(durable), WORKSTATION_DATA_DIR=str(mine)), mine) == []
+    # 3. with neither set, the root is the repository's data/, as before
+    assert _under(_paths(), root / "data") == []
+    # 4. the routes that keep stores there read these names, not a root of their own
+    for rel in ("agentic_core/ai/memory.py", "agentic_core/ai/logger.py", "agentic_core/synthesis/api.py",
+                "agentic_core/ingestion/api.py", "agentic_core/api/v138/ceo.py",
+                "agentic_core/synthesis/content_production.py", "agentic_core/reactor/religion/qep_flagship.py"):
+        assert "from config.paths import" in (root / rel).read_text(encoding="utf-8"), rel
+
+    # 5. never a silent switch: the memory left at the old root is said, until the new root holds as much
+    from config import paths as _p893
+    monkeypatch.delenv("WORKSTATION_DATA_DIR", raising=False)
+    monkeypatch.setenv("DATA_DIR", str(tmp_path / "now"))
+    monkeypatch.setattr(_p893, "BASE_DIR", tmp_path / "repo")
+    monkeypatch.setattr(_p893, "MEMORY_FILE", tmp_path / "now" / "memory.json")
+    (tmp_path / "repo" / "data").mkdir(parents=True)
+    (tmp_path / "repo" / "data" / "memory.json").write_text(json.dumps([{"t": i} for i in range(5)]), encoding="utf-8")
+    said = _p893.previous_root_warning() or ""
+    assert "holds 5 entries against 0" in said and "set WORKSTATION_DATA_DIR=" in said, said
+    assert "relocate_data_store.py" not in said, ("the warning names a script that copies from elsewhere", said)
+    (tmp_path / "now").mkdir()
+    (tmp_path / "now" / "memory.json").write_text(json.dumps([{"t": i} for i in range(5)]), encoding="utf-8")
+    assert _p893.previous_root_warning() is None, "the new root holds as much, and a warning was still given"
+    monkeypatch.setenv("WORKSTATION_DATA_DIR", str(tmp_path / "now"))
+    (tmp_path / "now" / "memory.json").write_text("[]", encoding="utf-8")
+    assert _p893.previous_root_warning() is None, "WORKSTATION_DATA_DIR was always followed, so nothing switched"

@@ -11,7 +11,13 @@ _LEGACY_BASE = BASE_DIR.parent
 
 # Data directories — WORKSTATION_DATA_DIR overrides the data root (test isolation / deployments that
 # keep mutable state off the repo volume). Defaults to <root>/data so existing setups are unchanged.
-DATA_DIR = Path(os.environ["WORKSTATION_DATA_DIR"]).expanduser() if os.environ.get("WORKSTATION_DATA_DIR") else BASE_DIR / "data"
+# W893 (FU-1168) - ONE DATA ROOT. The deployments set DATA_DIR (render.yaml, the Dockerfile, both compose files), which
+# every store resolved through agentic_core.config.data_path follows, and this file read only WORKSTATION_DATA_DIR.
+# So on the durable disk render.yaml describes, the memory store, the interactions database, the L7 registry, the
+# meeting log and the synthesis, ingestion, CEO and QEP stores stayed in <repo>/data and were lost on a redeploy.
+# WORKSTATION_DATA_DIR still wins where it is set; otherwise DATA_DIR; otherwise <root>/data, as before.
+_ROOT_SET = os.environ.get("WORKSTATION_DATA_DIR") or os.environ.get("DATA_DIR")
+DATA_DIR = Path(_ROOT_SET).expanduser() if _ROOT_SET else BASE_DIR / "data"
 LOG_DIR = BASE_DIR / "logs"
 GENOME_DIR = BASE_DIR / "genome"
 MODELS_DIR = BASE_DIR / "models"
@@ -37,6 +43,23 @@ def ensure_dir(path: Path) -> Path:
     return Path(path)
 
 
+def _holds(p: Path):
+    """What the store HOLDS, with its unit: ('entries', n) for a JSON list or object, ('bytes', n) for anything
+    else (refutation 2: a byte count was once reported as an entry count, and an unreadable store here could
+    mask a live legacy list). W893 - module level, so both warnings below read a store the same way."""
+    try:
+        import json
+        d = json.loads(p.read_text(encoding="utf-8"))
+        if isinstance(d, (list, dict)):
+            return "entries", len(d)
+    except Exception:
+        pass
+    try:
+        return "bytes", p.stat().st_size
+    except OSError:
+        return "bytes", 0
+
+
 def legacy_store_warning() -> str | None:
     """W473 (FU-026) — the store is relocated by COPY, VERIFY, SWITCH (scripts/relocate_data_store.py), never
     silently. While a legacy store at <repo-parent>/data still holds MORE than the repository's, say so: the
@@ -44,22 +67,6 @@ def legacy_store_warning() -> str | None:
     if os.environ.get("WORKSTATION_DATA_DIR"):
         return None
     legacy = _LEGACY_BASE / "data" / "memory.json"
-
-    def _holds(p: Path):
-        """What the store HOLDS, with its unit: ('entries', n) for a JSON list or object, ('bytes', n) for anything
-        else (refutation 2: a byte count was once reported as an entry count, and an unreadable store here could
-        mask a live legacy list)."""
-        try:
-            import json
-            d = json.loads(p.read_text(encoding="utf-8"))
-            if isinstance(d, (list, dict)):
-                return "entries", len(d)
-        except Exception:
-            pass
-        try:
-            return "bytes", p.stat().st_size
-        except OSError:
-            return "bytes", 0
     try:
         if not legacy.exists():
             return None
@@ -77,7 +84,33 @@ def legacy_store_warning() -> str | None:
     return None
 
 
+def previous_root_warning() -> str | None:
+    """W893 (FU-1168) - never a silent switch (W473's rule). Before W893 this file followed only WORKSTATION_DATA_DIR,
+    so where DATA_DIR alone was set these stores were kept in <root>/data. They now follow DATA_DIR. While <root>/data
+    still holds a memory store richer than the one under DATA_DIR, say so: the memory is there, not here."""
+    if os.environ.get("WORKSTATION_DATA_DIR") or not os.environ.get("DATA_DIR"):
+        return None
+    before = BASE_DIR / "data" / "memory.json"
+    try:
+        if not before.exists() or before.resolve() == Path(MEMORY_FILE).resolve():
+            return None
+        was_u, was = _holds(before)
+        now_u, now = _holds(MEMORY_FILE) if Path(MEMORY_FILE).exists() else ("entries", 0)
+        #  relocate_data_store.py copies from <repo-parent>/data only, so it is not named here
+        hint = (f"copy the stores in {before.parent} into {Path(MEMORY_FILE).parent} and verify them before relying "
+                f"on this location, or set WORKSTATION_DATA_DIR={before.parent} to keep them where they were")
+        if was_u != now_u:
+            return (f"the AI memory store at {before} ({was:,} {was_u}) cannot be compared with {MEMORY_FILE} "
+                    f"({now:,} {now_u}): one of them is not a JSON store — {hint}")
+        if was > now:
+            return (f"the AI memory store at {before} holds {was:,} {was_u} against {now:,} at {MEMORY_FILE}, "
+                    f"which DATA_DIR names since W893 — {hint}")
+    except OSError:
+        return None
+    return None
+
+
 ensure_dirs()
-_warn = legacy_store_warning()
-if _warn:
-    logging.getLogger("config.paths").warning(_warn)
+for _warn in (legacy_store_warning(), previous_root_warning()):
+    if _warn:
+        logging.getLogger("config.paths").warning(_warn)
