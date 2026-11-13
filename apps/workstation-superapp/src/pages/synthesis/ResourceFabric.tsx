@@ -43,6 +43,29 @@ interface Resource {
   // W815 (FU-911) - what composing it runs, where that is not its declared endpoint
   runs_instead?: string; runs_instead_basis?: string;
 }
+// W917 (FU-609) — a saved composition's lifecycle, as GET /resources/compositions serves it: derived on each read
+// and never stored (W915). expiry_recorded is the beat's record of an expiry, once it has written one (W916).
+interface CompositionLifecycle {
+  state: string;                      // provisioned · operating · expired · not known
+  runnable: boolean;
+  expires_at: string | null;
+  expired: boolean | null;
+  runs_kept: number | null;
+  last_run_at: string | null;
+  not_known_because: string | null;
+  read_at: string;
+  basis: string;
+  expiry_recorded: { expired_at: string; recorded_at: string; recorded_by: string } | null;
+}
+
+// W917 — a refusal's own sentence (the API's detail), so a refused action is never read as done
+async function refusalOf(r: Response): Promise<string> {
+  try {
+    const d = await r.json();
+    return typeof d?.detail === 'string' ? d.detail : `Refused (${r.status}); nothing changed.`;
+  } catch { return `Refused (${r.status}); nothing changed.`; }
+}
+
 interface Composition {
   id: string; name: string; usage_area: string;
   resources: { id: string; name: string; resource_class: string }[];
@@ -50,6 +73,11 @@ interface Composition {
   // W273/W284 — living-design lifecycle + the params still unset (for per-run entry)
   version?: number;
   model?: { unset_params?: Record<string, string[]> };
+  // W917 (FU-609) — the declared expiry, the lifecycle derived from it, and the composition's own history of it
+  expires_at?: string;
+  lifecycle?: CompositionLifecycle;
+  lifecycle_events?: { event: string; at?: string; by?: string; expires_at?: string | null;
+                       previous_expiry?: string | null; recorded_at?: string; recorded_by?: string }[];
 }
 // W274/W284 — a persisted composition run (GET /resources/compositions/runs)
 interface HistoryRun {
@@ -225,6 +253,9 @@ export const ResourceFabric: React.FC = () => {
   const [selected, setSelected] = useState<string[]>([]);
   const [name, setName] = useState('');
   const [actErr, setActErr] = useState('');   // W344 — actions never fail silently
+  // W917 (FU-609) — an optional expiry for a new composition, and a renewal per saved one (local time, sent as UTC)
+  const [expiresAt, setExpiresAt] = useState('');
+  const [renewAt, setRenewAt] = useState<Record<string, string>>({});
   const [usageArea, setUsageArea] = useState('synthesis');
   const [composing, setComposing] = useState(false);
   const [compositions, setCompositions] = useState<Composition[]>([]);
@@ -317,6 +348,7 @@ export const ResourceFabric: React.FC = () => {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ objective: runObjective || undefined, params: cleanRunParams() }),
       });
+      if (!r.ok) { setActErr(await refusalOf(r)); setRunningComp(false); return; }   // W917 - e.g. expired (409)
       setRunResult(await r.json());
     } catch { setActErr('Action failed — backend unreachable; nothing changed.'); }   // W344
     setRunningComp(false);
@@ -338,6 +370,23 @@ export const ResourceFabric: React.FC = () => {
     setSavingParams(false);
   };
 
+  // W917 (FU-609) — renew a composition's expiry with a later time, or clear it so it does not expire. A refusal
+  // (an expiry that has passed, one that cannot be read) is shown in the API's own words and nothing is cleared.
+  const changeExpiry = async (cid: string, clear: boolean) => {
+    const when = renewAt[cid];
+    if (!clear && !when) return;
+    try {
+      const r = await fetch(`/api/v1/resources/compositions/${cid}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(clear ? { clear_expiry: true } : { expires_at: new Date(when).toISOString() }),
+      });
+      if (!r.ok) { setActErr(await refusalOf(r)); return; }
+      setActErr('');
+      setRenewAt(p => ({ ...p, [cid]: '' }));
+      loadCompositions();
+    } catch { setActErr('Action failed — backend unreachable; nothing changed.'); }   // W344
+  };
+
   const deleteComposition = async (cid: string) => {
     try {
       await fetch(`/api/v1/resources/compositions/${cid}`, { method: 'DELETE' });
@@ -357,11 +406,15 @@ export const ResourceFabric: React.FC = () => {
     if (!name.trim() || selected.length === 0) return;
     setComposing(true);
     try {
-      await fetch('/api/v1/resources/compose', {
+      const r = await fetch('/api/v1/resources/compose', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, resource_ids: selected, usage_area: usageArea, config: buildConfig() }),
+        body: JSON.stringify({ name, resource_ids: selected, usage_area: usageArea, config: buildConfig(),
+                               //  W917 (FU-609) - an optional expiry: the local time chosen, sent as UTC
+                               expires_at: expiresAt ? new Date(expiresAt).toISOString() : undefined }),
       });
-      setName(''); setSelected([]); setSim(null); setParamConfig({});
+      if (!r.ok) { setActErr(await refusalOf(r)); setComposing(false); return; }   // W917 - said; the form is kept
+      setActErr('');
+      setName(''); setSelected([]); setSim(null); setParamConfig({}); setExpiresAt('');
       loadCompositions();
     } catch { setActErr('Action failed — backend unreachable; nothing changed.'); }   // W344
     setComposing(false);
@@ -516,6 +569,13 @@ export const ResourceFabric: React.FC = () => {
             className="bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-highlight/50">
             {usageAreas.map(a => <option key={a} value={a}>{a.replace(/_/g, ' ')}</option>)}
           </select>
+          {/* W917 (FU-609) - an optional expiry: past it a run is refused, and the beat records when it expired */}
+          <label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-500">
+            Expires (optional)
+            <input type="datetime-local" data-testid="compose-expires-at" value={expiresAt}
+              onChange={e => setExpiresAt(e.target.value)}
+              className="bg-slate-900 border border-slate-800 rounded-xl p-2 text-xs text-white focus:outline-none focus:border-highlight/50" />
+          </label>
           <Button onClick={simulate} disabled={simulating || selected.length === 0} className="flex items-center gap-2 bg-slate-800 text-highlight">
             {simulating ? <Loader2 size={16} className="animate-spin" /> : <FlaskConical size={16} />}
             Model before commit
@@ -709,9 +769,44 @@ export const ResourceFabric: React.FC = () => {
                 <div>
                   <p className="font-black text-white text-sm">{c.name}</p>
                   <p className="text-[9px] font-black uppercase text-slate-500 mt-0.5">{c.usage_area} · {c.resources.length} resources · {c.id}{c.version ? ` · v${c.version}` : ''}</p>
+                  {/* W917 (FU-609) — the lifecycle the API derived on this read: its state (the basis on hover), its
+                      expiry, the runs the history keeps, the beat's record of an expiry, and why a state is not known */}
+                  {c.lifecycle && (
+                    <div data-testid={`comp-lifecycle-${c.id}`} title={c.lifecycle.basis}
+                      className="flex flex-wrap items-center gap-2 mt-1.5 text-[9px] font-black uppercase">
+                      <span data-testid="comp-state" className={`px-2 py-0.5 rounded border ${
+                        c.lifecycle.state === 'expired' ? 'text-vital border-vital/40'
+                          : c.lifecycle.state === 'not known' ? 'text-amber-400 border-amber-400/40'
+                            : 'text-highlight border-highlight/40'}`}>{c.lifecycle.state}</span>
+                      {c.lifecycle.expires_at && (
+                        <span data-testid="comp-expiry" className="text-slate-400">
+                          {c.lifecycle.expired ? 'expired at' : 'expires at'} {c.lifecycle.expires_at}
+                        </span>
+                      )}
+                      {c.lifecycle.runs_kept !== null && (
+                        <span data-testid="comp-runs-kept" className="text-slate-500">
+                          {c.lifecycle.runs_kept} run{c.lifecycle.runs_kept === 1 ? '' : 's'} kept
+                          {c.lifecycle.last_run_at ? `, last ${c.lifecycle.last_run_at}` : ''}
+                        </span>
+                      )}
+                      {c.lifecycle.expiry_recorded && (
+                        <span data-testid="comp-expiry-recorded" className="text-slate-500 normal-case">
+                          recorded by {c.lifecycle.expiry_recorded.recorded_by} at {c.lifecycle.expiry_recorded.recorded_at}
+                        </span>
+                      )}
+                      {c.lifecycle.not_known_because && (
+                        <span data-testid="comp-not-known" className="text-amber-400 normal-case">
+                          {c.lifecycle.not_known_because}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <button type="button"
+                  <button type="button" data-testid={`comp-run-${c.id}`}
+                    disabled={c.lifecycle?.runnable === false}
+                    title={c.lifecycle?.runnable === false
+                      ? 'A run would be refused: renew the expiry below, or retire the design.' : undefined}
                     onClick={() => { setRunCompId(runCompId === c.id ? null : c.id); setRunResult(null); setRunParams({}); }}
                     className="flex items-center gap-1.5 text-[9px] font-black uppercase text-highlight border border-highlight/40 px-2.5 py-1 rounded-lg hover:bg-highlight/10 transition-colors">
                     <Play size={11} /> Run
@@ -726,6 +821,22 @@ export const ResourceFabric: React.FC = () => {
               <div className="flex flex-wrap gap-1.5 mt-3">
                 {c.resources.map(r => <Tag key={r.id}>{r.name}</Tag>)}
               </div>
+              {/* W917 (FU-609) — renew the expiry with a later time, or clear it; a refusal is shown in the API's words */}
+              {c.lifecycle?.expires_at && (
+                <div data-testid={`comp-renew-${c.id}`} className="flex flex-wrap items-center gap-2 mt-3">
+                  <input type="datetime-local" aria-label={`New expiry for ${c.name}`} value={renewAt[c.id] ?? ''}
+                    onChange={e => setRenewAt(p => ({ ...p, [c.id]: e.target.value }))}
+                    className="bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-[11px] text-white focus:outline-none focus:border-highlight/50" />
+                  <button type="button" onClick={() => changeExpiry(c.id, false)} disabled={!renewAt[c.id]}
+                    className="text-[9px] font-black uppercase text-highlight border border-highlight/40 px-2.5 py-1 rounded-lg disabled:opacity-40">
+                    Renew
+                  </button>
+                  <button type="button" onClick={() => changeExpiry(c.id, true)}
+                    className="text-[9px] font-black uppercase text-slate-400 border border-slate-700 px-2.5 py-1 rounded-lg">
+                    Clear expiry
+                  </button>
+                </div>
+              )}
 
               {/* §7↔§6↔§5 — run this configuration end-to-end on Workstation's OWN native swarm */}
               {runCompId === c.id && (

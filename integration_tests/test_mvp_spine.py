@@ -77751,3 +77751,73 @@ def test_w916_fu609_the_beat_records_a_composition_expiry_once_and_a_change_clos
         assert comp(cid)["lifecycle"]["state"] == "operating"
     finally:
         client.delete(f"/api/v1/resources/compositions/{cid}")
+
+
+def test_w917_fu609_the_fabric_page_shows_each_compositions_lifecycle_against_the_apis_own_answers(client, monkeypatch):
+    """FU-609 last part (W917). W915 derives a saved composition's state on each read and refuses a run past its
+    declared expiry; W916 records an expiry once, on the beat. The Resource Fabric page showed none of it, and it
+    read a refused compose, run or update as done. Each card now shows the lifecycle as the API serves it: the
+    state with its basis, when it expires or expired, the runs kept, the beat's record of an expiry, and why a state
+    is not known. Its Run control is disabled when a run would be refused, and the compose form and each card can
+    declare, renew or clear an expiry. A refusal shows the API's own sentence.
+
+    ResourceFabric.test.tsx mounts the real page against the API's own answers, captured after three compositions
+    were saved: one never run, one run, and one run then expired and recorded by a real beat. It reads each card in
+    the DOM. Its page blinds each turn it red, run by the round as it runs tsc. This guard holds what the render
+    rests on:
+    - the test mounts the real page;
+    - every id it reads is one the page renders;
+    - the page sends the expiry it is given and says every refusal;
+    - the captured answer is one the live route still gives, field for field, with the beat's record written by
+      the service identity, so a renamed field is not hidden behind a frozen answer."""
+    import json
+    import pathlib
+    import time as _t
+    from agentic_core.api import resource_fabric as rf
+    from agentic_core.economy.living_vsbs import SERVICE_IDENTITY
+
+    page_dir = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/pages/synthesis"
+    page = (page_dir / "ResourceFabric.tsx").read_text(encoding="utf-8")
+    t = (page_dir / "ResourceFabric.test.tsx").read_text(encoding="utf-8")
+    assert "import { ResourceFabric } from './ResourceFabric';" in t and "<ResourceFabric />" in t, (
+        "the rendered test does not mount the real page")
+    for tid in ("comp-state", "comp-expiry", "comp-runs-kept", "comp-expiry-recorded", "comp-not-known"):
+        assert f"'{tid}'" in t and f'data-testid="{tid}"' in page, ("an id the test reads is not rendered", tid)
+    for prefix in ("comp-lifecycle-", "comp-run-", "comp-renew-"):
+        assert ("`" + prefix + "${c.id}`") in page and ("`" + prefix + "${") in t, ("an id the test reads", prefix)
+
+    #  the page sends the expiry it is given, as UTC, and says every refusal rather than reading it as done
+    assert "expires_at: expiresAt ? new Date(expiresAt).toISOString() : undefined" in page
+    assert page.count("setActErr(await refusalOf(r))") == 3, "a compose, a run or an update is refused silently"
+
+    #  the captured answer: three states, the expired one recorded by the service identity
+    fx = json.loads((page_dir / "ResourceFabric.fixture.json").read_text(encoding="utf-8"))
+    comps = fx["compositions"]["compositions"]
+    assert sorted(c["lifecycle"]["state"] for c in comps) == ["expired", "operating", "provisioned"]
+    ended = next(c for c in comps if c["lifecycle"]["state"] == "expired")
+    assert ended["lifecycle"]["expiry_recorded"]["recorded_by"] == SERVICE_IDENTITY
+    assert ended["lifecycle"]["runnable"] is False and ended["expires_at"] == ended["lifecycle"]["expires_at"]
+
+    #  ...and one the live route still gives: an expiring composition, expired on the fabric's own clock and
+    #  recorded by a real beat, carries every field the captured ones do
+    def stamp(epoch):
+        return _t.strftime("%Y-%m-%dT%H:%M:%SZ", _t.gmtime(epoch))
+
+    soon = _t.time() + 3600
+    made = client.post("/api/v1/resources/compose", json={"name": "W917 live shape", "resource_ids": ["compliance"],
+                                                           "expires_at": stamp(soon)})
+    assert made.status_code == 200, made.text[:300]
+    cid = made.json()["id"]
+    try:
+        monkeypatch.setattr(rf, "_lifecycle_clock", lambda: soon + 60)
+        assert f"composition_expired:{cid}" in client.post("/api/v1/heartbeat/beat").json()["actions"]
+        live = next(c for c in client.get("/api/v1/resources/compositions").json()["compositions"] if c["id"] == cid)
+        for c in comps:
+            assert set(c) - {"lifecycle_events", "expiry_recorded", "expires_at"} <= set(live), (
+                "the fixture holds a field a live composition no longer has", sorted(set(c) - set(live)))
+            assert set(c["lifecycle"]) == set(live["lifecycle"]), (
+                "the captured lifecycle and the live one differ", sorted(set(c["lifecycle"]) ^ set(live["lifecycle"])))
+        assert set(ended["lifecycle"]["expiry_recorded"]) == set(live["lifecycle"]["expiry_recorded"])
+        assert live["lifecycle"]["expiry_recorded"]["recorded_by"] == SERVICE_IDENTITY
+    finally:
+        client.delete(f"/api/v1/resources/compositions/{cid}")

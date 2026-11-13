@@ -11707,10 +11707,13 @@
       "severity": "low",
       "owner_gated": false,
       "slot": "P5.1",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W917",
       "note": "",
-      "slot_source": "no open item owns new Resource Fabric capability; parked on the Phase 5 item beside FU-605 until the Owner charters facility work or rules it out"
+      "slot_source": "no open item owns new Resource Fabric capability; parked on the Phase 5 item beside FU-605 until the Owner charters facility work or rules it out",
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built as the row asked, measured first. W914 measured which fabric resources keep state between calls: none of the 66 registered resources is provisioned or keeps anything between calls, and the only fabric objects with a life of their own are saved compositions and the rows of their runs. So the lifecycle is on the saved composition (W915): a state derived on each read and never stored (provisioned, operating, expired, or not known when the stores cannot settle it); an optional declared expiry, refused when it cannot be read, names no zone or has passed; and a run refused before anything runs once the expiry has passed. The beat records each expiry once, as the service identity, and a person's change to the expiry closes the record in the composition's own history (W916). The Resource Fabric page shows the state with its basis, the expiry, the runs kept, the beat's record and why a state is not known. Its Run control follows the lifecycle, the compose form and each card declare, renew or clear an expiry, and a refusal shows the API's own sentence (W917). The brief's cost and carbon attribution stay refused, as the row says, until something measures either. Driven in test_w914 to test_w917, and the page in ResourceFabric.test.tsx with nine page blinds."
     },
     {
       "id": "FU-610",
