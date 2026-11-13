@@ -12,6 +12,7 @@ export const ConstitutionalUI: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'articles' | 'timeline' | 'history'>('articles');
   const [search, setSearch] = useState('');
   const [articles, setArticles] = useState<any[]>([]);
+  const [articlesUnread, setArticlesUnread] = useState(false);   // W985 - not read is not none
   // W495 (FU-126, S10.3) - the endpoint's own report: whether a canon is present, why not, and what
   // governs in its place. A missing canon is a state, not an occasion to show one invented article.
   const [summary, setSummary] = useState<{ breach?: string[]; noMechanism?: string[]; note?: string }>({});
@@ -35,7 +36,10 @@ export const ConstitutionalUI: React.FC = () => {
     // archive, and the archived copy is the inherited Jules-era document, excluded as dated. The
     // endpoint now reports canon_present:false with a basis and names what governs instead; the page
     // shows that rather than presenting an invented article as the constitution.
-    apiJson('/api/v1/gaas/ueg/verify').then(setIntegrity).catch(() => setIntegrity(null));
+    //  W985 (FU-399 part 17) - a failed integrity check, and a failed read of the articles, are said: the verdict was a
+    //  bare dash, and an unread constitution was shown as an empty one
+    apiJson('/api/v1/gaas/ueg/verify').then(setIntegrity)
+      .catch(e => { setIntegrity(null); noteRead("the ledger's integrity check")(e); });
     apiJson('/api/v154/constitution/articles')
       .then(data => {
         // the endpoint used to return a bare array; it now returns an object carrying the basis
@@ -46,13 +50,16 @@ export const ConstitutionalUI: React.FC = () => {
                      note: data?.verification_note });
         setCanon(data ?? null);
       })
-      .catch(() => { setArticles([]); setCanon(null); });
+      .catch(e => { setArticles([]); setCanon(null); setArticlesUnread(true); noteRead("the constitution's articles")(e); });
   }, []);
 
   // Live GaaS v5 constitutional engine (v16-Omega interceptor + UEG audit log)
   const refreshGaas = () => {
     // W460 — a failing poll clears the verdict (a stale green NOMINAL used to outlive the backend)
-    fetch('/api/v1/gaas/status').then(r => (r.ok ? r.json() : null)).then(setGaas).catch(() => setGaas(null));
+    //  W985 - the refusal's status and reason are said, and cleared by a later read that succeeds
+    apiJson('/api/v1/gaas/status')
+      .then(d => { setGaas(d); clearRead("the constitutional engine's status"); })
+      .catch(e => { setGaas(null); noteRead("the constitutional engine's status")(e); });
     // W491 (sweep S10.14, C10) — the badge counted these 40 fetched rows and read as the trail's
     // total, freezing at 40 however large the chain grew (the same page showed 177+ elsewhere). The
     // response already carries summary.total_events and this threw it away.
@@ -252,6 +259,11 @@ export const ConstitutionalUI: React.FC = () => {
                     {/* W515 (FU-295) - Article 33 says this document names its own unmet articles, so a
                         reader must see that without diffing every card. A zero here is stated as a zero, never
                         as compliance: when no canon is present these lists are empty for that reason. */}
+                    {articlesUnread && (
+                      <p data-testid="articles-unread" className="text-[11px] font-bold px-2 py-1 rounded bg-amber-500/20 text-amber-400">
+                        The constitution's articles could not be read, so none is shown. This is not an empty constitution.
+                      </p>
+                    )}
                     {articles.length > 0 && (
                       <div className="mb-8 p-6 rounded-3xl bg-slate-950/60 border border-slate-900 text-[11px] font-bold">
                         <span className="text-slate-400">{articles.length} articles · </span>

@@ -11162,7 +11162,8 @@ def test_w460_compliance_badges_are_evaluated_or_absent(client):
                                                "            : verify.outcome === 'unreadable' ? 'text-amber-400'\n"
                                                "            : verify.valid ? (verify.anchor_checked ? 'text-emerald-500' : 'text-amber-400')\n"
                                                "            : 'text-vital'}"),
-        "pages/governance/ConstitutionalUI.tsx": ".catch(() => setGaas(null))",
+        #  W985 - the failing poll still clears the verdict, and now also says the server's reason
+        "pages/governance/ConstitutionalUI.tsx": ".catch(e => { setGaas(null); noteRead(\"the constitutional engine's status\")(e); })",
         "pages/enterprise/VSBSpawnStudio.tsx": "ev.data?.passed === true ? STAGE_META.gaas_complete",
     }
     for rel, needle in pins.items():
@@ -82823,3 +82824,43 @@ def test_w984_fu399_the_home_says_a_refusal_as_a_refusal_never_as_an_unreachable
     assert "running" in hb and "running" in fx["heartbeat"]
     org = client.get("/api/v1/organism/status").json()
     assert {"composite_health", "composite_health_measured_only", "composite_health_terms", "mode"} <= set(org) & set(fx["organism"])
+
+
+def test_w985_fu399_the_constitution_page_never_shows_an_unread_constitution_as_an_empty_one(client):
+    """FU-399 part 17 (W985). The Constitution page says what governs the platform: the articles and what each records,
+    whether the ledger's hash chain verifies, and the constitutional engine's live status. ConstitutionalUI.test.tsx
+    mounts the real page against the answers its four routes gave on a fresh store and has the server refuse each read.
+    Rendering it found three defects, fixed here:
+    - a failed read of the articles set them to none, so the articles tab showed nothing with nothing said - an unread
+      constitution shown as an empty one; the failure is said, and the tab says the articles were not read;
+    - a refused integrity check left the verdict at a bare dash with no reason anywhere; it is said with its reason;
+    - the engine's status read took any refusal as nothing ("UNAVAILABLE"); its status and reason are said beside it,
+      and a later read that succeeds clears them (the page polls it).
+    Held here: the page's code carries what the render reads, and the four routes answer the fixture's fields."""
+    import json
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    gdir = root / "apps/workstation-superapp/src/pages/governance"
+    page = (gdir / "ConstitutionalUI.tsx").read_text(encoding="utf-8")
+    shared = (root / "apps/workstation-superapp/src/components/ReadFailures.tsx").read_text(encoding="utf-8")
+    t = (gdir / "ConstitutionalUI.test.tsx").read_text(encoding="utf-8")
+    assert "import { ConstitutionalUI } from './ConstitutionalUI';" in t and "<ConstitutionalUI />" in t
+    read = set(re.findall(r"ByTestId\('([^']+)'\)", t))
+    assert {"articles-unread", "ledger-integrity-verdict", "gaas-breaker-badge", "read-failure"} <= read, sorted(read)
+    for tid in read:
+        assert f'data-testid="{tid}"' in page or f'data-testid="{tid}"' in shared, tid
+
+    code = _code_only(page)
+    assert "setArticlesUnread(true); noteRead(\"the constitution's articles\")(e);" in code
+    assert "{articlesUnread && (" in code and 'data-testid="articles-unread"' in code
+    assert "noteRead(\"the ledger's integrity check\")(e);" in code and ".catch(() => setIntegrity(null))" not in code
+    assert "noteRead(\"the constitutional engine's status\")(e);" in code and "clearRead(\"the constitutional engine's status\")" in code
+    assert "fetch('/api/v1/gaas/status')" not in code
+
+    fx = json.loads((gdir / "ConstitutionalUI.fixture.json").read_text(encoding="utf-8"))
+    assert set(fx["articles"]) <= set(client.get("/api/v154/constitution/articles").json())
+    assert set(fx["articles"]["articles"][0]) >= {"id", "title", "category"}
+    assert {"valid", "outcome", "anchor_checked"} <= set(client.get("/api/v1/gaas/ueg/verify").json()) & set(fx["verify"])
+    assert {"circuit_breaker", "circuit_breaker_node", "circuit_breaker_scope"} <= set(client.get("/api/v1/gaas/status").json()) & set(fx["status"])
+    assert {"events", "summary"} <= set(client.get("/api/v1/gaas/ueg/events?limit=40").json()) & set(fx["events"])
