@@ -23959,6 +23959,26 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: the business documents' guard (_w703_faults) refuses a sentence that states a customer, an interview, a partner, an endorsement, a price agreed or a name cleared, while one that denies, conditions or projects it passes; it refuses an e-mail address, a telephone number, a postcode, a date of birth and a person named with a title; and a document under docs/business/public/ must open with DRAFT - NOT APPROVED FOR PUBLICATION. test_w703 reads docs/business recursively. Each rule is driven red on a planted fault in test_w963, and every business document in the tree passes as it stands."
+    },
+    {
+      "id": "FU-1193",
+      "title": "Three answers type an outcome nothing made true: a treaty signed, an enhancement vote recorded, the v154 status operational",
+      "why": "Measured by the literal-outcome screen (W966, P5.10 clause 4) over every mounted route: POST /api/v250/treaties/{treaty_id}/sign answers status signed for any id and reads or writes no treaty, while the route beside it says no treaty register exists; POST /api/v200/contribute/vote answers status recorded for any proposal id and keeps nothing; GET /api/v154/status answers status operational whatever the immune system's health beside it reads. No page reaches the three, so they are answered by the API alone. Done when each says only what happened - a treaty signed only where a draft exists to sign, a vote refused while nothing records it, a status derived from the health it reads - and the screen's entries for them are reasons, not defects.",
+      "source": "W966 (the literal-outcome screen, P5.10 clause 4)",
+      "found": "2026-11-13",
+      "files": [
+        "agentic_core/api/v250/treaties.py",
+        "agentic_core/api/v200/contribute.py",
+        "agentic_core/api/integration_surface.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.10",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.10 clause 4 (the literal-outcome screen) found them",
+      "tier": 3
     }
   ],
   "routes": [

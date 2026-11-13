@@ -69508,7 +69508,9 @@ def test_w749_an_instrument_that_examined_nothing_refuses_and_reads_what_it_name
                     #  W890 (FU-1040) - the test double's rows, moved aside under the same rule
                     "scripts/quarantine_test_double_rows.py",
                     #  W918 (FU-742) - the stores' backup: it refuses an empty data root and an archive listing nothing
-                    "scripts/backup_stores.py"]
+                    "scripts/backup_stores.py",
+                    #  W966 (P5.10 clause 4) - the literal-outcome screen refuses an application with no handler
+                    "scripts/literal_outcomes.py"]
 
     def _emitted(src):
         """The strings a module can print or return - its docstrings left out, since a docstring saying the tool
@@ -81455,3 +81457,93 @@ def test_w965_fu1190_a_claim_can_be_raised_under_the_answer_of_each_of_the_25_do
         assert held in t, held
     pinned = re.search(r"const EXPORTED_SHA256 = '([0-9a-f]{64})';", t).group(1)
     assert pinned == hashlib.sha256("w965 the plan as it was shown\n\n_w965 a disclaimer that travels with it_".encode("utf-8")).hexdigest()
+
+
+def test_w966_p510_clause4_every_typed_outcome_in_a_mounted_answer_is_on_the_allow_list_with_its_reason(monkeypatch, capsys):
+    """P5.10 clause 4 (W966): "a commit-time check that lists every typed outcome word and figure in an answer, each on
+    an allow-list with its reason, or it fails"; ACCEPT: it "fails on a typed outcome added to a handler". Held here:
+    - over every route the application mounts, each typed outcome is on docs/LITERAL_OUTCOMES.json with its reason,
+      and the screen says ok with what it examined;
+    - a typed outcome added to a real handler fails, naming its place, against the real allow-list;
+    - the check fails on a place it does not carry, a count that differs, a reason under thirty characters, an entry
+      nothing types, and a defect whose row is not open; a computed value and None are not typed outcomes;
+    - it refuses an application with no handler to read;
+    - the three places that are not true where they are said are registered defects naming one open row on P5.10."""
+    import importlib.util
+    import inspect
+    import json
+    import pathlib
+    from fastapi import FastAPI
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    spec = importlib.util.spec_from_file_location("w966_lo", root / "scripts/literal_outcomes.py")
+    lo = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(lo)
+    from agentic_core.app_mvp import app
+    allow = json.loads((root / "docs/LITERAL_OUTCOMES.json").read_text(encoding="utf-8"))
+    rows = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    open_rows = {r["id"] for r in rows if r.get("status") == "open"}
+
+    examined, found, unread = lo.census(app)
+    assert examined >= 600 and unread == [], (examined, unread)
+    assert lo.check(found, allow, open_rows) == []
+    assert lo.main() == 0
+    out = capsys.readouterr().out
+    assert f"ok - examined {examined} mounted route handler(s): {len(found)} typed outcome(s)" in out, out
+
+    #  ACCEPT: a typed outcome added to a real handler (health's own source, with one more key) fails, by its place
+    from agentic_core import app_mvp
+    real_lines = inspect.getsourcelines
+
+    def planted(obj):
+        lines, first = real_lines(obj)
+        if obj is inspect.unwrap(app_mvp.health):
+            lines = [ln.replace('"status": "healthy",', '"status": "healthy", "verdict": "approved",') for ln in lines]
+        return lines, first
+    monkeypatch.setattr(lo.inspect, "getsourcelines", planted)
+    _, found2, _ = lo.census(app)
+    assert lo.check(found2, allow, open_rows) == [
+        f"a typed outcome no reason allows: agentic_core/app_mvp.py:{inspect.getsourcelines(app_mvp.health)[1] + 3} "
+        'health verdict="approved"'], lo.check(found2, allow, open_rows)
+    monkeypatch.setattr(lo.inspect, "getsourcelines", real_lines)
+
+    #  the check itself, on its planted cases
+    one = [{"file": "x.py", "function": "h", "key": "status", "literal": "signed", "line": 9, "routes": ["POST /x"]}]
+    good = {"entries": [{"file": "x.py", "function": "h", "key": "status", "literal": "signed", "occurrences": 1,
+                         "reason": "said after the record is written to the store and read back"}]}
+    assert lo.check(one, good, set()) == []
+    assert lo.check(one, {"entries": []}, set()) == ['a typed outcome no reason allows: x.py:9 h status="signed"']
+    assert lo.check(one + one, good, set()) == ['x.py:9 h status="signed" is typed 2 time(s), and the allow-list says 1']
+    short = {"entries": [dict(good["entries"][0], reason="it is fine")]}
+    assert lo.check(one, short, set()) == ['x.py:9 h status="signed" has no reason of at least 30 characters']
+    assert lo.check([], good, set()) == ['the allow-list carries x.py h status="signed", which no mounted handler types']
+    closed = {"entries": [dict(good["entries"][0], defect="FU-0001")]}
+    assert lo.check(one, closed, {"FU-0002"}) == [
+        'x.py:9 h status="signed" is excused as defect FU-0001, which is not an open row, so it excuses nothing: '
+        'remove the literal or give it a reason']
+    assert lo.check(one, closed, {"FU-0001"}) == []
+
+    #  a computed value and None are not typed outcomes; a constant is, wherever the dict stands in the handler
+    import types
+    mod = types.ModuleType("w966_planted")
+    src = ("def h(x):\n    out = {'status': 'done', 'state': x, 'score': None}\n    return {'result': out}\n")
+    monkeypatch.setattr(lo.inspect, "getsourcelines", lambda obj: (src.splitlines(True), 1))
+    monkeypatch.setattr(lo.inspect, "getsourcefile", lambda obj: str(root / "w966_planted.py"))
+    exec(compile(src, str(root / "w966_planted.py"), "exec"), mod.__dict__)
+    tiny = FastAPI()
+    tiny.post("/w966")(mod.h)
+    n, got, _ = lo.census(tiny)
+    assert n == 1 and [(g["key"], g["literal"], g["line"]) for g in got] == [("status", "done", 2)], got
+    monkeypatch.setattr(lo.inspect, "getsourcelines", real_lines)
+
+    #  an application with no handler to read is refused
+    monkeypatch.setattr(lo, "_app", lambda: FastAPI())
+    assert lo.main() == 2 and "examined nothing" in capsys.readouterr().out
+
+    #  the three that are not true where they are said: registered defects naming one open row on P5.10
+    defects = [e for e in allow["entries"] if e.get("defect")]
+    assert sorted((e["file"].rsplit("/", 1)[1], e["function"], e["literal"]) for e in defects) == [
+        ("contribute.py", "vote_enhancement", "recorded"), ("integration_surface.py", "v154_status", "operational"),
+        ("treaties.py", "sign_treaty", "signed")], defects
+    row = next(r for r in rows if r["id"] == defects[0]["defect"])
+    assert {e["defect"] for e in defects} == {row["id"]} and row["status"] == "open" and row["slot"] == "P5.10", row
