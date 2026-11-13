@@ -79620,3 +79620,64 @@ def test_w941_p53_a_claim_that_an_output_is_wrong_stays_open_until_a_person_answ
     prompt = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
     still = prompt.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0]
     assert f"{row['id']} (W941): under which Change Control tier is a claim that an output is wrong filed?" in still
+
+
+def test_w942_p53_claims_are_on_the_support_page_and_an_answer_says_whether_it_reached_the_ledger(client):
+    """P5.3 part 2 (W942). W941 built the claim path with no page, and an ANSWERED claim did not say whether the
+    decision that answered it reached the ledger, which P5.3 asks of a claim's resolution. Measured after W941: the
+    Support page showed no claim, and a claim's answer carried no ledger mark. components/SupportClaims.tsx on the
+    Support page lists every claim in the server's words and raises one against a deliverable the person picks;
+    SupportClaims.test.tsx mounts it against the claim routes' own answers (captured by w942_capture.py). Held here:
+    - the Support page shows the claims;
+    - the rendered test mounts the real component, and every id it reads is one the component renders;
+    - the component types no sentence about a claim's state or its rules, and sends only the three fields a claim
+      takes;
+    - an answered claim says whether its decision reached the ledger, read from the change's own audit trail;
+    - the captured answers are ones the live routes still give, field for field, with their refusals."""
+    import json
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = root / "apps/workstation-superapp/src"
+    comp = (src / "components/SupportClaims.tsx").read_text(encoding="utf-8")
+    t = (src / "components/SupportClaims.test.tsx").read_text(encoding="utf-8")
+    page = (src / "pages/support/Support.tsx").read_text(encoding="utf-8")
+    assert "<SupportClaims />" in _code_only(page) and "import { SupportClaims } from '../../components/SupportClaims';" in page
+    assert "import { SupportClaims } from './SupportClaims';" in t and "<SupportClaims />" in t
+    for tid in ("claims-basis", "claims-open", "claims-none", "claims-no-deliverable", "claims-refused", "claims-done",
+                "claims-unread"):
+        assert f"'{tid}'" in t and f'data-testid="{tid}"' in comp, ("an id the test reads is not rendered", tid)
+    for prefix in ("claim-", "claim-logged-"):
+        assert ("`" + prefix + "${c.claim_id}`") in t and ("data-testid={`" + prefix + "${c.claim_id}`}") in comp, prefix
+    code = _code_only(comp + "\n")
+    for owned in ("nobody has answered", "a person decided", "constitutional ledger", "CRITICAL", "sign-in is off"):
+        assert owned not in code, ("the component types a sentence the server owns", owned)
+    assert "body: { artefact_kind: 'deliverable', artefact_id: artefact, what_is_wrong: wrong }" in code
+
+    fx = json.loads((src / "components/SupportClaims.fixture.json").read_text(encoding="utf-8"))
+    empty = client.get("/api/v1/support/claims").json()
+    assert set(empty) == set(fx["empty"]) and empty["basis"] == fx["empty"]["basis"]
+    vid = client.post("/api/v1/genesis/establish", json={"problem": "w942 an entity whose report is said to be wrong",
+                                                          "ship_output": False, "name": "W942 Page"}).json()["vsb_id"]
+    did = client.post("/api/v1/deliverables/produce", json={"vsb_id": vid, "type": "report", "title": "W942 report",
+                                                            "brief": "w942 a report someone says is wrong"}).json()["id"]
+    assert set(fx["raise_request"]) == {"artefact_kind", "artefact_id", "what_is_wrong"}
+    req = {**fx["raise_request"], "artefact_id": did}
+    blank = client.post("/api/v1/support/claims", json={**req, "what_is_wrong": " "})
+    assert blank.status_code == 422 and blank.json()["detail"] == fx["refused_blank"], blank.text[:200]
+    raised = client.post("/api/v1/support/claims", json=req)
+    assert raised.status_code == 200 and set(raised.json()) == set(fx["raised"]), raised.text[:300]
+    open_ = next(x for x in client.get("/api/v1/support/claims").json()["claims"] if x["claim_id"] == raised.json()["claim_id"])
+    assert set(open_) == set(fx["after_raise"]["claims"][0]) and open_["state"] == "OPEN" and "answer_logged" not in open_
+    rv = client.post(f"/api/v1/cca/{raised.json()['cca_id']}/review", json={
+        "override_decision": "rejected", "reviewer_notes": "w942 the year is right",
+        "admin_decision_for_critical": True, "owner_decision_acknowledged": True})
+    assert rv.status_code == 200, rv.text[:200]
+    answered = next(x for x in client.get("/api/v1/support/claims").json()["claims"] if x["claim_id"] == raised.json()["claim_id"])
+    assert set(answered) == set(fx["after_answer"]["claims"][0]), sorted(set(answered) ^ set(fx["after_answer"]["claims"][0]))
+    assert (answered["state"], answered["answer_logged"]) == ("ANSWERED", True), answered
+    assert answered["answer_logged_basis"] == fx["after_answer"]["claims"][0]["answer_logged_basis"] == (
+        "the decision is in the constitutional ledger as cca.change_rejected")
+    change = client.get(f"/api/v1/cca/{raised.json()['cca_id']}").json()
+    assert any(e.get("event") == "ueg_written" and e.get("event_type") == "cca.change_rejected"
+               for e in change.get("audit_trail") or []), "the ledger mark the claim reads is not on the change"
+    assert set(fx["deliverables"]["deliverables"][0]) >= {"id", "title"}

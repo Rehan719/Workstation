@@ -112,8 +112,16 @@ def _state(claim: Dict[str, Any]) -> Dict[str, Any]:
     summary = {"cca_id": change.get("cca_id"), "status": status, "impact_tier": effective_tier(change),
                "decision_source": change.get("decision_source")}
     if status in ("approved", "rejected", "implemented"):
+        #  W942 - whether the decision reached the ledger, read from the change's own audit trail (Change Control
+        #  writes every decision to the constitutional ledger and marks the record whether or not it got there)
+        logged = [e for e in (change.get("audit_trail") or []) if isinstance(e, dict) and e.get("event") == "ueg_written"
+                  and str(e.get("event_type") or "").startswith("cca.change_")]
         return {"state": "ANSWERED", "decision": status, "change": summary, "state_basis": (
-            f"a person decided the change this claim was filed as: {status}")}
+            f"a person decided the change this claim was filed as: {status}"),
+            "answer_logged": bool(logged), "answer_logged_basis": (
+                f"the decision is in the constitutional ledger as {logged[-1]['event_type']}" if logged else
+                "the decision has no ledger entry on the change's record, so this answer is not logged; Change "
+                "Control marks such a gap for reconciliation")}
     return {"state": "OPEN", "change": summary, "state_basis": (
         f"the change is {status} and no person has decided it; a claim nobody has answered stays OPEN")}
 

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { LifeBuoy, CheckCircle2, XCircle, AlertTriangle, FileText } from 'lucide-react';
 import { provenanceBadge } from '../../lib/api';
+import { SupportClaims } from '../../components/SupportClaims';   // W942 (P5.3)
 
 // P3.18 — the support surface, told truthfully.
 //
@@ -285,6 +286,8 @@ export const Support: React.FC = () => {
           </>
         )}
       </section>
+      {/* W942 (P5.3) - claims that an output is wrong: OPEN until a person answers them */}
+      <SupportClaims />
     </div>
   );
 };
