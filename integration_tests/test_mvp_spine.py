@@ -81118,3 +81118,63 @@ def test_w961_fu1181_every_silence_in_the_frontend_is_named_with_its_reason():
     for rel in {f for f, _ in in_catch}:
         t = (src / rel).read_text(encoding="utf-8")
         assert re.search(r"import \{[^}]*\bsilenceIsRight\b[^}]*\} from '[./]*(?:components/)?ReadFailures';", t), rel
+
+
+def test_w962_fu807_the_cost_model_marks_every_cost_by_where_it_came_from_and_fills_in_none():
+    """FU-807 (W962, plan item P5.7 clause 2). The cost model: every cost marked quoted, sourced, assumed or not
+    measured; lean, base and higher-assurance scenarios; the founder's time kept apart; the unit economics as formulas
+    with no values; no promise of a zero bill. Held here, read from docs/business/COST_MODEL.md:
+    - P5.6's guard reads it like every business document (a draft, labelled statements, only what exists, no money
+      figure without a ruling, no count of people);
+    - the four marks are defined, and every cell of the cost table is NOT MEASURED, none, or a mark - no amount;
+    - the three scenarios rest on the Owner's ruling of the first deploy and on the hardening brief;
+    - the founder's time and the unit-economics formulas are there, on what the Owner ruled is charged (P5.16), each
+      NOT MEASURED;
+    - it promises no zero bill;
+    - the seven gates are not invented: the document says why and the question is an OWNER DECISION row."""
+    import json
+    import re
+    from pathlib import Path
+
+    from agentic_core import plan_followups as _fu
+    root = Path(__file__).resolve().parents[1]
+    text = (root / "docs/business/COST_MODEL.md").read_text(encoding="utf-8")
+    plan_slots = {i["slot"] for i in _fu.plan_items((root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8"))}
+    reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    from agentic_core.app_mvp import app as _app962
+    routes = {(m, r.path) for r in _app962.routes for m in (getattr(r, "methods", None) or ())}
+    assert _w703_faults(text, root, plan_slots, {r["id"] for r in reg}, routes) == []
+
+    flat = " ".join(text.split())
+    for mark in ("QUOTED: a price a named supplier gave in writing", "SOURCED: a provider's published price",
+                 "ASSUMED: a value chosen only so a calculation can be run", "NOT MEASURED: everything else"):
+        assert mark in flat, mark
+    table = [ln for ln in text.splitlines() if ln.startswith("| ") and "---" not in ln and not ln.startswith("| Line")]
+    assert len(table) == 8, len(table)
+    for row in table:
+        for cell in [c.strip() for c in row.strip("|").split("|")[1:4]]:
+            assert re.fullmatch(r"(free tier, )?NOT MEASURED|none|none kept off it|kept apart below", cell), (row, cell)
+    assert "| The founder's time | kept apart below | kept apart below | kept apart below |" in text
+    for scen in ("LEAN is the first deploy the Owner ruled", "BASE adds what opening to a first person other than the Owner would need",
+                 "HIGHER ASSURANCE adds the outside help scoped in"):
+        assert scen in flat, scen
+    assert "[owner-defined, 2026-10-12]" in flat and "`docs/business/PRODUCTION_HARDENING_BRIEF.md`" in flat
+    assert "Founder cost for a period = hours spent in the period × the Owner's own hourly rate" in flat
+    for formula in ("Contribution per entity generated = the once-only price − the cost of generating one entity",
+                    "The platform's share from an entity in a cycle = a quarter × the entity's profit for the cycle",
+                    "Break-even entities generated in a period =", "Months to recover what was spent to win a founder =",
+                    "Gross margin ="):
+        assert formula in flat, formula
+    #  the formulas are on what the Owner ruled is charged (P5.16), each with its ruling's date
+    assert "every Domain are free, for individuals and for institutions" in flat and "[owner-defined, 2026-10-13]" in flat
+    assert "the bill is not promised to be zero" in flat and "zero bill" in flat
+    assert not re.search(r"\b\d[\d,.]*\s*(?:per cent|%)", text.split("## Unit economics", 1)[1]), "a figure crept into the formulas"
+
+    #  the seven gates: said not to be in the tree, and put to the Owner
+    gates = text.split("## The seven investment gates", 1)[1]
+    assert "was not received" in gates and "none is invented here" in gates and "[owner decision]" in gates
+    row = next(r for r in reg if r.get("title") == "OWNER DECISION: which are the seven investment gates the cost model is to mark?")
+    assert row.get("owner_gated") and row.get("slot") == "OWNER" and "RECOMMENDED" in row["why"]
+    prompt = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    assert f"{row['id']} (W962): which are the seven investment gates" in prompt
+    assert prompt.index(f"{row['id']} (W962):") < prompt.index("THAT IS THE WHOLE LIST.")

@@ -15832,11 +15832,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.7",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W962",
       "note": "",
       "slot_source": "the Owner asked on 2026-10-11 that this work be added to the plan; it is the item chartered for it",
-      "tier": 3
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Done in W962, except the seven gates, which go to the Owner. docs/business/COST_MODEL.md marks every cost quoted, sourced with its date, assumed, or not measured; sets out the lean (the first deploy the Owner ruled), base and higher-assurance scenarios; keeps the founder's time apart as hours times the Owner's own rate; gives the unit economics as formulas with no values, on what the Owner ruled is charged (P5.16: the Domains free, one price for generating an entity, a quarter of profit); and promises no zero bill. Every cost is NOT MEASURED: no supplier has quoted, and whether a provider's published price may be stated is FU-1176, the Owner's. The seven investment gates are defined nowhere in this tree (the founder playbook the prompts referred to was never received), so none is invented; which seven they are is the Owner's decision row on the gates, with a recommendation. P5.6's guard reads the document like every business document, and test_w962 holds the rest."
     },
     {
       "id": "FU-808",
@@ -23913,6 +23916,24 @@
       "closed_by": null,
       "note": "",
       "slot_source": "P5.20 clause 6 (how to complain to the Owner about an answer)",
+      "tier": 2
+    },
+    {
+      "id": "FU-1191",
+      "title": "OWNER DECISION: which are the seven investment gates the cost model is to mark?",
+      "why": "Plan item P5.7 clause 2 asks the cost model for 'the seven investment gates and which one is evidenced today'. No gate is defined anywhere in this tree: the four commercialisation prompts the clause was chartered from are not kept here, and the founder playbook they referred to was never received (docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md, section 17.1, row 7). W962 wrote docs/business/COST_MODEL.md and invented none. RECOMMENDED: if you hold the playbook, add it to the tree and the next round marks each gate from it; if not, rule that the seven are the six switches of your hand, P4.1 to P4.6, and a first offer the interviews support, so that each can be marked evidenced or not from what this tree shows.",
+      "source": "W962 (FU-807: the cost model's gates are not defined in the tree)",
+      "found": "2026-11-13",
+      "files": [
+        "docs/INSTRUMENT_CELL_BRIEF_ASSESSMENT.md"
+      ],
+      "severity": "low",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.7 clause 2 names seven investment gates the tree does not define",
       "tier": 2
     }
   ],
