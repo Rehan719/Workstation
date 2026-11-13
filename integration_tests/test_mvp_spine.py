@@ -82138,3 +82138,60 @@ def test_w974_fu399_the_delivery_method_page_is_guarded_by_a_render_and_a_refusa
     assert planted and planted[0]["at_or_over_threshold"] is True, planted
     assert set().union(*(set(b) for b in fx["learning_breached"]["breached"])) <= set(planted[0])
     assert {fx["breached_once"], fx["breached_at_threshold"]} <= {l["id"] for l in method["lessons"]}
+
+
+def test_w975_fu399_the_horizon_guardrails_page_is_guarded_by_a_render_and_a_refusal_keeps_its_reason(client):
+    """FU-399 part 9 (W975). The Horizon Guardrails page carries the most dangerous field on the platform, the human
+    distress route: an unfilled field must read as unfilled, a stale route as stale, and a route for named places as
+    covering those places only. It also says the seam observes and does not gate, and that no gate certifies absence.
+    Six guards read the page's source. HorizonGuardrails.test.tsx mounts the real page against the answers the two
+    routes gave on a fresh store, in the field's three states, and reads each claim in the DOM, then has the server
+    refuse each read. Rendering it found one defect, fixed here: a refused read was said by its status alone, so a
+    refusal the server gave a reason for read as an unexplained code. The reason is now said beside the status.
+    This guard holds what the render rests on:
+    - the test mounts the real page, and every id it reads is one the page names (the two route-row ids are chosen
+      by a route's freshness, so the page names them as strings rather than as literal attributes);
+    - a refusal is said with the server's reason, by one helper, for both reads, and the page still holds no digit
+      run a person could read as a number to dial;
+    - the captured answers are the live routes', field for field, and the captured routes are test records that name
+      no service, reach no one and name no real reviewer; none is the route the Owner supplied."""
+    import json
+    import pathlib
+    import re
+    root = pathlib.Path(__file__).resolve().parents[1]
+    page_dir = root / "apps/workstation-superapp/src/pages/governance"
+    page = (page_dir / "HorizonGuardrails.tsx").read_text(encoding="utf-8")
+    t = (page_dir / "HorizonGuardrails.test.tsx").read_text(encoding="utf-8")
+    assert "import { HorizonGuardrails } from './HorizonGuardrails';" in t and "<HorizonGuardrails />" in t, (
+        "the rendered test does not mount the real page")
+    read = set(re.findall(r"ByTestId\(['`]([^'`]+)['`]\)", t))
+    assert {"horizon-distress-routes", "horizon-route-row", "horizon-route-stale-row", "horizon-routes-stale",
+            "horizon-routes-coverage", "horizon-seam"} <= read, sorted(read)
+    for tid in read:
+        assert f'data-testid="{tid}"' in page or f"'{tid}'" in page, ("an id the test reads is not on the page", tid)
+
+    #  a refusal is said with the server's reason, by one helper, for both reads
+    assert "const said = (body: unknown): string => {" in page
+    assert page.count("(HTTP ${r.status}${said(r.data)})") == 2, "a refused read is said by its status alone"
+    #  and the page still holds no digit run a person could read as a number to dial (the leg test_w551 holds)
+    assert not re.search(r"(?:\+?\d[\d\s().-]{6,}\d)|(?:\b\d{4,}\b)", page), "the page holds a dialable digit run"
+
+    #  the captured answers are the live routes', field for field
+    fx = json.loads((page_dir / "HorizonGuardrails.fixture.json").read_text(encoding="utf-8"))
+    live = client.get("/api/v1/horizon/guardrails").json()
+    for state in ("refused", "fresh", "stale"):
+        assert set(fx[state]) == set(live), (state, sorted(set(fx[state]) ^ set(live)))
+        assert [g["gate"] for g in fx[state]["gates"]] == [g["gate"] for g in live["gates"]], state
+        assert set().union(*(set(g) for g in fx[state]["gates"])) <= set().union(*(set(g) for g in live["gates"]))
+        assert fx[state]["not_a_person_statement"] == live["not_a_person_statement"], state
+    assert set(fx["seam"]) <= set(client.get("/api/v1/horizon/seam").json())
+    assert [fx[s]["distress_routes_state"] for s in ("refused", "fresh", "stale")] == [
+        "NOT_SUPPLIED", "SUPPLIED_FRESH", "SUPPLIED_STALE"]
+    #  the captured routes are test records: no service, no one reached, no real reviewer, never the Owner's route
+    from agentic_core.gaas.v5 import horizon_guardrails as _g975
+    supplied = {r.get("route") for r in _g975.DISTRESS_ROUTES} | {r.get("reviewed_by") for r in _g975.DISTRESS_ROUTES}
+    for state in ("fresh", "stale"):
+        for r in fx[state]["distress_routes"]:
+            assert "(a test record" in r["route"] and "(a test record)" in r["reviewed_by"], r
+            assert r["route"] not in supplied and r["reviewed_by"] not in supplied, ("a supplied route is in the fixture", r)
+            assert not _g975._looks_dialable(r["route"]), r

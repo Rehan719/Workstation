@@ -65,6 +65,13 @@ interface Guardrails {
   unchanged_refusals: string[];
 }
 
+//  W975 (FU-399 part 9) - A REFUSAL IS SAID WITH THE SERVER'S REASON. A refused read was said by its status alone, so a
+//  refusal the server gave a reason for read as an unexplained code. The reason, when there is one, is said beside it.
+const said = (body: unknown): string => {
+  const d = (body as { detail?: unknown } | null)?.detail;
+  return typeof d === 'string' && d.trim() ? `: ${d}` : '';
+};
+
 const ICONS: Record<string, React.ReactNode> = {
   religious_ruling: <BookOpen className="w-5 h-5" />,
   theological_proof: <AlertTriangle className="w-5 h-5" />,
@@ -81,7 +88,7 @@ export const HorizonGuardrails: React.FC = () => {
     axios.get<Guardrails>('/api/v1/horizon/guardrails', { validateStatus: () => true })
       .then(r => {
         if (r.status === 200 && r.data) { setG(r.data); setErr(''); }
-        else { setG(null); setErr(`The guardrails are not reporting (HTTP ${r.status}).`); }
+        else { setG(null); setErr(`The guardrails are not reporting (HTTP ${r.status}${said(r.data)}).`); }
       })
       .catch(() => { setG(null); setErr('The guardrails could not be reached.'); });
     // The seam is fetched SEPARATELY and fails separately: a seam that cannot be read must not blank the
@@ -89,7 +96,7 @@ export const HorizonGuardrails: React.FC = () => {
     axios.get<Seam>('/api/v1/horizon/seam', { validateStatus: () => true })
       .then(r => {
         if (r.status === 200 && r.data) { setS(r.data); setSeamErr(''); }
-        else { setS(null); setSeamErr(`The seam is not reporting (HTTP ${r.status}).`); }
+        else { setS(null); setSeamErr(`The seam is not reporting (HTTP ${r.status}${said(r.data)}).`); }
       })
       .catch(() => { setS(null); setSeamErr('The seam could not be reached.'); });
   }, []);
