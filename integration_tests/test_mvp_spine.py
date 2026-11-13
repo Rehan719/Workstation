@@ -79212,3 +79212,74 @@ def test_w936_p54_the_entity_repository_carries_a_version_a_changelog_and_the_ma
         assert "version_control" not in carried and "cannot be written inside that commit" in carried["version_control_basis"]
         assert (clone / "VERSION").read_text(encoding="utf-8") == "2\n"
         assert (clone / "CHANGELOG.md").read_text(encoding="utf-8") == cl3
+
+
+def test_w937_p54_the_board_pack_is_in_the_repository_and_the_manifest_says_which_part_each_file_is(client):
+    """P5.4 part 2 (W937, row FU-1183). ACCEPT: 'the manifest states plainly which parts are scaffold and which are
+    the entity's own, so a reader is not handed a template as a business'; the board pack is part of the repository.
+    Measured: the board pack lived under data/vsb_board_packs, outside the repository, and the manifest labelled only
+    web, webapp and mobile. Driven here:
+    - before any pack is assembled the manifest says the repository carries none; once one is, board/BOARD_PACK.json
+      is that pack - its version, content hash, layers and narrative - without its per-assembly fields;
+    - an unchanged pack assembled again leaves the repository's version where it was;
+    - every file on disk has its part: the business plan of an entity with a body is its own, the layout files are
+      the platform's, a placeholder surface is a scaffold, the generation's records are records, and a file no
+      generator wrote is not known;
+    - once the website is generated its files are a generated surface, not a scaffold;
+    - an entity with no body of its own has its business plan said to be the platform's template."""
+    import json
+    import pathlib
+
+    def entity(name, **body):
+        r = client.post("/api/v1/genesis/establish", json={"problem": f"w937 {name}", "name": name, "ship_output": False, **body})
+        assert r.status_code == 200, r.text[:300]
+        return r.json()["vsb_id"]
+
+    vid = entity("W937 Pack", concept="a tool library that lends to one street", design="d", commercialisation="m")
+    m0 = client.post(f"/api/v1/vsb/{vid}/repo").json()
+    assert m0["board_pack"]["in_repository"] is False and "no board pack has been assembled" in m0["board_pack"]["says"]
+    assert not any(p["path"].startswith("board/") for p in m0["parts"])
+    pack = client.post(f"/api/v1/vsb/{vid}/board-pack").json()
+    m1 = client.post(f"/api/v1/vsb/{vid}/repo").json()
+    root = pathlib.Path(m1["repo_root"])
+    carried = json.loads((root / "board" / "BOARD_PACK.json").read_text(encoding="utf-8"))
+    assert (carried["version"], carried["content_hash"]) == (pack["version"], pack["content_hash"])
+    assert (carried["layers"], carried["narrative"]) == (pack["layers"], pack["narrative"])
+    assert not set(carried) & {"generated_at", "unchanged", "quality_assurance", "narrative_record_hash", "owner_id"}
+    assert m1["board_pack"]["in_repository"] is True and m1["board_pack"]["version"] == pack["version"]
+    assert m1["version"] == m0["version"] + 1 and "board/BOARD_PACK.json" in m1["changes"]["added"], m1["changes"]
+
+    parts = {p["path"]: p for p in m1["parts"]}
+    assert set(parts) == set(m1["tree"]), sorted(set(parts) ^ set(m1["tree"]))
+    assert {p["part"] for p in m1["parts"]} <= {"own", "template", "layout", "generated", "scaffold", "board_pack", "record", "unknown"}
+    assert parts["BUSINESS_PLAN.md"]["part"] == "own" and parts["genome.json"]["part"] == "own"
+    assert parts["ORGANISATION.md"]["part"] == "layout" and parts["README.md"]["part"] == "layout"
+    assert parts["web/index.html"]["part"] == "scaffold" and "website, which has not been generated" in parts["web/index.html"]["part_says"]
+    assert parts["mobile/manifest.webmanifest"]["part"] == "scaffold"
+    assert parts["board/BOARD_PACK.json"]["part"] == "board_pack" and f"(version {pack['version']})" in parts["board/BOARD_PACK.json"]["part_says"]
+    assert {parts[f]["part"] for f in ("VERSION", "CHANGELOG.md", "compliance/QUALITY.md")} == {"record"}
+
+    #  an unchanged pack assembled again leaves the version where it was
+    again = client.post(f"/api/v1/vsb/{vid}/board-pack").json()
+    assert again["unchanged"] is True
+    m2 = client.post(f"/api/v1/vsb/{vid}/repo").json()
+    assert (m2["version"], m2["version_moved"]) == (m1["version"], False), m2["changes"]
+
+    #  a file no generator wrote is not known
+    (root / "NOTES.txt").write_text("a person's own note", encoding="utf-8")
+    m3 = client.post(f"/api/v1/vsb/{vid}/repo").json()
+    assert {p["path"]: p["part"] for p in m3["parts"]}["NOTES.txt"] == "unknown"
+
+    #  the website generated: its files are a generated surface
+    w = client.post(f"/api/v1/vsb/{vid}/website")
+    assert w.status_code == 200, w.text[:300]
+    m4 = client.post(f"/api/v1/vsb/{vid}/repo").json()
+    p4 = {p["path"]: p["part"] for p in m4["parts"]}
+    assert p4["web/index.html"] == "generated" and all(v == "generated" for k, v in p4.items() if k.startswith("web/")), p4
+
+    #  an entity with no body of its own: its business plan is the platform's template, and said so
+    bare = entity("W937 Bare")
+    mb = client.post(f"/api/v1/vsb/{bare}/repo")
+    assert mb.status_code == 200, mb.text[:300]
+    pb = {p["path"]: p for p in mb.json()["parts"]}
+    assert pb["BUSINESS_PLAN.md"]["part"] == "template" and "not a business plan" in pb["BUSINESS_PLAN.md"]["part_says"]

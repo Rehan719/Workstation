@@ -545,6 +545,49 @@ def _write_changelog(root, name: str, ver: Dict[str, Any]) -> None:
     p.write_bytes((head + "\n".join(lines) + "\n\n" + earlier).encode("utf-8"))
 
 
+#  W937 (P5.4) - WHICH PART OF THE REPOSITORY EACH FILE IS, so a reader is not handed a template as a business
+_PART_SAYS = {
+    "own": "the entity's own: its record, or the body its founder or the model composed for it",
+    "template": ("the platform's template: this entity has no body of its own yet, so these sections are the "
+                 "template's and not a business plan"),
+    "layout": "the platform's standard layout, filled from this entity's record",
+    "generated": "generated from this entity's data by Workstation's {surface} generator: source, not a built or running app",
+    "scaffold": "a placeholder for the {surface}, which has not been generated",
+    "board_pack": "the entity's latest board pack, assembled from its live data (version {version})",
+    "record": "a record of this generation of the repository, not part of the entity",
+    "unknown": "not written by Workstation's generators, so what it is is not known",
+}
+_LAYOUT_FILES = ("README.md", "ORGANISATION.md", "OPERATIONS.md", "EVIDENCE.md", "resources/cascades.json")
+_OWN_FILES = ("IDENTITY.md", "genome.json")
+_SURFACES = {"web": "website", "webapp": "webapp", "mobile": "mobile"}
+_SURFACE_NAMES = {"website": "website", "webapp": "web app", "mobile": "phone app"}
+_SCAFFOLD_FILES = ("web/index.html", "webapp/README.md", "mobile/README.md", "mobile/manifest.webmanifest")
+#  a pack's per-assembly fields: its quality record is sealed per assembly, and when it was assembled is not its content
+_PACK_PER_ASSEMBLY = ("generated_at", "unchanged", "quality_assurance", "narrative_record_hash", "owner_id")
+
+
+def _repo_part(path: str, generated: Dict[str, bool], body_is_template: bool, board_version: Any) -> Dict[str, str]:
+    """Which part of the repository one file is, and the sentence that says so."""
+    top = path.split("/", 1)[0]
+    if path in _GENERATION_RECORDS:
+        part = "record"
+    elif path == "board/BOARD_PACK.json":
+        part = "board_pack"
+    elif top in _SURFACES and "/" in path:
+        surface = _SURFACES[top]
+        part = "generated" if generated.get(surface) else ("scaffold" if path in _SCAFFOLD_FILES else "unknown")
+        return {"part": part, "part_says": _PART_SAYS[part].format(surface=_SURFACE_NAMES[surface], version=board_version)}
+    elif path == "BUSINESS_PLAN.md":
+        part = "template" if body_is_template else "own"
+    elif path in _OWN_FILES:
+        part = "own"
+    elif path in _LAYOUT_FILES:
+        part = "layout"
+    else:
+        part = "unknown"
+    return {"part": part, "part_says": _PART_SAYS[part].format(surface="", version=board_version)}
+
+
 def _manifest_history(vsb_id: str, kind: str = "manifest") -> list:
     """§13 (W289) — the prior manifest is APPENDED to history instead of silently overwritten."""
     p = _REPO_STORE / f"{vsb_id}.{kind}.json"
@@ -639,6 +682,27 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
         _data = content.encode("utf-8")
         fp.write_bytes(_data)
         written.append({"path": path, "bytes": len(_data)})
+    #  W937 (P5.4) - THE BOARD PACK IS IN THE REPOSITORY IT IS PART OF: the latest assembled pack, in the fields that
+    #  describe its content and version. Its per-assembly quality record and timestamps stay on the platform, so an
+    #  unchanged pack assembled again leaves the repository's version where it was.
+    _pack_file = _BOARDPACK_STORE / vsb_id / "latest.json"
+    _board937: Dict[str, Any] = {"in_repository": False, "says": (
+        f"no board pack has been assembled for this entity yet (POST /api/v1/vsb/{vsb_id}/board-pack), so the "
+        f"repository carries none")}
+    if _pack_file.exists():
+        try:
+            _pack = json.loads(_pack_file.read_text(encoding="utf-8"))
+            (root / "board").mkdir(parents=True, exist_ok=True)
+            (root / "board" / "BOARD_PACK.json").write_bytes(json.dumps(
+                {k: v for k, v in _pack.items() if k not in _PACK_PER_ASSEMBLY}, indent=2).encode("utf-8"))
+            _board937 = {"in_repository": True, "path": "board/BOARD_PACK.json", "version": _pack.get("version"),
+                         "content_hash": _pack.get("content_hash"), "says": (
+                f"board/BOARD_PACK.json is the entity's latest board pack, version {_pack.get('version')}; its "
+                f"per-assembly quality record and timestamps stay on the platform")}
+        except Exception as _e937:                   # noqa: BLE001 - said in the manifest, never read as no pack
+            _board937 = {"in_repository": False, "says": (
+                f"the latest board pack could not be read ({type(_e937).__name__}), so the repository's copy was "
+                f"not written this generation")}
     #  W936 (P5.4) - A VERSION AND A CHANGELOG FROM WHAT ACTUALLY CHANGED, written before the tree is counted and
     #  before the commit, so the repository and any clone of it carry them
     _prior936 = _prior_repo_manifest(vsb_id, root)
@@ -669,6 +733,10 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
             _on_disk.append({"path": _p.relative_to(root).as_posix(),
                              "bytes": _p.stat().st_size})
     _history = _manifest_history(vsb_id)                       # W289 — never silently overwritten
+    #  W937 (P5.4) - every file on disk, with the part it is
+    _template937 = _body_served_by(vsb) == "template"
+    _parts = [{"path": x["path"], **_repo_part(x["path"], _generated, _template937, _board937.get("version"))}
+              for x in _on_disk]
     manifest = {
         "vsb_id": vsb_id, "name": vsb.get("name"), "slug": _repo_slug(vsb.get("name") or vsb_id),
         "domain": vsb.get("domain"), "realm": vsb.get("realm"),
@@ -692,6 +760,11 @@ async def generate_vsb_repo(vsb_id: str, user: dict | None = Depends(get_current
         #  W936 (P5.4) - the version, what it compared, and what changed since the last one
         "version": _ver["version"], "version_moved": _ver["moved"], "version_basis": _VERSION_BASIS,
         "changes": {k: _ver[k] for k in ("added", "changed", "removed")}, "digests": _digests,
+        #  W937 (P5.4) - which part each file is, and the board pack the repository carries
+        "parts": _parts, "board_pack": _board937,
+        "parts_basis": ("every file on disk except .git and manifest.json, each with the part it is: the entity's own, "
+                        "the platform's layout or template filled from its record, a generated surface, a scaffold, "
+                        "the board pack, a record of this generation, or not known"),
         "manifest_history": _history,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         # §13 (W574, M1 R2.1/R2.4) — THE SURFACE CLAUSE IS COMPUTED, from the same `_generated` map

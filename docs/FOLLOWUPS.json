@@ -23764,11 +23764,14 @@
       "severity": "medium",
       "owner_gated": false,
       "slot": "P5.4",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W937",
       "note": "",
       "slot_source": "P5.4's own ACCEPT clause",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W937. generate_vsb_repo writes board/BOARD_PACK.json from the latest assembled board pack, in the fields that describe its content and version (layers, economy, narrative, the entity's verdict, version and content hash); the pack's per-assembly quality record, timestamps and owner stay on the platform, so an unchanged pack assembled again leaves the repository's version where it was, and before any pack is assembled the manifest says the repository carries none. manifest.parts names every file on disk with the part it is and a sentence saying so: the entity's own (its record, or its body - the business plan only when the entity has a body of its own, otherwise the platform's template, said not to be a business plan), the platform's standard layout filled from its record, a generated surface or a scaffold for one not generated, the board pack with its version, a record of the generation, or not known for a file no generator wrote. Driven in test_w937."
     },
     {
       "id": "FU-1184",
