@@ -77680,3 +77680,74 @@ def test_w915_fu609_a_saved_composition_has_a_lifecycle_and_a_run_honours_its_de
             store.write_bytes(held)
     finally:
         client.delete(f"/api/v1/resources/compositions/{cid}")
+
+
+def test_w916_fu609_the_beat_records_a_composition_expiry_once_and_a_change_closes_the_record(client, monkeypatch):
+    """FU-609 part 3 (W916). A run of an expired composition is refused at its run (W915). The beat now writes the
+    fact down: each beat records every expiry that has passed and is not yet recorded, once, on the composition
+    itself: when it expired, when the beat saw it, and the service identity that recorded it. It also goes into
+    the beat's actions. The beat runs nothing and deletes nothing. A person's change to the expiry closes the
+    record in the composition's own lifecycle_events, so a later expiry is recorded afresh. Driven over HTTP,
+    with the beat fired at its own route. Only the fabric's own clock is moved (W900)."""
+    import time as _t
+    from agentic_core.api import resource_fabric as rf
+    from agentic_core.economy.living_vsbs import SERVICE_IDENTITY
+
+    def stamp(epoch):
+        return _t.strftime("%Y-%m-%dT%H:%M:%SZ", _t.gmtime(epoch))
+
+    def comp(cid):
+        return client.get(f"/api/v1/resources/compositions/{cid}").json()
+
+    def beat():
+        b = client.post("/api/v1/heartbeat/beat")
+        assert b.status_code == 200, b.text[:300]
+        assert "composition_expiry" not in (b.json().get("steps_failed") or {}), b.json()["steps_failed"]
+        return b.json()["actions"]
+
+    soon = _t.time() + 3600
+    made = client.post("/api/v1/resources/compose", json={"name": "W916 ephemeral", "resource_ids": ["compliance"],
+                                                           "expires_at": stamp(soon)})
+    assert made.status_code == 200, made.text[:300]
+    cid = made.json()["id"]
+    try:
+        assert client.post(f"/api/v1/resources/compositions/{cid}/run",
+                           json={"objective": "W916 one run before expiry"}).status_code == 200
+
+        #  before its expiry, a beat records nothing about it
+        assert f"composition_expired:{cid}" not in beat()
+        assert comp(cid).get("expiry_recorded") is None and comp(cid)["lifecycle"]["expiry_recorded"] is None
+
+        #  past it, the next beat records it once, as the service identity, and runs nothing
+        later = soon + 60
+        monkeypatch.setattr(rf, "_lifecycle_clock", lambda: later)
+        assert f"composition_expired:{cid}" in beat()
+        c = comp(cid)
+        want = {"expired_at": stamp(soon), "recorded_at": stamp(later), "recorded_by": SERVICE_IDENTITY}
+        assert c["expiry_recorded"] == want and c["lifecycle"]["expiry_recorded"] == want, c.get("expiry_recorded")
+        assert c["lifecycle"]["state"] == "expired" and c["lifecycle"]["runs_kept"] == 1, c["lifecycle"]
+        assert [e["event"] for e in c["lifecycle_events"]] == ["expired"]
+
+        #  a second beat does not record it again
+        assert f"composition_expired:{cid}" not in beat()
+        assert [e["event"] for e in comp(cid)["lifecycle_events"]] == ["expired"]
+
+        #  a person's renewal closes the record in the composition's own history, and says who and when
+        r = client.put(f"/api/v1/resources/compositions/{cid}", json={"expires_at": stamp(later + 600)})
+        assert r.status_code == 200 and r.json().get("expiry_recorded") is None, r.text[:300]
+        ev = r.json()["lifecycle_events"]
+        assert [e["event"] for e in ev] == ["expired", "renewed"], ev
+        assert (ev[-1]["expires_at"], ev[-1]["previous_expiry"], ev[-1]["at"]) == (
+            stamp(later + 600), stamp(soon), stamp(later)) and ev[-1]["by"], ev[-1]
+        assert f"composition_expired:{cid}" not in beat()
+
+        #  the renewed expiry, once passed, is recorded afresh; clearing it is kept in the history too
+        monkeypatch.setattr(rf, "_lifecycle_clock", lambda: later + 700)
+        assert f"composition_expired:{cid}" in beat()
+        assert comp(cid)["expiry_recorded"]["expired_at"] == stamp(later + 600)
+        r = client.put(f"/api/v1/resources/compositions/{cid}", json={"clear_expiry": True})
+        assert r.status_code == 200 and r.json().get("expiry_recorded") is None
+        assert [e["event"] for e in r.json()["lifecycle_events"]] == ["expired", "renewed", "expired", "expiry cleared"]
+        assert comp(cid)["lifecycle"]["state"] == "operating"
+    finally:
+        client.delete(f"/api/v1/resources/compositions/{cid}")

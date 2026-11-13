@@ -1173,7 +1173,9 @@ _LIFECYCLE_BASIS = (
     "of it. provisioned: saved, and the history, which covers its whole life, keeps no run of it. A state the "
     "stores cannot settle is 'not known'. A simulation (POST /api/v1/resources/compose/simulate) stores nothing, "
     "so no saved composition is ever 'requested'. Retiring (DELETE) removes the design from the store and keeps "
-    "the rows of its runs, so no saved composition reads 'retired'.")
+    "the rows of its runs, so no saved composition reads 'retired'. The beat records an expiry once, on the first "
+    "beat after it passes, as the service identity (expiry_recorded); a run is refused at the expiry whether or not "
+    "that record has been written yet. A change to the expiry is kept in the composition's own lifecycle_events.")
 
 
 def _composition_lifecycle(comp: Dict[str, Any], runs: Optional[List[Any]],
@@ -1216,7 +1218,9 @@ def _composition_lifecycle(comp: Dict[str, Any], runs: Optional[List[Any]],
             "expires_at": declared or None, "expired": None if unreadable_expiry else expired,
             "runs_kept": len(kept) if kept is not None else None,
             "last_run_at": max((str(r.get("created_at") or "") for r in kept), default=None) if kept else None,
-            "not_known_because": why, "read_at": _utc_stamp(now), "basis": _LIFECYCLE_BASIS}
+            "not_known_because": why, "read_at": _utc_stamp(now), "basis": _LIFECYCLE_BASIS,
+            #  W916 (FU-609 part 3) - the beat's record of this expiry, once it has written one
+            "expiry_recorded": comp.get("expiry_recorded") if isinstance(comp.get("expiry_recorded"), dict) else None}
 
 
 def _composition_runs_read() -> tuple:
@@ -1235,6 +1239,44 @@ def _lifecycle_counts(comps: List[Dict[str, Any]]) -> Dict[str, int]:
         s = _composition_lifecycle(c, runs, why)["state"]
         out[s] = out.get(s, 0) + 1
     return dict(sorted(out.items()))
+
+
+_LIFECYCLE_EVENTS_KEPT = 50     # a composition keeps the last 50 events of its own lifecycle
+
+
+def record_expired_compositions(by: str) -> List[str]:
+    """W916 (FU-609 part 3) - AN EXPIRY IS HONOURED ON THE BEAT, AND RECORDED ONCE. A run of an expired composition
+    is refused at its run (W915). This writes the fact on the composition itself: when it expired, when the beat
+    saw it, and who recorded it. It also goes into the tamper-evident trail, so the page and the trail say when an
+    ephemeral composition ended without anyone having to try to run it. It runs nothing and deletes nothing. An
+    expiry that cannot be read is left alone: the lifecycle already says it is not known, and its run is refused.
+    Returns the ids recorded on this call. A store that cannot be read raises, and the beat records the failure."""
+    now = _lifecycle_clock()
+    recorded: List[str] = []
+    with _compositions_lock():
+        rows = _compositions_for_write()
+        for c in rows:
+            exp = _expiry_epoch(c.get("expires_at")) if c.get("expires_at") else None
+            if exp is None or now < exp:
+                continue
+            if isinstance(c.get("expiry_recorded"), dict) and c["expiry_recorded"].get("expired_at") == c.get("expires_at"):
+                continue                                         # recorded once, never twice
+            rec = {"expired_at": c["expires_at"], "recorded_at": _utc_stamp(now), "recorded_by": by}
+            c["expiry_recorded"] = rec
+            c["lifecycle_events"] = (list(c.get("lifecycle_events") or [])
+                                     + [{"event": "expired", **rec}])[-_LIFECYCLE_EVENTS_KEPT:]
+            recorded.append(c["id"])
+        if recorded:
+            _save_compositions(rows)                     # W916 - the record is kept on the composition
+    if recorded:
+        try:
+            from agentic_core.gaas.v5 import UEGLogger
+            for _cid in recorded:
+                UEGLogger().log({"type": "resource_fabric.composition.expired", "composition_id": _cid,
+                                 "recorded_by": by})
+        except Exception:
+            pass
+    return recorded
 
 
 async def _omnimedia_live_sentence() -> str:
@@ -1448,10 +1490,18 @@ async def update_composition(cid: str, req: UpdateCompositionRequest,
             "version": int(comp.get("version", 1)) + 1,
             "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         })
+        _expiry_before = comp.get("expires_at")
         if _expiry_new:                                           # W915 (FU-609 part 2) - renewed
             comp["expires_at"] = _expiry_new
         elif req.clear_expiry:                                    # W915 - no longer expires
             comp.pop("expires_at", None)
+        if comp.get("expires_at") != _expiry_before:             # W916 (FU-609 part 3) - its own history
+            comp.pop("expiry_recorded", None)                     # W916 - a change closes the beat's record
+            _event = {"event": ("expiry cleared" if not comp.get("expires_at") else
+                                "renewed" if _expiry_before else "expiry declared"),
+                      "at": _utc_stamp(_lifecycle_clock()), "by": _fabric_owner(user),
+                      "expires_at": comp.get("expires_at"), "previous_expiry": _expiry_before}
+            comp["lifecycle_events"] = (list(comp.get("lifecycle_events") or []) + [_event])[-_LIFECYCLE_EVENTS_KEPT:]
         _save_compositions(rows)
     try:
         from agentic_core.gaas.v5 import UEGLogger

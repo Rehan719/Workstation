@@ -675,6 +675,18 @@ class OrganismHeartbeat:
                 }
                 actions.append("metabolic_cycle_failed")
 
+        # 2h. W916 (FU-609 part 3) - A SAVED COMPOSITION'S DECLARED EXPIRY IS RECORDED ON THE BEAT, ONCE. A run of
+        #     an expired composition is already refused at its run (W915), read from its own record. This writes
+        #     the fact on the composition, as the service identity, so the page and the trail say when it ended.
+        #     It runs nothing and deletes nothing, and nothing is added to `actions` when nothing expired.
+        try:
+            from agentic_core.api.resource_fabric import record_expired_compositions
+            from agentic_core.economy.living_vsbs import SERVICE_IDENTITY as _svc916
+            for _cid916 in record_expired_compositions(by=_svc916):
+                actions.append(f"composition_expired:{_cid916}")
+        except Exception as _swallowed:   # FU-461 (W611) — recorded, never swallowed
+            self._step_failed("composition_expiry", _swallowed)
+
         # 3. Transformation tick — vision-realisation introspection (no AI)
         try:
             from agentic_core.api.transformation import _realise
