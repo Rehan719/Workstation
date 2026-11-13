@@ -82251,3 +82251,109 @@ def test_w976_fu399_the_care_page_is_guarded_by_a_render_and_a_refused_hazard_lo
         now = compute_score("news2", data)
         for field in ("total", "band", "response", "missing", "keys_not_read", "complete"):
             assert fx[k]["score"].get(field) == now.get(field), (k, field, fx[k]["score"].get(field), now.get(field))
+
+
+def test_w977_p522_the_final_audits_workflow_is_handed_the_census_and_joined_into_one_record(capsys, tmp_path):
+    """P5.22 (W977): the final audit's workflow, built and guarded, not run. scripts/workflows/fidelity_audit_final.js
+    runs one assessor and one refuter per census slice, uncapped, in one named configuration; FidelityAuditFinal.test.ts
+    drives it with planted agents. What it is handed and what it is joined into are held here:
+    - the partition hands it every declared slice with the surfaces it holds, and together they are this tree's census;
+      a partition that is not the census is refused with nothing written;
+    - a record of each configuration, shaped as the workflow returns it, is joined into the one run record, and the
+      completeness check calls it complete; one configuration and the reason the other did not run is complete too;
+    - records that measured different commits, two of one configuration, one naming no configuration, a configuration
+      given as run and as not run, and no record at all are each refused with their own sentence;
+    - the driven test exists, runs the real script, and is named where the runner collects its tests."""
+    import importlib.util
+    import json
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+
+    def load(rel, name):
+        spec = importlib.util.spec_from_file_location(name, root / rel)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+    c = load("scripts/audit_surface_census.py", "w977_census")
+    p = load("scripts/audit_census_partition.py", "w977_partition")
+    ac = load("scripts/audit_completeness.py", "w977_completeness")
+
+    #  the slices handed to the workflow are this tree's census, every declared slice with what it holds
+    from agentic_core.app_mvp import app
+    routes, _excluded = c.routes_of(app)
+    src = (root / "apps/workstation-superapp/src/App.tsx").read_text(encoding="utf-8")
+    pages, _r, _u, _d = c.parse_pages(src)
+    files = c.page_files(src)
+    census = {"head": "w977", "routes": routes, "pages": pages, "route_modules": c.route_modules(app),
+              "page_files": {pg["component"]: files.get(pg["component"]) for pg in pages}}
+    declared = json.loads((root / "docs/AUDIT_SLICES.json").read_text(encoding="utf-8"))
+    handed = p.surfaces(census, declared)
+    assert [s["id"] for s in handed["slices"]] == [s["id"] for s in declared["slices"]]
+    assert all(s["routes"] or s["pages"] for s in handed["slices"]), "a slice is handed to the audit with no surface"
+    assert sorted(r for s in handed["slices"] for r in s["routes"]) == sorted(routes)
+    assert sorted(x.split(" (", 1)[0] for s in handed["slices"] for x in s["pages"]) == sorted(pg["path"] for pg in pages)
+    cpath = tmp_path / "census.json"
+    cpath.write_text(json.dumps(census), encoding="utf-8")
+    assert p.main([str(cpath), "--surfaces"]) == 0
+    assert json.loads(capsys.readouterr().out)["slices"] == handed["slices"]
+    census["routes"] = routes + ["GET /api/v1/w977-nowhere"]
+    census["route_modules"] = {**census["route_modules"], "GET /api/v1/w977-nowhere": "w977.nowhere"}
+    cpath.write_text(json.dumps(census), encoding="utf-8")
+    assert p.main([str(cpath), "--surfaces"]) == 1
+    said = capsys.readouterr()
+    assert said.out == "" and "REFUSING: the slices are not the census" in said.err, said
+    assert "a surface is in no slice: GET /api/v1/w977-nowhere (w977.nowhere)" in said.err
+
+    #  a record of each configuration, as the workflow returns it, joined and judged
+    import subprocess
+    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=root, capture_output=True, text=True, check=True).stdout.strip()
+    ids = [s["id"] for s in declared["slices"]]
+
+    def ran(configuration, commit=head):
+        return {"measured_commit": commit, "date": "2026-11-13", "configuration": configuration,
+                "slices": [{"region": sid, "configuration": configuration, "measured_commit": commit, "status": "ok",
+                            "findings": [], "verdicts": [], "summary": "w977", "hit_the_cap": False,
+                            "unlisted_findings": 0, "surfaces_exercised": {"routes": [f"GET /w977/{sid}"], "files": []},
+                            "residue": [], "refuter_residue": []} for sid in ids]}
+    both = ac.record([ran("floor"), ran("local_model")], {})
+    assert set(both["configurations"]) == {"floor", "local_model"} and both["measured_commit"] == head
+    assert ac.reasons(both, ids, head) == []
+    one = ac.record([ran("floor")], {"local_model": "no local model is installed on the machine that ran it"})
+    assert one["configurations"]["local_model"] == {"ran": False, "why_not": "no local model is installed on the machine that ran it"}
+    assert ac.reasons(one, ids, head) == []
+    failed = ran("floor")
+    failed["slices"][0].update(status="failed", error="the assessor returned nothing, so nothing in this slice was assessed")
+    assert ac.reasons(ac.record([failed], {"local_model": "w977"}), ids, head) == [
+        f"floor: slice {ids[0]} did not complete (status 'failed': the assessor returned nothing, so nothing in this slice "
+        "was assessed)"]
+
+    #  each way records cannot be one is refused with its own sentence
+    for runs, not_run, said in (
+            ([ran("floor"), ran("local_model", commit="b" * 40)], {}, "the configurations measured different commits"),
+            ([ran("floor"), ran("floor")], {}, "two records are of the floor configuration"),
+            ([{**ran("floor"), "configuration": "cloud"}], {}, "a record names 'cloud'"),
+            ([ran("floor")], {"floor": "w977"}, "the floor configuration is given as run and as not run"),
+            ([], {}, "examined nothing - no configuration's record was given")):
+        try:
+            ac.record(runs, not_run)
+        except ValueError as e:
+            assert said in str(e), (said, str(e))
+        else:
+            raise AssertionError(("joined records that cannot be one", said))
+    floor_path, local_path = tmp_path / "floor.json", tmp_path / "local.json"
+    floor_path.write_text(json.dumps(ran("floor")), encoding="utf-8")
+    local_path.write_text(json.dumps(ran("local_model", commit="c" * 40)), encoding="utf-8")
+    assert ac.main(["record", str(floor_path), "--not-run", "local_model", "w977: no local model here"]) == 0
+    printed = json.loads(capsys.readouterr().out)
+    assert printed["configurations"]["local_model"]["why_not"] == "w977: no local model here"
+    assert ac.main(["record", str(floor_path), str(local_path)]) == 2
+    assert "REFUSING: no run record is written" in capsys.readouterr().err
+
+    #  the driven test runs the real script, and the runner says why it collects a test that renders no page
+    wf = (root / "scripts/workflows/fidelity_audit_final.js").read_text(encoding="utf-8")
+    driven = (root / "apps/workstation-superapp/src/audit/FidelityAuditFinal.test.ts").read_text(encoding="utf-8")
+    assert "import source from '../../../../scripts/workflows/fidelity_audit_final.js?raw';" in driven
+    assert "name: 'fidelity-audit-final'" in wf and "return { measured_commit: HEAD, date: DATE, configuration: CONFIGURATION, slices }" in wf
+    vite = (root / "apps/workstation-superapp/vite.config.js").read_text(encoding="utf-8")
+    assert "src/audit/FidelityAuditFinal.test.ts drives the final audit's workflow script" in vite
+    assert "include: ['src/**/*.test.{ts,tsx}']," in vite

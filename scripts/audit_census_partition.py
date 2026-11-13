@@ -8,6 +8,9 @@ needs. Its ACCEPT properties held here are (1) every census surface is in exactl
 
     python scripts/audit_surface_census.py > census.json       # in the fresh-store environment (see that script)
     python scripts/audit_census_partition.py census.json       # the slices, or every way they fail the census
+    python scripts/audit_census_partition.py census.json --surfaces > slices.json
+        # W977: each slice with the surfaces it holds, as scripts/workflows/fidelity_audit_final.js takes them
+        # (args.slices); refused, with nothing written, when the slices are not the census
 
 The slices are declared in docs/AUDIT_SLICES.json. Each names the router modules whose routes it holds (the module a
 route's handler is written in, which the census now records) and the page folders whose pages it holds (the folder of
@@ -81,10 +84,25 @@ def partition(census: Dict[str, Any], declared: Dict[str, Any]) -> Dict[str, Any
     return {"slices": held, "routes": len(routes), "pages": len(pages), "problems": problems}
 
 
+def surfaces(census: Dict[str, Any], declared: Dict[str, Any], out: Dict[str, Any] | None = None) -> Dict[str, Any]:
+    """W977 - each declared slice with the routes and pages it holds, as the final audit's workflow takes them."""
+    out = out or partition(census, declared)
+    component = {p.get("path"): p.get("component") for p in census.get("pages") or []}
+    rows = []
+    for s in declared.get("slices") or []:
+        held = out["slices"].get(s["id"]) or {"routes": [], "pages": []}
+        rows.append({"id": s["id"], "holds": s.get("holds") or "", "routes": list(held["routes"]),
+                     "pages": [f"{p} ({component.get(p) or 'no component named'})" for p in held["pages"]]})
+    return {"census_head": census.get("head"), "routes": out["routes"], "pages": out["pages"], "slices": rows,
+            "basis": ("each slice of docs/AUDIT_SLICES.json with the census surfaces it holds; the partition "
+                      "was checked against the census before these were written, and every surface is in "
+                      "exactly one slice or a stated overlap")}
+
+
 def main(argv: List[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     if not argv:
-        print("usage: audit_census_partition.py CENSUS.json")
+        print("usage: audit_census_partition.py CENSUS.json [--surfaces]")
         return 2
     try:
         census = json.loads(pathlib.Path(argv[0]).read_text(encoding="utf-8"))
@@ -101,6 +119,16 @@ def main(argv: List[str] | None = None) -> int:
               "routes cannot be sliced. Make it again with scripts/audit_surface_census.py.")
         return 2
     out = partition(census, declared)
+    if "--surfaces" in argv[1:]:
+        #  W977 - the audit is handed slices only when they are the census; nothing is written otherwise
+        if out["problems"]:
+            for p in out["problems"]:
+                print(f"  {p}", file=sys.stderr)
+            print(f"REFUSING: the slices are not the census ({len(out['problems'])} problem(s)), so no slice is "
+                  "handed to an audit. That is not a pass.", file=sys.stderr)
+            return 1
+        print(json.dumps(surfaces(census, declared, out), indent=1, ensure_ascii=False))
+        return 0
     for sid, h in out["slices"].items():
         print(f"  {sid}: {len(h['routes'])} route(s), {len(h['pages'])} page(s)")
     if out["problems"]:

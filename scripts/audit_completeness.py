@@ -20,7 +20,11 @@ hit_the_cap, unlisted_findings, surfaces_exercised), and two more: status ("ok",
 measured_commit.
 
     python scripts/audit_completeness.py <run.json> <commit the ledger names>
-        COMPLETE (exit 0), INCOMPLETE with each reason (1), or REFUSING when there is nothing to judge (2)"""
+        COMPLETE (exit 0), INCOMPLETE with each reason (1), or REFUSING when there is nothing to judge (2)
+    python scripts/audit_completeness.py record FLOOR.json [LOCAL_MODEL.json] [--not-run CONFIGURATION WHY]
+        W977: the run record above, joined from the records scripts/workflows/fidelity_audit_final.js returns (one
+        per configuration, each naming its own) and the reason a configuration did not run; refused (2) when they
+        cannot be one record"""
 from __future__ import annotations
 
 import json
@@ -29,7 +33,7 @@ import pathlib
 import re
 import subprocess
 import sys
-from typing import Callable, Dict, List
+from typing import Any, Callable, Dict, List
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 SLICES = ROOT / "docs" / "AUDIT_SLICES.json"
@@ -130,8 +134,56 @@ def reasons(run: dict, declared: List[str], ledger_commit: str,
     return out
 
 
+def record(runs: List[dict], not_run: Dict[str, str]) -> Dict[str, Any]:
+    """W977 - the run record, from each configuration's workflow record and the reason any other did not run.
+    Raises ValueError with the sentence when they cannot be one record."""
+    if not runs:
+        raise ValueError("examined nothing - no configuration's record was given, so there is no run to record")
+    by: Dict[str, dict] = {}
+    for r in runs:
+        name = r.get("configuration") if isinstance(r, dict) else None
+        if name not in CONFIGURATIONS:
+            raise ValueError(f"a record names {name!r}, which is neither the floor nor the local model")
+        if name in by:
+            raise ValueError(f"two records are of the {name} configuration, and which one counts is not said")
+        by[name] = r
+    commits = sorted({str(r.get("measured_commit")) for r in by.values()})
+    if len(commits) != 1:
+        raise ValueError(f"the configurations measured different commits ({', '.join(c[:12] for c in commits)}): "
+                         "one run record measures one commit")
+    configurations: Dict[str, Any] = {n: {"ran": True, "slices": r.get("slices") or []} for n, r in by.items()}
+    for name, why in not_run.items():
+        if name not in CONFIGURATIONS:
+            raise ValueError(f"{name!r} is neither the floor nor the local model")
+        if name in by:
+            raise ValueError(f"the {name} configuration is given as run and as not run")
+        configurations[name] = {"ran": False, "why_not": why}
+    return {"measured_commit": commits[0], "configurations": configurations}
+
+
+def _record_main(argv: List[str]) -> int:
+    files, not_run, i = [], {}, 0
+    while i < len(argv):
+        if argv[i] == "--not-run" and i + 2 < len(argv):
+            not_run[argv[i + 1]] = argv[i + 2]
+            i += 3
+        else:
+            files.append(argv[i])
+            i += 1
+    try:
+        runs = [json.loads(pathlib.Path(f).read_text(encoding="utf-8")) for f in files]
+        joined = record(runs, not_run)
+    except Exception as e:                                   # noqa: BLE001 - said, never written as a record
+        print(f"REFUSING: no run record is written ({type(e).__name__}: {e}).", file=sys.stderr)
+        return 2
+    print(json.dumps(joined, indent=1, ensure_ascii=False))
+    return 0
+
+
 def main(argv: List[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
+    if argv and argv[0] == "record":
+        return _record_main(argv[1:])
     if len(argv) != 2:
         print("usage: python scripts/audit_completeness.py <run.json> <commit the ledger names>")
         return 2
