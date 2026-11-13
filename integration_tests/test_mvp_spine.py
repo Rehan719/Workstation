@@ -80071,3 +80071,52 @@ def test_w946_p521_a_reflection_prompt_is_a_persons_words_a_scholar_approved_and
     #  with sign-in on, only an administrator proposes a prompt
     late = client.post("/api/v1/scholar-review/reflection-prompts", headers=ha, json={"text": f"w946 later {tag}"})
     assert late.status_code == 403, late.text[:200]
+
+
+def test_w947_p521_a_check_in_is_the_packs_questions_the_child_answers_on_the_screen_and_nothing_is_received(client, monkeypatch):
+    """P5.21 clause 4, the fifth tool (W947): check-ins the child answers and controls, nothing inferred, built and
+    held. The questions and their answers are the tool's entry in the pack, shown word for word on the scholar's page
+    and in the pack's one document. Held with sign-in off. With the real gate opened (sign-in on in this test process,
+    the current pack approved by a scholar's own account), a signed-in adult is served exactly the pack's questions;
+    no route under the prefix takes an answer, and nothing is written to any store."""
+    import pathlib
+    import uuid
+    from fastapi.routing import APIRoute
+    from agentic_core.app_mvp import app
+    from agentic_core.config import data_path
+    from agentic_core.religious_domain import approval_pack as _ap
+    tag = uuid.uuid4().hex[:6]
+    prefix = _ap.CHILDREN_PREFIX
+    root_dir = pathlib.Path(__file__).resolve().parents[1]
+    tool = next(t for t in _ap.CHILDREN_TOOLS if t["id"] == "self-check-in")
+    for key in ("name", "run_by", "what_a_child_sees", "steps", "questions", "wording", "arabic_from", "routes"):
+        assert tool.get(key), ("the check-in's entry in the pack does not say", key)
+    for q in tool["questions"]:
+        assert q["question"] and len(q["answers"]) >= 2 and "I'd rather not say" in q["answers"], q
+
+    #  the scholar sees each question with its answers, in the pack's document and on its page
+    doc = client.get("/api/v1/scholar-review/pack.md").text
+    for q in tool["questions"]:
+        assert f"- {q['question']} ({' / '.join(q['answers'])})" in doc, q["question"]
+    page = (root_dir / "apps/workstation-superapp/src/components/qep/ChildrenApprovalPack.tsx").read_text(encoding="utf-8")
+    assert "t.questions.map(q =>" in page and "q.answers.join(' / ')" in page and 'data-testid="pack-tool-questions"' in page
+
+    off = client.get(f"{prefix}/check-in/questions")
+    assert off.status_code == 423 and "sign-in is off" in off.json()["detail"], off.text[:200]
+
+    ha = _w945_signed_in_and_open(client, monkeypatch, f"947{tag}")
+    root = data_path()
+    stores = {p: p.stat().st_mtime_ns for p in root.rglob("*") if p.is_file()}
+    r = client.get(f"{prefix}/check-in/questions", headers=ha)
+    assert r.status_code == 200, r.text[:200]
+    got = r.json()
+    assert got["questions"] == [{"id": q["id"], "question": q["question"], "answers": q["answers"]}
+                                for q in tool["questions"]], got["questions"]
+    assert got["screen"]["wording"] == tool["wording"] and got["received"] is False and got["inferred"] is False
+    after = {p: p.stat().st_mtime_ns for p in root.rglob("*") if p.is_file()}
+    assert after == stores, ("a check-in wrote to a store", sorted(set(after.items()) ^ set(stores.items()))[:5])
+
+    #  no route under the prefix takes an answer
+    taking = [f"{m} {x.path}" for x in app.routes if isinstance(x, APIRoute) and x.path.startswith(prefix + "/check-in")
+              for m in x.methods if m != "GET"]
+    assert not taking, ("a route takes a child's answer", taking)

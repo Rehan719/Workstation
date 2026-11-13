@@ -138,6 +138,27 @@ CHILDREN_TOOLS: List[Dict[str, Any]] = [
      "arabic_from": ("none: a prompt holds no Arabic. One that does is refused when it is proposed, because every "
                      "verse a child sees is fetched from a named edition."),
      "routes": [f"GET {CHILDREN_PREFIX}/reflection/prompts"]},
+    #  W947 - P5.21 clause 4, the fifth tool
+    {"id": "self-check-in",
+     "name": "Check-ins the child answers, run by a parent or teacher",
+     "run_by": "a parent or teacher, signed in on their own account, sitting with the child",
+     "what_a_child_sees": ("A few short questions about their practice, each with answers to choose from, "
+                           "including I'd rather not say. Any question can be skipped. Nothing is guessed about the "
+                           "child, and nothing they answer is sent or kept."),
+     "steps": ["The adult opens the check-in with the child.",
+               "The child reads each question and chooses an answer, or skips it.",
+               "The answers are shown back on the screen, to the child and the adult.",
+               "When the screen is closed the answers are gone: nothing the child chose is sent or kept, and "
+               "nothing is worked out from it."],
+     "questions": [{"id": "feel", "question": "How did practising feel today?",
+                    "answers": ["Easy", "Just right", "Hard", "I'd rather not say"]},
+                   {"id": "help", "question": "Is there anything you would like help with next time?",
+                    "answers": ["Yes", "No", "I'd rather not say"]}],
+     "wording": ["Answer only if you want to. You can skip any question.",
+                 "Your answers stay on this screen. They are not saved or sent.",
+                 "Skip"],
+     "arabic_from": "none: this tool shows no Arabic.",
+     "routes": [f"GET {CHILDREN_PREFIX}/check-in/questions"]},
 ]
 
 PACK_STORE = "scholar_pack_decisions.json"
@@ -256,6 +277,9 @@ def as_document() -> str:
         lines += [f"### {t.get('name')}", f"Run by: {t.get('run_by')}", "", f"What the child sees: {t.get('what_a_child_sees')}", ""]
         lines += [f"{i}. {s}" for i, s in enumerate(t.get("steps") or [], 1)]
         lines += ["", "Exact wording on screen:"] + [f"> {w}" for w in (t.get("wording") or [])]
+        if t.get("questions"):                                    # W947 - a tool's questions, word for word
+            lines += ["", "Questions, each with the answers to choose from:"]
+            lines += [f"- {q['question']} ({' / '.join(q['answers'])})" for q in t["questions"]]
         lines += ["", f"Where any Arabic comes from: {t.get('arabic_from')}", ""]
     lines += ["## 3. Learner-facing text awaiting or holding a decision", ""]
     if not st["sections"]["learner_content"]:

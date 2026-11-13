@@ -263,3 +263,25 @@ async def children_reflection_prompts(user: dict | None = Depends(get_current_us
             "received": False,
             "received_basis": ("what the child writes stays on this device: no route here takes a reflection, so "
                                "none is sent, read, judged or kept")}
+
+
+# ── TOOL 5 - CHECK-INS THE CHILD ANSWERS (W947) ──────────────────────────────────────────────────────────────────
+#  The questions and their answers are the tool's entry in the pack, approved word for word with it. The child answers
+#  on the screen or skips: no route here takes an answer, so nothing the child chooses is sent or kept, and nothing is
+#  worked out about the child from anything.
+CHECK_IN = "self-check-in"
+
+
+@router.get("/check-in/questions")
+async def children_check_in_questions(user: dict | None = Depends(get_current_user)):
+    """The check-in's questions, each with the answers to choose from, from the tool's entry in the pack."""
+    _adult(user)
+    tool = next(t for t in _ap.CHILDREN_TOOLS if t["id"] == CHECK_IN)
+    return {"questions": [{"id": q["id"], "question": q["question"], "answers": list(q["answers"])}
+                          for q in tool["questions"]],
+            "screen": {"tool": tool["id"], "name": tool["name"], "wording": list(tool["wording"])},
+            "received": False,
+            "received_basis": ("the child's answers stay on the screen: no route here takes one, so none is sent or "
+                               "kept"),
+            "inferred": False,
+            "inferred_basis": "nothing about the child is worked out from anything; only what the child chooses is shown"}
