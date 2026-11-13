@@ -1,7 +1,7 @@
 {
- "vsb_id": "vsb-f791dd3fa0",
+ "vsb_id": "vsb-654c6f08c6",
  "generated_empty": {
-  "vsb_id": "vsb-f791dd3fa0",
+  "vsb_id": "vsb-654c6f08c6",
   "limit": 5,
   "active": [],
   "lapsed": [],
@@ -13,7 +13,7 @@
    "education",
    "money_readiness"
   ],
-  "basis": "A short roster per entity, not a registry of people (P5.15 clause 6): a name, the discipline, the credential as the person states it, what they review for this entity, and when their place lapses. No contact detail is kept. Five at a time is Workstation's own number; the ruling says a short roster. A lapsed place does not count against the five. A specialist leaves by a recorded retirement and is never deleted. Their signature on this entity's work is not built yet.",
+  "basis": "A short roster per entity, not a registry of people (P5.15 clause 6): a name, the discipline, the credential as the person states it, what they review for this entity, and when their place lapses. No contact detail is kept. Five at a time is Workstation's own number; the ruling says a short roster. A lapsed place does not count against the five. A specialist leaves by a recorded retirement and is never deleted. A specialist holding a place signs one version of this entity's work, and that signature is its third tier (the signatures are read at .../signatures).",
   "credential_basis": "this platform does not verify a person's credential; it records what the person stated",
   "recommendation": {
    "recommended": true,
@@ -34,14 +34,14 @@
  "attached": {
   "attached": true,
   "specialist": {
-   "specialist_id": "spec-8909e5f670",
+   "specialist_id": "spec-6fe4e2be01",
    "name": "A. Example (a made-up specialist)",
    "discipline": "care",
    "credential_as_stated": "a registered nurse, as stated for this test",
    "reviews": "the entity's care plans",
    "lapses_on": "2027-06-01",
    "added_by": "single-user-mode",
-   "added_at": "2026-11-13T12:50:06Z",
+   "added_at": "2026-11-13T12:58:34Z",
    "state": "active"
   },
   "credential_basis": "this platform does not verify a person's credential; it records what the person stated",
@@ -49,18 +49,18 @@
   "places_left": 4
  },
  "after_attach": {
-  "vsb_id": "vsb-f791dd3fa0",
+  "vsb_id": "vsb-654c6f08c6",
   "limit": 5,
   "active": [
    {
-    "specialist_id": "spec-8909e5f670",
+    "specialist_id": "spec-6fe4e2be01",
     "name": "A. Example (a made-up specialist)",
     "discipline": "care",
     "credential_as_stated": "a registered nurse, as stated for this test",
     "reviews": "the entity's care plans",
     "lapses_on": "2027-06-01",
     "added_by": "single-user-mode",
-    "added_at": "2026-11-13T12:50:06Z",
+    "added_at": "2026-11-13T12:58:34Z",
     "state": "active"
    }
   ],
@@ -73,7 +73,7 @@
    "education",
    "money_readiness"
   ],
-  "basis": "A short roster per entity, not a registry of people (P5.15 clause 6): a name, the discipline, the credential as the person states it, what they review for this entity, and when their place lapses. No contact detail is kept. Five at a time is Workstation's own number; the ruling says a short roster. A lapsed place does not count against the five. A specialist leaves by a recorded retirement and is never deleted. Their signature on this entity's work is not built yet.",
+  "basis": "A short roster per entity, not a registry of people (P5.15 clause 6): a name, the discipline, the credential as the person states it, what they review for this entity, and when their place lapses. No contact detail is kept. Five at a time is Workstation's own number; the ruling says a short roster. A lapsed place does not count against the five. A specialist leaves by a recorded retirement and is never deleted. A specialist holding a place signs one version of this entity's work, and that signature is its third tier (the signatures are read at .../signatures).",
   "credential_basis": "this platform does not verify a person's credential; it records what the person stated",
   "recommendation": {
    "recommended": true,
@@ -85,45 +85,45 @@
   }
  },
  "held": {
-  "vsb_id": "vsb-f791dd3fa0",
+  "vsb_id": "vsb-654c6f08c6",
   "limit": 5,
   "active": [
    {
-    "specialist_id": "spec-8909e5f670",
+    "specialist_id": "spec-6fe4e2be01",
     "name": "A. Example (a made-up specialist)",
     "discipline": "care",
     "credential_as_stated": "a registered nurse, as stated for this test",
     "reviews": "the entity's care plans",
     "lapses_on": "2027-06-01",
     "added_by": "single-user-mode",
-    "added_at": "2026-11-13T12:50:06Z",
+    "added_at": "2026-11-13T12:58:34Z",
     "state": "active"
    }
   ],
   "lapsed": [
    {
-    "specialist_id": "spec-77b05a3815",
+    "specialist_id": "spec-b69c7382f1",
     "name": "B. Example (a made-up specialist)",
     "discipline": "law",
     "credential_as_stated": "a solicitor, as stated for this test",
     "reviews": "the entity's contracts",
     "lapses_on": "2026-11-14",
     "added_by": "single-user-mode",
-    "added_at": "2026-11-13T12:50:06Z",
+    "added_at": "2026-11-13T12:58:34Z",
     "state": "lapsed"
    }
   ],
   "retired": [
    {
-    "specialist_id": "spec-2b80b19353",
+    "specialist_id": "spec-d5eb209a04",
     "name": "C. Example (a made-up specialist)",
     "discipline": "education",
     "credential_as_stated": "a qualified teacher, as stated for this test",
     "reviews": "the entity's lesson materials",
     "lapses_on": "2027-06-01",
     "added_by": "single-user-mode",
-    "added_at": "2026-11-13T12:50:06Z",
-    "retired_at": "2026-11-13T12:50:06Z",
+    "added_at": "2026-11-13T12:58:34Z",
+    "retired_at": "2026-11-13T12:58:34Z",
     "retired_by": "single-user-mode",
     "retired_reason": "the engagement ended",
     "state": "retired"
@@ -136,7 +136,7 @@
    "education",
    "money_readiness"
   ],
-  "basis": "A short roster per entity, not a registry of people (P5.15 clause 6): a name, the discipline, the credential as the person states it, what they review for this entity, and when their place lapses. No contact detail is kept. Five at a time is Workstation's own number; the ruling says a short roster. A lapsed place does not count against the five. A specialist leaves by a recorded retirement and is never deleted. Their signature on this entity's work is not built yet.",
+  "basis": "A short roster per entity, not a registry of people (P5.15 clause 6): a name, the discipline, the credential as the person states it, what they review for this entity, and when their place lapses. No contact detail is kept. Five at a time is Workstation's own number; the ruling says a short roster. A lapsed place does not count against the five. A specialist leaves by a recorded retirement and is never deleted. A specialist holding a place signs one version of this entity's work, and that signature is its third tier (the signatures are read at .../signatures).",
   "credential_basis": "this platform does not verify a person's credential; it records what the person stated",
   "recommendation": {
    "recommended": true,
@@ -151,7 +151,7 @@
  "refused_reason": "Not retired: a retirement gives its reason.",
  "unreadable": "The roster could not be read (StoreUnavailable), so no specialist is shown and none is added.",
  "not_generated": {
-  "vsb_id": "vsb-4b0c24fe1b",
+  "vsb_id": "vsb-f7251b227d",
   "limit": 5,
   "active": [],
   "lapsed": [],
@@ -163,7 +163,7 @@
    "education",
    "money_readiness"
   ],
-  "basis": "A short roster per entity, not a registry of people (P5.15 clause 6): a name, the discipline, the credential as the person states it, what they review for this entity, and when their place lapses. No contact detail is kept. Five at a time is Workstation's own number; the ruling says a short roster. A lapsed place does not count against the five. A specialist leaves by a recorded retirement and is never deleted. Their signature on this entity's work is not built yet.",
+  "basis": "A short roster per entity, not a registry of people (P5.15 clause 6): a name, the discipline, the credential as the person states it, what they review for this entity, and when their place lapses. No contact detail is kept. Five at a time is Workstation's own number; the ruling says a short roster. A lapsed place does not count against the five. A specialist leaves by a recorded retirement and is never deleted. A specialist holding a place signs one version of this entity's work, and that signature is its third tier (the signatures are read at .../signatures).",
   "credential_basis": "this platform does not verify a person's credential; it records what the person stated",
   "recommendation": {
    "recommended": false,

@@ -29,8 +29,19 @@ chargeable to the ENTITY: the specialist's fee is its own cost, declared among i
 before profit (P5.16 clause 6). Workstation sets no price for it and charges nothing for it. The roster is shown on
 the entity's page (components/EntitySpecialists.tsx, on the Cockpit's deliverables tab).
 
-A specialist's signature on the entity's work (its third tier) is the next part of row FU-1178; nothing here signs
-or charges anything.
+W934 (part 3) - THE SIGNATURE, the third tier for the entity's work (clauses 5 and 6):
+
+    POST /api/v1/entity-specialists/{vsb_id}/{specialist_id}/sign   sign one version of one of its deliverables
+    GET  /api/v1/entity-specialists/{vsb_id}/signatures             each signature, whether it counts and why not,
+                                                                    and the tier each deliverable has reached
+
+- A signature is a named person's record: the specialist's name and credential as stated (from the roster), the
+  deliverable and what in it they reviewed, the date reviewed (not after today), and when it lapses (after today,
+  and not after their place lapses). Only a specialist holding a place signs.
+- It is bound to the exact text it signed (sha256): once the deliverable is run again, the new version is
+  unreviewed until it is signed. A lapsed signature does not count. Nothing is deleted.
+- It is the person's statement, entered by the entity's owner or an administrator with who entered it. Workstation
+  composes no part of it and charges nothing for it.
 """
 from __future__ import annotations
 
@@ -54,7 +65,8 @@ BASIS = ("A short roster per entity, not a registry of people (P5.15 clause 6): 
          "credential as the person states it, what they review for this entity, and when their place lapses. No "
          "contact detail is kept. Five at a time is Workstation's own number; the ruling says a short roster. A "
          "lapsed place does not count against the five. A specialist leaves by a recorded retirement and is never "
-         "deleted. Their signature on this entity's work is not built yet.")
+         "deleted. A specialist holding a place signs one version of this entity's work, and that signature is its "
+         "third tier (the signatures are read at .../signatures).")
 
 #  W933 - the doors through which Workstation generates an entity; each writes established_through on the record
 GENERATING_DOORS = {"genesis_journey": "the Genesis journey", "spawn_route": "the spawn route"}
@@ -87,6 +99,14 @@ class Specialist(BaseModel):
     credential_as_stated: str
     reviews: str                                # what they review for this entity
     lapses_on: str                              # an ISO date, after today
+
+
+class Signing(BaseModel):
+    model_config = {"extra": "forbid"}          # the person's statement, and nothing Workstation composes
+    deliverable_id: str
+    reviewed: str                               # what in it they reviewed
+    date: str                                   # the date they reviewed it: not after today
+    lapses_on: str                              # after today, and not after their place lapses
 
 
 class Retirement(BaseModel):
@@ -233,3 +253,152 @@ async def retire(vsb_id: str, specialist_id: str, req: Retirement, user: dict | 
     if outcome.get("code") == 409:
         raise HTTPException(status_code=409, detail=f"Specialist {specialist_id} is already retired; the record stands.")
     return {"retired": True, "specialist": {**outcome["entry"], "state": "retired"}}
+
+
+#  W934 (P5.15 clauses 5 and 6) - THE THIRD TIER FOR THIS ENTITY'S WORK: a specialist's signature on one exact version
+SIGNED_STORE = "entity_signatures.json"
+SIGN_BASIS = ("A signature is the third tier for this entity's work (P5.15 clause 5): a named person's record - their "
+              "name and credential as stated, what they reviewed (one version of one of this entity's deliverables, "
+              "and what in it), the date they reviewed it, and when the signature lapses. Only a specialist holding a "
+              "place on this entity's roster signs, and a signature does not outlive that place. A signature is of the "
+              "exact text it signed: once the deliverable is run again, the new version is unreviewed until it is "
+              "signed. A signature is the person's statement; Workstation composes no part of it.")
+
+
+def _signed_path():
+    from agentic_core.config import data_path
+    return data_path(SIGNED_STORE)
+
+
+def _read_signed() -> Dict[str, List[Dict[str, Any]]]:
+    p = _signed_path()
+    if not p.exists():
+        return {}
+    from agentic_core.config import read_json_strict
+    try:
+        data = read_json_strict(p, dict, expect=dict)
+    except Exception as e:                              # noqa: BLE001 - said, never read as "nothing is signed"
+        raise HTTPException(status_code=503, detail=(
+            f"The signatures could not be read ({type(e).__name__}), so no signature is shown and none is added."))
+    return {k: [r for r in v if isinstance(r, dict)] for k, v in (data or {}).items() if isinstance(v, list)}
+
+
+def _text_hash(text: Any) -> str:
+    import hashlib
+    return hashlib.sha256(str(text or "").encode("utf-8")).hexdigest()
+
+
+def _entity_deliverables(vsb_id: str, user: Any) -> Dict[str, Dict[str, Any]]:
+    """This entity's deliverables the caller may read, by id."""
+    from agentic_core.api import deliverables as _dl
+    u = user if isinstance(user, dict) else None
+    return {d["id"]: d for d in _dl._load() if d.get("vsb_id") == vsb_id and d.get("id")
+            and user_can_access(u, d.get("owner_id"))}
+
+
+def judge_signature(sig: Dict[str, Any], deliverable: Optional[Dict[str, Any]], today: _dt.date) -> Optional[str]:
+    """Why a stored signature does not count now, or None when it does."""
+    try:
+        lapses = _dt.date.fromisoformat(str(sig.get("lapses_on"))[:10])
+    except ValueError:
+        return "its lapse date cannot be read"
+    if lapses < today:
+        return f"it lapsed on {lapses.isoformat()}"
+    if deliverable is None:
+        return "the deliverable it signed is no longer held"
+    if sig.get("content_sha256") != _text_hash(deliverable.get("content")):
+        return (f"it signed version {sig.get('version')}; the deliverable has been run again since, and its version "
+                f"{len(deliverable.get('versions') or [])} is not signed")
+    return None
+
+
+def deliverable_review(sigs: List[Dict[str, Any]], deliverable: Dict[str, Any], today: _dt.date) -> Dict[str, Any]:
+    """The tier one of this entity's deliverables has reached: a qualified person's signature on its current text,
+    or unreviewed. Nothing here is a review Workstation made."""
+    from agentic_core.api._review_tier import LABEL, SIGNED_BY_PERSON, UNREVIEWED
+    mine = [s for s in sigs if s.get("deliverable_id") == deliverable.get("id")]
+    judged = [(s, judge_signature(s, deliverable, today)) for s in mine]
+    good = [s for s, why in judged if why is None]
+    if good:
+        top = max(good, key=lambda s: str(s.get("date")))
+        return {"tier": SIGNED_BY_PERSON, "label": LABEL[SIGNED_BY_PERSON],
+                "basis": (f"signed by {top['name']} ({top['credential_as_stated']} - as stated; {NOT_VERIFIED}) on "
+                          f"{top['date']}, for version {top['version']}, until {top['lapses_on']}"),
+                "signatures_counted": len(good), "signatures_not_counted": len(judged) - len(good)}
+    return {"tier": UNREVIEWED, "label": LABEL[UNREVIEWED],
+            "basis": ("no specialist on this entity's roster has signed its current text"
+                      + (f"; {len(judged)} signature(s) of it do not count" if judged else "")),
+            "signatures_counted": 0, "signatures_not_counted": len(judged)}
+
+
+@router.post("/{vsb_id}/{specialist_id}/sign")
+async def sign(vsb_id: str, specialist_id: str, req: Signing, user: dict | None = Depends(get_current_user)):
+    """A specialist holding a place on this entity's roster signs the current version of one of its deliverables.
+    Refused, with nothing written, when a field is empty, the specialist is not on the roster or holds no place, a
+    date is not a date, the review is dated after today, the signature would lapse by today or after the place lapses,
+    or the deliverable is not one of this entity's."""
+    _require_entity(vsb_id, user)
+    fields = {k: str(getattr(req, k) or "").strip() for k in ("deliverable_id", "reviewed", "date", "lapses_on")}
+    empty = [k for k, v in fields.items() if not v]
+    if empty:
+        raise HTTPException(status_code=422, detail=f"Not signed: a signature names {', '.join(empty)}.")
+    today = _today()
+    spec = next((r for r in _read().get(vsb_id, []) if r.get("specialist_id") == specialist_id), None)
+    if spec is None:
+        raise HTTPException(status_code=404, detail=f"No specialist {specialist_id} is on this entity's roster.")
+    state = _state(spec, today)
+    if state != "active":
+        raise HTTPException(status_code=409, detail=(
+            f"Not signed: {spec.get('name')} is {state} on this entity's roster, and only a specialist holding a "
+            f"place signs."))
+    try:
+        on = _dt.date.fromisoformat(fields["date"][:10])
+        lapses = _dt.date.fromisoformat(fields["lapses_on"][:10])
+    except ValueError:
+        raise HTTPException(status_code=422, detail=(
+            "Not signed: the date reviewed and the date the signature lapses are dates (YYYY-MM-DD)."))
+    if on > today:
+        raise HTTPException(status_code=422, detail=f"Not signed: the review is dated {on.isoformat()}, after today.")
+    if lapses <= today:
+        raise HTTPException(status_code=422, detail=(
+            f"Not signed: the signature would lapse on {lapses.isoformat()}, which is not after today."))
+    place = _dt.date.fromisoformat(str(spec.get("lapses_on"))[:10])
+    if lapses > place:
+        raise HTTPException(status_code=422, detail=(
+            f"Not signed: the signature would lapse on {lapses.isoformat()}, after {spec.get('name')}'s place lapses "
+            f"on {place.isoformat()}. A signature does not outlive the place."))
+    d = _entity_deliverables(vsb_id, user).get(fields["deliverable_id"])
+    if d is None:
+        raise HTTPException(status_code=404, detail=(
+            f"Deliverable {fields['deliverable_id']} is not one of this entity's, so it is not signed for it."))
+    entry = {"signature_id": f"sig-{uuid.uuid4().hex[:10]}", "specialist_id": specialist_id,
+             "name": spec.get("name"), "credential_as_stated": spec.get("credential_as_stated"),
+             "discipline": spec.get("discipline"), "deliverable_id": d["id"], "deliverable_title": d.get("title"),
+             "version": len(d.get("versions") or []) or 1, "content_sha256": _text_hash(d.get("content")),
+             "reviewed": fields["reviewed"], "date": on.isoformat(), "lapses_on": lapses.isoformat(),
+             "entered_by": _by(user), "entered_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+    from agentic_core.config import mutate_json
+
+    def _add(existing):
+        data = existing if isinstance(existing, dict) else {}
+        data.setdefault(vsb_id, []).append(entry)
+        return data
+    _read_signed()                                           # an unreadable store refuses before any write
+    mutate_json(_signed_path(), _add, dict)
+    return {"signed": True, "signature": entry, "credential_basis": NOT_VERIFIED,
+            "deliverable_now_says": deliverable_review(_read_signed().get(vsb_id, []), d, _today())}
+
+
+@router.get("/{vsb_id}/signatures")
+async def signatures(vsb_id: str, user: dict | None = Depends(get_current_user)):
+    _require_entity(vsb_id, user)
+    held = _entity_deliverables(vsb_id, user)
+    sigs = _read_signed().get(vsb_id, [])
+    today = _today()
+    rows = []
+    for s in sigs:
+        why = judge_signature(s, held.get(str(s.get("deliverable_id"))), today)
+        rows.append({**s, "counts": why is None, "why_not": why})
+    return {"vsb_id": vsb_id, "signatures": rows,
+            "deliverables": {i: deliverable_review(sigs, d, today) for i, d in held.items()},
+            "basis": SIGN_BASIS, "credential_basis": NOT_VERIFIED}

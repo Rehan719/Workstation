@@ -78947,3 +78947,124 @@ def test_w933_p515_clause6_the_roster_is_on_the_entitys_page_and_a_generated_ent
     plain = client.get(base).json()["recommendation"]
     assert plain["recommended"] is False and plain["chargeable"] is True, plain
     assert plain == fx["not_generated"]["recommendation"], "the captured answer for an entity not generated is not the live one"
+
+
+def test_w934_p515_clauses5_6_a_specialist_on_the_roster_signs_one_version_of_the_entitys_work(client, tmp_path, monkeypatch):
+    """P5.15 clauses 5 and 6 (W934, row FU-1178 part 3). Clause 5: the third tier is a named person's record - name,
+    credential as stated, what was reviewed, the date and when it lapses - empty until a person fills it, and the
+    platform does not verify a credential and says so. Clause 6: an entity may attach its own specialists to its third
+    tier. Measured after W933: nothing could be signed for an entity's work. POST .../{specialist_id}/sign and
+    GET .../signatures now hold it. Driven here:
+    - an entity's deliverable is unreviewed until signed, said with what would sign it;
+    - each short or wrong signature is refused with nothing written: no field, a review dated after today, a lapse by
+      today or after the place lapses, a date that is not one, a field the clause does not name, a specialist not on
+      the roster, and a deliverable of another entity;
+    - a signature by a specialist holding a place is the third tier for that exact version, with the credential as
+      stated and not verified;
+    - once the deliverable is run again, the new version is unreviewed and the signature is kept and said not to
+      count; a lapsed signature does not count; a retired or lapsed specialist does not sign;
+    - under sign-in another person's entity is not found."""
+    import datetime as dt
+    import uuid
+    import agentic_core.auth.core as ac
+    from agentic_core.api import entity_specialists as es
+    monkeypatch.setattr(es, "_path", lambda: tmp_path / "entity_specialists.json")
+    monkeypatch.setattr(es, "_signed_path", lambda: tmp_path / "entity_signatures.json")
+    today = dt.date.today()
+    day = lambda n: (today + dt.timedelta(days=n)).isoformat()   # noqa: E731
+
+    def entity(name, headers=None):
+        r = client.post("/api/v1/genesis/establish", headers=headers or {},
+                        json={"problem": f"w934 {name}", "ship_output": False, "name": name})
+        assert r.status_code == 200, r.text[:300]
+        return r.json()["vsb_id"]
+
+    def deliverable(vid, headers=None):
+        r = client.post("/api/v1/deliverables/produce", headers=headers or {},
+                        json={"vsb_id": vid, "type": "report", "title": "W934 report", "brief": "w934 a report to be signed"})
+        assert r.status_code == 200, r.text[:300]
+        return r.json()["id"]
+
+    one = {"name": "A. Example (a test record)", "discipline": "care", "credential_as_stated": "stated for this test",
+           "reviews": "the entity's reports", "lapses_on": day(200)}
+    vid = entity("W934 Signed")
+    base = f"/api/v1/entity-specialists/{vid}"
+    sid = client.post(base, json=one).json()["specialist"]["specialist_id"]
+    did = deliverable(vid)
+    s0 = client.get(f"{base}/signatures").json()
+    assert s0["signatures"] == [] and s0["deliverables"][did]["tier"] == "unreviewed", s0
+    assert "no specialist on this entity's roster has signed its current text" in s0["deliverables"][did]["basis"]
+    assert "does not verify" in s0["credential_basis"] and "Workstation composes no part of it" in s0["basis"]
+
+    good = {"deliverable_id": did, "reviewed": "the report's recommendations", "date": day(0), "lapses_on": day(100)}
+    other_did = deliverable(entity("W934 Other"))
+    for bad, code, word in (({**good, "reviewed": " "}, 422, "names reviewed"),
+                            ({**good, "date": day(1)}, 422, "after today"),
+                            ({**good, "lapses_on": day(0)}, 422, "not after today"),
+                            ({**good, "lapses_on": day(300)}, 422, "does not outlive the place"),
+                            ({**good, "date": "soon"}, 422, "are dates"),
+                            ({**good, "contact": "a@example.org"}, 422, None),
+                            ({**good, "deliverable_id": other_did}, 404, "not one of this entity's")):
+        r = client.post(f"{base}/{sid}/sign", json=bad)
+        assert r.status_code == code and (word is None or word in r.json()["detail"]), (bad, r.status_code, r.text[:200])
+    assert client.post(f"{base}/spec-missing/sign", json=good).status_code == 404
+    assert client.get(f"{base}/signatures").json()["signatures"] == [], "a refused signature wrote something"
+
+    #  the third tier for this exact version, the credential as stated
+    ok = client.post(f"{base}/{sid}/sign", json=good)
+    assert ok.status_code == 200, ok.text[:300]
+    sig, says = ok.json()["signature"], ok.json()["deliverable_now_says"]
+    assert says["tier"] == "signed_by_a_qualified_person" and says["label"] == "Signed by a qualified person", says
+    assert "signed by A. Example (a test record) (stated for this test - as stated; this platform does not verify" in says["basis"]
+    assert (sig["version"], sig["entered_by"], sig["reviewed"]) == (1, "single-user-mode", "the report's recommendations")
+    assert set(sig) >= {"name", "credential_as_stated", "deliverable_id", "reviewed", "date", "lapses_on", "content_sha256"}
+    s1 = client.get(f"{base}/signatures").json()
+    assert s1["signatures"][0]["counts"] is True and s1["deliverables"][did]["tier"] == "signed_by_a_qualified_person"
+    assert other_did not in s1["deliverables"], "another entity's deliverable is read as this entity's work"
+
+    #  the deliverable is run again: the new version is unreviewed until signed, and the signature is kept
+    again = client.post(f"/api/v1/deliverables/{did}/regenerate", json={"content": "W934 a later version, written by the person."})
+    assert again.status_code == 200, again.text[:300]
+    s2 = client.get(f"{base}/signatures").json()
+    assert s2["deliverables"][did]["tier"] == "unreviewed" and "1 signature(s) of it do not count" in s2["deliverables"][did]["basis"]
+    assert s2["signatures"][0]["counts"] is False and "it signed version 1" in s2["signatures"][0]["why_not"], s2["signatures"]
+    assert client.post(f"{base}/{sid}/sign", json=good).json()["deliverable_now_says"]["tier"] == "signed_by_a_qualified_person"
+    monkeypatch.setattr(es, "_today", lambda: today + dt.timedelta(days=101))
+    s3 = client.get(f"{base}/signatures").json()
+    assert s3["deliverables"][did]["tier"] == "unreviewed" and all(not s["counts"] for s in s3["signatures"])
+    assert any(s["why_not"] == f"it lapsed on {day(100)}" for s in s3["signatures"]), s3["signatures"]
+    monkeypatch.setattr(es, "_today", lambda: today)
+    assert len(s3["signatures"]) == 2, "a signature left the store"
+
+    #  a retired specialist does not sign, nor one whose place has lapsed
+    soon = client.post(base, json={**one, "name": "B. Example (a test record)", "lapses_on": day(2)}).json()["specialist"]
+    assert client.post(f"{base}/{sid}/retire", json={"reason": "w934 the engagement ended"}).status_code == 200
+    gone = client.post(f"{base}/{sid}/sign", json=good)
+    assert gone.status_code == 409 and "is retired on this entity's roster" in gone.json()["detail"], gone.text[:200]
+    monkeypatch.setattr(es, "_today", lambda: today + dt.timedelta(days=3))
+    late = client.post(f"{base}/{soon['specialist_id']}/sign", json={**good, "lapses_on": day(4)})
+    assert late.status_code == 409 and "is lapsed on this entity's roster" in late.json()["detail"], late.text[:200]
+    monkeypatch.setattr(es, "_today", lambda: today)
+
+    #  under sign-in: another person's entity is not found; its owner's specialist signs its owner's work
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    users = ac._load_users()
+    who = {}
+    for k in ("one", "two"):
+        name = f"w934-{k}-{uuid.uuid4().hex[:6]}"
+        users[name] = {"username": name, "hashed_password": ac._pwd_ctx.hash("pw12345678"), "role": "user"}
+        who[k] = name
+    ac._save_users(users)
+    H = {}
+    for k, name in who.items():
+        tok = client.post("/api/v1/auth/token", data={"username": name, "password": "pw12345678"})
+        assert tok.status_code == 200, tok.text[:200]
+        H[k] = {"Authorization": "Bearer " + tok.json()["access_token"]}
+    mid = entity("W934 One", H["one"])
+    mine = f"/api/v1/entity-specialists/{mid}"
+    msid = client.post(mine, headers=H["one"], json=one).json()["specialist"]["specialist_id"]
+    mdid = deliverable(mid, H["one"])
+    assert client.get(f"{mine}/signatures", headers=H["two"]).status_code == 404
+    assert client.post(f"{mine}/{msid}/sign", headers=H["two"], json={**good, "deliverable_id": mdid}).status_code == 404
+    signed = client.post(f"{mine}/{msid}/sign", headers=H["one"], json={**good, "deliverable_id": mdid})
+    assert signed.status_code == 200 and signed.json()["signature"]["entered_by"] == who["one"], signed.text[:200]
