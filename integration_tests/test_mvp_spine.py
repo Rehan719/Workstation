@@ -82864,3 +82864,47 @@ def test_w985_fu399_the_constitution_page_never_shows_an_unread_constitution_as_
     assert {"valid", "outcome", "anchor_checked"} <= set(client.get("/api/v1/gaas/ueg/verify").json()) & set(fx["verify"])
     assert {"circuit_breaker", "circuit_breaker_node", "circuit_breaker_scope"} <= set(client.get("/api/v1/gaas/status").json()) & set(fx["status"])
     assert {"events", "summary"} <= set(client.get("/api/v1/gaas/ueg/events?limit=40").json()) & set(fx["events"])
+
+
+def test_w986_fu399_the_learning_loop_prints_no_rate_over_no_run_and_says_each_failed_read(client, monkeypatch, tmp_path):
+    """FU-399 part 18 (W986). The Learning Loop shows the recorded outcomes of the platform's own runs.
+    OperationalExcellence.test.tsx mounts the real page against the answers its five routes gave on a fresh store - an
+    empty record, then three made-up runs - and has the server refuse each read. Rendering it found two defects, fixed:
+    - GET /api/v1/operations/summary answered in_house_rate 0.0 and produced_rate 0.0 when no run was recorded, so
+      the page said "In-house rate 0%" over an empty record. Both are None with nothing recorded, as the success rate
+      has been since W495, the basis says no run is recorded, and the page says "not measured";
+    - the five reads sat in one Promise.all, so one refusal showed "Failed to load operational metrics" in place of all
+      five, without saying which or why. Each read stands on its own, says its failure by what it was reading with the
+      server's reason, and the other sections show what was read.
+    Held here, driven on this test's own store: the summary of an empty record and of one run; and the page's code."""
+    import json
+    import pathlib
+    import re
+    from agentic_core.api import operational_excellence as _oe
+    monkeypatch.setattr(_oe, "_STORE", tmp_path / "operations_outcomes.json")
+    empty = client.get("/api/v1/operations/summary").json()
+    assert empty["total_runs"] == 0 and empty["in_house_rate"] is None and empty["produced_rate"] is None, empty
+    assert empty["in_house_rate_basis"] == "No run is recorded, so there is no in-house rate.", empty["in_house_rate_basis"]
+    _oe.record_outcome("w986-probe", "w986-probe-resource", served_by="native", duration_ms=10, success=True)
+    one = client.get("/api/v1/operations/summary").json()
+    assert one["total_runs"] == 1 and one["in_house_rate"] == 1.0 and one["produced_rate"] == 1.0, one
+    assert one["in_house_rate_basis"].startswith("1 of 1 row(s) are not marked external."), one["in_house_rate_basis"]
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    pdir = root / "apps/workstation-superapp/src/pages"
+    page = (pdir / "OperationalExcellence.tsx").read_text(encoding="utf-8")
+    shared = (root / "apps/workstation-superapp/src/components/ReadFailures.tsx").read_text(encoding="utf-8")
+    t = (pdir / "OperationalExcellence.test.tsx").read_text(encoding="utf-8")
+    assert "import { OperationalExcellence } from './OperationalExcellence';" in t and "<OperationalExcellence />" in t
+    read = set(re.findall(r"ByTestId\('([^']+)'\)", t))
+    assert {"ops-in-house-basis", "rankings-basis", "outcome-mark", "read-failure"} <= read, sorted(read)
+    for tid in read:
+        assert f'data-testid="{tid}"' in page or f'data-testid="{tid}"' in shared, tid
+    code = _code_only(page)
+    assert "Promise.allSettled([" in code and "Promise.all([" not in code
+    for what in ("the summary", "the rankings", "the outcomes", "the model health", "the failures"):
+        assert f".catch(noteRead('{what}'))" in code, what
+    assert "Failed to load operational metrics" not in code and "<ReadFailures failures={readFailures} />" in code
+    assert "(typeof n === 'number' ? `${Math.round(n * 100)}%` : 'not measured')" in code and "(n ?? 0)" not in code
+    fx = json.loads((pdir / "OperationalExcellence.fixture.json").read_text(encoding="utf-8"))
+    assert set(fx["summary"]) <= set(one) | {"top_resource"}, sorted(set(fx["summary"]) - set(one))

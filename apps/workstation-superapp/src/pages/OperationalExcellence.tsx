@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { provenanceBadge, apiJson } from '../lib/api';
+import { ReadFailures, useReadFailures } from '../components/ReadFailures';   // W986
 import { Card } from '@workstation/ui';
 import { Gauge, TrendingUp, Cpu, CheckCircle2, Loader2 } from 'lucide-react';
 
@@ -7,7 +8,7 @@ import { Gauge, TrendingUp, Cpu, CheckCircle2, Loader2 } from 'lucide-react';
 // floor always does, so every rate here was 1.0 by construction. The rate now covers gate-ASSESSED runs
 // only and is NULL when none were assessed; `produced` is the separate, weaker fact.
 interface Summary {
-  total_runs: number; success_rate: number | null; in_house_rate: number;
+  total_runs: number; success_rate: number | null; in_house_rate: number | null;   // W986 - null: no run recorded
   distinct_resources: number; top_resource: string | null; kinds: string[];
   assessed_runs?: number; unassessed_runs?: number;
   success_rate_basis?: string; produced_rate?: number;
@@ -52,7 +53,8 @@ interface ModelHealth { name: string; runs: number; success_rate: number; avg_ms
   // and the colour below — which means "the orchestrator demoted this" — can be wrong.
   success_rate_is_incomplete?: boolean; success_rate_basis?: string }
 
-const pct = (n: number) => `${Math.round((n ?? 0) * 100)}%`;
+//  W986 - a rate the server did not give is not a zero
+const pct = (n: number | null | undefined) => (typeof n === 'number' ? `${Math.round(n * 100)}%` : 'not measured');
 
 export const OperationalExcellence: React.FC = () => {
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -61,23 +63,25 @@ export const OperationalExcellence: React.FC = () => {
   const [outcomes, setOutcomes] = useState<Outcome[]>([]);
   const [models, setModels] = useState<ModelHealth[]>([]);
   const [failures, setFailures] = useState<Failures | null>(null);   // W583 (P3.25)
-  const [error, setError] = useState('');
+  const { failures: readFailures, note: noteRead } = useReadFailures();
   const [loading, setLoading] = useState(true);
 
+  //  W986 (FU-399 part 18) - EACH READ STANDS ON ITS OWN. The five sat in one Promise.all, so a refusal of any one
+  //  showed "Failed to load operational metrics" in place of all five, without saying which or why. A failure is
+  //  said by what it was reading, with the server's reason, and the other sections show what was read.
   useEffect(() => {
-    Promise.all([
-      apiJson('/api/v1/operations/summary'),
-      apiJson('/api/v1/operations/rankings'),
-      apiJson('/api/v1/operations/outcomes?limit=40'),
-      apiJson('/api/v1/operations/model-health'),
-      apiJson('/api/v1/operations/failures?limit=20'),
-    ]).then(([s, r, o, m, f]) => {
-      setSummary(s); setRankings(r.rankings || []); setOutcomes(o.outcomes || []); setModels(m.models || []);
-      setRankingsBasis(typeof r.basis === 'string' ? r.basis : 'What this ranking ranks was not stated by the server.');
-      setFailures(f && typeof f === 'object' && 'state' in f ? (f as Failures) : null);
-    })
-      .catch(() => setError('Failed to load operational metrics'))
-      .finally(() => setLoading(false));
+    Promise.allSettled([
+      apiJson('/api/v1/operations/summary').then(setSummary).catch(noteRead('the summary')),
+      apiJson('/api/v1/operations/rankings').then(r => {
+        setRankings(r.rankings || []);
+        setRankingsBasis(typeof r.basis === 'string' ? r.basis : 'What this ranking ranks was not stated by the server.');
+      }).catch(noteRead('the rankings')),
+      apiJson('/api/v1/operations/outcomes?limit=40').then(o => setOutcomes(o.outcomes || [])).catch(noteRead('the outcomes')),
+      apiJson('/api/v1/operations/model-health').then(m => setModels(m.models || [])).catch(noteRead('the model health')),
+      apiJson('/api/v1/operations/failures?limit=20')
+        .then(f => setFailures(f && typeof f === 'object' && 'state' in f ? (f as Failures) : null))
+        .catch(noteRead('the failures')),
+    ]).finally(() => setLoading(false));
   }, []);
 
   return (
@@ -93,9 +97,9 @@ export const OperationalExcellence: React.FC = () => {
         </p>
       </header>
 
-      {error && <p className="text-vital text-xs font-bold">{error}</p>}
+      <ReadFailures failures={readFailures} />
 
-      {loading && !error && (
+      {loading && (
         <div className="flex items-center gap-2 text-[11px] font-bold text-slate-500"><Loader2 size={14} className="animate-spin" /> Loading operational metrics…</div>
       )}
 

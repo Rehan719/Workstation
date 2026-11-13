@@ -722,12 +722,15 @@ async def summary():
             if assessed else
             f"NOT ASSESSED — no quality gate evaluated any of these {n} run(s). {produced} returned "
             f"output, which the deterministic floor always does, so it is not a success measure."),
-        "produced_rate": round(produced / n, 3) if n else 0.0,
-        "in_house_rate": round(in_house / n, 3) if n else 0.0,
+        #  W986 (FU-399 part 18) - A RATE OVER NO RUN IS NOT MEASURED. Both were 0.0 with nothing recorded, and the
+        #  Learning Loop printed "In-house rate 0%" over an empty record. None, as success_rate is with nothing assessed.
+        "produced_rate": round(produced / n, 3) if n else None,
+        "in_house_rate": round(in_house / n, 3) if n else None,
         "caller_reported_runs": len(_claimed),
         "in_house_rate_excluding_caller_reported": (
             round(sum(1 for r in _own if not r.get("is_external")) / len(_own), 3) if _own else None),
-        "in_house_rate_basis": (
+        #  W986 - with no run recorded there is no rate, and nothing about rows to say
+        "in_house_rate_basis": "No run is recorded, so there is no in-house rate." if not n else (
             f"{in_house} of {n} row(s) are not marked external. "
             + (f"{len(_claimed)} of the {n} were written through POST /operations/record: what served them, "
                f"and whether that was external, is the CALLER'S claim and not something this platform observed. "
