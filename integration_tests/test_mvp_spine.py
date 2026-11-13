@@ -78849,3 +78849,101 @@ def test_w932_p515_clause6_an_entity_keeps_a_short_roster_of_its_own_specialists
     got = client.post(f"/api/v1/entity-specialists/{mid}", headers=H["one"], json=one)
     assert got.status_code == 200 and got.json()["specialist"]["added_by"] == who["one"], got.text[:200]
     assert len(client.get(f"/api/v1/entity-specialists/{mid}", headers=H["admin"]).json()["active"]) == 1
+
+
+def test_w933_p515_clause6_the_roster_is_on_the_entitys_page_and_a_generated_entity_is_recommended_a_specialist(client, tmp_path, monkeypatch):
+    """P5.15 clause 6 and its RELEASE clause (W933, row FU-1178 part 2). The release clause says that for a generated
+    entity, engaging a specialist is a chargeable option the platform recommends; P5.16 clause 6 makes the entity's
+    cost of its own specialists a declared cost. Measured after W932: the roster had routes and no page, and nothing
+    recommended a specialist to any entity. The roster answer now carries a recommendation read from the entity's own
+    record (the door that made it), and components/EntitySpecialists.tsx shows the roster on the Cockpit's
+    deliverables tab. EntitySpecialists.test.tsx mounts it against the route's own answers (captured by
+    w933_capture.py). Held here:
+    - the deliverables tab shows the selected entity's roster;
+    - the rendered test mounts the real component, and every id it reads is one the component renders;
+    - the component types no sentence about the rules, and sends only the five things clause 5 names;
+    - an entity the Genesis journey generated is recommended a specialist, as a chargeable option whose fee the
+      entity declares before profit; an entity whose record names no generating door is recommended nothing, and told
+      why; every door that writes established_through in the code is one the roster knows;
+    - the captured answers are ones the live route still gives, field for field, and its refusals are the live ones."""
+    import datetime as dt
+    import json
+    import pathlib
+    import re
+    from agentic_core.api import entity_specialists as es
+    from agentic_core.api import vsb as vsb_mod
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = root / "apps/workstation-superapp/src"
+    comp = (src / "components/EntitySpecialists.tsx").read_text(encoding="utf-8")
+    t = (src / "components/EntitySpecialists.test.tsx").read_text(encoding="utf-8")
+    cockpit = (src / "pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8").replace("\r\n", "\n")
+    tab = cockpit.split("{tab === 'deliverables' && (", 1)[1].split("{tab === 'systems' && (", 1)[0]
+    assert "<EntitySpecialists vsbId={selected} />" in _code_only(tab), "the deliverables tab does not show the entity's roster"
+    assert "import { EntitySpecialists } from './EntitySpecialists';" in t and "<EntitySpecialists vsbId=" in t, (
+        "the rendered test does not mount the real component")
+    for tid in ("specialists-recommendation", "specialists-charge", "specialists-when", "specialists-basis",
+                "specialists-credential", "specialists-places", "specialists-none", "specialists-refused",
+                "specialists-done", "specialists-unread"):
+        assert f"'{tid}'" in t and f'data-testid="{tid}"' in comp, ("an id the test reads is not rendered", tid)
+    for prefix in ("specialist-", "specialist-lapsed-", "specialist-retired-"):
+        assert ("`" + prefix + "${") in t and ("data-testid={`" + prefix + "${s.specialist_id}`}") in comp, prefix
+    code = _code_only(comp + "\n")
+    for owned in ("Five at a time", "verif", "chargeable", "P5.16", "is warranted", "recommends", "registry"):
+        assert owned not in code, ("the component types a sentence the server owns", owned)
+    assert "const BLANK = { name: '', discipline: '', credential_as_stated: '', reviews: '', lapses_on: '' };" in code
+    assert "{ method: 'POST', body: form }" in code, "the attach sends something other than the five fields"
+
+    #  every door that writes established_through is one the roster knows: a new door is not silently "not generated"
+    doors = set()
+    for f in (root / "agentic_core").rglob("*.py"):
+        doors |= set(re.findall(r"\"established_through\":\s*\"(\w+)\"", f.read_text(encoding="utf-8", errors="replace")))
+    assert doors and doors == set(es.GENERATING_DOORS), (sorted(doors), sorted(es.GENERATING_DOORS))
+
+    #  the live route, on a store of this test's own
+    monkeypatch.setattr(es, "_path", lambda: tmp_path / "entity_specialists.json")
+    fx = json.loads((src / "components/EntitySpecialists.fixture.json").read_text(encoding="utf-8"))
+    est = client.post("/api/v1/genesis/establish", json={"problem": "w933 a generated entity", "ship_output": False,
+                                                          "name": "W933 Page"})
+    assert est.status_code == 200, est.text[:300]
+    vid = est.json()["vsb_id"]
+    base = f"/api/v1/entity-specialists/{vid}"
+    live = client.get(base).json()
+    rec = live["recommendation"]
+    assert (rec["recommended"], rec["chargeable"], rec["established_through"]) == (True, True, "genesis_journey"), rec
+    assert "through the Genesis journey, so it recommends engaging a specialist" in rec["said"], rec["said"]
+    assert "P5.16 clause 6" in rec["charge"] and "comes off before profit" in rec["charge"], rec["charge"]
+    assert "charges nothing for it" in rec["charge"] and "claims no professional's role" in rec["when_warranted"]
+    assert set(fx["generated_empty"]) == set(live), sorted(set(fx["generated_empty"]) ^ set(live))
+    assert fx["generated_empty"]["recommendation"] == rec, "the captured recommendation is not the live one"
+    assert (fx["generated_empty"]["basis"], fx["generated_empty"]["credential_basis"]) == (live["basis"], live["credential_basis"])
+
+    #  the five things the clause names, as captured and as sent; the answers' shapes are the live ones
+    assert set(fx["attach_request"]) == {"name", "discipline", "credential_as_stated", "reviews", "lapses_on"}
+    ahead = (dt.date.today() + dt.timedelta(days=200)).isoformat()
+    a = client.post(base, json={**fx["attach_request"], "lapses_on": ahead})
+    assert a.status_code == 200, a.text[:300]
+    assert set(a.json()) == set(fx["attached"]) and set(a.json()["specialist"]) == set(fx["attached"]["specialist"])
+    after = client.get(base).json()
+    assert set(after["active"][0]) == set(fx["after_attach"]["active"][0]) == set(fx["held"]["lapsed"][0])
+    for i in range(4):
+        assert client.post(base, json={**fx["attach_request"], "lapses_on": ahead, "name": f"W933 filler {i}"}).status_code == 200
+    six = client.post(base, json={**fx["attach_request"], "lapses_on": ahead, "name": "W933 sixth"})
+    assert six.status_code == 409 and six.json()["detail"] == fx["refused_full"], six.text[:300]
+    first = after["active"][0]["specialist_id"]
+    blank = client.post(f"{base}/{first}/retire", json={"reason": " "})
+    assert blank.status_code == 422 and blank.json()["detail"] == fx["refused_reason"], blank.text[:300]
+    assert client.post(f"{base}/{first}/retire", json={"reason": "w933"}).status_code == 200
+    gone = client.get(base).json()["retired"][0]
+    assert set(gone) == set(fx["held"]["retired"][0]), sorted(set(gone) ^ set(fx["held"]["retired"][0]))
+    (tmp_path / "entity_specialists.json").write_text("{not json", encoding="utf-8")
+    unread = client.get(base)
+    assert unread.status_code == 503 and unread.json()["detail"] == fx["unreadable"], unread.text[:300]
+
+    #  an entity whose record names no generating door is recommended nothing, and told why
+    record = vsb_mod._load_vsb(vid)
+    record.pop("established_through", None)
+    vsb_mod._save_vsb(record)
+    (tmp_path / "entity_specialists.json").unlink()
+    plain = client.get(base).json()["recommendation"]
+    assert plain["recommended"] is False and plain["chargeable"] is True, plain
+    assert plain == fx["not_generated"]["recommendation"], "the captured answer for an entity not generated is not the live one"

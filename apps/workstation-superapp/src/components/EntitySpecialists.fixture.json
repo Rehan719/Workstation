@@ -1,0 +1,177 @@
+{
+ "vsb_id": "vsb-f791dd3fa0",
+ "generated_empty": {
+  "vsb_id": "vsb-f791dd3fa0",
+  "limit": 5,
+  "active": [],
+  "lapsed": [],
+  "retired": [],
+  "places_left": 5,
+  "disciplines": [
+   "care",
+   "law",
+   "education",
+   "money_readiness"
+  ],
+  "basis": "A short roster per entity, not a registry of people (P5.15 clause 6): a name, the discipline, the credential as the person states it, what they review for this entity, and when their place lapses. No contact detail is kept. Five at a time is Workstation's own number; the ruling says a short roster. A lapsed place does not count against the five. A specialist leaves by a recorded retirement and is never deleted. Their signature on this entity's work is not built yet.",
+  "credential_basis": "this platform does not verify a person's credential; it records what the person stated",
+  "recommendation": {
+   "recommended": true,
+   "chargeable": true,
+   "established_through": "genesis_journey",
+   "said": "Workstation generated this entity, through the Genesis journey, so it recommends engaging a specialist to review the entity's work before anyone relies on it.",
+   "charge": "Engaging a specialist is a chargeable option. Their fee is this entity's own cost: declare it among the entity's costs for a cycle, and it comes off before profit (P5.16 clause 6). Workstation sets no price for it and charges nothing for it.",
+   "when_warranted": "A specialist is warranted before this entity's work is relied on in care, law, education or money readiness (P5.15 clause 7), and they review in that discipline. This is Workstation's own statement; it claims no professional's role."
+  }
+ },
+ "attach_request": {
+  "name": "A. Example (a made-up specialist)",
+  "discipline": "care",
+  "credential_as_stated": "a registered nurse, as stated for this test",
+  "reviews": "the entity's care plans",
+  "lapses_on": "2027-06-01"
+ },
+ "attached": {
+  "attached": true,
+  "specialist": {
+   "specialist_id": "spec-8909e5f670",
+   "name": "A. Example (a made-up specialist)",
+   "discipline": "care",
+   "credential_as_stated": "a registered nurse, as stated for this test",
+   "reviews": "the entity's care plans",
+   "lapses_on": "2027-06-01",
+   "added_by": "single-user-mode",
+   "added_at": "2026-11-13T12:50:06Z",
+   "state": "active"
+  },
+  "credential_basis": "this platform does not verify a person's credential; it records what the person stated",
+  "limit": 5,
+  "places_left": 4
+ },
+ "after_attach": {
+  "vsb_id": "vsb-f791dd3fa0",
+  "limit": 5,
+  "active": [
+   {
+    "specialist_id": "spec-8909e5f670",
+    "name": "A. Example (a made-up specialist)",
+    "discipline": "care",
+    "credential_as_stated": "a registered nurse, as stated for this test",
+    "reviews": "the entity's care plans",
+    "lapses_on": "2027-06-01",
+    "added_by": "single-user-mode",
+    "added_at": "2026-11-13T12:50:06Z",
+    "state": "active"
+   }
+  ],
+  "lapsed": [],
+  "retired": [],
+  "places_left": 4,
+  "disciplines": [
+   "care",
+   "law",
+   "education",
+   "money_readiness"
+  ],
+  "basis": "A short roster per entity, not a registry of people (P5.15 clause 6): a name, the discipline, the credential as the person states it, what they review for this entity, and when their place lapses. No contact detail is kept. Five at a time is Workstation's own number; the ruling says a short roster. A lapsed place does not count against the five. A specialist leaves by a recorded retirement and is never deleted. Their signature on this entity's work is not built yet.",
+  "credential_basis": "this platform does not verify a person's credential; it records what the person stated",
+  "recommendation": {
+   "recommended": true,
+   "chargeable": true,
+   "established_through": "genesis_journey",
+   "said": "Workstation generated this entity, through the Genesis journey, so it recommends engaging a specialist to review the entity's work before anyone relies on it.",
+   "charge": "Engaging a specialist is a chargeable option. Their fee is this entity's own cost: declare it among the entity's costs for a cycle, and it comes off before profit (P5.16 clause 6). Workstation sets no price for it and charges nothing for it.",
+   "when_warranted": "A specialist is warranted before this entity's work is relied on in care, law, education or money readiness (P5.15 clause 7), and they review in that discipline. This is Workstation's own statement; it claims no professional's role."
+  }
+ },
+ "held": {
+  "vsb_id": "vsb-f791dd3fa0",
+  "limit": 5,
+  "active": [
+   {
+    "specialist_id": "spec-8909e5f670",
+    "name": "A. Example (a made-up specialist)",
+    "discipline": "care",
+    "credential_as_stated": "a registered nurse, as stated for this test",
+    "reviews": "the entity's care plans",
+    "lapses_on": "2027-06-01",
+    "added_by": "single-user-mode",
+    "added_at": "2026-11-13T12:50:06Z",
+    "state": "active"
+   }
+  ],
+  "lapsed": [
+   {
+    "specialist_id": "spec-77b05a3815",
+    "name": "B. Example (a made-up specialist)",
+    "discipline": "law",
+    "credential_as_stated": "a solicitor, as stated for this test",
+    "reviews": "the entity's contracts",
+    "lapses_on": "2026-11-14",
+    "added_by": "single-user-mode",
+    "added_at": "2026-11-13T12:50:06Z",
+    "state": "lapsed"
+   }
+  ],
+  "retired": [
+   {
+    "specialist_id": "spec-2b80b19353",
+    "name": "C. Example (a made-up specialist)",
+    "discipline": "education",
+    "credential_as_stated": "a qualified teacher, as stated for this test",
+    "reviews": "the entity's lesson materials",
+    "lapses_on": "2027-06-01",
+    "added_by": "single-user-mode",
+    "added_at": "2026-11-13T12:50:06Z",
+    "retired_at": "2026-11-13T12:50:06Z",
+    "retired_by": "single-user-mode",
+    "retired_reason": "the engagement ended",
+    "state": "retired"
+   }
+  ],
+  "places_left": 4,
+  "disciplines": [
+   "care",
+   "law",
+   "education",
+   "money_readiness"
+  ],
+  "basis": "A short roster per entity, not a registry of people (P5.15 clause 6): a name, the discipline, the credential as the person states it, what they review for this entity, and when their place lapses. No contact detail is kept. Five at a time is Workstation's own number; the ruling says a short roster. A lapsed place does not count against the five. A specialist leaves by a recorded retirement and is never deleted. Their signature on this entity's work is not built yet.",
+  "credential_basis": "this platform does not verify a person's credential; it records what the person stated",
+  "recommendation": {
+   "recommended": true,
+   "chargeable": true,
+   "established_through": "genesis_journey",
+   "said": "Workstation generated this entity, through the Genesis journey, so it recommends engaging a specialist to review the entity's work before anyone relies on it.",
+   "charge": "Engaging a specialist is a chargeable option. Their fee is this entity's own cost: declare it among the entity's costs for a cycle, and it comes off before profit (P5.16 clause 6). Workstation sets no price for it and charges nothing for it.",
+   "when_warranted": "A specialist is warranted before this entity's work is relied on in care, law, education or money readiness (P5.15 clause 7), and they review in that discipline. This is Workstation's own statement; it claims no professional's role."
+  }
+ },
+ "refused_full": "Not attached: this entity's roster holds 5 specialists, and a roster holds 5 at a time. Retire one, with the reason, to make a place.",
+ "refused_reason": "Not retired: a retirement gives its reason.",
+ "unreadable": "The roster could not be read (StoreUnavailable), so no specialist is shown and none is added.",
+ "not_generated": {
+  "vsb_id": "vsb-4b0c24fe1b",
+  "limit": 5,
+  "active": [],
+  "lapsed": [],
+  "retired": [],
+  "places_left": 5,
+  "disciplines": [
+   "care",
+   "law",
+   "education",
+   "money_readiness"
+  ],
+  "basis": "A short roster per entity, not a registry of people (P5.15 clause 6): a name, the discipline, the credential as the person states it, what they review for this entity, and when their place lapses. No contact detail is kept. Five at a time is Workstation's own number; the ruling says a short roster. A lapsed place does not count against the five. A specialist leaves by a recorded retirement and is never deleted. Their signature on this entity's work is not built yet.",
+  "credential_basis": "this platform does not verify a person's credential; it records what the person stated",
+  "recommendation": {
+   "recommended": false,
+   "chargeable": true,
+   "established_through": null,
+   "said": "This entity's record names no door through which Workstation generated it, so Workstation makes no recommendation for it. Attaching a specialist remains open to it.",
+   "charge": "Engaging a specialist is a chargeable option. Their fee is this entity's own cost: declare it among the entity's costs for a cycle, and it comes off before profit (P5.16 clause 6). Workstation sets no price for it and charges nothing for it.",
+   "when_warranted": "A specialist is warranted before this entity's work is relied on in care, law, education or money readiness (P5.15 clause 7), and they review in that discipline. This is Workstation's own statement; it claims no professional's role."
+  }
+ }
+}

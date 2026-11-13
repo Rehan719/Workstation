@@ -21,8 +21,16 @@ THIS PART (W932) IS THE ROSTER, and it is the entity's own:
   found. An entity the platform does not hold has no roster.
 - The platform verifies no credential, and every answer says so.
 
-A specialist's signature on the entity's work (its third tier) and the entity page's recommendation to engage one are
-the next parts of row FU-1178; nothing here signs, charges or recommends anything.
+W933 (part 2) - THE RECOMMENDATION, read from the entity's own record. P5.15's release clause: for a generated
+entity, engaging a specialist is a chargeable option the platform recommends. An entity is generated when its record
+names a door through which Workstation made it (established_through: the Genesis journey or the spawn route). Such
+an entity is recommended a specialist; any other is told no recommendation is made, and why. Engaging one is
+chargeable to the ENTITY: the specialist's fee is its own cost, declared among its costs for a cycle, so it comes off
+before profit (P5.16 clause 6). Workstation sets no price for it and charges nothing for it. The roster is shown on
+the entity's page (components/EntitySpecialists.tsx, on the Cockpit's deliverables tab).
+
+A specialist's signature on the entity's work (its third tier) is the next part of row FU-1178; nothing here signs
+or charges anything.
 """
 from __future__ import annotations
 
@@ -46,7 +54,30 @@ BASIS = ("A short roster per entity, not a registry of people (P5.15 clause 6): 
          "credential as the person states it, what they review for this entity, and when their place lapses. No "
          "contact detail is kept. Five at a time is Workstation's own number; the ruling says a short roster. A "
          "lapsed place does not count against the five. A specialist leaves by a recorded retirement and is never "
-         "deleted. Their signature on this entity's work, and the recommendation to engage one, are not built yet.")
+         "deleted. Their signature on this entity's work is not built yet.")
+
+#  W933 - the doors through which Workstation generates an entity; each writes established_through on the record
+GENERATING_DOORS = {"genesis_journey": "the Genesis journey", "spawn_route": "the spawn route"}
+CHARGE = ("Engaging a specialist is a chargeable option. Their fee is this entity's own cost: declare it among the "
+          "entity's costs for a cycle, and it comes off before profit (P5.16 clause 6). Workstation sets no price for it "
+          "and charges nothing for it.")
+WHEN = ("A specialist is warranted before this entity's work is relied on in care, law, education or money readiness "
+        "(P5.15 clause 7), and they review in that discipline. This is Workstation's own statement; it claims no "
+        "professional's role.")
+
+
+def _recommendation(record: Dict[str, Any]) -> Dict[str, Any]:
+    """P5.15 RELEASE: for a generated entity, engaging a specialist is a chargeable option the platform recommends.
+    Read from the entity's own record: the door that made it."""
+    door = str(record.get("established_through") or "")
+    if door in GENERATING_DOORS:
+        said = (f"Workstation generated this entity, through {GENERATING_DOORS[door]}, so it recommends engaging a "
+                f"specialist to review the entity's work before anyone relies on it.")
+    else:
+        said = ("This entity's record names no door through which Workstation generated it, so Workstation makes no "
+                "recommendation for it. Attaching a specialist remains open to it.")
+    return {"recommended": door in GENERATING_DOORS, "chargeable": True, "established_through": door or None,
+            "said": said, "charge": CHARGE, "when_warranted": WHEN}
 
 
 class Specialist(BaseModel):
@@ -85,7 +116,7 @@ def _read() -> Dict[str, List[Dict[str, Any]]]:
     return {k: [r for r in v if isinstance(r, dict)] for k, v in (data or {}).items() if isinstance(v, list)}
 
 
-def _require_entity(vsb_id: str, user: Any) -> None:
+def _require_entity(vsb_id: str, user: Any) -> Dict[str, Any]:
     """An entity the platform does not hold has no roster; under sign-in another person's entity is not found."""
     from agentic_core.api.vsb import _load_vsb
     record = _load_vsb(vsb_id)
@@ -93,6 +124,7 @@ def _require_entity(vsb_id: str, user: Any) -> None:
         raise HTTPException(status_code=404, detail=f"Entity {vsb_id} not found, so it has no roster.")
     if not user_can_access(user if isinstance(user, dict) else None, record.get("owner_id")):
         raise HTTPException(status_code=404, detail=f"Entity {vsb_id} not found, so it has no roster.")
+    return record
 
 
 def _by(user: Any) -> str:
@@ -110,7 +142,7 @@ def _state(entry: Dict[str, Any], today: _dt.date) -> str:
     return "lapsed" if lapses < today else "active"
 
 
-def _view(vsb_id: str, rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+def _view(vsb_id: str, rows: List[Dict[str, Any]], record: Dict[str, Any]) -> Dict[str, Any]:
     today = _today()
     shown = [{**r, "state": _state(r, today)} for r in rows]
     active = [r for r in shown if r["state"] == "active"]
@@ -118,20 +150,20 @@ def _view(vsb_id: str, rows: List[Dict[str, Any]]) -> Dict[str, Any]:
             "lapsed": [r for r in shown if r["state"] == "lapsed"],
             "retired": [r for r in shown if r["state"] == "retired"],
             "places_left": max(0, LIMIT - len(active)), "disciplines": list(DISCIPLINES),
-            "basis": BASIS, "credential_basis": NOT_VERIFIED}
+            "basis": BASIS, "credential_basis": NOT_VERIFIED, "recommendation": _recommendation(record)}
 
 
 @router.get("/{vsb_id}")
 async def roster(vsb_id: str, user: dict | None = Depends(get_current_user)):
-    _require_entity(vsb_id, user)
-    return _view(vsb_id, _read().get(vsb_id, []))
+    record = _require_entity(vsb_id, user)
+    return _view(vsb_id, _read().get(vsb_id, []), record)
 
 
 @router.post("/{vsb_id}")
 async def attach(vsb_id: str, req: Specialist, user: dict | None = Depends(get_current_user)):
     """Attach a specialist to this entity's roster. Refused, with nothing written, when a field is empty, the
     discipline is not one of clause 7's four, the lapse date is not a date after today, or five places are held."""
-    _require_entity(vsb_id, user)
+    record = _require_entity(vsb_id, user)
     fields = {k: str(getattr(req, k) or "").strip() for k in ("name", "discipline", "credential_as_stated", "reviews",
                                                                "lapses_on")}
     empty = [k for k, v in fields.items() if not v]
@@ -168,7 +200,7 @@ async def attach(vsb_id: str, req: Specialist, user: dict | None = Depends(get_c
     if refused:
         raise HTTPException(status_code=409, detail=refused["why"])
     return {"attached": True, "specialist": {**entry, "state": "active"}, "credential_basis": NOT_VERIFIED,
-            **{k: v for k, v in _view(vsb_id, _read().get(vsb_id, [])).items() if k in ("places_left", "limit")}}
+            **{k: v for k, v in _view(vsb_id, _read().get(vsb_id, []), record).items() if k in ("places_left", "limit")}}
 
 
 @router.post("/{vsb_id}/{specialist_id}/retire")
