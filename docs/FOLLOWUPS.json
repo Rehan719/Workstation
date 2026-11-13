@@ -23935,6 +23935,27 @@
       "note": "",
       "slot_source": "P5.7 clause 2 names seven investment gates the tree does not define",
       "tier": 2
+    },
+    {
+      "id": "FU-1192",
+      "title": "P5.7's acceptance rules are not in the business documents' guard: a stated customer, interview, partner, endorsement, agreed price or cleared name; a personal detail; a public draft's heading",
+      "why": "P5.7's ACCEPT asks that no document state a customer, an interview, a partner, an endorsement, a price agreed or a name cleared; that no personal detail of the Owner appear; and that every public-facing draft carry its DRAFT heading, each driven RED. The measurement (docs/REMAINING_WORK_MEASURED.md, P5.7) found the business documents' guard held none of the three, and no row held the work.",
+      "source": "W963 (P5.7's ACCEPT, measured: not captured by any row)",
+      "found": "2026-11-13",
+      "files": [
+        "integration_tests/test_mvp_spine.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.7",
+      "status": "done",
+      "closed_by": "W963",
+      "note": "",
+      "slot_source": "P5.7 ACCEPT (the guard of the item before this one reads these documents too)",
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: the business documents' guard (_w703_faults) refuses a sentence that states a customer, an interview, a partner, an endorsement, a price agreed or a name cleared, while one that denies, conditions or projects it passes; it refuses an e-mail address, a telephone number, a postcode, a date of birth and a person named with a title; and a document under docs/business/public/ must open with DRAFT - NOT APPROVED FOR PUBLICATION. test_w703 reads docs/business recursively. Each rule is driven red on a planted fault in test_w963, and every business document in the tree passes as it stands."
     }
   ],
   "routes": [

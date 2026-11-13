@@ -64691,8 +64691,42 @@ def test_w702_a_scholars_queue_is_capped_per_tool_and_nothing_is_dropped_to_make
 #  W703 - WORKSTATION'S OWN BUSINESS CASE, WRITTEN DOWN, EVERY STATEMENT LABELLED: the canvas and the plan.
 #  Each is a DRAFT until the Owner ratifies it; everything it names exists; nothing is stated as a market fact.
 # ══════════════════════════════════════════════════════════════════════════════════════════════════════════
-def _w703_faults(text, root, plan_slots, row_ids, routes=None):
-    """Every reason a business document cannot stand as written. Empty means none."""
+#  W963 (P5.7's ACCEPT) - what no business document may state as a fact, and no personal detail of the Owner. A
+#  sentence that denies, conditions or projects a claim ("no customer has been asked", "a price would be agreed only
+#  after the interviews") does not state it.
+_W963_NOT_A_THING = r"(?!\s+(?:data|segments?|relationships?|records?|support|services?|journeys?)\b)"
+_W963_CLAIMS = (
+    ("a customer", r"\b(?:our|existing|current|paying)\s+customers?\b" + _W963_NOT_A_THING +
+                   r"|\bcustomers?\s+(?:has|have|had)\s+(?:signed|paid|bought|agreed|subscribed|ordered)\b"
+                   r"|\b(?:has|have|had|won|signed)\s+(?:a\s+|its\s+|our\s+|the\s+)?(?:first\s+)?(?:paying\s+)?customers?\b"
+                   + _W963_NOT_A_THING),
+    ("an interview", r"\b(?:we|i|the owner|the founder)\s+(?:have\s+|has\s+|had\s+)?interviewed\b"
+                     r"|\binterviews?\s+(?:showed|shows|found|confirmed|revealed|were\s+held|was\s+held|have\s+been\s+held|took\s+place)\b"
+                     r"|\b(?:in|from)\s+(?:our|the)\s+interviews,?\s+(?:people|teachers|tutors|users|they|most|all|every|several|many|some)\b"),
+    ("a partner", r"\bin\s+partnership\s+with\b|\bpartnered\s+with\b|\bour\s+partners?\b|\bis\s+(?:a|our)\s+partner\b"
+                  r"|\bhas\s+partnered\b"),
+    ("an endorsement", r"\bendorsed\s+by\b|\b(?:has|have)\s+endorsed\b|\bendorses\b|\bwith\s+the\s+endorsement\s+of\b"),
+    ("a price agreed", r"\b(?:price|fee|rate|terms)\s+(?:was\s+|were\s+|has\s+been\s+|have\s+been\s+|is\s+|are\s+)?agreed\b"
+                       r"|\bagreed\s+(?:on\s+)?(?:a|the)\s+(?:price|fee|rate)\b"),
+    ("a name cleared", r"\b(?:name|mark|trade\s*mark)\s+(?:is|was|has\s+been|have\s+been)\s+cleared\b"
+                       r"|\bcleared\s+(?:the|our|its|this)\s+(?:name|mark|trade\s*mark)\b"
+                       r"|\bclearance\s+(?:was|has\s+been)\s+(?:obtained|given|granted)\b|[\u00ae\u2122]"),
+)
+_W963_NOT_STATED = (r"\b(?:no|not|never|nothing|neither|nor|none|without|until|unless|if|whether|would|could|might|"
+                    r"may|will|once|before|when)\b")
+_W963_PERSONAL = (
+    ("an e-mail address", r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+"),
+    ("a telephone number", r"(?<![\w.-])(?:\+44\s?\d|0\d)[\d \-]{8,13}\d\b"),
+    ("a postcode", r"\b[A-Z]{1,2}\d[A-Z\d]?\s+\d[A-Z]{2}\b"),
+    ("a date of birth", r"(?i)\b(?:date of birth|born on)\b"),
+    ("a person named with a title", r"\b(?:Mr|Mrs|Ms|Miss|Dr)\.?\s+[A-Z][a-z]+"),
+)
+_W963_PUBLIC = "DRAFT - NOT APPROVED FOR PUBLICATION"
+
+
+def _w703_faults(text, root, plan_slots, row_ids, routes=None, public=False):
+    """Every reason a business document cannot stand as written. Empty means none. `public`: the document is a
+    public-facing draft (W963: one under docs/business/public/)."""
     import re
     labels = ("[observed", "[owner-defined", "[inference", "[hypothesis", "[deferred", "[owner decision")
     faults = []
@@ -64736,6 +64770,21 @@ def _w703_faults(text, root, plan_slots, row_ids, routes=None):
     for line in text.splitlines():
         if re.search(r"\b\d[\d,]*\s+(users|customers|subscribers|learners)\b", line):
             faults.append(f"a count of people is stated as a fact: {line.strip()[:70]}")
+    #  W963 (P5.7's ACCEPT) - no customer, interview, partner, endorsement, price agreed or name cleared is stated;
+    #  read sentence by sentence, and a sentence that denies, conditions or projects the claim does not state it
+    for sentence in re.split(r"(?<=[.;!?])\s+|\n\s*\n|\n(?=- |\d+\. |#|\|)", text):
+        for what, pat in _W963_CLAIMS:
+            m = re.search(pat, sentence, re.I)
+            if m and not re.search(_W963_NOT_STATED, sentence[:m.start()], re.I):
+                faults.append(f"it states {what} as a fact: {sentence.strip()[:70]}")
+    #  no personal detail of the Owner (or of anyone) appears
+    for what, pat in _W963_PERSONAL:
+        m = re.search(pat, text)
+        if m:
+            faults.append(f"it carries {what}: {m.group(0)[:40]}")
+    #  a public-facing draft opens with its heading (P5.7 clause 4)
+    if public and _W963_PUBLIC not in opening:
+        faults.append(f"a public-facing draft does not open with {_W963_PUBLIC}")
     return faults
 
 
@@ -64746,15 +64795,16 @@ def test_w703_the_business_documents_are_labelled_drafts_that_name_only_what_exi
     root = pathlib.Path(__file__).resolve().parents[1]
     plan_slots = {i["slot"] for i in _fu.plan_items((root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8"))}
     row_ids = {r["id"] for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
-    docs = sorted((root / "docs/business").glob("*.md"))
+    docs = sorted((root / "docs/business").rglob("*.md"))   # W963: a folder's documents are read too
     names = [d.name for d in docs]
     from agentic_core.app_mvp import app as _app903
     routes = {(m, r.path) for r in _app903.routes for m in (getattr(r, "methods", None) or ())}   # W903
     assert "BUSINESS_MODEL_CANVAS.md" in names and "BUSINESS_PLAN.md" in names, names
     for d in docs:
         text = d.read_text(encoding="utf-8")
-        assert _w703_faults(text, root, plan_slots, row_ids, routes) == [], (
-            d.name, _w703_faults(text, root, plan_slots, row_ids, routes))
+        public = d.parent.name == "public"   # W963: a public-facing draft
+        assert _w703_faults(text, root, plan_slots, row_ids, routes, public) == [], (
+            d.name, _w703_faults(text, root, plan_slots, row_ids, routes, public))
         assert len([b for b in text.split("\n- ") if "[" in b]) >= 10, (d.name, "too few labelled statements to be a document")
 
     canvas = (root / "docs/business/BUSINESS_MODEL_CANVAS.md").read_text(encoding="utf-8")
@@ -81178,3 +81228,75 @@ def test_w962_fu807_the_cost_model_marks_every_cost_by_where_it_came_from_and_fi
     prompt = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
     assert f"{row['id']} (W962): which are the seven investment gates" in prompt
     assert prompt.index(f"{row['id']} (W962):") < prompt.index("THAT IS THE WHOLE LIST.")
+
+
+def test_w963_p57_no_business_document_states_a_customer_a_partner_or_a_cleared_name_or_carries_a_personal_detail():
+    """P5.7's ACCEPT (W963): "no document states a customer, an interview, a partner, an endorsement, a price agreed or
+    a name cleared; no personal detail of the Owner appears; every public-facing draft carries its DRAFT heading; and
+    the guard is driven RED on each". The business documents' guard (_w703_faults, P5.6's) now holds each:
+    - every business document in the tree, read recursively, passes it as it stands;
+    - each kind of claim, stated as a fact, is found; the same words denied, conditioned or projected are not;
+    - each kind of personal detail is found;
+    - a document under docs/business/public/ must open with DRAFT - NOT APPROVED FOR PUBLICATION, and one that does
+      passes."""
+    import json
+    from pathlib import Path
+
+    from agentic_core import plan_followups as _fu
+    from agentic_core.app_mvp import app as _app963
+    root = Path(__file__).resolve().parents[1]
+    plan_slots = {i["slot"] for i in _fu.plan_items((root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8"))}
+    rows = {r["id"] for r in json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]}
+    routes = {(m, r.path) for r in _app963.routes for m in (getattr(r, "methods", None) or ())}
+
+    def faults(text, public=False):
+        return _w703_faults(text, root, plan_slots, rows, routes, public)
+
+    docs = sorted((root / "docs/business").rglob("*.md"))
+    assert len(docs) >= 6, docs
+    for d in docs:
+        assert faults(d.read_text(encoding="utf-8"), d.parent.name == "public") == [], d.name
+
+    good = "# T\n\n**DRAFT until the Owner ratifies it.**\n\n## One\n\n- A true thing [observed: `docs/FOLLOWUPS.json`].\n"
+    assert faults(good) == []
+    stated = {
+        "a customer": ["- Our customers are teachers in two schools. [observed]",
+                       "- The platform has its first paying customer. [observed]",
+                       "- Two customers have signed up for the pilot. [observed]"],
+        "an interview": ["- We interviewed six tutors in October. [observed]",
+                         "- The interviews showed that tutors would pay. [observed]",
+                         "- In the interviews, teachers asked for marking help. [observed]"],
+        "a partner": ["- It is offered in partnership with a training provider. [observed]",
+                      "- The college is our partner for the pilot. [observed]"],
+        "an endorsement": ["- The plan is endorsed by a business adviser. [observed]",
+                           "- A head teacher has endorsed the lesson planner. [observed]"],
+        "a price agreed": ["- The price was agreed with the first school. [observed]",
+                           "- The Owner agreed a fee with the course organisation. [observed]"],
+        "a name cleared": ["- The name has been cleared for use. [observed]",
+                           "- Workstation™ is the name. [observed]"],
+    }
+    for what, plants in stated.items():
+        for plant in plants:
+            got = faults(good + plant + "\n")
+            assert any(f.startswith(f"it states {what} as a fact") for f in got), (what, plant, got)
+    denied = ["- No customer has been asked, and nothing here has been put to one. [observed]",
+              "- No name has been cleared; no clearance opinion has been obtained. [observed]",
+              "- The interviews would show whether anyone pays. [hypothesis]",
+              "- A price would be agreed only after the interviews. [inference]",
+              "- If a customer has signed, the row says so. [inference]",
+              "- Neither has agreed to anything. [observed]",
+              "- The canvas has customer segments and customer relationships. [observed]"]
+    for plant in denied:
+        assert faults(good + plant + "\n") == [], plant
+
+    personal = {"an e-mail address": "Write to owner.name@example.com.", "a telephone number": "Call 07700 900123.",
+                "a postcode": "The office is at SW1A 1AA.", "a date of birth": "The founder's date of birth is kept.",
+                "a person named with a title": "Mr Example signs it."}
+    for what, said in personal.items():
+        got = faults(good + f"- {said} [observed]\n")
+        assert any(f.startswith(f"it carries {what}") for f in got), (what, got)
+
+    #  a public-facing draft opens with its heading
+    assert faults(good, public=True) == ["a public-facing draft does not open with DRAFT - NOT APPROVED FOR PUBLICATION"]
+    assert faults("# DRAFT - NOT APPROVED FOR PUBLICATION\n\n" + good.split("\n\n", 1)[1], public=True) == []
+    assert faults(good.replace("# T", "# T\n\nDRAFT - NOT APPROVED FOR PUBLICATION"), public=True) == []
