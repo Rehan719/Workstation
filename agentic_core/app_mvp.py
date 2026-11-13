@@ -493,6 +493,10 @@ app.include_router(entity_specialists_api.router, dependencies=[_Depends(_get_cu
 #  deliverable carries is a person's declaration. Owner-scoped like the rest of the economy
 from agentic_core.api import pricing as pricing_api
 app.include_router(pricing_api.router, dependencies=[_Depends(_get_current_user)])
+#  W941 (P5.3) - a claim that an output is wrong: recorded with its provenance, filed with Change Control at a tier
+#  only a person decides, logged to the UEG, and OPEN until a person answers it
+from agentic_core.api import support_claims as support_claims_api
+app.include_router(support_claims_api.router, dependencies=[_Depends(_get_current_user)])
 from agentic_core.api import board as board_api
 app.include_router(board_api.router, dependencies=[_Depends(_require_admin)])   # W505 (P2.6): the Board is the apex governance tier
 

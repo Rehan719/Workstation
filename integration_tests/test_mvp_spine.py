@@ -79535,3 +79535,88 @@ def test_w940_p55_what_is_not_for_sale_is_one_register_and_pricing_one_is_refuse
               if any(f'"{i}"' in p.read_text(encoding="utf-8", errors="replace")
                      for i in ("fitrah_spectrum", "real_money_rail")) and p.name != "not_for_sale.py"]
     assert stated == [], ("the exclusions are stated outside their register", [str(p.relative_to(root)) for p in stated])
+
+
+def test_w941_p53_a_claim_that_an_output_is_wrong_stays_open_until_a_person_answers_it(client, monkeypatch):
+    """P5.3 part 1 (W941). OWNER RULING 2026-09-27: a tenant raises that an output is wrong; the claim is recorded
+    against the artefact with its provenance, routes to Change Control like every other change, and its resolution is
+    UEG-logged. ACCEPT: a raised claim reaches a named owner through an executing path (not a comment); the artefact's
+    provenance is part of the record; the UEG entry is hash-chained like the rest; and a claim nobody has answered is
+    visible as OPEN, never closed by a timer. Measured: tickets hold no artefact, provenance or owner, and nothing raised
+    a claim against an output. Driven here:
+    - a claim against a deliverable keeps what it was (what served it, its gate, the sha256 of its text) and names its
+      owner; each short or wrong claim is refused, with nothing written;
+    - it is filed with Change Control as a support_claim at CRITICAL, undecided;
+    - support.claim_raised is in the UEG and the chain verifies;
+    - with the clock moved a thousand days on, it is still OPEN;
+    - a person rejects the change, and the claim reads ANSWERED with that decision;
+    - the tier is put to the Owner: an open OWNER DECISION row with its recommendation, on the resume prompt's list."""
+    import hashlib
+    import json
+    import pathlib
+    import time as _time
+    from agentic_core.api import support_claims as sc
+    from agentic_core.ueg.registry import ueg_ledger
+    root = pathlib.Path(__file__).resolve().parents[1]
+    vid = client.post("/api/v1/genesis/establish", json={"problem": "w941 an entity whose output is said to be wrong",
+                                                          "ship_output": False, "name": "W941 Claimed"}).json()["vsb_id"]
+    prod = client.post("/api/v1/deliverables/produce", json={"vsb_id": vid, "type": "report", "title": "W941 report",
+                                                             "brief": "w941 a report someone says is wrong"})
+    assert prod.status_code == 200, prod.text[:300]
+    d = prod.json()
+
+    good = {"artefact_kind": "deliverable", "artefact_id": d["id"], "what_is_wrong": "the second section names the wrong year"}
+    before = len(sc._read())
+    for bad, code in (({**good, "artefact_kind": "board_pack"}, 422), ({**good, "what_is_wrong": " "}, 422),
+                      ({**good, "artefact_id": "no-such-deliverable"}, 404), ({**good, "severity": "high"}, 422)):
+        r = client.post("/api/v1/support/claims", json=bad)
+        assert r.status_code == code, (bad, r.status_code, r.text[:200])
+    assert len(sc._read()) == before, "a refused claim wrote something"
+
+    r = client.post("/api/v1/support/claims", json=good)
+    assert r.status_code == 200, r.text[:300]
+    c = r.json()
+    a = c["artefact"]
+    assert a["ai_provenance"] == d["ai_provenance"] and a["vsb_id"] == vid and a["version"] == 1
+    assert a["content_sha256"] == hashlib.sha256(d["content"].encode("utf-8")).hexdigest()
+    assert a["qms_gate_passed"] == ((d.get("quality_assurance") or {}).get("quality") or {}).get("qms_gate_passed")
+    assert c["named_owner"]["owner"] and "sign-in is off, so the Owner answers every claim" in c["named_owner"]["basis"]
+    assert (c["state"], c["change"]["impact_tier"], c["change"]["status"]) == ("OPEN", "CRITICAL", "submitted"), c.get("change")
+
+    #  the change is in Change Control's own store, CRITICAL and undecided
+    ch = client.get(f"/api/v1/cca/{c['cca_id']}").json()
+    assert (ch["change_type"], ch["impact_tier"], ch["status"]) == ("support_claim", "CRITICAL", "submitted"), ch.get("status")
+    assert d["id"] in json.dumps(ch["affected_systems"])
+
+    #  the UEG holds support.claim_raised for this claim, and the chain verifies
+    assert c["ueg"]["recorded"] is True, c["ueg"]
+    lines = [json.loads(x) for x in pathlib.Path(ueg_ledger.log_path).read_text(encoding="utf-8").splitlines() if x.strip()]
+    mine = [e for e in lines if e["payload"]["event_type"] == "support.claim_raised"
+            and e["payload"]["data"].get("claim_id") == c["claim_id"]]
+    assert len(mine) == 1 and mine[0]["hash"] == c["ueg"]["entry"], (len(mine), c["ueg"])
+    assert ueg_ledger.verify_chain_detail()["valid"] is True
+
+    #  a thousand days on, nobody has answered it: still OPEN
+    real = _time.time
+    monkeypatch.setattr(_time, "time", lambda: real() + 1000 * 86400)
+    later = client.get("/api/v1/support/claims").json()
+    assert [x["state"] for x in later["claims"] if x["claim_id"] == c["claim_id"]] == ["OPEN"] and later["open"] >= 1
+    monkeypatch.setattr(_time, "time", real)
+
+    #  a person decides the change: the claim is ANSWERED, with that decision
+    rv = client.post(f"/api/v1/cca/{c['cca_id']}/review", json={
+        "override_decision": "rejected", "reviewer_notes": "w941 the year is right; the claim is answered",
+        "admin_decision_for_critical": True, "owner_decision_acknowledged": True})
+    assert rv.status_code == 200, rv.text[:300]
+    one = client.get(f"/api/v1/support/claims/{c['claim_id']}").json()
+    assert (one["state"], one["decision"]) == ("ANSWERED", "rejected"), one
+
+    #  the tier is the Owner's, put with the recommendation where the Owner reads
+    reg = json.loads((root / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
+    row = next((x for x in reg if x.get("title") == (
+        "OWNER DECISION: under which Change Control tier is a claim that an output is wrong filed?")), None)
+    assert row and (row["status"], row.get("owner_gated"), row.get("slot")) == ("open", True, "OWNER"), row
+    assert "RECOMMENDED: CRITICAL, as built" in row["why"]
+    prompt = (root / "docs/FABLE_DELIVERY_PROMPT.md").read_text(encoding="utf-8")
+    still = prompt.split("STILL WITH THE OWNER", 1)[1].split("THAT IS THE WHOLE LIST.", 1)[0]
+    assert f"{row['id']} (W941): under which Change Control tier is a claim that an output is wrong filed?" in still

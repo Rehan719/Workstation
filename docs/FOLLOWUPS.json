@@ -23833,6 +23833,24 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it. agentic_core/economy/not_for_sale.py holds the three exclusions, each with its ruling and what names it (a domain, or a term in the deliverable's type, title or brief): the faith content (section 11), the Fitrah Spectrum (ruling A.9.5) and anything needing a real-money rail (section 18). GET /api/v1/economy/not-for-sale serves it; the price route and the cost declaration (W939) read it and refuse a deliverable that names an exclusion (409), saying which, by what, and the ruling. Driven in test_w940, one refusal per exclusion."
+    },
+    {
+      "id": "FU-1187",
+      "title": "OWNER DECISION: under which Change Control tier is a claim that an output is wrong filed?",
+      "why": "P5.3: a claim that an output is wrong routes to Change Control like every other change, and a claim nobody has answered stays OPEN, never closed by a timer. W941 files a claim as a support_claim. Change Control decides a MEDIUM change by a model's marker, and a HIGH one by a marker or the health rule; only a CRITICAL change is never decided by a review and waits for a person's explicit decision. RECOMMENDED: CRITICAL, as built, so every claim is answered by a person and no claim closes because a model or a health reading decided it. With sign-in off the Owner is that person; after sign-in, the entity's owner or an administrator. A lower tier would let claims close without anyone answering them.",
+      "source": "W941 (P5.3's first round: the tier REMAINING_WORK_MEASURED leaves to the Owner)",
+      "found": "2026-11-13",
+      "files": [
+        "agentic_core/api/change_control.py"
+      ],
+      "severity": "medium",
+      "owner_gated": true,
+      "slot": "OWNER",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "P5.3's measured remaining work names the claim's Change Control tier as the Owner's to rule",
+      "tier": 2
     }
   ],
   "routes": [

@@ -390,6 +390,9 @@ _TIER_MAP: dict[str, ImpactTier] = {
     # ratification); a material economy action is CRITICAL (decided only by the Owner's explicit decision).
     "code_change":          "HIGH",
     "economy_material":     "CRITICAL",
+    # P5.3 (W941) - a claim that an output is wrong is decided only by a person: a review or a rule closing it would
+    # answer nobody (the tier is put to the Owner, with this recommendation)
+    "support_claim":        "CRITICAL",
 }
 
 
