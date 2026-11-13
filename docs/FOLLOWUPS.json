@@ -23885,11 +23885,14 @@
       "severity": "high",
       "owner_gated": false,
       "slot": "P5.13",
-      "status": "open",
-      "closed_by": null,
+      "status": "done",
+      "closed_by": "W952",
       "note": "",
       "slot_source": "P5.13 clause 11 (a guard that no care record is stored before sign-in)",
-      "tier": 2
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in W952. gateway.query_meta takes keep_text (true by default, so every other caller is unchanged); when false the interaction log records that the call was made - its agent, and how long each text was - and not the texts, the AI memory store records nothing of it, and the answer says why. ai_text, the one helper every domain tool composes through, passes keep_text false when the call carries a person's own words or material and no signed-in person owns it; a signed-in person's own call is kept as before, stamped with their id. Driven in test_w952 on the native floor across Care, Education and Employment tools, searching every file under both data roots."
     }
   ],
   "routes": [

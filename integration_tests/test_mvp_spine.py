@@ -80391,3 +80391,92 @@ def test_w951_p513_care_texts_say_no_professional_reviewed_them_and_news2_names_
     _items = _json951.loads((_pl951.Path(__file__).resolve().parents[1] / "docs/FOLLOWUPS.json").read_text(encoding="utf-8"))["items"]
     _row = [r for r in _items if r["title"].startswith("What a person types into a Care tool, or any domain tool, is kept")]
     assert len(_row) == 1 and _row[0]["slot"] == "P5.13" and _row[0]["severity"] == "high", _row
+
+
+def test_w952_fu1189_nothing_a_person_types_into_a_domain_tool_is_stored_before_sign_in(client, monkeypatch):
+    """FU-1189 (W952). Measured in W951: on the native floor with sign-in off, what a person typed into a domain tool
+    was kept in the interaction log and the AI memory store - the pool another feature's chat recalls from. The
+    Owner's rulings of 2026-10-12 say nothing a person types is stored before authentication. Held here, on the real
+    composer path (the native floor on this machine):
+    - Care, Education and Employment tools are driven with text no store could otherwise hold, and no store holds it;
+    - the interaction log still records each call - its agent, and how long each text was - and not its text;
+    - a signed-in person's own call is kept, stamped with their id;
+    - a call that carries no person's words (an internal one) is kept as before;
+    - the one helper every domain tool composes through hands the gateway that choice."""
+    import inspect
+    import sqlite3
+    import uuid
+    import agentic_core.auth.core as _ac952
+    from agentic_core.ai import gateway as _gw
+    from agentic_core.api import _ai_provenance as _aip
+    from agentic_core.config import data_path
+    from agentic_core.store_paths import INTERACTIONS_DB
+    tag = uuid.uuid4().hex[:8]
+    probes = {f"W952P{tag}{i}" for i in range(5)}
+    calls = [
+        ("/api/v1/care/risk-assess", {"tool": "news2", "patient_data": {"resp_rate": "18"},
+                                      "clinical_context": f"W952P{tag}0"}, "care_risk_assess"),
+        ("/api/v1/care/handover", {"patient_summary": f"W952P{tag}1", "current_situation": "w952 stable"}, "care_handover"),
+        ("/api/v1/education/feedback", {"student_work": f"W952P{tag}2 an essay on rivers", "task": "w952 explain",
+                                        "subject": "Geography"}, "education_feedback"),
+        ("/api/v1/employment/cover-letter", {"target_role": "w952 analyst", "highlights": f"W952P{tag}3"},
+         "employment_cover_letter"),
+    ]
+    for url, body, _agent in calls:
+        r = client.post(url, json=body)
+        assert r.status_code == 200, (url, r.status_code, r.text[:200])
+
+    roots = {data_path().resolve(), INTERACTIONS_DB.parent.resolve()}      # the two roots may differ in a suite run
+
+    def holding(marks):
+        out = {}
+        files = {f.resolve() for root in roots for f in root.rglob("*") if f.is_file()}
+        for f in files:
+            text = f.read_bytes().decode("utf-8", errors="replace")
+            found = sorted(m for m in marks if m in text)
+            if found:
+                out[f.name] = found
+        return out
+    held = holding(probes)
+    assert not held, ("a store holds what a person typed into a domain tool before sign-in", held)
+
+    #  the log still records each call: its agent, and the lengths of what was not kept
+    con = sqlite3.connect(str(INTERACTIONS_DB))
+    rows = con.execute("SELECT agent, user_query, ai_response FROM logs ORDER BY rowid DESC LIMIT 40").fetchall()
+    con.close()
+    for _url, _body, agent in calls:
+        mine = [r for r in rows if r[0] == agent]
+        assert mine and mine[0][1].startswith("[NOT KEPT: ") and mine[0][2].startswith("[NOT KEPT: "), (agent, mine[:1])
+        assert _gw.NOT_KEPT_BASIS in mine[0][1]
+
+    #  a call with no person's words is kept as before
+    import asyncio
+    marker = f"W952INTERNAL{tag}"
+    res = asyncio.new_event_loop().run_until_complete(_gw.gateway.query_meta(f"w952 internal note {marker}", agent="w952-internal"))
+    assert res.get("recall_not_stored_because") != _gw.NOT_KEPT_BASIS
+    assert holding({marker}), "a call that carried no person's words was not kept"
+
+    #  a signed-in person's own call is kept, under their id
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    users = _ac952._load_users()
+    who = f"w952-user-{tag}"
+    users[who] = {"username": who, "hashed_password": _ac952._pwd_ctx.hash("pw12345678"), "role": "user"}
+    _ac952._save_users(users)
+    tok = client.post("/api/v1/auth/token", data={"username": who, "password": "pw12345678"}).json()["access_token"]
+    owned = f"W952OWNED{tag}"
+    r = client.post("/api/v1/education/feedback", headers={"Authorization": f"Bearer {tok}"},
+                    json={"student_work": f"{owned} an essay", "task": "w952 explain", "subject": "Geography"})
+    assert r.status_code == 200, r.text[:200]
+    con = sqlite3.connect(str(INTERACTIONS_DB))
+    kept = con.execute("SELECT owner_id FROM logs WHERE user_query LIKE ?", (f"%{owned}%",)).fetchall()
+    con.close()
+    assert kept and kept[-1][0] == who, kept
+
+    #  the one helper hands the gateway the choice, and material handed over with no words is a person's too
+    src = inspect.getsource(_aip.ai_text)
+    assert "keep_text=_keep952" in src
+    monkeypatch.delenv("AUTH_ENABLED")
+    mat = f"W952MAT{tag}"
+    asyncio.new_event_loop().run_until_complete(_aip.ai_text("w952 summarise the material", "w952-material",
+                                                             material=f"{mat} a person's document"))
+    assert not holding({mat}), ("material a person handed over was stored before sign-in", holding({mat}))

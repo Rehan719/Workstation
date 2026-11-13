@@ -294,8 +294,12 @@ async def ai_text(prompt: str, agent: str, timeout: float = 30.0,
         prompt = f"Domain: {domain.strip()}\n{prompt}"
     t0 = time.monotonic()
     owner_id = owner_id or request_user() or None     # W619 (FU-501) — the authenticated caller, when there is one
+    #  W952 (FU-1189) - a person's own words or material, with no signed-in person owning them, are not stored: the
+    #  gateway logs that the call was made and keeps none of its text for recall
+    from agentic_core.auth.core import auth_enabled as _auth952
+    _keep952 = not (str(user_text or "").strip() or material is not None) or bool(_auth952() and owner_id)
     res = await gateway.query_meta(prompt, agent=agent, timeout=timeout,
-                                   owner_id=owner_id, augment=augment, user_text=user_text,
+                                   owner_id=owner_id, augment=augment, user_text=user_text, keep_text=_keep952,
                                    #  P3.6 clause (2) — the request's own language, so the output can be
                                    #  labelled when it is not delivered in it ("the defect is silent
                                    #  English"). One seam, so all six domain tools are covered at once.

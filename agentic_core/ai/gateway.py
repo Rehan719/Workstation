@@ -257,6 +257,18 @@ class _RateLimiter:
 # owner_id either way (W333).
 _RECALL_OFF = False
 
+#  W952 (FU-1189; OWNER RULINGS 2026-10-12, P5.12's boundary and P5.13 clause 11) - NOTHING A PERSON TYPES IS STORED
+#  BEFORE SIGN-IN. A call made with keep_text=False - a domain tool's call carrying a person's own words or material
+#  that no signed-in person owns - keeps its text in neither the interaction log nor the AI memory store: the log
+#  records that the call was made, by which agent and when, and how long each text was; the memory store records
+#  nothing of it.
+NOT_KEPT_BASIS = ("this call carried a person's own words and no signed-in person owns it, so nothing of its text is "
+                  "kept: nothing a person types is stored before sign-in")
+
+
+def not_kept(text) -> str:
+    return f"[NOT KEPT: {len(str(text or ''))} characters - {NOT_KEPT_BASIS}]"
+
 
 class ModelGateway:
     """WHO SERVES A COMPLETION - in-house first, and the two entry paths do not order resources the same way.
@@ -409,7 +421,8 @@ class ModelGateway:
                          timeout: float | None = 90.0,
                          owner_id: str | None = None, augment: bool = _RECALL_OFF,
                          governance: dict | None = None,
-                         language: str | None = None, user_text: str | None = None) -> dict:
+                         language: str | None = None, user_text: str | None = None,
+                         keep_text: bool = True) -> dict:
         """Like `query()` but returns PROVENANCE — {output, served_by, is_external} — so callers
         can surface which OWNED resource served the completion (Genesis/Forge/Transformation use
         this to prove their cascades run in-house). Same in-house-first routing as `query()`.
@@ -529,14 +542,19 @@ class ModelGateway:
         _post = _output_verdict(response)
         _chk = _record_checkpoint(agent, _pre, _post, screened=bool(_screen))
 
-        interaction_logger.log_interaction(agent, prompt, response, owner_id=owner_id)
+        if keep_text:
+            interaction_logger.log_interaction(agent, prompt, response, owner_id=owner_id)
+        else:                                    # W952 (FU-1189) - that the call was made, and not what was in it
+            interaction_logger.log_interaction(agent, not_kept(prompt), not_kept(response), owner_id=owner_id)
         # W505 (P2.1) — the FLOOR'S OUTPUT is not stored for recall; the USER'S OWN WORDS still are.
         # A first cut dropped the whole "User: … | AI: …" record when the floor served, which also threw
         # away the half recall exists for: what the person said. The interaction LOG above keeps both
         # either way - that is an audit trail, not a recall pool.
         _floor = self._is_floor(served_by)
-        _stored = not _floor
-        if _floor:
+        _stored = (not _floor) and keep_text
+        if not keep_text:
+            pass                                 # W952 (FU-1189) - nothing of this call is kept for recall
+        elif _floor:
             memory.add_memory(f"User: {prompt}",
                               metadata={"agent": agent, "ai_reply_withheld": "served by the "
                                         "deterministic floor - its structured prose is the engine's own "
@@ -565,6 +583,7 @@ class ModelGateway:
                 #  WAS stored, which is a different fact from the key being absent.
                 "recall_not_stored_because": (
                     None if _stored else
+                    NOT_KEPT_BASIS if not keep_text else
                     "the deterministic floor served this, so its structured prose was withheld from the "
                     "recall pool - it is the engine's own framing, not prior knowledge. Your own "
                     "message was kept."),
