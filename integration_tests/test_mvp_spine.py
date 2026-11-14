@@ -85099,3 +85099,109 @@ def test_w1025_a_refusal_is_said_by_its_reason_never_by_its_status_alone(client)
     assert ".catch(e => setSuwarFailed(errorMessage(e)));" in qep and "source unreachable" not in qep
     cockpit = _code_only((src / "pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8"))
     assert "await (r.data as Blob).text().then(t => bodyDetail(JSON.parse(t), 'no reason given'), () => 'no reason given')" in cockpit
+
+
+def test_w1026_fu399_the_application_studio_is_rendered_and_says_each_failure_by_what_it_was(client, monkeypatch):
+    """FU-399 part 51 (W1026). The Employment application studio is rendered against its routes' own answers
+    (ApplicationStudio.test.tsx): one made-up CV in the knowledge base, a document the floor composed from it, the
+    floor's job search, two replies made up for the capture and run through the route (one with a whole listing and
+    one that leaves out its employer and its location, one in prose with no listing in it), and the refusals the
+    routes give. Rendering found four defects. Six failures were said as fixed sentences, five through alert(), each
+    dropping the reason. The route filled in what a reply left out: no location read "Remote", no employer "Company",
+    no title "Position". A reply with no line in a listing's shape answered a bare zero, which the page said as "Try
+    broadening your terms", a cause nobody measured. And the CV the studio offers as "CV" came back titled "Cv". Each
+    failure is now said beside its action and by what it was (errorMessage); what a listing leaves out comes back as
+    null and is said as not given; the route always says why a search has no listing; and each output is titled as
+    the studio names it.
+
+    Held here: the fixture is the routes' answers, read again; the nulls are never posted back, since the attach
+    route refuses a null employer; and the page's readings."""
+    import json
+    import pathlib
+    from agentic_core.ai.gateway import gateway as _gw
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/components/employment"
+    fx = json.loads((src / "ApplicationStudio.fixture.json").read_text(encoding="utf-8"))
+
+    #  the refusals, read again
+    g = client.post("/api/v1/career/generate", json={"file_ids": [], "output_types": []})
+    assert (g.status_code, g.json()) == (fx["generate_refused"]["status"], fx["generate_refused"]["body"]), g.text[:200]
+    u = client.post("/api/v1/career/job-search/use", json={"title": "", "description": ""})
+    assert (u.status_code, u.json()) == (fx["use_refused"]["status"], fx["use_refused"]["body"]), u.text[:200]
+    d = client.delete("/api/v1/ingest/w1026-made-up-none")
+    assert (d.status_code, d.json()) == (fx["delete_refused"]["status"], fx["delete_refused"]["body"]), d.text[:200]
+
+    #  the floor's search says why it has no listing
+    q = {"file_ids": [], "instructions": "", "query": "W1026 made up: delivery coordinator", "limit": 12}
+    floor = client.post("/api/v1/career/job-search", json=q).json()
+    assert floor["results"] == [] and (floor["ai_provenance"] or {}).get("served_by") == "native", floor
+    assert floor["none_basis"] == fx["job_search"]["none_basis"], floor["none_basis"]
+
+    #  each output is titled as the studio names it: the CV it offers as "CV" came back as "Cv"
+    import re
+    from agentic_core.api import career as _car
+    from agentic_core.ingestion.api import ingestion_manager as _im
+    studio = (src / "ApplicationStudio.tsx").read_text(encoding="utf-8").replace("\r\n", "\n")
+    block = studio[studio.index("const OUTPUT_TYPES = ["):]
+    labels = dict(re.findall(r"\{ id: '(\w+)', label: '([^']+)', icon: \w+ \}", block[:block.index("];")]))
+    assert len(labels) == 8 and _car._OUTPUT_TITLES == labels, (labels, _car._OUTPUT_TITLES)
+    row = {"file_id": "w1026-made-up-cv", "filename": "w1026-made-up-cv.txt", "category": "cv_history",
+           "status": "EXTRACTED", "extracted_text": fx["uploads"][0]["extracted_text"]}
+    _im.registry.append(row)
+    try:
+        gen = client.post("/api/v1/career/generate", json={
+            "file_ids": [row["file_id"]], "output_types": ["cv", "linkedin_profile"],
+            "instructions": "W1026 made up: a delivery coordinator role"})
+    finally:
+        _im.registry.remove(row)
+    assert gen.status_code == 200, gen.text[:300]
+    assert [r["title"] for r in gen.json()["results"]] == ["CV", "LinkedIn Profile"], gen.json()["results"]
+    assert fx["generate"]["results"][0]["title"] == "CV", fx["generate"]["results"][0]["title"]
+
+    #  a reply that leaves fields out, and one in prose: what is not given stays not given, and a search with no
+    #  listing always says why
+    said = {"output": ""}
+
+    async def _reply(prompt, **_kw):
+        return {"output": said["output"], "served_by": "ollama:w1026-made-up", "is_external": False}
+    monkeypatch.setattr(_gw, "query_meta", _reply)
+    keep = ("title", "company", "location", "salary_estimate", "tags", "description")
+    said["output"] = "\n".join(json.dumps({k: r[k] for k in keep if r.get(k) is not None})
+                               for r in fx["job_search_model"]["results"])
+    model = client.post("/api/v1/career/job-search", json=q).json()
+
+    def strip(rows):
+        return [{k: v for k, v in r.items() if k != "listing_id"} for r in rows]
+    assert strip(model["results"]) == strip(fx["job_search_model"]["results"]), model["results"]
+    assert [(r["company"], r["location"]) for r in model["results"]][1] == (None, None), model["results"]
+    assert model["none_basis"] is None, model["none_basis"]
+    said["output"] = "W1026 made up: a reply in prose, with no listing in it."
+    prose = client.post("/api/v1/career/job-search", json=q).json()
+    assert prose["results"] == [] and prose["none_basis"] == fx["job_search_prose"]["none_basis"], prose
+    assert prose["none_basis"].startswith("Nothing came back in the shape a listing is asked for. "), (
+        prose["none_basis"])
+    assert prose["none_basis"].endswith("this says nothing about whether such roles exist."), prose["none_basis"]
+    #  the attach route refuses a null employer, so the page posts what is not given as empty
+    nul = client.post("/api/v1/career/job-search/use", json={"title": "W1026 made up", "company": None,
+                                                            "location": None, "description": "W1026 made up."})
+    assert nul.status_code == 422, nul.text[:200]
+
+    page = _code_only((src / "ApplicationStudio.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    assert "alert(" not in page, "a failure is said in an alert, away from its action and with no reason"
+    for line in ("setActionErr({ at: 'files', text: `The upload failed: ${errorMessage(err)}` });",
+                 "setActionErr({ at: 'files', text: `The files were not sorted: ${errorMessage(err)}` });",
+                 "setActionErr({ at: 'files', text: `The file was not removed: ${errorMessage(err)}` });",
+                 "setActionErr({ at: 'generate', text: `Nothing was generated: ${errorMessage(err)}` });",
+                 "setActionErr({ at: 'listing', text: `The listing was not attached as the Target Job Ad: "
+                 "${errorMessage(err)}` });",
+                 "setJobSearchError(`The example listings were not synthesised: ${errorMessage(err)}`);"):
+        assert line in page, line
+    for at in ("files", "listing", "generate"):
+        assert f"{{actionErr?.at === '{at}' && <p role=\"alert\" data-testid=\"studio-{at}-failed\"" in page, at
+    assert page.count("setActionErr(null);") == 6, page.count("setActionErr(null);")
+    assert "Try broadening" not in page and "Try again" not in page
+    for f in ("title", "company", "location"):
+        assert f"        {f}: listing.{f} ?? '',\n" in page, f
+    assert "{listing.title || 'no title given'}" in page and "{listing.company || 'employer not stated'}" in page
+    t = (src / "ApplicationStudio.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './ApplicationStudio.fixture.json';" in t and "<ApplicationStudio " in t
+    assert "expect(alert).not.toHaveBeenCalled();" in t

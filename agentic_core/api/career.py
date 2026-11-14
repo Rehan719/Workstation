@@ -122,6 +122,14 @@ async def auto_classify_upload(file: UploadFile = File(...), user: dict | None =
 
 # ── Generate career documents ─────────────────────────────────────────────────
 
+#  W1026 - each output is titled as the studio names it: str.title() made "cv" a "Cv" and "linkedin_profile" a
+#  "Linkedin Profile". A type with no title here keeps its own name, title-cased
+_OUTPUT_TITLES: dict[str, str] = {
+    "cv": "CV", "cover_letter": "Cover Letter", "supporting_statement": "Supporting Statement",
+    "application_form": "Application Forms", "interview_prep": "Interview Preparation",
+    "new_job_prep": "New Job Preparation", "in_job_support": "In-Job Support", "linkedin_profile": "LinkedIn Profile",
+}
+
 _OUTPUT_PROMPTS: dict[str, str] = {
     "cv": (
         "Generate a professional, ATS-optimised CV in Markdown format. "
@@ -280,7 +288,7 @@ async def generate_career_docs(req: GenerateRequest):
         results.append({
             "output_id": uuid.uuid4().hex[:10],
             "output_type": output_type,
-            "title": output_type.replace("_", " ").title(),
+            "title": _OUTPUT_TITLES.get(output_type) or output_type.replace("_", " ").title(),
             "content": content,
             #  every number or year in the output that the recorded profile does not contain
             "unsupported_specifics": sorted({n for n in re.findall(r"\d+(?:[.,]\d+)?", str(content or ""))
@@ -396,11 +404,13 @@ async def job_search(req: JobSearchRequest):
                 if _is_template_echo(obj):
                     _echoes += 1
                     continue
+                #  W1026 - what the reply left out stays out: a listing with no location read "Remote", and one with no
+                #  title or employer read "Position" at "Company", each a fact nobody gave
                 listings.append({
                     "listing_id": uuid.uuid4().hex[:10],
-                    "title": obj.get("title", "Position"),
-                    "company": obj.get("company", "Company"),
-                    "location": obj.get("location", "Remote"),
+                    "title": obj.get("title") or None,
+                    "company": obj.get("company") or None,
+                    "location": obj.get("location") or None,
                     # W454 — labelled for what it is; never a fabricated url / posting date
                     "salary_estimate": obj.get("salary_estimate") or obj.get("salary"),
                     "tags": obj.get("tags", []),
@@ -429,10 +439,12 @@ async def job_search(req: JobSearchRequest):
         # (A numeric `template_echoes_discarded` was returned here too and removed in the same
         # round: the pre-flight's key screen found it reaching no surface, and the sentence below
         # already states the count in words where a reader actually meets it.)
-        "none_basis": (
-            f"{_echoes} line(s) came back as the prompt's own field template rather than a listing "
-            f"and were discarded. No listing could be synthesised here — this says nothing about "
-            f"whether such roles exist." if _echoes and not listings else None),
+        #  W1026 - and when nothing came back in a listing's shape at all: that answered a bare zero, which the page
+        #  read as "Try broadening your terms"
+        "none_basis": (None if listings else (
+            (f"{_echoes} line(s) came back as the prompt's own field template rather than a listing and were "
+             f"discarded. " if _echoes else "Nothing came back in the shape a listing is asked for. ")
+            + "No listing could be synthesised here — this says nothing about whether such roles exist.")),
         "ai_provenance": provenance,
     }
 

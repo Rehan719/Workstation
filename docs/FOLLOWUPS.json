@@ -24427,6 +24427,28 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: each of the seventeen says the server's reason, through refusalOf for a fetch, bodyDetail for a body already read and errorMessage for axios. test_w1025 holds it tree-wide: no template whose only interpolation is a status after 'HTTP ' is said, except as a fallback when no reason came or a sentence saying the reason is absent; one named (the swarm's cascade line). Five blinds turn it red."
+    },
+    {
+      "id": "FU-1210",
+      "title": "The application studio said six failures as fixed sentences with no reason, five in alerts; its job search filled in what a reply left out and said a bare zero as 'Try broadening your terms'",
+      "why": "Found rendering the Employment application studio against its routes' own answers (FU-399 part 51). An upload, a sort, a removal, a generation and an attach that failed were each said through alert() with a fixed sentence ('Generation failed.', 'Could not remove file.'), and a failed search as 'Example-listing synthesis failed. Try again.', each dropping the reason a refusal gave. The job-search route filled in what a model's reply left out: a listing with no location read 'Remote', one with no employer 'Company', one with no title 'Position'. And a reply with no line in a listing's shape answered a bare zero with no reason unless the floor had echoed the prompt's template (W574), which the page said as 'No example listings were synthesised. Try broadening your terms', a cause nobody measured.",
+      "source": "W1026 (FU-399 part 51, the Employment application studio rendered)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/components/employment/ApplicationStudio.tsx",
+        "agentic_core/api/career.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1026",
+      "note": "",
+      "slot_source": "found by FU-399's rendering of the Employment application studio; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: each failure is said beside its action (the files, the listing, the generation) and by what it was, through errorMessage, and the search's through it too; what a reply leaves out comes back as null and is said as not given ('employer not stated', 'no title given', 'Not specified'), and posted back as empty, since the attach route refuses a null; and the route always says why a search has no listing. ApplicationStudio.test.tsx drives the floor's search, two replies made up for the capture, three refusals and an unreachable server (seven vitest blinds); test_w1026 holds the fixture, read again, and the studio's readings (five blinds)."
     }
   ],
   "routes": [

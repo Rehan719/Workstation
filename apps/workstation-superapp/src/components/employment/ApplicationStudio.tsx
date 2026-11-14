@@ -10,6 +10,7 @@ import { Card, Button } from '@workstation/ui';
 import { provenanceBadge, provenanceLine } from '../../lib/api';
 import { ReviewOptions } from '../ReviewOptions';   // W925 (P5.15 release)
 import { describeReadFailure } from '../ReadFailures';   // W960 (FU-1181)
+import { errorMessage } from '../../lib/api';   // W1026 - a failure said as what it was
 
 interface IngestedFile {
   file_id: string;
@@ -43,9 +44,10 @@ interface ClassificationNotice {
 // W454 — an ILLUSTRATIVE example listing: no url, no posting date (they were invented), a salary estimate
 interface JobListing {
   listing_id: string;
-  title: string;
-  company: string;
-  location: string;
+  //  W1026 - what the reply left out comes back as null, never a stand-in ("Position", "Company", "Remote")
+  title: string | null;
+  company: string | null;
+  location: string | null;
   salary_estimate?: string | null;
   tags: string[];
   description: string;
@@ -105,6 +107,9 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
     // W856 (FU-1059) - how much of what the person supplied the search read, and a sentence when it was not all of it
     read_basis?: string | null; read_cut?: string | null } | null>(null);
   const [jobSearchError, setJobSearchError] = useState('');
+  //  W1026 - an action's failure, said beside the action and by what it was: five were alert()s with a fixed
+  //  sentence and no reason. Each action clears the last one when it starts
+  const [actionErr, setActionErr] = useState<{ at: 'files' | 'listing' | 'generate'; text: string } | null>(null);
   const [usingListingUrl, setUsingListingUrl] = useState<string | null>(null);
   const [usedListingUrls, setUsedListingUrls] = useState<string[]>([]);
 
@@ -126,6 +131,7 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
     setUploadingSlot(slotId);
+    setActionErr(null);
     try {
       for (const file of Array.from(files)) {
         const formData = new FormData();
@@ -135,7 +141,7 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
       }
       await fetchUploads();
     } catch (err) {
-      alert('Upload failed.');
+      setActionErr({ at: 'files', text: `The upload failed: ${errorMessage(err)}` });
     } finally {
       setUploadingSlot(null);
       e.target.value = '';
@@ -146,6 +152,7 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
     setClassifying(true);
+    setActionErr(null);
     try {
       const notices: ClassificationNotice[] = [];
       for (const file of Array.from(files)) {
@@ -166,7 +173,7 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
       setClassificationNotices(notices);
       await fetchUploads();
     } catch (err) {
-      alert('Auto-categorization failed.');
+      setActionErr({ at: 'files', text: `The files were not sorted: ${errorMessage(err)}` });
     } finally {
       setClassifying(false);
       e.target.value = '';
@@ -174,11 +181,12 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
   };
 
   const handleDelete = async (fileId: string) => {
+    setActionErr(null);
     try {
       await axios.delete(`/api/v1/ingest/${fileId}`);
       await fetchUploads();
     } catch (err) {
-      alert('Could not remove file.');
+      setActionErr({ at: 'files', text: `The file was not removed: ${errorMessage(err)}` });
     }
   };
 
@@ -192,7 +200,8 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
   };
 
   const handleGenerate = async () => {
-    if (selectedOutputs.length === 0) return alert('Select at least one output to generate.');
+    if (selectedOutputs.length === 0) { setActionErr({ at: 'generate', text: 'Select at least one output to generate.' }); return; }
+    setActionErr(null);
     setGenerating(true);
     setResults(null);
     try {
@@ -212,7 +221,7 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
       setUnread(resp.data.unread_files || []);
       setUnreadBasis(resp.data.unread_basis || '');
     } catch (err) {
-      alert('Generation failed.');
+      setActionErr({ at: 'generate', text: `Nothing was generated: ${errorMessage(err)}` });
     } finally {
       setGenerating(false);
     }
@@ -238,6 +247,7 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
   const handleJobSearch = async () => {
     setJobSearching(true);
     setJobSearchError('');
+    setActionErr(null);
     setJobResults(null);
     try {
       const fileIds = uploads
@@ -253,7 +263,7 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
       setJobSearchMeta({ query: resp.data.query, basis: resp.data.basis, total: resp.data.total, none_basis: resp.data.none_basis, ai_provenance: resp.data.ai_provenance,
         read_basis: resp.data.read_basis ?? null, read_cut: resp.data.read_cut ?? null });
     } catch (err) {
-      setJobSearchError('Example-listing synthesis failed. Try again.');
+      setJobSearchError(`The example listings were not synthesised: ${errorMessage(err)}`);
     } finally {
       setJobSearching(false);
     }
@@ -261,11 +271,12 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
 
   const handleUseListing = async (listing: JobListing) => {
     setUsingListingUrl(listing.listing_id);
+    setActionErr(null);
     try {
       await axios.post('/api/v1/career/job-search/use', {
-        title: listing.title,
-        company: listing.company,
-        location: listing.location,
+        title: listing.title ?? '',
+        company: listing.company ?? '',
+        location: listing.location ?? '',
         listing_id: listing.listing_id,
         description: listing.description,
         salary_estimate: listing.salary_estimate ?? null,
@@ -273,7 +284,7 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
       setUsedListingUrls(prev => [...prev, listing.listing_id]);
       await fetchUploads();
     } catch (err) {
-      alert('Could not attach this listing as the Target Job Ad.');
+      setActionErr({ at: 'listing', text: `The listing was not attached as the Target Job Ad: ${errorMessage(err)}` });
     } finally {
       setUsingListingUrl(null);
     }
@@ -293,6 +304,7 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
       <div id="input-materials-section" className="space-y-4">
         <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Input Materials</label>
         {uploadsErr && <p role="alert" data-testid="uploads-read-failed" className="text-[10px] text-vital font-bold">{uploadsErr}</p>}
+        {actionErr?.at === 'files' && <p role="alert" data-testid="studio-files-failed" className="text-[10px] text-vital font-bold">{actionErr.text}</p>}
         <div className="grid grid-cols-1 @lg:grid-cols-2 @3xl:grid-cols-3 gap-4">
           {INPUT_SLOTS.map(slot => {
             const slotFiles = uploads.filter(u => u.category === slot.id);
@@ -467,7 +479,8 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
           </Button>
         </div>
 
-        {jobSearchError && <p className="text-[10px] text-red-400 font-bold">{jobSearchError}</p>}
+        {jobSearchError && <p role="alert" data-testid="job-search-failed" className="text-[10px] text-red-400 font-bold">{jobSearchError}</p>}
+        {actionErr?.at === 'listing' && <p role="alert" data-testid="studio-listing-failed" className="text-[10px] text-red-400 font-bold">{actionErr.text}</p>}
 
         {jobSearchMeta && (
           <div className="flex flex-wrap items-center gap-2">
@@ -490,11 +503,11 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
           </p>
         )}
 
-        {jobResults && jobResults.length === 0 && (
-          <p className="text-[10px] text-slate-600 font-bold">
-            {jobSearchMeta?.ai_provenance?.served_by === 'native'
-              ? 'No example listings were synthesised — the deterministic native floor served this search and cannot compose listings; an owned model is needed for examples.'
-              : 'No example listings were synthesised. Try broadening your terms.'}
+        {/* W1026 - the route says why there is none (none_basis, above); "Try broadening your terms" named a cause
+            nobody measured */}
+        {jobResults && jobResults.length === 0 && jobSearchMeta?.ai_provenance?.served_by === 'native' && (
+          <p className="text-[10px] text-slate-600 font-bold" data-testid="job-search-floor">
+            No example listings were synthesised — the deterministic native floor served this search and cannot compose listings; an owned model is needed for examples.
           </p>
         )}
 
@@ -506,9 +519,9 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
                 <div key={listing.listing_id} className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-xs font-black text-white truncate">{listing.title}</p>
+                      <p className="text-xs font-black text-white truncate">{listing.title || 'no title given'}</p>
                       <p className="text-[10px] text-slate-400 font-bold flex items-center gap-1.5 mt-0.5">
-                        {listing.company} <span className="text-slate-600">·</span>
+                        {listing.company || 'employer not stated'} <span className="text-slate-600">·</span>
                         <MapPin size={9} className="inline" /> {listing.location || 'Not specified'}
                         {listing.salary_estimate && <><span className="text-slate-600">·</span> est. {listing.salary_estimate}</>}
                       </p>
@@ -571,6 +584,7 @@ export const ApplicationStudio: React.FC<{ title: string }> = ({ title }) => {
         {generating ? 'Generating...' : `Generate${selectedOutputs.length > 1 ? ` (${selectedOutputs.length} outputs)` : ''}`}
       </Button>
 
+      {actionErr?.at === 'generate' && <p role="alert" data-testid="studio-generate-failed" className="text-[11px] text-vital font-bold">{actionErr.text}</p>}
       {careerRefusal && <p className="text-[11px] text-amber-300" data-testid="career-refused">{careerRefusal}</p>}
       {results && (
         <div className="space-y-4 pt-6 border-t border-slate-800">
