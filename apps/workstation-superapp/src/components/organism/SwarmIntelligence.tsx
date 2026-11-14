@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W931
-import { qmsChip, provenanceMapBadge, complianceChip, errorMessage, layerTitle, axiosDetail, immuneReading, bodyOrNull } from '../../lib/api';
+import { qmsChip, provenanceMapBadge, complianceChip, errorMessage, layerTitle, axiosDetail, immuneReading, bodyOrNull, bodyDetail } from '../../lib/api';
 import axios from 'axios';
 import { Loader2, Send, Cpu, RefreshCw, Zap, ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -187,7 +187,8 @@ const SwarmIntelligence: React.FC = () => {
         //  W960 (FU-1181) - a body that is not JSON leaves the status line above standing
         const body = await bodyOrNull(response);
         const d = body?.detail ?? body;
-        reason = typeof d === 'string' ? d
+        //  W1013 - a field check (a list) by its field; it was said by the status line alone
+        reason = typeof d === 'string' ? d : Array.isArray(d) ? bodyDetail(body, reason)
           : [d?.error, d?.message, d?.note, d?.clear_by && `clear by: ${d.clear_by}`].filter(Boolean).join(' — ') || reason;
         setStreamOutput(`NOT RUN — ${reason}\n\nNothing was delegated by another route.`);
       }

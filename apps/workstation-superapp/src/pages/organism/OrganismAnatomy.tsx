@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Dna, Loader2, Settings2, ShieldCheck, Waves, Play, GitMerge, Sparkles, Send } from 'lucide-react';
-import { apiJson, errorMessage, provenanceBadge, immuneReading, bodyOrNull } from '../../lib/api';
+import { apiJson, errorMessage, provenanceBadge, immuneReading, bodyOrNull, bodyDetail } from '../../lib/api';
 import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W998
 
 // W438 — the organism's ANATOMY, finally reachable: 18 routes (config · genome · nervous ·
@@ -198,7 +198,8 @@ export const OrganismAnatomy: React.FC = () => {
       } else {
         const body = await bodyOrNull(r);
         const d = body?.detail;
-        setResetRefusal(d && typeof d === 'object' ? d : { why: typeof d === 'string' ? d : `HTTP ${r.status}` });
+        //  W1013 - a structured refusal is kept whole; a field check (a list) is said by its field, not dropped
+        setResetRefusal(d && typeof d === 'object' && !Array.isArray(d) ? d : { why: bodyDetail(body, `HTTP ${r.status}`) });
       }
     } catch {
       setErr('reset check failed — backend unreachable');

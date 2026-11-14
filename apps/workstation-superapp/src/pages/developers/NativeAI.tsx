@@ -645,7 +645,7 @@ export const NativeAI: React.FC = () => {
         setTree(data);
       } else {
         //  W982 - the server's sentence when it gave one; an object detail is never put into the text
-        setError(typeof data?.detail === 'string' && data.detail ? data.detail : `Workflow-tree run failed (HTTP ${r.status}).`);
+        setError(bodyDetail(data, `Workflow-tree run failed (HTTP ${r.status}).`));   // W1013 - a field check by its field
       }
     } catch (e: any) { setError(e?.message ?? String(e)); }
     setTreeRunning(false);
@@ -1372,7 +1372,7 @@ export const NativeAI: React.FC = () => {
                                   try {
                                     const r = await fetch(`/api/v1/resources/swarm/${c.id}`, { method: 'DELETE' });
                                     const b = await r.json().catch(() => ({}));
-                                    if (!r.ok) throw new Error(typeof b.detail === 'string' ? b.detail : `HTTP ${r.status}`);
+                                    if (!r.ok) throw new Error(bodyDetail(b, `HTTP ${r.status}`));   // W1013 - a field check by its field
                                     setCascades(prev => prev.filter(x => x.id !== c.id));
                                     setConfirmDelete(null);
                                     if (editingId === c.id) setEditingId(null);

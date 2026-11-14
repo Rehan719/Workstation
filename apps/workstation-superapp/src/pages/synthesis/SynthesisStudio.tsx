@@ -179,10 +179,8 @@ export const SynthesisStudio: React.FC = () => {
       // exist: nothing was ever fetched, one hard-coded link returned fabricated medical content, and
       // every other URL answered 500. The backend now refuses with 501 and explains; show what it said
       // rather than blaming the input.
-      const detail = e?.response?.data?.detail;
-      setErrorMsg(typeof detail === 'string' && detail
-        ? detail
-        : 'URL ingestion is not available and nothing was ingested. Upload the file directly instead.');
+      //  W1013 - a field check by its field: it said a refused field as "URL ingestion is not available"
+      setErrorMsg(axiosDetail(e, 'URL ingestion is not available and nothing was ingested. Upload the file directly instead.'));
     } finally {
       setIngesting(false);
     }

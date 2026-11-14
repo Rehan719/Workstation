@@ -7,7 +7,7 @@
 // Signup turned on and an administrator's session cannot be read from that store, so the two answers that need them
 // are written here, in the shape the routes answer, and say so. A refusal says the server's reason, and a setting
 // that was not read is not shown as off.
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -60,15 +60,16 @@ describe('Login, rendered against the auth routes\' own answers', () => {
     serve();
     mount();
     expect(await screen.findByText(/Single-user mode — authentication is currently OFF/)).toBeTruthy();
-    expect((await screen.findByTestId('signup-state')).textContent).toMatch(/^Accounts are Owner-curated/);
+    //  W1013 - the element is there while the setting is read: wait for what it says once read (it raced on CI)
+    await waitFor(() => expect(screen.getByTestId('signup-state').textContent).toMatch(/^Accounts are Owner-curated/));
     expect((captured.config.body as { self_serve_signup_enabled: boolean }).self_serve_signup_enabled).toBe(false);
   });
 
   it('a refused read of the signup setting is said, not shown as signup being off', async () => {
     serve({ [CONFIG]: refused(503, 'the account store is locked') });
     mount();
-    expect((await screen.findByTestId('signup-state')).textContent).toBe(
-      'Whether self-serve signup is on could not be read (Failed (HTTP 503): the account store is locked).');
+    await waitFor(() => expect(screen.getByTestId('signup-state').textContent).toBe(
+      'Whether self-serve signup is on could not be read (Failed (HTTP 503): the account store is locked).'));
   });
 
   it('a wrong password is said as one', async () => {

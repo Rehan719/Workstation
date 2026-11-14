@@ -54845,7 +54845,8 @@ def test_p3b_r3_board_chief_plan_and_entity_pages_say_what_they_hold(client, mon
     assert _gen.index("const context = genContext.trim();") < _gen.index("await fetch('/api/v1/business-plan/generate'"), (
         "the description is read after the request began")
     assert "body: JSON.stringify(context ? { scope, context } : { scope })" in _gen, "the page still sends the scope alone"
-    assert "typeof ed === 'string' ? ed : JSON.stringify(ed)" in _gen, "a structured refusal detail would be rendered as an object"
+    #  W1013 - the reason as bodyDetail reads it (an object by its message, a field check by its field; it said JSON)
+    assert "const ed = bodyDetail(await bodyOrNull(r), '');" in _gen, "a structured refusal detail would be rendered as an object"
     assert 'data-testid="plan-generate-context" value={genContext} onChange={e => setGenContext(e.target.value)}' in _bpx
     assert 'data-testid="plan-generate-note"' in _bpx          # the note an older test holds stays on this page
 
@@ -55913,7 +55914,8 @@ def test_p330_r5_the_owners_rulings_of_2026_10_11_are_built(client, monkeypatch)
         else:
             _mb._WATERFALL_OVERRIDES.write_bytes(_wbytes)
     _ve = _fe("pages/enterprise/VSBEconomy.tsx")
-    assert "typeof d?.detail === 'string' ? [d.detail]" in _ve, "the page turns a plain-sentence refusal into a bare status code"
+    #  W1013 - a sentence as itself, and a field check by its field (it said the bare status for one)
+    assert "[bodyDetail(d, `HTTP ${r.status}`)]" in _ve, "the page turns a plain-sentence refusal into a bare status code"
     _ob = _ve.split("{(wf?.out_of_bound ?? []).length > 0 && (", 1)
     assert len(_ob) == 2, "the page does not gate the out-of-bound statement on the route's list"
     _ob = _ob[1].split("{wfMsg &&", 1)[0]
@@ -71314,7 +71316,8 @@ def test_w805_fu823_forge_runs_what_its_record_lists_and_configures_each_stage_w
     # -- the page shows the refusal's sentence ---------------------------------------------------------------------
     _page805 = _slash_star_restored(_re805.sub(r"/\*.*?\*/", "", _slash_star_masked(pathlib.Path("apps/workstation-superapp/src/pages/developers/ForgePipeline.tsx")
                           .read_text(encoding="utf-8")), flags=_re805.S))
-    assert "typeof _b?.detail === 'string' ? _b.detail : ''" in _page805, (
+    #  W1013 - the reason as bodyDetail reads it: a sentence as itself, a field check by its field
+    assert "_why = bodyDetail(_b, '');" in _page805, (
         "the Forge page still shows a refused pipeline as a bare status number")
 
 
@@ -83079,7 +83082,7 @@ def test_w989_fu399_the_deliverables_page_never_shows_an_unread_list_as_empty_an
     #  a refused export: the server's reason, on the page
     assert "catch (e: any) { setError(e?.message ?? 'Export failed'); }" in code and "alert(" not in code
     assert dl.count("if (!r.ok) throw await refused(r);") == 2 and "throw new Error(`Export failed (HTTP ${r.status})`)" not in dl
-    assert "const d = (await bodyOrNull(r))?.detail;" in dl and "Export failed (HTTP ${r.status})${d ?" in dl
+    assert "const d = bodyDetail(await bodyOrNull(r), '');" in dl and "Export failed (HTTP ${r.status})${d ?" in dl   # W1013
     fx = json.loads((src / "pages/Deliverables.fixture.json").read_text(encoding="utf-8"))
     assert fx["export_missing"]["status"] == 404 and fx["export_missing"]["body"]["detail"].startswith("Deliverable ")
     assert fx["list_empty"]["deliverables"] == [] and len(fx["version"]["versions"]) == len(fx["one"]["versions"]) + 1
@@ -83301,7 +83304,9 @@ def test_w994_fu399_self_vision_draws_the_figure_each_bar_names_and_says_a_refus
     assert "bio.metabolic.efficiency" not in code
     assert "{typeof value === 'number' ? `${value}%` : 'not measured'}" in code
     #  a refusal's reason, and "none were received" only when none was
-    assert "setBioError(`The organism is not reporting (HTTP ${res.status}${d ? `: ${typeof d === 'string' ? d : JSON.stringify(d)}` : ''}).`);" in code
+    #  W1013 - the reason as bodyDetail reads it (a field check by its field; it said JSON)
+    assert "setBioError(`The organism is not reporting (HTTP ${res.status}${d ? `: ${d}` : ''}).`);" in code
+    assert "const d = bodyDetail(res.data, '');" in code
     assert "setEverRead(true);" in code and "'The last reading is not shown, because it may no longer be current.'" in code
     fx = json.loads((pdir / "Introspection.fixture.json").read_text(encoding="utf-8"))
     fm = fx["status"]["metabolic"]
@@ -84102,7 +84107,8 @@ def test_w1011_no_page_puts_a_refusal_s_detail_into_the_page_as_it_came(client):
     assert scanned > 100, ("this scanned almost nothing, so it would pass on an empty tree", scanned)
     assert offenders == [], ("a page reads a refusal's detail as it came; say it through axiosDetail(e, fallback)",
                              offenders)
-    assert held == {"detailText": 8, "serverDetail": 1, "string check": 1}, held
+    #  W1013 - the synthesis studio's string check is gone: it said a field check as "URL ingestion is not available"
+    assert held == {"detailText": 8, "serverDetail": 1, "string check": 0}, held
 
 
 def test_w1012_a_refusal_read_by_hand_is_never_said_as_object_object(client):
@@ -84260,3 +84266,121 @@ def test_w1012b_test_w994_reads_the_stores_it_sets_and_not_the_sessions(client, 
     assert 'monkeypatch.setattr(_wb, "_store", lambda: tmp_path / "work_budget.json")' in w994
     assert 'monkeypatch.setattr(_projects, "_all_projects", lambda: [])' in w994
     assert 'assert m["energy_ratio"] == 0.9 and m["efficiency"] == 0.95, m' in w994
+
+
+def test_w1013_one_reading_of_a_refusal_a_field_check_is_said_by_its_field(client):
+    """W1013. W1011 and W1012 removed the readings of a refusal that took a page down or said "[object Object]". What
+    remained read a refusal some other way, each its own, and each lost a field check (FastAPI's 422, a list of
+    {loc, msg}): the shared fetch helper, apiJson, said one as JSON text for every page that calls through it;
+    twenty-two readers kept the reason only when it was a sentence and otherwise said the status alone, or a fallback
+    that is false for a refusal that gave a reason ("returned no details", "the server's reply could not be read");
+    three said anything but a sentence as JSON; the two Horizon pages said nothing beside the status and the capital
+    dashboard "no reason given"; four readers of a structured refusal read its parts and dropped a list. Each now reads
+    the reason through bodyDetail (or axiosDetail for an axios error): a sentence as itself, a field check by its
+    field, an object by its message. src/lib/api.test.ts drives the reading, apiJson's and the session read's.
+
+    Held here: a real route's field check is the shape the unit test reads; apiJson reads through bodyDetail; each
+    reader's line; and, tree-wide, no reader of its own is left: no string check of a detail (one stays, named: the
+    economy's cycle, which reads the list itself one line above), no JSON.stringify of a detail or of a variable
+    copied from one, and each structured reader reads a list through bodyDetail."""
+    import pathlib
+    import re
+    #  the shape the unit test reads: a field check, as a real route answers it
+    r = client.post("/api/v1/projects/", json={})
+    d = r.json()["detail"]
+    assert r.status_code == 422 and isinstance(d, list) and d, r.text[:200]
+    assert {"type", "loc", "msg"} <= set(d[0]) and d[0]["loc"][0] == "body" and isinstance(d[0]["msg"], str), d[0]
+
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    api = (src / "lib/api.ts").read_text(encoding="utf-8")
+    assert "      detail = bodyDetail(j, detail);" in api and "JSON.stringify(j.detail)" not in api
+    unit = (src / "lib/api.test.ts").read_text(encoding="utf-8")
+    assert "import { ApiError, apiJson, axiosDetail, bodyDetail } from './api';" in unit
+    assert "expect((e as ApiError).detail).toBe('title: Field required');" in unit
+    assert "basis: 'Failed (HTTP 422): title: Field required'" in unit
+
+    sites = {
+        "components/organism/AgentHubPanel.tsx": [
+            "if (!r.ok) { setErr(bodyDetail(d, `HTTP ${r.status}`)); setBusy(false); return; }",
+            "if (!r.ok) { const d = await bodyOrNull(r); setErr(bodyDetail(d, `HTTP ${r.status}`)); return; }"],
+        "components/qep/QEPIntelligence.tsx": ["if (!r.ok) { setErr(bodyDetail(d, `HTTP ${r.status}`)); setBusy(''); return; }"] * 3,
+        "lib/auth.ts": ["basis: `Failed (HTTP ${r.status}): ${bodyDetail(d, 'no reason given')}` };"],
+        "pages/developers/ForgePipeline.tsx": ["_why = bodyDetail(_b, '');", "const _rwhy = bodyDetail(_rb, '');"],
+        "pages/developers/NativeAI.tsx": [
+            "setError(bodyDetail(data, `Workflow-tree run failed (HTTP ${r.status}).`));",
+            "if (!r.ok) throw new Error(bodyDetail(b, `HTTP ${r.status}`));"],
+        "pages/enterprise/VSBCockpit.tsx": ["if (!r.ok) throw new Error(bodyDetail(b, `HTTP ${r.status}`));"] * 2,
+        "pages/enterprise/EconomyOperations.tsx": [
+            "if (!r.ok) { setErr(bodyDetail(d, `HTTP ${r.status}`)); setBusy(''); return; }",
+            "setErr(bodyDetail(d,   // W1013",
+            "Check its ledger before sending it again.`));",
+            "setCompleteErr(bodyDetail(d, `The completion failed (HTTP ${r.status}) — nothing was debited; try again.`));"],
+        "pages/enterprise/VSBEconomy.tsx": [
+            "setPayLoadErr(bodyDetail(d, `Could not load the owner payments (HTTP ${r.status}).`));",
+            "setBpLoadErr(bodyDetail(d, `Could not load the board pack (HTTP ${r.status}).`)); return; }",
+            "setWfErr((d?.detail?.violations) || [bodyDetail(d, `HTTP ${r.status}`)]);",
+            "setCloseErr(bodyDetail(d,",
+            "setPayErr(bodyDetail(d, `HTTP ${r.status} — the payout request was refused; nothing was paid.`));"],
+        "pages/synthesis/ResourceFabric.tsx": ["return bodyDetail(d, `Refused (${r.status}); nothing changed.`);"],
+        "pages/synthesis/SynthesisStudio.tsx": [
+            "setErrorMsg(axiosDetail(e, 'URL ingestion is not available and nothing was ingested. Upload the file directly instead.'));"],
+        "pages/enterprise/BusinessPlan.tsx": [
+            "const ed = bodyDetail(await bodyOrNull(r), '');",
+            "const why = (d && typeof d === 'object' && !Array.isArray(d) ? (d.error || d.reason) : bodyDetail(data, '')) || data?.error;"],
+        "pages/cognitive/Introspection.tsx": ["const d = bodyDetail(res.data, '');"],
+        "lib/download.ts": ["const d = bodyDetail(await bodyOrNull(r), '');"],
+        "pages/governance/HorizonGuardrails.tsx": ["const d = bodyDetail(body, '');", "return d.trim() ? `: ${d}` : '';"],
+        "pages/governance/HorizonCompanion.tsx": ["const d = bodyDetail(body, '');", "return d.trim() ? `: ${d}` : '';"],
+        "pages/enterprise/CapitalDashboard.tsx": [
+            "noteRead('the portfolio summary')(new ApiError(res.status, bodyDetail(res.data, 'no reason given')));"],
+        #  the structured readers: their parts for an object, a list through bodyDetail
+        "pages/organism/OrganismAnatomy.tsx": [
+            "setResetRefusal(d && typeof d === 'object' && !Array.isArray(d) ? d : { why: bodyDetail(body, `HTTP ${r.status}`) });"],
+        "pages/synthesis/GenesisJourney.tsx": [
+            "if (Array.isArray(det)) return bodyDetail(d, `Action failed (HTTP ${res.status}) and the server gave no reason.`);"],
+        "components/organism/SwarmIntelligence.tsx": [
+            "reason = typeof d === 'string' ? d : Array.isArray(d) ? bodyDetail(body, reason)"],
+    }
+    imported = re.compile(r"^import \{[^}]*\bbodyDetail\b[^}]*\} from '(?:\./|(?:\.\./)+lib/)api';", re.M)
+    for rel, lines in sites.items():
+        code = _code_only((src / rel).read_text(encoding="utf-8").replace("\r\n", "\n"))
+        if rel != "pages/synthesis/SynthesisStudio.tsx":
+            assert imported.search(code), (rel, "bodyDetail is not imported")
+        for ln in set(lines):
+            assert code.count(ln) == lines.count(ln), (rel, ln, code.count(ln))
+
+    #  tree-wide: no reader of its own is left
+    check = re.compile(r"typeof\s+[\w?.()\s]*?\.detail\s*===\s*'string'")
+    copied = re.compile(r"\b(?:const|let)\s+(\w+)\s*=\s*[^;\n]*?\.detail\s*(?=;|\?\?|\|\|)")
+    named, offenders, scanned = [], [], 0
+    for f in sorted(p for ext in ("*.ts", "*.tsx", "*.js", "*.jsx") for p in src.rglob(ext)):
+        rel = f.relative_to(src).as_posix()
+        if ".test." in f.name or rel == "lib/api.ts":
+            continue
+        scanned += 1
+        code = _code_only(f.read_text(encoding="utf-8").replace("\r\n", "\n"))
+        for m in check.finditer(code):
+            line = code[code.rfind("\n", 0, m.start()) + 1:code.find("\n", m.end())].strip()
+            if rel == "pages/enterprise/VSBEconomy.tsx" and line.startswith("const why = typeof fail?.detail === 'string' ? fail.detail : reasons ?"):
+                named.append(rel)
+                continue
+            offenders.append(f"{rel}: a string check of a detail: {line[:140]}")
+        for m in re.finditer(r"JSON\.stringify\(\s*[\w?.()\s]*?\.detail\b", code):
+            line = code[code.rfind("\n", 0, m.start()) + 1:code.find("\n", m.end())].strip()
+            offenders.append(f"{rel}: a detail said as JSON: {line[:140]}")
+        for a in copied.finditer(code):
+            var = a.group(1)
+            for u in re.finditer(r"JSON\.stringify\(\s*" + var + r"\s*\)", code[a.end():a.end() + 400]):
+                offenders.append(f"{rel}: {var}, copied from a detail, said as JSON")
+    assert scanned > 100, ("this scanned almost nothing, so it would pass on an empty tree", scanned)
+    assert offenders == [], ("a page reads a refusal its own way; read it through bodyDetail (axiosDetail for axios)",
+                             offenders)
+    assert named == ["pages/enterprise/VSBEconomy.tsx"], named
+    ve = _code_only((src / "pages/enterprise/VSBEconomy.tsx").read_text(encoding="utf-8"))
+    assert "const reasons = Array.isArray(fail?.detail)" in ve, "the named reader no longer reads the list itself"
+
+    #  the frontend job's red on 463a3ef4: the sign-in page's signup element is there while the setting is read, and
+    #  its test read it at once; on a loaded runner it still said "Reading whether self-serve signup is on..."
+    lt = (src / "pages/Login.test.tsx").read_text(encoding="utf-8")
+    assert "findByTestId('signup-state')" not in lt, "a read of the signup element races the setting's answer"
+    assert lt.count("await waitFor(() => expect(screen.getByTestId('signup-state').textContent)") == 2

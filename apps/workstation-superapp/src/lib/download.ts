@@ -2,14 +2,14 @@
 // under AUTH_ENABLED every UI export format dead-ended with a 401 (audit-proven). Fetching via the
 // patched window.fetch (auth.ts attaches the token) and handing the browser an object URL keeps
 // every export working in BOTH modes. Failure surfaces to the caller — never a silent dead click.
-import { bodyOrNull } from './api';
+import { bodyOrNull, bodyDetail } from './api';
 
 //  W989 (FU-399 part 21) - A REFUSED EXPORT SAYS THE SERVER'S REASON. This said "Export failed (HTTP 404)" and
 //  dropped what the server said (the deliverable it no longer holds, the format it does not serve) on every page that
 //  exports. The status is checked by the caller below; the body is read only to say why.
 async function refused(r: Response): Promise<Error> {
-  const d = (await bodyOrNull(r))?.detail;
-  return new Error(`Export failed (HTTP ${r.status})${d ? `: ${typeof d === 'string' ? d : JSON.stringify(d)}` : ''}`);
+  const d = bodyDetail(await bodyOrNull(r), '');   // W1013 - a field check by its field (it said JSON)
+  return new Error(`Export failed (HTTP ${r.status})${d ? `: ${d}` : ''}`);
 }
 
 export async function downloadExport(url: string, fallbackName: string): Promise<void> {

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { bodyDetail } from '../../lib/api';   // W1013
 import { ShieldAlert, AlertTriangle, BookOpen, HeartHandshake } from 'lucide-react';
 
 // P2.12 — the three guardrails, each with what it did NOT look at, and the distress route field shown
@@ -68,8 +69,8 @@ interface Guardrails {
 //  W975 (FU-399 part 9) - A REFUSAL IS SAID WITH THE SERVER'S REASON. A refused read was said by its status alone, so a
 //  refusal the server gave a reason for read as an unexplained code. The reason, when there is one, is said beside it.
 const said = (body: unknown): string => {
-  const d = (body as { detail?: unknown } | null)?.detail;
-  return typeof d === 'string' && d.trim() ? `: ${d}` : '';
+  const d = bodyDetail(body, '');   // W1013 - a field check by its field (it said nothing for one)
+  return d.trim() ? `: ${d}` : '';
 };
 
 const ICONS: Record<string, React.ReactNode> = {

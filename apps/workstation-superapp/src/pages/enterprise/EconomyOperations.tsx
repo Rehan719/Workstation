@@ -16,7 +16,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Sprout, Loader2, AlertCircle, ShieldCheck, ArrowRightLeft, Recycle } from 'lucide-react';
-import { fundingLabel, bodyOrNull, apiJson, axiosDetail, errorMessage } from '../../lib/api';
+import { fundingLabel, bodyOrNull, bodyDetail, apiJson, axiosDetail, errorMessage } from '../../lib/api';
 import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W1000
 
 // ── §6 Venture Portfolio ──────────────────────────────────────────────────────
@@ -61,7 +61,7 @@ export const VenturePortfolioPanel: React.FC<{ vsbId: string }> = ({ vsbId }) =>
       });
       //  W982 - the status before the body (W927's rule): a refusal that is not JSON says its status
       const d = r.ok ? await r.json() : await bodyOrNull(r);
-      if (!r.ok) { setErr(typeof d?.detail === 'string' ? d.detail : `HTTP ${r.status}`); setBusy(''); return; }
+      if (!r.ok) { setErr(bodyDetail(d, `HTTP ${r.status}`)); setBusy(''); return; }   // W1013 - a field check by its field
       setMsg(`${d.returned_wst.toLocaleString()} WST recorded on ${holdingId} — ${d.recycles}. (${d.amount_source})`);
       setRetAmt({ ...retAmt, [holdingId]: 0 });
       load();
@@ -235,8 +235,8 @@ export const TransferPanel: React.FC<{ fromVsb: string; entities: { vsb_id: stri
       // posted nothing
       const d = await bodyOrNull(r);
       if (!r.ok) {
-        setErr(typeof d?.detail === 'string' ? d.detail
-          : `The transfer failed (HTTP ${r.status}) and returned no details — it may have debited ${fromVsb}. Check its ledger before sending it again.`);
+        setErr(bodyDetail(d,   // W1013 - a field check by its field; "no details" only when there were none
+          `The transfer failed (HTTP ${r.status}) and returned no details — it may have debited ${fromVsb}. Check its ledger before sending it again.`));
         const debited = r.headers.get('X-Transfer-Debited');
         const tid = r.headers.get('X-Transfer-Id');
         // Complete is offered only for a debit whose receiver credit is missing (or unknown), never for one that posted
@@ -261,7 +261,7 @@ export const TransferPanel: React.FC<{ fromVsb: string; entities: { vsb_id: stri
       });
       const d = await bodyOrNull(r);
       if (!r.ok) {
-        setCompleteErr(typeof d?.detail === 'string' ? d.detail : `The completion failed (HTTP ${r.status}) — nothing was debited; try again.`);
+        setCompleteErr(bodyDetail(d, `The completion failed (HTTP ${r.status}) — nothing was debited; try again.`));   // W1013 - a field check by its field
         return;
       }
       setCompleteMsg(`${d?.status === 'completed' ? 'Completed' : 'Already credited'} · ${tid} — ${d?.note ?? ''}`);

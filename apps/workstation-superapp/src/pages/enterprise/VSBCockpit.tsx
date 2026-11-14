@@ -65,7 +65,7 @@ const EditCascade: React.FC<{ cascadeId: string; onSaved: () => void }> = ({ cas
       const r = await fetch(`/api/v1/resources/swarm/${cascadeId}`);
       //  W982 - the status before the body (W927's rule): a refusal that is not JSON says its status
       const b = r.ok ? await r.json() : await bodyOrNull(r);
-      if (!r.ok) throw new Error(typeof b?.detail === 'string' ? b.detail : `HTTP ${r.status}`);
+      if (!r.ok) throw new Error(bodyDetail(b, `HTTP ${r.status}`));   // W1013 - a field check by its field
       setStages((b.stages || []).map((st: any) => ({ role: st.role || '', instruction: st.instruction || '',
                                                      ...(st.model ? { model: String(st.model) } : {}) })));
     } catch (e: any) { setErr(e?.message ?? String(e)); }
@@ -83,7 +83,7 @@ const EditCascade: React.FC<{ cascadeId: string; onSaved: () => void }> = ({ cas
       });
       //  W982 - the status before the body (W927's rule): a refusal that is not JSON says its status
       const b = r.ok ? await r.json() : await bodyOrNull(r);
-      if (!r.ok) throw new Error(typeof b?.detail === 'string' ? b.detail : `HTTP ${r.status}`);
+      if (!r.ok) throw new Error(bodyDetail(b, `HTTP ${r.status}`));   // W1013 - a field check by its field
       setMsg(`Saved ${(b.stages || []).length} stages. The next run of this cascade re-reads them — nothing further to apply.`);
       onSaved();
     } catch (e: any) { setErr(e?.message ?? String(e)); }

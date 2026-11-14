@@ -8,7 +8,7 @@ import {
 import { ServiceContracts } from './ServiceContracts';
 import { CharityDirectives } from './CharityDirectives';
 import { VenturePortfolioPanel, TransferPanel } from './EconomyOperations';
-import { complianceChip, fundingLabel, apiJson, bodyOrNull } from '../../lib/api';
+import { complianceChip, fundingLabel, apiJson, bodyOrNull, bodyDetail } from '../../lib/api';
 import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W928
 import { domainLabel } from '../../lib/taxonomy';   // W735 (FU-831)
 
@@ -107,7 +107,7 @@ export const VSBEconomy: React.FC = () => {
         // an error answer, or a body that is not an account, is never stored as one (it rendered as 0 WST)
         if (!r.ok || !d || typeof d.balance_wst !== 'number') {
           setPay(null);
-          setPayLoadErr(typeof d?.detail === 'string' ? d.detail : `Could not load the owner payments (HTTP ${r.status}).`);
+          setPayLoadErr(bodyDetail(d, `Could not load the owner payments (HTTP ${r.status}).`));   // W1013 - a field check by its field
           return;
         }
         setPayLoadErr('');
@@ -128,7 +128,7 @@ export const VSBEconomy: React.FC = () => {
       .then(async r => {
         const d = await bodyOrNull(r);
         if (issuedFor !== currentVsb.current) return;   // a late answer for another entity
-        if (!r.ok || !d) { setBp(null); setBpLoadErr(typeof d?.detail === 'string' ? d.detail : `Could not load the board pack (HTTP ${r.status}).`); return; }
+        if (!r.ok || !d) { setBp(null); setBpLoadErr(bodyDetail(d, `Could not load the board pack (HTTP ${r.status}).`)); return; }   // W1013 - a field check by its field
         setBpLoadErr('');
         setBp(d);
       }).catch(() => {
@@ -206,7 +206,7 @@ export const VSBEconomy: React.FC = () => {
       });
       //  W982 - the status before the body (W927's rule): a refusal that is not JSON says its status
       const d = r.ok ? await r.json() : await bodyOrNull(r);
-      if (!r.ok) { setWfErr((d?.detail?.violations) || (typeof d?.detail === 'string' ? [d.detail] : [`HTTP ${r.status}`])); setWfSaving(false); return; }
+      if (!r.ok) { setWfErr((d?.detail?.violations) || [bodyDetail(d, `HTTP ${r.status}`)]); setWfSaving(false); return; }   // W1013 - a field check by its field
       setWf(prev => prev ? { ...prev, waterfall: d.waterfall, source: d.source } : prev);
       setWfDraft(Object.fromEntries(Object.entries(d.waterfall as Record<string, number>).map(([k, v]) => [k, Math.round(v * 100)])));
       //  W790 (FU-1159) - whether the change reached the constitutional log is the route's answer, not this page's
@@ -268,8 +268,8 @@ export const VSBEconomy: React.FC = () => {
       // error instead of why the close was refused.
       const d = await bodyOrNull(r);
       if (!r.ok) {
-        setCloseErr((typeof d?.detail === 'string' && d.detail)
-          || `HTTP ${r.status} — the server's reply could not be read; the books were NOT closed.`);
+        setCloseErr(bodyDetail(d,   // W1013 - a field check by its field; "could not be read" only when it could not
+          `HTTP ${r.status} — the server's reply could not be read; the books were NOT closed.`));
         setClosing(false); return;
       }
       if (!d) { setCloseErr('The close returned a reply that could not be read — check the books before retrying.'); setClosing(false); return; }
@@ -290,7 +290,7 @@ export const VSBEconomy: React.FC = () => {
       // a refusal's body may be absent or structured (a 422 carries a list): it is never rendered as a child
       const d = await bodyOrNull(r);
       if (!r.ok || !d) {
-        setPayErr(typeof d?.detail === 'string' ? d.detail : `HTTP ${r.status} — the payout request was refused; nothing was paid.`);
+        setPayErr(bodyDetail(d, `HTTP ${r.status} — the payout request was refused; nothing was paid.`));   // W1013 - a field check by its field
         setPayingOut(false); return;
       }
       const left = typeof d.remaining_balance_wst === 'number' ? d.remaining_balance_wst.toLocaleString() : 'not stated';

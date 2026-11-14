@@ -13,7 +13,7 @@
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { ReadFailures, useReadFailures, silenceIsRight } from '../../components/ReadFailures';   // W931
-import { bodyOrNull } from '../../lib/api';   // W982
+import { bodyOrNull, bodyDetail } from '../../lib/api';   // W982; W1013: bodyDetail
 import { Card, Button } from '@workstation/ui';
 import { Radio, Loader2, AlertCircle, ShieldCheck, Send, Inbox, Users } from 'lucide-react';
 
@@ -103,7 +103,7 @@ const AgentHubPanel: React.FC = () => {
       });
       //  W982 - the status before the body (W927's rule): a refusal that is not JSON says its status
       const d = r.ok ? await r.json() : await bodyOrNull(r);
-      if (!r.ok) { setErr(typeof d?.detail === 'string' ? d.detail : `HTTP ${r.status}`); setBusy(false); return; }
+      if (!r.ok) { setErr(bodyDetail(d, `HTTP ${r.status}`)); setBusy(false); return; }   // W1013 - a field check by its field
       // W443 refuter catch: "(including this panel)" was claimed unconditionally — it is only
       // true when THIS panel's stream is actually connected; and without the SSE echo the
       // poster's own message never appeared until a remount, so refetch when not live.
@@ -123,7 +123,7 @@ const AgentHubPanel: React.FC = () => {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
       });
-      if (!r.ok) { const d = await r.json(); setErr(typeof d.detail === 'string' ? d.detail : `HTTP ${r.status}`); return; }
+      if (!r.ok) { const d = await bodyOrNull(r); setErr(bodyDetail(d, `HTTP ${r.status}`)); return; }   // W1013 - and a body that is not JSON
       jget('/api/v1/hub/handoffs?limit=20').then(d => { clearRead('the handoffs'); setHandoffs(d.handoffs); }).catch(noteRead('the handoffs'));
     } catch (e: any) { setErr(e?.message ?? String(e)); }
   };

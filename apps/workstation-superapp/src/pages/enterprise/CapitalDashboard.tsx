@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { apiJson, errorMessage, ApiError } from '../../lib/api';
+import { apiJson, errorMessage, ApiError, bodyDetail } from '../../lib/api';
 import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W928
 import { Card, Button, Badge, notImplemented } from '@workstation/ui';
 import {
@@ -114,8 +114,7 @@ export const CapitalDashboard: React.FC = () => {
       .then(res => {
         if (res.status === 200) { setPortfolio(res.data); return; }
         //  W928 - a refusal was dropped here without a word: it is said, with the server's reason
-        const detail = (res.data as unknown as { detail?: unknown })?.detail;
-        noteRead('the portfolio summary')(new ApiError(res.status, typeof detail === 'string' ? detail : 'no reason given'));
+        noteRead('the portfolio summary')(new ApiError(res.status, bodyDetail(res.data, 'no reason given')));   // W1013 - a field check by its field
       })
       .catch(noteRead('the portfolio summary'));
 

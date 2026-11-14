@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { immuneReading } from '../../lib/api';
+import { immuneReading, bodyDetail } from '../../lib/api';
 import { motion } from 'framer-motion';
 import { Activity, Brain, Zap, Heart, Wind, Shield, Cpu, FlaskConical, Radio } from 'lucide-react';
 
@@ -33,9 +33,9 @@ export const Introspection: React.FC = () => {
           if (res.status === 200 && res.data) { setBio(res.data); setBioError(""); setEverRead(true); }
           else {
             //  W994 (FU-399 part 26) - the server's reason beside its status; it said the status alone
-            const d = (res.data as { detail?: unknown } | null)?.detail;
+            const d = bodyDetail(res.data, '');   // W1013 - a field check by its field (it said JSON)
             setBio(null);
-            setBioError(`The organism is not reporting (HTTP ${res.status}${d ? `: ${typeof d === 'string' ? d : JSON.stringify(d)}` : ''}).`);
+            setBioError(`The organism is not reporting (HTTP ${res.status}${d ? `: ${d}` : ''}).`);
           }
         })
         .catch(() => { setBio(null); setBioError("The organism is not reporting — it could not be reached."); });

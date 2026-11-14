@@ -50,7 +50,7 @@ export async function apiJson<T = any>(url: string, opts: ApiOptions = {}): Prom
     let detail = res.statusText || 'request failed';
     const j = await bodyOrNull(res);              // W960 (FU-1181) - a body that is not JSON keeps the status text
     if (j && typeof j === 'object' && 'detail' in j) {
-      detail = typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail);
+      detail = bodyDetail(j, detail);   // W1013 - a field check by its field, an object by its message (it said JSON)
     }
     throw new ApiError(res.status, detail.slice(0, 300));
   }

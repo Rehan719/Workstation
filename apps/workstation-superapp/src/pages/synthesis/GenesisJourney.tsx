@@ -492,6 +492,8 @@ export const GenesisJourney: React.FC = () => {
     const d = await bodyOrNull(res);
     const det = d?.detail;
     if (typeof det === 'string' && det) return det;
+    //  W1013 - a field check (a list) by its field; it was said as "the server gave no reason"
+    if (Array.isArray(det)) return bodyDetail(d, `Action failed (HTTP ${res.status}) and the server gave no reason.`);
     if (det && typeof det === 'object') {
       const parts = [det.error, det.reason, det.clear_by ? `Clear by: ${det.clear_by}` : ''].filter(x => typeof x === 'string' && x);
       if (parts.length) return parts.join(' ');

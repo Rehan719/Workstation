@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { bodyDetail } from '../../lib/api';   // W1013
 import { Eye, HelpCircle } from 'lucide-react';
 import ArchiveSearchPanel from '../../components/ArchiveSearchPanel';
 
@@ -66,8 +67,8 @@ const NOT_EVALUATED = 'Not evaluated';
 
 //  W978 (FU-399 part 11) - a refusal is said with the server's reason, when it gave one
 const said = (body: unknown): string => {
-  const d = (body as { detail?: unknown } | null)?.detail;
-  return typeof d === 'string' && d.trim() ? `: ${d}` : '';
+  const d = bodyDetail(body, '');   // W1013 - a field check by its field (it said nothing for one)
+  return d.trim() ? `: ${d}` : '';
 };
 
 /** A list field's three states, rendered as three DIFFERENT things. */

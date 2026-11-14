@@ -90,8 +90,8 @@ export const BusinessPlan: React.FC = () => {
       const context = genContext.trim();
       const r = await fetch('/api/v1/business-plan/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(context ? { scope, context } : { scope }) });
       if (!r.ok) {
-        const ed = (await bodyOrNull(r))?.detail;
-        setActErr(`Generate failed (HTTP ${r.status})${ed ? `: ${typeof ed === 'string' ? ed : JSON.stringify(ed)}` : ''}`);
+        const ed = bodyDetail(await bodyOrNull(r), '');   // W1013 - a field check by its field (it said JSON)
+        setActErr(`Generate failed (HTTP ${r.status})${ed ? `: ${ed}` : ''}`);
       }
       else { const d = await bodyOrNull(r); setGenNote(d?.reason || (d?.written?.length ? `Chief wrote: ${d.written.join(', ')}` : '')); }
       await load();
@@ -130,7 +130,8 @@ export const BusinessPlan: React.FC = () => {
       const data = await bodyOrNull(r);
       if (!r.ok) {
         const d = data?.detail;
-        const why = typeof d === 'string' ? d : (d?.error || d?.reason || data?.error);
+        //  W1013 - a structured refusal by its error or reason; a sentence or a field check as bodyDetail reads it
+        const why = (d && typeof d === 'object' && !Array.isArray(d) ? (d.error || d.reason) : bodyDetail(data, '')) || data?.error;
         setActErr(why ? `Delivery refused: ${why}` : `Delivery refused (HTTP ${r.status})`);
       } else if (!data?.tree) {
         setActErr('The orchestrator returned no workflow tree, so nothing is shown for this objective.');

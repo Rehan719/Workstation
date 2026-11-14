@@ -7,6 +7,7 @@
 import { silenceIsRight } from '../components/ReadFailures';   // W961 (FU-1181)
 import axios from 'axios';
 import { bodyOrNull } from './api';   // W960 (FU-1181)
+import { bodyDetail } from './api';   // W1013 - a refusal's reason, in the one reading
 
 const KEY = 'workstation_token';
 
@@ -94,7 +95,7 @@ export async function whoami(): Promise<WhoAmI> {
   let d: any = null;
   d = await bodyOrNull(r);              // W960 (FU-1181) - no body is said just below
   if (!r.ok) {
-    return { mode: 'unknown', basis: `Failed (HTTP ${r.status}): ${typeof d?.detail === 'string' ? d.detail : 'no reason given'}` };
+    return { mode: 'unknown', basis: `Failed (HTTP ${r.status}): ${bodyDetail(d, 'no reason given')}` };   // W1013 - a field check by its field
   }
   const u = d?.user ?? d;
   if (u?.username) return { mode: 'authenticated', username: u.username, role: u.role };

@@ -16,7 +16,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Brain, Loader2, AlertCircle, ShieldCheck, GitBranch, Scale } from 'lucide-react';
-import { provenanceBadge, bodyOrNull } from '../../lib/api';
+import { provenanceBadge, bodyOrNull, bodyDetail } from '../../lib/api';
 import { DOMAINS as CANON_DOMAINS, DOMAIN_LABELS } from '../../lib/taxonomy';   // W758 (FU-969)
 
 const Chip: React.FC<{ tone: 'ok' | 'warn' | 'bad' | 'dim'; children: React.ReactNode; title?: string }> = ({ tone, children, title }) => (
@@ -54,7 +54,7 @@ const QEPIntelligence: React.FC = () => {
       const r = await fetch(`/api/v1/qep/xai/explanations?${q}`);
       //  W982 - the status before the body (W927's rule): a refusal that is not JSON says its status
       const d = r.ok ? await r.json() : await bodyOrNull(r);
-      if (!r.ok) { setErr(typeof d?.detail === 'string' ? d.detail : d?.detail != null ? JSON.stringify(d.detail).slice(0, 200) : `HTTP ${r.status}`); setBusy(''); return; }
+      if (!r.ok) { setErr(bodyDetail(d, `HTTP ${r.status}`)); setBusy(''); return; }   // W1013 - a field check by its field (it said JSON)
       setXai(d);
       setWeights({ ease_weight: d.model_weights.ease_weight, interval_weight: d.model_weights.interval_weight, quality_weight: d.model_weights.quality_weight });
     } catch (e: any) { setErr(e?.message ?? String(e)); }
@@ -69,7 +69,7 @@ const QEPIntelligence: React.FC = () => {
       });
       //  W982 - the status before the body (W927's rule): a refusal that is not JSON says its status
       const d = r.ok ? await r.json() : await bodyOrNull(r);
-      if (!r.ok) { setErr(typeof d?.detail === 'string' ? d.detail : `HTTP ${r.status}`); setBusy(''); return; }
+      if (!r.ok) { setErr(bodyDetail(d, `HTTP ${r.status}`)); setBusy(''); return; }   // W1013 - a field check by its field
       //  W687 (OWNER RULING 2026-10-12) - nothing was applied: the shared weights change only through a change
       //  record. The sentence is the server's own, with the record's id and its state.
       setMsg(`${d.status} — ${d.basis} Change record ${d.cca_id ?? 'not filed'}${d.change_status ? ` (${d.change_status})` : ''}.`);
@@ -86,7 +86,7 @@ const QEPIntelligence: React.FC = () => {
       });
       //  W982 - the status before the body (W927's rule): a refusal that is not JSON says its status
       const d = r.ok ? await r.json() : await bodyOrNull(r);
-      if (!r.ok) { setErr(typeof d?.detail === 'string' ? d.detail : `HTTP ${r.status}`); setBusy(''); return; }
+      if (!r.ok) { setErr(bodyDetail(d, `HTTP ${r.status}`)); setBusy(''); return; }   // W1013 - a field check by its field
       setBlueprint(d);
       loadAll();
     } catch (e: any) { setErr(e?.message ?? String(e)); }

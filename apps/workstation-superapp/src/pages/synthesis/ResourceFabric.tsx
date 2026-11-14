@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { provenanceBadge, qmsChip, provenanceMapBadge, provenanceMapFromTrace, complianceChip, immuneReading, apiJson } from '../../lib/api';
+import { provenanceBadge, qmsChip, provenanceMapBadge, provenanceMapFromTrace, complianceChip, immuneReading, apiJson, bodyDetail } from '../../lib/api';
 import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W929
 import { useNavigate } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
@@ -63,7 +63,7 @@ interface CompositionLifecycle {
 async function refusalOf(r: Response): Promise<string> {
   try {
     const d = await r.json();
-    return typeof d?.detail === 'string' ? d.detail : `Refused (${r.status}); nothing changed.`;
+    return bodyDetail(d, `Refused (${r.status}); nothing changed.`);   // W1013 - a field check by its field
   } catch { return `Refused (${r.status}); nothing changed.`; }
 }
 

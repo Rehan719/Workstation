@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Hammer, Loader2, AlertCircle, Check, ChevronDown, ChevronUp, Rocket, FlaskConical } from 'lucide-react';
 import { FabricLink } from '../../components/FabricLink';
-import { provenanceMapBadge, apiJson, bodyOrNull } from '../../lib/api';
+import { provenanceMapBadge, apiJson, bodyOrNull, bodyDetail } from '../../lib/api';
 import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W929
 
 //  W979 (FU-399 part 12) - `params` names the keys each stage declares, with their type (GET /forge/resources)
@@ -78,7 +78,7 @@ export const ForgePipeline: React.FC = () => {
       // W805 (FU-823) - a refused pipeline says WHY: the route's sentence, not a bare status number
       if (!r.ok) {
         let _why = '';
-        const _b = await bodyOrNull(r); _why = typeof _b?.detail === 'string' ? _b.detail : '';   // W960 (FU-1181)
+        const _b = await bodyOrNull(r); _why = bodyDetail(_b, '');   // W960 (FU-1181); W1013 - a field check by its field
         setError(_why ? `HTTP ${r.status} — ${_why}` : `HTTP ${r.status}`); setRunning(false); return;
       }
       setResult(await r.json());
@@ -195,7 +195,7 @@ export const ForgePipeline: React.FC = () => {
                 //  refusal whose body was not JSON (a proxy's error page) said a parse error and never its status.
                 if (!r.ok) {
                   const _rb = await bodyOrNull(r);
-                  const _rwhy = typeof _rb?.detail === 'string' ? _rb.detail : '';
+                  const _rwhy = bodyDetail(_rb, '');   // W1013 - a field check by its field
                   throw new Error(_rwhy ? `HTTP ${r.status} — ${_rwhy}` : `HTTP ${r.status}`);
                 }
                 setResult(await r.json());
