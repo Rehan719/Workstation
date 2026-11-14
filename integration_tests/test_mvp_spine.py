@@ -86323,3 +86323,44 @@ def test_w1048_fu399_the_native_ai_page_says_each_failure_beside_the_action_that
     assert 'data-testid="cascade-run-error"' in page
     t = (src / "pages/developers/NativeAI.test.tsx").read_text(encoding="utf-8")
     assert "import captured from './NativeAI.fixture.json';" in t and "render(<NativeAI />);" in t
+
+
+def test_w1049_fu399_the_cockpit_says_what_a_failed_read_of_its_list_and_its_shipped_body_was(client):
+    """FU-399 part 68 (W1049). The entity cockpit is rendered against its routes' own answers (VSBCockpit.test.tsx):
+    every read it makes on opening an entity established through Genesis on a fresh store, the list route's own 500,
+    and the shipped body's own 500 when its manifest cannot be read. Rendering found two reads whose failure was said
+    as something else:
+    - a failed read of the entity list said the backend was unreachable whatever the failure was, so the list route's
+      own 500 was said as a server that could not be reached. It is said with what happened, and still says the list
+      is unknown rather than empty;
+    - a failed read of the shipped body was dropped as an entity never shipped is: a 404 shows nothing, and so did
+      every other failure, so a body whose manifest could not be read gave no sign that whether it is current was
+      unknown. A 404 still shows nothing; any other failure is said where the staleness banner is.
+
+    Held here: an entity with no shipped body is answered 404, read again (nothing is shipped); the two 500s are the
+    global handler's (made inside the routes, so not run again); and the page's code."""
+    import json
+    import pathlib
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    fx = json.loads((src / "pages/enterprise/VSBCockpit.fixture.json").read_text(encoding="utf-8"))
+    vid = fx["vsb_id"]
+    ship = fx["answers"][f"/api/v1/vsb/{vid}/repo/ship"]
+    assert ship["status"] == 404 and "No shipped repo for" in ship["body"]["detail"], ship
+    r = client.get("/api/v1/vsb/w1049-made-up-nothing-shipped/repo/ship")
+    assert r.status_code == 404, r.text[:200]
+    for key, route, cls in (("list_failed", "/api/v1/vsb", "RuntimeError"),
+                            ("ship_failed", f"/api/v1/vsb/{vid}/repo/ship", "JSONDecodeError")):
+        b = fx[key]["body"]
+        assert (fx[key]["status"], b["route"], b["failure_class"], b["cause_established"]) == (500, route, cls, False), b
+    assert [e["vsb_id"] for e in fx["answers"]["/api/v1/vsb"]["body"]["entities"]] == [vid]
+
+    page = _code_only((src / "pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    assert "}).catch((e: unknown) => { setVsbsErr(errorMessage(e)); setVsbsState('error'); });" in page
+    assert "The VSB list could not be read, so this is not &ldquo;no VSBs&rdquo;: the list is unknown. {vsbsErr}" in page
+    assert "VSB list unavailable — backend unreachable" not in page
+    assert ("        if (e?.response?.status !== 404) setShipErr(`Whether the shipped body is current could not be read: "
+            "${errorMessage(e)}`);") in page
+    assert ".catch(() => setShipState(null));" not in page, "a failed read of the shipped body is dropped again"
+    assert 'data-testid="cockpit-ship-error"' in page and 'data-testid="cockpit-list-error"' in page
+    t = (src / "pages/enterprise/VSBCockpit.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './VSBCockpit.fixture.json';" in t and "<VSBCockpit />" in t

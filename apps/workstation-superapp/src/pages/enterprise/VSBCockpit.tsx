@@ -236,6 +236,7 @@ export const VSBCockpit: React.FC = () => {
   // platform panel) rendered on first paint before the list arrived, and FOREVER after a failed
   // fetch, asserting "no VSBs" when the truth was "list unknown".
   const [vsbsState, setVsbsState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [vsbsErr, setVsbsErr] = useState('');   // W1049 - what the failed read of the list was
   useEffect(() => {
     axios.get('/api/v1/vsb').then(r => {
       const ents: VSBRow[] = r.data.entities || [];
@@ -245,7 +246,7 @@ export const VSBCockpit: React.FC = () => {
       const want = new URLSearchParams(window.location.search).get('vsb');
       const chosen = (want && ents.find(e => e.vsb_id === want)) || ents.find(e => e.has_board) || ents[0];
       if (chosen) setSelected(chosen.vsb_id);
-    }).catch(() => setVsbsState('error'));
+    }).catch((e: unknown) => { setVsbsErr(errorMessage(e)); setVsbsState('error'); });
     axios.get('/api/v1/mgmt/standards').then(r => setStandards(r.data.standards || [])).catch(noteRead('the management standards'));
     axios.get('/api/v1/bto/components').then(r => setBtoComponents(r.data.components || [])).catch(noteRead('the transformation components'));
     axios.get('/api/v1/deliverables/output-formats').then(r => {
@@ -257,6 +258,7 @@ export const VSBCockpit: React.FC = () => {
   // is read on selection and after every ship — previously no UI ever read the stale flag, so a
   // drifted shipped body was invisible end-to-end.
   const [shipState, setShipState] = useState<Dict | null>(null);
+  const [shipErr, setShipErr] = useState('');   // W1049 - a failed read of the shipped body that is not a 404
   //  P3.7 (W586) — §13 the repo's own tree, its files and the archive. `repoTree === null` means NOT
   //  LOADED and is never conflated with an empty repo; `repoNone` carries the backend's own sentence for
   //  an entity that HAS no repo, which is a different fact from one whose declared tree is empty.
@@ -265,8 +267,8 @@ export const VSBCockpit: React.FC = () => {
   const [repoErr, setRepoErr] = useState('');
   const [repoFile, setRepoFile] = useState<{ path: string; text: string; bytes: string } | null>(null);
   const [repoBusy, setRepoBusy] = useState('');
-  //  a BRACED function, deliberately: the loader beside this one is a concise arrow body, and inserting
-  //  a statement into one of those silently makes the inserted line the return value.
+  //  a BRACED function, deliberately: inserting a statement into a concise arrow body silently makes the inserted
+  //  line the return value.
   const loadRepoTree = (vid: string) => {
     setRepoTree(null); setRepoNone(''); setRepoErr(''); setRepoFile(null);
     axios.get(`/api/v1/vsb/${vid}/repo`, { validateStatus: () => true }).then(r => {
@@ -275,9 +277,16 @@ export const VSBCockpit: React.FC = () => {
       else { setRepoErr(`The repository could not be read (HTTP ${r.status}): ${bodyDetail(r.data, 'no reason given')}. No tree is shown.`); }   // W1025
     }).catch(() => setRepoErr('The repository could not be reached. No tree is shown.'));
   };
-  const loadShipState = (vid: string) =>
+  //  W1049 - a 404 is an entity never shipped, and shows nothing. Every other failure showed nothing too, so a body
+  //  whose manifest could not be read gave no sign that whether it is current was unknown; it is said
+  const loadShipState = (vid: string) => {
+    setShipErr('');
     axios.get(`/api/v1/vsb/${vid}/repo/ship`).then(r => setShipState(r.data))
-      .catch(() => setShipState(null));   // 404 = never shipped — honestly nothing to show
+      .catch((e: any) => {
+        setShipState(null);
+        if (e?.response?.status !== 404) setShipErr(`Whether the shipped body is current could not be read: ${errorMessage(e)}`);
+      });
+  };
 
   useEffect(() => {
     if (!selected) return;
@@ -766,8 +775,9 @@ export const VSBCockpit: React.FC = () => {
         if (vsbsState === 'error') {
           return (
             <Card className="p-8 text-center border-dashed border-slate-800">
-              <p className="text-amber-400 font-black uppercase tracking-widest text-xs">
-                VSB list unavailable — backend unreachable (this is not "no VSBs"; the list is unknown)
+              {/* W1049 - with what happened: it said the backend was unreachable whatever the failure was */}
+              <p role="alert" data-testid="cockpit-list-error" className="text-amber-400 font-black text-xs">
+                The VSB list could not be read, so this is not &ldquo;no VSBs&rdquo;: the list is unknown. {vsbsErr}
               </p>
             </Card>
           );
@@ -1495,6 +1505,7 @@ export const VSBCockpit: React.FC = () => {
               {shipState && !shipState.stale && (
                 <p className="text-[9px] font-black uppercase tracking-widest text-emerald-500/80">Shipped body is current (shipped {String(shipState.shipped_at ?? '')})</p>
               )}
+              {shipErr && <p role="alert" data-testid="cockpit-ship-error" className="text-[10px] font-bold text-vital">{shipErr}</p>}
               {/* W503 (FU-264) — THE EVOLUTION LIFECYCLE, WHICH REACHED NO SURFACE. The record has
                   carried all of this since W493 and no page read any of it: a founder could run ten
                   cycles and see no trace, and an entity that never applied a mutation looked the same as

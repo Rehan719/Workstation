@@ -24929,6 +24929,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: each action says its failure beside its own button and clears it when tried again; the status read says the route's reason. NativeAI.test.tsx drives the reads as captured, the status route's own 500, a completion that reached no server and then was answered, and the swarm's and the tree's failures (five vitest blinds); test_w1048 holds the captured status, completion and 500, and the page (four blinds); test_w1012's and test_w1013's readings of the save and the tree move with them."
+    },
+    {
+      "id": "FU-1233",
+      "title": "The entity cockpit said a failed read of its list as an unreachable backend, and dropped a failed read of the shipped body",
+      "why": "Found rendering the entity cockpit (FU-399 part 68) against its routes' own answers, for an entity established on a fresh store. A failed read of the entity list said the backend was unreachable whatever the failure was, so the list route's own 500 was said as a server that could not be reached. A failed read of the shipped body was dropped as an entity never shipped is: a 404 shows nothing, and so did every other failure, so a body whose manifest could not be read gave no sign that whether it is current was unknown.",
+      "source": "W1049 (FU-399 part 68, the entity cockpit rendered)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1049",
+      "note": "",
+      "slot_source": "found by FU-399's rendering of the entity cockpit; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: the list's failure is said with what happened and still says the list is unknown; a failed read of the shipped body that is not a 404 is said where the staleness banner is. VSBCockpit.test.tsx drives the entity as captured, the list's own 500, the shipped body's own 500 and its 404 (three vitest blinds); test_w1049 holds the 404, the two 500s and the page (three blinds)."
     }
   ],
   "routes": [
