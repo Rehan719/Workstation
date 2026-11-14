@@ -179,25 +179,34 @@ class SynthesisManager:
         return meta.get("output", "")
 
     @staticmethod
-    def _extract_json_array(text: str) -> Optional[list]:
-        m = re.search(r'\[[\s\S]*?\]', text, re.DOTALL)
-        if m:
+    def _first_json(text: str, opener: str, accept) -> Any:
+        """W1022 - the first JSON value in a model's reply that opens with `opener` and that `accept` takes, read by
+        the JSON decoder itself. The two readers below were regular expressions: the array one stopped at the first
+        `]`, so a deck or an audiobook with a list inside an entry (a slide's bullets) was cut, failed to parse, and
+        was said as "The model did not return a usable ..." although it had; the object one ran from the first `{`
+        to the last `}`, so a reply that said anything with a brace after its object failed the same way."""
+        dec = json.JSONDecoder()
+        at = text.find(opener)
+        while at != -1:
             try:
-                return json.loads(m.group())
+                value, _end = dec.raw_decode(text, at)
+                if accept(value):
+                    return value
             except json.JSONDecodeError:
-                pass
+                pass                    # not a value from here: the next opener is tried
+            at = text.find(opener, at + 1)
         return None
 
     @staticmethod
+    def _extract_json_array(text: str) -> Optional[list]:
+        #  W1022 - a list of entries (slides, chapters). A list of anything else was taken as a deck, and its
+        #  entries were then given slide defaults, which raised on a string: a 500 for a reply the route can say
+        return SynthesisManager._first_json(text or "", "[", lambda v: isinstance(v, list) and bool(v)
+                                            and all(isinstance(x, dict) for x in v))
+
+    @staticmethod
     def _extract_json_object(text: str) -> Optional[dict]:
-        # Prefer outermost complete object
-        m = re.search(r'\{[\s\S]*\}', text, re.DOTALL)
-        if m:
-            try:
-                return json.loads(m.group())
-            except json.JSONDecodeError:
-                pass
-        return None
+        return SynthesisManager._first_json(text or "", "{", lambda v: isinstance(v, dict) and bool(v))
 
     # ── Main generation entry point ──────────────────────────────────────────────
 

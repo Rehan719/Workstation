@@ -24333,6 +24333,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: the audiobook, the canvas and the four specifications each say the model did not return a usable output, as the presentation and the simulation do; the audiobook counts no chapter; a reply that parses is used as it is. The two template modules are removed with their last callers, and the fabrication ledger says the deck survived W414 on the audiobook path. test_w1020 holds every structured type's floor answer and the scan of agentic_core (five blinds)."
+    },
+    {
+      "id": "FU-1206",
+      "title": "/generate read a model's JSON with regular expressions: a deck with a list inside a slide was said as no deck, and a list of strings was a 500",
+      "why": "Found staging the synthesis studio's render (W1021). The array reader stopped at the first ']', so a deck or an audiobook with a list inside an entry (a slide's bullets) was cut, failed to parse, and was said as 'The model did not return a usable slide deck' although it had. The object reader ran from the first '{' to the last '}', so a canvas or a simulation followed by anything with a brace failed the same way. A list of anything but entries was taken as a deck, and its entries given slide defaults, which raised on a string.",
+      "source": "W1022 (found staging the synthesis studio's render)",
+      "found": "2026-11-14",
+      "files": [
+        "agentic_core/synthesis/api.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1022",
+      "note": "",
+      "slot_source": "found by FU-399's rendering of the synthesis studio; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: both readers are the JSON decoder's own (raw_decode from each opener), the array one taking only a list of entries. test_w1022 drives a deck with bullets fenced before bracketed prose, an audiobook with a list in a chapter, a canvas and a simulation followed by a brace, and a list of strings through the route (three blinds)."
     }
   ],
   "routes": [

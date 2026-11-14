@@ -84879,3 +84879,67 @@ def test_w1021_fu399_the_synthesis_studio_is_rendered_and_every_structured_outpu
     assert ".toBe(framesText(captured.stream_report));" in t
     assert "throw new Error(`the studio streamed ${type}, which is composed whole`);" in t
     assert "expect(screen.getByRole('alert').textContent).not.toContain('check the API server is running');" in t
+
+
+def test_w1022_a_reply_is_read_by_the_json_decoder_so_a_list_inside_an_entry_is_kept(client, monkeypatch):
+    """W1022. /generate read the JSON in a model's reply with two regular expressions. The array one stopped at the
+    first `]`, so a deck or an audiobook with a list inside an entry (a slide's bullets) was cut, failed to parse, and
+    was said as "The model did not return a usable slide deck" although it had. The object one ran from the first `{`
+    to the last `}`, so a reply that said anything with a brace after its object failed the same way. And a list of
+    anything but entries was taken as a deck, whose entries were then given slide defaults, which raised on a string:
+    a 500. Both readers are now the JSON decoder's own, scanning for the first value of the shape asked for.
+
+    Held here, each through the route with the model's call stood in by a reply made up for the test: a deck with a
+    list in a slide, fenced and followed by bracketed prose, is the deck; an audiobook with a list in a chapter is the
+    audiobook; a canvas and a simulation followed by a brace are themselves; a list of strings is said as no deck,
+    never a 500; and the readers are the decoder's, read as code."""
+    import json
+    import pathlib
+    from agentic_core.synthesis import api as _sa
+    ask = {"content_ids": [], "instructions": "W1022 made up: a delivery cooperative for village bakeries"}
+    deck = [{"id": 1, "title": "W1022 made up: the vans", "content": "Two vans.", "narration": "Two vans.",
+             "bullets": ["W1022 made up: one at five", "one at six"]},
+            {"id": 2, "title": "W1022 made up: the line", "content": "One line.", "narration": "One line."}]
+    chapters = [{"id": 1, "title": "W1022 made up: the vans", "narration": "W1022 made up.", "duration_sec": 6,
+                 "cues": ["W1022 made up: a van"]}]
+    canvas = {"title": "W1022 made up: a bakery cooperative", "customer_segments": ["W1022 made up: cafes", "schools"]}
+    simulation = {"title": "W1022 made up: the cooperative", "market_summary": "W1022 made up: two vans."}
+    replies = {
+        "presentation": "Here is the deck:\n```json\n" + json.dumps(deck) + "\n```\nSee [the notes] below.",
+        "audiobook": json.dumps(chapters),
+        "business_model": "```json\n" + json.dumps(canvas) + "\n```\nPrices are in {USD}.",
+        "simulation": "The figures: " + json.dumps(simulation) + " (see {the note})",
+    }
+
+    def _replying(text):
+        async def _reply(prompt, **_kw):
+            return {"output": text, "served_by": "ollama:w1022-made-up", "is_external": False}
+        return _reply
+
+    for t, text in replies.items():
+        monkeypatch.setattr(_sa.gateway, "query_meta", _replying(text))
+        r = client.post("/api/v1/synthesis/generate", json={**ask, "output_type": t})
+        assert r.status_code == 200, (t, r.status_code, r.text[:300])
+        c = json.loads(r.json()["content"])
+        if t == "presentation":
+            assert [s["title"] for s in c] == [s["title"] for s in deck], ("the deck was not read whole", c)
+            assert c[0]["bullets"] == deck[0]["bullets"] and r.json()["metadata"]["slides_count"] == 2, c
+        elif t == "audiobook":
+            assert c == chapters and r.json()["metadata"]["chapters_count"] == 1, c
+        elif t == "business_model":
+            assert {k: v for k, v in c.items() if k != "timestamp"} == canvas, c
+        else:
+            assert c["market_summary"] == simulation["market_summary"] and c.get("generated") is not False, c
+
+    #  a list of anything but entries is not a deck: said as none, never a 500
+    monkeypatch.setattr(_sa.gateway, "query_meta", _replying('["W1022 made up", "two strings"]'))
+    r = client.post("/api/v1/synthesis/generate", json={**ask, "output_type": "presentation"})
+    assert r.status_code == 200, (r.status_code, r.text[:300])
+    c = json.loads(r.json()["content"])
+    assert c[0]["generated"] is False and r.json()["metadata"]["slides_count"] == 0, c
+    monkeypatch.undo()
+
+    #  the readers are the decoder's, read as code
+    code = _code_only(pathlib.Path(_sa.__file__).read_text(encoding="utf-8"))
+    assert "value, _end = dec.raw_decode(text, at)" in code
+    assert "re.search(r'\\[[\\s\\S]*?\\]'" not in code and "re.search(r'\\{[\\s\\S]*\\}'" not in code
