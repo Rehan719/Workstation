@@ -24633,6 +24633,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: 'Clear all' opens a question in AskPerson's shape (what clearing and keeping each do, that clearing cannot be undone, keeping recommended), and the clearing waits for 'clear all' typed back. MyWork.test.tsx drives it over two outputs saved the way a tool saves one (two vitest blinds); test_w1034 holds the question's shape as test_w968 holds its four (three blinds)."
+    },
+    {
+      "id": "FU-1219",
+      "title": "The catalogue's order was the platform's: Backend on Windows failed on test_w1032",
+      "why": "Found by Backend on Windows on W1032's head (8ab7d162). test_w1032 read the BTO blueprint's product lists again against the fixture captured on Linux, and Windows answered them in another order. list_products sorted its directories as paths, and a path orders by its platform's rule: a Windows path compares its lowercased string, a POSIX path its characters. The four products whose names begin with a capital (Care, Education, OctoVeritasEngine, Religion) sorted first on Linux and among the lowercase names on Windows, so the catalogue, and every list read from it, had a second order on the Owner's machine.",
+      "source": "W1035 (Backend on Windows red on W1032's head)",
+      "found": "2026-11-14",
+      "files": [
+        "agentic_core/catalog/api.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1035",
+      "note": "",
+      "slot_source": "found by the Windows job; it sits beside the Windows rows already on this item",
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: the catalogue orders its directories by the name's own characters, which compare the same on every platform. test_w1035 holds it on any platform: with the products directory as a path that orders as a Windows path does, the catalogue keeps its names' order, and the blueprint's product lists are the fixture's, read again (three blinds)."
     }
   ],
   "routes": [

@@ -85728,3 +85728,36 @@ def test_w1034_fu399_my_work_asks_before_it_clears_every_saved_output(client):
     assert "it cannot be undone" in b, b[:300]
     t = (src / "pages/MyWork.test.tsx").read_text(encoding="utf-8")
     assert "import { MyWork } from './MyWork';" in t and "saveOutput(" in t
+
+
+def test_w1035_the_catalogue_is_in_the_same_order_on_every_platform(client, monkeypatch):
+    """W1035. Backend on Windows failed on W1032's head. test_w1032 read the BTO blueprint's product lists again
+    against the fixture captured on Linux, and Windows answered them in another order. The catalogue sorted its
+    directories as paths, and a path orders by its platform's rule: a Windows path compares its lowercased string, a
+    POSIX path its characters. Care, Education, OctoVeritasEngine and Religion sorted first on Linux and among the
+    lowercase names on Windows, so the catalogue, and every list read from it, had a second order on the Owner's
+    machine. It now orders by the name's own characters, which compare the same everywhere.
+
+    Held here, on any platform: with the products directory as a path that orders as a Windows path does, the
+    catalogue keeps its names' own order, and the blueprint's product lists are the fixture's, read again."""
+    import json
+    import pathlib
+    from agentic_core.catalog import api as _api
+
+    class _OrdersAsWindows(type(pathlib.Path())):
+        #  PureWindowsPath's rule: two paths compare by their lowercased strings
+        def __lt__(self, other):
+            return str(self).lower() < str(other).lower()
+
+    here = [p["slug"] for p in _api.list_products()]
+    assert here == sorted(here), here
+    monkeypatch.setattr(_api, "PRODUCTS_DIR", _OrdersAsWindows(_api.PRODUCTS_DIR))
+    #  the rule bites on this tree: under it, the catalogue's own paths order otherwise
+    assert [e.name for e in sorted(_api.PRODUCTS_DIR / s for s in here)] != here
+    assert [p["slug"] for p in _api.list_products()] == here
+
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    fx = json.loads((src / "pages/BTOCatalog.fixture.json").read_text(encoding="utf-8"))
+    got = client.post("/api/v1/bto/configure", json=fx["request"])
+    assert got.status_code == 200, got.text[:200]
+    assert got.json()["components"]["products"] == fx["blueprint"]["components"]["products"]
