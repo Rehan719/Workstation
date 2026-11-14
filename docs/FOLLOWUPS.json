@@ -24845,6 +24845,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: only an answer is copied into the page's list; a failed read of the list says its reason; the create, the delete and the proposal say what happened through errorMessage; a run that completed is said as completed when the project cannot be read again, and stays done, its status said in words as well as colour. ProjectsHub.test.tsx drives each against the routes' own answers (six vitest blinds); test_w1044 holds the field check, the captured run, proposal, refusal and 500, and the page (five blinds); test_w1011's reading of the hub's three fallbacks moves with them."
+    },
+    {
+      "id": "FU-1229",
+      "title": "The Solutions Platform showed a specification as generated whatever composed it, named the AI fabric for any failure, and said its plan button built infrastructure",
+      "why": "Found rendering the Solutions Platform (FU-399 part 65) against its routes' own answers. On a fresh store with no model installed the query route's answer says the native engine composed the specification; the page showed it under its heading as generated, with nothing saying what composed it. A failed request with no reason said the AI fabric did not respond, for a call that reached no server and for a server that answered without a reason, and its sentence ended twice. The Build phase's button said it built infrastructure, and while pressed that it was provisioning it, for an action that records a plan in the browser.",
+      "source": "W1045 (FU-399 part 65, the Solutions Platform rendered)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/pages/SolutionsPlatform.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1045",
+      "note": "",
+      "slot_source": "found by FU-399's rendering of the Solutions Platform; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: the specification says what composed it beside its heading (provenanceBadge over the answer's served_by); a failed request says what happened through errorMessage, its sentence ending once; the Build button is named for the plan it records. SolutionsPlatform.test.tsx drives each against the routes' own answers (four vitest blinds); test_w1045 holds the captured answer, the readiness reads and the page (four blinds)."
     }
   ],
   "routes": [

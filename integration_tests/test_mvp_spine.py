@@ -86143,3 +86143,48 @@ def test_w1044_fu399_the_projects_hub_says_each_failure_as_what_it_was(client):
             "              onUpdate({ ...project, status: 'done' });\n") in hub
     t = (src / "pages/projects/ProjectsHub.test.tsx").read_text(encoding="utf-8")
     assert "import captured from './ProjectsHub.fixture.json';" in t and "<ProjectsHub />" in t
+
+
+def test_w1045_fu399_the_solutions_platform_says_what_composed_a_specification(client):
+    """FU-399 part 65 (W1045). The Solutions Platform is rendered against its routes' own answers
+    (SolutionsPlatform.test.tsx): the specification the query route answered for a made-up brief on a fresh store with
+    no model installed, the fabric's status and the constitutional ledger's verification. Rendering found three
+    defects:
+    - a specification was shown under its heading as generated, with nothing on the page saying what composed it,
+      though the route's answer says the native engine served it. It is said beside the heading, through
+      provenanceBadge;
+    - a failed request for one named the AI fabric as the layer that had not answered when no reason came: for a call
+      that reached no server, and for a server that answered without one. It is said through errorMessage, and its
+      sentence ends once;
+    - the Build phase's button said it built infrastructure, and while pressed that it was provisioning it, for an
+      action that records a plan in the browser. It is named for what it does.
+
+    Held here: the captured answer is the native engine's, asked with the page's own prompt; the two readiness reads;
+    and the page's code. The answer is not asked again: it is a gateway call, which the operations record counts."""
+    import json
+    import pathlib
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    fx = json.loads((src / "pages/SolutionsPlatform.fixture.json").read_text(encoding="utf-8"))
+    a = fx["answered"]["body"]
+    assert (fx["answered"]["status"], a["ok"], a["served_by"], a["is_external"]) == (200, True, "native", False), a
+    assert a["answer"].startswith("_[Workstation native structured engine"), a["answer"][:120]
+    b = fx["brief"]
+    q = fx["ask"]["query"]
+    assert all(x in q for x in (b["solution_name"], b["description"], b["objectives"][0], b["domains"][0])), q[:300]
+    s = fx["status"]["body"]
+    assert (s["floor_active"], s["is_real_model"]) == (True, False), s
+    v = fx["verify"]["body"]
+    assert (v["valid"], v["outcome"], v["anchor_checked"]) == (True, "verified", True), v
+
+    page = _code_only((src / "pages/SolutionsPlatform.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    assert "setSpecServedBy({ by: resp.data?.served_by ?? null, external: Boolean(resp.data?.is_external) });" in page
+    assert "const b = provenanceBadge(specServedBy.by, specServedBy.external);" in page
+    assert 'data-testid="spec-provenance"' in page
+    assert "the AI fabric did not respond" not in page
+    assert "const why = axiosDetail(e, errorMessage(e));" in page
+    assert "Specification generation failed: ${why}${/[.!?]$/.test(why) ? '' : '.'} Nothing was generated." in page
+    assert "Build Infrastructure" not in page and "Provisioning Infrastructure" not in page
+    assert "Record the deployment plan" in page
+    assert "status: 'PLAN ONLY \\u2014 nothing provisioned'" in page   # what the button records, unchanged
+    t = (src / "pages/SolutionsPlatform.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './SolutionsPlatform.fixture.json';" in t and "render(<SolutionsPlatform />);" in t
