@@ -83873,3 +83873,38 @@ def test_w1006_fu399_the_generator_and_the_studio_say_a_refusal_s_reason_and_an_
     assert "The generator answered, and its answer held no artefact." in gen and ") : result ? (" in gen
     studio = _code_only((pages / "synthesis/ReactorStudio.tsx").read_text(encoding="utf-8"))
     assert "} catch (e) { setError(errorMessage(e)); }" in studio and "e?.message ?? String(e)" not in studio
+
+
+def test_w1007_fu399_each_cognition_action_says_its_own_failure_where_it_is_run(client):
+    """FU-399 part 37 (W1007). The cognition page shows the tiers' wiring, the knowledge sources and the engines, runs
+    the cognitive cascade, and reads the pillars' alignment as a dry run. CognitionIntegration.test.tsx mounts the real
+    page against the answers its routes gave on a fresh store with no model installed, and has the server refuse each
+    action. Rendering it found two defects, fixed:
+    - a refused cascade and a refused alignment were said on one line at the top of the page under neither name; each
+      action says its own failure where it is run, as that action's;
+    - neither action took its failure off when run again; each clears its own when it starts.
+    Held here: the reads and both actions answer; and the page's code."""
+    import json
+    import pathlib
+    import re
+    for u in ("/api/v1/cognition/wiring", "/api/v1/cognition/knowledge", "/api/v1/intelligence/cognitive-engines"):
+        assert client.get(u).status_code == 200, u
+    assert client.post("/api/v1/cognition/align", json={"execute": False}).status_code == 200
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    pages = root / "apps/workstation-superapp/src/pages"
+    page = (pages / "CognitionIntegration.tsx").read_text(encoding="utf-8")
+    shared = (root / "apps/workstation-superapp/src/components/ReadFailures.tsx").read_text(encoding="utf-8")
+    t = (pages / "CognitionIntegration.test.tsx").read_text(encoding="utf-8")
+    assert "import { CognitionIntegration } from './CognitionIntegration';" in t and "<CognitionIntegration />" in t
+    for tid in set(re.findall(r"ByTestId\('([^']+)'\)", t)):
+        assert f'data-testid="{tid}"' in page or f'data-testid="{tid}"' in shared, tid
+    code = _code_only(page)
+    #  each action's failure is its own, said where it is run, and taken off when it runs again
+    assert "setSolveErr(`The cascade did not run: ${errorMessage(e)}`);" in code
+    assert "setAlignErr(`The alignment could not be read: ${errorMessage(e)}`);" in code
+    assert "setSolving(true); setSolveRes(null); setSolveErr('');" in code and "setBusy(true); setAlignErr('');" in code
+    assert code.count("{alignErr && ") == 1 and 'data-testid="align-error">{alignErr}</p>}' in code
+    assert 'data-testid="solve-error">{solveErr}</p>}' in code
+    fx = json.loads((pages / "CognitionIntegration.fixture.json").read_text(encoding="utf-8"))
+    assert set(fx) == {"wiring", "knowledge", "engines", "heartbeat", "solved", "aligned"}, sorted(fx)
