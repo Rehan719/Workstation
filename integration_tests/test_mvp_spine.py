@@ -83467,10 +83467,11 @@ def test_w998_fu399_organism_anatomy_names_every_failed_read_and_never_shows_an_
 
 
 def test_w999_round_and_row_ids_are_read_past_three_digits_and_rounds_are_ordered_as_numbers():
-    """W999, the last round with a three-digit id. Driven on a copy of the register itself, with rounds W1000 to W1005
-    each closing one row and a row W1000 found: the pace window is those six rounds in the order they ran, and W1000 is
-    counted as finding its row. Before, the window stayed on W961 to W969 (round ids were sorted as text, where W1000
-    sorts between W100 and W101) and W1000 found nothing (a source's round was read as exactly three digits). Also
+    """W999, the last round with a three-digit id. Driven on a copy of the register itself, with six rounds past every
+    real one (W9000 to W9005: W1001, part 2 - a real round in the window changed the rate held) each closing one row
+    and a row W9000 found: the pace window is those six rounds in the order they ran, and W9000 is counted as finding
+    its row. Before, the window stayed on the real three-digit rounds (round ids were sorted as text, where W1000
+    sorts between W100 and W101) and W9000 found nothing (a source's round was read as exactly three digits). Also
     driven: the ceiling's tie list and the method's rounds that only found rows, in round order; the two
     round-duration readers over commits of W999 to W1001; and the check that an open item's text names no row riding
     another item, over a row past FU-999, while today's plan still passes it. No id pattern in the code reads exactly
@@ -83493,18 +83494,18 @@ def test_w999_round_and_row_ids_are_read_past_three_digits_and_rounds_are_ordere
     assert sorted(["W1000", "W884", "W883b", "W999", "W883", "W1001"], key=fu.round_key) == [
         "W883", "W883b", "W884", "W999", "W1000", "W1001"]
 
-    #  rounds W1000 to W1005 each close one open row, and W1000 finds one
+    #  six rounds past every real one each close one open row, and the first finds one
     reg2 = copy.deepcopy(reg)
     opened = [r for r in reg2["items"] if isinstance(r, dict) and r.get("status") == "open"][:6]
     assert len(opened) == 6, "the register has fewer than six open rows to drive the window with"
     for i, r in enumerate(opened):
-        r["status"], r["closed_by"] = "done", f"W{1000 + i}"
+        r["status"], r["closed_by"] = "done", f"W{9000 + i}"
     found = copy.deepcopy(opened[0])
-    found.update(id="FU-99999", status="open", closed_by=None, source="W1000 (driven by test_w999)")
+    found.update(id="FU-99999", status="open", closed_by=None, source="W9000 (driven by test_w999)")
     reg2["items"].append(found)
-    assert fu._round_activity(reg2)["W1000"] == {"closed": 1, "found": 1}, fu._round_activity(reg2).get("W1000")
+    assert fu._round_activity(reg2)["W9000"] == {"closed": 1, "found": 1}, fu._round_activity(reg2).get("W9000")
     window = fu.forecast(reg2, prompt)["window"]
-    assert window["rounds"] == [f"W{1000 + i}" for i in range(6)], window
+    assert window["rounds"] == [f"W{9000 + i}" for i in range(6)], window
     assert window["found_per_round"] == round(1 / 6, 2), window
 
     #  a tie at the ceiling, and the rounds that only found rows, are listed in the order the rounds ran
@@ -83639,3 +83640,22 @@ def test_w1000_fu399_economy_operations_say_each_failed_read_and_a_new_entitys_e
     fx = json.loads((src / "pages/enterprise/EconomyOperations.fixture.json").read_text(encoding="utf-8"))
     assert set(fx) == {"entities", "portfolio", "candidates", "open", "intake", "transfer"}, sorted(fx)
     assert fx["transfer"]["status"] == 400 and "predates" not in fx["transfer"]["body"]["detail"], fx["transfer"]
+
+
+def test_w1001_the_retrospection_refuses_in_the_shape_it_answers_in(monkeypatch):
+    """W1001. The method's retrospection promises that its refusal carries the same key set as its answer, so that a
+    reader indexing a key never raises exactly when the record is already unreadable (the W508 shape). W561 added
+    three keys to the answer (the mix of why rows closed) and not to the refusal. Driven here: the register's round
+    record made unreadable, the refusal carries every key the answer carries, and says the mix was not measured."""
+    from agentic_core import plan_followups as fu
+    from agentic_core.api import method
+    answer = method._retrospect([], {"items": []})
+
+    def unreadable(_register):
+        raise OSError("w1001: the round record could not be read")
+    monkeypatch.setattr(fu, "_round_activity", unreadable)
+    refusal = method._retrospect([], {"items": []})
+    assert refusal["state"] == method.NOT_ASSESSABLE and "w1001" in refusal["basis"], refusal
+    assert set(refusal) == set(answer), sorted(set(answer) ^ set(refusal))
+    assert refusal["closure_kinds"] is None and refusal["closures_with_a_kind"] is None, refusal
+    assert refusal["closure_kind_basis"].startswith("not measured"), refusal["closure_kind_basis"]

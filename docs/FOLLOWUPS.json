@@ -24027,6 +24027,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: a round id is read past three digits wherever it is read (the round a row's source names, the two round-duration readers, W811's guard), and a row id past FU-999 in the item-text check. The pace window, the ceiling's tie list and the method's rounds that only found rows order rounds as numbers (round_key: W999 before W1000, W883 before W883b before W884). Driven in test_w999 on a copy of the register with rounds W1000 to W1005: the window is those six rounds and W1000 counts its row; no id pattern in the code reads exactly three digits."
+    },
+    {
+      "id": "FU-1196",
+      "title": "The method's retrospection refuses in a different shape from its answer: three keys are missing",
+      "why": "Found by W999's diff check (selfcheck_diff, returns): _retrospect() in agentic_core/api/method.py promises that its refusal carries the same key set as its answer, so that a reader indexing a key never raises exactly when the record is already unreadable (the W508 shape). W561 added closure_kinds, closures_with_a_kind and closure_kind_basis to the answer and not to the refusal.",
+      "source": "W1001 (W999's diff check: not captured by any row)",
+      "found": "2026-11-14",
+      "files": [
+        "agentic_core/api/method.py"
+      ],
+      "severity": "low",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1001",
+      "note": "",
+      "slot_source": "an instrument's own answer shape, which rides the suite-and-tooling item as the other instrument rows do",
+      "tier": 3,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: the retrospection's refusal now carries the three keys W561 added to its answer (closure_kinds, closures_with_a_kind, closure_kind_basis), said as not measured. Driven in test_w1001 with the round record made unreadable: the refusal's key set is the answer's."
     }
   ],
   "routes": [

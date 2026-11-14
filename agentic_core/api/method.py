@@ -2108,6 +2108,9 @@ def _retrospect(rows: List[Dict[str, Any]], reg: Any) -> Dict[str, Any]:
                 "rounds_that_closed_something": None, "rounds_that_only_found": None,
                 "closed_total": None, "found_total": None, "backlog_growing": None,
                 "what_the_pattern_means": "not measured: the round record could not be read",
+                #  W1001 - the three keys W561 added to the answer and not here: the mix of why rows closed
+                "closure_kinds": None, "closures_with_a_kind": None,
+                "closure_kind_basis": "not measured: the round record could not be read",
                 "limits": "nothing was read, so nothing is claimed about the pattern"}
 
     done = [r for r in rows if r.get("status") == "done"]
