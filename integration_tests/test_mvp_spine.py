@@ -84091,7 +84091,7 @@ def test_w1011_no_page_puts_a_refusal_s_detail_into_the_page_as_it_came(client):
             "const detail = axiosDetail(e, '');"],
         "pages/enterprise/VSBCockpit.tsx": [
             "setChiefResult({ error: axiosDetail(e, errorMessage(e)) });",   # W1015 - axios's own words were the fallback
-            "setActErr(`Produce failed: ${errorMessage(e)}`);"],   # W1028 - its fallback said a refusal as unreachable
+            "setDelivErr(`Produce failed: ${errorMessage(e)}`);"],   # W1028 - its fallback said a refusal as unreachable; W1050 - beside its button
         "pages/synthesis/SynthesisStudio.tsx": [
             "setErrorMsg(`Delete failed: ${errorMessage(e)}`);"],   # W1028
         "pages/create/CreatorStudio.tsx": [
@@ -85426,7 +85426,7 @@ def test_w1028_a_server_that_answered_is_never_said_as_unreachable(client):
     vsb = _code_only((src / "pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8"))
     for line in ("setActErr(`The transformation failed: ${errorMessage(e)}`);",
                  "setActErr(`The configuration failed: ${errorMessage(e)}`);",
-                 "setActErr(`Produce failed: ${errorMessage(e)}`);"):
+                 "setDelivErr(`Produce failed: ${errorMessage(e)}`);"):   # W1050 - beside its button
         assert vsb.count(line) == 1, line
     cca = _code_only((src / "pages/enterprise/ChangeControlAgency.tsx").read_text(encoding="utf-8"))
     assert "setLoadError(`The change queue could not be read: ${errorMessage(e)}`);" in cca
@@ -86364,3 +86364,52 @@ def test_w1049_fu399_the_cockpit_says_what_a_failed_read_of_its_list_and_its_shi
     assert 'data-testid="cockpit-ship-error"' in page and 'data-testid="cockpit-list-error"' in page
     t = (src / "pages/enterprise/VSBCockpit.test.tsx").read_text(encoding="utf-8")
     assert "import captured from './VSBCockpit.fixture.json';" in t and "<VSBCockpit />" in t
+
+
+def test_w1050_fu399_the_cockpit_s_deliverables_say_an_unread_list_as_unread_and_a_cut_title_as_cut(client):
+    """FU-399 part 69 (W1050). The cockpit's deliverables tab is rendered against its routes' own answers
+    (VSBCockpit.deliverables.test.tsx): every read the cockpit makes on opening an entity established through Genesis
+    on a fresh store, a report produced from a made-up brief, the list read again after it, and the list route's own
+    500. Rendering found three defects:
+    - a failed read of the entity's deliverables set the list to none, so the tab counted no outputs and said none had
+      been produced. It is said as unread, with what happened;
+    - a failed production was said in the cockpit's one action line above the entity picker, away from the Produce
+      button, and stayed there after a later production. It is said beside the button and cleared when pressed again;
+    - a deliverable produced with no title was titled with its brief cut at the sixtieth character, mid-word, with
+      nothing to say it was cut. The cut falls between words and is marked, as a blueprint's name is (W1038).
+
+    Held here: the title rule, driven at the route (a brief that fits is its title whole; a longer one is cut between
+    words, marked, and is never longer than the limit and its mark); the captured production and list; the list's 500
+    is the global handler's (made inside the route, so not run again); and the page's code."""
+    import json
+    import pathlib
+    from agentic_core.api.deliverables import _title_of
+    assert _title_of("a short brief") == "a short brief"
+    assert _title_of("  two   spaces\nand a line  ") == "two spaces and a line"
+    long_brief = "W1050 made up: how the seed exchange records what each member brings and takes"
+    cut = _title_of(long_brief)
+    assert cut == "W1050 made up: how the seed exchange records what each…", cut
+    assert len(cut) <= 61 and long_brief.startswith(cut[:-1])
+    assert _title_of("x" * 80) == "x" * 60 + "…"
+    r = client.post("/api/v1/deliverables/produce", json={"type": "brief", "brief": long_brief})
+    assert r.status_code == 200 and r.json()["title"] == cut, r.text[:200]
+    assert client.post("/api/v1/deliverables/produce", json={"type": "brief", "brief": long_brief,
+                                                             "title": "W1050 given"}).json()["title"] == "W1050 given"
+
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    fx = json.loads((src / "pages/enterprise/VSBCockpit.deliverables.fixture.json").read_text(encoding="utf-8"))
+    assert fx["produced"]["body"]["title"] == cut and fx["ask"]["brief"] == long_brief
+    assert [d["title"] for d in fx["after"]["body"]["deliverables"]] == [cut]
+    lf = fx["list_failed"]
+    assert (lf["status"], lf["body"]["route"], lf["body"]["cause_established"]) == (500, "/api/v1/deliverables", False), lf
+
+    page = _code_only((src / "pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    assert ".catch(() => setDeliverables([]));" not in page, "a failed read of the list is a list of none again"
+    assert ("setDelivReadErr(`This entity's deliverables could not be read, so the list is not what is there: "
+            "${errorMessage(e)}`);") in page
+    assert "Outputs ({delivReadErr ? 'not read' : deliverables.length})" in page
+    assert "{deliverables.length === 0 && !delivReadErr && <p" in page
+    assert "setDelivProducing(true); setDelivErr('');" in page
+    assert "setDelivErr(`Produce failed: ${errorMessage(e)}`);" in page and "setActErr(`Produce failed" not in page
+    t = (src / "pages/enterprise/VSBCockpit.deliverables.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './VSBCockpit.deliverables.fixture.json';" in t and "<VSBCockpit />" in t

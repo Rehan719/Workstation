@@ -24950,6 +24950,28 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: the list's failure is said with what happened and still says the list is unknown; a failed read of the shipped body that is not a 404 is said where the staleness banner is. VSBCockpit.test.tsx drives the entity as captured, the list's own 500, the shipped body's own 500 and its 404 (three vitest blinds); test_w1049 holds the 404, the two 500s and the page (three blinds)."
+    },
+    {
+      "id": "FU-1234",
+      "title": "The cockpit's deliverables tab said an unread list as none and a failed production away from its button; a title cut its brief mid-word",
+      "why": "Found rendering the cockpit's deliverables tab (FU-399 part 69) against its routes' own answers, for an entity established on a fresh store. A failed read of the entity's deliverables set the list to none, so the tab counted no outputs and said none had been produced. A failed production was said in the cockpit's one action line above the entity picker, away from the Produce button, and stayed there after a later production. A deliverable produced with no title was titled with its brief cut at the sixtieth character, mid-word, with nothing to say it was cut.",
+      "source": "W1050 (FU-399 part 69, the cockpit's deliverables tab rendered)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx",
+        "agentic_core/api/deliverables.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1050",
+      "note": "",
+      "slot_source": "found by FU-399's rendering of the cockpit's deliverables tab; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: an unread list is said as unread with what happened; a production's failure is said beside its button and cleared when pressed again; a title taken from a brief is cut between words and marked. VSBCockpit.deliverables.test.tsx drives the production as captured, the list's own 500 and a production that reached no server (four vitest blinds); test_w1050 holds the title rule at the route, the captured production and list, the 500 and the page (four blinds); test_w1011's and test_w1028's readings of the production's failure move with it."
     }
   ],
   "routes": [

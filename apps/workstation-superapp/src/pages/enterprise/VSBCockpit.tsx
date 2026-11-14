@@ -163,6 +163,8 @@ export const VSBCockpit: React.FC = () => {
   const [objOrch, setObjOrch] = useState('');                 // objective id being delivered by the Chief
   const [objOrchResult, setObjOrchResult] = useState<Dict>({}); // tree result per objective id
   const [deliverables, setDeliverables] = useState<Dict[]>([]); // this VSB's living outputs (§13)
+  const [delivReadErr, setDelivReadErr] = useState('');   // W1050 - a list that could not be read is not a list of none
+  const [delivErr, setDelivErr] = useState('');           // W1050 - a production's failure, beside its button
   //  P3.2 clause (3) — THE OPERATING STATE, read from the server. Measured W598: this page showed none of
   //  last_operated, operating_cycles or the governing flags, so the clause's own failure case ("a page that
   //  shows 0 cycles for an entity that has run") was not even reachable — there was no cycle count to be
@@ -611,16 +613,18 @@ export const VSBCockpit: React.FC = () => {
   // exportable in any of the in-house formats.
   const loadDeliverables = (vid: string) =>
     axios.get('/api/v1/deliverables', { params: { vsb_id: vid } })
-      .then(r => setDeliverables(r.data.deliverables || [])).catch(() => setDeliverables([]));
+      .then(r => { setDeliverables(r.data.deliverables || []); setDelivReadErr(''); })
+      //  W1050 - said as unread: it set the list to none, so the tab counted no outputs for a list it had not read
+      .catch((e: unknown) => { setDeliverables([]); setDelivReadErr(`This entity's deliverables could not be read, so the list is not what is there: ${errorMessage(e)}`); });
 
   const produceDeliverable = async () => {
     if (!selected || !delivBrief.trim()) return;
-    setDelivProducing(true);
+    setDelivProducing(true); setDelivErr('');
     try {
       await axios.post('/api/v1/deliverables/produce', { type: delivType, brief: delivBrief, vsb_id: selected });
       setDelivBrief('');
       await loadDeliverables(selected);
-    } catch (e: any) { setActErr(`Produce failed: ${errorMessage(e)}`); }   // W1028 - a refusal with no reason was said as an unreachable server
+    } catch (e: any) { setDelivErr(`Produce failed: ${errorMessage(e)}`); }   // W1028 - a refusal with no reason was said as an unreachable server
     setDelivProducing(false);
   };
 
@@ -1262,16 +1266,18 @@ export const VSBCockpit: React.FC = () => {
                     {delivProducing ? <Loader2 size={14} className="animate-spin" /> : <ScrollText size={14} />} Produce
                   </Button>
                 </div>
+                {delivErr && <p data-testid="cockpit-deliverable-error" role="alert" className="text-[10px] font-bold text-vital mb-2">{delivErr}</p>}
                 <p className="text-[9px] text-slate-600">Filed under this VSB. Each row says what composed it — the
                   deterministic floor arranges headings and supplies no analysis.</p>
               </Card>
               <Card className="p-6">
                 <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-highlight">Outputs ({deliverables.length})</h4>
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-highlight">Outputs ({delivReadErr ? 'not read' : deliverables.length})</h4>
                   <select value={delivFormat} onChange={e => setDelivFormat(e.target.value)} aria-label="Export format" className="text-[10px] bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-slate-300">
                     {delivFormats.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
                   </select>
                 </div>
+                {delivReadErr && <p data-testid="cockpit-deliverables-unread" role="alert" className="text-[10px] font-bold text-vital mb-2">{delivReadErr}</p>}
                 <div className="space-y-2">
                   {deliverables.map((d: Dict) => (
                     <div key={d.id} className="flex items-center justify-between gap-2 p-3 rounded-xl bg-slate-900 border border-slate-800">
@@ -1306,7 +1312,7 @@ export const VSBCockpit: React.FC = () => {
                         className="shrink-0 text-[10px] font-black uppercase text-sovereign bg-aura px-3 py-1.5 rounded-lg flex items-center gap-1 hover:opacity-90"><Download size={11} /> Export</button>
                     </div>
                   ))}
-                  {deliverables.length === 0 && <p className="text-slate-600 text-xs">No deliverables yet — produce one above.</p>}
+                  {deliverables.length === 0 && !delivReadErr && <p className="text-slate-600 text-xs">No deliverables yet — produce one above.</p>}
                 </div>
               </Card>
             </div>
