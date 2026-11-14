@@ -84080,10 +84080,10 @@ def test_w1011_no_page_puts_a_refusal_s_detail_into_the_page_as_it_came(client):
             "setNotice(axiosDetail(err, 'Voice output is currently unavailable.'));",
             "axiosDetail(err, '') ||",
             "setNotice(axiosDetail(err, 'Voice transcription is currently unavailable.'));"],
-        "pages/projects/ProjectsHub.tsx": [
-            "setError(axiosDetail(err, 'Failed to create project.'));",
-            "setError(axiosDetail(err, 'Cannot propose advance yet.'));",
-            "setError(axiosDetail(err, 'Delete failed.'));"],
+        "pages/projects/ProjectsHub.tsx": [   # W1044 - each fallback says what happened
+            "setError(axiosDetail(err, `Could not create the project: ${errorMessage(err)}`));",
+            "setError(axiosDetail(err, `Could not propose the advance: ${errorMessage(err)}`));",
+            "setError(axiosDetail(err, `Delete failed: ${errorMessage(err)}`));"],
         "pages/enterprise/ChangeControlAgency.tsx": [
             "setMsg(`Error: ${axiosDetail(e, 'request failed')}`);",
             "const detail = axiosDetail(e, '');"],
@@ -86090,3 +86090,56 @@ def test_w1043_fu399_a_change_request_s_outcome_stays_says_the_health_gate_and_t
     assert "<p role={ledger.startsWith('⚠') ? 'alert' : undefined} data-testid=\"cca-ledger\"" in form
     t = (src / "pages/enterprise/ChangeControlAgency.test.tsx").read_text(encoding="utf-8")
     assert "import captured from './ChangeControlAgency.fixture.json';" in t and "render(<ChangeControlAgency />);" in t
+
+
+def test_w1044_fu399_the_projects_hub_says_each_failure_as_what_it_was(client):
+    """FU-399 part 64 (W1044). The Projects hub is rendered against its routes' own answers (ProjectsHub.test.tsx): a
+    made-up project created on the subject and area the form opens on, its concept stage run (composed by the native
+    engine, no model being installed), the proposal to advance it and the refusal of a second, and the list route's
+    own 500 when its read fails inside. Rendering found four defects:
+    - the page rendered again without end while its list was unread: the list's default was a new empty list on every
+      render, and the effect that copies the answer into the page's own list set it on every render. Under test the
+      loop kept the list's own read from ever arriving, so every case hung; in a browser it ran while the read was
+      pending, and without end after it had failed. Only an answer is copied;
+    - a failed read of the list was one fixed sentence asking whether the backend was running. It is said with its
+      reason;
+    - three fallbacks said nothing of what happened when a call reached no server or was answered without a reason,
+      the proposal's saying the project was not ready yet. Each says it through errorMessage;
+    - a run whose stream completed was said as failed when the project could not be read again afterwards, and the
+      project was marked as in error over a saved output. It is said as completed, and stays done.
+
+    Held here: the field check is the route's own, read again (it files nothing); the captured run, proposal and
+    refusal; the list's 500 is the global handler's (made inside the route, so not run again); and the page's code."""
+    import json
+    import pathlib
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    fx = json.loads((src / "pages/projects/ProjectsHub.fixture.json").read_text(encoding="utf-8"))
+
+    r = client.post("/api/v1/projects/", json={k: v for k, v in fx["ask"].items() if k != "title"})
+    assert (r.status_code, r.json()) == (fx["refused"]["status"], fx["refused"]["body"]), r.text[:200]
+    assert (fx["empty"]["body"], fx["created"]["status"], fx["created"]["body"]["status"]) == ([], 201, "idle")
+    frames = [json.loads(ln[6:]) for ln in fx["stream"]["text"].split("\n") if ln.startswith("data: ")]
+    assert frames[-1].get("done") is True and frames[-1]["served_by"] == "native", frames[-1]
+    assert sum(1 for f in frames if "token" in f) == len(frames) - 1, "a frame of the stream is neither a token nor done"
+    ran = fx["ran"]["body"]
+    assert (ran["status"], [o["served_by"] for o in ran["outputs"]]) == ("done", ["native"]), ran["status"]
+    assert (fx["proposed"]["status"], fx["again"]["status"]) == (201, 409), fx["again"]
+    assert "already exists" in fx["again"]["body"]["detail"], fx["again"]["body"]
+    assert fx["waiting"]["body"]["waiting_on_person"]["waiting"] is True
+    lf = fx["list_failed"]
+    assert (lf["status"], lf["body"]["detail"], lf["body"]["cause_established"]) == (
+        500, "GET /api/v1/projects/ failed with RuntimeError. The failure is recorded; the cause is not established.",
+        False), lf
+
+    hub = _code_only((src / "pages/projects/ProjectsHub.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    assert "data: projectsData = []" not in hub and "    data: projectsData,\n" in hub
+    assert "useEffect(() => { if (projectsData) setProjects(projectsData); }, [projectsData]);" in hub
+    assert ("const fetchError = hasFetchError ? `The projects could not be read, so the list is not what is there: "
+            "${errorMessage(listError)}` : '';") in hub and "Is the backend running" not in hub
+    assert ("            try {\n"
+            "              const updated = await axios.get<Project>(`/api/v1/projects/${project.id}`);\n"
+            "              onUpdate(updated.data);\n"
+            "            } catch (e) {\n"
+            "              onUpdate({ ...project, status: 'done' });\n") in hub
+    t = (src / "pages/projects/ProjectsHub.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './ProjectsHub.fixture.json';" in t and "<ProjectsHub />" in t

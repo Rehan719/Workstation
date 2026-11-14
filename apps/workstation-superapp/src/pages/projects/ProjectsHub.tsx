@@ -88,11 +88,13 @@ const StagePill: React.FC<{ stage: Stage }> = ({ stage }) => (
   </span>
 );
 
+//  W1044 - the status is said in words as well as by its icon's colour
 const StatusDot: React.FC<{ status: Status }> = ({ status }) => {
-  if (status === 'running') return <Loader2 size={10} className="animate-spin text-aura" />;
-  if (status === 'done')    return <CheckCircle2 size={10} className="text-emerald-400" />;
-  if (status === 'error')   return <AlertCircle  size={10} className="text-red-400" />;
-  return <Clock size={10} className="text-slate-600" />;
+  const said = { role: 'img', 'aria-label': `status: ${status}` };
+  if (status === 'running') return <Loader2 size={10} className="animate-spin text-aura" {...said} />;
+  if (status === 'done')    return <CheckCircle2 size={10} className="text-emerald-400" {...said} />;
+  if (status === 'error')   return <AlertCircle  size={10} className="text-red-400" {...said} />;
+  return <Clock size={10} className="text-slate-600" {...said} />;
 };
 
 // ── Create-project form ────────────────────────────────────────────────────
@@ -129,7 +131,9 @@ const CreateForm: React.FC<CreateFormProps> = ({ onCreated, onCancel, initialRea
       });
       onCreated(res.data);
     } catch (err: any) {
-      setError(axiosDetail(err, 'Failed to create project.'));
+      //  W1044 - the fallback says what happened: a fixed sentence said nothing of a server that was not reached, or
+      //  that answered without a reason
+      setError(axiosDetail(err, `Could not create the project: ${errorMessage(err)}`));
     } finally {
       setSaving(false);
     }
@@ -198,7 +202,7 @@ const CreateForm: React.FC<CreateFormProps> = ({ onCreated, onCancel, initialRea
         </div>
       </div>
 
-      {error && <p className="text-[9px] text-red-400 font-bold">{error}</p>}
+      {error && <p data-testid="project-create-error" className="text-[9px] text-red-400 font-bold">{error}</p>}
 
       <div className="flex gap-2 pt-1">
         <button
@@ -316,8 +320,15 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
             setStreamServedBy(payload.served_by ?? null);
             setStreamIsExternal(Boolean(payload.is_external));
             // Reload full project to get outputs list updated
-            const updated = await axios.get<Project>(`/api/v1/projects/${project.id}`);
-            onUpdate(updated.data);
+            //  W1044 - the run completed and the server saved its output, so a failed re-read is said as that. It fell
+            //  to the catch below as the run's own failure, which marked the project as in error over a saved output
+            try {
+              const updated = await axios.get<Project>(`/api/v1/projects/${project.id}`);
+              onUpdate(updated.data);
+            } catch (e) {
+              onUpdate({ ...project, status: 'done' });
+              setError(`The run completed and its output was saved, but the project could not be read again to show it: ${errorMessage(e)}`);
+            }
             setStreaming(false);
             return;
           }
@@ -361,7 +372,8 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
       // failed re-read leaves the confirmation standing, and the next read of the list says it.
       try { const again = await axios.get(`/api/v1/projects/${project.id}`); onUpdate(again.data); } catch { silenceIsRight('a failed re-read leaves the confirmation standing, and the next read of the list says it')(); }
     } catch (err: any) {
-      setError(axiosDetail(err, 'Cannot propose advance yet.'));
+      //  W1044 - by what happened: the fallback said the project was not ready yet, of a call that reached no server
+      setError(axiosDetail(err, `Could not propose the advance: ${errorMessage(err)}`));
     } finally {
       setAdvancing(false);
     }
@@ -375,7 +387,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
       await axios.delete(`/api/v1/projects/${project.id}`, { params: { confirm_title: project.title } });
       onDelete(project.id);
     } catch (err: any) {
-      setError(axiosDetail(err, 'Delete failed.'));
+      setError(axiosDetail(err, `Delete failed: ${errorMessage(err)}`));   // W1044 - and by what happened
       setDeleting(false);
     }
   };
@@ -485,7 +497,7 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
       {error && (
         <div className={`shrink-0 flex items-start gap-2 rounded-xl border px-3 py-2 ${error.startsWith('✓') ? 'border-emerald-500/30 bg-emerald-500/10' : 'border-red-500/30 bg-red-500/10'}`}>
           <AlertCircle size={12} className={`shrink-0 mt-0.5 ${error.startsWith('✓') ? 'text-emerald-400' : 'text-red-400'}`} />
-          <p className={`text-[10px] leading-relaxed ${error.startsWith('✓') ? 'text-emerald-300' : 'text-red-300'}`}>{error}</p>
+          <p data-testid="project-message" className={`text-[10px] leading-relaxed ${error.startsWith('✓') ? 'text-emerald-300' : 'text-red-300'}`}>{error}</p>
         </div>
       )}
 
@@ -590,21 +602,26 @@ export const ProjectsHub: React.FC = () => {
 
   // Project list — tanstack-query for caching + background refetch
   const {
-    data: projectsData = [],
+    data: projectsData,
     isLoading: loading,
     isError: hasFetchError,
+    error: listError,
   } = useQuery<Project[]>({
     queryKey: ['projects'],
     queryFn: () => axios.get<Project[]>('/api/v1/projects/').then(r => r.data ?? []),
   });
-  const fetchError = hasFetchError ? 'Could not load projects. Is the backend running?' : '';
+  //  W1044 - said with its reason: one fixed sentence asked whether the backend was running, of a server that answered
+  const fetchError = hasFetchError ? `The projects could not be read, so the list is not what is there: ${errorMessage(listError)}` : '';
 
   const [projects,   setProjects]   = useState<Project[]>([]);
   const [selected,   setSelected]   = useState<Project | null>(null);
   const [showCreate, setShowCreate] = useState(openNew);
 
   // Sync query data into local state (local state allows optimistic mutations)
-  useEffect(() => { setProjects(projectsData); }, [projectsData]);
+  //  W1044 - only an answer is copied. A default of [] was a new list on every render while the list was unread, so
+  //  this set it on every render and the page rendered again without end: while the read was pending, and after
+  //  it had failed
+  useEffect(() => { if (projectsData) setProjects(projectsData); }, [projectsData]);
 
   // Clear the ?new=1 param once we've consumed it
   useEffect(() => {
@@ -666,7 +683,7 @@ export const ProjectsHub: React.FC = () => {
 
           {fetchError && (
             <div className="px-3 py-3 rounded-xl border border-red-500/20 bg-red-500/10 mx-1">
-              <p className="text-[9px] text-red-400 font-bold">{fetchError}</p>
+              <p data-testid="projects-unread" className="text-[9px] text-red-400 font-bold">{fetchError}</p>
             </div>
           )}
 

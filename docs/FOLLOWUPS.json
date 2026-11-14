@@ -24824,6 +24824,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: the queue is read again at once and the outcome stays until the form is closed or a new change submitted; a LOW change the health gate held says the gate's own reason; the ledger's word is said apart, as an alert when the append failed. ChangeControlAgency.test.tsx drives each against the route's own answers (four vitest blinds); test_w1043 holds the field check, the captured hold and the form (four blinds); test_w576's reading of the ledger's binding moves to the element it is said in."
+    },
+    {
+      "id": "FU-1228",
+      "title": "The Projects hub rendered without end while its list was unread, and said four failures as something else",
+      "why": "Found rendering the Projects hub (FU-399 part 64) against its routes' own answers. The list's default was a new empty list on every render and an effect copied it into the page's own list each time, so the page rendered again without end while the list was unread: pending, and for good after a failed read. A failed read of the list was one fixed sentence asking whether the backend was running, the route's reason dropped. The create, the delete and the proposal to advance fell back to fixed sentences when a call reached no server or was answered without a reason, the proposal's saying the project was not ready yet. A run whose stream completed was said as failed when the project could not be read again, the project marked in error over a saved output.",
+      "source": "W1044 (FU-399 part 64, the Projects hub rendered)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/pages/projects/ProjectsHub.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1044",
+      "note": "",
+      "slot_source": "found by FU-399's rendering of the Projects hub; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: only an answer is copied into the page's list; a failed read of the list says its reason; the create, the delete and the proposal say what happened through errorMessage; a run that completed is said as completed when the project cannot be read again, and stays done, its status said in words as well as colour. ProjectsHub.test.tsx drives each against the routes' own answers (six vitest blinds); test_w1044 holds the field check, the captured run, proposal, refusal and 500, and the page (five blinds); test_w1011's reading of the hub's three fallbacks moves with them."
     }
   ],
   "routes": [
