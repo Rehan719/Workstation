@@ -126,7 +126,9 @@ export const SynthesisStudio: React.FC = () => {
   const [generating, setGenerating] = useState(false);
   const [results, setResults] = useState<SynthesisResult[]>([]);
   const [streamTokens, setStreamTokens] = useState<Record<string, string>>({});
-  const [activePresentation, setActivePresentation] = useState<any[] | null>(null);
+  // W1023 - the deck's slides, and what composed them (the result's provenance, which the player now says)
+  const [activePresentation, setActivePresentation] = useState<
+    { slides: any[]; servedBy?: string | null; isExternal?: boolean } | null>(null);
 
   // History
   const [history, setHistory] = useState<SynthesisResult[]>([]);
@@ -631,7 +633,13 @@ export const SynthesisStudio: React.FC = () => {
                               type="button"
                               disabled={!result.content || note !== undefined}
                               onClick={() => {
-                                try { setActivePresentation(JSON.parse(result.content)); }
+                                //  W1023 - the slides themselves: a deck the route wrapped as {slides} was handed
+                                //  over whole, and the player indexed it as a list
+                                try {
+                                  const p = JSON.parse(result.content);
+                                  setActivePresentation({ slides: Array.isArray(p) ? p : Array.isArray(p?.slides) ? p.slides : [],
+                                                          servedBy: result.served_by, isExternal: result.is_external });
+                                }
                                 catch { setErrorMsg('Could not parse slide data.'); }
                               }}
                               data-testid="studio-launch-player"
@@ -1025,7 +1033,9 @@ export const SynthesisStudio: React.FC = () => {
       {/* Presentation player overlay */}
       {activePresentation && (
         <PresentationPlayer
-          slides={activePresentation}
+          slides={activePresentation.slides}
+          servedBy={activePresentation.servedBy}
+          isExternal={activePresentation.isExternal}
           onClose={() => setActivePresentation(null)}
         />
       )}

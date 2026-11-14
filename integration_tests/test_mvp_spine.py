@@ -84943,3 +84943,50 @@ def test_w1022_a_reply_is_read_by_the_json_decoder_so_a_list_inside_an_entry_is_
     code = _code_only(pathlib.Path(_sa.__file__).read_text(encoding="utf-8"))
     assert "value, _end = dec.raw_decode(text, at)" in code
     assert "re.search(r'\\[[\\s\\S]*?\\]'" not in code and "re.search(r'\\{[\\s\\S]*\\}'" not in code
+
+
+def test_w1023_fu399_the_deck_player_is_rendered_and_says_what_composed_the_deck(client, monkeypatch):
+    """FU-399 part 49 (W1023). The synthesis studio opens a deck in PresentationPlayer. Its test,
+    PresentationPlayer.test.tsx, mounts the real player on /generate's answer to a reply made up for the capture and
+    run through the route (with no model the route answers a note the studio does not open): three slides, one with a
+    list, one with no narration. Rendering found four defects. The header called every deck an "AI CEO Presentation",
+    whatever composed it; it now says what composed it, from the result's provenance, which the studio hands in. A
+    deck with no slide took the player down; it says there is nothing to play. A slide with no narration showed an
+    empty pair of quotes as its script, and a named image was drawn as a box holding its file name; each is said as
+    what it is. And the studio handed the player the parsed content whole, so a deck wrapped as {slides} was indexed
+    as a list; it hands over the slides.
+
+    Held here: the fixture is the route's own answer, made again; the studio hands the player the slides and the
+    result's provenance; and the player reads both, read as code."""
+    import json
+    import pathlib
+    from agentic_core.synthesis import api as _sa
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src/pages/synthesis"
+    fx = json.loads((src / "PresentationPlayer.fixture.json").read_text(encoding="utf-8"))
+    assert json.loads(fx["answer"]["content"]) == fx["slides"] and len(fx["slides"]) == 3
+    assert any(isinstance(v, list) for v in fx["slides"][0].values()), "the deck has no list in a slide"
+    assert fx["slides"][2]["narration"] == "", "the deck has no slide without narration"
+    reply = [{k: v for k, v in s.items() if k != "animation"} for s in fx["slides"]]   # the route adds the animation
+
+    async def _reply(prompt, **_kw):
+        return {"output": "Here is the deck:\n" + json.dumps(reply), "served_by": fx["answer"]["served_by"], "is_external": False}
+    monkeypatch.setattr(_sa.gateway, "query_meta", _reply)
+    again = client.post("/api/v1/synthesis/generate", json={"content_ids": [], "output_type": "presentation",
+                                                           "instructions": "W1023 made up: a delivery cooperative for village bakeries"})
+    monkeypatch.undo()
+    assert again.status_code == 200, again.text[:300]
+    assert json.loads(again.json()["content"]) == fx["slides"], "the fixture is not the route's answer"
+    assert again.json()["metadata"]["slides_count"] == 3 and again.json()["served_by"] == fx["answer"]["served_by"]
+
+    studio = _code_only((src / "SynthesisStudio.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    assert ("setActivePresentation({ slides: Array.isArray(p) ? p : Array.isArray(p?.slides) ? p.slides : [],"
+            in studio), "the studio hands the player the parsed content whole"
+    assert "servedBy: result.served_by, isExternal: result.is_external });" in studio
+    assert "slides={activePresentation.slides}" in studio and "servedBy={activePresentation.servedBy}" in studio
+    player = _code_only((src / "PresentationPlayer.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    assert "AI CEO" not in player, "the player names the AI CEO as the deck's author"
+    assert "const prov = provenanceBadge(servedBy, isExternal);" in player and 'data-testid="player-provenance"' in player
+    assert "if (!currentSlide) {" in player and 'data-testid="player-nothing-to-play"' in player
+    t = (src / "PresentationPlayer.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './PresentationPlayer.fixture.json';" in t and "<PresentationPlayer slides={deck}" in t
+    assert "servedBy={answer.served_by} isExternal={answer.is_external}" in t

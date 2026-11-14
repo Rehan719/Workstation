@@ -24354,6 +24354,28 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: both readers are the JSON decoder's own (raw_decode from each opener), the array one taking only a list of entries. test_w1022 drives a deck with bullets fenced before bracketed prose, an audiobook with a list in a chapter, a canvas and a simulation followed by a brace, and a list of strings through the route (three blinds)."
+    },
+    {
+      "id": "FU-1207",
+      "title": "The deck player called every deck an 'AI CEO Presentation', fell over on a deck with no slide, and showed empty quotes and a file-name box as content",
+      "why": "Found rendering PresentationPlayer against a deck the route composed (FU-399 part 49). The header named the AI CEO as the author of every deck the synthesis studio opened, whatever composed it. A deck with no slide took the player down, its first slide read unchecked. A slide with no narration showed an empty pair of quotes as its script, and a named image was drawn as a box holding its file name. The studio handed the player the parsed content whole, so a deck wrapped as {slides} was indexed as a list.",
+      "source": "W1023 (FU-399 part 49, the deck player rendered)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/pages/synthesis/PresentationPlayer.tsx",
+        "apps/workstation-superapp/src/pages/synthesis/SynthesisStudio.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1023",
+      "note": "",
+      "slot_source": "found by FU-399's rendering of the deck player; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: the header says what composed the deck (the result's provenance, handed in by the studio); a deck with no slide says there is nothing to play; a slide with no narration says so; a named image is said as not shown; the studio hands over the slides. PresentationPlayer.test.tsx drives it on the route's answer to a made-up reply (three vitest blinds); test_w1023 holds the fixture, made again, and the studio's and the player's readings (three blinds)."
     }
   ],
   "routes": [
