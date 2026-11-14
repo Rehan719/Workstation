@@ -39800,11 +39800,12 @@ def test_w576_p218a_an_absence_reaches_the_reader(client):
     assert "ueg_logged" in _ccp and "NOT RECORDED IN THE GOVERNANCE LEDGER" in _ccp, (
         "the governance page still renders five fields and not whether the change reached the UEG, "
         "so an unlogged filing looks identical to a logged one")
-    #  AND IT IS APPENDED TO THE MESSAGE. Computing the sentence and never concatenating it is the
-    #  shape a half-finished fix takes, and it leaves every string in the file for a name check to
-    #  find — the blind that removed `+ ledger` passed this leg until it asserted the binding.
-    assert "+ raised + ledger)" in _ccp, (
-        "the ledger sentence is computed and never appended, so the page says nothing about whether "
+    #  AND IT IS SAID. Computing the sentence and never showing it is the shape a half-finished fix
+    #  takes, and it leaves every string in the file for a name check to find — the blind that removed
+    #  `+ ledger` passed this leg until it asserted the binding. W1043 - the sentence is said apart from
+    #  the outcome now, in an element of its own, so the binding held is that element's.
+    assert "setLedger(logged === false" in _ccp and ">{ledger}</p>" in _ccp, (
+        "the ledger sentence is computed and never shown, so the page says nothing about whether "
         "the change reached the UEG")
 
     # ── FU-334 — SIBLING RETURNS AGREE ON THEIR KEYS ───────────────────────────────────────────
@@ -86049,3 +86050,43 @@ def test_w1042_a_server_is_never_guessed_as_down(client):
     assert "return detail || errorMessage(e);" in cca
     t = (src / "components/DomainTool.failures.test.tsx").read_text(encoding="utf-8")
     assert "import { DomainTool } from './DomainTool';" in t and "import captured from './DomainTool.fixture.json';" in t
+
+
+def test_w1043_fu399_a_change_request_s_outcome_stays_says_the_health_gate_and_the_ledger_apart(client):
+    """FU-399 part 63 (W1043). The Change Control Agency is rendered against its routes' own answers
+    (ChangeControlAgency.test.tsx): a made-up LOW change with a rationale and its affected systems, submitted on a fresh
+    store with no model installed, the queue it joined, and the field check of a request with no title. Rendering
+    found three defects:
+    - the outcome closed and cleared itself a second and a half after a submission, the ledger's warning with it. The
+      queue is read again at once, and the outcome stays until the person closes the form or submits again;
+    - a LOW change the health gate did not approve (nothing is measured on a fresh store, so it is held for review
+      rather than approved on absent evidence) was said only as waiting for review, though the route says why. The
+      gate's own reason is said;
+    - the ledger's word was folded into the outcome and read in its green. It is said apart, as an alert when the
+      append failed.
+
+    Held here: the field check is the route's own, read again (it files nothing); the captured submission is the
+    health gate's hold, with its basis; and the form's code."""
+    import json
+    import pathlib
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    fx = json.loads((src / "pages/enterprise/ChangeControlAgency.fixture.json").read_text(encoding="utf-8"))
+
+    r = client.post("/api/v1/cca/submit", json={k: v for k, v in fx["ask"].items() if k != "title"})
+    assert (r.status_code, r.json()) == (fx["refused"]["status"], fx["refused"]["body"]), r.text[:200]
+    b = fx["submitted"]["body"]
+    assert (fx["submitted"]["status"], b["status"], b["impact_tier"]) == (200, "submitted", "LOW"), b
+    assert b["health_gate"]["verdict"] == "held_not_decidable" and "HELD for review" in b["health_gate"]["basis"], b
+    assert [c["cca_id"] for c in fx["queue"]["body"]["changes"]] == [b["cca_id"]], fx["queue"]["body"]
+
+    form = _code_only((src / "pages/enterprise/ChangeControlAgency.tsx").read_text(encoding="utf-8"))
+    form = form[form.index("function SubmitForm("):form.index("export const ChangeControlAgency")]
+    assert "setTimeout(" not in form, "the outcome closes and clears itself again"
+    assert "      onSubmitted();\n" in form
+    assert ("const healthHeld = res.data.status !== 'approved' && res.data.impact_tier === 'LOW' && hg && "
+            "hg.verdict !== 'pass'") in form
+    assert "`✓ Change submitted — the health gate did not approve it automatically: ${healthHeld}.`" in form
+    assert "setLedger(logged === false" in form and "+ raised + ledger" not in form
+    assert "<p role={ledger.startsWith('⚠') ? 'alert' : undefined} data-testid=\"cca-ledger\"" in form
+    t = (src / "pages/enterprise/ChangeControlAgency.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './ChangeControlAgency.fixture.json';" in t and "render(<ChangeControlAgency />);" in t

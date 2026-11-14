@@ -24803,6 +24803,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: each of the three fallbacks is errorMessage, which says a refusal by its status, that no reason came, and an unreachable server as one. DomainTool.failures.test.tsx drives the generation and the refine (two vitest blinds); test_w1042 holds, tree-wide, that no code says a backend may be down (four blinds)."
+    },
+    {
+      "id": "FU-1227",
+      "title": "A change request's outcome cleared itself after 1.5 s, omitted the health gate's reason, and folded in the ledger's warning",
+      "why": "Found rendering the Change Control Agency (FU-399 part 63) against the submit route's own answers. The outcome closed and cleared itself a second and a half after a submission, the ledger's warning with it; a LOW change the health gate did not approve (nothing measured on a fresh store, so held for review) was said only as awaiting review, though the route says why; and the ledger's word was folded into the outcome, so a failed append read in success green.",
+      "source": "W1043 (FU-399 part 63, the Change Control Agency rendered)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/pages/enterprise/ChangeControlAgency.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1043",
+      "note": "",
+      "slot_source": "found by FU-399's rendering of the Change Control Agency; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: the queue is read again at once and the outcome stays until the form is closed or a new change submitted; a LOW change the health gate held says the gate's own reason; the ledger's word is said apart, as an alert when the append failed. ChangeControlAgency.test.tsx drives each against the route's own answers (four vitest blinds); test_w1043 holds the field check, the captured hold and the form (four blinds); test_w576's reading of the ledger's binding moves to the element it is said in."
     }
   ],
   "routes": [

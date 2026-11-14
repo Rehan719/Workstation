@@ -487,10 +487,11 @@ function SubmitForm({ onSubmitted }: { onSubmitted: () => void }) {
   const [systems, setSystems] = useState('');
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [ledger, setLedger] = useState('');   // W1043 - the ledger's word, said apart from the outcome
 
   const submit = async () => {
     if (!title.trim() || !desc.trim()) return;
-    setLoading(true); setMsg(null);
+    setLoading(true); setMsg(null); setLedger('');
     try {
       const res = await axios.post('/api/v1/cca/submit', {
         title, description: desc, change_type: type, submitted_by: 'workstation-ui',
@@ -522,18 +523,28 @@ function SubmitForm({ onSubmitted }: { onSubmitted: () => void }) {
       // whole purpose is to show that a change was recorded. false is the case that matters, so it
       // is said loudly; true is said quietly, because silence there is what hid the failure.
       const logged = (res.data as any).ueg_logged as boolean | undefined;
-      const ledger = logged === false
-        ? ' ⚠ NOT RECORDED IN THE GOVERNANCE LEDGER: the decision stands but its append to the UEG failed, so the audit trail does not carry it.'
+      //  W1043 - said apart from the outcome, as the warning it is when the append failed: it was folded into the
+      //  outcome and read in the outcome's green
+      setLedger(logged === false
+        ? '⚠ NOT RECORDED IN THE GOVERNANCE LEDGER: the decision stands but its append to the UEG failed, so the audit trail does not carry it.'
         : logged === true
-          ? ' Recorded in the governance ledger.'
-          : '';
+          ? 'Recorded in the governance ledger.'
+          : '');
+      //  W1043 - a LOW change the health gate did not approve says the gate's own reason; it was said only as
+      //  waiting for review, though the route says why
+      const healthHeld = res.data.status !== 'approved' && res.data.impact_tier === 'LOW' && hg && hg.verdict !== 'pass'
+        ? String(hg.basis ?? hg.verdict) : '';
       setMsg((res.data.status === 'approved'
         ? `✓ Auto-approved: LOW tier, ${measured}, immune threat ${res.data.immune_threat_at_submit ?? 'unknown'}`
         : withheld
           ? `✓ Change submitted — the automatic approval was withheld by the delivery-method gate: ${withheld}. It may still be approved by review.`
-          : '✓ Change submitted — awaiting review') + raised + ledger);
+          : healthHeld
+            ? `✓ Change submitted — the health gate did not approve it automatically: ${healthHeld}.`
+            : '✓ Change submitted — awaiting review') + raised);
       setTitle(''); setDesc(''); setType('config_minor'); setRationale(''); setSystems('');
-      setTimeout(() => { onSubmitted(); setOpen(false); setMsg(null); }, 1500);
+      //  W1043 - the queue is read again at once, and the outcome stays until the person closes the form or submits
+      //  again: it closed and cleared itself after a second and a half
+      onSubmitted();
     } catch (e: any) {
       setMsg(`Error: ${axiosDetail(e, 'request failed')}`);
     } finally { setLoading(false); }
@@ -646,6 +657,10 @@ function SubmitForm({ onSubmitted }: { onSubmitted: () => void }) {
               {msg && (
                 <p className={`text-sm ${msg.startsWith('Error') ? 'text-red-400' : 'text-green-400'}`}>{msg}</p>
               )}
+              {ledger && (
+                <p role={ledger.startsWith('⚠') ? 'alert' : undefined} data-testid="cca-ledger"
+                  className={`text-sm ${ledger.startsWith('⚠') ? 'text-amber-400 font-bold' : 'text-white/50'}`}>{ledger}</p>
+              )}
 
               <div className="flex gap-2">
                 <button
@@ -656,7 +671,7 @@ function SubmitForm({ onSubmitted }: { onSubmitted: () => void }) {
                   {loading ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
                   Submit
                 </button>
-                <button onClick={() => setOpen(false)} className="px-4 py-2 rounded-xl text-sm text-white/40 hover:text-white/60 hover:bg-white/5">
+                <button onClick={() => { setOpen(false); setMsg(null); setLedger(''); }} className="px-4 py-2 rounded-xl text-sm text-white/40 hover:text-white/60 hover:bg-white/5">
                   Cancel
                 </button>
               </div>
