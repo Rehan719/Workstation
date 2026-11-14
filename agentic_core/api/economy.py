@@ -1264,6 +1264,15 @@ def _debited_phrase(reused_id: Optional[str]) -> str:
     return "Nothing was debited"
 
 
+def _refusal_reason(e: Exception) -> str:
+    """W1000 - the reason a transfer refusal gives, without the sentence its answer adds for itself. Both answers
+    that carry a ledger refusal say whether anything was debited, and a reason that said "Nothing was debited."
+    as well was answered "... from the postings.. Nothing was debited - retry again ..."; the two read it one way,
+    here."""
+    return (str(e).replace("; nothing was written", "").replace("; nothing was debited", "")
+            .replace(" Nothing was debited.", "") or type(e).__name__).strip("'\"")
+
+
 async def _transfer_core(req: TransferRequest, transfer_id: Optional[str] = None, *,
                          context: str = "transfer", gate_source: Optional[str] = None) -> dict:
     """The transfer itself, after the caller's access check. W465: a service-contract settlement passes the
@@ -1282,8 +1291,8 @@ async def _transfer_core(req: TransferRequest, transfer_id: Optional[str] = None
         await asyncio.to_thread(validate_transfer, req.from_vsb, req.to_vsb, req.amount)
     except SenderLedgerUnavailable as e:
         # W468 (register FU-041) — an unreadable sender ledger read as empty books and answered 400 "insufficient funds"
-        why = str(e).replace("; nothing was debited", "")
-        again = "settle" if context == "settlement" else "retry"
+        why = _refusal_reason(e).rstrip(".")          # W1000: its answer ends the sentence
+        again = "settle" if context == "settlement" else "try"
         raise HTTPException(status_code=503,
                             headers={"X-Transfer-Debited": "unknown" if transfer_id else "false",
                                      **({"X-Transfer-Id": transfer_id} if transfer_id else {})},
@@ -1361,11 +1370,10 @@ async def _transfer_core(req: TransferRequest, transfer_id: Optional[str] = None
         except Exception:
             debited = None
         settling = context == "settlement"
-        why = (str(e).replace("; nothing was written", "").replace("; nothing was debited", "")
-               or type(e).__name__).strip("'\"")
+        why = _refusal_reason(e)                      # W1000
         headers = {"X-Transfer-Id": _xfer_id,
                    "X-Transfer-Debited": "true" if debited else ("false" if debited is False else "unknown")}
-        again = "settle" if settling else "retry"
+        again = "settle" if settling else "try"
         if isinstance(e, StoreUnavailable) and debited is False:
             headers["X-Transfer-Debited"] = "false"
             return HTTPException(status_code=503, headers=headers, detail=(

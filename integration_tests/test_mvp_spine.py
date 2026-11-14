@@ -83554,3 +83554,88 @@ def test_w999_round_and_row_ids_are_read_past_three_digits_and_rounds_are_ordere
         hits += [f"{rel}:{n}" for n, line in enumerate(text.splitlines(), 1)
                  if not line.lstrip().startswith(("#", "//")) and three.search(line)]
     assert not hits, ("an id pattern reads exactly three digits, so it stops reading at W1000 or FU-1000", hits)
+
+
+def test_w1000_fu399_economy_operations_say_each_failed_read_and_a_new_entitys_empty_fund_is_said_as_one(client, monkeypatch):
+    """FU-399 part 31 (W1000). The Economy Operations panels hold an entity's venture portfolio and its transfers to the
+    owner's other entities. EconomyOperations.test.tsx mounts both against the answers their routes gave on a fresh
+    store, and has the server refuse each read. Capturing those answers found two server defects, fixed:
+    - a new entity's first transfer was refused as if its books predated double-entry bookkeeping (a never-posted
+      ledger has an empty accounts view), telling the owner to repair books a repair cannot change; books with no
+      posting, no legacy entry and no legacy balance are now the empty fund they are (400, insufficient funds);
+    - a ledger refusal's 503 said "Nothing was debited" twice, with a doubled full stop, and asked to "retry again";
+      both answers that carry it read the reason one way, and say it once.
+    Rendering found four in the panels, fixed: a refusal was said by its status alone; a portfolio still being read
+    was said to hold no investments; a refused read of the candidates, or of where the credits came from, was hidden
+    as if there were none; and a refused check for debited transfers did not say why.
+    Held here: the four reads answer; both server fixes, driven through the transfer route; and the panels' code."""
+    import json
+    import pathlib
+    import re
+    import uuid
+    import agentic_core.economy.living_vsbs as lv
+    from agentic_core.api import vsb as V
+    from agentic_core.config import atomic_write_json, data_path
+
+    a, b = f"vsb-w1000-a-{uuid.uuid4().hex[:6]}", f"vsb-w1000-b-{uuid.uuid4().hex[:6]}"
+    for v in (a, b):
+        V._save_vsb({"vsb_id": v, "name": f"W1000 probe {v}", "owner_id": "default", "domain": "enterprise",
+                     "challenge": "made up for test_w1000"})
+        lv.register(v, name=f"W1000 probe {v}")
+    for u in (f"/api/v1/economy/ventures/portfolio?vsb_id={a}", f"/api/v1/economy/ventures/candidates?vsb_id={a}&top=5",
+              f"/api/v1/economy/transfers/open?from_vsb={a}", f"/api/v1/economy/transfers/intake-sources?vsb_id={a}"):
+        assert client.get(u).status_code == 200, u
+
+    #  a new entity's books have never posted: its fund is empty, and that is what the transfer is told
+    sent = client.post("/api/v1/economy/transfer", json={"from_vsb": a, "to_vsb": b, "amount": 5, "memo": "W1000"})
+    assert sent.status_code == 400, sent.text
+    assert sent.json()["detail"] == f"Insufficient virtual funds: {a} reserve fund holds 0.0 WST < transfer 5.0 WST.", sent.text
+    #  books that DO predate double entry are still refused (W505), and the refusal is said once
+    atomic_write_json(data_path("economy") / f"{a}_ledger.json", {
+        "vsb_id": a, "currency": "WST",
+        "entries": [{"ts": "2026-01-01T00:00:00Z", "account": "reserves", "kind": "credit", "amount": 50.0,
+                     "memo": "legacy", "balance_after": 50.0}],
+        "balances": {"reserves": 50.0}, "postings": []})
+    old = client.post("/api/v1/economy/transfer", json={"from_vsb": a, "to_vsb": b, "amount": 5, "memo": "W1000"})
+    detail = old.json()["detail"]
+    assert old.status_code == 503 and "predates double-entry" in detail and "/repair" in detail, old.text
+    assert detail.count("Nothing was debited") == 1 and ".." not in detail and "retry again" not in detail, detail
+    assert "try again once the ledger is readable" in detail, detail
+    #  a ledger that broke after validation is answered by the transfer's own failure path, the same way
+    from agentic_core.economy import transfers as tr
+    good = json.dumps({"vsb_id": a, "currency": "WST", "entries": [], "balances": {}, "closes": [],
+                       "accounts": {"reserve_fund": 500.0}, "postings": []}).encode()
+    (data_path("economy") / f"{a}_ledger.json").write_bytes(b"\xef\xbb\xbf" + good)
+    monkeypatch.setattr(tr, "validate_transfer", lambda *x, **k: 5.0)
+    late = client.post("/api/v1/economy/transfer", json={"from_vsb": a, "to_vsb": b, "amount": 5, "memo": "W1000"})
+    monkeypatch.undo()
+    said = late.json()["detail"]
+    assert late.status_code == 503 and "try again once the ledger is readable" in said, late.text
+    assert said.lower().count("nothing was debited") == 1 and "retry again" not in said, said
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = root / "apps/workstation-superapp/src"
+    page = (src / "pages/enterprise/EconomyOperations.tsx").read_text(encoding="utf-8")
+    shared = (src / "components/ReadFailures.tsx").read_text(encoding="utf-8")
+    t = (src / "pages/enterprise/EconomyOperations.test.tsx").read_text(encoding="utf-8")
+    assert "import { TransferPanel, VenturePortfolioPanel } from './EconomyOperations';" in t
+    assert "<VenturePortfolioPanel vsbId={A} />" in t and "<TransferPanel fromVsb={A} entities={captured.entities} />" in t
+    read = set(re.findall(r"ByTestId\('([^']+)'\)", t))
+    assert {"read-failure", "transfer-open-error", "transfer-intake-unread", "transfer-intake-sources",
+            "transfer-stranded"} <= read, sorted(read)
+    for tid in read:
+        assert f'data-testid="{tid}"' in page or f'data-testid="{tid}"' in shared, tid
+    code = _code_only(page)
+    #  each read through apiJson or with its status checked, each failure said by what was being read, with its reason
+    assert "setLoadErr" not in code and "throw new Error(`HTTP ${r.status}`)" not in code
+    assert ".catch(noteRead('the venture portfolio'));" in code
+    assert ".catch(e => { setCands(null); noteRead('the investment candidates')(e); });" in code
+    assert "<ReadFailures failures={readFailures} />" in code
+    assert "{pf && !readFailures['the venture portfolio'] && holdings.length === 0 && (" in code
+    assert ("setOpenErr(!r.ok ? `${CHECK} — Failed (HTTP ${r.status}): "
+            "${axiosDetail({ response: { data: d } }, 'no reason given')}`") in code
+    assert ".catch(e => { setOpenChecked(false); setOpenErr(`${CHECK} — ${errorMessage(e)}`); });" in code
+    assert "setIntakeErr(errorMessage(e))" in code and "r.ok ? r.json() : null" not in code
+    fx = json.loads((src / "pages/enterprise/EconomyOperations.fixture.json").read_text(encoding="utf-8"))
+    assert set(fx) == {"entities", "portfolio", "candidates", "open", "intake", "transfer"}, sorted(fx)
+    assert fx["transfer"]["status"] == 400 and "predates" not in fx["transfer"]["body"]["detail"], fx["transfer"]

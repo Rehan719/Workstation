@@ -185,7 +185,15 @@ def validate_transfer(from_vsb: str, to_vsb: str, amount: float) -> float:
     # reserves. Migrating the books here would mean synthesising postings for history nobody recorded,
     # which in a money ledger is the worse defect, so the cause is SAID and the repair is named.
     _accounts = sender._data.get("accounts")
-    if not isinstance(_accounts, dict) or "reserve_fund" not in _accounts:
+    #  W1000 - NEW BOOKS ARE NOT OLD BOOKS. A ledger that has never posted is written with an empty accounts view
+    #  (ledger._new_books), and this read it as one that predates double entry: a new entity's first transfer was
+    #  refused with "repair the books first", and a repair rebuilds nothing from no postings, so every transfer
+    #  from it was refused that way until a cycle had posted. Books with no posting, no legacy entry and no legacy
+    #  balance hold 0.0 in every account, and are answered as the empty fund they are.
+    _never_posted = (isinstance(_accounts, dict) and not _accounts and not sender._data.get("postings")
+                     and not sender._data.get("entries")
+                     and not any((sender._data.get("balances") or {}).values()))
+    if not _never_posted and (not isinstance(_accounts, dict) or "reserve_fund" not in _accounts):
         _legacy = round((sender._data.get("balances") or {}).get("reserves", 0.0), 2)
         raise SenderLedgerUnavailable(
             f"{from_vsb}'s ledger predates double-entry bookkeeping: it has no `accounts` view, so the "

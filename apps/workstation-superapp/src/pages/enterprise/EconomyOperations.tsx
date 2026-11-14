@@ -16,7 +16,8 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Sprout, Loader2, AlertCircle, ShieldCheck, ArrowRightLeft, Recycle } from 'lucide-react';
-import { fundingLabel, bodyOrNull } from '../../lib/api';
+import { fundingLabel, bodyOrNull, apiJson, axiosDetail, errorMessage } from '../../lib/api';
+import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W1000
 
 // ── §6 Venture Portfolio ──────────────────────────────────────────────────────
 
@@ -27,7 +28,9 @@ interface Holding {
 
 export const VenturePortfolioPanel: React.FC<{ vsbId: string }> = ({ vsbId }) => {
   const [pf, setPf] = useState<any>(null);
-  const [loadErr, setLoadErr] = useState('');
+  //  W1000 - each read says its own failure, by what it was reading and with the server's reason (a refusal was said
+  //  as "HTTP 404" alone, and a refused candidates list was hidden as if there were none)
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();
   const [retAmt, setRetAmt] = useState<Record<string, number>>({});
   const [busy, setBusy] = useState('');
   const [msg, setMsg] = useState('');
@@ -36,18 +39,15 @@ export const VenturePortfolioPanel: React.FC<{ vsbId: string }> = ({ vsbId }) =>
   // §6's visible loop start: what the next cycle's user_projects allocation selects from
   const [cands, setCands] = useState<any>(null);
   const load = () => {
-    setLoadErr('');
     // W442 refuter catch: `.then(r => r.json()).then(setPf)` with no r.ok check rendered a
     // tenant-scoped 404 as the "no holdings" empty state — the documented HTTP-status-blindness
     // class apiJson exists to kill.
-    fetch(`/api/v1/economy/ventures/portfolio?vsb_id=${encodeURIComponent(vsbId)}`)
-      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
-      .then(setPf)
-      .catch(e => setLoadErr(`Could not load the venture portfolio — ${e?.message ?? 'backend unreachable'} (this is not "no holdings").`));
-    fetch(`/api/v1/economy/ventures/candidates?vsb_id=${encodeURIComponent(vsbId)}&top=5`)
-      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
-      .then(setCands)
-      .catch(() => setCands(null));   // candidates are supplementary — the portfolio's own error state governs
+    apiJson(`/api/v1/economy/ventures/portfolio?vsb_id=${encodeURIComponent(vsbId)}`)
+      .then(d => { setPf(d); clearRead('the venture portfolio'); })
+      .catch(noteRead('the venture portfolio'));
+    apiJson(`/api/v1/economy/ventures/candidates?vsb_id=${encodeURIComponent(vsbId)}&top=5`)
+      .then(d => { setCands(d); clearRead('the investment candidates'); })
+      .catch(e => { setCands(null); noteRead('the investment candidates')(e); });
   };
   useEffect(() => { load(); }, [vsbId]);
 
@@ -96,8 +96,10 @@ export const VenturePortfolioPanel: React.FC<{ vsbId: string }> = ({ vsbId }) =>
         then it waits.
         <span className="text-amber-400"> Returns are caller-asserted (nothing measures them) — cumulative returns bounded at 10× invested. Virtual WST.</span>
       </p>
-      {loadErr && <p role="alert" className="text-[10px] font-bold text-vital">{loadErr}</p>}
-      {!loadErr && holdings.length === 0 && (
+      <ReadFailures failures={readFailures} />
+      {/* W1000 - none is said only of a portfolio that was read: while the read is under way, or when it failed,
+          there is no portfolio to say none of */}
+      {pf && !readFailures['the venture portfolio'] && holdings.length === 0 && (
         <p className="text-[10px] text-slate-600 italic">{pf?.note || 'No venture investments yet (virtual) — positions accrue from each cycle’s user_projects allocation.'}</p>
       )}
       <div className="space-y-2">
@@ -181,28 +183,38 @@ export const TransferPanel: React.FC<{ fromVsb: string; entities: { vsb_id: stri
   // W466 (third refutation) — "could not check" is unknown, never "nothing stranded": a fresh mount knows no legs, so
   // Transfer stays locked until a check has actually read the ledger
   const [openChecked, setOpenChecked] = useState(false);
+  //  W1000 - a check that could not be made says why: the server's status and reason, or that it was not reached
+  const CHECK = 'Could not check for debited transfers awaiting completion';
   const loadOpen = () =>
     fetch(`/api/v1/economy/transfers/open?from_vsb=${encodeURIComponent(fromVsb)}`)
       .then(async r => {
         const d = await bodyOrNull(r);
-        if (!r.ok || !d || !Array.isArray(d.open)) { setOpenChecked(false); setOpenErr('Could not check for debited transfers awaiting completion.'); return; }
+        if (!r.ok || !d || !Array.isArray(d.open)) {
+          setOpenChecked(false);
+          setOpenErr(!r.ok ? `${CHECK} — Failed (HTTP ${r.status}): ${axiosDetail({ response: { data: d } }, 'no reason given')}`
+            : `${CHECK} — the answer held no list of them.`);
+          return;
+        }
         // an answer that could not read the ledger lists nothing it could not see: keep what is already known
         if (d.ledger_unreadable) { setOpenChecked(false); setOpenErr('The ledger could not be read to check for debited transfers awaiting completion.'); return; }
         setOpenErr(d.receiver_queue_unreadable ? 'The receivers\' queues could not be read — a listed transfer may already have reached its receiver; completing it credits nothing twice.' : '');
         setOpenLegs(d.open);
         setOpenChecked(true);
-      }).catch(() => { setOpenChecked(false); setOpenErr('Could not check for debited transfers awaiting completion.'); });
+      }).catch(e => { setOpenChecked(false); setOpenErr(`${CHECK} — ${errorMessage(e)}`); });
   useEffect(() => { loadOpen(); }, [fromVsb]);
   // W820 (FU-826) - where this entity's recorded credits came from. A credit from a scope that is not a registered
   // living entity is FLAGGED, not reversed (Owner ruling 2026-10-10); nothing here moves or reverses anything
   const [intake, setIntake] = useState<{ basis?: string; credits?: { id?: string | null; sender?: string | null;
     amount_wst?: number | null; flag?: string | null }[] } | null>(null);
+  //  W1000 - a refused read of where the credits came from is said, with the server's reason: it was hidden, so an
+  //  unread record looked like one with nothing to flag
+  const [intakeErr, setIntakeErr] = useState('');
   useEffect(() => {
     let alive = true;
-    fetch(`/api/v1/economy/transfers/intake-sources?vsb_id=${encodeURIComponent(fromVsb)}`)
-      .then(r => (r.ok ? r.json() : null))
+    setIntakeErr('');
+    apiJson(`/api/v1/economy/transfers/intake-sources?vsb_id=${encodeURIComponent(fromVsb)}`)
       .then(d => { if (alive) setIntake(d); })
-      .catch(() => { if (alive) setIntake(null); });
+      .catch(e => { if (alive) { setIntake(null); setIntakeErr(errorMessage(e)); } });
     return () => { alive = false; };
   }, [fromVsb]);
   const strandedIds = Array.from(new Set([...(stranded ? [stranded] : []), ...openLegs.map(l => l.transfer_id)]));
@@ -405,6 +417,11 @@ export const TransferPanel: React.FC<{ fromVsb: string; entities: { vsb_id: stri
         </p>
       )}
       {completeMsg && <p className="text-emerald-400 text-[10px] font-bold mt-3" data-testid="transfer-complete-result">{completeMsg}</p>}
+      {intakeErr && (
+        <p className="text-amber-400 text-[10px] font-bold mt-3" data-testid="transfer-intake-unread">
+          Where this entity's recorded credits came from could not be read — {intakeErr}
+        </p>
+      )}
       {intake?.basis && (
         <div className="mt-4 space-y-1" data-testid="transfer-intake-sources">
           <p className="text-[9px] text-slate-500">{intake.basis}</p>
