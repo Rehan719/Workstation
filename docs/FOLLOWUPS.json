@@ -25014,6 +25014,27 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: a reply that did not come is said beside the input as what it was, through errorMessage, and cleared when a message is sent again or another entity is opened; the conversation holds only what was said. VSBCockpit.chat.test.tsx drives an answer as captured, a call that reached no server and the route's field check (three vitest blinds); test_w1052 holds the field check, the captured answer and the page (three blinds)."
+    },
+    {
+      "id": "FU-1237",
+      "title": "The cockpit's life-cycle change and restore proposal did nothing visible when no server was reached; a refused change read as the roster's line",
+      "why": "Found rendering the cockpit's operating panel (FU-399 part 72) for an entity established on a fresh store. The life-cycle toggle and the restore proposal were inline handlers with no catch: a call that reached no server threw where nothing caught it, so the press did nothing visible. A refused life-cycle change was written into the roster's own line above the panel, as if the roster had said it. Neither message was cleared when another entity was opened.",
+      "source": "W1053 (FU-399 part 72, the cockpit's operating panel rendered)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1053",
+      "note": "",
+      "slot_source": "found by FU-399's rendering of the cockpit's operating panel; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: both actions say a call that reached no server; a refused life-cycle change is said beside the toggle and cleared when pressed again; both messages are cleared when another entity is opened. VSBCockpit.lifecycle.test.tsx drives each against the routes' own answers (three vitest blinds); test_w1053 holds the two refusals at the routes, the captured change and the page (four blinds)."
     }
   ],
   "routes": [

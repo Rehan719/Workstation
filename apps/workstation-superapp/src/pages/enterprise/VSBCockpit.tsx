@@ -175,6 +175,7 @@ export const VSBCockpit: React.FC = () => {
   //  FU-869 (W833) - proposing the restore of a retired entity, and what Change Control answered
   const [restoreWhy, setRestoreWhy] = useState('');
   const [restoreNote, setRestoreNote] = useState('');
+  const [lifecycleMsg, setLifecycleMsg] = useState('');   // W1053 - a life-cycle change refused or not made, beside its toggle
   const [delivType, setDelivType] = useState('report');
   const [delivBrief, setDelivBrief] = useState('');
   const [delivProducing, setDelivProducing] = useState(false);
@@ -293,7 +294,7 @@ export const VSBCockpit: React.FC = () => {
 
   useEffect(() => {
     if (!selected) return;
-    setLoading(true); setTx(null); setMessages([]); setLastCycle(null); setLedgerErr(''); setTxErr(''); setOrchErr({}); setCycleErr(''); setBtoErr(''); setPlanErr(''); setChatErr('');
+    setLoading(true); setTx(null); setMessages([]); setLastCycle(null); setLedgerErr(''); setTxErr(''); setOrchErr({}); setCycleErr(''); setBtoErr(''); setPlanErr(''); setChatErr(''); setLifecycleMsg(''); setRestoreNote('');
     setCycleHold(null); setGrowthResult(null);   // W503 (FU-059) — never another entity's answer
     const issuedFor = selected;
     Promise.all([
@@ -1578,14 +1579,20 @@ export const VSBCockpit: React.FC = () => {
                           className="ml-2 px-2 py-0.5 rounded border border-slate-700 text-[9px] text-slate-300 hover:bg-slate-800"
                           onClick={async () => {
                             const to = operating.lifecycle_state === 'dormant' ? 'awake' : 'dormant';
-                            const r = await axios.post<Dict>(`/api/v1/economy/living-vsbs/${selected}/lifecycle`, { to }, { validateStatus: () => true });
-                            if (r.status === 200 && r.data) setOperating({ ...operating, lifecycle_state: (r.data as Dict).to, lifecycle_basis: (r.data as Dict).basis });
-                            else setOperatingErr(`The life-cycle change was refused (HTTP ${r.status}): ${String((r.data as any)?.detail?.basis ?? bodyDetail(r.data, 'no reason given'))}`);
+                            setLifecycleMsg('');
+                            //  W1053 - a call that reached no server is said: nothing caught it, so the press did nothing visible. A
+                            //  refusal is said beside the toggle, not in the roster's own line above the panel
+                            try {
+                              const r = await axios.post<Dict>(`/api/v1/economy/living-vsbs/${selected}/lifecycle`, { to }, { validateStatus: () => true });
+                              if (r.status === 200 && r.data) setOperating({ ...operating, lifecycle_state: (r.data as Dict).to, lifecycle_basis: (r.data as Dict).basis });
+                              else setLifecycleMsg(`The life-cycle change was refused (HTTP ${r.status}): ${String((r.data as any)?.detail?.basis ?? bodyDetail(r.data, 'no reason given'))}`);
+                            } catch (e: unknown) { setLifecycleMsg(`The life-cycle change was not made: ${errorMessage(e)}`); }
                           }}>
                           {operating.lifecycle_state === 'dormant' ? 'Wake' : 'Make dormant'}
                         </button>
                       )}
                     </p>
+                    {lifecycleMsg && <p role="alert" data-testid="cockpit-lifecycle-error" className="text-[10px] font-bold text-vital">{lifecycleMsg}</p>}
                     {operating.lifecycle_basis && <p className="text-[9px] text-slate-600 leading-relaxed">{String(operating.lifecycle_basis)}</p>}
                     {/* FU-869 (W833) - a retired entity can be brought back: the Owner proposes a restore through Change Control */}
                     {operating.lifecycle_state === 'retired' && (
@@ -1596,10 +1603,13 @@ export const VSBCockpit: React.FC = () => {
                           <button type="button" data-testid="cockpit-restore-propose" disabled={!restoreWhy.trim()}
                             className="px-2 py-0.5 rounded border border-slate-700 text-[9px] text-slate-300 hover:bg-slate-800 disabled:opacity-40"
                             onClick={async () => {
-                              const r = await axios.post<Dict>(`/api/v1/economy/living-vsbs/${selected}/propose-restore`, { why: restoreWhy }, { validateStatus: () => true });
-                              setRestoreNote(r.status === 200 && r.data
-                                ? String((r.data as Dict).basis ?? 'filed through Change Control')
-                                : `The restore was not filed (HTTP ${r.status}): ${String((r.data as any)?.detail?.basis ?? bodyDetail(r.data, 'no reason given'))}`);
+                              setRestoreNote('');
+                              try {   // W1053 - a call that reached no server is said, as above
+                                const r = await axios.post<Dict>(`/api/v1/economy/living-vsbs/${selected}/propose-restore`, { why: restoreWhy }, { validateStatus: () => true });
+                                setRestoreNote(r.status === 200 && r.data
+                                  ? String((r.data as Dict).basis ?? 'filed through Change Control')
+                                  : `The restore was not filed (HTTP ${r.status}): ${String((r.data as any)?.detail?.basis ?? bodyDetail(r.data, 'no reason given'))}`);
+                              } catch (e: unknown) { setRestoreNote(`The restore was not filed: ${errorMessage(e)}`); }
                             }}>
                             Propose a restore
                           </button>

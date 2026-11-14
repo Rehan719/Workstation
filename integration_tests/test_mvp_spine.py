@@ -86480,3 +86480,44 @@ def test_w1052_fu399_the_cockpit_s_chat_says_a_reply_that_did_not_come_as_that(c
     assert 'data-testid="cockpit-chat-error"' in page
     t = (src / "pages/enterprise/VSBCockpit.chat.test.tsx").read_text(encoding="utf-8")
     assert "import captured from './VSBCockpit.chat.fixture.json';" in t and "<VSBCockpit />" in t
+
+
+def test_w1053_fu399_the_cockpit_s_life_cycle_and_restore_say_a_call_that_reached_no_server(client):
+    """FU-399 part 72 (W1053). The cockpit's operating panel is rendered against its routes' own answers
+    (VSBCockpit.lifecycle.test.tsx): every read the cockpit makes on opening an entity established through Genesis on a
+    fresh store, the entity made dormant, the refusal of its retirement, and the refusal of a restore for an entity
+    that is not retired. Rendering found:
+    - the life-cycle toggle and the restore proposal had no catch, so a call that reached no server did nothing
+      visible. Each says what happened;
+    - a refused life-cycle change was written into the roster's own line above the panel, as if the roster had said
+      it. It is said beside the toggle, and cleared when the toggle is pressed again;
+    - neither message was cleared when another entity was opened. Both are, with the rest.
+
+    Held here: the two refusals are the routes' own, asked again for an entity that is not retired (neither changes
+    anything); the captured change; and the page's code."""
+    import json
+    import pathlib
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    fx = json.loads((src / "pages/enterprise/VSBCockpit.lifecycle.fixture.json").read_text(encoding="utf-8"))
+    assert (fx["dormant"]["status"], fx["dormant"]["body"]["from"], fx["dormant"]["body"]["to"]) == (200, "juvenile", "dormant")
+    rr, sr = fx["retire_refused"], fx["restore_refused"]
+    assert (rr["status"], rr["body"]["detail"]["refused"]) == (409, "retirement_is_governed"), rr
+    assert (sr["status"], sr["body"]["detail"]["refused"]) == (409, "not_retired"), sr
+    est = client.post("/api/v1/genesis/establish", json={"problem": "W1053 made up: a toy library for a nursery",
+                                                         "ship_output": False, "name": "W1053 Toy Library"})
+    assert est.status_code == 200, est.text[:200]
+    vid = est.json()["vsb_id"]
+    r = client.post(f"/api/v1/economy/living-vsbs/{vid}/lifecycle", json={"to": "retired"})
+    assert (r.status_code, r.json()["detail"]["refused"]) == (409, "retirement_is_governed"), r.text[:200]
+    r = client.post(f"/api/v1/economy/living-vsbs/{vid}/propose-restore", json={"why": "W1053 made up: a new organiser"})
+    assert (r.status_code, r.json()["detail"]["refused"], r.json()["detail"]["filed"]) == (409, "not_retired", False), r.text[:200]
+
+    page = _code_only((src / "pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    assert "} catch (e: unknown) { setLifecycleMsg(`The life-cycle change was not made: ${errorMessage(e)}`); }" in page
+    assert "} catch (e: unknown) { setRestoreNote(`The restore was not filed: ${errorMessage(e)}`); }" in page
+    assert "else setOperatingErr(`The life-cycle change was refused" not in page, "a refusal is said as the roster's line again"
+    assert "else setLifecycleMsg(`The life-cycle change was refused (HTTP ${r.status}):" in page
+    assert "setPlanErr(''); setChatErr(''); setLifecycleMsg(''); setRestoreNote('');" in page
+    assert 'data-testid="cockpit-lifecycle-error"' in page
+    t = (src / "pages/enterprise/VSBCockpit.lifecycle.test.tsx").read_text(encoding="utf-8")
+    assert "import captured from './VSBCockpit.lifecycle.fixture.json';" in t and "<VSBCockpit />" in t
