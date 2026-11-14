@@ -24074,6 +24074,34 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: each of the twelve sites says the reason through lib/api.ts's axiosDetail (a sentence as itself, a field check by its field, an object by its message) with the message it already gave when there is none. test_w1011 holds each site's line and the expression tree-wide: outside lib/api.ts it is read only where every shape is handled (the cockpit's detailText and serverDetail, the synthesis studio's string check); ten blinds turn it red."
+    },
+    {
+      "id": "FU-1198",
+      "title": "Nine places said a refusal read by hand as \"[object Object]\": a field check's list stringified as it came",
+      "why": "Found by W1011's sweep, on the path it did not reach: a page that reads a refused answer's body itself (a fetch, or axios told to accept every status) turned its detail into text with String(), new Error() or JSON.stringify(), and a field check answers a list, which String() reads as \"[object Object]\". The Quran studio's reads, the projects hub's run (which also threw the parser's words when the body was not JSON), the business plan's own read, the entity cockpit's repository read and restore proposal, and three that copied the reason into a variable first (the Genesis journey's establishment, the governance hub's submission, the native AI designer's save); the cockpit's life-cycle change said its reason in JSON quotes.",
+      "source": "W1012 (W1011's class, on the path a page reads by hand)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/lib/api.ts",
+        "apps/workstation-superapp/src/components/QEPStudio.tsx",
+        "apps/workstation-superapp/src/pages/projects/ProjectsHub.tsx",
+        "apps/workstation-superapp/src/pages/enterprise/BusinessPlan.tsx",
+        "apps/workstation-superapp/src/pages/enterprise/VSBCockpit.tsx",
+        "apps/workstation-superapp/src/pages/synthesis/GenesisJourney.tsx",
+        "apps/workstation-superapp/src/pages/governance/GovernanceHub.tsx",
+        "apps/workstation-superapp/src/pages/developers/NativeAI.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1012",
+      "note": "",
+      "slot_source": "the defect class FU-399's rendering found, on the path W1011 did not reach; it rides P5.1 as FU-399 does",
+      "tier": 2,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: each of the nine places reads the reason through lib/api.ts's bodyDetail (axiosDetail's reading: a sentence as itself, a field check by its field, an object by its message), and the projects hub's run says a refusal in lib/stream.ts's sentence. test_w1012 holds each site's line and, tree-wide, that no whole detail value is turned into text as it came outside a string check or a shape-reading helper, nor a variable it was copied into; fourteen blinds turn it red."
     }
   ],
   "routes": [

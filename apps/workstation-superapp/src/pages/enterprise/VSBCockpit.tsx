@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { axiosDetail, provenanceBadge, provenanceMapBadge, provenanceMapFromTrace, bodyOrNull } from '../../lib/api';   // W1011: axiosDetail
+import { axiosDetail, bodyDetail, provenanceBadge, provenanceMapBadge, provenanceMapFromTrace, bodyOrNull } from '../../lib/api';   // W1011: axiosDetail; W1012: bodyDetail
 import { ReadFailures, useReadFailures, silenceIsRight } from '../../components/ReadFailures';   // W928
 import { VBSSystemsPanel } from '../../components/VBSSystemsPanel';
 import { downloadExport } from '../../lib/download';
@@ -268,7 +268,7 @@ export const VSBCockpit: React.FC = () => {
     setRepoTree(null); setRepoNone(''); setRepoErr(''); setRepoFile(null);
     axios.get(`/api/v1/vsb/${vid}/repo`, { validateStatus: () => true }).then(r => {
       if (r.status === 200 && Array.isArray(r.data?.tree)) { setRepoTree(r.data.tree as string[]); }
-      else if (r.status === 404) { setRepoNone(String(r.data?.detail ?? 'This entity has no repository.')); }
+      else if (r.status === 404) { setRepoNone(bodyDetail(r.data, 'This entity has no repository.')); }   // W1012
       else { setRepoErr(`The repository could not be read (HTTP ${r.status}). No tree is shown.`); }
     }).catch(() => setRepoErr('The repository could not be reached. No tree is shown.'));
   };
@@ -1538,7 +1538,7 @@ export const VSBCockpit: React.FC = () => {
                             const to = operating.lifecycle_state === 'dormant' ? 'awake' : 'dormant';
                             const r = await axios.post<Dict>(`/api/v1/economy/living-vsbs/${selected}/lifecycle`, { to }, { validateStatus: () => true });
                             if (r.status === 200 && r.data) setOperating({ ...operating, lifecycle_state: (r.data as Dict).to, lifecycle_basis: (r.data as Dict).basis });
-                            else setOperatingErr(`The life-cycle change was refused (HTTP ${r.status}): ${JSON.stringify((r.data as any)?.detail?.basis ?? r.data)}`);
+                            else setOperatingErr(`The life-cycle change was refused (HTTP ${r.status}): ${String((r.data as any)?.detail?.basis ?? bodyDetail(r.data, 'no reason given'))}`);
                           }}>
                           {operating.lifecycle_state === 'dormant' ? 'Wake' : 'Make dormant'}
                         </button>
@@ -1557,7 +1557,7 @@ export const VSBCockpit: React.FC = () => {
                               const r = await axios.post<Dict>(`/api/v1/economy/living-vsbs/${selected}/propose-restore`, { why: restoreWhy }, { validateStatus: () => true });
                               setRestoreNote(r.status === 200 && r.data
                                 ? String((r.data as Dict).basis ?? 'filed through Change Control')
-                                : `The restore was not filed (HTTP ${r.status}): ${String((r.data as any)?.detail?.basis ?? (r.data as any)?.detail ?? '')}`);
+                                : `The restore was not filed (HTTP ${r.status}): ${String((r.data as any)?.detail?.basis ?? bodyDetail(r.data, 'no reason given'))}`);
                             }}>
                             Propose a restore
                           </button>

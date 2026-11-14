@@ -94,6 +94,13 @@ export function axiosDetail(e: any, fallback: string): string {
   return fallback;
 }
 
+/** W1012 - the reason in a refused answer's body that a page read by hand (a fetch, or axios told to accept every
+ *  status), as text whatever its shape: axiosDetail's reading, so a sentence is itself, a field check is said by
+ *  its field and an object by its message. String() of a field check's list said "[object Object]". */
+export function bodyDetail(body: unknown, fallback: string): string {
+  return axiosDetail({ response: { data: body } }, fallback);
+}
+
 /** Honest, user-facing message for anything a failed call can throw. */
 export function errorMessage(e: unknown): string {
   if (e instanceof ApiError) return e.status === 401

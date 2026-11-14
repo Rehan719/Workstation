@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { GenerationPrice } from '../../components/GenerationPrice';
-import { qmsChip, provenanceMapBadge, complianceChip, layerTitle, immuneReading, apiJson, errorMessage, bodyOrNull } from '../../lib/api';
+import { qmsChip, provenanceMapBadge, complianceChip, layerTitle, immuneReading, apiJson, errorMessage, bodyOrNull, bodyDetail } from '../../lib/api';
 import { ReadFailures, useReadFailures, silenceIsRight } from '../../components/ReadFailures';   // W928
 import { REALMS as CANON_REALMS, DOMAINS as CANON_DOMAINS, PRODUCTS, PRODUCT_LABELS } from '../../lib/taxonomy';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -430,8 +430,8 @@ export const GenesisJourney: React.FC = () => {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body,
         });
         if (!res.ok) {
-          const detail = (await bodyOrNull(res))?.detail;
-          setError(`Establishment failed (HTTP ${res.status})${detail ? `: ${String(detail).slice(0, 160)}` : ''}.`);
+          const detail = bodyDetail(await bodyOrNull(res), '');   // W1012 - text, whatever its shape
+          setError(`Establishment failed (HTTP ${res.status})${detail ? `: ${detail.slice(0, 160)}` : ''}.`);
         } else {
           setVsb(await res.json());
         }

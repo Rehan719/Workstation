@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, Button } from '@workstation/ui';
 import { Target, Loader2, Sparkles, Plus, CheckCircle2, Clock, AlertCircle, Crown, PenLine } from 'lucide-react';
-import { provenanceMapBadge, provenanceMapFromTrace, bodyOrNull, apiJson, errorMessage } from '../../lib/api';
+import { provenanceMapBadge, provenanceMapFromTrace, bodyOrNull, bodyDetail, apiJson, errorMessage } from '../../lib/api';
 import { PlanOpening } from '../../components/PlanOpening';   // W505 (FU-074) — one component, both pages
 import { CadencePanel } from '../../components/CadencePanel';   // W620 (FU-492)
 
@@ -64,7 +64,7 @@ export const BusinessPlan: React.FC = () => {
       const data = await bodyOrNull(r);
       if (!r.ok) {
         setPlan(null);
-        setPlanErr(String(data?.detail || `the plan could not be read (HTTP ${r.status})`));
+        setPlanErr(bodyDetail(data, `the plan could not be read (HTTP ${r.status})`));   // W1012 - text, whatever its shape
         return;
       }
       setPlanErr(''); setPlan(data);

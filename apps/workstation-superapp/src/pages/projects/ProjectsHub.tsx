@@ -9,6 +9,7 @@ import { downloadExport } from '../../lib/download';
 // W495 (FU-131, S12.6) - the shared provenance helpers, so this page labels output the same way
 // every other surface does rather than inventing its own wording
 import { axiosDetail, provenanceBadge, provenanceLine } from '../../lib/api';   // W1011: axiosDetail
+import { refusalOf } from '../../lib/stream';   // W1012
 import { AskPerson } from '../../components/AskPerson';   // W968 (P5.14 clause 6)
 import {
   Plus, Play, ChevronRight, Download, Loader2, Trash2,
@@ -274,10 +275,9 @@ const DetailPanel: React.FC<DetailPanelProps> = ({ project, onUpdate, onDelete }
 
     try {
       const response = await fetch(`/api/v1/projects/${project.id}/run`, { method: 'POST' });
-      if (!response.ok) {
-        const body = await response.json();
-        throw new Error(body.detail ?? `HTTP ${response.status}`);
-      }
+      //  W1012 - a refused run says the server's status and reason in lib/stream.ts's sentence: a field check's list
+      //  read "[object Object]", and a refusal whose body was not JSON said the parser's words
+      if (!response.ok) throw new Error(await refusalOf(response));
       if (!response.body) throw new Error('No response body');
 
       const reader = response.body.getReader();

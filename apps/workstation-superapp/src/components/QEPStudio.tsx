@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { BookOpen, Brain, Loader2, Sparkles, Trophy, Languages, CheckCircle2 } from 'lucide-react';
-import { apiJson, errorMessage } from '../lib/api';
+import { apiJson, bodyDetail, errorMessage } from '../lib/api';
 import { whoami } from '../lib/auth';
 import { HifzPractice } from './HifzPractice';
 import { AskPerson } from './AskPerson';   // W968 (P5.14 clause 6)
@@ -55,7 +55,7 @@ export const QEPStudio: React.FC = () => {
   const getJson = (url: string, set: (d: any) => void) =>
     fetch(url)
       .then(r => (r.ok ? r.json() : r.json().catch(() => ({})).then((b: any) =>
-        Promise.reject(new Error(b?.detail ? String(b.detail).slice(0, 140) : `${url} → HTTP ${r.status}`)))))
+        Promise.reject(new Error(bodyDetail(b, '').slice(0, 140) || `${url} → HTTP ${r.status}`)))))   // W1012 - text, whatever its shape
       .then(set)
       .catch(e => setLoadErrs(errs => [...errs, String(e?.message ?? e)]));
 

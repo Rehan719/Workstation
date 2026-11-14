@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Cpu, Network, Loader2, CheckCircle2, Circle, ShieldCheck, Server, Globe, Plus, Trash2, Play, Save, Activity } from 'lucide-react';
-import { apiJson, errorMessage, provenanceBadge, provenanceMapBadge, provenanceMapFromTrace, qmsChip, bodyOrNull } from '../../lib/api';
+import { apiJson, errorMessage, provenanceBadge, provenanceMapBadge, provenanceMapFromTrace, qmsChip, bodyOrNull, bodyDetail } from '../../lib/api';
 import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W929
 
 interface ModelResource {
@@ -704,8 +704,8 @@ export const NativeAI: React.FC = () => {
                                        : { name, context: designContext, stages: valid, usage_area: 'synthesis' }),
       });
       if (!r.ok) {   // W344 — never a silent click; W460 — and say why when the backend says why
-        const detail = (await bodyOrNull(r))?.detail;
-        setError(`Save failed (HTTP ${r.status})${detail ? `: ${String(detail)}` : ''}.`);
+        const detail = bodyDetail(await bodyOrNull(r), '');   // W1012 - text, whatever its shape
+        setError(`Save failed (HTTP ${r.status})${detail ? `: ${detail}` : ''}.`);
       }
       // W460 — a cascade removed elsewhere (404) used to trap the designer in edit mode against a missing id
       if (r.ok || (editingId && r.status === 404)) { setEditingId(null); if (r.ok) setDesignContext(''); }

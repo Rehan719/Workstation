@@ -84095,3 +84095,130 @@ def test_w1011_no_page_puts_a_refusal_s_detail_into_the_page_as_it_came(client):
     assert offenders == [], ("a page reads a refusal's detail as it came; say it through axiosDetail(e, fallback)",
                              offenders)
     assert held == {"detailText": 8, "serverDetail": 1, "string check": 1}, held
+
+
+def test_w1012_a_refusal_read_by_hand_is_never_said_as_object_object(client):
+    """W1012. W1011 put every axios error's refusal through axiosDetail. The same reason also reaches pages by hand,
+    from a body a page reads itself (a fetch, or axios told to accept every status), and there nine places turned it
+    into text as it came. A field check answers a list, and String() of a list reads "[object Object]": the Quran
+    studio's reads, the projects hub's run (which also threw the parser's words when the refusal's body was not
+    JSON), the business plan's own read, the entity cockpit's repository read and restore proposal, and three that
+    copied the reason into a variable first (the Genesis journey's establishment, the governance hub's submission,
+    the native AI designer's save). The cockpit's life-cycle change said its reason in JSON quotes. Each now reads the
+    reason as axiosDetail does, through lib/api.ts's bodyDetail; the projects hub's run says a refusal in
+    lib/stream.ts's sentence.
+
+    Held here: the helper is axiosDetail's reading; each site's line; and, tree-wide, no reason is turned into text
+    as it came. A whole `.detail` value inside String(), Error(), JSON.stringify() or a template is read only behind a
+    string check on its line, or through a helper that reads every shape (axiosDetail, bodyDetail, the cockpit's
+    detailText, the wallet's flat). A variable a whole `.detail` was copied into is never said through String(),
+    Error() or a bare template hole without a string check on its line. One stays, named: the cockpit's apply answer,
+    whose `detail` is that 200 answer's own field and not a refusal."""
+    import pathlib
+    import re
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    api = (src / "lib/api.ts").read_text(encoding="utf-8")
+    assert ("export function bodyDetail(body: unknown, fallback: string): string {\n"
+            "  return axiosDetail({ response: { data: body } }, fallback);\n}") in api
+    sites = {
+        "components/QEPStudio.tsx": [
+            "Promise.reject(new Error(bodyDetail(b, '').slice(0, 140) || `${url} → HTTP ${r.status}`)))))"],
+        "pages/projects/ProjectsHub.tsx": ["if (!response.ok) throw new Error(await refusalOf(response));"],
+        "pages/enterprise/BusinessPlan.tsx": [
+            "setPlanErr(bodyDetail(data, `the plan could not be read (HTTP ${r.status})`));"],
+        "pages/enterprise/VSBCockpit.tsx": [
+            "setRepoNone(bodyDetail(r.data, 'This entity has no repository.'));",
+            "${String((r.data as any)?.detail?.basis ?? bodyDetail(r.data, 'no reason given'))}`);"],
+        "pages/synthesis/GenesisJourney.tsx": [
+            "const detail = bodyDetail(await bodyOrNull(res), '');",
+            "setError(`Establishment failed (HTTP ${res.status})${detail ? `: ${detail.slice(0, 160)}` : ''}.`);"],
+        "pages/governance/GovernanceHub.tsx": [
+            "const detail = bodyDetail(await bodyOrNull(res), '');",
+            "toast(`Submission failed (HTTP ${res.status})${detail ? `: ${detail.slice(0, 120)}` : ''}`);"],
+        "pages/developers/NativeAI.tsx": [
+            "const detail = bodyDetail(await bodyOrNull(r), '');",
+            "setError(`Save failed (HTTP ${r.status})${detail ? `: ${detail}` : ''}.`);"],
+    }
+    for rel, lines in sites.items():
+        code = _code_only((src / rel).read_text(encoding="utf-8").replace("\r\n", "\n"))
+        for ln in lines:
+            assert ln in code, (rel, ln)
+    cockpit = _code_only((src / "pages/enterprise/VSBCockpit.tsx").read_text(encoding="utf-8"))
+    assert cockpit.count("${String((r.data as any)?.detail?.basis ?? bodyDetail(r.data, 'no reason given'))}`);") == 2
+    hub = _code_only((src / "pages/projects/ProjectsHub.tsx").read_text(encoding="utf-8"))
+    assert "import { refusalOf } from '../../lib/stream';" in hub and "await response.json()" not in hub
+
+    #  tree-wide: a whole `.detail` value turned into text as it came
+    whole = re.compile(r"\.detail\b(?!\s*\??\.\w)(?!\s*\[)")
+    helpers = {"axiosDetail", "bodyDetail", "detailText", "flat"}
+    texters = {"String", "Error", "stringify"}
+
+    def enclosing(code, at):
+        """the calls (innermost first) and template holes an expression sits in, back to its statement's start"""
+        out, depth, braces, i = [], 0, 0, at - 1
+        while i >= 0 and at - i < 600:
+            ch = code[i]
+            if ch == ")":
+                depth += 1
+            elif ch == "(":
+                if depth == 0:
+                    name = re.search(r"([A-Za-z_]\w*)\s*$", code[max(0, i - 40):i])
+                    out.append(name.group(1) if name else "")
+                else:
+                    depth -= 1
+            elif ch == "}":
+                braces += 1          # a hole or block closed before the expression: not one it sits in
+            elif ch == "{":
+                if braces:
+                    braces -= 1
+                elif i > 0 and code[i - 1] == "$":
+                    out.append("${")
+                else:
+                    break
+            elif ch == ";" and depth == 0 and not braces:
+                break
+            i -= 1
+        return out
+
+    offenders, named, scanned = [], [], 0
+    for f in sorted(p for ext in ("*.ts", "*.tsx", "*.js", "*.jsx") for p in src.rglob(ext)):
+        rel = f.relative_to(src).as_posix()
+        if ".test." in f.name or rel == "lib/api.ts":
+            continue
+        scanned += 1
+        code = _code_only(f.read_text(encoding="utf-8").replace("\r\n", "\n"))
+        for m in whole.finditer(code):
+            start = code.rfind("\n", 0, m.start()) + 1
+            line = code[start:code.find("\n", m.end())]
+            if re.search(r"typeof\s+[\w?.()\s]*?\.detail\s*===\s*'string'", line):
+                continue
+            said_as = None
+            for name in enclosing(code, m.start()):
+                if name in helpers:
+                    break
+                if name in texters or name == "${":
+                    said_as = name
+                    break
+            if said_as is None:
+                continue
+            if rel == "pages/enterprise/VSBCockpit.tsx" and code[m.start() - len("String(growthResult"):m.end()] == "String(growthResult.detail":
+                named.append(rel)
+                continue
+            offenders.append(f"{rel}: {said_as}: {line.strip()[:140]}")
+        #  a variable a whole detail was copied into, said through String(), Error() or a bare hole
+        #  (the detail itself is copied: `= <body>?.detail;`, or `?? ...` / `|| ...` after it; a text built from it
+        #  - a list's reasons joined, say - is not the detail)
+        for a in re.finditer(r"\b(?:const|let)\s+(\w+)\s*=\s*[^;\n]*?\.detail\s*(?=;|\?\?|\|\|)", code):
+            if re.search(r"typeof\s+[\w?.()\s]*?\.detail\s*===\s*'string'", a.group(0)):
+                continue                 # copied behind a string check: the variable holds text already
+            var = a.group(1)
+            said = re.compile(r"String\(\s*" + var + r"\s*\)|Error\(\s*" + var + r"\s*[),?|]|\$\{\s*" + var + r"\s*\}")
+            for u in said.finditer(code, a.end(), a.end() + 400):
+                ustart = code.rfind("\n", 0, u.start()) + 1
+                uline = code[ustart:code.find("\n", u.end())]
+                if re.search(r"typeof\s+" + var + r"\s*===\s*'string'", uline):
+                    continue
+                offenders.append(f"{rel}: {var} copied from a detail: {uline.strip()[:140]}")
+    assert scanned > 100, ("this scanned almost nothing, so it would pass on an empty tree", scanned)
+    assert offenders == [], ("a refusal's reason is turned into text as it came; read it through bodyDetail", offenders)
+    assert named == ["pages/enterprise/VSBCockpit.tsx"], named

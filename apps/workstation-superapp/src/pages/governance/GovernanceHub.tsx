@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { axiosDetail, bodyOrNull } from '../../lib/api';
+import { axiosDetail, bodyDetail, bodyOrNull } from '../../lib/api';
 import { useNavigate } from 'react-router-dom';
 import { Card, Badge, Button, toast } from '@workstation/ui';
 import {
@@ -525,8 +525,8 @@ const SanctumTab: React.FC = () => {
       });
       // Ledger cluster 2 — a 4xx/5xx must never produce the success toast + a phantom list entry
       if (!res.ok) {
-        const detail = (await bodyOrNull(res))?.detail;
-        toast(`Submission failed (HTTP ${res.status})${detail ? `: ${String(detail).slice(0, 120)}` : ''}`);
+        const detail = bodyDetail(await bodyOrNull(res), '');   // W1012 - text, whatever its shape
+        toast(`Submission failed (HTTP ${res.status})${detail ? `: ${detail.slice(0, 120)}` : ''}`);
         return;
       }
       const data = await res.json();
