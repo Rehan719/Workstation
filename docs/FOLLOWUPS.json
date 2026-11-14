@@ -24503,6 +24503,28 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: each of the fourteen says the failure through errorMessage, which says a refusal by its status and reason and only a call that reached no server as an unreachable one. SynthesisStudio.test.tsx drives the delete: the ingest route's own refusal and an answer with no reason (two vitest blinds). test_w1028 holds it tree-wide, in a try's catch and a promise's .catch, with the avatar session's network sentence named (five blinds); test_w1011's two lines and test_w1015's count moved with them."
+    },
+    {
+      "id": "FU-1213",
+      "title": "Four awaited answers were used before their status was read, or never read: the Resource Fabric's simulation, save and retirement, and the avatar's read of the entities",
+      "why": "Found by a census of the awaited form of W927's rule (W927 held only fetch(...).then(r => r.json())), after W1028's census of unreachable sentences read the Resource Fabric's catches. The fabric's simulation took a refusal's {detail} as the simulation: it has no model, so nothing was shown and nothing was said. Its 'save params to the design' and its retirement never read their answer: a refused save was silent and the designs were read again as if saved, and a refused retirement dropped the chosen design as if retired. The avatar session read a refused read of the entities as a list of none and kept 'no entity' for the page's whole life, so a reply was never grounded in the person's entity.",
+      "source": "W1029 (the census of awaited fetch answers)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/pages/synthesis/ResourceFabric.tsx",
+        "apps/workstation-superapp/src/hooks/useAvatarSession.ts"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1029",
+      "note": "",
+      "slot_source": "found by the census FU-399's rendering led to; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: the fabric's three actions read the status first and say a refusal in the API's own words (its refusalOf), the designs are read again only after a save the server took, and a refused retirement keeps the design chosen; the avatar's refused read of the entities is not kept. ResourceFabric.test.tsx drives the three refusals, the routes' own (three vitest blinds); test_w1029 holds the refusals, read again, the four sites and, tree-wide, that no awaited fetch's answer is left unread or used before its status (six blinds)."
     }
   ],
   "routes": [

@@ -49,6 +49,9 @@ async function resolveGroundingVsb(): Promise<string | null> {
   if (_groundingVsb !== undefined) return _groundingVsb ?? null;
   try {
     const r = await fetch('/api/v1/vsb');
+    //  W1029 - a refused read of the entities is not "no entity": it is not kept, so the next message asks again (its
+    //  {detail} was read as a list of none, and none was kept for the page's whole life)
+    if (!r.ok) return null;
     const d = await r.json();
     const rows: any[] = d.entities ?? [];
     // W625 (FU-535, M2 v9 R5.2) — /api/v1/vsb lists MOST RECENT FIRST, so rows[0] is the latest; this took the last

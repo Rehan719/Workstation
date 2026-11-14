@@ -77876,7 +77876,9 @@ def test_w917_fu609_the_fabric_page_shows_each_compositions_lifecycle_against_th
 
     #  the page sends the expiry it is given, as UTC, and says every refusal rather than reading it as done
     assert "expires_at: expiresAt ? new Date(expiresAt).toISOString() : undefined" in page
-    assert page.count("setActErr(await refusalOf(r))") == 3, "a compose, a run or an update is refused silently"
+    #  W1029 - and a simulation, a save of the run parameters and a retirement, which were refused silently
+    assert page.count("setActErr(await refusalOf(r))") == 6, (
+        "a compose, a run, an update, a simulation, a save or a retirement is refused silently")
 
     #  the captured answer: three states, the expired one recorded by the service identity
     fx = json.loads((page_dir / "ResourceFabric.fixture.json").read_text(encoding="utf-8"))
@@ -85419,3 +85421,70 @@ def test_w1028_a_server_that_answered_is_never_said_as_unreachable(client):
     assert "(err?.response ? errorMessage(err)" in avatar and "Could not reach the avatar backend" not in avatar
     t = (src / "pages/synthesis/SynthesisStudio.test.tsx").read_text(encoding="utf-8")
     assert "'Delete failed: Failed (HTTP 429): no reason given'" in t and "ingest.delete_refused" in t
+
+
+def test_w1029_an_awaited_answer_is_read_before_it_is_used_and_never_left_unread(client):
+    """W1029. W927 held that no read uses an answer's body before its status is checked, in the promise form
+    (fetch(...).then(r => r.json())). The awaited form was not held, and a census of it found four. The Resource
+    Fabric's simulation took a refusal's {detail} as the simulation: it has no model, so nothing was shown and nothing
+    was said. The fabric's "save params to the design" and its retirement never read their answer, so a refused save
+    was silent and the designs were read again as if saved, and a refused retirement was read as retired. And the
+    avatar session read a refused read of the entities as a list of none, keeping "no entity" for the page's whole
+    life, so a reply was never grounded in the person's entity. Each now reads the status first: a refusal is said in
+    the API's own words, and the avatar's refused read is not kept. ResourceFabric.test.tsx drives the three refusals.
+
+    Held here: the refusals are the routes' own, read again; the four sites; and, tree-wide, no awaited fetch's
+    answer is left unread, and none is used before its status is read."""
+    import json
+    import pathlib
+    import re
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    fx = json.loads((src / "pages/synthesis/ResourceFabric.refusals.fixture.json").read_text(encoding="utf-8"))
+
+    #  the routes' own refusals, read again
+    sim = client.post("/api/v1/resources/compose/simulate", json={
+        "name": "W1029 made up", "resource_ids": ["w1029-made-up-gone"], "usage_area": "general", "config": {}})
+    put = client.put("/api/v1/resources/compositions/comp-w1029-made-up", json={"config": {"compliance": {"subject": "x"}}})
+    rm = client.delete("/api/v1/resources/compositions/comp-w1029-made-up")
+    for key, r in (("simulate_refused", sim), ("save_refused", put), ("retire_refused", rm)):
+        assert (r.status_code, r.json()) == (fx[key]["status"], fx[key]["body"]), (key, r.status_code, r.text[:200])
+        assert r.status_code >= 400 and isinstance(r.json().get("detail"), str), (key, r.text[:200])
+
+    #  the four, read where they are
+    rf = _code_only((src / "pages/synthesis/ResourceFabric.tsx").read_text(encoding="utf-8"))
+    assert "if (r.ok) { setSim(await r.json()); setActErr(''); } else setActErr(await refusalOf(r));" in rf
+    assert "if (!r.ok) setActErr(await refusalOf(r));\n      else { setActErr(''); loadCompositions(); }" in rf
+    retire = rf[rf.index("const deleteComposition = async (cid: string) => {"):]
+    retire = retire[:retire.index("\n  };\n")]
+    assert "if (!r.ok) { setActErr(await refusalOf(r)); return; }" in retire, retire
+    assert retire.index("if (!r.ok)") < retire.index("setRunCompId(null)"), "the design is dropped before the answer is read"
+    avatar = _code_only((src / "hooks/useAvatarSession.ts").read_text(encoding="utf-8"))
+    assert "const r = await fetch('/api/v1/vsb');\n    if (!r.ok) return null;\n    const d = await r.json();" in avatar
+
+    #  tree-wide: an awaited fetch's answer is read, and its body is not used before its status
+    left_unread, used_first, assigned, scanned = [], [], 0, 0
+    for f in sorted(p for ext in ("*.ts", "*.tsx") for p in src.rglob(ext)):
+        if ".test." in f.name:
+            continue
+        scanned += 1
+        rel = f.relative_to(src).as_posix()
+        s = _code_only(f.read_text(encoding="utf-8").replace("\r\n", "\n"))
+        for m in re.finditer(r"(?:^|[;{}])\s*await fetch\(", s, re.M):
+            left_unread.append(f"{rel}:{s.count(chr(10), 0, m.end()) + 1}")
+        for m in re.finditer(r"(?:const|let)\s+(\w+)\s*(?::\s*\w+)?\s*=\s*await fetch\(", s):
+            assigned += 1
+            v, rest = m.group(1), s[m.end():m.end() + 2000]
+            j = re.search(rf"\b{v}\.json\(\)", rest)
+            if not j:
+                continue
+            before, after = rest[:j.start()], rest[j.end():j.end() + 300]
+            if re.search(rf"\b{v}\.(?:ok|status)\b", before):
+                continue                                  # the status is read first
+            #  read into a value and checked before anything uses it (a body a refusal is said from)
+            nxt = after[after.index("\n") + 1:] if "\n" in after else ""
+            if re.match(rf"\s*if\s*\(\s*!?\s*{v}\.ok\b", nxt):
+                continue
+            used_first.append(f"{rel}:{s.count(chr(10), 0, m.start()) + 1} ({v})")
+    assert scanned > 100 and assigned > 30, ("this read almost nothing", scanned, assigned)
+    assert left_unread == [], ("an awaited fetch's answer is never read, so a refusal reads as done", left_unread)
+    assert used_first == [], ("an answer's body is used before its status is read", used_first)

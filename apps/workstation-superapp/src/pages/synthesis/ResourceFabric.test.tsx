@@ -7,12 +7,17 @@
 // (one with an expiry, never run; one run, with no expiry; one run, then expired and recorded by a real beat), and
 // reads each card in the DOM. The capture keeps each composition's fields the page reads: its QA record is left out
 // and its model keeps only unset_params (scratchpad w917_capture.py, the round's own record of how it was taken).
+//
+// W1029 - and three actions read their answer before they use it. The simulation took a refusal's {detail} as the
+// simulation and said nothing, and "save params to the design" and the retirement never read their answer, so a
+// refusal was read as saved or retired. Each refusal here is the route's own (ResourceFabric.refusals.fixture.json).
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import captured from './ResourceFabric.fixture.json';
+import refused from './ResourceFabric.refusals.fixture.json';
 import { ResourceFabric } from './ResourceFabric';
 
 type Comp = (typeof captured.compositions.compositions)[number];
@@ -23,9 +28,10 @@ function byState(state: string): Comp {
   return c;
 }
 
-// answer the page's reads with the captured answers; `edit` changes the compositions answer for one case, and `put`
-// answers an update
-function serve(edit?: (comps: Comp[]) => void, put?: { status: number; body: unknown }) {
+type Answer = { status: number; body: unknown };
+// answer the page's reads with the captured answers; `edit` changes the compositions answer for one case, `put`
+// answers an update, and `more` a simulation or a retirement (W1029)
+function serve(edit?: (comps: Comp[]) => void, put?: Answer, more?: { simulate?: Answer; retire?: Answer }) {
   const comps = JSON.parse(JSON.stringify(captured.compositions));
   if (edit) edit(comps.compositions);
   const calls: { url: string; init?: RequestInit }[] = [];
@@ -33,6 +39,8 @@ function serve(edit?: (comps: Comp[]) => void, put?: { status: number; body: unk
     calls.push({ url, init });
     const reply = (status: number, body: unknown) => ({ ok: status < 400, status, json: async () => body });
     if (init?.method === 'PUT' && put) return reply(put.status, put.body);
+    if (init?.method === 'DELETE' && more?.retire) return reply(more.retire.status, more.retire.body);
+    if (url === '/api/v1/resources/compose/simulate' && more?.simulate) return reply(more.simulate.status, more.simulate.body);
     if (url === '/api/v1/resources/compositions') return reply(200, comps);
     if (url.startsWith('/api/v1/resources/compositions/runs')) return reply(200, { runs: [], listing_is_incomplete: false });
     if (url.startsWith('/api/v1/resources?')) return reply(200, captured.resources);
@@ -127,5 +135,44 @@ describe('ResourceFabric, each saved composition\'s lifecycle, rendered', () => 
     const sent = calls.find(c => c.init?.method === 'PUT');
     expect(sent?.url).toBe(`/api/v1/resources/compositions/${fresh.id}`);
     expect(JSON.parse(String(sent?.init?.body)).expires_at).toBe(new Date('2020-01-01T00:00').toISOString());
+  });
+
+  it('a refused simulation says the API\'s own sentence, and shows no simulation', async () => {
+    serve(undefined, undefined, { simulate: refused.simulate_refused });
+    mount();
+    const resource = captured.resources.resources[0];
+    const card = (await screen.findAllByText(resource.name)).map(el => el.closest('button')).find(Boolean);
+    expect(card).toBeTruthy();
+    fireEvent.click(card!);
+    fireEvent.click(screen.getByRole('button', { name: /Model before commit/ }));
+    expect(await screen.findByText(refused.simulate_refused.body.detail)).toBeTruthy();
+    expect(screen.queryByText(/commit-ready|gate could not assess/)).toBeNull();
+  });
+
+  it('a refused save says the API\'s own sentence, and the designs are not read again as if it were saved', async () => {
+    const live = byState('operating');
+    const { calls } = serve(undefined, refused.save_refused);
+    mount();
+    fireEvent.click(await screen.findByTestId(`comp-run-${live.id}`));
+    const [rid, params] = Object.entries(live.model.unset_params)[0];
+    fireEvent.change(screen.getByPlaceholderText(params[0]), { target: { value: 'W1029 made up: a subject' } });
+    const reads = calls.filter(c => c.url === '/api/v1/resources/compositions').length;
+    fireEvent.click(screen.getByRole('button', { name: /Save params to the design/ }));
+    expect(await screen.findByText(refused.save_refused.body.detail)).toBeTruthy();
+    expect(calls.filter(c => c.url === '/api/v1/resources/compositions').length).toBe(reads);
+    const sent = calls.find(c => c.init?.method === 'PUT');
+    expect(JSON.parse(String(sent?.init?.body)).config).toEqual({ [rid]: { [params[0]]: 'W1029 made up: a subject' } });
+  });
+
+  it('a refused retirement says the API\'s own sentence, and the design stays chosen', async () => {
+    const live = byState('operating');
+    serve(undefined, undefined, { retire: refused.retire_refused });
+    mount();
+    const run = await screen.findByTestId(`comp-run-${live.id}`);
+    fireEvent.click(run);
+    fireEvent.click(run.parentElement!.querySelector('button[title="Retire this design"]') as HTMLButtonElement);
+    expect(await screen.findByText(refused.retire_refused.body.detail)).toBeTruthy();
+    expect(screen.getByText('Run on the native swarm (§6)')).toBeTruthy();
+    expect(screen.getByTestId(`comp-run-${live.id}`)).toBeTruthy();
   });
 });

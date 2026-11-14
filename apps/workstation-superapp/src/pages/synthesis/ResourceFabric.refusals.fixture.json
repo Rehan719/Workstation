@@ -1,0 +1,20 @@
+{
+  "retire_refused": {
+    "body": {
+      "detail": "Composition comp-w1029-made-up not found."
+    },
+    "status": 404
+  },
+  "save_refused": {
+    "body": {
+      "detail": "Composition comp-w1029-made-up not found."
+    },
+    "status": 404
+  },
+  "simulate_refused": {
+    "body": {
+      "detail": "Unknown resource ids: ['w1029-made-up-gone']"
+    },
+    "status": 400
+  }
+}

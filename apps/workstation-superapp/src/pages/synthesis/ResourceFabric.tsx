@@ -327,7 +327,9 @@ export const ResourceFabric: React.FC = () => {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: name || '(unnamed)', resource_ids: selected, usage_area: usageArea, config: buildConfig() }),
       });
-      setSim(await r.json());
+      //  W1029 - a refused simulation is said in the API's own words: its {detail} was taken as the simulation, which
+      //  has no model, so nothing was shown and nothing was said
+      if (r.ok) { setSim(await r.json()); setActErr(''); } else setActErr(await refusalOf(r));
     } catch { setActErr('Action failed — backend unreachable; nothing changed.'); }   // W344
     setSimulating(false);
   };
@@ -364,11 +366,14 @@ export const ResourceFabric: React.FC = () => {
     if (!cfg) return;
     setSavingParams(true);
     try {
-      await fetch(`/api/v1/resources/compositions/${cid}`, {
+      const r = await fetch(`/api/v1/resources/compositions/${cid}`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ config: cfg }),
       });
-      loadCompositions();
+      //  W1029 - a refused save is said, and the designs are not read again as if it were saved: the answer was
+      //  never read
+      if (!r.ok) setActErr(await refusalOf(r));
+      else { setActErr(''); loadCompositions(); }
     } catch { setActErr('Action failed — backend unreachable; nothing changed.'); }   // W344
     setSavingParams(false);
   };
@@ -392,7 +397,11 @@ export const ResourceFabric: React.FC = () => {
 
   const deleteComposition = async (cid: string) => {
     try {
-      await fetch(`/api/v1/resources/compositions/${cid}`, { method: 'DELETE' });
+      const r = await fetch(`/api/v1/resources/compositions/${cid}`, { method: 'DELETE' });
+      //  W1029 - a refused retirement is said, and the design stays chosen: the answer was never read, so a refusal
+      //  read as retired
+      if (!r.ok) { setActErr(await refusalOf(r)); return; }
+      setActErr('');
       if (runCompId === cid) setRunCompId(null);
       loadCompositions();
     } catch { setActErr('Action failed — backend unreachable; nothing changed.'); }   // W344
