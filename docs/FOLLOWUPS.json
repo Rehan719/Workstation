@@ -24266,6 +24266,48 @@
       "because": "built",
       "because_means": "the work this row asked for was done in this round, not found already done",
       "close_note": "Built in the round that registered it: the five reads wait for what their element says inside its part; test_w1016 holds that no rendered test reads an element's text as found through within() (one blind)."
+    },
+    {
+      "id": "FU-1203",
+      "title": "The business model dashboard's badge read a field the simulation never carries, a card read a field nothing writes, a download downloaded nothing, and the studio's stream path never reached it",
+      "why": "Found rendering BusinessModelDashboard against the simulation route's own answers (FU-399 part 47). Its badge read served_by from the parsed simulation, which never carries it, so it said 'provenance not recorded' over every simulation, under the result header's badge for the same result. A 'Market Size' card read data.market_size, which the route never asks the model for. 'Download Strategy PDF' showed a toast promising a later release. And the studio streams first: the stream route asked for a simulation as markdown and saved it as .json, so the dashboard, which parses it, drew nothing on that path.",
+      "source": "W1019 (FU-399 part 47, the business model dashboard rendered)",
+      "found": "2026-11-14",
+      "files": [
+        "apps/workstation-superapp/src/pages/synthesis/BusinessModelDashboard.tsx",
+        "apps/workstation-superapp/src/pages/synthesis/SynthesisStudio.tsx",
+        "agentic_core/synthesis/api.py"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "done",
+      "closed_by": "W1019",
+      "note": "",
+      "slot_source": "found by FU-399's rendering of the dashboard; it rides P5.1 as FU-399 does",
+      "tier": 1,
+      "because": "built",
+      "because_means": "the work this row asked for was done in this round, not found already done",
+      "close_note": "Built in the round that registered it: the badge reads the result's served_by and is_external, which the studio hands in beside the simulation; the Market Size card and the toast-only download are removed; a simulation is composed whole, asked of /generate by the studio and refused by /stream before anything is written. BusinessModelDashboard.test.tsx renders the floor's answer and two made-up replies run through the route (three vitest blinds); test_w1019 holds the refusal, the routing, the fields read and the fixture, each made again (five blinds)."
+    },
+    {
+      "id": "FU-1204",
+      "title": "The synthesis stream hands every other structured output type to the studio as unparsed text, and generates a type /generate refuses",
+      "why": "Found with FU-1203. The studio streams every type it does not compose whole, and draws audiobook, app, agent, product, service, business-model and slide-deck outputs by parsing the result's content as JSON, silently drawing nothing when it does not parse. The stream route asks for an audiobook as markdown and saves it as .json, asks for app, agent, product and service as markdown where /generate composes JSON, and hands over the raw reply for a business model or a deck without /generate's parsing or its note when nothing usable came back. It also generates and saves any output_type string, which /generate refuses since W645. The studio's loop says every failure, a refusal included, as 'check the API server is running'.",
+      "source": "W1019 (found rendering the business model dashboard)",
+      "found": "2026-11-14",
+      "files": [
+        "agentic_core/synthesis/api.py",
+        "apps/workstation-superapp/src/pages/synthesis/SynthesisStudio.tsx"
+      ],
+      "severity": "medium",
+      "owner_gated": false,
+      "slot": "P5.1",
+      "status": "open",
+      "closed_by": null,
+      "note": "",
+      "slot_source": "the synthesis studio's own render, the next FU-399 part; it rides P5.1 as FU-399 does",
+      "tier": 1
     }
   ],
   "routes": [

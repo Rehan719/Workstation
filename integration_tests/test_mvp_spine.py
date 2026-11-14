@@ -28689,7 +28689,8 @@ def test_w511_p22_provenance_travels_on_the_stream_and_on_every_named_surface(cl
     assert "provenanceMapBadge(roadmap.served_by, roadmap.any_external)" in se, "the cycle's own map"
     assert 'data-testid="cycle-provenance"' in se
     bmd = (pages / "synthesis/BusinessModelDashboard.tsx").read_text(encoding="utf-8")
-    assert "provenanceBadge(data?.served_by, data?.is_external)" in bmd, "from the prop it already receives"
+    #  W1019 - the result's own field, handed in beside the simulation; the parsed content never carries served_by
+    assert "provenanceBadge(servedBy, isExternal)" in bmd, "from the result the studio hands in"
     assert 'data-testid="model-provenance"' in bmd
     bto = (pages / "BTOCatalog.tsx").read_text(encoding="utf-8")
     assert "provenanceMapBadge(btoResult.served_by, btoResult.any_external)" in bto
@@ -84568,7 +84569,7 @@ def test_w1017_fu399_the_four_tab_hubs_are_rendered_the_tab_shown_is_the_tab_the
     assert "'at: /native-ai?focus=cascade-designer'" in lo
 
 
-def test_w1018_fu399_the_tools_catalogue_and_the_domains_hub_are_rendered_against_the_registry_and_the_status(client):
+def test_w1018_fu399_the_tools_catalogue_and_the_domains_hub_are_rendered_against_the_registry_and_the_status(client, monkeypatch, tmp_path):
     """FU-399 parts 45 and 46 (W1018). The AI tools catalogue and the domains hub list the domain tools from the one
     registry (lib/toolRegistry.ts) and say, before any form, what this machine can serve, from
     GET /api/v1/native-ai/status. AIToolsCatalogue.test.tsx and DomainsHub.test.tsx mount the real pages against the
@@ -84579,6 +84580,11 @@ def test_w1018_fu399_the_tools_catalogue_and_the_domains_hub_are_rendered_agains
     and the serving sentence rather than its own copy of them."""
     import json
     import pathlib
+    #  W1019 - read on an empty outcome record, as the fixture was captured on a fresh store. The status measures its
+    #  mode from the most recent recorded serve, so read on the worker's own record it said what an earlier test on
+    #  that worker served last: one that records a model's serve made it "real_model" (W1019's neighbourhood run).
+    from agentic_core.api import operational_excellence as _oe
+    monkeypatch.setattr(_oe, "_STORE", tmp_path / "outcomes.json")
     live = client.get("/api/v1/native-ai/status")
     assert live.status_code == 200, live.text[:200]
     src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
@@ -84592,3 +84598,121 @@ def test_w1018_fu399_the_tools_catalogue_and_the_domains_hub_are_rendered_agains
         assert f"import {{ TOOL_REGISTRY, TOOL_TOTAL }} from '{up}lib/toolRegistry';" in t, page
         assert f"import {{ servingSentence }} from '{up}components/ServingNow';" in t, page
         assert "toBe(servingSentence(captured.status))" in t and "status: 503" in t, page
+
+
+def test_w1019_fu399_the_business_model_dashboard_is_rendered_and_a_simulation_is_composed_whole(client, monkeypatch):
+    """FU-399 part 47 (W1019). The synthesis studio draws a simulation with BusinessModelDashboard. Its test,
+    BusinessModelDashboard.test.tsx, mounts the real dashboard against POST /api/v1/synthesis/generate's answers on a
+    fresh store: the floor's, and two replies made up for the capture and run through the route, one whole and one
+    without its simulation results. Rendering found three defects. The badge read served_by from the simulation, which
+    never carries it, so it said "provenance not recorded" over every simulation, under the result header's own badge
+    for the same result. A "Market Size" card read a field the route never asks the model for. A "Download Strategy
+    PDF" button downloaded nothing. The badge now reads the result's served_by and is_external, handed in by the
+    studio; the card and the button are gone.
+
+    And the dashboard was not reached: the studio streams first, and the stream route asked for a simulation as
+    markdown and saved it as a .json file, so the dashboard, which parses the simulation, drew nothing on that path.
+    A simulation is composed whole now: the studio asks /generate for one, and /stream refuses one before anything is
+    written.
+
+    Held here: the stream's refusal, with nothing recorded; /generate's simulation, as the dashboard reads it; the
+    studio's routing and the props it hands in; the dashboard reads no field the route does not ask for or write; and
+    the fixture is the route's own answer, each of the three made again here."""
+    import json
+    import pathlib
+    import re
+    from agentic_core.synthesis import api as _sa
+    ask = {"content_ids": [], "output_type": "simulation",
+           "instructions": "W1019 made up: a delivery cooperative for village bakeries"}
+
+    #  the stream refuses a simulation, and records and writes nothing
+    rows = len(_sa.synthesis_manager.history)
+    files = sorted(p.name for p in _sa.synthesis_manager.output_dir.glob("*"))
+    s = client.post("/api/v1/synthesis/stream", json=ask)
+    assert s.status_code == 422, (s.status_code, s.text[:300])
+    assert "text/event-stream" not in s.headers.get("content-type", ""), "the refusal arrived inside a stream"
+    said = s.json()["detail"]
+    assert ("'simulation' is composed whole, not streamed: POST /api/v1/synthesis/generate" in said
+            and said.endswith("Nothing was generated or saved.")), said
+    assert len(_sa.synthesis_manager.history) == rows, "a refused stream recorded a row"
+    assert sorted(p.name for p in _sa.synthesis_manager.output_dir.glob("*")) == files, "a refused stream wrote a file"
+    r = client.post("/api/v1/synthesis/stream", json={**ask, "output_type": "report"})
+    assert r.status_code == 200 and "text/event-stream" in r.headers.get("content-type", ""), "a report still streams"
+    assert _sa._COMPOSED_WHOLE_TYPES == frozenset({"simulation"}) <= _sa._GENERATED_OUTPUT_TYPES
+
+    #  /generate composes one, as the dashboard reads it
+    g = client.post("/api/v1/synthesis/generate", json=ask)
+    assert g.status_code == 200, g.text[:300]
+    sim = json.loads(g.json()["content"])
+    assert sim["generated"] is False and sim["sim_results"] is None and sim["projections"] is None, sorted(sim)
+    assert g.json()["served_by"] == "native" and g.json()["is_external"] is False
+
+    #  the studio asks /generate for what is composed whole, and hands the result's provenance in
+    src = pathlib.Path(__file__).resolve().parents[1] / "apps/workstation-superapp/src"
+    studio = _code_only((src / "pages/synthesis/SynthesisStudio.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    decl = re.search(r"const COMPOSED_WHOLE: readonly OutputTypeId\[\] = \[([^\]]*)\];", studio)
+    assert decl and set(re.findall(r"'(\w+)'", decl.group(1))) == set(_sa._COMPOSED_WHOLE_TYPES), (
+        "the studio and the stream route name different types as composed whole", decl and decl.group(0))
+    loop = studio[studio.index("    for (const type of outputTypes) {\n"):]
+    loop = loop[:loop.index("await fetch('/api/v1/synthesis/stream'")]
+    assert ("if (COMPOSED_WHOLE.includes(type)) {" in loop and "axios.post('/api/v1/synthesis/generate'" in loop
+            and "continue;" in loop), ("a type composed whole is still streamed first", loop)
+    assert "<BusinessModelDashboard data={data} servedBy={result.served_by} isExternal={result.is_external} />" in studio
+
+    #  the dashboard reads the result's provenance, and no field the route does not ask the model for or write
+    bmd = _code_only((src / "pages/synthesis/BusinessModelDashboard.tsx").read_text(encoding="utf-8").replace("\r\n", "\n"))
+    assert "const prov = provenanceBadge(servedBy, isExternal);" in bmd
+    assert "data?.served_by" not in bmd and "data?.is_external" not in bmd, "the badge reads the model's own JSON"
+    assert "toast(" not in bmd and "Download Strategy PDF" not in bmd, "a download that downloads nothing"
+    api_src = pathlib.Path(_sa.__file__).read_text(encoding="utf-8")
+    prompt = api_src[api_src.index("Generate a detailed market simulation JSON for:"):]
+    prompt = prompt[:prompt.index('raw = await self._query(prompt, "simulation"')]
+    asked = {"title", "market_summary", "projections", "roi_analysis", "sim_results"}
+    assert all(k in prompt for k in asked), "a field the dashboard is allowed to read is no longer asked for"
+    written = {"generated", "detail", "timestamp", "sim_results_note", "projections_note"}   # the route's own
+    read = set(re.findall(r"\bdata\??\.(\w+)", bmd))
+    assert read and read <= asked | written, ("the dashboard reads a field nothing writes", sorted(read - asked - written))
+
+    #  the fixture is the route's own answer: each of the three made again here
+    fx = json.loads((src / "pages/synthesis/BusinessModelDashboard.fixture.json").read_text(encoding="utf-8"))
+    assert sorted(fx) == ["floor", "model", "partial"], sorted(fx)
+    for case, c in fx.items():
+        assert json.loads(c["answer"]["content"]) == c["simulation"], case
+    floor = dict(fx["floor"]["simulation"])
+    assert {k: v for k, v in floor.items() if k != "timestamp"} == {k: v for k, v in sim.items() if k != "timestamp"}
+    assert (fx["floor"]["answer"]["served_by"], fx["floor"]["answer"]["is_external"]) == ("native", False)
+    for case in ("model", "partial"):
+        want = {k: v for k, v in fx[case]["simulation"].items() if k not in ("timestamp", "sim_results_note")}
+        if want.get("sim_results") is None:
+            want.pop("sim_results", None)                    # the reply left them out; the route says so
+
+        async def _reply(prompt, _out=json.dumps(want), _by=fx[case]["answer"]["served_by"], **_kw):
+            return {"output": _out, "served_by": _by, "is_external": False}
+        monkeypatch.setattr(_sa.gateway, "query_meta", _reply)
+        again = client.post("/api/v1/synthesis/generate", json=ask)
+        assert again.status_code == 200, again.text[:300]
+        made = json.loads(again.json()["content"])
+        assert ({k: v for k, v in made.items() if k != "timestamp"}
+                == {k: v for k, v in fx[case]["simulation"].items() if k != "timestamp"}), (case, sorted(made))
+        assert again.json()["served_by"] == fx[case]["answer"]["served_by"] == "ollama:w1019-made-up", case
+    monkeypatch.undo()
+
+    #  test_w1018 reads the serving status on an empty outcome record, as its fixture was captured: the status
+    #  measures its mode from the most recent recorded serve, and a model's serve recorded earlier on the same worker
+    #  turned it red in this round's neighbourhood run
+    spine = pathlib.Path(__file__).read_text(encoding="utf-8").replace("\r\n", "\n")
+    w1018 = spine.split("def test_w1018_fu399_the_tools_catalogue_and_the_domains_hub_are_rendered_against_the_registry"
+                        "_and_the_status(")[1].split("\ndef ")[0]
+    iso = 'monkeypatch.setattr(_oe, "_STORE", tmp_path / "outcomes.json")'
+    assert iso in w1018 and w1018.index(iso) < w1018.index('client.get("/api/v1/native-ai/status")'), (
+        "test_w1018 reads the serving status on whatever the worker's outcome record holds")
+
+    #  the rendered test draws each answer as the studio does, and holds the two removals
+    t = (src / "pages/synthesis/BusinessModelDashboard.test.tsx").read_text(encoding="utf-8")
+    assert "import { BusinessModelDashboard } from './BusinessModelDashboard';" in t
+    assert "import captured from './BusinessModelDashboard.fixture.json';" in t
+    assert "data={JSON.parse(answer.content)} servedBy={answer.served_by} isExternal={answer.is_external}" in t
+    for case in ("captured.floor", "captured.model", "captured.partial"):
+        assert case in t, case
+    assert "expect(screen.queryByText('Market Size')).toBeNull();" in t
+    assert "expect(screen.queryByRole('button')).toBeNull();" in t

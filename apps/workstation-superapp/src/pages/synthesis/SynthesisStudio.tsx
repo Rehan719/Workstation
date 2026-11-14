@@ -40,6 +40,11 @@ const OUTPUT_TYPES = [
 
 type OutputTypeId = typeof OUTPUT_TYPES[number]['id'];
 
+// W1019 — the types composed whole: asked of /generate, which parses the model's reply into the structure drawn
+// below and says when none came back. The stream asked for a simulation as markdown and saved it as .json, so the
+// business model dashboard, which parses it, drew nothing on the path tried first. The stream route refuses one now.
+const COMPOSED_WHOLE: readonly OutputTypeId[] = ['simulation'];
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface IngestedFile {
@@ -226,6 +231,13 @@ export const SynthesisStudio: React.FC = () => {
 
     for (const type of outputTypes) {
       try {
+        if (COMPOSED_WHOLE.includes(type)) {
+          const resp = await axios.post('/api/v1/synthesis/generate', {
+            content_ids: selectedIds, output_type: type, instructions,
+          });
+          completed.push({ ...resp.data, outputType: type });
+          continue;
+        }
         const res = await fetch('/api/v1/synthesis/stream', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -590,7 +602,7 @@ export const SynthesisStudio: React.FC = () => {
                             const data = JSON.parse(result.content);
                             return (
                               <div className="p-6 border-b border-slate-800">
-                                <BusinessModelDashboard data={data} />
+                                <BusinessModelDashboard data={data} servedBy={result.served_by} isExternal={result.is_external} />
                               </div>
                             );
                           } catch { return null; }

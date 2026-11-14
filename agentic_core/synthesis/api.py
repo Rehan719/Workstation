@@ -73,6 +73,8 @@ class SynthesisOutput(BaseModel):
 _GENERATED_OUTPUT_TYPES = frozenset({
     "report", "review", "analysis", "dissertation", "dossier", "presentation", "video", "audiobook", "website",
     "app", "agent", "product", "service", "business_model", "simulation"})
+#  W1019 - the output types composed whole and never streamed: /stream refuses them, and the studio asks /generate
+_COMPOSED_WHOLE_TYPES = frozenset({"simulation"})
 
 
 class SynthesisManager:
@@ -460,6 +462,15 @@ async def stream_synthesis(request: SynthesisRequest, user: dict | None = Depend
     #  W659 - refused HERE, before the generator exists: a refusal raised inside a stream arrives after a 200
     from agentic_core.religious_domain.composed_text import refuse_faith_ruling as _refuse_ruling659
     _refuse_ruling659(request.instructions, "synthesis request")
+    #  W1019 - A SIMULATION IS COMPOSED WHOLE. This route fell through to its markdown prompt for one and saved the
+    #  reply as a .json file, so the studio's dashboard, which parses the simulation, drew nothing on the path the
+    #  studio tries first, and the download was markdown under a .json name, without the provenance a parsed
+    #  simulation's download carries. /generate asks the model for the simulation's structure and says when none came
+    #  back. Refused before anything is asked, written or recorded, and after the ruling check, as /generate refuses.
+    if request.output_type in _COMPOSED_WHOLE_TYPES:
+        raise HTTPException(status_code=422, detail=(
+            f"output_type {request.output_type!r} is composed whole, not streamed: POST /api/v1/synthesis/generate "
+            "asks the model for its structure and says when none came back. Nothing was generated or saved."))
     context, inferred_topic = synthesis_manager._resolve_context(request.content_ids,
                                                                  user if isinstance(user, dict) else None)
     instructions = request.instructions.strip()
