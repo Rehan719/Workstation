@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button } from '@workstation/ui';
 import { Boxes, Loader2, Activity, ChevronRight } from 'lucide-react';
-import { apiJson } from '../../lib/api';   // W927 - a read is used only on a 2xx
+import { apiJson, errorMessage } from '../../lib/api';   // W927 - a read is used only on a 2xx
 import { ReadFailures, useReadFailures } from '../../components/ReadFailures';   // W929
 
 // W481 (FU-122, sweep S8.1) — the transformation cascade writes a PROJECTION (arithmetic over two live
@@ -62,13 +62,9 @@ export const DigitalTwins: React.FC = () => {
     loadModels().finally(() => setLoading(false));
   }, []);
 
-  const post = async (url: string, body: any) => {
-    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                                 body: JSON.stringify(body) });
-    const d = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(typeof d?.detail === 'string' ? d.detail : `HTTP ${r.status}`);
-    return d;
-  };
+  //  W993 (FU-399 part 25) - this said the server's detail when it was a string and only the status when it was not,
+  //  and read a body that was not JSON as no body. apiJson carries both, and errorMessage says them.
+  const post = (url: string, body: any) => apiJson(url, { method: 'POST', body });
 
   const compose = async () => {
     setComposing(true); setActionError('');
@@ -77,7 +73,7 @@ export const DigitalTwins: React.FC = () => {
       await loadModels();
       await open({ model_id: d.model_id, system_name: d.system_name } as TwinModel);
       setForm(f => ({ ...f, system_name: '', system_description: '' }));
-    } catch (e: any) { setActionError(e?.message ?? String(e)); }
+    } catch (e) { setActionError(`The model was not composed: ${errorMessage(e)}`); }
     setComposing(false);
   };
 
@@ -92,21 +88,22 @@ export const DigitalTwins: React.FC = () => {
       setAnswer({ kind, title: (kind === 'scenario' ? d.scenario_name : d.objective) ?? '', text: d.result ?? '',
                   basis: d.composition?.basis });
       if (kind === 'scenario') {        // the stored model now lists this scenario
-        const r = await fetch(`/api/v1/twin/models/${selected.model_id}`);
-        if (r.ok) setSelected(await r.json());
+        //  W993 - a refused re-read was silent, and the earlier model stood as if it were current
+        try { setSelected(await apiJson(`/api/v1/twin/models/${selected.model_id}`)); }
+        catch (e) {
+          setSelected(s => (s ? { ...s, _load_error: `${errorMessage(e)} — the list of scenarios is the one read before this one ran` } as any : s));
+        }
       }
-    } catch (e: any) { setActionError(e?.message ?? String(e)); }
+    } catch (e) { setActionError(`The ${kind === 'scenario' ? 'scenario' : 'optimisation'} was not run: ${errorMessage(e)}`); }
     setAsking(false);
   };
 
   const open = async (m: TwinModel) => {
     setAnswer(null);
     setLoadingDetail(true); setSelected(m);
-    try {
-      const r = await fetch(`/api/v1/twin/models/${m.model_id}`);
-      if (r.ok) setSelected(await r.json());
-      else setSelected({ ...m, _load_error: `HTTP ${r.status} — showing the summary row only` } as any);   // W329
-    } catch { setSelected({ ...m, _load_error: 'backend unreachable — showing the summary row only' } as any); }
+    //  W993 (FU-399 part 25) - the failure was written to _load_error, which nothing on the page read; it is shown
+    try { setSelected(await apiJson(`/api/v1/twin/models/${m.model_id}`)); }
+    catch (e) { setSelected({ ...m, _load_error: `${errorMessage(e)} — showing the summary row only` } as any); }
     setLoadingDetail(false);
   };
 
@@ -193,6 +190,11 @@ export const DigitalTwins: React.FC = () => {
                 <h3 className="text-sm font-black text-white">{selected.system_name}</h3>
                 {loadingDetail && <Loader2 size={13} className="animate-spin text-highlight" />}
               </div>
+              {(selected as any)._load_error && (
+                <p className="text-[10px] text-amber-400/90 font-bold mb-3 leading-relaxed" data-testid="twin-load-error">
+                  This model could not be read: {(selected as any)._load_error}.
+                </p>
+              )}
               {selected.trained === false && selected.template_note ? (
                 <p className="text-[10px] text-amber-400/90 font-semibold mb-3 leading-relaxed">{selected.template_note}</p>
               ) : selected.trained === undefined && (selected.simulations?.some(s => !s.simulation_id) || /vision_realisation|owner twin/i.test(selected.model_spec || '')) ? (

@@ -83207,3 +83207,45 @@ def test_w992_fu399_sovereign_evolution_says_a_refusals_reason_reads_before_it_s
     fx = json.loads((src / "pages/evolution/SovereignEvolution.fixture.json").read_text(encoding="utf-8"))
     assert fx["roadmap_none"]["roadmap"] is None and fx["roadmap_none"]["message"], fx["roadmap_none"]
     assert "ceo_directives" in fx["cycle"] and isinstance(fx["heartbeat"]["auto_evolve"], bool)
+
+
+def test_w993_fu399_digital_twins_shows_a_refused_read_and_says_each_refusals_status_and_reason(client):
+    """FU-399 part 25 (W993). The Digital Twins page composes a twin model of a system, lists the models, opens one, and
+    asks it a scenario or an optimisation. DigitalTwins.test.tsx mounts the real page against the answers its routes gave
+    on a fresh store, and has the server refuse each read and each action. Rendering it found three defects, fixed:
+    - opening a model the server refused set `_load_error` on the selected row, and nothing on the page read that field,
+      so the summary row stood as if it were the model; the failure is shown with the server's status and reason;
+    - post() said the server's detail when it was a string and only the status when it was not, and read a body that
+      was not JSON as no body; it goes through apiJson, and each refused action says the status and the reason;
+    - after a scenario ran, a refused re-read of the model left the earlier model on the page as if it were current;
+      it is said.
+    Held here: the route's refusal of a model it does not hold; and the page's code."""
+    import json
+    import pathlib
+    import re
+    r = client.get("/api/v1/twin/models/twin-w993-none")
+    assert r.status_code == 404 and r.json()["detail"] == "Model twin-w993-none not found.", r.text
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = root / "apps/workstation-superapp/src"
+    page = (src / "pages/developers/DigitalTwins.tsx").read_text(encoding="utf-8")
+    shared = (src / "components/ReadFailures.tsx").read_text(encoding="utf-8")
+    t = (src / "pages/developers/DigitalTwins.test.tsx").read_text(encoding="utf-8")
+    assert "import { DigitalTwins } from './DigitalTwins';" in t and "<DigitalTwins />" in t
+    read = set(re.findall(r"ByTestId\('([^']+)'\)", t))
+    assert {"twin-load-error", "twin-action-error", "twin-scenario-row"} <= read, sorted(read)
+    for tid in read:
+        assert f'data-testid="{tid}"' in page or f'data-testid="{tid}"' in shared, tid
+    code = _code_only(page)
+    #  a load error is written only where it is shown
+    assert code.count("_load_error") >= 3 and "{(selected as any)._load_error && (" in code
+    assert "This model could not be read: {(selected as any)._load_error}." in code
+    #  every action through apiJson, its refusal said with the status and the reason
+    assert "const post = (url: string, body: any) => apiJson(url, { method: 'POST', body });" in code
+    assert ".json().catch(() => ({}))" not in code and "`HTTP ${r.status}`" not in code
+    assert "setActionError(`The model was not composed: ${errorMessage(e)}`)" in code
+    assert "setActionError(`The ${kind === 'scenario' ? 'scenario' : 'optimisation'} was not run: ${errorMessage(e)}`)" in code
+    #  a refused re-read after a scenario is said
+    assert "the list of scenarios is the one read before this one ran" in code
+    fx = json.loads((src / "pages/developers/DigitalTwins.fixture.json").read_text(encoding="utf-8"))
+    assert fx["missing"]["status"] == 404 and len(fx["model_after"]["simulations"]) == len(fx["model"].get("simulations", [])) + 1
