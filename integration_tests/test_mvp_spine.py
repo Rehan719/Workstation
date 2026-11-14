@@ -83986,3 +83986,30 @@ def test_w1009_fu399_the_factory_and_the_reactor_say_a_refused_run_s_reason_in_t
         assert f"import {{ {name} }} from './{name}';" in t and "new ReadableStream(" in t, name
         fx = json.loads((src / f"{rel}.fixture.json").read_text(encoding="utf-8"))
         assert fx["refused"]["status"] == 422, (name, fx["refused"])
+
+
+def test_w1010_fu399_a_refused_tournament_says_its_reason_and_never_takes_the_incubator_down(client):
+    """FU-399 part 40 (W1010). The Incubator runs a prompt tournament: variants of a base prompt scored against stated
+    criteria, with the winner and why. Incubator.test.tsx mounts the real page against what its route answered on a
+    fresh store with no model installed, and has the server refuse and be unreachable. Rendering it found one defect,
+    which took the page down, fixed: a refused tournament put the server's reason into the page as it came, and a field
+    check's reason is a list, which React refuses to render ("Objects are not valid as a React child"); a refusal of
+    any other shape said no status, and an unreachable server said axios's words. A refusal is said by its status and
+    reason through describeReadFailure, a field check by its field, and an unreachable server as one.
+    Held here: the route answers and refuses as captured; and the page's code."""
+    import json
+    import pathlib
+    r = client.post("/api/v1/incubator/evolve", json={"name": "W1010", "domain": "enterprise", "variants": 3,
+                                                     "iterations": 2, "fitness_criteria": "clarity"})
+    assert r.status_code == 422 and isinstance(r.json()["detail"], list), r.text[:200]
+    root = pathlib.Path(__file__).resolve().parents[1]
+    pd = root / "apps/workstation-superapp/src/pages/developers"
+    code = _code_only((pd / "Incubator.tsx").read_text(encoding="utf-8"))
+    assert "err.response?.data?.detail ?? err.message" not in code
+    assert "updateTournament(id, { status: 'error', error: describeReadFailure(err) });" in code
+    assert "import { describeReadFailure } from '../../components/ReadFailures';" in code
+    t = (pd / "Incubator.test.tsx").read_text(encoding="utf-8")
+    assert "import { Incubator } from './Incubator';" in t and "<Incubator />" in t
+    fx = json.loads((pd / "Incubator.fixture.json").read_text(encoding="utf-8"))
+    assert fx["evolved"]["winner"] is None and fx["evolved"]["winner_basis"], fx["evolved"].get("winner_basis")
+    assert fx["refused"]["status"] == 422 and isinstance(fx["refused"]["body"]["detail"], list), fx["refused"]
