@@ -6,6 +6,14 @@
 import { axiosDetail, bodyOrNull, errorMessage } from './api';
 import { silenceIsRight } from '../components/ReadFailures';
 
+/** W1009 - the sentence for a refused streamed run: the server's status and reason, a field check (which answers a
+ *  list) by its field. The pages that keep their own reader (the Factory and the Digital Reactor hold theirs, so a run
+ *  can be stopped) say a refusal in it too. */
+export async function refusalOf(res: Response): Promise<string> {
+  const d = await bodyOrNull(res);
+  return `Failed (HTTP ${res.status}): ${axiosDetail({ response: { data: d } }, 'no reason given')}`;
+}
+
 /** POST `body` to `url` and hand each `data:` frame of the streamed answer to `onChunk`, then call `onDone`. A refusal,
  *  an answer with no stream, or a server that cannot be reached goes to `onError` as one sentence. */
 export async function streamPost<E>(
@@ -21,11 +29,7 @@ export async function streamPost<E>(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    if (!res.ok) {
-      const d = await bodyOrNull(res);
-      onError(`Failed (HTTP ${res.status}): ${axiosDetail({ response: { data: d } }, 'no reason given')}`);
-      return;
-    }
+    if (!res.ok) { onError(await refusalOf(res)); return; }
     if (!res.body) { onError('The server answered without a stream, so nothing ran here.'); return; }
     const reader = res.body.getReader();
     const dec = new TextDecoder();

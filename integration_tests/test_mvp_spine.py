@@ -83933,7 +83933,9 @@ def test_w1008_fu399_one_stream_reader_says_a_refusal_s_reason_and_an_unreachabl
     src = root / "apps/workstation-superapp/src"
     reader = _code_only((src / "lib/stream.ts").read_text(encoding="utf-8"))
     assert "export async function streamPost<E>(" in reader
-    assert "onError(`Failed (HTTP ${res.status}): ${axiosDetail({ response: { data: d } }, 'no reason given')}`);" in reader
+    #  W1009 - the refusal is one sentence, refusalOf, which the pages that keep their own reader say too
+    assert "if (!res.ok) { onError(await refusalOf(res)); return; }" in reader
+    assert "return `Failed (HTTP ${res.status}): ${axiosDetail({ response: { data: d } }, 'no reason given')}`;" in reader
     assert "onError('The server answered without a stream, so nothing ran here.');" in reader
     assert "onError(errorMessage(e));" in reader and "e?.message ?? String(e)" not in reader
     #  one reader: no page defines its own, and the five that stream import the one, naming the events they read
@@ -83951,3 +83953,36 @@ def test_w1008_fu399_one_stream_reader_says_a_refusal_s_reason_and_an_unreachabl
     assert "import { IntelligenceLab } from './IntelligenceLab';" in t and "new ReadableStream(" in t
     fx = json.loads((src / "pages/IntelligenceLab.fixture.json").read_text(encoding="utf-8"))
     assert fx["bdp"]["content_type"].startswith("text/event-stream") and fx["refused"]["status"] == 422, sorted(fx)
+
+
+def test_w1009_fu399_the_factory_and_the_reactor_say_a_refused_run_s_reason_in_the_one_sentence(client):
+    """FU-399 part 39 (W1009). The Factory writes one product per production line and streams it back; the Digital
+    Reactor narrates a domain's pipeline as a streamed log, executing nothing. Each keeps its own stream reader (it
+    holds the reader so a run can be stopped). Factory.test.tsx and DigitalReactor.test.tsx mount the real pages
+    against what their routes streamed on a fresh store with no model installed, played back as streams. Rendering
+    them found the two defects W1008 removed from the shared reader, fixed:
+    - a refused run said its status alone ("[ERROR] HTTP 422"); it says the server's status and reason, a field check
+      by its field, in lib/stream.ts's one sentence (refusalOf, which the shared reader uses too);
+    - an unreachable server was said in the browser's words; it is said as one.
+    Held here: each route refuses as captured; and each page's code."""
+    import json
+    import pathlib
+    for u in ("/api/v1/factory/produce", "/api/v1/reactor/run"):
+        r = client.post(u)
+        assert r.status_code == 422 and isinstance(r.json()["detail"], list), (u, r.text[:200])
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = root / "apps/workstation-superapp/src"
+    reader = _code_only((src / "lib/stream.ts").read_text(encoding="utf-8"))
+    assert "export async function refusalOf(res: Response): Promise<string> {" in reader
+    for name, said in (("Factory", "updateLine(id, { status: 'error', output: `[ERROR] ${await refusalOf(response)}` }); return;"),
+                       ("DigitalReactor", "appendLog(`[ERROR] ${await refusalOf(response)}`); return;")):
+        rel = f"pages/developers/{name}"
+        code = _code_only((src / f"{rel}.tsx").read_text(encoding="utf-8"))
+        assert "import { refusalOf } from '../../lib/stream';" in code and said in code, name
+        assert "throw new Error(`HTTP ${response.status}`)" not in code and "${err.message}" not in code, name
+        assert "${errorMessage(err)}" in code, (name, "an unreachable server is not said as one")
+        t = (src / f"{rel}.test.tsx").read_text(encoding="utf-8")
+        assert f"import {{ {name} }} from './{name}';" in t and "new ReadableStream(" in t, name
+        fx = json.loads((src / f"{rel}.fixture.json").read_text(encoding="utf-8"))
+        assert fx["refused"]["status"] == 422, (name, fx["refused"])
