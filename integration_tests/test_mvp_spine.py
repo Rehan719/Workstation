@@ -83077,3 +83077,48 @@ def test_w989_fu399_the_deliverables_page_never_shows_an_unread_list_as_empty_an
     fx = json.loads((src / "pages/Deliverables.fixture.json").read_text(encoding="utf-8"))
     assert fx["export_missing"]["status"] == 404 and fx["export_missing"]["body"]["detail"].startswith("Deliverable ")
     assert fx["list_empty"]["deliverables"] == [] and len(fx["version"]["versions"]) == len(fx["one"]["versions"]) + 1
+
+
+def test_w990_fu399_the_governance_audit_tab_says_each_failed_read_and_never_shows_unread_proposals_as_none(client):
+    """FU-399 part 22 (W990). The Governance Hub's audit tab shows the constitutional ledger (its chain recomputed, its
+    newest events, each with what it is) and the stage proposals awaiting a vote. GovernanceHub.test.tsx mounts the real
+    page against the answers its three reads gave on a fresh store, and has the server refuse each read. Rendering it
+    found two defects, fixed:
+    - a refused read of the proposals set them to none, and the panel said "No proposals yet." with nothing about the
+      failure; it now says the read failed, with the server's reason;
+    - the verification and the event log sat in one Promise.all, so a refusal of either hid both and the tab said one
+      reason without saying which read it was; each read stands on its own and is said by what it was reading.
+    Held here: the three routes answer the fields the page reads; and the page's code."""
+    import json
+    import pathlib
+    import re
+    v = client.get("/api/v1/gaas/ueg/verify").json()
+    assert {"valid", "events", "root_hash"} <= set(v), sorted(v)
+    ev = client.get("/api/v1/gaas/ueg/events?limit=40").json()
+    assert isinstance(ev.get("events"), list), ev
+    assert isinstance(client.get("/api/v1/projects/governance/proposals").json(), list)
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = root / "apps/workstation-superapp/src"
+    page = (src / "pages/governance/GovernanceHub.tsx").read_text(encoding="utf-8")
+    shared = (src / "components/ReadFailures.tsx").read_text(encoding="utf-8")
+    t = (src / "pages/governance/GovernanceHub.test.tsx").read_text(encoding="utf-8")
+    assert "import { GovernanceHub } from './GovernanceHub';" in t and "<GovernanceHub />" in t
+    read = set(re.findall(r"ByTestId\('([^']+)'\)", t))
+    assert {"proposals-unread", "read-failure"} <= read, sorted(read)
+    for tid in read:
+        assert f'data-testid="{tid}"' in page or f'data-testid="{tid}"' in shared, tid
+    code = _code_only(page)
+    #  an unread list of proposals is not none
+    #  (the Sanctum keeps its own setProposals([]) beside the error it shows; the panel's catch is what changed)
+    assert "setUnread(describeReadFailure(e));" in code and "    } catch {\n      setProposals([]);\n    } finally {" not in page
+    assert "if (unread && proposals.length === 0) return (" in code
+    assert "The proposals could not be read ({unread}), so this is not a list of none." in code
+    #  each of the ledger's reads on its own, said by what it was reading
+    assert "Promise.all([" not in code and "await Promise.allSettled([" in code
+    assert ".catch(noteRead(\"the ledger's verification\"))" in code
+    assert ".catch(e => { setEventsUnread(true); noteRead('the event log')(e); })" in code
+    assert "{eventsUnread ? 'Event log unavailable — it could not be read, so this is not a log of none.'" in code
+    assert "<ReadFailures failures={readFailures} />" in code
+    fx = json.loads((src / "pages/governance/GovernanceHub.fixture.json").read_text(encoding="utf-8"))
+    assert fx["proposals"] == [] and fx["verify"]["valid"] is True and len(fx["events"]["events"]) >= 1

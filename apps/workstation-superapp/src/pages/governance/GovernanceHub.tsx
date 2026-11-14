@@ -11,6 +11,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { progressWidthClass } from '../../lib/progressWidth';
 import { apiJson, errorMessage } from '../../lib/api';
+import { ReadFailures, useReadFailures, describeReadFailure } from '../../components/ReadFailures';   // W990
 
 // ── Governance Proposals sub-component ────────────────────────────────────────
 
@@ -29,14 +30,18 @@ interface Proposal {
 const ProposalsPanel: React.FC = () => {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading]     = useState(true);
+  //  W990 (FU-399 part 22) - AN UNREAD LIST IS NOT AN EMPTY ONE. A refused read set the proposals to none, and the
+  //  panel said "No proposals yet." with nothing about the failure. It says the read failed, with the server's reason.
+  const [unread, setUnread] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const r = await axios.get<Proposal[]>('/api/v1/projects/governance/proposals');
       setProposals(r.data);
-    } catch {
-      setProposals([]);
+      setUnread('');
+    } catch (e) {
+      setUnread(describeReadFailure(e));
     } finally {
       setLoading(false);
     }
@@ -62,6 +67,11 @@ const ProposalsPanel: React.FC = () => {
   };
 
   if (loading) return <p className="text-xs text-slate-500 py-4">Loading proposals…</p>;
+  if (unread && proposals.length === 0) return (
+    <p className="text-xs font-bold text-amber-400/90 py-4" data-testid="proposals-unread">
+      The proposals could not be read ({unread}), so this is not a list of none.
+    </p>
+  );
   if (proposals.length === 0) return (
     <div className="py-8 text-center">
       <Vote size={28} className="text-slate-700 mx-auto mb-2" />
@@ -133,16 +143,20 @@ const AuditTab: React.FC = () => {
   const [loadErr, setLoadErr] = useState('');
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
 
+  //  W990 (FU-399 part 22) - EACH READ STANDS ON ITS OWN. The verification and the event log sat in one Promise.all,
+  //  so a refusal of either hid both and the tab said one reason without saying which read it was. Each is said by
+  //  what it was reading, with the server's reason, and the other is shown.
+  const { failures: readFailures, note: noteRead, clear: clearRead } = useReadFailures();
+  const [eventsUnread, setEventsUnread] = useState(false);
   const load = async () => {
-    try {
-      const [v, ev] = await Promise.all([
-        apiJson('/api/v1/gaas/ueg/verify'),
-        apiJson('/api/v1/gaas/ueg/events?limit=40'),
-      ]);
-      setVerify(v);
-      setEvents((ev.events ?? []).slice().reverse());   // newest first
-      setLoadErr('');
-    } catch (e) { setLoadErr(errorMessage(e)); }
+    await Promise.allSettled([
+      apiJson('/api/v1/gaas/ueg/verify')
+        .then(v => { setVerify(v); clearRead("the ledger's verification"); })
+        .catch(noteRead("the ledger's verification")),
+      apiJson('/api/v1/gaas/ueg/events?limit=40')
+        .then(ev => { setEvents((ev.events ?? []).slice().reverse()); setEventsUnread(false); clearRead('the event log'); })   // newest first
+        .catch(e => { setEventsUnread(true); noteRead('the event log')(e); }),
+    ]);
   };
   useEffect(() => { load(); }, []);
 
@@ -202,7 +216,8 @@ const AuditTab: React.FC = () => {
         </div>
       </div>
 
-      {loadErr && <p className="text-vital text-xs font-bold">{loadErr}</p>}
+      <ReadFailures failures={readFailures} />
+      {loadErr && <p className="text-vital text-xs font-bold" data-testid="audit-error">{loadErr}</p>}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
         {/* W492 (refutation) - an unreadable ledger returns events:null and root_hash:null, and a hash
@@ -272,7 +287,7 @@ const AuditTab: React.FC = () => {
 
             <div className="space-y-3">
               {filteredEvents.length === 0 && (
-                <p className="text-sm text-slate-500 font-bold">{loadErr ? 'Event log unavailable.' : statusFilter === 'FLAGGED' ? 'No flagged or review events among the events loaded.' : 'No constitutional events recorded yet.'}</p>
+                <p className="text-sm text-slate-500 font-bold">{eventsUnread ? 'Event log unavailable — it could not be read, so this is not a log of none.' : statusFilter === 'FLAGGED' ? 'No flagged or review events among the events loaded.' : 'No constitutional events recorded yet.'}</p>
               )}
               {filteredEvents.map((ev) => (
                 <motion.div key={ev.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
